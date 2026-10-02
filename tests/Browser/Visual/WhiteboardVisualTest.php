@@ -127,7 +127,8 @@ it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a 
             $page = $this->awaitRealtime($page->navigate($path))
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('[role="toolbar"][aria-label]')
-                ->assertPresent('.whiteboard-canvas [data-slot="read-mode-toggle"][aria-pressed="true"]')
+                ->assertPresent('.whiteboard-canvas [data-slot="read-mode-toggle"]')
+                ->assertPresent('.whiteboard-canvas [data-slot="read-mode-state"]')
                 ->assertCount('[data-realtime]', 1)
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
@@ -252,3 +253,75 @@ it('[P18e-07-05] renders the colour bar of the canvas, the colours of the sticky
     'sticky colours' => ['whiteboard-board-sticky-colors', '[data-slot="popover-content"] [role="radiogroup"]'],
     'export card' => ['whiteboard-board-export', '.ExportDialog--json [data-slot="scene-export"]'],
 ]);
+
+it('[P18e-07-05] renders the cursor of another member in the presence colour of that member without overflow', function () {
+    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+    [$mia] = whiteboardMember($board);
+    renamedWhiteboardUser($mia, 'Mia Member');
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)))
+        ->assertPresent('[data-scene^="3:"]');
+
+    // A cursor is forgotten after three seconds without a message: Mia's pointer keeps moving on one spot.
+    $miaPage->script(<<<'JS'
+        () => {
+            const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
+            const box = canvas.getBoundingClientRect();
+
+            setInterval(() => canvas.dispatchEvent(new PointerEvent('pointermove', {
+                bubbles: true,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true,
+                clientX: box.left + 300,
+                clientY: box.top + 460,
+            })), 300);
+
+            return true;
+        }
+        JS);
+
+    $cursorIsDrawn = <<<'JS'
+        async () => {
+            const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
+            const scale = canvas.width / canvas.getBoundingClientRect().width;
+            const drawn = () => canvas.getContext('2d')
+                .getImageData(300 * scale, 460 * scale, 16 * scale, 16 * scale).data
+                .some((value, index) => index % 4 === 3 && value > 0);
+
+            for (let attempt = 0; attempt < 50 && !drawn(); attempt += 1) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+
+            return drawn();
+        }
+        JS;
+
+    $this->captureVisuals(
+        'whiteboard-board-cursor',
+        $this->whiteboardPath($board),
+        function (string $path, array $options) use ($fran, $cursorIsDrawn) {
+            User::query()->whereKey($fran->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $fran->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page = $this->awaitRealtime($page->navigate($path))
+                ->assertPresent('[data-scene^="3:"]')
+                ->assertPresent('header [role="group"][aria-label]')
+                ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+
+            p18eVisualLeaveCanvasToolbarOut($page);
+
+            expect($page->script($cursorIsDrawn))->toBeTrue();
+
+            return $page;
+        },
+    );
+});

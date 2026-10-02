@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -33,6 +33,7 @@ import {
 import {
     CANVAS_LIGHT,
     DEFAULT_POSTIT_COLOR,
+    DEFAULT_STROKE,
     POSTIT,
 } from '@/lib/whiteboard/palette';
 import { restoreScene } from '@/lib/whiteboard/restore';
@@ -90,6 +91,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
+    const appliedStroke = useRef<string>(DEFAULT_STROKE);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
     const initial = useRef(snapshot);
@@ -199,11 +201,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
 
     if (state.status !== 'active') {
         return (
-            <BoardGone
-                title={board.title}
-                reason={state.status}
-                teamUrl={state.snapshot.links.team}
-            />
+            <>
+                <Head title={board.title} />
+                <BoardGone
+                    title={board.title}
+                    reason={state.status}
+                    teamUrl={state.snapshot.links.team}
+                />
+            </>
         );
     }
 
@@ -252,6 +257,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             rootProps={{ 'data-scene': initialStamp }}
         >
             <div className="flex h-full min-h-0 flex-col">
+                <Head title={board.title} />
                 {me.isFacilitator && !facilitationInHeader && (
                     <div className="flex shrink-0 justify-center border-b bg-background p-1.5">
                         <BoardFacilitation state={state} compact />
@@ -309,9 +315,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                     : bar,
                             );
 
-                            const stroke = strokeForTool(appState);
+                            const stroke = strokeForTool(
+                                appState,
+                                appliedStroke.current,
+                            );
 
                             if (stroke !== null) {
+                                appliedStroke.current = stroke;
+
                                 // Outside the library's own update, which reports this change.
                                 queueMicrotask(() =>
                                     api?.updateScene({

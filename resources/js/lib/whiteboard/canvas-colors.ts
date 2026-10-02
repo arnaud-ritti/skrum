@@ -92,10 +92,15 @@ export function colorBarState(
  * A new filled shape takes the border of its colour, as a sticky note does.
  * Every other tool goes back to the default stroke: text, a line or a pencil
  * stroke in a note's border colour could not be read. A stroke the user chose
- * (neither the default nor one of the eight borders) is left alone. Returns
- * the stroke to set, or null when the current one is right.
+ * is left alone: only one of the eight borders, or the stroke this function
+ * returned last (`appliedStroke`, the default one at first), is replaced, so
+ * the default stroke picked over a border stays. Returns the stroke to set,
+ * or null when the current one is right.
  */
-export function strokeForTool(appState: ColorAppState): string | null {
+export function strokeForTool(
+    appState: ColorAppState,
+    appliedStroke: string = DEFAULT_STROKE,
+): string | null {
     const current = appState.currentItemStrokeColor.toLowerCase();
     const fromPalette = postItFromStroke(current) !== null;
 
@@ -109,7 +114,7 @@ export function strokeForTool(appState: ColorAppState): string | null {
         return fromPalette ? DEFAULT_STROKE : null;
     }
 
-    if (current !== DEFAULT_STROKE && !fromPalette) {
+    if (current !== appliedStroke.toLowerCase() && !fromPalette) {
         return null;
     }
 

@@ -96,6 +96,115 @@ describe('BoardTitle', () => {
         expect(retroRequest).not.toHaveBeenCalled();
     });
 
+    it('saves a changed name when the field loses focus', async () => {
+        const state = boardState();
+
+        renderWithProviders(<BoardTitle state={state} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Sprint board' }));
+
+        const field = screen.getByRole('textbox', { name: 'Board name' });
+
+        fireEvent.change(field, { target: { value: 'Sprint 43 board' } });
+        fireEvent.blur(field);
+
+        await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(1));
+
+        expect(sentBodies()).toEqual([{ title: 'Sprint 43 board' }]);
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('textbox', { name: 'Board name' }),
+            ).toBeNull(),
+        );
+    });
+
+    it('closes the field and sends nothing when it loses focus unchanged or empty', () => {
+        renderWithProviders(<BoardTitle state={boardState()} />);
+
+        for (const value of ['Sprint board', '  ']) {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Sprint board' }),
+            );
+
+            const field = screen.getByRole('textbox', { name: 'Board name' });
+
+            fireEvent.change(field, { target: { value } });
+            fireEvent.blur(field);
+
+            expect(
+                screen.queryByRole('textbox', { name: 'Board name' }),
+            ).toBeNull();
+        }
+
+        expect(retroRequest).not.toHaveBeenCalled();
+    });
+
+    it('does not save the draft of a rename cancelled with Escape when the field then loses focus', () => {
+        renderWithProviders(<BoardTitle state={boardState()} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Sprint board' }));
+
+        const field = screen.getByRole('textbox', { name: 'Board name' });
+
+        fireEvent.change(field, { target: { value: 'Another name' } });
+        fireEvent.keyDown(field, { key: 'Escape' });
+        fireEvent.blur(field);
+
+        expect(retroRequest).not.toHaveBeenCalled();
+    });
+
+    it('keeps the field focusable while saving and open with the draft after a refusal', async () => {
+        let refuse: (reason: Error) => void = () => {};
+
+        vi.mocked(retroRequest).mockImplementationOnce(
+            () =>
+                new Promise((_, reject) => {
+                    refuse = reject;
+                }),
+        );
+
+        const state = boardState();
+
+        renderWithProviders(<BoardTitle state={state} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Sprint board' }));
+
+        const field = screen.getByRole('textbox', { name: 'Board name' });
+
+        fireEvent.change(field, { target: { value: 'Sprint 43 board' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        await waitFor(() =>
+            expect(field.getAttribute('aria-busy')).toBe('true'),
+        );
+
+        expect(field.hasAttribute('readonly')).toBe(true);
+        expect(field.hasAttribute('disabled')).toBe(false);
+
+        refuse(new Error('refused'));
+
+        await waitFor(() => expect(field.hasAttribute('readonly')).toBe(false));
+
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'Board name',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('Sprint 43 board');
+        expect(state.refetch).not.toHaveBeenCalled();
+    });
+
+    it('says that a press on the name renames the board, without changing the heading', () => {
+        renderWithProviders(<BoardTitle state={boardState()} />);
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Sprint board' })
+                .getAttribute('aria-description'),
+        ).toBe('Rename the board');
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Sprint board',
+        );
+    });
+
     it('sends nothing for an empty or an unchanged name', () => {
         renderWithProviders(<BoardTitle state={boardState()} />);
 

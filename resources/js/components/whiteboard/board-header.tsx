@@ -40,7 +40,9 @@ export function useFacilitationInHeader(): boolean {
 
 /**
  * The board's name, renamed in place by who may rename it (the facilitator):
- * a press on it, or F2, turns it into a field; Enter saves, Escape cancels.
+ * a press on it, or F2, turns it into a field; Enter saves, and so does
+ * leaving the field with a changed name; Escape cancels. While it saves the
+ * field is read-only, not disabled, so it keeps the focus if the save fails.
  */
 export function BoardTitle({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
@@ -50,6 +52,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
     const [saving, setSaving] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
     const restoreFocus = useRef(false);
+    const isClosing = useRef(false);
     const isEditing = draft !== null;
 
     useEffect(() => {
@@ -61,20 +64,27 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
         trigger.current?.focus();
     }, [isEditing]);
 
-    const close = (): void => {
-        restoreFocus.current = true;
+    const open = (): void => {
+        isClosing.current = false;
+        setDraft(board.title);
+    };
+
+    /** Leaving the field by itself sends the focus nowhere: it is already elsewhere. */
+    const close = (toTrigger = true): void => {
+        isClosing.current = true;
+        restoreFocus.current = toTrigger;
         setDraft(null);
     };
 
-    const save = async (): Promise<void> => {
+    const save = async (toTrigger = true): Promise<void> => {
         const title = (draft ?? '').trim();
 
-        if (saving) {
+        if (saving || isClosing.current) {
             return;
         }
 
         if (title === '' || title === board.title) {
-            close();
+            close(toTrigger);
 
             return;
         }
@@ -89,7 +99,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
 
         if (done !== undefined) {
             await state.refetch();
-            close();
+            close(toTrigger);
         }
 
         setSaving(false);
@@ -115,7 +125,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
         }
 
         event.preventDefault();
-        setDraft(board.title);
+        open();
     };
 
     if (!me.isFacilitator) {
@@ -133,7 +143,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
                         size="icon-sm"
                         aria-label={t('Rename the board')}
                         aria-keyshortcuts="F2"
-                        onClick={() => setDraft(board.title)}
+                        onClick={open}
                         onKeyDown={onTriggerKeyDown}
                         className="hidden shrink-0 md:inline-flex"
                     >
@@ -149,11 +159,12 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
                         required
                         maxLength={TitleMaxLength}
                         value={draft}
-                        disabled={saving}
+                        readOnly={saving}
+                        aria-busy={saving || undefined}
                         aria-label={t('Board name')}
                         onChange={(event) => setDraft(event.target.value)}
                         onKeyDown={onFieldKeyDown}
-                        onBlur={() => !saving && setDraft(null)}
+                        onBlur={() => void save(false)}
                         onFocus={(event) => event.target.select()}
                         className="h-8 w-64 max-w-full text-base font-semibold"
                     />
@@ -164,8 +175,9 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
                         ref={trigger}
                         type="button"
                         title={t('Rename the board')}
+                        aria-description={t('Rename the board')}
                         aria-keyshortcuts="F2"
-                        onClick={() => setDraft(board.title)}
+                        onClick={open}
                         onKeyDown={onTriggerKeyDown}
                         className="block max-w-full truncate rounded-sm text-left outline-offset-2 outline-ring hover:bg-accent focus-visible:outline-2"
                     >

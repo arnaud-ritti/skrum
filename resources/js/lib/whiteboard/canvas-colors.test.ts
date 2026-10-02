@@ -188,6 +188,43 @@ describe('strokeForTool', () => {
         ).toBeNull();
     });
 
+    it('leaves the default stroke alone on a filled shape when the user chose it over the border the app had set', () => {
+        expect(
+            strokeForTool(
+                appState({
+                    activeTool: { type: 'rectangle' },
+                    currentItemStrokeColor: DEFAULT_STROKE,
+                }),
+                POSTIT.sun.stroke,
+            ),
+        ).toBeNull();
+    });
+
+    it('still replaces the default stroke the app itself had set', () => {
+        expect(
+            strokeForTool(
+                appState({
+                    activeTool: { type: 'ellipse' },
+                    currentItemStrokeColor: DEFAULT_STROKE,
+                }),
+                DEFAULT_STROKE,
+            ),
+        ).toBe(POSTIT.sun.stroke);
+    });
+
+    it('follows the fill when the stroke is still the border the app set', () => {
+        expect(
+            strokeForTool(
+                appState({
+                    activeTool: { type: 'rectangle' },
+                    currentItemBackgroundColor: POSTIT.sky.bg,
+                    currentItemStrokeColor: POSTIT.sun.stroke,
+                }),
+                POSTIT.sun.stroke,
+            ),
+        ).toBe(POSTIT.sky.stroke);
+    });
+
     it('does not keep a note border on a shape whose fill is not one of the eight', () => {
         expect(
             strokeForTool(

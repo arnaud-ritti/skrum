@@ -21,6 +21,17 @@ it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in w
         ->assertSeeIn('[data-slot="guest-join-participants"]', '2 participants')
         ->assertSeeIn('[data-slot="guest-join-facilitator"]', 'Fran Facilitator facilitates')
         ->assertValue('#name', 'Oscar Outsider')
+        ->assertNotPresent('[data-slot="guest-join-preview"]:has-text("Suggested nickname")')
+        ->fill('#name', '')
+        ->assertNotPresent('[data-slot="guest-join-preview"]')
+        ->assertDontSee('Suggested nickname if you leave it empty')
+        ->click('Join')
+        ->assertPathIs($joinPath)
+        ->assertPresent('#name[aria-invalid="true"]')
+        ->assertPresent('#name ~ [role="alert"]')
+        ->assertScript('document.querySelector(\'#name ~ [role="alert"]\').textContent.trim() !== \'\'', true)
+        ->fill('#name', 'Oscar Outsider')
+        ->assertNotPresent('#name ~ [role="alert"]')
         ->click('Join')
         ->assertPathIs($this->whiteboardPath($board));
 
@@ -140,12 +151,16 @@ it('[P18e-07-06] renames the board in place for everyone, gives a guest no field
         ->keys('header span > h1', 'F2')
         ->assertNotPresent($field);
 
-    $franPage->click('header span > h1 button')
+    $franPage->assertAttribute('header span > h1 button', 'aria-description', 'Rename the board')
+        ->assertScript('document.title.startsWith("Sprint board")', true)
+        ->click('header span > h1 button')
         ->assertValue($field, 'Sprint board')
         ->fill($field, 'Not this name')
         ->keys($field, 'Escape')
         ->assertNotPresent($field)
         ->assertSeeIn('header span > h1', 'Sprint board');
+
+    $this->settleWhiteboard($franPage);
 
     expect($board->fresh()->title)->toBe('Sprint board');
 
@@ -153,12 +168,41 @@ it('[P18e-07-06] renames the board in place for everyone, gives a guest no field
         ->fill($field, 'Onboarding journey')
         ->keys($field, 'Enter')
         ->assertNotPresent($field)
-        ->assertSeeIn('header span > h1', 'Onboarding journey');
+        ->assertSeeIn('header span > h1', 'Onboarding journey')
+        ->assertScript('document.title.startsWith("Onboarding journey")', true);
 
     $guestPage->assertSeeIn('header span > h1', 'Onboarding journey')
+        ->assertScript('document.title.startsWith("Onboarding journey")', true)
         ->assertNotPresent('header span > h1 button');
 
     expect($board->fresh()->title)->toBe('Onboarding journey');
+
+    $franPage->click('header span > h1 button')
+        ->fill($field, 'Left by a click on the canvas')
+        ->click('.whiteboard-canvas canvas.excalidraw__canvas.interactive')
+        ->assertNotPresent($field)
+        ->assertSeeIn('header span > h1', 'Left by a click on the canvas');
+
+    $guestPage->assertSeeIn('header span > h1', 'Left by a click on the canvas');
+
+    expect($board->fresh()->title)->toBe('Left by a click on the canvas');
+
+    $this->blockWhiteboardRequests($franPage, '/settings');
+
+    $franPage->click('header span > h1 button')
+        ->fill($field, 'Refused name')
+        ->keys($field, 'Enter')
+        ->assertValue($field, 'Refused name')
+        ->assertScript('document.activeElement === document.querySelector(\'header input[aria-label="Board name"]\')', true)
+        ->assertScript('document.querySelector(\'header input[aria-label="Board name"]\').readOnly', false);
+
+    $this->unblockWhiteboardRequests($franPage);
+
+    $franPage->keys($field, 'Escape')
+        ->assertNotPresent($field)
+        ->assertSeeIn('header span > h1', 'Left by a click on the canvas');
+
+    expect($board->fresh()->title)->toBe('Left by a click on the canvas');
 
     $this->openWhiteboardMenu($franPage)
         ->assertPresent('[role="menuitem"]:has-text("Rename")');
@@ -180,6 +224,19 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
             const picks = [...document.querySelectorAll('.whiteboard-canvas .color-picker__top-picks')];
 
             return picks.length > 0 && picks.every((pick) => getComputedStyle(pick).display === 'none');
+        })()
+        JS;
+    $pickerRowsCollapsed = <<<'JS'
+        (() => {
+            const rows = [...document.querySelectorAll('.whiteboard-canvas .color-picker-container')];
+
+            return rows.length > 0 && rows.every((row) => {
+                const shown = [...row.children].filter((child) => getComputedStyle(child).display !== 'none');
+
+                return shown.length === 1
+                    && (shown[0].matches('button.color-picker__button') || shown[0].querySelector('button.color-picker__button') !== null)
+                    && shown[0].getBoundingClientRect().left - row.getBoundingClientRect().left < 2;
+            });
         })()
         JS;
 
@@ -204,6 +261,7 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
 
     $page->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]")
         ->assertScript($quickPicksHidden, true)
+        ->assertScript($pickerRowsCollapsed, true)
         ->click("{$bar} [role=\"radio\"][aria-label=\"Sky\"]")
         ->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sky\"][aria-checked=\"true\"]");
 
@@ -320,7 +378,8 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
 
     $page->assertSeeIn('.whiteboard-canvas [data-slot="read-mode-state"]', 'Reading')
         ->assertSeeIn($toggle, 'Edit')
-        ->assertAttribute($toggle, 'aria-pressed', 'true')
+        ->assertNotPresent("{$toggle}[aria-pressed]")
+        ->assertSeeIn('.whiteboard-canvas span[role="status"]', 'Reading')
         ->assertNotPresent($tools)
         ->assertNotPresent('button[aria-label="Sticky note"]')
         ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-colors"]')
@@ -347,8 +406,9 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
 
     $page->click($toggle)
         ->assertSeeIn($toggle, 'Read')
-        ->assertAttribute($toggle, 'aria-pressed', 'false')
+        ->assertNotPresent("{$toggle}[aria-pressed]")
         ->assertNotPresent('[data-slot="read-mode-state"]')
+        ->assertScript('document.querySelector(\'.whiteboard-canvas span[role="status"]\').textContent', 'Editing')
         ->assertPresent($tools)
         ->assertScript($dockIsClear, true);
 
@@ -388,4 +448,20 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
 
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('element_id', $sticky['id'])->sole()->data)
         ->toMatchArray(['x' => $sticky['x'], 'y' => $sticky['y']]);
+
+    $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => false]);
+
+    $guestPage->assertNotPresent('div[role="status"]:has-text("This board is locked.")')
+        ->assertSeeIn($toggle, 'Edit')
+        ->click($toggle)
+        ->assertSeeIn($toggle, 'Read')
+        ->assertPresent($tools)
+        ->assertNotPresent('.whiteboard-canvas .excalidraw--view-mode');
+
+    $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => true]);
+
+    $guestPage->assertPresent('div[role="status"]:has-text("This board is locked.")')
+        ->assertNotPresent($toggle)
+        ->assertNotPresent($tools)
+        ->assertPresent('.whiteboard-canvas .excalidraw--view-mode');
 });
