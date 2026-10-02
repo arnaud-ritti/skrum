@@ -261,7 +261,15 @@ export function ActionItemFilterBar({
                     variant="link"
                     size="sm"
                     className={cn('max-w-full min-w-0', !stacked && 'ml-auto')}
-                    onClick={onReset}
+                    onClick={(event) => {
+                        // Reset goes away with the opening state: the focus
+                        // stays in the toolbar instead of falling to the page.
+                        event.currentTarget
+                            .closest<HTMLElement>('[role="toolbar"]')
+                            ?.querySelector<HTMLElement>('[role="combobox"]')
+                            ?.focus();
+                        onReset();
+                    }}
                 >
                     <span className="truncate">{t('Reset')}</span>
                 </Button>

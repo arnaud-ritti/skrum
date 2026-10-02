@@ -196,6 +196,26 @@ describe('ActionItemFilterBar', () => {
         expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
     });
 
+    it('hands the focus to the first facet when Reset goes away', () => {
+        const props = bar({
+            filters: { ...defaults, team: null },
+            isDefault: false,
+        });
+        const { rerender } = renderWithProviders(
+            <ActionItemFilterBar {...props} />,
+        );
+
+        const reset = screen.getByRole('button', { name: 'Reset' });
+
+        reset.focus();
+        fireEvent.click(reset);
+        rerender(<ActionItemFilterBar {...bar()} />);
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('combobox', { name: 'Team' }),
+        );
+    });
+
     it('leaves the place of the later facets after Assignee', () => {
         renderWithProviders(
             <ActionItemFilterBar
