@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Armchair, Keyboard, Spade } from 'lucide-react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -180,6 +180,58 @@ describe('KeyboardShortcuts', () => {
         fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
 
         expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('returns the focus to the element that had it when it closes', async () => {
+        function Opener() {
+            const [open, setOpen] = useState(false);
+
+            return (
+                <>
+                    <button type="button" onClick={() => setOpen(true)}>
+                        Open
+                    </button>
+                    <KeyboardShortcuts
+                        open={open}
+                        onOpenChange={setOpen}
+                        sections={sections}
+                        platform="mac"
+                    />
+                </>
+            );
+        }
+
+        renderWithProviders(<Opener />);
+
+        const opener = screen.getByRole('button', { name: 'Open' });
+
+        opener.focus();
+        fireEvent.click(opener);
+
+        expect(document.activeElement).toBe(screen.getByRole('searchbox'));
+
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(document.activeElement).toBe(opener);
+    });
+
+    it('stacks header, search, body and footer in a column', () => {
+        renderWithProviders(<Harness />);
+
+        const dialog = screen.getByRole('dialog');
+        const blocks = Array.from(dialog.children).map(
+            (child) =>
+                child.getAttribute('data-slot') ?? child.tagName.toLowerCase(),
+        );
+
+        expect(dialog.className).toContain('flex-col');
+        expect(blocks.indexOf('header')).toBeLessThan(
+            blocks.indexOf('keyboard-shortcuts-body'),
+        );
+        expect(blocks.indexOf('keyboard-shortcuts-body')).toBeLessThan(
+            blocks.indexOf('footer'),
+        );
     });
 
     it('labels the dialog with its title', () => {

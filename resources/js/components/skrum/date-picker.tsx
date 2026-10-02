@@ -1,6 +1,13 @@
-import { CalendarIcon, CalendarX, CircleAlert } from 'lucide-react';
+import {
+    CalendarIcon,
+    CalendarRange,
+    CalendarX,
+    CircleAlert,
+    X,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import type { CalendarLocale } from '@/components/ui/calendar';
@@ -11,6 +18,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -453,5 +465,263 @@ export function DatePicker({
                 </span>
             )}
         </div>
+    );
+}
+
+export type DateRangeValue = { from: Date; to: Date };
+
+export type DateRangePreset = { label: string; range: DateRangeValue };
+
+export type DateRangeFilterProps = {
+    label: string;
+    value?: DateRangeValue;
+    presets?: DateRangePreset[];
+    /** Called by Apply with the chosen range, or with nothing once cleared. */
+    onApply: (range?: DateRangeValue) => void;
+    locale: DatePickerLocale;
+    weekStartsOn?: 0 | 1;
+    isDateDisabled?: (date: Date) => boolean;
+    today?: Date;
+    defaultOpen?: boolean;
+    className?: string;
+};
+
+export function formatShortRange(
+    range: DateRangeValue,
+    locale: DatePickerLocale,
+    today: Date,
+): string {
+    const isCurrentYear =
+        range.from.getFullYear() === today.getFullYear() &&
+        range.to.getFullYear() === today.getFullYear();
+
+    return new Intl.DateTimeFormat(IntlTags[locale], {
+        day: 'numeric',
+        month: 'short',
+        year: isCurrentYear ? undefined : 'numeric',
+    }).formatRange(range.from, range.to);
+}
+
+function completeRange(draft: DateRange | undefined): DateRangeValue | null {
+    if (!draft?.from) {
+        return null;
+    }
+
+    return { from: draft.from, to: draft.to ?? draft.from };
+}
+
+export function DateRangeFilter({
+    label,
+    value,
+    presets,
+    onApply,
+    locale,
+    weekStartsOn,
+    isDateDisabled,
+    today,
+    defaultOpen = false,
+    className,
+}: DateRangeFilterProps) {
+    const { t } = useTrans();
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const focusTriggerOnce = useRef(false);
+    const referenceDay = today ?? new Date();
+    const [open, setOpen] = useState(defaultOpen);
+    const [draft, setDraft] = useState<DateRange | undefined>(value);
+    const [month, setMonth] = useState<Date>(value?.from ?? referenceDay);
+    const hasValue = value !== undefined;
+    const chosen = completeRange(draft);
+    const selectedDays =
+        chosen === null ? 0 : daysBetween(chosen.from, chosen.to) + 1;
+    const removeLabel = t('Remove the :label filter', { label });
+
+    useEffect(() => {
+        if (focusTriggerOnce.current && !hasValue) {
+            focusTriggerOnce.current = false;
+            triggerRef.current?.focus();
+        }
+    }, [hasValue]);
+
+    const changeOpen = (next: boolean) => {
+        if (next) {
+            setDraft(value);
+            setMonth(value?.from ?? referenceDay);
+        }
+
+        setOpen(next);
+    };
+
+    const apply = () => {
+        onApply(chosen ?? undefined);
+        setOpen(false);
+    };
+
+    const remove = () => {
+        focusTriggerOnce.current = true;
+        setOpen(false);
+        onApply(undefined);
+    };
+
+    const countLabel =
+        selectedDays === 0
+            ? t('No date selected')
+            : selectedDays === 1
+              ? t('1 day selected')
+              : t(':count days selected', { count: selectedDays });
+
+    return (
+        <Popover open={open} onOpenChange={changeOpen}>
+            <span
+                data-slot="date-range-filter"
+                data-active={hasValue}
+                className={cn(
+                    'inline-flex h-8 max-w-full min-w-0 items-center rounded-md border text-body-sm font-semibold',
+                    hasValue
+                        ? 'border-primary/45 bg-skrum-primary-soft text-skrum-primary-text'
+                        : 'border-input bg-card text-foreground hover:bg-accent',
+                    className,
+                )}
+            >
+                <PopoverTrigger asChild>
+                    <button
+                        ref={triggerRef}
+                        type="button"
+                        data-slot="date-range-filter-trigger"
+                        className={cn(
+                            'inline-flex h-full min-w-0 items-center gap-1.5 rounded-md pr-2 pl-3 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            !hasValue && 'pr-3',
+                        )}
+                    >
+                        <CalendarRange
+                            className="size-4 shrink-0"
+                            aria-hidden="true"
+                        />
+                        <span className="truncate">
+                            {hasValue
+                                ? t(':label: :value', {
+                                      label,
+                                      value: formatShortRange(
+                                          value,
+                                          locale,
+                                          referenceDay,
+                                      ),
+                                  })
+                                : label}
+                        </span>
+                    </button>
+                </PopoverTrigger>
+                {hasValue && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                aria-label={removeLabel}
+                                data-slot="date-range-filter-remove"
+                                onClick={remove}
+                                className="grid h-full w-7 shrink-0 place-items-center rounded-r-md border-l border-primary/30 outline-none hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <X className="size-3.5" aria-hidden="true" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{removeLabel}</TooltipContent>
+                    </Tooltip>
+                )}
+            </span>
+            <PopoverContent
+                data-slot="date-range-filter-content"
+                aria-label={label}
+                align="start"
+                sideOffset={4}
+                className="z-50 w-auto max-w-(--radix-popover-content-available-width) rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover outline-none"
+            >
+                <div className="@container flex w-112 max-w-full flex-col gap-3">
+                    <div className="flex flex-col gap-3 @md:flex-row">
+                        {presets && presets.length > 0 && (
+                            <div
+                                data-slot="date-range-filter-presets"
+                                className="flex flex-wrap gap-1 @md:w-32 @md:shrink-0 @md:flex-col @md:flex-nowrap @md:gap-0.5 @md:border-r @md:pr-3"
+                            >
+                                {presets.map((preset) => {
+                                    const active =
+                                        chosen !== null &&
+                                        isSameDay(
+                                            preset.range.from,
+                                            chosen.from,
+                                        ) &&
+                                        isSameDay(preset.range.to, chosen.to);
+
+                                    return (
+                                        <button
+                                            key={preset.label}
+                                            type="button"
+                                            data-active={active}
+                                            aria-pressed={active}
+                                            onClick={() => {
+                                                setDraft(preset.range);
+                                                setMonth(preset.range.from);
+                                            }}
+                                            className="flex min-w-0 flex-col items-start rounded-sm border px-2 py-1 text-left text-sm transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-skrum-primary-soft data-[active=true]:text-skrum-primary-text motion-reduce:transition-none @md:border-transparent"
+                                        >
+                                            <span className="w-full truncate">
+                                                {preset.label}
+                                            </span>
+                                            <span className="hidden w-full truncate text-xs text-muted-foreground @md:block">
+                                                {formatShortRange(
+                                                    preset.range,
+                                                    locale,
+                                                    referenceDay,
+                                                )}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        <Calendar
+                            mode="range"
+                            selected={draft}
+                            onSelect={setDraft}
+                            locale={locale}
+                            weekStartsOn={weekStartsOn}
+                            disabled={isDateDisabled}
+                            today={today}
+                            month={month}
+                            onMonthChange={setMonth}
+                        />
+                    </div>
+                    <div
+                        data-slot="date-range-filter-footer"
+                        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t pt-3"
+                    >
+                        <span
+                            aria-live="polite"
+                            className="text-xs text-muted-foreground"
+                        >
+                            {countLabel}
+                        </span>
+                        <span className="flex max-w-full min-w-0 gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="min-w-0"
+                                disabled={chosen === null}
+                                onClick={() => setDraft(undefined)}
+                            >
+                                <span className="truncate">{t('Clear')}</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="min-w-0"
+                                onClick={apply}
+                            >
+                                <span className="truncate">{t('Apply')}</span>
+                            </Button>
+                        </span>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }

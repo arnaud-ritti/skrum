@@ -15,8 +15,12 @@ import { cn } from '@/lib/utils';
 export interface Participant {
     id: string;
     name: string;
-    initials: string;
-    presence: number;
+    /** Server URL of the avatar; initials are the fallback. */
+    avatarUrl?: string | null;
+    /** Unused: the initials are derived from the name. */
+    initials?: string;
+    /** Presence colour 1..12 of the fallback; neutral when absent. */
+    presence?: number;
     role: 'facilitator' | 'member' | 'guest';
     status: 'online' | 'away' | 'offline';
     typing?: boolean;
@@ -37,8 +41,13 @@ const overflowSizeClasses: Record<'sm' | 'md', string> = {
     md: 'size-8 text-xs',
 };
 
-function toPresence(value: number): AvatarPresence | undefined {
-    if (!Number.isInteger(value) || value < 1 || value > 12) {
+function toPresence(value: number | undefined): AvatarPresence | undefined {
+    if (
+        value === undefined ||
+        !Number.isInteger(value) ||
+        value < 1 ||
+        value > 12
+    ) {
         return undefined;
     }
 
@@ -100,33 +109,46 @@ function firstName(participant: Participant): string {
 function ParticipantAvatar({
     participant,
     size,
+    tracked = false,
     className,
 }: {
     participant: Participant;
     size: AvatarSize;
+    /** Carries `data-presence-id`, which flying reactions aim at. */
+    tracked?: boolean;
     className?: string;
 }) {
+    const [failedUrl, setFailedUrl] = useState<string | null>(null);
     const isGuest = participant.role === 'guest';
+    const isOffline = participant.status === 'offline';
+    const status =
+        participant.status === 'offline' ? undefined : participant.status;
+    const typing = Boolean(participant.typing) && !isOffline;
+    const avatarUrl = participant.avatarUrl || null;
+    const presenceId = tracked ? participant.id : undefined;
+
+    const hasImage = avatarUrl !== null && failedUrl !== avatarUrl;
 
     return (
         <PersonAvatar
-            data-presence-id={participant.id}
+            data-presence-id={hasImage ? undefined : presenceId}
             name={participant.name}
             kind={isGuest ? 'guest' : 'member'}
             presence={toPresence(participant.presence)}
             size={size}
-            status={
-                participant.status === 'offline'
-                    ? undefined
-                    : participant.status
+            status={status}
+            typing={typing}
+            src={hasImage ? avatarUrl : undefined}
+            imgProps={
+                hasImage
+                    ? {
+                          alt: participant.name,
+                          'data-presence-id': presenceId,
+                          onError: () => setFailedUrl(avatarUrl),
+                      }
+                    : undefined
             }
-            typing={
-                Boolean(participant.typing) && participant.status !== 'offline'
-            }
-            className={cn(
-                participant.status === 'offline' && 'opacity-55',
-                className,
-            )}
+            className={cn(isOffline && 'opacity-55', className)}
         />
     );
 }
@@ -213,6 +235,7 @@ export function PresenceStack({
                                     key={participant.id}
                                     participant={participant}
                                     size={size}
+                                    tracked
                                     className={cn(
                                         !initialIds.has(participant.id) &&
                                             'duration-base animate-in ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
@@ -242,7 +265,7 @@ export function PresenceStack({
                     align="end"
                     sideOffset={8}
                     data-slot="presence-stack-popover"
-                    className="z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-2 text-popover-foreground shadow-popover outline-hidden duration-(--duration-base) ease-(--ease-enter) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
+                    className="z-50 w-80 max-w-viewport-gutter rounded-lg border bg-popover p-2 text-popover-foreground shadow-popover outline-hidden duration-(--duration-base) ease-(--ease-enter) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
                 >
                     <div className="flex items-center justify-between px-2 pt-2 pb-1">
                         <span className="text-body-sm font-semibold">
@@ -295,6 +318,7 @@ export function PresenceStack({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
+                                className="max-w-full"
                                 onClick={onInvite}
                             >
                                 <UserPlus aria-hidden />

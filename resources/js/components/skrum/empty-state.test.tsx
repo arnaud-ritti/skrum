@@ -22,6 +22,30 @@ describe('EmptyState', () => {
         expect(art?.getAttribute('aria-hidden')).toBe('true');
     });
 
+    it('labels every module', () => {
+        const labels = {
+            retro: 'Retrospective',
+            poker: 'Planning poker',
+            whiteboard: 'Whiteboard',
+            survey: 'Surveys',
+            icebreaker: 'Icebreakers',
+            actions: 'Actions',
+        } as const;
+
+        Object.entries(labels).forEach(([module, label]) => {
+            const { unmount } = render(
+                <EmptyState
+                    module={module as keyof typeof labels}
+                    title="t"
+                    description="d"
+                />,
+            );
+
+            expect(screen.getByText(label)).toBeTruthy();
+            unmount();
+        });
+    });
+
     it('draws a different illustration for every module', () => {
         const modules = [
             'retro',

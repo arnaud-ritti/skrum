@@ -89,6 +89,27 @@ export default function IcebreakerGameCardSection() {
                 <State label={t('Unavailable (max. 12 players)')}>
                     <IcebreakerGameCard {...draw} participants={14} />
                 </State>
+                <State label={t('Server option only (kind and label)')}>
+                    <IcebreakerGameCard
+                        game="decoded"
+                        title={t('Decoded')}
+                        available
+                    />
+                </State>
+                <State label={t('Refused by the server (no GIF provider)')}>
+                    <IcebreakerGameCard
+                        {...gif}
+                        available={false}
+                        unavailableReason={t('No GIF provider configured')}
+                    />
+                </State>
+                <State label={t('Refused by the server, no reason given')}>
+                    <IcebreakerGameCard
+                        game="gif"
+                        title={t('Sprint in one GIF')}
+                        available={false}
+                    />
+                </State>
                 <State label={t('Long text')}>
                     <IcebreakerGameCard
                         {...hangman}
@@ -102,6 +123,16 @@ export default function IcebreakerGameCardSection() {
                     />
                 </State>
             </div>
+            <State label={t('One game offered')}>
+                <IcebreakerGameGrid>
+                    <IcebreakerGameCard
+                        game="hangman"
+                        title={t('Hangman')}
+                        available
+                        selected
+                    />
+                </IcebreakerGameGrid>
+            </State>
             <State label={t('Choose an icebreaker')}>
                 <IcebreakerGameGrid>
                     {games.map((game) => (

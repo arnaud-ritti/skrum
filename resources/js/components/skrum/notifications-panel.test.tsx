@@ -38,17 +38,40 @@ const starting: AppNotification = {
 
 const overdue: AppNotification = {
     id: 'n3',
-    kind: 'action_overdue',
+    kind: 'overdue',
+    wording: 'overdue',
     readAt: null,
     createdAt: '2026-10-01T08:00:00Z',
-    action: {
+    actionItem: {
         id: 'a1',
-        title: 'Isolate E2E data',
-        dueAt: '2026-09-29T00:00:00Z',
+        content: 'Isolate E2E data',
+        teamName: 'Atlas',
+        dueOn: '2026-09-29',
+        isOverdue: true,
+        url: '/actions/a1',
         ticket: 'ATLAS-1287',
     },
-    href: '/actions/a1',
 };
+
+const dueSoon = (
+    id: string,
+    wording: 'due_today' | 'due_tomorrow',
+    content = 'Write the release notes',
+): AppNotification => ({
+    id,
+    kind: 'due_soon',
+    wording,
+    readAt: null,
+    createdAt: '2026-10-01T07:00:00Z',
+    actionItem: {
+        id: `action-${id}`,
+        content,
+        teamName: 'Atlas',
+        dueOn: wording === 'due_today' ? '2026-10-01' : '2026-10-02',
+        isOverdue: false,
+        url: `/actions/${id}`,
+    },
+});
 
 const mention: AppNotification = {
     id: 'n4',
@@ -102,6 +125,23 @@ function setup(overrides: Partial<NotificationsPanelProps> = {}) {
     return props;
 }
 
+function setupWithView(overrides: Partial<NotificationsPanelProps>) {
+    return render(
+        <NotificationsPanel
+            notifications={[]}
+            unreadCount={0}
+            tab="all"
+            onTabChange={vi.fn()}
+            onMarkAllRead={vi.fn()}
+            onOpen={vi.fn()}
+            settingsHref="/settings/notifications"
+            locale="en"
+            now={now}
+            {...overrides}
+        />,
+    );
+}
+
 describe('NotificationsPanel', () => {
     it('lists items with a hidden unread label only on unread ones', () => {
         setup();
@@ -144,7 +184,9 @@ describe('NotificationsPanel', () => {
                 {
                     ...starting,
                     session: {
-                        ...starting.session!,
+                        id: 's1',
+                        title: 'Sprint 42 retro',
+                        facilitator: 'Inès B.',
                         startsAt: '2026-10-01T11:50:00Z',
                     },
                 },
@@ -160,7 +202,13 @@ describe('NotificationsPanel', () => {
             notifications: [
                 {
                     ...starting,
-                    session: { ...starting.session!, ended: true },
+                    session: {
+                        id: 's1',
+                        title: 'Sprint 42 retro',
+                        facilitator: 'Inès B.',
+                        startsAt: '2026-10-01T12:05:00Z',
+                        ended: true,
+                    },
                 },
             ],
         });
@@ -171,13 +219,130 @@ describe('NotificationsPanel', () => {
     it('shows the overdue due date as text, with the ticket', () => {
         setup();
 
-        expect(screen.getByText(/^Due /)).toBeTruthy();
+        expect(screen.getByText('Due Sep 29')).toBeTruthy();
         expect(screen.getByText('ATLAS-1287')).toBeTruthy();
+    });
+
+    it('renders the server payload with the three wordings and the team', () => {
+        setup({
+            notifications: [
+                overdue,
+                dueSoon('t1', 'due_today'),
+                dueSoon('t2', 'due_tomorrow'),
+            ],
+            onInvite: undefined,
+            onJoin: undefined,
+        });
+
+        expect(
+            screen.getByRole('link', { name: 'Overdue: Isolate E2E data' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('link', {
+                name: 'Due today: Write the release notes',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('link', {
+                    name: 'Due tomorrow: Write the release notes',
+                })
+                .getAttribute('href'),
+        ).toBe('/actions/t2');
+        expect(screen.getAllByText('Atlas')).toHaveLength(3);
+        expect(
+            screen
+                .getAllByRole('listitem')
+                .map((item) => item.getAttribute('data-kind')),
+        ).toEqual(['overdue', 'due_soon', 'due_soon']);
+    });
+
+    it('omits the due date when the action has none', () => {
+        setup({
+            notifications: [
+                {
+                    ...overdue,
+                    actionItem: {
+                        id: 'a1',
+                        content: 'Isolate E2E data',
+                        teamName: 'Atlas',
+                        dueOn: null,
+                        isOverdue: false,
+                        url: '/actions/a1',
+                    },
+                },
+            ],
+        });
+
+        expect(screen.queryByText(/^Due /)).toBeNull();
+    });
+
+    it('shows no Accept, Decline or Join without their handlers', () => {
+        setup({ onInvite: undefined, onJoin: undefined });
+
+        expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Decline' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();
+        expect(screen.getAllByRole('listitem')).toHaveLength(5);
+    });
+
+    it('lists one and 200 notifications, with a 280-character action', () => {
+        const long = 'A'.repeat(280);
+        const { unmount } = setupWithView({
+            notifications: [dueSoon('only', 'due_today', long)],
+            unreadCount: 1,
+        });
+
+        expect(screen.getAllByRole('listitem')).toHaveLength(1);
+        expect(
+            screen.getByRole('link', { name: `Due today: ${long}` }),
+        ).toBeTruthy();
+        unmount();
+
+        setup({
+            notifications: Array.from({ length: 200 }, (_, index) =>
+                dueSoon(`n${index}`, 'due_tomorrow'),
+            ),
+            unreadCount: 200,
+        });
+
+        expect(screen.getAllByRole('listitem')).toHaveLength(200);
+        expect(screen.getByRole('tab', { name: 'All,200' })).toBeTruthy();
+    });
+
+    it('shows the empty state for zero notifications', () => {
+        setup({ notifications: [], unreadCount: 0 });
+
+        expect(screen.getByText('No notifications yet')).toBeTruthy();
+        expect(screen.queryByRole('list')).toBeNull();
+    });
+
+    it('reports a failed load with a retry', async () => {
+        const onRetry = vi.fn();
+
+        setup({ failed: true, onRetry });
+
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Could not load the notifications.',
+        );
+        expect(screen.queryByRole('list')).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+        expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables mark all read while the request runs', () => {
+        setup({ markingAllRead: true });
+
+        const button = screen.getByRole('button', { name: 'Mark all as read' });
+
+        expect((button as HTMLButtonElement).disabled).toBe(true);
     });
 
     it('opens an item through its link and lets modified clicks through', () => {
         const props = setup();
-        const link = screen.getByRole('link', { name: /Overdue action/ });
+        const link = screen.getByRole('link', { name: /Overdue: / });
 
         expect(link.getAttribute('href')).toBe('/actions/a1');
 

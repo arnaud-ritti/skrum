@@ -15,6 +15,7 @@ function gif(
 ): GifItem {
     return {
         id,
+        previewUrl: `/gifs/${id}.gif`,
         title: `Gif ${id}`,
         durationMs: 2400,
         width: 200,
@@ -394,6 +395,92 @@ describe('GifPicker', () => {
         expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
+    it('tells a rate limit apart from an unreachable provider', () => {
+        const onRetry = vi.fn();
+        setup({ status: 'rate_limited', onRetry });
+
+        const alert = screen.getByRole('alert');
+
+        expect(alert.textContent).toContain(
+            'Too many searches, wait a moment.',
+        );
+        expect(alert.textContent).not.toContain('isn’t responding');
+        fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+        expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders what the GIF proxy returns: numbered names, no title, no duration', () => {
+        const proxied: GifItem[] = [
+            { id: 'p1', previewUrl: '/p1.gif', width: 200, height: 100 },
+            { id: 'p2', previewUrl: '/p2.gif', width: 200, height: 100 },
+        ];
+        const { onSelect } = setup({ results: proxied, withCaption: true });
+
+        const second = screen.getByRole('option', { name: 'GIF 2' });
+
+        expect(screen.getByRole('option', { name: 'GIF 1' })).toBeTruthy();
+        expect(second.querySelector('img')?.getAttribute('src')).toBe(
+            '/p2.gif',
+        );
+        expect(second.textContent).toBe('');
+
+        fireEvent.click(second);
+
+        expect(screen.getByText('GIF 2')).toBeTruthy();
+        expect(screen.queryByText(/ s$/)).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Send this GIF' }));
+        expect(onSelect).toHaveBeenCalledWith(proxied[1], undefined);
+    });
+
+    it('offers the default categories under literal keys', () => {
+        setup();
+
+        expect(
+            screen.getAllByRole('tab').map((tab) => tab.textContent),
+        ).toEqual([
+            'Trending',
+            'Celebrate',
+            'Tired',
+            'Facepalm',
+            'Coffee',
+            'Deadline',
+        ]);
+    });
+
+    it('returns the focus to the previewed tile after Back', () => {
+        setup({ withCaption: true });
+
+        fireEvent.click(screen.getByRole('option', { name: /Gif b/ }));
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('option', { name: /Gif b/ }),
+        );
+    });
+
+    it('gives the focus back to the opener when it closes', () => {
+        const opener = document.createElement('button');
+        document.body.append(opener);
+        opener.focus();
+
+        const { rerender, onOpenChange, onSelect } = setup();
+
+        expect(document.activeElement).toBe(screen.getByRole('searchbox'));
+
+        rerender(
+            <GifPicker
+                open={false}
+                results={results}
+                onOpenChange={onOpenChange}
+                onSelect={onSelect}
+            />,
+        );
+
+        expect(document.activeElement).toBe(opener);
+        opener.remove();
+    });
+
     it('hides retry when no handler is given', () => {
         setup({ status: 'error' });
 
@@ -456,7 +543,11 @@ describe('GifPicker', () => {
     });
 
     it('falls back to a neutral placeholder when a GIF has no media', () => {
-        setup({ results: [gif('x', 100, { mp4: '', webp: '', still: '' })] });
+        setup({
+            results: [
+                gif('x', 100, { previewUrl: '', mp4: '', webp: '', still: '' }),
+            ],
+        });
 
         const tile = screen.getByRole('option', { name: /Gif x/ });
 

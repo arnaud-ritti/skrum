@@ -17,6 +17,72 @@ const base = {
 };
 
 describe('IcebreakerGameCard', () => {
+    it('renders a server option with only its kind and label', () => {
+        const onSelect = vi.fn();
+        render(
+            <IcebreakerGameCard
+                game="draw"
+                title="Draw & Guess"
+                available
+                onSelect={onSelect}
+            />,
+        );
+
+        const radio = screen.getByRole('radio', { name: 'Draw & Guess' });
+
+        expect(radio.getAttribute('aria-disabled')).toBeNull();
+        expect(radio.getAttribute('aria-describedby')).toBeNull();
+        expect(screen.queryByText(/min$/)).toBeNull();
+        expect(screen.queryByText(/players/)).toBeNull();
+
+        fireEvent.click(radio);
+
+        expect(onSelect).toHaveBeenCalledWith('draw');
+    });
+
+    it('is not selectable when the server refuses the game, whatever the participants', () => {
+        const onSelect = vi.fn();
+        const { rerender } = render(
+            <IcebreakerGameCard
+                {...base}
+                game="gif"
+                available={false}
+                onSelect={onSelect}
+            />,
+        );
+
+        const radio = screen.getByRole('radio');
+
+        expect(radio.getAttribute('aria-disabled')).toBe('true');
+        expect(screen.getByText('Not available')).toBeTruthy();
+
+        fireEvent.click(radio);
+
+        expect(onSelect).not.toHaveBeenCalled();
+
+        rerender(
+            <IcebreakerGameCard
+                {...base}
+                game="gif"
+                available={false}
+                unavailableReason="No GIF provider configured"
+                onSelect={onSelect}
+            />,
+        );
+
+        expect(
+            screen.getByRole('radio').getAttribute('aria-describedby'),
+        ).toContain(screen.getByText('No GIF provider configured').id);
+    });
+
+    it('keeps the participant check when the server allows the game', () => {
+        render(<IcebreakerGameCard {...base} available participants={2} />);
+
+        expect(screen.getByRole('radio').getAttribute('aria-disabled')).toBe(
+            'true',
+        );
+    });
+
     it('shows duration and player range and checks when selected', () => {
         const { rerender } = render(<IcebreakerGameCard {...base} />);
 

@@ -8,9 +8,10 @@ import {
     FileText,
     LogIn,
     Radio,
+    RefreshCw,
     Settings,
 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import type {
     ComponentProps,
     KeyboardEvent,
@@ -24,13 +25,24 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type NotificationKind =
+/** The in-app notifications the server sends (`ActionItemReminderNotification`). */
+export type ActionItemNotificationKind = 'due_soon' | 'overdue';
+
+/**
+ * Backlog: no in-app notification of these kinds exists on the server. They
+ * render when given; their buttons need the matching optional callback.
+ */
+export type BacklogNotificationKind =
     | 'team_invite'
     | 'session_starting'
-    | 'action_overdue'
-    | 'action_due_soon'
     | 'mention'
     | 'recap_ready';
+
+export type NotificationKind =
+    | ActionItemNotificationKind
+    | BacklogNotificationKind;
+
+export type NotificationWording = 'overdue' | 'due_today' | 'due_tomorrow';
 
 export type NotificationPresence =
     | 1
@@ -48,11 +60,30 @@ export type NotificationPresence =
 
 export type NotificationsTab = 'all' | 'unread';
 
-export type AppNotification = {
+type NotificationBase = {
     id: string;
-    kind: NotificationKind;
     readAt: string | null;
     createdAt: string;
+};
+
+/** Same shape as the payload of `NotificationsController@index`. */
+export type ActionItemNotification = NotificationBase & {
+    kind: ActionItemNotificationKind;
+    wording: NotificationWording;
+    actionItem: {
+        id: string;
+        content: string;
+        teamName: string;
+        dueOn: string | null;
+        isOverdue: boolean;
+        url: string;
+        /** Backlog: key of the linked ticket. */
+        ticket?: string;
+    };
+};
+
+export type BacklogNotification = NotificationBase & {
+    kind: BacklogNotificationKind;
     actor?: {
         name: string;
         presence: NotificationPresence;
@@ -67,11 +98,18 @@ export type AppNotification = {
         facilitator: string;
         ended?: boolean;
     };
-    action?: { id: string; title: string; dueAt: string; ticket?: string };
     excerpt?: string;
     answer?: 'accepted' | 'declined';
     href: string;
 };
+
+export type AppNotification = ActionItemNotification | BacklogNotification;
+
+function isActionItemNotification(
+    notification: AppNotification,
+): notification is ActionItemNotification {
+    return notification.kind === 'due_soon' || notification.kind === 'overdue';
+}
 
 export type NotificationsPanelProps = {
     notifications: AppNotification[];
@@ -80,9 +118,16 @@ export type NotificationsPanelProps = {
     onTabChange: (tab: NotificationsTab) => void;
     onMarkAllRead: () => void;
     onOpen: (notification: AppNotification) => void;
-    onInvite: (id: string, answer: 'accept' | 'decline') => void;
-    onJoin: (sessionId: string) => void;
+    /** Backlog: Accept / Decline are rendered only when given. */
+    onInvite?: (id: string, answer: 'accept' | 'decline') => void;
+    /** Backlog: Join is rendered only when given. */
+    onJoin?: (sessionId: string) => void;
     settingsHref: string;
+    /** The list could not be loaded; Retry is rendered with `onRetry`. */
+    failed?: boolean;
+    onRetry?: () => void;
+    /** A "mark all as read" request is running. */
+    markingAllRead?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
     loading?: boolean;
@@ -138,9 +183,12 @@ function relativeTime(iso: string, now: number, locale?: string): string {
 }
 
 function shortDate(iso: string, locale?: string): string {
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+
     return new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'short',
+        timeZone: isDateOnly ? 'UTC' : undefined,
     }).format(new Date(iso));
 }
 
@@ -197,7 +245,16 @@ function NotificationItem({
     onJoin,
 }: ItemProps) {
     const { t } = useTrans();
-    const { kind, actor, session, action } = notification;
+    const { kind } = notification;
+    const actionNotification = isActionItemNotification(notification)
+        ? notification
+        : null;
+    const backlog = isActionItemNotification(notification)
+        ? null
+        : notification;
+    const actor = backlog?.actor;
+    const session = backlog?.session;
+    const href = actionNotification?.actionItem.url ?? backlog?.href ?? '#';
     const isUnread = notification.readAt === null;
     const relative = relativeTime(notification.createdAt, now, locale);
     const actorName = actor?.name ?? t('Someone');
@@ -245,36 +302,38 @@ function NotificationItem({
                 template={t(':actor invited you to join team :team')}
                 values={{
                     actor: actorName,
-                    team: notification.team ?? '',
+                    team: backlog?.team ?? '',
                 }}
             />
         );
 
-        if (notification.answer === 'accepted') {
+        if (backlog?.answer === 'accepted') {
             meta = (
                 <>
                     {t('Accepted · welcome to :team', {
-                        team: notification.team ?? '',
+                        team: backlog.team ?? '',
                     })}
                 </>
             );
-        } else if (notification.answer === 'declined') {
+        } else if (backlog?.answer === 'declined') {
             meta = <>{t('Declined')}</>;
-        } else {
+        } else if (onInvite) {
             actions = (
                 <>
                     <Button
                         size="sm"
+                        className="max-w-full"
                         onClick={() => onInvite(notification.id, 'accept')}
                     >
-                        {t('Accept')}
+                        <span className="truncate">{t('Accept')}</span>
                     </Button>
                     <Button
                         size="sm"
                         variant="outline"
+                        className="max-w-full"
                         onClick={() => onInvite(notification.id, 'decline')}
                     >
-                        {t('Decline')}
+                        <span className="truncate">{t('Decline')}</span>
                     </Button>
                 </>
             );
@@ -305,58 +364,88 @@ function NotificationItem({
             );
         meta = `${t('Facilitated by :name', { name: session.facilitator })} · ${shortTime(session.startsAt, locale)}`;
 
-        if (!session.ended) {
+        if (!session.ended && onJoin) {
             const sessionId = session.id;
 
             actions = (
-                <Button size="sm" onClick={() => onJoin(sessionId)}>
+                <Button
+                    size="sm"
+                    className="max-w-full"
+                    onClick={() => onJoin(sessionId)}
+                >
                     <LogIn aria-hidden="true" />
-                    {t('Join')}
+                    <span className="truncate">{t('Join')}</span>
                 </Button>
             );
         }
     }
 
-    if ((kind === 'action_overdue' || kind === 'action_due_soon') && action) {
-        const isOverdue = kind === 'action_overdue';
-        const due = (
-            <span
-                className={cn(
-                    isOverdue && 'font-semibold text-skrum-destructive-text',
-                )}
-            >
-                {t('Due :date', { date: shortDate(action.dueAt, locale) })}
-            </span>
-        );
+    if (actionNotification) {
+        const { actionItem, wording } = actionNotification;
+        const templates: Record<NotificationWording, string> = {
+            overdue: t('Overdue: :content'),
+            due_today: t('Due today: :content'),
+            due_tomorrow: t('Due tomorrow: :content'),
+        };
+        const parts: { key: string; node: ReactNode }[] = [
+            {
+                key: 'team',
+                node: (
+                    <span className="min-w-0 break-words">
+                        {actionItem.teamName}
+                    </span>
+                ),
+            },
+        ];
+
+        if (actionItem.dueOn !== null) {
+            parts.push({
+                key: 'due',
+                node: (
+                    <span
+                        className={cn(
+                            actionItem.isOverdue &&
+                                'font-semibold text-skrum-destructive-text',
+                        )}
+                    >
+                        {t('Due :date', {
+                            date: shortDate(actionItem.dueOn, locale),
+                        })}
+                    </span>
+                ),
+            });
+        }
+
+        if (actionItem.ticket) {
+            parts.push({
+                key: 'ticket',
+                node: (
+                    <span className="font-mono text-overline">
+                        {actionItem.ticket}
+                    </span>
+                ),
+            });
+        }
+
+        parts.push({ key: 'time', node: <span>{relative}</span> });
 
         leading = (
-            <Tile tone={isOverdue ? 'destructive' : 'primary'}>
+            <Tile tone={actionItem.isOverdue ? 'destructive' : 'primary'}>
                 <CalendarClock />
             </Tile>
         );
         text = (
             <Rich
-                template={
-                    isOverdue
-                        ? t('Overdue action: :title')
-                        : t('Action due soon: :title')
-                }
-                values={{ title: action.title }}
+                template={templates[wording]}
+                values={{ content: actionItem.content }}
             />
         );
-        meta = (
-            <>
-                {due}
-                {action.ticket ? (
-                    <>
-                        {' · '}
-                        <span className="font-mono text-overline">
-                            {action.ticket}
-                        </span>
-                    </>
-                ) : null}
-            </>
-        );
+        meta = parts.map((part, index) => (
+            <Fragment key={part.key}>
+                {index > 0 && <span aria-hidden="true">·</span>}
+                {part.node}
+            </Fragment>
+        ));
     }
 
     if (kind === 'mention') {
@@ -377,10 +466,10 @@ function NotificationItem({
                 />
             );
 
-        if (notification.excerpt) {
+        if (backlog?.excerpt) {
             quote = (
                 <blockquote className="my-1 rounded-sm border bg-background px-2 py-1.5 text-body-sm break-words text-foreground">
-                    {notification.excerpt}
+                    {backlog.excerpt}
                 </blockquote>
             );
         }
@@ -420,7 +509,7 @@ function NotificationItem({
                     <p className={textClasses}>
                         <a
                             data-notification-link
-                            href={notification.href}
+                            href={href}
                             onClick={open}
                             className={stretchedLink}
                         >
@@ -429,7 +518,7 @@ function NotificationItem({
                     </p>
                 )}
                 {quote}
-                <span className="flex flex-wrap items-center text-xs text-muted-foreground">
+                <span className="flex min-w-0 flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
                     {meta}
                 </span>
                 {actions ? (
@@ -440,7 +529,7 @@ function NotificationItem({
                 {linkLabel ? (
                     <a
                         data-notification-link
-                        href={notification.href}
+                        href={href}
                         onClick={open}
                         className={cn(
                             stretchedLink,
@@ -490,6 +579,9 @@ export function NotificationsPanel({
     onInvite,
     onJoin,
     settingsHref,
+    failed = false,
+    onRetry,
+    markingAllRead = false,
     hasMore = false,
     onLoadMore,
     loading = false,
@@ -572,7 +664,7 @@ export function NotificationsPanel({
                     variant="ghost"
                     size="sm"
                     className="min-w-0 text-skrum-primary-text"
-                    disabled={unreadCount === 0}
+                    disabled={unreadCount === 0 || markingAllRead}
                     onClick={onMarkAllRead}
                 >
                     <CheckCheck aria-hidden="true" />
@@ -601,6 +693,29 @@ export function NotificationsPanel({
                 <TabsContent value={tab} className="mt-2 min-w-0">
                     {loading ? (
                         <ItemsSkeleton />
+                    ) : failed ? (
+                        <div
+                            role="alert"
+                            data-slot="notifications-failed"
+                            className="flex flex-col items-center gap-3 border-t px-6 py-8 text-center"
+                        >
+                            <p className="text-body-sm text-muted-foreground">
+                                {t('Could not load the notifications.')}
+                            </p>
+                            {onRetry ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="max-w-full"
+                                    onClick={onRetry}
+                                >
+                                    <RefreshCw aria-hidden="true" />
+                                    <span className="truncate">
+                                        {t('Retry')}
+                                    </span>
+                                </Button>
+                            ) : null}
+                        </div>
                     ) : visible.length === 0 ? (
                         <div
                             data-slot="notifications-empty"
@@ -642,7 +757,9 @@ export function NotificationsPanel({
                                         className="w-full"
                                         onClick={onLoadMore}
                                     >
-                                        {t('Load more')}
+                                        <span className="truncate">
+                                            {t('Load more')}
+                                        </span>
                                     </Button>
                                 </div>
                             ) : null}

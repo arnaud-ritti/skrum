@@ -85,35 +85,78 @@ export default function NotificationsPanelSection() {
         ...starting,
         id: 'n2b',
         session: {
-            ...starting.session!,
+            id: 's1',
+            title: t('Sprint 42 retro'),
+            facilitator: 'Inès B.',
             startsAt: '2026-10-01T11:50:00Z',
         },
     };
     const overdue: AppNotification = {
         id: 'n3',
-        kind: 'action_overdue',
+        kind: 'overdue',
+        wording: 'overdue',
         readAt: null,
         createdAt: '2026-10-01T08:00:00Z',
-        action: {
+        actionItem: {
             id: 'a1',
-            title: t('Isolate E2E data per worker'),
-            dueAt: '2026-09-29T00:00:00Z',
-            ticket: 'ATLAS-1287',
+            content: t('Isolate E2E data per worker'),
+            teamName: t('Atlas'),
+            dueOn: '2026-09-29',
+            isOverdue: true,
+            url: '#',
         },
-        href: '#',
+    };
+    const withTicket: AppNotification = {
+        ...overdue,
+        id: 'n3t',
+        actionItem: { ...overdue.actionItem, ticket: 'ATLAS-1287' },
     };
     const dueSoon: AppNotification = {
         id: 'n3b',
-        kind: 'action_due_soon',
+        kind: 'due_soon',
+        wording: 'due_tomorrow',
         readAt: null,
         createdAt: '2026-10-01T07:00:00Z',
-        action: {
+        actionItem: {
             id: 'a2',
-            title: t('Write the release notes'),
-            dueAt: '2026-10-02T00:00:00Z',
+            content: t('Write the release notes'),
+            teamName: t('Atlas'),
+            dueOn: '2026-10-02',
+            isOverdue: false,
+            url: '#',
         },
-        href: '#',
     };
+    const dueToday: AppNotification = {
+        ...dueSoon,
+        id: 'n3c',
+        wording: 'due_today',
+        readAt: '2026-10-01T09:00:00Z',
+        actionItem: {
+            ...dueSoon.actionItem,
+            id: 'a3',
+            content: t('Book the demo room'),
+            dueOn: '2026-10-01',
+        },
+    };
+    const extreme: AppNotification = {
+        ...dueSoon,
+        id: 'n3x',
+        actionItem: {
+            ...dueSoon.actionItem,
+            id: 'a4',
+            content: t(
+                'Rewrite the onboarding checklist so that every new joiner gets access to the staging environment, the incident channel and the on-call calendar on their first morning, then review it with the three team leads before the next planning and archive the old wiki page for good.',
+            ),
+            teamName: t(
+                'Platform reliability and developer experience guild (EMEA)',
+            ),
+        },
+    };
+    const many: AppNotification[] = Array.from({ length: 200 }, (_, index) => ({
+        ...dueSoon,
+        id: `many-${index}`,
+        readAt: index < 12 ? null : '2026-10-01T09:00:00Z',
+    }));
     const mention: AppNotification = {
         id: 'n4',
         kind: 'mention',
@@ -188,6 +231,75 @@ export default function NotificationsPanelSection() {
                 >
                     <Frame>
                         <NotificationsPanel {...base} />
+                    </Frame>
+                </Example>
+                <Example
+                    label={t(
+                        'Notifications the server sends today: overdue, due today, due tomorrow',
+                    )}
+                >
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            onInvite={undefined}
+                            onJoin={undefined}
+                            notifications={[overdue, dueSoon, dueToday]}
+                            unreadCount={2}
+                        />
+                    </Frame>
+                </Example>
+                <Example label={t('No notification at all (0 items)')}>
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            notifications={[]}
+                            unreadCount={0}
+                        />
+                    </Frame>
+                </Example>
+                <Example
+                    label={t(
+                        'One notification, 280-character action, 60-character team',
+                    )}
+                >
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            notifications={[extreme]}
+                            unreadCount={1}
+                        />
+                    </Frame>
+                </Example>
+                <Example label={t('200 notifications, the list scrolls')}>
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            notifications={many}
+                            unreadCount={12}
+                        />
+                    </Frame>
+                </Example>
+                <Example label={t('Load failed, with retry')}>
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            failed
+                            onRetry={() => undefined}
+                        />
+                    </Frame>
+                </Example>
+                <Example
+                    label={t(
+                        'Backlog kinds without handlers: no Accept, Decline or Join',
+                    )}
+                >
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            onInvite={undefined}
+                            onJoin={undefined}
+                            notifications={[invite, starting, withTicket]}
+                        />
                     </Frame>
                 </Example>
                 <Example

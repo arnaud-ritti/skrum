@@ -18,9 +18,12 @@ function State({ label, children }: { label: string; children: ReactNode }) {
 export default function GuestJoinSection() {
     const { t } = useTrans();
     const session: GuestJoinProps['session'] = {
-        code: 'K7Q2',
         kind: 'retro',
         title: t('Sprint 42 retro · Atlas team'),
+    };
+    const rich: GuestJoinProps['session'] = {
+        ...session,
+        code: 'K7Q2',
         status: 'live',
         participants: 9,
         facilitator: 'Camille',
@@ -33,6 +36,7 @@ export default function GuestJoinSection() {
             <State label={t('Filled, colour chosen')}>
                 <GuestJoin
                     {...common}
+                    session={rich}
                     initialName="Nadia"
                     initialPresence={5}
                     takenColors={[]}
@@ -83,12 +87,49 @@ export default function GuestJoinSection() {
                     <GuestJoin
                         {...common}
                         session={{
-                            ...session,
+                            ...rich,
                             kind: 'poker',
                             status: 'scheduled',
                             participants: 1,
                         }}
                         initialName="Nadia"
+                        onSubmit={noop}
+                    />
+                </State>
+                <State label={t('Data of the join pages today (title only)')}>
+                    <GuestJoin
+                        {...common}
+                        initialName={t('Thoughtful otter')}
+                        onSubmit={noop}
+                    />
+                </State>
+                <State label={t('Game room')}>
+                    <GuestJoin
+                        {...common}
+                        session={{
+                            kind: 'game',
+                            title: t('Friday game room'),
+                            gameLabel: t('Quiz'),
+                        }}
+                        initialName="Nadia"
+                        onSubmit={noop}
+                    />
+                </State>
+                <State
+                    label={t(
+                        'Whiteboard, 280-character title, 60-character name',
+                    )}
+                >
+                    <GuestJoin
+                        {...common}
+                        session={{
+                            kind: 'whiteboard',
+                            title: t('Quarterly planning board. ').repeat(11),
+                        }}
+                        initialName={'Maximilienne-Alexandrine de la Tour'.padEnd(
+                            60,
+                            ' Saint-Exupéry',
+                        )}
                         onSubmit={noop}
                     />
                 </State>

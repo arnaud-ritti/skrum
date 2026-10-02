@@ -11,9 +11,10 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
+import type { GameKind } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 
-export type IcebreakerGame = 'draw' | 'gif' | 'hangman' | 'decoded';
+export type IcebreakerGame = GameKind;
 
 export type IcebreakerColor =
     | 'sun'
@@ -27,12 +28,23 @@ export type IcebreakerColor =
 
 export type IcebreakerGameCardProps = {
     game: IcebreakerGame;
+    /** `GameOption.label`. */
     title: string;
-    pitch: string;
-    color: IcebreakerColor;
-    durationMin: number;
-    players: { min: number; max: number };
-    participants: number;
+    /** Front-end copy; the line is not rendered when absent. */
+    pitch?: string;
+    /** Defaults to the colour of the game. */
+    color?: IcebreakerColor;
+    /**
+     * `GameOption.available`: the server decides (for example the GIF game
+     * without a provider). `false` wins over the participant check.
+     */
+    available?: boolean;
+    /** Shown when the game is unavailable; a generic reason otherwise. */
+    unavailableReason?: string;
+    /** No source on the server today: each line is hidden when absent. */
+    durationMin?: number;
+    players?: { min: number; max: number };
+    participants?: number;
     selected?: boolean;
     onSelect?: (game: IcebreakerGame) => void;
     className?: string;
@@ -98,6 +110,13 @@ const colorClasses: Record<
         letter: 'border-b-skrum-col-moss-text',
         lie: 'bg-skrum-col-moss-text',
     },
+};
+
+const defaultColors: Record<IcebreakerGame, IcebreakerColor> = {
+    hangman: 'sun',
+    draw: 'sky',
+    gif: 'plum',
+    decoded: 'moss',
 };
 
 const cornerIcons: Record<IcebreakerGame, LucideIcon> = {
@@ -207,10 +226,14 @@ function Art({
 }
 
 export function unavailabilityReason(
-    players: { min: number; max: number },
-    participants: number,
+    players: { min: number; max: number } | undefined,
+    participants: number | undefined,
     t: (key: string, replacements?: Record<string, string | number>) => string,
 ): string | null {
+    if (players === undefined || participants === undefined) {
+        return null;
+    }
+
     if (participants < players.min) {
         return t('min. :count players', { count: players.min });
     }
@@ -226,7 +249,9 @@ export function IcebreakerGameCard({
     game,
     title,
     pitch,
-    color,
+    color = defaultColors[game],
+    available,
+    unavailableReason,
     durationMin,
     players,
     participants,
@@ -236,18 +261,23 @@ export function IcebreakerGameCard({
 }: IcebreakerGameCardProps) {
     const { t } = useTrans();
     const id = useId();
-    const reason = unavailabilityReason(players, participants, t);
+    const reason =
+        available === false
+            ? (unavailableReason ?? t('Not available'))
+            : unavailabilityReason(players, participants, t);
     const unavailable = reason !== null;
+    const hasMeta = durationMin !== undefined || players !== undefined;
     const CornerIcon = cornerIcons[game];
     const classes = colorClasses[color];
     const titleId = `${id}-title`;
     const describedBy = [
-        `${id}-pitch`,
-        `${id}-meta`,
+        pitch !== undefined ? `${id}-pitch` : null,
+        hasMeta ? `${id}-meta` : null,
         unavailable ? `${id}-reason` : null,
     ]
         .filter(Boolean)
         .join(' ');
+    const describedByAttribute = describedBy === '' ? undefined : describedBy;
 
     return (
         <button
@@ -260,7 +290,7 @@ export function IcebreakerGameCard({
             aria-checked={selected}
             aria-disabled={unavailable || undefined}
             aria-labelledby={titleId}
-            aria-describedby={describedBy}
+            aria-describedby={describedByAttribute}
             onClick={() => {
                 if (unavailable) {
                     return;
@@ -318,33 +348,41 @@ export function IcebreakerGameCard({
                 >
                     {title}
                 </span>
-                <span
-                    id={`${id}-pitch`}
-                    className="line-clamp-2 text-xs leading-snug text-muted-foreground"
-                >
-                    {pitch}
-                </span>
-                <span
-                    id={`${id}-meta`}
-                    className="mt-1 flex gap-3 text-xs font-semibold text-muted-foreground"
-                >
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                        <Clock className="size-3.5" aria-hidden />
-                        {t(':count min', { count: durationMin })}
+                {pitch !== undefined && (
+                    <span
+                        id={`${id}-pitch`}
+                        className="line-clamp-2 text-xs leading-snug break-words text-muted-foreground"
+                    >
+                        {pitch}
                     </span>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                        <Users className="size-3.5" aria-hidden />
-                        <span aria-hidden>
-                            {players.min}-{players.max}
-                        </span>
-                        <span className="sr-only">
-                            {t(':min to :max players', {
-                                min: players.min,
-                                max: players.max,
-                            })}
-                        </span>
+                )}
+                {hasMeta && (
+                    <span
+                        id={`${id}-meta`}
+                        className="mt-1 flex gap-3 text-xs font-semibold text-muted-foreground"
+                    >
+                        {durationMin !== undefined && (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                                <Clock className="size-3.5" aria-hidden />
+                                {t(':count min', { count: durationMin })}
+                            </span>
+                        )}
+                        {players !== undefined && (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                                <Users className="size-3.5" aria-hidden />
+                                <span aria-hidden>
+                                    {players.min}-{players.max}
+                                </span>
+                                <span className="sr-only">
+                                    {t(':min to :max players', {
+                                        min: players.min,
+                                        max: players.max,
+                                    })}
+                                </span>
+                            </span>
+                        )}
                     </span>
-                </span>
+                )}
             </div>
         </button>
     );

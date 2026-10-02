@@ -12,6 +12,7 @@ import {
     SearchX,
     Send,
     ShieldCheck,
+    Timer,
     TrendingUp,
     WifiOff,
     X,
@@ -36,17 +37,24 @@ export type GifPickerStatus =
     | 'loading'
     | 'empty'
     | 'error'
+    | 'rate_limited'
     | 'disabled';
 
+/**
+ * `id`, `previewUrl`, `width` and `height` are what the GIF proxy returns
+ * (`GameGifSearchResult`). The other fields are richer provider data the
+ * server does not send today; nothing is rendered for an absent one.
+ */
 export type GifItem = {
     id: string;
-    title: string;
-    durationMs: number;
+    previewUrl: string;
     width: number;
     height: number;
-    mp4: string;
-    webp: string;
-    still: string;
+    title?: string;
+    durationMs?: number;
+    mp4?: string;
+    webp?: string;
+    still?: string;
 };
 
 export type GifCategory = { key: string; label: string; query: string };
@@ -145,7 +153,7 @@ function GifMedia({
     label: string;
     playing: boolean;
 }) {
-    if (playing && gif.mp4 !== '') {
+    if (playing && gif.mp4) {
         return (
             <video
                 aria-label={label}
@@ -160,9 +168,9 @@ function GifMedia({
         );
     }
 
-    const image = playing ? gif.webp || gif.still : gif.still;
+    const image = playing ? gif.webp || gif.previewUrl || gif.still : gif.still;
 
-    if (image !== '') {
+    if (image) {
         return (
             <img
                 alt={label}
@@ -253,6 +261,10 @@ function GifPickerPanel({
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [toggledId, setToggledId] = useState<string | null>(null);
+    const [opener] = useState<Element | null>(() =>
+        typeof document === 'undefined' ? null : document.activeElement,
+    );
+    const backToId = useRef<string | null>(null);
 
     const isDisabled = status === 'disabled';
     const isReduced = reducedMotion ?? prefersReducedMotion();
@@ -268,13 +280,17 @@ function GifPickerPanel({
         () =>
             categories ?? [
                 { key: 'trending', label: t('Trending'), query: '' },
-                ...['Celebrate', 'Tired', 'Facepalm', 'Coffee', 'Deadline'].map(
-                    (label) => ({
-                        key: label.toLowerCase(),
-                        label: t(label),
-                        query: t(label).toLowerCase(),
-                    }),
-                ),
+                ...[
+                    { key: 'celebrate', label: t('Celebrate') },
+                    { key: 'tired', label: t('Tired') },
+                    { key: 'facepalm', label: t('Facepalm') },
+                    { key: 'coffee', label: t('Coffee') },
+                    { key: 'deadline', label: t('Deadline') },
+                ].map(({ key, label }) => ({
+                    key,
+                    label,
+                    query: label.toLowerCase(),
+                })),
             ],
         [categories, t],
     );
@@ -292,13 +308,66 @@ function GifPickerPanel({
         }
     }, [isDisabled]);
 
+    useEffect(() => {
+        return () => {
+            const active = document.activeElement;
+
+            if (
+                (active === null || active === document.body) &&
+                opener instanceof HTMLElement &&
+                opener.isConnected
+            ) {
+                opener.focus();
+            }
+        };
+    }, [opener]);
+
+    const isPreviewing = previewed !== null;
+
+    useEffect(() => {
+        if (isPreviewing || backToId.current === null) {
+            return;
+        }
+
+        const tile = tileRefs.current[backToId.current];
+        backToId.current = null;
+
+        if (tile) {
+            tile.focus();
+
+            return;
+        }
+
+        searchRef.current?.focus();
+    }, [isPreviewing]);
+
     const changeQuery = (next: string): void => {
         setQuery(next);
         onQueryChange?.(next);
     };
 
-    const labelFor = (gif: GifItem): string =>
-        `${gif.title} · ${formatGifDuration(gif.durationMs, locale)}`;
+    const titleFor = (gif: GifItem): string => {
+        if (gif.title) {
+            return gif.title;
+        }
+
+        const index = results.findIndex((item) => item.id === gif.id);
+
+        return index === -1 ? t('GIF') : t('GIF :index', { index: index + 1 });
+    };
+
+    const durationFor = (gif: GifItem): string | null =>
+        gif.durationMs === undefined
+            ? null
+            : formatGifDuration(gif.durationMs, locale);
+
+    const labelFor = (gif: GifItem): string => {
+        const duration = durationFor(gif);
+
+        return duration === null
+            ? titleFor(gif)
+            : `${titleFor(gif)} · ${duration}`;
+    };
 
     const isPlaying = (gif: GifItem): boolean => {
         if (isReduced) {
@@ -471,6 +540,7 @@ function GifPickerPanel({
 
     if (previewed) {
         const remaining = captionMaxLength - caption.length;
+        const previewDuration = durationFor(previewed);
 
         return (
             <div
@@ -488,17 +558,23 @@ function GifPickerPanel({
                             label={labelFor(previewed)}
                             playing={!isReduced}
                         />
-                        <span className="absolute right-1.5 bottom-1.5 rounded-full bg-foreground/80 px-1.5 font-mono text-overline font-semibold tracking-normal text-background">
-                            {formatGifDuration(previewed.durationMs, locale)}
-                        </span>
+                        {previewDuration !== null && (
+                            <span className="absolute right-1.5 bottom-1.5 rounded-full bg-foreground/80 px-1.5 font-mono text-overline font-semibold tracking-normal text-background">
+                                {previewDuration}
+                            </span>
+                        )}
                     </div>
                     <div className="flex min-w-0 flex-col gap-0.5">
                         <span className="truncate text-sm font-semibold">
-                            {previewed.title}
+                            {titleFor(previewed)}
                         </span>
                         <span className="truncate text-xs text-muted-foreground">
-                            {formatGifDuration(previewed.durationMs, locale)}
-                            {' · '}
+                            {previewDuration !== null && (
+                                <>
+                                    {previewDuration}
+                                    {' · '}
+                                </>
+                            )}
                             {t('looping')}
                             {' · '}
                             {t('shared with the room')}
@@ -535,7 +611,10 @@ function GifPickerPanel({
                             variant="ghost"
                             size="sm"
                             className="max-w-full"
-                            onClick={() => setPreviewed(null)}
+                            onClick={() => {
+                                backToId.current = previewed.id;
+                                setPreviewed(null);
+                            }}
                         >
                             <ArrowLeft aria-hidden="true" />
                             <span className="truncate">{t('Back')}</span>
@@ -640,7 +719,7 @@ function GifPickerPanel({
                                 aria-controls={bodyId}
                                 tabIndex={isTabStop ? 0 : -1}
                                 disabled={isDisabled}
-                                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border bg-card px-2.5 text-xs font-semibold whitespace-nowrap text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed aria-selected:border-foreground aria-selected:bg-foreground aria-selected:text-background"
+                                className="inline-flex h-7 max-w-48 shrink-0 items-center gap-1 rounded-full border bg-card px-2.5 text-xs font-semibold whitespace-nowrap text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed aria-selected:border-foreground aria-selected:bg-foreground aria-selected:text-background"
                                 onClick={() => changeQuery(tab.query)}
                                 onKeyDown={(event) =>
                                     onTabKeyDown(event, index)
@@ -652,7 +731,7 @@ function GifPickerPanel({
                                         className="size-3"
                                     />
                                 )}
-                                {tab.label}
+                                <span className="truncate">{tab.label}</span>
                             </button>
                         );
                     })}
@@ -727,6 +806,32 @@ function GifPickerPanel({
                             })}
                             description={t(
                                 'Your answers are safe. Check the connection or try again in a moment.',
+                            )}
+                        >
+                            {onRetry && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="max-w-full"
+                                    onClick={onRetry}
+                                >
+                                    <RefreshCw aria-hidden="true" />
+                                    <span className="truncate">
+                                        {t('Retry')}
+                                    </span>
+                                </Button>
+                            )}
+                        </StateBlock>
+                    </div>
+                )}
+                {status === 'rate_limited' && (
+                    <div role="alert" className="h-full">
+                        <StateBlock
+                            destructive
+                            icon={Timer}
+                            title={t('Too many searches, wait a moment.')}
+                            description={t(
+                                'The search is paused for a few seconds. Your answers are safe.',
                             )}
                         >
                             {onRetry && (
@@ -866,25 +971,30 @@ function GifPickerPanel({
                                                         <Play className="size-3.5" />
                                                     </span>
                                                 )}
-                                                <span
-                                                    aria-hidden="true"
-                                                    className={cn(
-                                                        'absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-foreground/80 to-transparent px-2 pt-5 pb-1.5 text-left text-xs font-semibold text-background opacity-0 transition-opacity duration-140 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none',
-                                                        isSelected &&
-                                                            'opacity-100',
-                                                    )}
-                                                >
-                                                    {gif.title}
-                                                </span>
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="absolute right-1.5 bottom-1.5 rounded-full bg-foreground/80 px-1.5 font-mono text-overline font-semibold tracking-normal text-background"
-                                                >
-                                                    {formatGifDuration(
-                                                        gif.durationMs,
-                                                        locale,
-                                                    )}
-                                                </span>
+                                                {gif.title && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className={cn(
+                                                            'absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-foreground/80 to-transparent px-2 pt-5 pb-1.5 text-left text-xs font-semibold text-background opacity-0 transition-opacity duration-140 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none',
+                                                            isSelected &&
+                                                                'opacity-100',
+                                                        )}
+                                                    >
+                                                        {gif.title}
+                                                    </span>
+                                                )}
+                                                {gif.durationMs !==
+                                                    undefined && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute right-1.5 bottom-1.5 rounded-full bg-foreground/80 px-1.5 font-mono text-overline font-semibold tracking-normal text-background"
+                                                    >
+                                                        {formatGifDuration(
+                                                            gif.durationMs,
+                                                            locale,
+                                                        )}
+                                                    </span>
+                                                )}
                                                 {isSelected && (
                                                     <span
                                                         aria-hidden="true"

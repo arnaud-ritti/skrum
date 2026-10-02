@@ -2,9 +2,18 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { DatePicker, parseTypedDate } from '@/components/skrum/date-picker';
-import type { DateShortcut } from '@/components/skrum/date-picker';
+import {
+    DatePicker,
+    DateRangeFilter,
+    formatShortRange,
+    parseTypedDate,
+} from '@/components/skrum/date-picker';
+import type {
+    DateRangeValue,
+    DateShortcut,
+} from '@/components/skrum/date-picker';
 import { Calendar } from '@/components/ui/calendar';
+import { renderWithProviders } from '@/test/render';
 
 const today = new Date(2026, 9, 14);
 
@@ -500,6 +509,191 @@ describe('Calendar', () => {
 
         expect(onSelect).toHaveBeenLastCalledWith(
             expect.objectContaining({ from: expect.any(Date) }),
+        );
+    });
+});
+
+describe('DateRangeFilter', () => {
+    const thisSprint: DateRangeValue = {
+        from: new Date(2026, 9, 5),
+        to: new Date(2026, 9, 16),
+    };
+    const presets = [
+        { label: 'This sprint', range: thisSprint },
+        {
+            label: 'Last 30 days',
+            range: { from: new Date(2026, 8, 15), to: today },
+        },
+    ];
+
+    function Filter({
+        initial,
+        onApply,
+        defaultOpen,
+    }: {
+        initial?: DateRangeValue;
+        onApply?: (range?: DateRangeValue) => void;
+        defaultOpen?: boolean;
+    }) {
+        const [value, setValue] = useState(initial);
+
+        return (
+            <DateRangeFilter
+                label="Due"
+                locale="en"
+                today={today}
+                presets={presets}
+                value={value}
+                defaultOpen={defaultOpen}
+                onApply={(range) => {
+                    setValue(range);
+                    onApply?.(range);
+                }}
+            />
+        );
+    }
+
+    it('formats a range once, with the year only outside the current one', () => {
+        expect(formatShortRange(thisSprint, 'en', today)).toMatch(
+            /^Oct 5\s–\s16$/,
+        );
+        expect(
+            formatShortRange(
+                { from: new Date(2025, 11, 29), to: new Date(2026, 0, 9) },
+                'en',
+                today,
+            ),
+        ).toMatch(/2025.*2026/);
+    });
+
+    it('applies a preset: counts the days, shows the pill and closes', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+
+        renderWithProviders(<Filter onApply={onApply} />);
+
+        const trigger = screen.getByRole('button', { name: 'Due' });
+
+        await user.click(trigger);
+
+        const dialog = screen.getByRole('dialog', { name: 'Due' });
+
+        expect(within(dialog).getByText('No date selected')).toBeTruthy();
+
+        await user.click(
+            within(dialog).getByRole('button', { name: /This sprint/ }),
+        );
+
+        expect(within(dialog).getByText('12 days selected')).toBeTruthy();
+        expect(
+            within(dialog)
+                .getByRole('button', { name: /This sprint/ })
+                .getAttribute('aria-pressed'),
+        ).toBe('true');
+        expect(onApply).not.toHaveBeenCalled();
+
+        await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
+
+        expect(onApply).toHaveBeenCalledWith(thisSprint);
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(
+            screen.getByRole('button', { name: /^Due: Oct 5\s–\s16$/ }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Remove the Due filter' }),
+        ).toBeTruthy();
+    });
+
+    it('selects a range in the calendar', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+
+        renderWithProviders(<Filter onApply={onApply} defaultOpen />);
+
+        const dialog = screen.getByRole('dialog', { name: 'Due' });
+        const day = (iso: string) =>
+            dialog.querySelector(`button[data-day="${iso}"]`) as HTMLElement;
+
+        await user.click(day('2026-10-20'));
+
+        expect(within(dialog).getByText('1 day selected')).toBeTruthy();
+
+        await user.click(day('2026-10-22'));
+
+        expect(within(dialog).getByText('3 days selected')).toBeTruthy();
+
+        await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
+
+        expect(onApply).toHaveBeenCalledWith({
+            from: new Date(2026, 9, 20),
+            to: new Date(2026, 9, 22),
+        });
+    });
+
+    it('clears the draft, and Apply then removes the filter', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+
+        renderWithProviders(<Filter initial={thisSprint} onApply={onApply} />);
+
+        await user.click(
+            screen.getByRole('button', { name: /^Due: Oct 5\s–\s16$/ }),
+        );
+
+        const dialog = screen.getByRole('dialog', { name: 'Due' });
+
+        expect(within(dialog).getByText('12 days selected')).toBeTruthy();
+
+        await user.click(within(dialog).getByRole('button', { name: 'Clear' }));
+
+        expect(within(dialog).getByText('No date selected')).toBeTruthy();
+        expect(onApply).not.toHaveBeenCalled();
+
+        await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
+
+        expect(onApply).toHaveBeenCalledWith(undefined);
+        expect(screen.getByRole('button', { name: 'Due' })).toBeTruthy();
+    });
+
+    it('drops an unapplied draft on Escape and gives focus back to the trigger', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+
+        renderWithProviders(<Filter initial={thisSprint} onApply={onApply} />);
+
+        const trigger = screen.getByRole('button', {
+            name: /^Due: Oct 5\s–\s16$/,
+        });
+
+        await user.click(trigger);
+        await user.click(screen.getByRole('button', { name: /Last 30 days/ }));
+        await user.keyboard('{Escape}');
+
+        expect(onApply).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+
+        await user.click(trigger);
+
+        expect(screen.getByText('12 days selected')).toBeTruthy();
+    });
+
+    it('removes the filter from the pill and keeps the focus on the trigger', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+
+        renderWithProviders(<Filter initial={thisSprint} onApply={onApply} />);
+
+        await user.click(
+            screen.getByRole('button', { name: 'Remove the Due filter' }),
+        );
+
+        expect(onApply).toHaveBeenCalledWith(undefined);
+        expect(
+            screen.queryByRole('button', { name: 'Remove the Due filter' }),
+        ).toBeNull();
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Due' }),
         );
     });
 });

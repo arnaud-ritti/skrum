@@ -41,15 +41,6 @@ export type EmptyStateProps = {
     className?: string;
 };
 
-const moduleLabels: Record<EmptyStateModule, string> = {
-    retro: 'Retrospective',
-    poker: 'Planning poker',
-    whiteboard: 'Whiteboard',
-    survey: 'Surveys',
-    icebreaker: 'Icebreakers',
-    actions: 'Actions',
-};
-
 const line =
     'fill-none stroke-muted-foreground stroke-[2.5] opacity-50 [stroke-linecap:round]';
 const ink =
@@ -396,6 +387,15 @@ export function EmptyState({
         </>
     );
 
+    const moduleLabels: Record<EmptyStateModule, string> = {
+        retro: t('Retrospective'),
+        poker: t('Planning poker'),
+        whiteboard: t('Whiteboard'),
+        survey: t('Surveys'),
+        icebreaker: t('Icebreakers'),
+        actions: t('Actions'),
+    };
+
     return (
         <section
             data-slot="empty-state"
@@ -407,7 +407,7 @@ export function EmptyState({
         >
             {illustration && <Illustration module={module} />}
             <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                {t(moduleLabels[module])}
+                {moduleLabels[module]}
             </span>
             <Heading
                 data-slot="empty-state-title"

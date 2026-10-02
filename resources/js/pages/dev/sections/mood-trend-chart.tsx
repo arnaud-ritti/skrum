@@ -47,6 +47,18 @@ export default function MoodTrendChartSection() {
     const { t } = useTrans();
     const longHistory = buildPoints(31, 12);
     const eightSprints = buildPoints(35, 8);
+    const healthTrend: MoodPoint[] = [6.2, 5.8, 7.1, 7.4, 8.0].map(
+        (score, index) => ({
+            id: `retro-${index}`,
+            sprint: t('Sprint :number retro', { number: 38 + index }),
+            mean: score,
+            href: '#',
+            note:
+                index === 2
+                    ? t('The statements changed since the previous retro')
+                    : undefined,
+        }),
+    );
     const annotations = [
         {
             sprint: 'S37',
@@ -99,6 +111,51 @@ export default function MoodTrendChartSection() {
                     team="Atlas"
                     points={eightSprints}
                     defaultView="table"
+                />
+            </State>
+            <State
+                label={t(
+                    'Health trend of the app today · score out of 10, links, no quartiles',
+                )}
+            >
+                <MoodTrendChart
+                    points={healthTrend}
+                    title={t('Trend across retros')}
+                    metricLabel={t('Health score')}
+                    scale={{ min: 0, max: 10 }}
+                    period="retro"
+                    deltaSincePrevious={0.6}
+                    noteLegend={t('Statements changed')}
+                    defaultActiveSprint="retro-3"
+                />
+            </State>
+            <State label={t('Health trend · table view')}>
+                <MoodTrendChart
+                    points={healthTrend}
+                    title={t('Trend across retros')}
+                    metricLabel={t('Health score')}
+                    scale={{ min: 0, max: 10 }}
+                    period="retro"
+                    deltaSincePrevious={null}
+                    defaultView="table"
+                />
+            </State>
+            <State label={t('One point')}>
+                <MoodTrendChart team="Atlas" points={buildPoints(41, 1)} />
+            </State>
+            <State label={t('200 points, 60-character labels')}>
+                <MoodTrendChart
+                    points={Array.from({ length: 200 }, (_, index) => ({
+                        id: `long-${index}`,
+                        sprint: `${t('Quarterly platform reliability retrospective, EMEA guild')} ${index + 1}`,
+                        mean: means[index % means.length] * 2,
+                    }))}
+                    title={t('Trend across retros')}
+                    metricLabel={t('Health score')}
+                    scale={{ min: 0, max: 10 }}
+                    period="retro"
+                    range="all"
+                    onRangeChange={() => {}}
                 />
             </State>
             <State label={t('Narrow container · 20rem')}>

@@ -1,10 +1,10 @@
 import { Link } from '@inertiajs/react';
 import {
     ArrowRight,
-    ChartColumn,
     Check,
     CircleAlert,
     Dices,
+    Gamepad2,
     Layers,
     PenTool,
     ShieldCheck,
@@ -12,8 +12,8 @@ import {
     VenetianMask,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import { Fragment, useId, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -27,16 +27,19 @@ import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type GuestJoinSessionKind = 'retro' | 'poker' | 'whiteboard' | 'survey';
+export type GuestJoinSessionKind = 'retro' | 'poker' | 'whiteboard' | 'game';
 
 export type GuestJoinProps = {
     session: {
-        code: string;
         kind: GuestJoinSessionKind;
         title: string;
-        status: 'live' | 'scheduled';
-        participants: number;
-        facilitator: string;
+        /** Name of the game played in a game room (`gameLabel` of games/join). */
+        gameLabel?: string;
+        /** Backlog (join by short code): the join pages do not receive these. */
+        code?: string;
+        status?: 'live' | 'scheduled';
+        participants?: number;
+        facilitator?: string;
     };
     /** Random nickname proposed when the field is left empty. */
     defaultName?: string;
@@ -73,8 +76,8 @@ const kinds: Record<GuestJoinSessionKind, { icon: LucideIcon; tone: string }> =
             icon: PenTool,
             tone: 'bg-skrum-col-lagoon text-skrum-col-lagoon-text',
         },
-        survey: {
-            icon: ChartColumn,
+        game: {
+            icon: Gamepad2,
             tone: 'bg-skrum-col-sky text-skrum-col-sky-text',
         },
     };
@@ -159,13 +162,59 @@ export function GuestJoin({
         retro: t('Retrospective'),
         poker: t('Planning poker'),
         whiteboard: t('Whiteboard'),
-        survey: t('Survey'),
+        game: t('Game'),
     };
-    const statusLabel = session.status === 'live' ? t('Live') : t('Scheduled');
-    const participantsLabel =
-        session.participants === 1
-            ? t(':count participant', { count: 1 })
-            : t(':count participants', { count: session.participants });
+    const details: { key: string; node: ReactNode }[] = [];
+
+    if (session.gameLabel !== undefined) {
+        details.push({ key: 'game', node: session.gameLabel });
+    }
+
+    if (session.status !== undefined) {
+        details.push({
+            key: 'status',
+            node: (
+                <span className="inline-flex items-center gap-1.5">
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'size-1.5 rounded-full',
+                            session.status === 'live'
+                                ? 'bg-skrum-success'
+                                : 'bg-skrum-info',
+                        )}
+                    />
+                    {session.status === 'live' ? t('Live') : t('Scheduled')}
+                </span>
+            ),
+        });
+    }
+
+    if (session.participants !== undefined) {
+        details.push({
+            key: 'participants',
+            node:
+                session.participants === 1
+                    ? t(':count participant', { count: 1 })
+                    : t(':count participants', {
+                          count: session.participants,
+                      }),
+        });
+    }
+
+    if (session.facilitator !== undefined) {
+        details.push({
+            key: 'facilitator',
+            node: t(':name facilitates', { name: session.facilitator }),
+        });
+    }
+
+    if (session.code !== undefined) {
+        details.push({
+            key: 'code',
+            node: t('Code :code', { code: session.code }),
+        });
+    }
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -249,31 +298,26 @@ export function GuestJoin({
                         <KindIcon className="size-4" />
                     </span>
                     <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="line-clamp-2 font-semibold">
+                        <span className="line-clamp-2 font-semibold break-words">
                             {session.title}
                         </span>
                         <span className="flex flex-wrap items-center gap-x-1.5 text-xs font-medium text-muted-foreground">
-                            <span className="sr-only">
+                            <span
+                                className={cn(details.length > 0 && 'sr-only')}
+                            >
                                 {kindLabels[session.kind]}
                             </span>
-                            <span
-                                aria-hidden
-                                className={cn(
-                                    'size-1.5 rounded-full',
-                                    session.status === 'live'
-                                        ? 'bg-skrum-success'
-                                        : 'bg-skrum-info',
-                                )}
-                            />
-                            <span>{statusLabel}</span>
-                            <span aria-hidden>·</span>
-                            <span>{participantsLabel}</span>
-                            <span aria-hidden>·</span>
-                            <span>
-                                {t(':name facilitates', {
-                                    name: session.facilitator,
-                                })}
-                            </span>
+                            {details.map((detail, index) => (
+                                <Fragment key={detail.key}>
+                                    {index > 0 && <span aria-hidden>·</span>}
+                                    <span
+                                        data-slot={`guest-join-${detail.key}`}
+                                        className="min-w-0 break-words"
+                                    >
+                                        {detail.node}
+                                    </span>
+                                </Fragment>
+                            ))}
                         </span>
                     </span>
                 </div>
@@ -438,7 +482,9 @@ export function GuestJoin({
                         onClick={onRandomName}
                     >
                         <Dices aria-hidden />
-                        {t('Another random nickname')}
+                        <span className="truncate">
+                            {t('Another random nickname')}
+                        </span>
                     </Button>
                 )}
 
@@ -450,14 +496,12 @@ export function GuestJoin({
                     loader="trema"
                     disabled={activeError !== null}
                 >
-                    {processing ? (
-                        t('Connecting to the session…')
-                    ) : (
-                        <>
-                            {t('Join')}
-                            <ArrowRight aria-hidden />
-                        </>
-                    )}
+                    <span className="truncate">
+                        {processing
+                            ? t('Connecting to the session…')
+                            : t('Join')}
+                    </span>
+                    {!processing && <ArrowRight aria-hidden />}
                 </LoadingButton>
 
                 <p className="flex items-start gap-2 text-xs text-muted-foreground">

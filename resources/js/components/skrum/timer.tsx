@@ -3,6 +3,7 @@ import {
     Pause,
     Play,
     Plus,
+    SlidersHorizontal,
     Square,
     Timer as TimerIcon,
 } from 'lucide-react';
@@ -22,6 +23,16 @@ import { cn } from '@/lib/utils';
 
 export const TimerPresetMinutes = [1, 3, 5, 10];
 
+export type TimerPreset = {
+    seconds: number;
+    /** Defaults to the duration, in minutes or in seconds. */
+    label?: string;
+};
+
+export const DefaultTimerPresets: TimerPreset[] = TimerPresetMinutes.map(
+    (minutes) => ({ seconds: minutes * 60 }),
+);
+
 export type TimerProps = {
     remainingSeconds: number | null;
     totalSeconds?: number;
@@ -29,6 +40,10 @@ export type TimerProps = {
     size?: 'md' | 'lg';
     lowThresholdSeconds?: number;
     onStart?: (seconds: number) => void;
+    /** Durations of the menu; 1, 3, 5 and 10 minutes by default. */
+    presets?: TimerPreset[];
+    /** Adds a "Custom…" entry; the container opens its own dialog. */
+    onCustom?: () => void;
     onStop?: () => void;
     onPause?: () => void;
     onResume?: () => void;
@@ -79,6 +94,8 @@ export function Timer({
     size = 'md',
     lowThresholdSeconds = 60,
     onStart,
+    presets = DefaultTimerPresets,
+    onCustom,
     onStop,
     onPause,
     onResume,
@@ -98,7 +115,20 @@ export function Timer({
         !isDone &&
         !paused &&
         remainingSeconds < lowThresholdSeconds;
-    const hasMenu = onStart !== undefined || onStop !== undefined;
+    const hasMenu =
+        onStart !== undefined || onStop !== undefined || onCustom !== undefined;
+    const hasStartEntries =
+        (onStart !== undefined && presets.length > 0) || onCustom !== undefined;
+
+    function presetLabel(preset: TimerPreset): string {
+        if (preset.label !== undefined) {
+            return preset.label;
+        }
+
+        return preset.seconds % 60 === 0
+            ? t(':count min', { count: preset.seconds / 60 })
+            : t(':count s', { count: preset.seconds });
+    }
     const hasControls =
         hasMenu ||
         onPause !== undefined ||
@@ -292,17 +322,23 @@ export function Timer({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {onStart &&
-                            TimerPresetMinutes.map((minutes) => (
+                            presets.map((preset) => (
                                 <DropdownMenuItem
-                                    key={minutes}
-                                    onSelect={() => onStart(minutes * 60)}
+                                    key={preset.seconds}
+                                    onSelect={() => onStart(preset.seconds)}
                                 >
                                     <span className="truncate">
-                                        {t(':count min', { count: minutes })}
+                                        {presetLabel(preset)}
                                     </span>
                                 </DropdownMenuItem>
                             ))}
-                        {onStart && onStop && <DropdownMenuSeparator />}
+                        {onCustom && (
+                            <DropdownMenuItem onSelect={onCustom}>
+                                <SlidersHorizontal aria-hidden />
+                                <span className="truncate">{t('Custom…')}</span>
+                            </DropdownMenuItem>
+                        )}
+                        {hasStartEntries && onStop && <DropdownMenuSeparator />}
                         {onStop && (
                             <DropdownMenuItem
                                 disabled={!hasTimer}

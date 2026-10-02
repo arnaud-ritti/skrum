@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+import type { InertiaLinkProps } from '@inertiajs/react';
 import {
     ChartLine,
     Minus,
@@ -15,12 +17,25 @@ import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
 export type MoodPoint = {
+    /** Unique key (a retro id); defaults to `sprint`. */
+    id?: string;
+    /** Label on the x axis: a sprint name or a retro title. */
     sprint: string;
     mean: number;
-    q1: number;
-    q3: number;
-    voters: number;
+    /** Backlog: the server has no quartiles; no band without them. */
+    q1?: number;
+    q3?: number;
+    /** Backlog: no voter count per point on the server. */
+    voters?: number;
+    /** The point and its table row link there (`HealthTrendPoint.url`). */
+    href?: NonNullable<InertiaLinkProps['href']>;
+    /** A remark on the point; its dot is drawn hollow. */
+    note?: string;
 };
+
+export type MoodScale = { min: number; max: number };
+
+export type MoodPeriod = 'sprint' | 'retro';
 
 export type MoodRange = '4' | '8' | 'all';
 
@@ -31,9 +46,24 @@ export type MoodAnnotation = {
 };
 
 export type MoodTrendChartProps = {
-    team: string;
+    /** Used by the default ROTI title. */
+    team?: string;
     points: MoodPoint[];
+    /** Heading; defaults to the ROTI title. */
+    title?: string;
+    /** Name of the plotted value; defaults to "Average ROTI". */
+    metricLabel?: string;
+    /** Defaults to the ROTI scale, 1 to 5, with its coloured levels. */
+    scale?: MoodScale;
+    /** What a point is: wording of the period tabs and the columns. */
+    period?: MoodPeriod;
+    /** Server-computed change of the last point; replaces the computed badge. */
+    deltaSincePrevious?: number | null;
+    /** Legend of the hollow dots (points with a `note`). */
+    noteLegend?: string;
+    emptyLabel?: string;
     annotations?: MoodAnnotation[];
+    /** Defaults to 3 on the ROTI scale; no threshold on another scale. */
     threshold?: number;
     range?: MoodRange;
     onRangeChange?: (range: MoodRange) => void;
@@ -51,6 +81,8 @@ const edgeInset = 28;
 const plotTop = 40;
 const plotBottomGap = 30;
 const minLabelGap = 44;
+const maxLabelGap = 120;
+const labelCharacterWidth = 6.5;
 const minTrendPoints = 3;
 const tooltipFlipRatio = 0.6;
 const annotationCharacterWidth = 7.5;
@@ -63,10 +95,20 @@ const rotiFills = [
     'fill-skrum-roti-5',
 ];
 
-const rotiLevels = [1, 2, 3, 4, 5];
+const rotiScale: MoodScale = { min: 1, max: 5 };
 
-function clampLevel(value: number): number {
-    return Math.min(5, Math.max(1, value));
+function ticksOf(scale: MoodScale): number[] {
+    const span = scale.max - scale.min;
+    const intervals = Number.isInteger(span / 5) ? 5 : 4;
+
+    return Array.from(
+        { length: intervals + 1 },
+        (_, index) => scale.min + (index * span) / intervals,
+    );
+}
+
+function keyOf(point: MoodPoint): string {
+    return point.id ?? point.sprint;
 }
 
 function clip(text: string, max: number): string {
@@ -124,8 +166,15 @@ function visiblePoints(points: MoodPoint[], range: MoodRange): MoodPoint[] {
 export function MoodTrendChart({
     team,
     points,
+    title,
+    metricLabel,
+    scale,
+    period = 'sprint',
+    deltaSincePrevious,
+    noteLegend,
+    emptyLabel,
     annotations = [],
-    threshold = 3,
+    threshold,
     range,
     onRangeChange,
     height = 290,
@@ -149,7 +198,7 @@ export function MoodTrendChart({
         defaultActiveSprint,
     );
     const foundIndex = shown.findIndex(
-        (point) => point.sprint === activeSprint,
+        (point) => keyOf(point) === activeSprint,
     );
     const activeIndex = foundIndex === -1 ? null : foundIndex;
     const activePoint = activeIndex === null ? undefined : shown[activeIndex];
@@ -169,11 +218,37 @@ export function MoodTrendChart({
     const hasTrend = count >= minTrendPoints;
     const first = shown[0];
     const last = shown[count - 1];
-    const delta = first && last && count >= 2 ? last.mean - first.mean : null;
+    const isRoti = scale === undefined;
+    const { min: scaleMin, max: scaleMax } = scale ?? rotiScale;
+    const ticks = ticksOf({ min: scaleMin, max: scaleMax });
+    const effectiveThreshold = threshold ?? (isRoti ? 3 : undefined);
+    const clampLevel = (value: number): number =>
+        Math.min(scaleMax, Math.max(scaleMin, value));
+    const formatValue = (value: number): string =>
+        isRoti ? format(value) : `${format(value)}/${scaleMax}`;
+    const metric = metricLabel ?? t('Average ROTI');
+    const isRetro = period === 'retro';
+
+    const computedDelta =
+        first && last && count >= 2 ? last.mean - first.mean : null;
+    const delta =
+        deltaSincePrevious === undefined ? computedDelta : deltaSincePrevious;
     const roundedDelta = delta === null ? 0 : Math.round(delta * 10) / 10;
-    const voterCounts = shown.map((point) => point.voters);
+    const signedDelta = `${roundedDelta > 0 ? '+' : roundedDelta < 0 ? '−' : ''}${format(Math.abs(roundedDelta))}`;
+    const hasSpread =
+        count > 0 &&
+        shown.every(
+            (point) => point.q1 !== undefined && point.q3 !== undefined,
+        );
+    const hasVoters =
+        count > 0 && shown.every((point) => point.voters !== undefined);
+    const hasNotes = shown.some((point) => point.note !== undefined);
+    const hasLinks = shown.some((point) => point.href !== undefined);
+    const voterCounts = shown.map((point) => point.voters ?? 0);
     const minVoters = voterCounts.length > 0 ? Math.min(...voterCounts) : 0;
     const maxVoters = voterCounts.length > 0 ? Math.max(...voterCounts) : 0;
+    const spreadOf = (point: MoodPoint): string =>
+        `${format(point.q1 ?? point.mean)} – ${format(point.q3 ?? point.mean)}`;
 
     const plotBottom = height - plotBottomGap;
     const plotLeft = axisLeft + edgeInset;
@@ -184,21 +259,93 @@ export function MoodTrendChart({
             ? plotLeft + index * step
             : (axisLeft + width - axisRight) / 2;
     const yOf = (value: number): number =>
-        plotTop + ((5 - clampLevel(value)) / 4) * (plotBottom - plotTop);
+        plotTop +
+        ((scaleMax - clampLevel(value)) / (scaleMax - scaleMin || 1)) *
+            (plotBottom - plotTop);
     const hitHalfWidth = count > 1 ? step / 2 : 40;
     const hitLeft = (index: number): number =>
         Math.max(axisLeft, xOf(index) - hitHalfWidth);
     const hitRight = (index: number): number =>
         Math.min(width - axisRight, xOf(index) + hitHalfWidth);
 
-    const labelEvery = Math.max(1, Math.ceil(minLabelGap / Math.max(step, 1)));
+    const longestLabel = shown.reduce(
+        (longest, point) => Math.max(longest, point.sprint.length),
+        0,
+    );
+    const labelGap = Math.min(
+        maxLabelGap,
+        Math.max(minLabelGap, longestLabel * labelCharacterWidth + 12),
+    );
+    const labelEvery = Math.max(1, Math.ceil(labelGap / Math.max(step, 1)));
+    const labelCharacters = Math.max(
+        3,
+        Math.floor((labelGap - 8) / labelCharacterWidth),
+    );
+    const isWideLabel = labelGap > 2 * (axisRight + edgeInset);
+    const labelPinsRight = (index: number): boolean =>
+        isWideLabel && count > 1 && index === count - 1;
+    const labelSpan = (index: number, text: string): [number, number] => {
+        const textWidth = text.length * labelCharacterWidth;
 
-    const subtitle =
-        effectiveRange === 'all'
-            ? t('All sprints')
-            : t('Last :count sprints', { count: effectiveRange });
+        if (labelPinsRight(index)) {
+            return [width - axisRight - textWidth, width - axisRight];
+        }
+
+        return [xOf(index) - textWidth / 2, xOf(index) + textWidth / 2];
+    };
+    // The active label comes first, then the regular ticks from the right: a
+    // label that would run into one already placed is left out.
+    const placedLabelSpans: [number, number][] = [];
+    const visibleLabelIndexes = new Set<number>();
+    const labelCandidates = [
+        ...(activeIndex === null ? [] : [activeIndex]),
+        ...shown
+            .map((_, index) => count - 1 - index)
+            .filter((index) => (count - 1 - index) % labelEvery === 0),
+    ];
+
+    labelCandidates.forEach((index) => {
+        if (visibleLabelIndexes.has(index) || shown[index] === undefined) {
+            return;
+        }
+
+        const [left, right] = labelSpan(
+            index,
+            clip(shown[index].sprint, labelCharacters),
+        );
+        const collides = placedLabelSpans.some(
+            ([placedLeft, placedRight]) =>
+                left < placedRight + 4 && right > placedLeft - 4,
+        );
+
+        if (collides) {
+            return;
+        }
+
+        placedLabelSpans.push([left, right]);
+        visibleLabelIndexes.add(index);
+    });
+
+    const allLabel = isRetro ? t('All retros') : t('All sprints');
+    const lastLabel = isRetro
+        ? t('Last :count retros', { count: effectiveRange })
+        : t('Last :count sprints', { count: effectiveRange });
+    const subtitle = effectiveRange === 'all' ? allLabel : lastLabel;
+    const periodLabel = isRetro ? t('Retro') : t('Sprint');
+    const defaultTitle =
+        team === undefined
+            ? t('Average ROTI per sprint')
+            : t('Average ROTI per sprint · :team', { team });
+    const heading = title ?? defaultTitle;
+    const empty =
+        emptyLabel ??
+        (title === undefined
+            ? t('No ROTI results yet.')
+            : t('No results yet.'));
+    const pointTitle = (point: MoodPoint): string =>
+        isRetro ? point.sprint : t('Sprint :sprint', { sprint: point.sprint });
     const votersLabel =
-        count === 0
+        count === 0 || !hasVoters
             ? null
             : t('Voters per retro: :range', {
                   range:
@@ -207,30 +354,74 @@ export function MoodTrendChart({
                           : `${minVoters}–${maxVoters}`,
               });
 
+    const chartName = title ?? t('Average ROTI per sprint');
     const svgTitle =
         count > 0
-            ? t('Average ROTI per sprint, :first to :last', {
+            ? t(':title, :first to :last', {
+                  title: chartName,
                   first: first.sprint,
                   last: last.sprint,
               })
-            : t('Average ROTI per sprint');
+            : chartName;
+    const describe = (point: MoodPoint): string => {
+        const details: string[] = [];
+
+        if (point.q1 !== undefined && point.q3 !== undefined) {
+            details.push(`${format(point.q1)}–${format(point.q3)}`);
+        }
+
+        if (point.voters !== undefined) {
+            details.push(t(':count voters', { count: point.voters }));
+        }
+
+        if (point.note !== undefined) {
+            details.push(point.note);
+        }
+
+        const base = `${point.sprint} ${formatValue(point.mean)}`;
+
+        return details.length > 0 ? `${base} (${details.join(', ')})` : base;
+    };
     const svgDescription = [
-        ...shown.map(
-            (point) =>
-                `${point.sprint} ${format(point.mean)} (${format(point.q1)}–${format(point.q3)}, ${t(':count voters', { count: point.voters })})`,
-        ),
-        t('Band: spread of votes, from the first to the third quartile.'),
+        ...shown.map(describe),
+        ...(hasSpread
+            ? [
+                  t(
+                      'Band: spread of votes, from the first to the third quartile.',
+                  ),
+              ]
+            : []),
     ].join('; ');
 
-    const announcement = activePoint
-        ? t(':sprint: average :mean, spread :q1 to :q3, :count voters', {
-              sprint: activePoint.sprint,
-              mean: format(activePoint.mean),
-              q1: format(activePoint.q1),
-              q3: format(activePoint.q3),
-              count: activePoint.voters,
-          })
-        : '';
+    const announce = (point: MoodPoint): string => {
+        const parts = [
+            t(':sprint: :metric :mean', {
+                sprint: point.sprint,
+                metric,
+                mean: formatValue(point.mean),
+            }),
+        ];
+
+        if (point.q1 !== undefined && point.q3 !== undefined) {
+            parts.push(
+                t('spread :q1 to :q3', {
+                    q1: format(point.q1),
+                    q3: format(point.q3),
+                }),
+            );
+        }
+
+        if (point.voters !== undefined) {
+            parts.push(t(':count voters', { count: point.voters }));
+        }
+
+        if (point.note !== undefined) {
+            parts.push(point.note);
+        }
+
+        return parts.join(', ');
+    };
+    const announcement = activePoint ? announce(activePoint) : '';
 
     const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
         if (count === 0) {
@@ -267,12 +458,18 @@ export function MoodTrendChart({
         }
 
         event.preventDefault();
-        setActiveSprint(shown[next].sprint);
+        setActiveSprint(keyOf(shown[next]));
     };
 
     const rangeItems = [
-        { value: '4' as const, label: t('4 sprints') },
-        { value: '8' as const, label: t('8 sprints') },
+        {
+            value: '4' as const,
+            label: isRetro ? t('4 retros') : t('4 sprints'),
+        },
+        {
+            value: '8' as const,
+            label: isRetro ? t('8 retros') : t('8 sprints'),
+        },
         { value: 'all' as const, label: t('All') },
     ];
 
@@ -285,12 +482,12 @@ export function MoodTrendChart({
     const bandPath = [
         ...shown.map(
             (point, index) =>
-                `${index === 0 ? 'M' : 'L'}${xOf(index).toFixed(1)} ${yOf(point.q3).toFixed(1)}`,
+                `${index === 0 ? 'M' : 'L'}${xOf(index).toFixed(1)} ${yOf(point.q3 ?? point.mean).toFixed(1)}`,
         ),
         ...shown
             .map(
                 (point, index) =>
-                    `L${xOf(index).toFixed(1)} ${yOf(point.q1).toFixed(1)}`,
+                    `L${xOf(index).toFixed(1)} ${yOf(point.q1 ?? point.mean).toFixed(1)}`,
             )
             .reverse(),
         'Z',
@@ -300,10 +497,17 @@ export function MoodTrendChart({
         .map((annotation) => ({
             annotation,
             index: shown.findIndex(
-                (point) => point.sprint === annotation.sprint,
+                (point) =>
+                    keyOf(point) === annotation.sprint ||
+                    point.sprint === annotation.sprint,
             ),
         }))
         .filter((entry) => entry.index !== -1);
+
+    // The SVG scales with its box (viewBox), so what is laid over it is placed
+    // in percent of the plot, not in the pixels of the drawing.
+    const percentX = (x: number): string => `${(x / width) * 100}%`;
+    const percentY = (y: number): string => `${(y / height) * 100}%`;
 
     const tooltipX = activeIndex === null ? 0 : xOf(activeIndex);
     const tooltipOnLeft = tooltipX > width * tooltipFlipRatio;
@@ -315,24 +519,24 @@ export function MoodTrendChart({
         >
             <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
                 <div className="flex min-w-0 flex-col gap-1">
-                    <h3 className="font-display text-base font-semibold">
-                        {t('Average ROTI per sprint · :team', { team })}
+                    <h3 className="font-display text-base font-semibold break-words">
+                        {heading}
                     </h3>
                     <p className="text-xs text-muted-foreground">
                         {subtitle}
                         {votersLabel ? ` · ${votersLabel}` : ''}
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div className="flex max-w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                     {last && (
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex max-w-full min-w-0 items-baseline gap-2">
                             <span
                                 data-slot="mood-trend-kpi"
                                 className="font-display text-display-lg"
                             >
-                                {format(last.mean)}
+                                {formatValue(last.mean)}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="max-w-48 min-w-0 truncate text-xs text-muted-foreground">
                                 {last.sprint}
                             </span>
                         </div>
@@ -344,15 +548,21 @@ export function MoodTrendChart({
                                 roundedDelta < 0 ? 'destructive' : 'success'
                             }
                             shape="pill"
-                            className="whitespace-nowrap"
+                            className="max-w-full min-w-0 whitespace-nowrap"
                         >
                             {roundedDelta > 0 && <TrendingUp aria-hidden />}
                             {roundedDelta < 0 && <TrendingDown aria-hidden />}
                             {roundedDelta === 0 && <Minus aria-hidden />}
-                            {t(':delta since :sprint', {
-                                delta: `${roundedDelta > 0 ? '+' : roundedDelta < 0 ? '−' : ''}${format(Math.abs(roundedDelta))}`,
-                                sprint: first.sprint,
-                            })}
+                            <span className="max-w-48 truncate">
+                                {deltaSincePrevious === undefined
+                                    ? t(':delta since :sprint', {
+                                          delta: signedDelta,
+                                          sprint: first.sprint,
+                                      })
+                                    : t(':delta since the previous retro', {
+                                          delta: signedDelta,
+                                      })}
+                            </span>
                         </Badge>
                     )}
                     <Tabs
@@ -379,7 +589,7 @@ export function MoodTrendChart({
                         onKeyDown={onKeyDown}
                         onFocus={() => {
                             if (activeIndex === null && count > 0) {
-                                setActiveSprint(shown[count - 1].sprint);
+                                setActiveSprint(keyOf(shown[count - 1]));
                             }
                         }}
                         onMouseLeave={() => setActiveSprint(undefined)}
@@ -387,60 +597,75 @@ export function MoodTrendChart({
                         <title id={titleId}>{svgTitle}</title>
                         <desc id={descId}>{svgDescription}</desc>
 
-                        {[1, 2, 4, 5].map((level) => (
-                            <line
-                                key={level}
-                                x1={axisLeft}
-                                x2={width - axisRight}
-                                y1={yOf(level)}
-                                y2={yOf(level)}
-                                strokeWidth={1}
-                                className="stroke-border"
-                            />
-                        ))}
+                        {ticks
+                            .filter(
+                                (level) =>
+                                    !hasTrend || level !== effectiveThreshold,
+                            )
+                            .map((level) => (
+                                <line
+                                    key={level}
+                                    x1={axisLeft}
+                                    x2={width - axisRight}
+                                    y1={yOf(level)}
+                                    y2={yOf(level)}
+                                    strokeWidth={1}
+                                    className="stroke-border"
+                                />
+                            ))}
 
-                        {hasTrend && (
+                        {hasTrend && effectiveThreshold !== undefined && (
                             <g data-slot="mood-trend-threshold">
                                 <line
                                     x1={axisLeft}
                                     x2={width - axisRight}
-                                    y1={yOf(threshold)}
-                                    y2={yOf(threshold)}
+                                    y1={yOf(effectiveThreshold)}
+                                    y2={yOf(effectiveThreshold)}
                                     strokeWidth={1}
                                     strokeDasharray="3 4"
                                     className="stroke-muted-foreground"
                                 />
                                 <text
                                     x={width - axisRight}
-                                    y={yOf(threshold) - 6}
+                                    y={yOf(effectiveThreshold) - 6}
                                     textAnchor="end"
                                     className="fill-muted-foreground text-overline font-semibold"
                                 >
-                                    {t(':value · okay', { value: threshold })}
+                                    {t(':value · okay', {
+                                        value: effectiveThreshold,
+                                    })}
                                 </text>
                             </g>
                         )}
 
-                        {rotiLevels.map((level) => (
+                        {ticks.map((level) => (
                             <g key={level} data-slot="mood-trend-level">
-                                <circle
-                                    cx={22}
-                                    cy={yOf(level)}
-                                    r={10}
-                                    className={rotiFills[level - 1]}
-                                />
+                                {isRoti && (
+                                    <circle
+                                        cx={22}
+                                        cy={yOf(level)}
+                                        r={10}
+                                        className={rotiFills[level - 1]}
+                                    />
+                                )}
                                 <text
                                     x={22}
                                     y={yOf(level) + 4}
                                     textAnchor="middle"
-                                    className="fill-skrum-roti-foreground font-display text-overline font-bold"
+                                    className={
+                                        isRoti
+                                            ? 'fill-skrum-roti-foreground font-display text-overline font-bold'
+                                            : 'fill-muted-foreground text-overline tabular-nums'
+                                    }
                                 >
-                                    {level}
+                                    {Number.isInteger(level)
+                                        ? level
+                                        : format(level)}
                                 </text>
                             </g>
                         ))}
 
-                        {hasTrend && (
+                        {hasTrend && hasSpread && (
                             <path
                                 d={bandPath}
                                 data-slot="mood-trend-band"
@@ -478,14 +703,19 @@ export function MoodTrendChart({
 
                             return (
                                 <circle
-                                    key={point.sprint}
+                                    key={keyOf(point)}
                                     data-slot="mood-trend-point"
+                                    data-hollow={
+                                        point.note !== undefined || undefined
+                                    }
                                     cx={xOf(index)}
                                     cy={yOf(point.mean)}
                                     r={isActive ? 6 : isLast ? 5 : 4}
                                     strokeWidth={isLast ? 3 : 2}
                                     className={cn(
-                                        'fill-chart-1 stroke-card',
+                                        point.note === undefined
+                                            ? 'fill-chart-1 stroke-card'
+                                            : 'fill-card stroke-chart-1',
                                         isLast &&
                                             justAdded &&
                                             'motion-safe:animate-in motion-safe:duration-200 motion-safe:fade-in',
@@ -514,7 +744,12 @@ export function MoodTrendChart({
                                     <line
                                         x1={x}
                                         x2={x}
-                                        y1={yOf(shown[index].q1) + 8}
+                                        y1={
+                                            yOf(
+                                                shown[index].q1 ??
+                                                    shown[index].mean,
+                                            ) + 8
+                                        }
                                         y2={plotBottom - 4}
                                         strokeWidth={1}
                                         className="stroke-foreground"
@@ -551,21 +786,23 @@ export function MoodTrendChart({
 
                         {shown.map((point, index) => {
                             const isActive = index === activeIndex;
-                            const showLabel =
-                                isActive ||
-                                (count - 1 - index) % labelEvery === 0;
-
-                            if (!showLabel) {
+                            if (!visibleLabelIndexes.has(index)) {
                                 return null;
                             }
 
+                            const pinsRight = labelPinsRight(index);
+
                             return (
                                 <text
-                                    key={point.sprint}
+                                    key={keyOf(point)}
                                     data-slot="mood-trend-x-label"
-                                    x={xOf(index)}
+                                    x={
+                                        pinsRight
+                                            ? width - axisRight
+                                            : xOf(index)
+                                    }
                                     y={height - 6}
-                                    textAnchor="middle"
+                                    textAnchor={pinsRight ? 'end' : 'middle'}
                                     className={cn(
                                         'text-overline',
                                         isActive
@@ -573,14 +810,14 @@ export function MoodTrendChart({
                                             : 'fill-muted-foreground',
                                     )}
                                 >
-                                    {point.sprint}
+                                    {clip(point.sprint, labelCharacters)}
                                 </text>
                             );
                         })}
 
                         {shown.map((point, index) => (
                             <rect
-                                key={point.sprint}
+                                key={keyOf(point)}
                                 data-slot="mood-trend-hit"
                                 x={hitLeft(index)}
                                 y={plotTop - 10}
@@ -588,40 +825,73 @@ export function MoodTrendChart({
                                 height={plotBottom - plotTop + 12}
                                 className="fill-transparent"
                                 onMouseEnter={() =>
-                                    setActiveSprint(point.sprint)
+                                    setActiveSprint(keyOf(point))
                                 }
                             />
                         ))}
                     </svg>
 
+                    {hasLinks &&
+                        shown.map((point, index) =>
+                            point.href === undefined ? null : (
+                                <Link
+                                    key={keyOf(point)}
+                                    href={point.href}
+                                    data-slot="mood-trend-link"
+                                    aria-label={t('Open :title', {
+                                        title: describe(point),
+                                    })}
+                                    className="absolute size-6 -translate-1/2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    style={{
+                                        left: percentX(xOf(index)),
+                                        top: percentY(yOf(point.mean)),
+                                    }}
+                                    onMouseEnter={() =>
+                                        setActiveSprint(keyOf(point))
+                                    }
+                                    onFocus={() =>
+                                        setActiveSprint(keyOf(point))
+                                    }
+                                />
+                            ),
+                        )}
+
                     {activePoint && (
                         <div
                             aria-hidden
                             data-slot="mood-trend-tooltip"
-                            className="pointer-events-none absolute z-10 min-w-36 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-popover"
+                            className="pointer-events-none absolute z-10 max-w-64 min-w-36 rounded-md border bg-popover px-3 py-2 text-xs break-words text-popover-foreground shadow-popover"
                             style={{
-                                left: tooltipX,
-                                top: yOf(activePoint.mean),
+                                left: percentX(tooltipX),
+                                top: percentY(yOf(activePoint.mean)),
                                 transform: `translate(${tooltipOnLeft ? 'calc(-100% - 0.75rem)' : '0.75rem'}, 0.5rem)`,
                             }}
                         >
                             <b className="text-body-sm">
-                                {t('Sprint :sprint', {
-                                    sprint: activePoint.sprint,
-                                })}
+                                {pointTitle(activePoint)}
                             </b>
                             <TooltipRow
-                                label={t('Average ROTI')}
-                                value={format(activePoint.mean)}
+                                label={metric}
+                                value={formatValue(activePoint.mean)}
                             />
-                            <TooltipRow
-                                label={t('Spread')}
-                                value={`${format(activePoint.q1)} – ${format(activePoint.q3)}`}
-                            />
-                            <TooltipRow
-                                label={t('Voters')}
-                                value={String(activePoint.voters)}
-                            />
+                            {activePoint.q1 !== undefined &&
+                                activePoint.q3 !== undefined && (
+                                    <TooltipRow
+                                        label={t('Spread')}
+                                        value={spreadOf(activePoint)}
+                                    />
+                                )}
+                            {activePoint.voters !== undefined && (
+                                <TooltipRow
+                                    label={t('Voters')}
+                                    value={String(activePoint.voters)}
+                                />
+                            )}
+                            {activePoint.note !== undefined && (
+                                <p className="mt-1 text-muted-foreground">
+                                    {activePoint.note}
+                                </p>
+                            )}
                         </div>
                     )}
 
@@ -639,7 +909,7 @@ export function MoodTrendChart({
                             data-slot="mood-trend-empty"
                             className="absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-sm text-muted-foreground"
                         >
-                            {t('No ROTI results yet.')}
+                            {empty}
                         </p>
                     )}
                     {count > 0 && !hasTrend && (
@@ -647,9 +917,13 @@ export function MoodTrendChart({
                             data-slot="mood-trend-sparse"
                             className="absolute inset-x-12 top-3 text-center text-sm text-muted-foreground"
                         >
-                            {t(
-                                'Not enough data for a trend yet. It appears from 3 sprints.',
-                            )}
+                            {isRetro
+                                ? t(
+                                      'Not enough data for a trend yet. It appears from 3 retros.',
+                                  )
+                                : t(
+                                      'Not enough data for a trend yet. It appears from 3 sprints.',
+                                  )}
                         </p>
                     )}
                 </div>
@@ -666,53 +940,86 @@ export function MoodTrendChart({
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
                                 >
-                                    {t('Sprint')}
+                                    {periodLabel}
                                 </th>
                                 <th
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
                                 >
-                                    {t('Average ROTI')}
+                                    {metric}
                                 </th>
-                                <th
-                                    scope="col"
-                                    className="py-2 pr-4 font-semibold"
-                                >
-                                    {t('Spread')}
-                                </th>
-                                <th scope="col" className="py-2 font-semibold">
-                                    {t('Voters')}
-                                </th>
+                                {hasSpread && (
+                                    <th
+                                        scope="col"
+                                        className="py-2 pr-4 font-semibold"
+                                    >
+                                        {t('Spread')}
+                                    </th>
+                                )}
+                                {hasVoters && (
+                                    <th
+                                        scope="col"
+                                        className="py-2 pr-4 font-semibold"
+                                    >
+                                        {t('Voters')}
+                                    </th>
+                                )}
+                                {hasNotes && (
+                                    <th
+                                        scope="col"
+                                        className="py-2 font-semibold"
+                                    >
+                                        {t('Note')}
+                                    </th>
+                                )}
                             </tr>
                         </thead>
                         <tbody>
                             {shown.map((point) => (
                                 <tr
-                                    key={point.sprint}
+                                    key={keyOf(point)}
                                     className="border-b last:border-0"
                                 >
                                     <th
                                         scope="row"
-                                        className="py-2 pr-4 text-left font-semibold"
+                                        className="py-2 pr-4 text-left font-semibold break-words"
                                     >
-                                        {point.sprint}
+                                        {point.href === undefined ? (
+                                            point.sprint
+                                        ) : (
+                                            <Link
+                                                href={point.href}
+                                                className="rounded-sm text-skrum-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                {point.sprint}
+                                            </Link>
+                                        )}
                                     </th>
                                     <td className="py-2 pr-4 tabular-nums">
-                                        {format(point.mean)}
+                                        {formatValue(point.mean)}
                                     </td>
-                                    <td className="py-2 pr-4 tabular-nums">
-                                        {format(point.q1)} – {format(point.q3)}
-                                    </td>
-                                    <td className="py-2 tabular-nums">
-                                        {point.voters}
-                                    </td>
+                                    {hasSpread && (
+                                        <td className="py-2 pr-4 tabular-nums">
+                                            {spreadOf(point)}
+                                        </td>
+                                    )}
+                                    {hasVoters && (
+                                        <td className="py-2 pr-4 tabular-nums">
+                                            {point.voters}
+                                        </td>
+                                    )}
+                                    {hasNotes && (
+                                        <td className="py-2 break-words text-muted-foreground">
+                                            {point.note}
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                     {count === 0 && (
                         <p className="py-4 text-center text-sm text-muted-foreground">
-                            {t('No ROTI results yet.')}
+                            {empty}
                         </p>
                     )}
                 </div>
@@ -725,22 +1032,35 @@ export function MoodTrendChart({
                             aria-hidden
                             className="inline-block h-0.5 w-3.5 rounded-full bg-chart-1"
                         />
-                        {t('Average ROTI')}
+                        {metric}
                     </li>
-                    <li className="flex items-center gap-1.5">
-                        <span
-                            aria-hidden
-                            className="inline-block h-2.5 w-3.5 rounded-xs bg-chart-1/16"
-                        />
-                        {t('Spread (Q1–Q3)')}
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                        <span
-                            aria-hidden
-                            className="inline-block w-3.5 border-t border-dashed border-muted-foreground"
-                        />
-                        {t('“Okay” threshold')}
-                    </li>
+                    {hasSpread && (
+                        <li className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden
+                                className="inline-block h-2.5 w-3.5 rounded-xs bg-chart-1/16"
+                            />
+                            {t('Spread (Q1–Q3)')}
+                        </li>
+                    )}
+                    {effectiveThreshold !== undefined && (
+                        <li className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden
+                                className="inline-block w-3.5 border-t border-dashed border-muted-foreground"
+                            />
+                            {t('“Okay” threshold')}
+                        </li>
+                    )}
+                    {hasNotes && noteLegend !== undefined && (
+                        <li className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden
+                                className="inline-block size-2.5 rounded-full border-2 border-chart-1 bg-card"
+                            />
+                            {noteLegend}
+                        </li>
+                    )}
                 </ul>
                 <Button
                     type="button"

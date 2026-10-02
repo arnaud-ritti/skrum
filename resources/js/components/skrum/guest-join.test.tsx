@@ -5,12 +5,8 @@ import type { GuestJoinProps } from '@/components/skrum/guest-join';
 import { renderWithProviders } from '@/test/render';
 
 const session: GuestJoinProps['session'] = {
-    code: 'ABC',
     kind: 'retro',
     title: 'Sprint 42 retro',
-    status: 'live',
-    participants: 9,
-    facilitator: 'Camille',
 };
 
 function setup(props: Partial<GuestJoinProps> = {}) {
@@ -168,6 +164,61 @@ describe('GuestJoin', () => {
             screen.queryByRole('button', { name: 'Another random nickname' }),
         ).toBeNull();
         expect(screen.getByText('Guest')).toBeTruthy();
+    });
+
+    it('renders with only the kind and the title the join pages receive', () => {
+        setup();
+
+        expect(screen.getByText('Sprint 42 retro')).toBeTruthy();
+        expect(screen.getByText('Retrospective')).toBeTruthy();
+        expect(
+            document.querySelectorAll(
+                '[data-slot="guest-join-session"] [data-slot^="guest-join-"]',
+            ),
+        ).toHaveLength(0);
+    });
+
+    it('shows the status, participants, facilitator and code only when given', () => {
+        setup({
+            session: {
+                ...session,
+                code: 'K7Q2',
+                status: 'scheduled',
+                participants: 1,
+                facilitator: 'Camille',
+            },
+        });
+
+        expect(screen.getByText('Scheduled')).toBeTruthy();
+        expect(screen.getByText('1 participant')).toBeTruthy();
+        expect(screen.getByText('Camille facilitates')).toBeTruthy();
+        expect(screen.getByText('Code K7Q2')).toBeTruthy();
+    });
+
+    it('presents a game room with the name of its game', () => {
+        setup({
+            session: { kind: 'game', title: 'Friday room', gameLabel: 'Quiz' },
+        });
+
+        expect(
+            document
+                .querySelector('[data-slot="guest-join-session"]')
+                ?.getAttribute('data-kind'),
+        ).toBe('game');
+        expect(screen.getByText('Game')).toBeTruthy();
+        expect(screen.getByText('Quiz')).toBeTruthy();
+    });
+
+    it('keeps a 60-character suggested name and a long title inside the card', () => {
+        const longName = 'N'.repeat(60);
+        const onSubmit = setup({
+            session: { kind: 'whiteboard', title: 'T'.repeat(280) },
+            initialName: longName,
+        });
+
+        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+
+        expect(onSubmit).toHaveBeenCalledWith({ name: longName });
     });
 
     it('links to the login page', () => {

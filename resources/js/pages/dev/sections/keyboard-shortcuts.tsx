@@ -159,6 +159,7 @@ function Launcher({
     context,
     withPalette,
     opensWithQuestionMark,
+    defaultOpen = false,
 }: {
     label: string;
     initialPlatform?: Platform;
@@ -166,9 +167,10 @@ function Launcher({
     context?: ShortcutSection['id'];
     withPalette?: boolean;
     opensWithQuestionMark?: boolean;
+    defaultOpen?: boolean;
 }) {
     const sections = useSections();
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(defaultOpen);
     const [platform, setPlatform] = useState<Platform | undefined>(
         initialPlatform,
     );
@@ -184,7 +186,7 @@ function Launcher({
                     variant="outline"
                     onClick={() => setOpen(true)}
                 >
-                    {label}
+                    <span className="truncate">{label}</span>
                 </Button>
                 <KeyboardShortcutsTrigger onClick={() => setOpen(true)} />
             </div>
@@ -210,11 +212,14 @@ export default function KeyboardShortcutsSection() {
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
-            <Example label={t('Default, macOS (opens with ? outside a field)')}>
+            <Example
+                label={t('Default, macOS, open (opens with ? outside a field)')}
+            >
                 <Launcher
                     label={t('Open the shortcuts')}
                     initialPlatform="mac"
                     opensWithQuestionMark
+                    defaultOpen
                 />
             </Example>
             <Example label={t('Windows · Linux')}>

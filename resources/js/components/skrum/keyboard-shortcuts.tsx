@@ -388,6 +388,18 @@ export function KeyboardShortcuts({
     const [detected] = useState<Platform>(detectPlatform);
     const [platformState, setPlatformState] = useState<Platform | null>(null);
     const [queryState, setQueryState] = useState('');
+    const [wasOpen, setWasOpen] = useState(open);
+    const [opener, setOpener] = useState<Element | null>(() =>
+        open && typeof document !== 'undefined' ? document.activeElement : null,
+    );
+
+    if (open !== wasOpen) {
+        setWasOpen(open);
+
+        if (open) {
+            setOpener(document.activeElement);
+        }
+    }
 
     const platform = platformProp ?? platformState ?? detected;
     const query = queryProp ?? queryState;
@@ -449,7 +461,14 @@ export function KeyboardShortcuts({
                     event.preventDefault();
                     searchRef.current?.focus();
                 }}
-                className="flex gap-0 overflow-hidden rounded-xl p-0 sm:max-w-190"
+                onCloseAutoFocus={(event) => {
+                    event.preventDefault();
+
+                    if (opener instanceof HTMLElement && opener.isConnected) {
+                        opener.focus();
+                    }
+                }}
+                className="flex flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-190"
             >
                 <header className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-4 pr-14 pb-3 pl-5">
                     <Keyboard

@@ -104,6 +104,32 @@ export default function TimerSection() {
             <Example label={t('No timer running, facilitator menu only')}>
                 <Timer remainingSeconds={null} onStart={noop} onStop={noop} />
             </Example>
+            <Example
+                label={t(
+                    'Poker durations (30 s, 1, 2, 3 min) with a custom entry',
+                )}
+            >
+                <Timer
+                    remainingSeconds={null}
+                    onStart={noop}
+                    onCustom={noop}
+                    onStop={noop}
+                    presets={[30, 60, 120, 180].map((seconds) => ({
+                        seconds,
+                    }))}
+                />
+            </Example>
+            <Example label={t('Games durations (1, 2, 3, 5, 10 min)')}>
+                <Timer
+                    remainingSeconds={95}
+                    totalSeconds={120}
+                    onStart={noop}
+                    onStop={noop}
+                    presets={[1, 2, 3, 5, 10].map((minutes) => ({
+                        seconds: minutes * 60,
+                    }))}
+                />
+            </Example>
             <Example label={t('Over an hour')}>
                 <Timer remainingSeconds={5025} totalSeconds={7200} />
             </Example>

@@ -16,32 +16,37 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    EllipsisIcon,
+    ArchiveIcon,
+    ArchiveRestoreIcon,
+    CircleAlertIcon,
     GripVerticalIcon,
     InfoIcon,
     MoveVerticalIcon,
     PencilIcon,
     PlusIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CardMenu } from '@/components/ui/dropdown-menu';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
+/** Same shape as `TeamHealthStatement`; the list keeps the server order. */
 export interface HealthStatement {
     id: string;
+    key?: string;
     label: string;
     text: string;
-    builtIn: boolean;
-    enabled: boolean;
-    position: number;
+    isBuiltin: boolean;
+    isArchived: boolean;
 }
 
 export interface HealthStatementDraft {
@@ -49,19 +54,36 @@ export interface HealthStatementDraft {
     text: string;
 }
 
+export interface HealthStatementErrors {
+    text?: string;
+    label?: string;
+}
+
+/** Resolving to `false` keeps the editor open (validation failed). */
+type SaveResult = void | boolean | Promise<void | boolean>;
+
 export interface HealthStatementsManagerProps {
     statements: HealthStatement[];
     canManage: boolean;
-    onToggle: (id: string, enabled: boolean) => void;
+    /** Ids of the active statements, in their new order. */
     onReorder: (orderedIds: string[]) => void;
-    onAdd: (statement: HealthStatementDraft) => void;
-    onEdit?: (id: string, statement: HealthStatementDraft) => void;
-    onDelete?: (id: string) => void;
+    onAdd: (statement: HealthStatementDraft) => SaveResult;
+    /** Custom statements only; "Edit" is rendered only when given. */
+    onEdit?: (id: string, statement: HealthStatementDraft) => SaveResult;
+    onArchive?: (id: string) => void;
+    onRestore?: (id: string) => void;
+    /** Server errors of the add form. */
+    addErrors?: HealthStatementErrors;
+    /** Server errors of the open editor. */
+    editErrors?: HealthStatementErrors;
+    /** Error on the list itself (reorder, archive). */
+    error?: string;
+    defaultArchivedOpen?: boolean;
     className?: string;
 }
 
-export const healthStatementLabelMax = 24;
-export const healthStatementTextMax = 120;
+export const healthStatementLabelMax = 30;
+export const healthStatementTextMax = 150;
 
 export function reorderedIds(
     ids: string[],
@@ -82,43 +104,84 @@ function isValidDraft(draft: HealthStatementDraft): boolean {
     return draft.label.trim() !== '' && draft.text.trim() !== '';
 }
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+    if (!message) {
+        return null;
+    }
+
+    return (
+        <p
+            id={id}
+            role="alert"
+            className="mt-1 flex items-start gap-1.5 text-xs font-medium text-skrum-destructive-text"
+        >
+            <CircleAlertIcon className="mt-px size-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0 break-words">{message}</span>
+        </p>
+    );
+}
+
 function StatementFields({
     initial,
     submitLabel,
     submitIcon: SubmitIcon,
     onSubmit,
     onCancel,
-    labelPlaceholder,
     textPlaceholder,
+    errors,
+    focusOnMount = false,
     className,
 }: {
     initial: HealthStatementDraft;
     submitLabel: string;
     submitIcon?: typeof PlusIcon;
-    onSubmit: (draft: HealthStatementDraft) => void;
+    onSubmit: (draft: HealthStatementDraft) => SaveResult;
     onCancel?: () => void;
-    labelPlaceholder: string;
     textPlaceholder: string;
+    errors?: HealthStatementErrors;
+    focusOnMount?: boolean;
     className?: string;
 }) {
     const { t } = useTrans();
+    const ids = useId();
+    const textRef = useRef<HTMLInputElement>(null);
     const [draft, setDraft] = useState(initial);
+    const [saving, setSaving] = useState(false);
     const valid = isValidDraft(draft);
+    const textErrorId = `${ids}-text-error`;
+    const labelErrorId = `${ids}-label-error`;
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    useEffect(() => {
+        if (focusOnMount) {
+            textRef.current?.focus();
+            textRef.current?.select();
+        }
+    }, [focusOnMount]);
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!valid) {
+        if (!valid || saving) {
             return;
         }
 
-        onSubmit({ label: draft.label.trim(), text: draft.text.trim() });
-        setDraft(initial);
+        setSaving(true);
+
+        const saved = await onSubmit({
+            label: draft.label.trim(),
+            text: draft.text.trim(),
+        });
+
+        setSaving(false);
+
+        if (saved !== false) {
+            setDraft(initial);
+        }
     }
 
     return (
         <form
-            onSubmit={handleSubmit}
+            onSubmit={(event) => void handleSubmit(event)}
             onKeyDown={(event) => {
                 if (event.key === 'Escape' && onCancel) {
                     event.stopPropagation();
@@ -126,36 +189,58 @@ function StatementFields({
                 }
             }}
             className={cn(
-                'grid gap-2 @lg/card:grid-cols-[auto_minmax(0,1fr)_auto]',
+                'grid gap-2 @lg/card:grid-cols-[minmax(0,1fr)_auto_auto] @lg/card:items-start',
                 className,
             )}
         >
-            <Input
-                value={draft.label}
-                maxLength={healthStatementLabelMax}
-                placeholder={labelPlaceholder}
-                aria-label={labelPlaceholder}
-                onChange={(event) =>
-                    setDraft({ ...draft, label: event.target.value })
-                }
-                className="@lg/card:w-36"
-            />
-            <Input
-                value={draft.text}
-                maxLength={healthStatementTextMax}
-                placeholder={textPlaceholder}
-                aria-label={textPlaceholder}
-                onChange={(event) =>
-                    setDraft({ ...draft, text: event.target.value })
-                }
-            />
-            <div className="flex gap-2">
-                <Button type="submit" variant="secondary" disabled={!valid}>
+            <div className="min-w-0">
+                <Input
+                    ref={textRef}
+                    name="text"
+                    value={draft.text}
+                    maxLength={healthStatementTextMax}
+                    placeholder={textPlaceholder}
+                    aria-label={t('Statement')}
+                    aria-invalid={errors?.text ? true : undefined}
+                    aria-describedby={errors?.text ? textErrorId : undefined}
+                    onChange={(event) =>
+                        setDraft({ ...draft, text: event.target.value })
+                    }
+                />
+                <FieldError id={textErrorId} message={errors?.text} />
+            </div>
+            <div className="min-w-0 @lg/card:w-36">
+                <Input
+                    name="label"
+                    value={draft.label}
+                    maxLength={healthStatementLabelMax}
+                    placeholder={t('Axis label')}
+                    aria-label={t('Axis label')}
+                    aria-invalid={errors?.label ? true : undefined}
+                    aria-describedby={errors?.label ? labelErrorId : undefined}
+                    onChange={(event) =>
+                        setDraft({ ...draft, label: event.target.value })
+                    }
+                />
+                <FieldError id={labelErrorId} message={errors?.label} />
+            </div>
+            <div className="flex min-w-0 flex-wrap gap-2">
+                <Button
+                    type="submit"
+                    variant="secondary"
+                    className="max-w-full"
+                    disabled={!valid || saving}
+                >
                     {SubmitIcon ? <SubmitIcon aria-hidden /> : null}
                     <span className="truncate">{submitLabel}</span>
                 </Button>
                 {onCancel ? (
-                    <Button type="button" variant="ghost" onClick={onCancel}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="max-w-full"
+                        onClick={onCancel}
+                    >
                         <span className="truncate">{t('Cancel')}</span>
                     </Button>
                 ) : null}
@@ -164,25 +249,37 @@ function StatementFields({
     );
 }
 
-function StatementSwitch({
-    checked,
-    label,
-    disabled,
-    onCheckedChange,
+function StatementText({
+    statement,
+    muted = false,
 }: {
-    checked: boolean;
-    label: string;
-    disabled: boolean;
-    onCheckedChange: (checked: boolean) => void;
+    statement: HealthStatement;
+    muted?: boolean;
 }) {
+    const { t } = useTrans();
+
     return (
-        <Switch
-            checked={checked}
-            disabled={disabled}
-            aria-label={label}
-            onCheckedChange={onCheckedChange}
-            className="cursor-pointer"
-        />
+        <div className="flex min-w-0 shrink grow basis-40 flex-col gap-0.5 py-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span
+                    data-slot="health-statement-label"
+                    className={cn(
+                        'min-w-0 truncate text-sm font-bold',
+                        muted && 'text-muted-foreground',
+                    )}
+                >
+                    {statement.label}
+                </span>
+                {statement.isBuiltin ? (
+                    <Badge variant="outline">{t('Built-in')}</Badge>
+                ) : (
+                    <Badge variant="soft">{t('Custom')}</Badge>
+                )}
+            </div>
+            <p className="text-body-sm break-words text-muted-foreground">
+                {statement.text}
+            </p>
+        </div>
     );
 }
 
@@ -190,23 +287,22 @@ function StatementRow({
     statement,
     canManage,
     editing,
-    onToggle,
+    editErrors,
     onEditRequest,
-    onEditCancel,
+    onEditClose,
     onEdit,
-    onDelete,
+    onArchive,
 }: {
     statement: HealthStatement;
     canManage: boolean;
     editing: boolean;
-    onToggle: (id: string, enabled: boolean) => void;
+    editErrors?: HealthStatementErrors;
     onEditRequest: () => void;
-    onEditCancel: () => void;
-    onEdit?: (id: string, draft: HealthStatementDraft) => void;
-    onDelete?: (id: string) => void;
+    onEditClose: () => void;
+    onEdit?: (id: string, draft: HealthStatementDraft) => SaveResult;
+    onArchive?: () => void;
 }) {
     const { t } = useTrans();
-    const [confirmingDelete, setConfirmingDelete] = useState(false);
     const {
         attributes,
         listeners,
@@ -216,37 +312,14 @@ function StatementRow({
         transition,
         isDragging,
     } = useSortable({ id: statement.id, disabled: !canManage });
-    const muted = !statement.enabled;
-    const entries = [
-        ...(onEdit
-            ? [
-                  {
-                      type: 'item' as const,
-                      label: t('Edit'),
-                      icon: PencilIcon,
-                      onSelect: onEditRequest,
-                  },
-              ]
-            : []),
-        ...(onDelete
-            ? [
-                  {
-                      type: 'item' as const,
-                      label: t('Delete'),
-                      tone: 'danger' as const,
-                      onSelect: () => setConfirmingDelete(true),
-                  },
-              ]
-            : []),
-    ];
-    const hasMenu = canManage && !statement.builtIn && entries.length > 0;
+    const canEdit = canManage && !statement.isBuiltin && onEdit !== undefined;
+    const canArchive = canManage && onArchive !== undefined;
 
     return (
         <li
             ref={setNodeRef}
             data-slot="health-statement"
             data-statement-id={statement.id}
-            data-enabled={statement.enabled}
             data-dragging={isDragging || undefined}
             style={{
                 transform: CSS.Transform.toString(transform),
@@ -264,9 +337,8 @@ function StatementRow({
                     ref={setActivatorNodeRef}
                     {...attributes}
                     {...listeners}
-                    aria-label={t('Reorder: :label', {
-                        label: statement.label,
-                    })}
+                    aria-label={t('Drag to reorder')}
+                    data-action="reorder"
                     className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
                 >
                     <GripVerticalIcon className="size-4" aria-hidden />
@@ -275,118 +347,126 @@ function StatementRow({
             {editing && onEdit ? (
                 <div className="min-w-0 flex-1 py-2">
                     <StatementFields
+                        focusOnMount
                         initial={{
                             label: statement.label,
                             text: statement.text,
                         }}
                         submitLabel={t('Save')}
-                        onSubmit={(draft) => {
-                            onEdit(statement.id, draft);
-                            onEditCancel();
+                        errors={editErrors}
+                        onSubmit={async (draft) => {
+                            const saved = await onEdit(statement.id, draft);
+
+                            if (saved !== false) {
+                                onEditClose();
+                            }
+
+                            return saved;
                         }}
-                        onCancel={onEditCancel}
-                        labelPlaceholder={t('Short label')}
+                        onCancel={onEditClose}
                         textPlaceholder={t('Statement')}
                     />
                 </div>
             ) : (
-                <>
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2">
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                            <span
-                                className={cn(
-                                    'min-w-0 truncate text-sm font-bold',
-                                    muted && 'text-muted-foreground',
-                                )}
-                            >
-                                {statement.label}
-                            </span>
-                            {statement.builtIn ? (
-                                <Badge variant="outline">{t('Built-in')}</Badge>
-                            ) : (
-                                <Badge variant="soft">{t('Custom')}</Badge>
-                            )}
-                            {muted ? (
-                                <Badge variant="muted">{t('Disabled')}</Badge>
+                <div className="flex min-w-0 flex-1 flex-wrap items-start justify-end gap-x-2">
+                    <StatementText statement={statement} />
+                    {canEdit || canArchive ? (
+                        <div className="flex min-h-11 max-w-full shrink-0 flex-wrap items-center gap-1">
+                            {canEdit ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="max-w-full"
+                                    data-action="edit"
+                                    onClick={onEditRequest}
+                                >
+                                    <PencilIcon aria-hidden />
+                                    <span className="truncate">
+                                        {t('Edit')}
+                                    </span>
+                                </Button>
+                            ) : null}
+                            {canArchive ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="max-w-full"
+                                    data-action="archive"
+                                    onClick={onArchive}
+                                >
+                                    <ArchiveIcon aria-hidden />
+                                    <span className="truncate">
+                                        {t('Archive')}
+                                    </span>
+                                </Button>
                             ) : null}
                         </div>
-                        <p className="text-body-sm text-muted-foreground">
-                            {statement.text}
-                        </p>
-                    </div>
-                    <div className="flex h-11 shrink-0 items-center gap-1">
-                        <StatementSwitch
-                            checked={statement.enabled}
-                            label={statement.label}
-                            disabled={!canManage}
-                            onCheckedChange={(checked) =>
-                                onToggle(statement.id, checked)
-                            }
-                        />
-                        {hasMenu ? (
-                            <CardMenu
-                                label={t('Actions: :label', {
-                                    label: statement.label,
-                                })}
-                                entries={entries}
-                                trigger={
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        aria-label={t('Actions: :label', {
-                                            label: statement.label,
-                                        })}
-                                    >
-                                        <EllipsisIcon aria-hidden />
-                                    </Button>
-                                }
-                            />
-                        ) : null}
-                    </div>
-                </>
+                    ) : null}
+                </div>
             )}
-            {onDelete ? (
-                <ConfirmDialog
-                    open={confirmingDelete}
-                    onOpenChange={setConfirmingDelete}
-                    title={t('Delete this statement?')}
-                    description={t(
-                        '":label" will no longer be asked in future retros. Past results are kept.',
-                        { label: statement.label },
-                    )}
-                    confirmLabel={t('Delete')}
-                    tone="destructive"
-                    onConfirm={async () => onDelete(statement.id)}
-                />
-            ) : null}
         </li>
     );
 }
 
+type FocusTarget = (root: HTMLElement) => HTMLElement | null;
+
+type PendingFocus = {
+    /** The focus moves once this row has left the list it was in. */
+    leaving: { id: string; archived: boolean };
+    targets: FocusTarget[];
+};
+
+function rowAction(id: string, action: string): FocusTarget {
+    return (root) => {
+        const row = Array.from(
+            root.querySelectorAll<HTMLElement>('[data-statement-id]'),
+        ).find((element) => element.dataset.statementId === id);
+
+        return (
+            row?.querySelector<HTMLElement>(`[data-action="${action}"]`) ?? null
+        );
+    };
+}
+
+const archivedTrigger: FocusTarget = (root) =>
+    root.querySelector<HTMLElement>('[data-slot="health-archived-trigger"]');
+
+const addField: FocusTarget = (root) =>
+    root.querySelector<HTMLElement>('[data-action="add-text"] input');
+
 export function HealthStatementsManager({
     statements,
     canManage,
-    onToggle,
     onReorder,
     onAdd,
     onEdit,
-    onDelete,
+    onArchive,
+    onRestore,
+    addErrors,
+    editErrors,
+    error,
+    defaultArchivedOpen = false,
     className,
 }: HealthStatementsManagerProps) {
     const { t } = useTrans();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const pendingFocus = useRef<PendingFocus | null>(null);
+    const closedEditorOf = useRef<string | null>(null);
     const [pending, setPending] = useState<{
         source: HealthStatement[];
         ids: string[];
     } | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [moving, setMoving] = useState<string | null>(null);
-    const sorted = [...statements].sort((a, b) => a.position - b.position);
+    const active = statements.filter((statement) => !statement.isArchived);
+    const archived = statements.filter((statement) => statement.isArchived);
     const ids =
         pending && pending.source === statements
             ? pending.ids
-            : sorted.map((statement) => statement.id);
-    const byId = new Map(statements.map((s) => [s.id, s]));
+            : active.map((statement) => statement.id);
+    const byId = new Map(active.map((s) => [s.id, s]));
     const ordered = ids
         .map((id) => byId.get(id))
         .filter((s): s is HealthStatement => s !== undefined);
@@ -396,6 +476,99 @@ export function HealthStatementsManager({
             coordinateGetter: sortableKeyboardCoordinates,
         }),
     );
+
+    useEffect(() => {
+        const root = rootRef.current;
+
+        if (!root) {
+            return;
+        }
+
+        const focusFirst = (targets: FocusTarget[]): void => {
+            for (const find of targets) {
+                const target = find(root);
+
+                if (target) {
+                    target.focus();
+
+                    return;
+                }
+            }
+        };
+
+        if (closedEditorOf.current !== null && editingId === null) {
+            const id = closedEditorOf.current;
+
+            closedEditorOf.current = null;
+            focusFirst([
+                rowAction(id, 'edit'),
+                rowAction(id, 'reorder'),
+                addField,
+            ]);
+
+            return;
+        }
+
+        const waiting = pendingFocus.current;
+
+        if (waiting === null) {
+            return;
+        }
+
+        const stillThere = statements.some(
+            (statement) =>
+                statement.id === waiting.leaving.id &&
+                statement.isArchived === waiting.leaving.archived,
+        );
+
+        if (stillThere) {
+            return;
+        }
+
+        pendingFocus.current = null;
+
+        const focused = document.activeElement;
+
+        if (focused === null || focused === document.body) {
+            focusFirst(waiting.targets);
+        }
+    });
+
+    function closeEditor(id: string) {
+        closedEditorOf.current = id;
+        setEditingId(null);
+    }
+
+    function archive(id: string) {
+        const index = ordered.findIndex((statement) => statement.id === id);
+        const neighbour = ordered[index + 1] ?? ordered[index - 1];
+
+        pendingFocus.current = {
+            leaving: { id, archived: false },
+            targets: [
+                ...(neighbour ? [rowAction(neighbour.id, 'archive')] : []),
+                archivedTrigger,
+                addField,
+            ],
+        };
+        onArchive?.(id);
+    }
+
+    function restore(id: string) {
+        const index = archived.findIndex((statement) => statement.id === id);
+        const neighbour = archived[index + 1] ?? archived[index - 1];
+
+        pendingFocus.current = {
+            leaving: { id, archived: true },
+            targets: [
+                ...(neighbour ? [rowAction(neighbour.id, 'restore')] : []),
+                rowAction(id, 'archive'),
+                rowAction(id, 'reorder'),
+                addField,
+            ],
+        };
+        onRestore?.(id);
+    }
 
     function labelOf(id: string | number): string {
         return byId.get(String(id))?.label ?? '';
@@ -414,35 +587,35 @@ export function HealthStatementsManager({
     }
 
     const announcements: Announcements = {
-        onDragStart: ({ active }) =>
+        onDragStart: ({ active: dragged }) =>
             t('Picked up :label. Position :position of :total.', {
-                label: labelOf(active.id),
-                position: positionOf(active.id),
+                label: labelOf(dragged.id),
+                position: positionOf(dragged.id),
                 total: ids.length,
             }),
-        onDragOver: ({ active, over }) =>
-            over ? movingText(active.id, positionOf(over.id)) : undefined,
-        onDragEnd: ({ active, over }) =>
+        onDragOver: ({ active: dragged, over }) =>
+            over ? movingText(dragged.id, positionOf(over.id)) : undefined,
+        onDragEnd: ({ active: dragged, over }) =>
             t('Dropped :label. Position :position of :total.', {
-                label: labelOf(active.id),
-                position: positionOf(over?.id ?? active.id),
+                label: labelOf(dragged.id),
+                position: positionOf(over?.id ?? dragged.id),
                 total: ids.length,
             }),
-        onDragCancel: ({ active }) =>
+        onDragCancel: ({ active: dragged }) =>
             t('Reordering cancelled. :label is back at position :position.', {
-                label: labelOf(active.id),
-                position: positionOf(active.id),
+                label: labelOf(dragged.id),
+                position: positionOf(dragged.id),
             }),
     };
 
-    function handleDragEnd({ active, over }: DragEndEvent) {
+    function handleDragEnd({ active: dragged, over }: DragEndEvent) {
         setMoving(null);
 
         if (!over) {
             return;
         }
 
-        const next = reorderedIds(ids, String(active.id), String(over.id));
+        const next = reorderedIds(ids, String(dragged.id), String(over.id));
 
         if (next === ids) {
             return;
@@ -458,7 +631,10 @@ export function HealthStatementsManager({
             title={t('Health check statements')}
             className={className}
         >
-            <div className="flex flex-col gap-4 px-5 pb-5 @max-card-narrow/card:px-4 @max-card-narrow/card:pb-4">
+            <div
+                ref={rootRef}
+                className="flex flex-col gap-4 px-5 pb-5 @max-card-narrow/card:px-4 @max-card-narrow/card:pb-4"
+            >
                 <p className="flex items-start gap-2 text-body-sm text-muted-foreground">
                     <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
                     <span>
@@ -467,14 +643,27 @@ export function HealthStatementsManager({
                         )}
                     </span>
                 </p>
+                {error ? (
+                    <p
+                        role="alert"
+                        data-slot="health-statements-error"
+                        className="flex items-start gap-1.5 text-body-sm font-medium text-skrum-destructive-text"
+                    >
+                        <CircleAlertIcon
+                            className="mt-0.5 size-4 shrink-0"
+                            aria-hidden
+                        />
+                        <span className="min-w-0 break-words">{error}</span>
+                    </p>
+                ) : null}
                 {moving ? (
                     <span
                         aria-hidden
                         data-slot="health-statements-moving"
                         className="flex items-center gap-1.5 text-xs text-muted-foreground"
                     >
-                        <MoveVerticalIcon className="size-4" />
-                        {moving}
+                        <MoveVerticalIcon className="size-4 shrink-0" />
+                        <span className="min-w-0 break-words">{moving}</span>
                     </span>
                 ) : null}
                 {ordered.length === 0 ? (
@@ -486,6 +675,7 @@ export function HealthStatementsManager({
                     </p>
                 ) : (
                     <DndContext
+                        id="health-statements"
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         accessibility={{
@@ -496,16 +686,16 @@ export function HealthStatementsManager({
                                 ),
                             },
                         }}
-                        onDragStart={({ active }) =>
+                        onDragStart={({ active: dragged }) =>
                             setMoving(
-                                movingText(active.id, positionOf(active.id)),
+                                movingText(dragged.id, positionOf(dragged.id)),
                             )
                         }
-                        onDragOver={({ active, over }) =>
+                        onDragOver={({ active: dragged, over }) =>
                             over
                                 ? setMoving(
                                       movingText(
-                                          active.id,
+                                          dragged.id,
                                           positionOf(over.id),
                                       ),
                                   )
@@ -518,37 +708,110 @@ export function HealthStatementsManager({
                             items={ids}
                             strategy={verticalListSortingStrategy}
                         >
-                            <ul className="flex flex-col divide-y rounded-lg border">
+                            <ol
+                                data-slot="health-statements-active"
+                                className="flex flex-col divide-y rounded-lg border"
+                            >
                                 {ordered.map((statement) => (
                                     <StatementRow
                                         key={statement.id}
                                         statement={statement}
                                         canManage={canManage}
                                         editing={editingId === statement.id}
-                                        onToggle={onToggle}
+                                        editErrors={editErrors}
                                         onEditRequest={() =>
                                             setEditingId(statement.id)
                                         }
-                                        onEditCancel={() => setEditingId(null)}
+                                        onEditClose={() =>
+                                            closeEditor(statement.id)
+                                        }
                                         onEdit={onEdit}
-                                        onDelete={onDelete}
+                                        onArchive={
+                                            onArchive
+                                                ? () => archive(statement.id)
+                                                : undefined
+                                        }
                                     />
                                 ))}
-                            </ul>
+                            </ol>
                         </SortableContext>
                     </DndContext>
                 )}
                 {canManage ? (
-                    <StatementFields
-                        initial={{ label: '', text: '' }}
-                        submitLabel={t('Add')}
-                        submitIcon={PlusIcon}
-                        onSubmit={onAdd}
-                        labelPlaceholder={t('Short label')}
-                        textPlaceholder={t(
-                            'New statement, e.g. Our meetings were useful',
-                        )}
-                    />
+                    <div data-action="add-text">
+                        <StatementFields
+                            initial={{ label: '', text: '' }}
+                            submitLabel={t('Add statement')}
+                            submitIcon={PlusIcon}
+                            errors={addErrors}
+                            onSubmit={onAdd}
+                            textPlaceholder={t(
+                                'New statement, e.g. Our meetings were useful',
+                            )}
+                        />
+                    </div>
+                ) : null}
+                {archived.length > 0 ? (
+                    <Collapsible defaultOpen={defaultArchivedOpen}>
+                        <CollapsibleTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="max-w-full"
+                                data-slot="health-archived-trigger"
+                            >
+                                <ArchiveIcon aria-hidden />
+                                <span className="truncate">
+                                    {t('Archived (:count)', {
+                                        count: archived.length,
+                                    })}
+                                </span>
+                            </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <ul
+                                data-slot="health-statements-archived"
+                                className="mt-2 flex flex-col divide-y rounded-lg border"
+                            >
+                                {archived.map((statement) => (
+                                    <li
+                                        key={statement.id}
+                                        data-slot="health-statement"
+                                        data-statement-id={statement.id}
+                                        data-archived
+                                        className="flex flex-wrap items-start justify-end gap-x-2 px-3 py-1 @max-card-narrow/card:px-2"
+                                    >
+                                        <StatementText
+                                            statement={statement}
+                                            muted
+                                        />
+                                        {canManage && onRestore ? (
+                                            <div className="flex min-h-11 max-w-full shrink-0 items-center">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="max-w-full"
+                                                    data-action="restore"
+                                                    onClick={() =>
+                                                        restore(statement.id)
+                                                    }
+                                                >
+                                                    <ArchiveRestoreIcon
+                                                        aria-hidden
+                                                    />
+                                                    <span className="truncate">
+                                                        {t('Restore')}
+                                                    </span>
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CollapsibleContent>
+                    </Collapsible>
                 ) : null}
             </div>
         </Card>

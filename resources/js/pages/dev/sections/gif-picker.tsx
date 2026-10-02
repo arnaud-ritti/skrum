@@ -40,15 +40,20 @@ export default function GifPickerSection() {
     const results: GifItem[] = samples.map(
         ([title, durationMs, height], index) => ({
             id: `sample-${index}`,
+            previewUrl: '',
             title,
             durationMs,
             width: 200,
             height,
-            mp4: '',
-            webp: '',
-            still: '',
         }),
     );
+    const proxied = (count: number): GifItem[] =>
+        Array.from({ length: count }, (_, index) => ({
+            id: `proxied-${index}`,
+            previewUrl: '',
+            width: 200,
+            height: 84 + ((index * 17) % 48),
+        }));
 
     return (
         <div className="grid max-w-240 grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))] items-start gap-6 p-4 md:p-6">
@@ -93,6 +98,47 @@ export default function GifPickerSection() {
                     onSelect={noop}
                 />
             </State>
+            <State label={t('Error: too many searches')}>
+                <GifPicker
+                    open
+                    lang={lang}
+                    status="rate_limited"
+                    initialQuery={t('deadline')}
+                    onRetry={noop}
+                    onOpenChange={noop}
+                    onSelect={noop}
+                />
+            </State>
+            <State label={t('Proxy data today: no title, no duration')}>
+                <GifPicker
+                    open
+                    lang={lang}
+                    reducedMotion={false}
+                    results={proxied(6)}
+                    onOpenChange={noop}
+                    onSelect={noop}
+                />
+            </State>
+            <State label={t('No result yet (0 items)')}>
+                <GifPicker
+                    open
+                    lang={lang}
+                    reducedMotion={false}
+                    results={[]}
+                    onOpenChange={noop}
+                    onSelect={noop}
+                />
+            </State>
+            <State label={t('200 results, scrolls')}>
+                <GifPicker
+                    open
+                    lang={lang}
+                    reducedMotion={false}
+                    results={proxied(200)}
+                    onOpenChange={noop}
+                    onSelect={noop}
+                />
+            </State>
             <State label={t('Search results, one GIF selected')}>
                 <GifPicker
                     open
@@ -123,7 +169,9 @@ export default function GifPickerSection() {
                     onOpenChange={noop}
                     onSelect={(gif, caption) =>
                         setSent(
-                            caption ? `${gif.title} (${caption})` : gif.title,
+                            caption
+                                ? `${gif.title ?? gif.id} (${caption})`
+                                : (gif.title ?? gif.id),
                         )
                     }
                 />

@@ -3,8 +3,12 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { BenchGroup } from '@/components/dev/bench';
-import { DatePicker } from '@/components/skrum/date-picker';
-import type { DateShortcut } from '@/components/skrum/date-picker';
+import { DatePicker, DateRangeFilter } from '@/components/skrum/date-picker';
+import type {
+    DateRangePreset,
+    DateRangeValue,
+    DateShortcut,
+} from '@/components/skrum/date-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { useTrans } from '@/hooks/use-trans';
 
@@ -50,10 +54,64 @@ export default function DatePickerSection() {
         { label: t('End of sprint'), date: addDays(today, 10) },
         { label: t('No date'), date: null },
     ];
+    const presets: DateRangePreset[] = [
+        {
+            label: t('This sprint'),
+            range: { from: addDays(today, -4), to: addDays(today, 7) },
+        },
+        {
+            label: t('Previous sprint'),
+            range: { from: addDays(today, -18), to: addDays(today, -5) },
+        },
+        {
+            label: t('Last 30 days'),
+            range: { from: addDays(today, -29), to: today },
+        },
+    ];
+    const [dueRange, setDueRange] = useState<DateRangeValue | undefined>(
+        presets[0].range,
+    );
+    const [createdRange, setCreatedRange] = useState<
+        DateRangeValue | undefined
+    >();
     const noop = () => {};
 
     return (
         <section className="@container grid gap-4 p-4 md:grid-cols-2 md:p-6">
+            <State
+                label={t(
+                    'DateRangeFilter: active pill with remove button, open with presets and the range footer',
+                )}
+            >
+                <div className="flex min-h-112 flex-wrap items-start gap-2">
+                    <DateRangeFilter
+                        label={t('Due')}
+                        locale={locale}
+                        value={dueRange}
+                        presets={presets}
+                        onApply={setDueRange}
+                        defaultOpen
+                    />
+                </div>
+            </State>
+            <State label={t('DateRangeFilter: no range yet, no presets')}>
+                <div className="flex flex-wrap items-start gap-2">
+                    <DateRangeFilter
+                        label={t('Created')}
+                        locale={locale}
+                        value={createdRange}
+                        onApply={setCreatedRange}
+                    />
+                    <DateRangeFilter
+                        label={t(
+                            'A very long filter label that must truncate in a narrow toolbar',
+                        )}
+                        locale={locale}
+                        value={presets[2].range}
+                        onApply={noop}
+                    />
+                </div>
+            </State>
             <State label={t('Calendar: single selection, weekends disabled')}>
                 <Calendar
                     mode="single"

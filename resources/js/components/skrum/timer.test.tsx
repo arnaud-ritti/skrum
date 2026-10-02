@@ -222,6 +222,85 @@ describe('Timer', () => {
         expect(onStop).toHaveBeenCalledTimes(1);
     });
 
+    it('offers the poker durations in seconds and a custom entry', async () => {
+        const user = userEvent.setup();
+        const onStart = vi.fn();
+        const onCustom = vi.fn();
+        renderWithProviders(
+            <Timer
+                remainingSeconds={null}
+                onStart={onStart}
+                onCustom={onCustom}
+                presets={[
+                    { seconds: 30 },
+                    { seconds: 60 },
+                    { seconds: 120 },
+                    { seconds: 180 },
+                ]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+        expect(
+            screen.getAllByRole('menuitem').map((item) => item.textContent),
+        ).toEqual(['30 s', '1 min', '2 min', '3 min', 'Custom…']);
+
+        await user.click(screen.getByRole('menuitem', { name: '30 s' }));
+
+        expect(onStart).toHaveBeenCalledWith(30);
+
+        await user.click(screen.getByRole('button', { name: 'Timer' }));
+        await user.click(screen.getByRole('menuitem', { name: 'Custom…' }));
+
+        expect(onCustom).toHaveBeenCalledTimes(1);
+        expect(onStart).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers the games durations with their own labels, and no custom entry by default', async () => {
+        const user = userEvent.setup();
+        const onStart = vi.fn();
+        renderWithProviders(
+            <Timer
+                remainingSeconds={null}
+                onStart={onStart}
+                presets={[1, 2, 3, 5, 10].map((minutes) => ({
+                    seconds: minutes * 60,
+                    label: `${minutes} minutes`,
+                }))}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+        expect(
+            screen.getAllByRole('menuitem').map((item) => item.textContent),
+        ).toEqual([
+            '1 minutes',
+            '2 minutes',
+            '3 minutes',
+            '5 minutes',
+            '10 minutes',
+        ]);
+
+        await user.click(screen.getByRole('menuitem', { name: '2 minutes' }));
+
+        expect(onStart).toHaveBeenCalledWith(120);
+    });
+
+    it('keeps the default durations of 1, 3, 5 and 10 minutes', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(
+            <Timer remainingSeconds={null} onStart={vi.fn()} />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+        expect(
+            screen.getAllByRole('menuitem').map((item) => item.textContent),
+        ).toEqual(['1 min', '3 min', '5 min', '10 min']);
+    });
+
     it('shows only the menu when no timer runs and disables stop', async () => {
         const user = userEvent.setup();
         renderWithProviders(

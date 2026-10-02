@@ -1,48 +1,84 @@
-import { CircleCheckIcon, VenetianMaskIcon } from 'lucide-react';
+import { CircleCheckIcon, VenetianMaskIcon, XIcon } from 'lucide-react';
 import { useId, useRef } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type HealthScore = 1 | 2 | 3 | 4 | 5;
+/** An integer from 1 to the scale; the server stores 1..10. */
+export type HealthScore = number;
 
-export interface HealthCheckFormStatement {
+export const healthCheckScale = 10;
+
+export interface HealthCheckRespondent {
     id: string;
+    name: string;
+    avatarUrl?: string;
+}
+
+/** `key`, `label`, `text`, `count` and `myScore` as in `HealthCheckStatement`. */
+export interface HealthCheckFormStatement {
+    key: string;
     label: string;
     text: string;
+    /** The viewer's own score; `answers` wins when it has the key. */
+    myScore?: HealthScore | null;
+    /** How many participants answered (`health.answered`). */
+    count?: number;
+    /** Who answered, resolved from `answeredBy` by the container. */
+    answeredBy?: HealthCheckRespondent[];
 }
 
 export interface HealthCheckFormProps {
     retroTitle: string;
     statements: HealthCheckFormStatement[];
-    answers: Record<string, HealthScore | undefined>;
-    onAnswer: (statementId: string, value: HealthScore) => void;
-    onSubmit: () => void;
+    /** Scores by statement key. */
+    answers?: Record<string, HealthScore | null | undefined>;
+    /** Highest score; the server validates 1..10. */
+    scale?: number;
+    /** Each answer is saved on its own (PUT). */
+    onAnswer: (statementKey: string, value: HealthScore) => void;
+    /** Removes an answer (DELETE); "Clear" is rendered only when given. */
+    onClear?: (statementKey: string) => void;
+    /** Backlog: no submit endpoint; the button is rendered only when given. */
+    onSubmit?: () => void;
     submitted?: boolean;
+    /** The retro is not editable or a request is running. */
+    disabled?: boolean;
     className?: string;
 }
 
-const scale: HealthScore[] = [1, 2, 3, 4, 5];
+const visibleRespondents = 8;
 
 function ScaleQuestion({
     statement,
     value,
+    scale,
     endsId,
     readOnly,
     onAnswer,
+    onClear,
 }: {
     statement: HealthCheckFormStatement;
     value: HealthScore | undefined;
+    scale: number;
     endsId: string;
     readOnly: boolean;
     onAnswer: (value: HealthScore) => void;
+    onClear?: () => void;
 }) {
+    const { t } = useTrans();
     const refs = useRef<Record<number, HTMLButtonElement | null>>({});
+    const scores = Array.from({ length: scale }, (_, index) => index + 1);
     const focusable: HealthScore = value ?? 1;
     const todo = value === undefined && !readOnly;
+    const respondents = statement.answeredBy ?? [];
+    const hiddenRespondents = respondents.length - visibleRespondents;
+    const hasProgress = statement.count !== undefined || respondents.length > 0;
+    const canClear = value !== undefined && onClear !== undefined && !readOnly;
 
     function choose(next: HealthScore) {
         refs.current[next]?.focus();
@@ -54,9 +90,14 @@ function ScaleQuestion({
             return;
         }
 
-        if (/^[1-5]$/.test(event.key)) {
-            event.preventDefault();
-            choose(Number(event.key) as HealthScore);
+        if (/^[0-9]$/.test(event.key)) {
+            const digit = Number(event.key);
+            const typed = digit === 0 && scale === 10 ? 10 : digit;
+
+            if (typed >= 1 && typed <= scale) {
+                event.preventDefault();
+                choose(typed);
+            }
 
             return;
         }
@@ -73,18 +114,21 @@ function ScaleQuestion({
         }
 
         event.preventDefault();
-        choose((((focusable - 1 + step + 5) % 5) + 1) as HealthScore);
+        choose(((focusable - 1 + step + scale) % scale) + 1);
     }
 
     return (
         <fieldset
             data-slot="health-question"
+            data-statement-key={statement.key}
             data-answered={value !== undefined}
             className="flex min-w-0 flex-col gap-2"
         >
             <legend className="mb-2 flex min-w-0 flex-col gap-0.5">
-                <span className="text-sm font-bold">{statement.label}</span>
-                <span className="text-body-sm text-muted-foreground">
+                <span className="text-sm font-bold break-words">
+                    {statement.label}
+                </span>
+                <span className="text-body-sm break-words text-muted-foreground">
                     {statement.text}
                 </span>
             </legend>
@@ -94,9 +138,15 @@ function ScaleQuestion({
                 aria-describedby={endsId}
                 aria-readonly={readOnly || undefined}
                 onKeyDown={handleKeyDown}
-                className="grid grid-cols-5 gap-2"
+                style={{ '--health-scale': scale } as CSSProperties}
+                className={cn(
+                    'grid gap-2',
+                    scale > 5
+                        ? 'grid-cols-5 @lg/card:grid-cols-[repeat(var(--health-scale),minmax(0,1fr))]'
+                        : 'grid-cols-[repeat(var(--health-scale),minmax(0,1fr))]',
+                )}
             >
-                {scale.map((score) => {
+                {scores.map((score) => {
                     const checked = value === score;
 
                     return (
@@ -108,6 +158,7 @@ function ScaleQuestion({
                             type="button"
                             role="radio"
                             aria-checked={checked}
+                            aria-label={t('Score :score', { score })}
                             aria-disabled={readOnly || undefined}
                             tabIndex={score === focusable ? 0 : -1}
                             data-score={score}
@@ -118,7 +169,7 @@ function ScaleQuestion({
                                 }
                             }}
                             className={cn(
-                                'h-11 min-w-0 rounded-md border bg-card font-bold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                                'h-11 min-w-0 rounded-md border bg-card font-bold tabular-nums transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
                                 todo
                                     ? 'border-dashed border-input'
                                     : 'border-input',
@@ -133,6 +184,68 @@ function ScaleQuestion({
                     );
                 })}
             </div>
+            {hasProgress || canClear ? (
+                <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                    <div
+                        data-slot="health-answered"
+                        className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+                    >
+                        {respondents.length > 0 ? (
+                            <ul
+                                aria-label={t('Answered')}
+                                className="flex -space-x-1.5"
+                            >
+                                {respondents
+                                    .slice(0, visibleRespondents)
+                                    .map((respondent) => (
+                                        <li key={respondent.id}>
+                                            <PersonAvatar
+                                                size="xs"
+                                                name={respondent.name}
+                                                src={respondent.avatarUrl}
+                                                className="ring-2 ring-card"
+                                            />
+                                        </li>
+                                    ))}
+                                {hiddenRespondents > 0 ? (
+                                    <li className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-overline font-semibold ring-2 ring-card">
+                                        +{hiddenRespondents}
+                                    </li>
+                                ) : null}
+                            </ul>
+                        ) : null}
+                        {statement.count !== undefined ? (
+                            <span
+                                className={cn(
+                                    statement.count === 0 && 'opacity-70',
+                                )}
+                            >
+                                {t(':count answered', {
+                                    count: statement.count,
+                                })}
+                            </span>
+                        ) : null}
+                    </div>
+                    {canClear ? (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="max-w-full"
+                            aria-label={t('Clear: :label', {
+                                label: statement.label,
+                            })}
+                            onClick={() => {
+                                refs.current[1]?.focus();
+                                onClear();
+                            }}
+                        >
+                            <XIcon aria-hidden />
+                            <span className="truncate">{t('Clear')}</span>
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
         </fieldset>
     );
 }
@@ -141,18 +254,40 @@ export function HealthCheckForm({
     retroTitle,
     statements,
     answers,
+    scale = healthCheckScale,
     onAnswer,
+    onClear,
     onSubmit,
     submitted = false,
+    disabled = false,
     className,
 }: HealthCheckFormProps) {
     const { t } = useTrans();
     const endsId = useId();
     const total = statements.length;
+    const valueOf = (
+        statement: HealthCheckFormStatement,
+    ): HealthScore | undefined => {
+        const fromAnswers = answers?.[statement.key];
+
+        if (fromAnswers !== undefined && fromAnswers !== null) {
+            return fromAnswers;
+        }
+
+        if (answers !== undefined && statement.key in answers) {
+            return undefined;
+        }
+
+        return statement.myScore ?? undefined;
+    };
     const answered = statements.filter(
-        (statement) => answers[statement.id] !== undefined,
+        (statement) => valueOf(statement) !== undefined,
     ).length;
     const complete = total > 0 && answered === total;
+    const progressLabel = t(':answered of :total answered', {
+        answered,
+        total,
+    });
 
     return (
         <Card
@@ -179,9 +314,9 @@ export function HealthCheckForm({
                     id={endsId}
                     className="flex justify-between gap-3 text-xs text-muted-foreground"
                 >
-                    <span>{t('1 · Strongly disagree')}</span>
+                    <span>{t(':score · Awful', { score: 1 })}</span>
                     <span className="text-right">
-                        {t('5 · Strongly agree')}
+                        {t(':score · Great', { score: scale })}
                     </span>
                 </p>
             </div>
@@ -193,12 +328,18 @@ export function HealthCheckForm({
                 ) : (
                     statements.map((statement) => (
                         <ScaleQuestion
-                            key={statement.id}
+                            key={statement.key}
                             statement={statement}
-                            value={answers[statement.id]}
+                            value={valueOf(statement)}
+                            scale={scale}
                             endsId={endsId}
-                            readOnly={submitted}
-                            onAnswer={(value) => onAnswer(statement.id, value)}
+                            readOnly={submitted || disabled}
+                            onAnswer={(value) => onAnswer(statement.key, value)}
+                            onClear={
+                                onClear
+                                    ? () => onClear(statement.key)
+                                    : undefined
+                            }
                         />
                     ))
                 )}
@@ -223,30 +364,27 @@ export function HealthCheckForm({
                                 max={Math.max(total, 1)}
                                 tone="primary"
                                 valueLabel=""
-                                aria-label={t(':answered of :total answered', {
-                                    answered,
-                                    total,
-                                })}
+                                aria-label={progressLabel}
                             />
                             <span
                                 data-slot="health-progress"
                                 className="text-xs text-muted-foreground"
                             >
-                                {t(':answered of :total answered', {
-                                    answered,
-                                    total,
-                                })}
+                                {progressLabel}
                             </span>
                         </div>
-                        <Button
-                            type="button"
-                            disabled={!complete}
-                            onClick={onSubmit}
-                        >
-                            <span className="truncate">
-                                {t('Submit answers')}
-                            </span>
-                        </Button>
+                        {onSubmit ? (
+                            <Button
+                                type="button"
+                                className="max-w-full"
+                                disabled={!complete || disabled}
+                                onClick={onSubmit}
+                            >
+                                <span className="truncate">
+                                    {t('Submit answers')}
+                                </span>
+                            </Button>
+                        ) : null}
                     </>
                 )}
             </div>

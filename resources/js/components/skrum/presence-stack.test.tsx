@@ -43,6 +43,110 @@ describe('PresenceStack', () => {
         expect(ids).toEqual(['p0', 'p1']);
     });
 
+    it('shows the server avatar as an image that carries the id and the name', () => {
+        const { container } = renderWithProviders(
+            <PresenceStack
+                participants={[
+                    person(0, { avatarUrl: '/avatars/0.png' }),
+                    person(1, {
+                        role: 'guest',
+                        name: 'Visitor',
+                        avatarUrl: '/avatars/guest.png',
+                    }),
+                    person(2),
+                ]}
+            />,
+        );
+
+        const images = [...container.querySelectorAll('img[data-presence-id]')];
+
+        expect(
+            images.map((image) => [
+                image.getAttribute('data-presence-id'),
+                image.getAttribute('alt'),
+                image.getAttribute('src'),
+            ]),
+        ).toEqual([
+            ['p0', 'Person0 Name', '/avatars/0.png'],
+            ['p1', 'Visitor', '/avatars/guest.png'],
+        ]);
+        expect(container.querySelectorAll('[data-presence-id]')).toHaveLength(
+            3,
+        );
+    });
+
+    it('falls back to the initials when the image fails, keeping the id', () => {
+        const { container } = renderWithProviders(
+            <PresenceStack
+                participants={[person(0, { avatarUrl: '/avatars/0.png' })]}
+            />,
+        );
+
+        fireEvent.error(container.querySelector('img') as HTMLImageElement);
+
+        expect(container.querySelector('img')).toBeNull();
+        expect(
+            container
+                .querySelector('[data-presence-id="p0"]')
+                ?.getAttribute('data-slot'),
+        ).toBe('person-avatar');
+    });
+
+    it('does not repeat the ids in the opened list', () => {
+        renderWithProviders(
+            <PresenceStack
+                participants={[
+                    person(0, { avatarUrl: '/avatars/0.png' }),
+                    person(1),
+                ]}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /view the list/ }));
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
+        expect(document.querySelectorAll('[data-presence-id]')).toHaveLength(2);
+    });
+
+    it('accepts participants without initials or presence colour, and a 60-character name', () => {
+        const name = 'N'.repeat(60);
+
+        renderWithProviders(
+            <PresenceStack
+                participants={[
+                    { id: 'a', name, role: 'member', status: 'online' },
+                ]}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /view the list/ }));
+
+        expect(within(screen.getByRole('dialog')).getByText(name)).toBeTruthy();
+    });
+
+    it('renders nobody and 200 participants', () => {
+        const { unmount } = renderWithProviders(
+            <PresenceStack participants={[]} />,
+        );
+
+        expect(screen.getByText('0 online')).toBeTruthy();
+        unmount();
+
+        renderWithProviders(
+            <PresenceStack
+                participants={Array.from({ length: 200 }, (_, index) =>
+                    person(index),
+                )}
+            />,
+        );
+
+        expect(screen.getByText('+195')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: /view the list/ }));
+        expect(
+            within(screen.getByRole('dialog')).getAllByRole('listitem'),
+        ).toHaveLength(200);
+    });
+
     it('exposes a dialog button and lists everyone in the popover', () => {
         renderWithProviders(<PresenceStack participants={twelve} />);
 

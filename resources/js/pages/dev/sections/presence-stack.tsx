@@ -112,6 +112,59 @@ export default function PresenceStackSection() {
             <Block title={t('Anonymous guests')}>
                 <PresenceStack participants={guests} />
             </Block>
+            <Block title={t('Server avatars, one failing (initials fallback)')}>
+                <PresenceStack
+                    participants={[
+                        member(0, {
+                            role: 'facilitator',
+                            avatarUrl: `/avatars/${'3'.repeat(32)}.svg`,
+                        }),
+                        member(1, {
+                            isMe: true,
+                            typing: true,
+                            avatarUrl: `/avatars/${'5'.repeat(32)}.svg`,
+                        }),
+                        member(2, {
+                            status: 'away',
+                            avatarUrl: `/avatars/${'7'.repeat(32)}.svg`,
+                        }),
+                        member(3, { avatarUrl: '/dev/missing-avatar.png' }),
+                        {
+                            ...member(9, { role: 'guest' }),
+                            name: t('Thoughtful Otter'),
+                            avatarUrl: `/avatars/${'9'.repeat(32)}.svg`,
+                        },
+                    ]}
+                />
+            </Block>
+            <Block title={t('Nobody connected')}>
+                <PresenceStack participants={[]} />
+            </Block>
+            <Block title={t('One participant, 60-character name')}>
+                <PresenceStack
+                    participants={[
+                        {
+                            id: 'long-name',
+                            name: t(
+                                'Maximilienne-Alexandrine de la Tour du Pin-Chambly Saint-Exupéry',
+                            ),
+                            role: 'member',
+                            status: 'online',
+                            typing: true,
+                        },
+                    ]}
+                />
+            </Block>
+            <Block title={t('200 participants')}>
+                <PresenceStack
+                    participants={Array.from({ length: 200 }, (_, index) =>
+                        member(index % Names.length, {
+                            id: `crowd-${index}`,
+                            presence: (index % 12) + 1,
+                        }),
+                    )}
+                />
+            </Block>
             <Block title={t('Without invite action')}>
                 <PresenceStack participants={few} />
             </Block>
