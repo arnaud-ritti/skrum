@@ -11,8 +11,9 @@ use App\Models\WorkspaceMembership;
 use Illuminate\Contracts\Database\Query\Builder;
 
 /**
- * The API tokens section of the account settings. All of it is read only
- * behind a confirmed password.
+ * The API tokens section of the account settings, in two parts: the choices
+ * of the creation form, the same for every account, and what belongs to the
+ * account, which is read only behind a confirmed password.
  */
 class ApiTokenSettings
 {
@@ -21,12 +22,29 @@ class ApiTokenSettings
     public const string DefaultExpiration = '90_days';
 
     /**
+     * Constants of the application alone: nothing here may depend on the
+     * account or on the instance.
+     *
+     * @return array{
+     *     expirationOptions: array<int, array{value: string, label: string}>,
+     *     defaultExpiration: string
+     * }
+     */
+    public function offered(): array
+    {
+        return [
+            'expirationOptions' => collect(self::Expirations)
+                ->map(fn (string $value): array => ['value' => $value, 'label' => $this->expirationLabel($value)])
+                ->all(),
+            'defaultExpiration' => self::DefaultExpiration,
+        ];
+    }
+
+    /**
      * @return array{
      *     tokens: array<int, array<string, mixed>>,
      *     teamGroups: array<int, array{workspace: array{id: string, name: string}, teams: array<int, array{id: string, name: string}>}>,
-     *     mcpUrl: string,
-     *     expirationOptions: array<int, array{value: string, label: string}>,
-     *     defaultExpiration: string
+     *     mcpUrl: string
      * }
      */
     public function protected(User $user): array
@@ -44,10 +62,6 @@ class ApiTokenSettings
                 ->all(),
             'teamGroups' => $this->teamsByWorkspace($user),
             'mcpUrl' => url('/mcp'),
-            'expirationOptions' => collect(self::Expirations)
-                ->map(fn (string $value): array => ['value' => $value, 'label' => $this->expirationLabel($value)])
-                ->all(),
-            'defaultExpiration' => self::DefaultExpiration,
         ];
     }
 

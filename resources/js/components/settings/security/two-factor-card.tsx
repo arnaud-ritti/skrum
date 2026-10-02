@@ -4,6 +4,7 @@ import {
     Eye,
     EyeOff,
     Key,
+    Mail,
     RotateCcw,
     ShieldCheck,
     ShieldOff,
@@ -12,6 +13,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { EmailCodeRow } from '@/components/settings/security/email-code-row';
 import { RecoveryCodes } from '@/components/settings/security/recovery-codes';
 import {
@@ -79,6 +81,76 @@ function IconTile({
     );
 }
 
+/**
+ * The card before the password is confirmed: the methods the instance
+ * offers, and nothing of the account. Its button asks for the password,
+ * then the page shows the card with what is on.
+ */
+export function TwoFactorConcealed({
+    appAvailable,
+    emailCodeAvailable,
+}: {
+    appAvailable: boolean;
+    emailCodeAvailable: boolean;
+}): ReactElement {
+    const { t } = useTrans();
+    const { guard } = usePasswordGate();
+    const title = t('Two-factor authentication');
+
+    return (
+        <SettingsCard
+            title={title}
+            description={
+                emailCodeAvailable
+                    ? t(
+                          'A 6-digit code on top of your password, from an authenticator app or by e-mail.',
+                      )
+                    : t(
+                          'A 6-digit code from an authenticator app, on top of your password.',
+                      )
+            }
+            flush
+            header={
+                <>
+                    <IconTile icon={Smartphone} />
+                    <span className="min-w-0 flex-1 text-sm font-semibold">
+                        {title}
+                    </span>
+                </>
+            }
+            footer={
+                <>
+                    <span className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
+                        {t(
+                            'Confirm your password to see which methods are on and to change them.',
+                        )}
+                    </span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        className="max-w-full"
+                        onClick={() => guard(() => undefined)}
+                    >
+                        <ShieldCheck aria-hidden="true" />
+                        <span className="truncate">
+                            {t('Manage two-factor authentication')}
+                        </span>
+                    </Button>
+                </>
+            }
+        >
+            {appAvailable && (
+                <Row
+                    icon={Smartphone}
+                    title={t('Authenticator app')}
+                    description={t('A 6-digit code from an app on your phone.')}
+                />
+            )}
+            {emailCodeAvailable && <Row icon={Mail} title={t('E-mail code')} />}
+        </SettingsCard>
+    );
+}
+
 export function TwoFactorCard({
     enabled,
     requiresConfirmation,
@@ -88,6 +160,7 @@ export function TwoFactorCard({
 }: TwoFactorCardProps): ReactElement {
     const { t } = useTrans();
     const { locale } = usePage<{ locale?: string }>().props;
+    const { guard } = usePasswordGate();
     const {
         qrCodeSvg,
         manualSetupKey,
@@ -533,7 +606,7 @@ export function TwoFactorCard({
                         size="sm"
                         loading={starting}
                         className="max-w-full"
-                        onClick={start}
+                        onClick={() => guard(start)}
                     >
                         <ShieldCheck aria-hidden="true" />
                         <span className="truncate">
@@ -584,7 +657,11 @@ export function TwoFactorCard({
                             aria-expanded={codesVisible}
                             aria-controls={codesVisible ? codesId : undefined}
                             className="max-w-full"
-                            onClick={toggleCodes}
+                            onClick={() =>
+                                codesVisible
+                                    ? toggleCodes()
+                                    : guard(toggleCodes)
+                            }
                         >
                             {codesVisible ? (
                                 <EyeOff aria-hidden="true" />
@@ -603,7 +680,7 @@ export function TwoFactorCard({
                         variant="outline"
                         size="sm"
                         className="max-w-full"
-                        onClick={() => setRegenerateOpen(true)}
+                        onClick={() => guard(() => setRegenerateOpen(true))}
                     >
                         <RotateCcw aria-hidden="true" />
                         <span className="truncate">
@@ -672,7 +749,7 @@ export function TwoFactorCard({
                     size="sm"
                     loading={starting}
                     className="max-w-full"
-                    onClick={start}
+                    onClick={() => guard(start)}
                 >
                     <ShieldCheck aria-hidden="true" />
                     <span className="truncate">
@@ -692,7 +769,7 @@ export function TwoFactorCard({
                 variant="outline"
                 size="sm"
                 className={turnOffButtonClass}
-                onClick={() => setTurnOffOpen(true)}
+                onClick={() => guard(() => setTurnOffOpen(true))}
             >
                 <ShieldOff aria-hidden="true" />
                 <span className="truncate">
@@ -759,7 +836,7 @@ export function TwoFactorCard({
                             variant="outline"
                             size="sm"
                             className={turnOffButtonClass}
-                            onClick={() => setTurnOffOpen(true)}
+                            onClick={() => guard(() => setTurnOffOpen(true))}
                         >
                             <ShieldOff aria-hidden="true" />
                             <span className="truncate">

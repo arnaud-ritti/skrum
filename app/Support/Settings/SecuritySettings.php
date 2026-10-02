@@ -26,30 +26,29 @@ class SecuritySettings
     ) {}
 
     /**
+     * Read from the configuration of the instance alone: nothing here may
+     * depend on the state of the account.
+     *
      * @return array{
      *     passwordRules: string,
      *     checksCompromisedPasswords: bool,
      *     canManageTwoFactor: bool,
      *     canManagePasskeys: bool,
-     *     requiresConfirmation: bool,
-     *     hasProtectedSettings: bool
+     *     canManageEmailCode: bool,
+     *     requiresConfirmation: bool
      * }
      */
-    public function offered(User $user): array
+    public function offered(): array
     {
         $canManageTwoFactor = Features::canManageTwoFactorAuthentication();
-        $canManagePasskeys = Features::canManagePasskeys();
 
         return [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'checksCompromisedPasswords' => Password::defaults()->appliedRules()['uncompromised'],
             'canManageTwoFactor' => $canManageTwoFactor,
-            'canManagePasskeys' => $canManagePasskeys,
+            'canManagePasskeys' => Features::canManagePasskeys(),
+            'canManageEmailCode' => $this->availability->emailEnabled(),
             'requiresConfirmation' => $canManageTwoFactor && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
-            'hasProtectedSettings' => $canManageTwoFactor
-                || $canManagePasskeys
-                || $this->availability->emailEnabled()
-                || $this->secondFactors->hasEmailCode($user),
         ];
     }
 

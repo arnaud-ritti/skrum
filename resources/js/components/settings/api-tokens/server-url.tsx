@@ -1,6 +1,7 @@
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Eye } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { toast } from 'sonner';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +9,19 @@ import { Label } from '@/components/ui/label';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 
-export function ServerUrl({ mcpUrl }: { mcpUrl: string }): ReactElement {
+export function ServerUrl({
+    mcpUrl,
+}: {
+    /** Absent while the password is not confirmed: the server keeps the address back. */
+    mcpUrl: string | null;
+}): ReactElement {
     const { t } = useTrans();
+    const { guard } = usePasswordGate();
     const [copied, copy] = useClipboard();
-    const urlCopied = copied === mcpUrl;
+    const urlCopied = mcpUrl !== null && copied === mcpUrl;
 
     const copyUrl = async (): Promise<void> => {
-        if (!(await copy(mcpUrl))) {
+        if (mcpUrl === null || !(await copy(mcpUrl))) {
             toast.error(t('Something went wrong. Please try again.'));
         }
     };
@@ -22,30 +29,47 @@ export function ServerUrl({ mcpUrl }: { mcpUrl: string }): ReactElement {
     return (
         <SettingsCard title={t('MCP server')}>
             <div className="flex min-w-0 flex-col gap-1.5">
-                <Label htmlFor="mcp-url">{t('Server URL')}</Label>
-                <div className="flex min-w-0 items-center gap-2">
-                    <Input
-                        id="mcp-url"
-                        readOnly
-                        value={mcpUrl}
-                        aria-describedby="mcp-url-help"
-                        className="min-w-0 flex-1 font-mono text-body-sm md:text-body-sm"
-                        onFocus={(event) => event.currentTarget.select()}
-                    />
+                {mcpUrl !== null && (
+                    <Label htmlFor="mcp-url">{t('Server URL')}</Label>
+                )}
+                {mcpUrl === null ? (
                     <Button
                         type="button"
                         variant="outline"
-                        className="shrink-0"
-                        onClick={() => void copyUrl()}
+                        aria-describedby="mcp-url-help"
+                        className="max-w-full self-start"
+                        onClick={() => guard(() => undefined)}
                     >
-                        {urlCopied ? (
-                            <Check aria-hidden="true" />
-                        ) : (
-                            <Copy aria-hidden="true" />
-                        )}
-                        <span>{urlCopied ? t('Copied') : t('Copy')}</span>
+                        <Eye aria-hidden="true" />
+                        <span className="truncate">
+                            {t('Show the server URL')}
+                        </span>
                     </Button>
-                </div>
+                ) : (
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Input
+                            id="mcp-url"
+                            readOnly
+                            value={mcpUrl}
+                            aria-describedby="mcp-url-help"
+                            className="min-w-0 flex-1 font-mono text-body-sm md:text-body-sm"
+                            onFocus={(event) => event.currentTarget.select()}
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0"
+                            onClick={() => void copyUrl()}
+                        >
+                            {urlCopied ? (
+                                <Check aria-hidden="true" />
+                            ) : (
+                                <Copy aria-hidden="true" />
+                            )}
+                            <span>{urlCopied ? t('Copied') : t('Copy')}</span>
+                        </Button>
+                    </div>
+                )}
                 <span
                     id="mcp-url-help"
                     className="text-body-sm text-muted-foreground"

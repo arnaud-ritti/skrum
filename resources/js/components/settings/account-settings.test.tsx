@@ -15,6 +15,9 @@ const seen = vi.hoisted(() => ({
     passkeys: undefined as unknown,
     tokens: undefined as unknown,
     createToken: undefined as Record<string, unknown> | undefined,
+    concealed: undefined as Record<string, unknown> | undefined,
+    serverUrl: undefined as unknown,
+    gate: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -26,6 +29,13 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
 
+vi.mock('@/components/settings/password-gate', () => ({
+    PasswordGateProvider: ({ children, ...props }: { children: ReactNode }) => {
+        seen.gate = props;
+
+        return <>{children}</>;
+    },
+}));
 vi.mock('@/components/settings/profile-card', () => ({
     ProfileCard: () => <p>profile card</p>,
 }));
@@ -48,6 +58,11 @@ vi.mock('@/components/settings/security/two-factor-card', () => ({
         seen.twoFactor = props;
 
         return <p>two-factor card</p>;
+    },
+    TwoFactorConcealed: (props: Record<string, unknown>) => {
+        seen.concealed = props;
+
+        return <p>concealed two-factor card</p>;
     },
 }));
 vi.mock('@/components/settings/security/passkeys-card', () => ({
@@ -88,7 +103,11 @@ vi.mock('@/components/settings/api-tokens/token-list', () => ({
     },
 }));
 vi.mock('@/components/settings/api-tokens/server-url', () => ({
-    ServerUrl: ({ mcpUrl }: { mcpUrl: string }) => <p>server {mcpUrl}</p>,
+    ServerUrl: ({ mcpUrl }: { mcpUrl: string | null }) => {
+        seen.serverUrl = mcpUrl;
+
+        return <p>server {mcpUrl}</p>;
+    },
 }));
 
 const scrollIntoView = vi.fn();
@@ -118,8 +137,8 @@ function unlocked(): AccountSettingsProps {
             checksCompromisedPasswords: true,
             canManageTwoFactor: true,
             canManagePasskeys: true,
+            canManageEmailCode: true,
             requiresConfirmation: true,
-            hasProtectedSettings: true,
             locked: false,
             protected: {
                 twoFactorEnabled: true,
@@ -149,13 +168,13 @@ function unlocked(): AccountSettingsProps {
             remindersEnabled: true,
         },
         apiTokens: {
+            expirationOptions: [],
+            defaultExpiration: '90_days',
             locked: false,
             protected: {
                 tokens: [token] as never,
                 teamGroups: [],
                 mcpUrl: 'https://skrum.test/mcp',
-                expirationOptions: [],
-                defaultExpiration: '90_days',
             },
         },
     };
@@ -167,7 +186,7 @@ function locked(): AccountSettingsProps {
     return {
         ...props,
         security: { ...props.security!, locked: true, protected: null },
-        apiTokens: { locked: true, protected: null },
+        apiTokens: { ...props.apiTokens!, locked: true, protected: null },
     };
 }
 
@@ -210,6 +229,9 @@ beforeEach(() => {
     seen.passkeys = undefined;
     seen.tokens = undefined;
     seen.createToken = undefined;
+    seen.concealed = undefined;
+    seen.serverUrl = undefined;
+    seen.gate = undefined;
     window.history.replaceState(null, '', '/settings');
     scrollIntoView.mockClear();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
@@ -284,45 +306,54 @@ describe('AccountSettings', () => {
         });
     });
 
-    it('replaces what the server keeps back by a locked card that leads to the password confirmation of its section', () => {
+    it('draws the protected cards before the password is confirmed, with nothing of the account in them', () => {
         renderWithProviders(<AccountSettings {...locked()} />);
 
-        const security = sectionNamed('Security');
-        const apiTokens = sectionNamed('API tokens');
-
-        expect(security.textContent).toContain('password card');
-        expect(security.textContent).not.toContain('two-factor card');
-        expect(security.textContent).not.toContain('passkeys card');
+        expect(sectionNamed('Security').textContent).toBe(
+            'password card with breach checkconcealed two-factor cardpasskeys card',
+        );
+        expect(sectionNamed('API tokens').textContent).toBe(
+            'create token formtoken listserver ',
+        );
+        expect(seen.twoFactor).toBeUndefined();
+        expect(seen.concealed).toEqual({
+            appAvailable: true,
+            emailCodeAvailable: true,
+        });
+        expect(seen.passkeys).toBeNull();
+        expect(seen.tokens).toBeNull();
+        expect(seen.serverUrl).toBeNull();
+        expect(seen.createToken).toMatchObject({
+            teamGroups: null,
+            mcpUrl: null,
+            defaultExpiration: '90_days',
+        });
+        expect(screen.queryByText('Locked')).toBeNull();
         expect(
-            within(security).getByRole('heading', {
-                level: 2,
-                name: 'Sign-in protection',
-            }),
-        ).toBeTruthy();
-        expect(
-            within(security)
-                .getByRole('link', { name: 'Confirm password' })
-                .getAttribute('href'),
-        ).toBe('/settings/security');
-
-        expect(apiTokens.textContent).not.toContain('create token form');
-        expect(apiTokens.textContent).not.toContain('token list');
-        expect(apiTokens.textContent).not.toContain('server');
-        expect(
-            within(apiTokens).getByRole('heading', {
-                level: 2,
-                name: 'API tokens',
-            }),
-        ).toBeTruthy();
-        expect(
-            within(apiTokens)
-                .getByRole('link', { name: 'Confirm password' })
-                .getAttribute('href'),
-        ).toBe('/settings/api-tokens');
+            screen.queryByRole('link', { name: 'Confirm password' }),
+        ).toBeNull();
         expect(navigation()).toHaveLength(5);
     });
 
-    it('shows no locked card in the security section when the instance has nothing behind the lock', () => {
+    it('tells the gate of the page whether the server kept something back, and whether a passkey may confirm', () => {
+        const { unmount } = renderWithProviders(
+            <AccountSettings {...locked()} />,
+        );
+
+        expect(seen.gate).toEqual({ locked: true, passkeys: true });
+
+        unmount();
+        renderWithProviders(
+            <AccountSettings
+                {...unlocked()}
+                security={{ ...unlocked().security!, canManagePasskeys: false }}
+            />,
+        );
+
+        expect(seen.gate).toEqual({ locked: false, passkeys: false });
+    });
+
+    it('draws no two-factor card before the confirmation when the instance offers no method', () => {
         const props = locked();
 
         renderWithProviders(
@@ -332,7 +363,7 @@ describe('AccountSettings', () => {
                     ...props.security!,
                     canManageTwoFactor: false,
                     canManagePasskeys: false,
-                    hasProtectedSettings: false,
+                    canManageEmailCode: false,
                 }}
             />,
         );
@@ -340,6 +371,22 @@ describe('AccountSettings', () => {
         expect(sectionNamed('Security').textContent).toBe(
             'password card with breach check',
         );
+    });
+
+    it('lists only the e-mail code before the confirmation when the instance offers no authenticator app', () => {
+        const props = locked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{ ...props.security!, canManageTwoFactor: false }}
+            />,
+        );
+
+        expect(seen.concealed).toEqual({
+            appAvailable: false,
+            emailCodeAvailable: true,
+        });
     });
 
     it('shows the cards the instance offers: no authenticator card without a second factor, no passkey card without passkeys', () => {

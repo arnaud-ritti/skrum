@@ -1,8 +1,9 @@
 import { useForm } from '@inertiajs/react';
 import { CircleAlert, Plus } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import ApiTokensController from '@/actions/App/Http/Controllers/Settings/ApiTokensController';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { TextField } from '@/components/skrum/text-field';
@@ -37,10 +38,12 @@ type TokenForm = {
 };
 
 type CreateTokenFormProps = {
-    teamGroups: ApiTokenTeamGroup[];
+    /** Absent while the password is not confirmed: opening the list asks for it. */
+    teamGroups: ApiTokenTeamGroup[] | null;
     expirationOptions: ApiTokenExpirationOption[];
     defaultExpiration: ApiTokenExpiration;
-    mcpUrl: string;
+    /** Absent while the password is not confirmed. */
+    mcpUrl: string | null;
     /** The token that was just created: shown once, in place of the footer. */
     newToken: NewApiToken | null;
     onDone: () => void;
@@ -89,6 +92,8 @@ export function CreateTokenForm({
     onDone,
 }: CreateTokenFormProps): ReactElement {
     const { t } = useTrans();
+    const { guard } = usePasswordGate();
+    const [teamsOpen, setTeamsOpen] = useState(false);
     const form = useForm<TokenForm>({
         name: '',
         scopes: [],
@@ -130,10 +135,22 @@ export function CreateTokenForm({
             return;
         }
 
-        form.submit(ApiTokensController.store(), {
-            preserveScroll: true,
-            onSuccess: () => form.reset(),
-        });
+        guard(() =>
+            form.submit(ApiTokensController.store(), {
+                preserveScroll: true,
+                onSuccess: () => form.reset(),
+            }),
+        );
+    };
+
+    const changeTeamsOpen = (open: boolean): void => {
+        if (open && teamGroups === null) {
+            guard(() => setTeamsOpen(true));
+
+            return;
+        }
+
+        setTeamsOpen(open);
     };
 
     return (
@@ -233,6 +250,8 @@ export function CreateTokenForm({
                         <div className="flex min-w-0 flex-col gap-1.5">
                             <Label htmlFor="token-team">{t('Team')}</Label>
                             <Select
+                                open={teamsOpen}
+                                onOpenChange={changeTeamsOpen}
                                 value={form.data.team_id ?? AllTeams}
                                 onValueChange={(value) =>
                                     form.setData(
@@ -259,7 +278,7 @@ export function CreateTokenForm({
                                     <SelectItem value={AllTeams}>
                                         {t('All my teams')}
                                     </SelectItem>
-                                    {teamGroups.map((group) => (
+                                    {(teamGroups ?? []).map((group) => (
                                         <SelectGroup key={group.workspace.id}>
                                             <SelectLabel>
                                                 {group.workspace.name}
@@ -372,7 +391,7 @@ export function CreateTokenForm({
                     </fieldset>
                 </fieldset>
 
-                {newToken !== null && (
+                {newToken !== null && mcpUrl !== null && (
                     <NewTokenPanel
                         token={newToken}
                         mcpUrl={mcpUrl}

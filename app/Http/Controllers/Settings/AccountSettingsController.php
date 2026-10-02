@@ -12,6 +12,7 @@ use App\Support\InstanceSettings;
 use App\Support\Settings\ApiTokenSettings;
 use App\Support\Settings\SecuritySettings;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
@@ -31,7 +32,8 @@ class AccountSettingsController extends Controller
      * Every section of the account on one page. An account whose address is
      * not verified gets its profile only, and what the security and API
      * token sections say about the account is sent only while the password
-     * confirmation of the session is still accepted.
+     * confirmation of the session is still accepted. The page asks for that
+     * confirmation at each protected action, then reloads these props.
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
@@ -39,7 +41,7 @@ class AccountSettingsController extends Controller
         $verified = ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
         $passwordConfirmed = $verified && $this->passwordConfirmation->isFresh($request);
 
-        if ($passwordConfirmed && Features::canManageTwoFactorAuthentication()) {
+        if ($passwordConfirmed && Features::canManageTwoFactorAuthentication() && ! $this->staysOnThePage($request)) {
             $request->ensureStateIsValid();
         }
 
@@ -50,6 +52,22 @@ class AccountSettingsController extends Controller
             'notificationPreferences' => $verified ? $this->notificationPreferences($user) : null,
             'apiTokens' => $verified && config('skrum.mcp.enabled') ? $this->apiTokensSection($user, $passwordConfirmed) : null,
         ]);
+    }
+
+    /**
+     * A visit Inertia makes from the page itself, the return of a form of
+     * another section or a reload of some props, is not a new opening of
+     * the page: an authenticator setup that waits for its code survives it.
+     */
+    private function staysOnThePage(TwoFactorAuthenticationRequest $request): bool
+    {
+        if (! $request->inertia()) {
+            return false;
+        }
+
+        $comesFrom = $request->headers->get('referer');
+
+        return is_string($comesFrom) && Str::before($comesFrom, '?') === $request->url();
     }
 
     /**
@@ -75,7 +93,7 @@ class AccountSettingsController extends Controller
     private function securitySection(User $user, bool $passwordConfirmed): array
     {
         return [
-            ...$this->security->offered($user),
+            ...$this->security->offered(),
             'locked' => ! $passwordConfirmed,
             'protected' => $passwordConfirmed ? $this->security->protected($user) : null,
         ];
@@ -108,6 +126,7 @@ class AccountSettingsController extends Controller
     private function apiTokensSection(User $user, bool $passwordConfirmed): array
     {
         return [
+            ...$this->apiTokens->offered(),
             'locked' => ! $passwordConfirmed,
             'protected' => $passwordConfirmed ? $this->apiTokens->protected($user) : null,
         ];

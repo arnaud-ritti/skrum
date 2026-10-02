@@ -9,15 +9,18 @@ import { ShortcutPreferenceCard } from '@/components/settings/appearance/shortcu
 import { AvatarStyleCard } from '@/components/settings/avatar-style-card';
 import type { ProfileAvatarStyle } from '@/components/settings/avatar-style-card';
 import { DeleteAccountCard } from '@/components/settings/delete-account-card';
-import { LockedSettingsCard } from '@/components/settings/locked-settings-card';
 import { NotificationsCard } from '@/components/settings/notifications-card';
 import type { NotificationPreferences } from '@/components/settings/notifications-card';
+import { PasswordGateProvider } from '@/components/settings/password-gate';
 import { ProfileCard } from '@/components/settings/profile-card';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
 import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
 import { SecurityStack } from '@/components/settings/security/security-stack';
-import { TwoFactorCard } from '@/components/settings/security/two-factor-card';
+import {
+    TwoFactorCard,
+    TwoFactorConcealed,
+} from '@/components/settings/security/two-factor-card';
 import {
     SettingsSection,
     SettingsSections,
@@ -25,9 +28,6 @@ import {
 } from '@/components/settings/settings-shell';
 import type { SettingsSectionId } from '@/components/settings/settings-shell';
 import { useVisibleSection } from '@/components/settings/use-visible-section';
-import { useTrans } from '@/hooks/use-trans';
-import { index as unlockApiTokens } from '@/routes/apiTokens';
-import { edit as unlockSecurity } from '@/routes/security';
 import type {
     ApiToken,
     ApiTokenExpiration,
@@ -65,9 +65,9 @@ export type SecuritySettings = {
     checksCompromisedPasswords: boolean;
     canManageTwoFactor: boolean;
     canManagePasskeys: boolean;
+    /** The instance can send the e-mail code. */
+    canManageEmailCode: boolean;
     requiresConfirmation: boolean;
-    /** There is something behind the lock: a second factor or passkeys to manage. */
-    hasProtectedSettings: boolean;
     locked: boolean;
     protected: ProtectedSecuritySettings | null;
 };
@@ -78,16 +78,16 @@ export type NotificationSettings = {
     remindersEnabled: boolean;
 };
 
-/** The whole API token section is sent only behind a confirmed password. */
+/** What the API token section says about the account: sent only behind a confirmed password. */
 export type ProtectedApiTokenSettings = {
     tokens: ApiToken[];
     teamGroups: ApiTokenTeamGroup[];
     mcpUrl: string;
-    expirationOptions: ApiTokenExpirationOption[];
-    defaultExpiration: ApiTokenExpiration;
 };
 
 export type ApiTokenSettings = {
+    expirationOptions: ApiTokenExpirationOption[];
+    defaultExpiration: ApiTokenExpiration;
     locked: boolean;
     protected: ProtectedApiTokenSettings | null;
 };
@@ -102,12 +102,16 @@ export type AccountSettingsProps = {
     apiTokens: ApiTokenSettings | null;
 };
 
+/**
+ * Before the password is confirmed the cards are there with what the
+ * instance offers and nothing of the account; each of their actions asks
+ * for the password, then the page loads the rest.
+ */
 function SecuritySection({
     security,
 }: {
     security: SecuritySettings;
 }): ReactElement {
-    const { t } = useTrans();
     const { protected: account } = security;
     const listsEmailCode =
         account !== null &&
@@ -124,15 +128,14 @@ function SecuritySection({
                     ) : undefined
                 }
             />
-            {account === null && security.hasProtectedSettings && (
-                <LockedSettingsCard
-                    title={t('Sign-in protection')}
-                    description={t(
-                        'Confirm your password to see and change what protects your sign-in.',
-                    )}
-                    href={unlockSecurity()}
-                />
-            )}
+            {account === null &&
+                (security.canManageTwoFactor ||
+                    security.canManageEmailCode) && (
+                    <TwoFactorConcealed
+                        appAvailable={security.canManageTwoFactor}
+                        emailCodeAvailable={security.canManageEmailCode}
+                    />
+                )}
             {account !== null &&
                 (security.canManageTwoFactor || listsEmailCode) && (
                     <TwoFactorCard
@@ -143,8 +146,8 @@ function SecuritySection({
                         emailCode={account.emailSecondFactor}
                     />
                 )}
-            {account !== null && security.canManagePasskeys && (
-                <PasskeysCard passkeys={account.passkeys} />
+            {security.canManagePasskeys && (
+                <PasskeysCard passkeys={account?.passkeys ?? null} />
             )}
         </SecurityStack>
     );
@@ -155,7 +158,6 @@ function ApiTokensSection({
 }: {
     apiTokens: ApiTokenSettings;
 }): ReactElement {
-    const { t } = useTrans();
     const flashedToken = usePage().flash.newToken ?? null;
     const [newToken, setNewToken] = useState<NewApiToken | null>(flashedToken);
 
@@ -165,33 +167,24 @@ function ApiTokensSection({
         }
     }, [flashedToken]);
 
-    if (apiTokens.protected === null) {
-        return (
-            <LockedSettingsCard
-                title={t('API tokens')}
-                description={t(
-                    'Confirm your password to see, create and revoke your tokens.',
-                )}
-                href={unlockApiTokens()}
-            />
-        );
-    }
-
-    const { tokens, teamGroups, mcpUrl, expirationOptions, defaultExpiration } =
-        apiTokens.protected;
+    const account = apiTokens.protected;
+    const mcpUrl = account?.mcpUrl ?? null;
 
     return (
         <>
             <div data-slot="api-tokens" className="flex min-w-0 flex-col gap-4">
                 <CreateTokenForm
-                    teamGroups={teamGroups}
-                    expirationOptions={expirationOptions}
-                    defaultExpiration={defaultExpiration}
+                    teamGroups={account?.teamGroups ?? null}
+                    expirationOptions={apiTokens.expirationOptions}
+                    defaultExpiration={apiTokens.defaultExpiration}
                     mcpUrl={mcpUrl}
                     newToken={newToken}
                     onDone={() => setNewToken(null)}
                 />
-                <TokenList tokens={tokens} newTokenName={newToken?.name} />
+                <TokenList
+                    tokens={account?.tokens ?? null}
+                    newTokenName={newToken?.name}
+                />
             </div>
 
             <ServerUrl mcpUrl={mcpUrl} />
@@ -228,62 +221,67 @@ export function AccountSettings({
             current={current as SettingsSectionId}
             onSelect={select}
         >
-            <SettingsSection id="profile">
-                <div className="flex min-w-0 flex-col gap-4">
-                    <ProfileCard
+            <PasswordGateProvider
+                locked={security?.locked === true || apiTokens?.locked === true}
+                passkeys={security?.canManagePasskeys === true}
+            >
+                <SettingsSection id="profile">
+                    <div className="flex min-w-0 flex-col gap-4">
+                        <ProfileCard
+                            user={auth.user}
+                            mustVerifyEmail={profile.mustVerifyEmail}
+                            status={profile.status ?? undefined}
+                        />
+                        <DeleteAccountCard />
+                    </div>
+
+                    <AvatarStyleCard
                         user={auth.user}
-                        mustVerifyEmail={profile.mustVerifyEmail}
-                        status={profile.status ?? undefined}
-                    />
-                    <DeleteAccountCard />
-                </div>
-
-                <AvatarStyleCard
-                    user={auth.user}
-                    memberChoice={profile.avatarMemberChoice}
-                    style={profile.avatarStyle}
-                    instanceStyle={profile.instanceAvatarStyle}
-                    styles={profile.avatarStyles}
-                />
-            </SettingsSection>
-
-            {security !== null && (
-                <SettingsSection id="security">
-                    <SecuritySection security={security} />
-                </SettingsSection>
-            )}
-
-            {appearance && (
-                <SettingsSection id="appearance">
-                    <AppearanceCard
-                        accessibility={
-                            <ShortcutPreferenceCard
-                                enabled={
-                                    auth.user.single_key_shortcuts !== false
-                                }
-                            />
-                        }
+                        memberChoice={profile.avatarMemberChoice}
+                        style={profile.avatarStyle}
+                        instanceStyle={profile.instanceAvatarStyle}
+                        styles={profile.avatarStyles}
                     />
                 </SettingsSection>
-            )}
 
-            {notificationPreferences !== null && (
-                <SettingsSection id="notifications">
-                    <NotificationsCard
-                        preferences={notificationPreferences.preferences}
-                        reminderTime={notificationPreferences.reminderTime}
-                        remindersEnabled={
-                            notificationPreferences.remindersEnabled
-                        }
-                    />
-                </SettingsSection>
-            )}
+                {security !== null && (
+                    <SettingsSection id="security">
+                        <SecuritySection security={security} />
+                    </SettingsSection>
+                )}
 
-            {apiTokens !== null && (
-                <SettingsSection id="api-tokens">
-                    <ApiTokensSection apiTokens={apiTokens} />
-                </SettingsSection>
-            )}
+                {appearance && (
+                    <SettingsSection id="appearance">
+                        <AppearanceCard
+                            accessibility={
+                                <ShortcutPreferenceCard
+                                    enabled={
+                                        auth.user.single_key_shortcuts !== false
+                                    }
+                                />
+                            }
+                        />
+                    </SettingsSection>
+                )}
+
+                {notificationPreferences !== null && (
+                    <SettingsSection id="notifications">
+                        <NotificationsCard
+                            preferences={notificationPreferences.preferences}
+                            reminderTime={notificationPreferences.reminderTime}
+                            remindersEnabled={
+                                notificationPreferences.remindersEnabled
+                            }
+                        />
+                    </SettingsSection>
+                )}
+
+                {apiTokens !== null && (
+                    <SettingsSection id="api-tokens">
+                        <ApiTokensSection apiTokens={apiTokens} />
+                    </SettingsSection>
+                )}
+            </PasswordGateProvider>
         </SettingsShell>
     );
 }
