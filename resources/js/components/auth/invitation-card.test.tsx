@@ -220,10 +220,11 @@ describe('InvitationCard', () => {
         ).toBe('You are invited to join Nordlys');
     });
 
-    it('offers the providers, then an account and the login to a logged out visitor', () => {
-        renderWithProviders(
+    it('offers the providers, then the account form and the sign-in link to a logged out visitor', () => {
+        const { container } = renderWithProviders(
             <InvitationCard
                 {...pending}
+                passwordRules="minlength: 12; required: lower;"
                 ssoProviders={[
                     { key: 'google', label: 'Google' },
                     { key: 'github', label: 'GitHub' },
@@ -231,22 +232,79 @@ describe('InvitationCard', () => {
             />,
         );
 
-        const links = screen.getAllByRole('link');
+        expect(
+            screen
+                .getAllByRole('link')
+                .map((link) => link.getAttribute('href')),
+        ).toEqual(['/auth/google/redirect', '/auth/github/redirect', '/login']);
+        expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+        expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
 
-        expect(links.map((link) => link.getAttribute('href'))).toEqual([
-            '/auth/google/redirect',
-            '/auth/github/redirect',
-            '/register',
-            '/login',
-        ]);
+        const accountForm = container.querySelector(
+            '[data-slot="invitation-card"] form',
+        );
+
+        expect(accountForm?.getAttribute('action')).toBe(
+            '/invitations/secret-token/account',
+        );
+        expect(accountForm?.getAttribute('method')).toBe('post');
         expect(
-            screen.getByRole('link', { name: 'Continue with Google' }),
+            screen.getByRole('button', {
+                name: 'Create my account and join Nordlys',
+            }),
         ).toBeTruthy();
+
+        const name = screen.getByLabelText(/^First and last name/);
+        const password = screen.getByLabelText(/^Create a password/);
+
+        expect(name.getAttribute('name')).toBe('name');
+        expect(password.getAttribute('name')).toBe('password');
+        expect(password.getAttribute('type')).toBe('password');
+        expect(password.getAttribute('placeholder')).toBe(
+            '12 characters minimum',
+        );
         expect(
-            screen.getByRole('link', { name: 'Create an account' }),
-        ).toBeTruthy();
-        expect(screen.getByRole('link', { name: 'Log in' })).toBeTruthy();
-        expect(screen.queryByRole('button')).toBeNull();
+            container.querySelector('[name="password_confirmation"]'),
+        ).toBeNull();
+    });
+
+    it('never sends the address: the locked field has no name', () => {
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        const email = screen.getByLabelText('Email') as HTMLInputElement;
+
+        expect(email.readOnly).toBe(true);
+        expect(email.hasAttribute('name')).toBe(false);
+    });
+
+    it('shows what the server refused under the fields', () => {
+        form.errors = {
+            email: 'The email has already been taken.',
+            name: 'The name field is required.',
+            password: 'The password field must be at least 12 characters.',
+        };
+
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        for (const message of Object.values(form.errors)) {
+            expect(screen.getByText(message)).toBeTruthy();
+        }
+
+        expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+    });
+
+    it('disables the account button while the account is created', () => {
+        form.processing = true;
+
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Create my account and join Nordlys',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
     });
 
     it('offers only the login when registration is closed', () => {
@@ -258,6 +316,8 @@ describe('InvitationCard', () => {
             screen.getAllByRole('link').map((link) => link.textContent),
         ).toEqual(['Log in']);
         expect(screen.queryByText('Already have an account?')).toBeNull();
+        expect(document.querySelector('form')).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('lets the invited account join, without a provider or a login link', () => {

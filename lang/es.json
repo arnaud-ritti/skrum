@@ -4582,5 +4582,7 @@
     "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.": "Los atajos de una sola tecla están desactivados. Los atajos con ⌘ o Ctrl siguen funcionando.",
     "Keyboard settings": "Ajustes del teclado",
     "Group with another card": "Agrupar con otra tarjeta",
-    "Focus the selected card": "Destacar la tarjeta seleccionada"
+    "Focus the selected card": "Destacar la tarjeta seleccionada",
+    "Create a password": "Crea una contraseña",
+    "Create my account and join :workspace": "Crear mi cuenta y unirme a :workspace"
 }

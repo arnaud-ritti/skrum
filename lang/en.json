@@ -4361,5 +4361,7 @@
     "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.": "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.",
     "Keyboard settings": "Keyboard settings",
     "Group with another card": "Group with another card",
-    "Focus the selected card": "Focus the selected card"
+    "Focus the selected card": "Focus the selected card",
+    "Create a password": "Create a password",
+    "Create my account and join :workspace": "Create my account and join :workspace"
 }
