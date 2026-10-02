@@ -3952,5 +3952,10 @@
     "Add the tasks in the room, once the game is open.": "Ajoutez les tâches dans la salle, une fois la partie ouverte.",
     "This deck needs at least :count values before the game is created.": "Ce deck doit avoir au moins :count valeurs avant la création de la partie.",
     "New session, poker form: the whole form, not scrolled": "Nouvelle session, formulaire poker : le formulaire entier, sans défilement",
-    "New session dialog, open on the poker type": "Dialogue Nouvelle session, ouvert sur le type poker"
+    "New session dialog, open on the poker type": "Dialogue Nouvelle session, ouvert sur le type poker",
+    "Everyone in the workspace can start a board from them.": "Tous les membres de l'espace de travail peuvent créer un tableau à partir de ces modèles.",
+    "New session, whiteboard form: the whole form, not scrolled": "Nouvelle session, formulaire tableau blanc : le formulaire entier, sans défilement",
+    "Whiteboard templates manager: the rows, one being edited": "Gestion des modèles de tableau blanc : les lignes, dont une en cours de modification",
+    "Whiteboard templates manager: no template": "Gestion des modèles de tableau blanc : aucun modèle",
+    "New session dialog, open on the whiteboard type": "Boîte de dialogue Nouvelle session, ouverte sur le type tableau blanc"
 }

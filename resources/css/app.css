@@ -712,3 +712,16 @@
   --z-cursor: 20; --z-chrome: 30; --z-sidebar: 40; --z-overlay: 50; --z-toast: 60; --z-drag: 70;
 }
 /* ===== End of plan 18d additions ===== */
+
+/*
+ * ===== Plan 18e additions to @theme =====
+ * The paper of a whiteboard template preview. A scene's colours are canvas
+ * data, drawn for a white board: the paper stays white in the dark theme
+ * (spec ruling 36, decision 1-D5). The line is the grey bar that stands for
+ * a text of the scene.
+ */
+@theme {
+  --color-whiteboard-paper: #ffffff;
+  --color-whiteboard-paper-line: #ced4da;
+}
+/* ===== End of plan 18e additions ===== */

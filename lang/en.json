@@ -3728,5 +3728,10 @@
     "Add the tasks in the room, once the game is open.": "Add the tasks in the room, once the game is open.",
     "This deck needs at least :count values before the game is created.": "This deck needs at least :count values before the game is created.",
     "New session, poker form: the whole form, not scrolled": "New session, poker form: the whole form, not scrolled",
-    "New session dialog, open on the poker type": "New session dialog, open on the poker type"
+    "New session dialog, open on the poker type": "New session dialog, open on the poker type",
+    "Everyone in the workspace can start a board from them.": "Everyone in the workspace can start a board from them.",
+    "New session, whiteboard form: the whole form, not scrolled": "New session, whiteboard form: the whole form, not scrolled",
+    "Whiteboard templates manager: the rows, one being edited": "Whiteboard templates manager: the rows, one being edited",
+    "Whiteboard templates manager: no template": "Whiteboard templates manager: no template",
+    "New session dialog, open on the whiteboard type": "New session dialog, open on the whiteboard type"
 }

@@ -97,3 +97,43 @@ Added by rule 13 (M2, M3): Tasks ("Type them", one title per line, 50 at most, a
 | "Auto reveal" and "Anonymous guests allowed" open off (the mockup shows them on): the defaults of today are kept | no row: parity rows 27, and 1.1 for the guests |
 | FR: "Facilitateur en « Regarder seulement »" (the mockup: « Watch only »): the name the room gives that mode in French | no row |
 | The type row of the bench dialog shows one tile (only the poker form is passed there) | bench only |
+
+## Task 1.3 — Whiteboard form and template gallery, templates manager
+
+### Parity (brief 01 §3, rows 36–46)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 36 | Open the whiteboard creation form | "New session", then the type radio "Whiteboard" (1-D2), offered when `canCreateWhiteboard`; the "New whiteboard" trigger of the whiteboards section is gone. The gallery is reloaded (`only: ['whiteboardGallery']`) when the form mounts without it, that is when the type is first chosen | yes |
+| 37 | Name, required, max 120, focused, empty | `#whiteboard-title`, label "Name" | yes |
+| 38 | Pick a template | `WhiteboardTemplateGallery`: two radiogroups named "Template" (built-in, then "Workspace templates"), tiles = preview surface, name, description; arrows move and select; Blank preselected, `?template=` (a key or a workspace template id) wins. A built-in sends `template`, a workspace template sends `workspace_template_id` alone | yes |
+| 39 | Template errors | `template` or `workspace_template_id` under the gallery | yes |
+| 40 | Gallery loading | six skeleton tiles, `aria-busy` | yes |
+| 41 | Create the board | "Create & open", POST `teams.whiteboards.store`; "Cancel" beside it | yes |
+| 42 | Open the templates manager | the "Whiteboard templates" button of the whiteboards section, unchanged (it moves to the "…" menu in 4.1) | yes |
+| 43 | Edit a template | "Edit" in the row (named "Edit :name"), inline form: name (80, required), description (300), "Save" / "Cancel"; a refused request reloads the two lists | yes |
+| 44 | Delete a template | "Delete" in the row (named "Delete :name"), then `ConfirmDialog` (`alertdialog`): "Delete this template?", "Boards already created from it are not changed." (1-D8) | yes |
+| 45 | No template | `EmptyState`: "No whiteboard templates yet.", "Save a board as a template from its menu." | yes |
+| 46 | Edit and Delete only for who may manage | `template.canManage` | yes |
+
+Added by rule 13 (M2): "Anonymous guests allowed" (`guest_access_enabled`, `#new-whiteboard-guests`).
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Schedule…" in the footer | `secondaryAction` of `WhiteboardSessionFormProps`, passed to `SessionFormFooter` | SE-2 |
+| Settings of a whiteboard (none in the product today) | the right column of `WhiteboardSessionFields` holds the "Invitation" block only; a "Settings" block goes above it | — |
+
+### Differences with the mockup
+
+ScreenSessionCreate draws the retro and the poker variants only: the whiteboard form has no mockup and is built from its neighbours (same two columns, same name field, same "Invitation" row, same footer).
+
+| Difference | Row |
+|---|---|
+| No invitation link and "Copy link" | D-08 |
+| No "Schedule…" | D-06 |
+| The right column holds one row ("Anonymous guests allowed"): a whiteboard has no other creation setting | no row: no mockup |
+| The preview paper is white in the dark theme (`--color-whiteboard-paper`), and the grey bar of a scene text is `--color-whiteboard-paper-line` | spec ruling 36, 1-D5 |
+| The templates manager is a plain dialog with rows (no mockup); "Save" and "Edit" labels are not wrapped in a truncating span, because the browser suite binds `button:text-is("Save")` and `button:text-is("Edit")` | no row: browser contract |
+| The type row of the bench dialog shows one tile (only the whiteboard form is passed there) | bench only |

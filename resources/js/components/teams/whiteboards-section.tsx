@@ -14,30 +14,19 @@ import {
 } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
-import type {
-    WhiteboardGalleryItem,
-    WhiteboardSummary,
-    WhiteboardTemplateSummary,
-} from '@/types';
-import { NewWhiteboardDialog } from './new-whiteboard-dialog';
+import type { WhiteboardSummary, WhiteboardTemplateSummary } from '@/types';
 import { WhiteboardTemplatesDialog } from './whiteboard-templates-dialog';
 
 type Props = {
     workspaceSlug: string;
-    teamId: string;
     boards: WhiteboardSummary[];
-    canCreate: boolean;
     templates: WhiteboardTemplateSummary[];
-    gallery?: WhiteboardGalleryItem[];
 };
 
 export function WhiteboardsSection({
     workspaceSlug,
-    teamId,
     boards,
-    canCreate,
     templates,
-    gallery,
 }: Props) {
     const { t } = useTrans();
     const [deleting, setDeleting] = useState<WhiteboardSummary | null>(null);
@@ -74,13 +63,6 @@ export function WhiteboardsSection({
             <Heading variant="small" title={t('Whiteboards')} />
 
             <div className="flex flex-wrap gap-2">
-                {canCreate && (
-                    <NewWhiteboardDialog
-                        workspaceSlug={workspaceSlug}
-                        teamId={teamId}
-                        gallery={gallery}
-                    />
-                )}
                 <WhiteboardTemplatesDialog
                     workspaceSlug={workspaceSlug}
                     templates={templates}

@@ -35,11 +35,12 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
     $page = $this->signIn($fran, $teamPath);
 
     $page->assertSee('No whiteboards yet.')
-        ->click('New whiteboard')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
         ->assertPresent('[role="dialog"] #whiteboard-title')
-        ->assertPresent('[role="dialog"] [role="radio"][aria-checked="true"]')
+        ->assertPresent('[role="dialog"] [aria-label="Template"] [role="radio"][aria-checked="true"]')
         ->fill('#whiteboard-title', 'Sprint planning board')
-        ->click('[role="dialog"] form button:text-is("Create")')
+        ->click('[role="dialog"] button:has-text("Create & open")')
         ->assertPathBeginsWith('/whiteboards/');
 
     $board = Whiteboard::query()->where('title', 'Sprint planning board')->sole();

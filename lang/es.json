@@ -3952,5 +3952,10 @@
     "Add the tasks in the room, once the game is open.": "Añade las tareas en la sala, una vez abierta la partida.",
     "This deck needs at least :count values before the game is created.": "Este mazo necesita al menos :count valores antes de crear la partida.",
     "New session, poker form: the whole form, not scrolled": "Nueva sesión, formulario de póker: el formulario entero, sin desplazamiento",
-    "New session dialog, open on the poker type": "Diálogo Nueva sesión, abierto en el tipo póker"
+    "New session dialog, open on the poker type": "Diálogo Nueva sesión, abierto en el tipo póker",
+    "Everyone in the workspace can start a board from them.": "Todas las personas del espacio pueden crear una pizarra a partir de ellas.",
+    "New session, whiteboard form: the whole form, not scrolled": "Nueva sesión, formulario de pizarra: el formulario entero, sin desplazamiento",
+    "Whiteboard templates manager: the rows, one being edited": "Gestor de plantillas de pizarra: las filas, una en edición",
+    "Whiteboard templates manager: no template": "Gestor de plantillas de pizarra: ninguna plantilla",
+    "New session dialog, open on the whiteboard type": "Diálogo Nueva sesión, abierto en el tipo pizarra"
 }

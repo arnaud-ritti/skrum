@@ -138,19 +138,33 @@ function p17bScene(Whiteboard $board, WhiteboardMember $author): void
     ], 4);
 }
 
+const P17bGallery = '[role="dialog"] [aria-label="Template"]';
+
 function p17bTile(string $name): string
 {
     return "[role=\"dialog\"] [role=\"radio\"]:has(span:text-is(\"{$name}\"))";
 }
 
-function p17bCreateBoard(mixed $page, string $tileName, string $title, string $newLabel = 'New whiteboard', string $createLabel = 'Create'): Whiteboard
+/**
+ * @param  array{new: string, type: string, template: string}  $labels
+ */
+function p17bOpenNewWhiteboard(mixed $page, array $labels = ['new' => 'New session', 'type' => 'Whiteboard', 'template' => 'Template']): mixed
 {
-    $page->click("button:text-is(\"{$newLabel}\")")
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
+    return $page->click("button:has-text(\"{$labels['new']}\")")
+        ->click("[role=\"dialog\"] [role=\"radio\"]:has-text(\"{$labels['type']}\")")
+        ->assertPresent("[role=\"dialog\"] [role=\"radiogroup\"][aria-label=\"{$labels['template']}\"]");
+}
+
+/**
+ * @param  array{new: string, type: string, template: string}  $labels
+ */
+function p17bCreateBoard(mixed $page, string $tileName, string $title, string $createLabel = 'Create & open', array $labels = ['new' => 'New session', 'type' => 'Whiteboard', 'template' => 'Template']): Whiteboard
+{
+    p17bOpenNewWhiteboard($page, $labels)
         ->click(p17bTile($tileName))
         ->assertAriaAttribute(p17bTile($tileName), 'checked', 'true')
         ->fill('#whiteboard-title', $title)
-        ->click("[role=\"dialog\"] form button:text-is(\"{$createLabel}\")")
+        ->click("[role=\"dialog\"] button:has-text(\"{$createLabel}\")")
         ->assertPathBeginsWith('/whiteboards/');
 
     return Whiteboard::query()->where('title', $title)->sole();
@@ -258,21 +272,20 @@ it('[P17b-01a] offers eight built-in templates with Blank first and selected, ea
         ]],
         'created_by_user_id' => $fran->id,
     ]);
-    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [role=\"radiogroup\"]')[0]";
+    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"]')[0]";
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
-    $page->click('button:text-is("New whiteboard")')
+    p17bOpenNewWhiteboard($page)
         ->assertPresent('[role="dialog"] #whiteboard-title')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
         ->assertScript("Array.from({$builtIns}.querySelectorAll('[role=\"radio\"] span.font-medium')).map((name) => name.textContent).join('|')", 'Blank|Brainstorm|Flowchart|User story map|Impact map|SWOT|Lean canvas|2×2 matrix')
         ->assertScript("{$builtIns}.querySelectorAll('[role=\"radio\"] svg').length", 8)
         ->assertScript("Array.from({$builtIns}.querySelectorAll('[role=\"radio\"]')).filter((tile) => tile.querySelector('span.text-muted-foreground')?.textContent.trim().length > 0).length", 8)
         ->assertAriaAttribute(p17bTile('Blank'), 'checked', 'true')
-        ->assertCount('[role="dialog"] [role="radio"][aria-checked="true"]', 1)
+        ->assertCount(P17bGallery.' [role="radio"][aria-checked="true"]', 1)
         ->assertSeeIn('[role="dialog"]', 'Workspace templates')
-        ->assertCount('[role="dialog"] [role="radiogroup"]', 2)
-        ->assertPresent('[role="dialog"] [role="radiogroup"] >> nth=1 >> [role="radio"]:has(span:text-is("Kick-off map"))')
+        ->assertCount(P17bGallery, 2)
+        ->assertPresent(P17bGallery.' >> nth=1 >> [role="radio"]:has(span:text-is("Kick-off map"))')
         ->assertSeeIn(p17bTile('Kick-off map'), 'How we start a project')
         ->assertCount(p17bTile('Kick-off map').' svg rect[stroke="#1e1e1e"]', 1);
 });
@@ -375,8 +388,8 @@ it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact ma
     $team = Team::factory()->create();
     $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
     $locales = [
-        'fr' => ['new' => 'Nouveau tableau blanc', 'create' => 'Créer', 'tiles' => ['Logigramme', "Carte d'impact"], 'word' => 'Légende'],
-        'de' => ['new' => 'Neues Whiteboard', 'create' => 'Erstellen', 'tiles' => ['Flussdiagramm', 'Impact-Map'], 'word' => 'Legende'],
+        'fr' => ['new' => 'Nouvelle session', 'type' => 'Tableau blanc', 'template' => 'Modèle', 'create' => 'Créer et ouvrir', 'tiles' => ['Logigramme', "Carte d'impact"], 'word' => 'Légende'],
+        'de' => ['new' => 'Neue Sitzung', 'type' => 'Whiteboard', 'template' => 'Vorlage', 'create' => 'Erstellen und öffnen', 'tiles' => ['Flussdiagramm', 'Impact-Map'], 'word' => 'Legende'],
     ];
 
     $page = $this->signIn($fran, p17bTeamPath($team));
@@ -389,7 +402,7 @@ it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact ma
         foreach ($labels['tiles'] as $tile) {
             $page->navigate(p17bTeamPath($team));
 
-            $board = p17bCreateBoard($page, $tile, "{$tile} {$locale}", $labels['new'], $labels['create']);
+            $board = p17bCreateBoard($page, $tile, "{$tile} {$locale}", $labels['create'], $labels);
 
             $this->awaitRealtime($page);
 
@@ -408,19 +421,18 @@ it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact ma
 it('[P17b-05] shows the gallery in French to a French-speaking member and creates a SWOT board whose quadrants and notes are in French', function () {
     $team = Team::factory()->create();
     $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator', 'fr');
-    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [role=\"radiogroup\"]')[0]";
+    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Modèle\"]')[0]";
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
-    $page->click('button:text-is("Nouveau tableau blanc")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
+    p17bOpenNewWhiteboard($page, ['new' => 'Nouvelle session', 'type' => 'Tableau blanc', 'template' => 'Modèle'])
         ->assertScript("Array.from({$builtIns}.querySelectorAll('[role=\"radio\"] span.font-medium')).map((name) => name.textContent).join('|')", "Vierge|Brainstorming|Logigramme|Carte des récits utilisateur|Carte d'impact|SWOT|Lean canvas|Matrice 2×2")
         ->assertSeeIn(p17bTile('Vierge'), 'Un canevas vide.')
         ->assertSeeIn(p17bTile('SWOT'), 'Forces, faiblesses, opportunités et menaces.')
         ->click(p17bTile('SWOT'))
         ->assertAriaAttribute(p17bTile('SWOT'), 'checked', 'true')
         ->fill('#whiteboard-title', 'SWOT FR')
-        ->click('[role="dialog"] form button:text-is("Créer")')
+        ->click('[role="dialog"] button:has-text("Créer et ouvrir")')
         ->assertPathBeginsWith('/whiteboards/');
 
     $board = Whiteboard::query()->where('title', 'SWOT FR')->sole();
@@ -445,16 +457,14 @@ it('[P17b-06] keeps the new-whiteboard dialog usable at 375 pixels of width, wit
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
-    $page->resize(375, 812)
-        ->click('button:text-is("New whiteboard")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
-        ->assertCount('[role="dialog"] [role="radio"]', 8)
+    p17bOpenNewWhiteboard($page->resize(375, 812))
+        ->assertCount(P17bGallery.' [role="radio"]', 8)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertScript("document.querySelector('[role=\"dialog\"]').getBoundingClientRect().right <= window.innerWidth", true)
         ->click(p17bTile('Brainstorm'))
         ->assertAriaAttribute(p17bTile('Brainstorm'), 'checked', 'true')
         ->fill('#whiteboard-title', 'Narrow board')
-        ->click('[role="dialog"] form button:text-is("Create")')
+        ->click('[role="dialog"] button:has-text("Create & open")')
         ->assertPathBeginsWith('/whiteboards/');
 
     $board = Whiteboard::query()->where('title', 'Narrow board')->sole();
@@ -479,12 +489,10 @@ it('[P17b-07] draws every thumbnail on a white surface in the dark theme, with t
 
     $page->script("() => { localStorage.setItem('appearance', 'dark'); document.cookie = 'appearance=dark;path=/;max-age=31536000;SameSite=Lax'; return true; }");
 
-    $page->navigate(p17bTeamPath($team))
-        ->assertScript("document.documentElement.classList.contains('dark')", true)
-        ->click('button:text-is("New whiteboard")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
-        ->assertCount('[role="dialog"] [role="radio"]', 9)
-        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
+    p17bOpenNewWhiteboard($page->navigate(p17bTeamPath($team))
+        ->assertScript("document.documentElement.classList.contains('dark')", true))
+        ->assertCount(P17bGallery.' [role="radio"]', 9)
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
         ->assertCount(p17bTile('Lean canvas').' svg rect[fill="none"][stroke="#1e1e1e"]', 9)
         ->assertCount(p17bTile('Flowchart').' svg ellipse', 3)
         ->assertCount(p17bTile('Flowchart').' svg polygon', 2)
@@ -527,8 +535,9 @@ it('[P17b-08] saves a board as a workspace template from the board menu, says so
 
     $page->click('a[aria-label="Back to the team"]')
         ->assertPathIs(p17bTeamPath($team))
-        ->click('button:text-is("New whiteboard")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
+        ->assertPresent(P17bGallery)
         ->assertSeeIn('[role="dialog"]', 'Workspace templates')
         ->assertSeeIn(p17bTile('Kick-off'), 'How we start a project')
         ->assertCount(p17bTile('Kick-off').' svg > *', 4)
@@ -707,8 +716,9 @@ it('[P17b-12] renames a template and edits its description in the templates dial
 
     $page->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
-        ->click('button:text-is("New whiteboard")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
+        ->assertPresent(P17bGallery)
         ->assertSeeIn(p17bTile('Renamed'), 'Edited description')
         ->assertNotPresent(p17bTile('Kick-off'));
 
@@ -762,10 +772,11 @@ it('[P17b-14] lets a workspace admin who created neither template edit one and d
         ->fill("#whiteboard-template-{$template->id}-description", 'Edited by the admin')
         ->click('[role="dialog"] form button:text-is("Save")')
         ->assertSeeIn(p17bTemplateRow('Kick-off'), 'Edited by the admin')
-        ->click(p17bTemplateRow('Second').' button:text-is("Delete")')
-        ->assertSeeIn(p17bTemplateRow('Second'), 'Delete this template?')
-        ->assertSeeIn(p17bTemplateRow('Second'), 'Boards already created from it are not changed.')
-        ->click(p17bTemplateRow('Second').' div.bg-muted button:text-is("Delete")')
+        ->click(p17bTemplateRow('Second').' button[aria-label="Delete Second"]')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Boards already created from it are not changed.')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertNotPresent(p17bTemplateRow('Second'))
         ->assertPresent(p17bTemplateRow('Kick-off'));
 
@@ -789,9 +800,10 @@ it('[P17b-15] still opens a board created from a template, with its elements and
     $page = $this->signIn($fran, p17bTeamPath($team));
 
     $page->click('button:text-is("Whiteboard templates")')
-        ->click(p17bTemplateRow('Kick-off').' button:text-is("Delete")')
-        ->assertSeeIn(p17bTemplateRow('Kick-off'), 'Delete this template?')
-        ->click(p17bTemplateRow('Kick-off').' div.bg-muted button:text-is("Delete")')
+        ->click(p17bTemplateRow('Kick-off').' button[aria-label="Delete Kick-off"]')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertSeeIn('[role="dialog"]', 'No whiteboard templates yet.')
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
@@ -816,9 +828,10 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->and($page->script(p17bFileDownload($board)))->toBe('200 image/png '.strlen(base64_decode(WhiteboardPng)));
 
     $page->click('a[aria-label="Back to the team"]')
-        ->click('button:text-is("New whiteboard")')
-        ->assertPresent('[role="dialog"] [role="radiogroup"]')
-        ->assertCount('[role="dialog"] [role="radiogroup"]', 1)
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
+        ->assertPresent(P17bGallery)
+        ->assertCount(P17bGallery, 1)
         ->assertDontSee('Workspace templates');
 });
 

@@ -9,12 +9,18 @@ use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Whiteboard;
+use App\Models\WhiteboardTemplate;
 use App\Models\WorkspaceTemplate;
 use App\Models\WorkspaceTemplateColumn;
 
 const P18eTemplates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"]';
 
 const P18eDecks = '[role="dialog"] [role="radiogroup"][aria-label="Deck"]';
+
+const P18eWhiteboardType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="whiteboard"]';
+
+const P18eGallery = '[role="dialog"] [role="radiogroup"][aria-label="Template"]';
 
 const P18ePokerType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="poker"]';
 
@@ -420,4 +426,86 @@ it('[P18e-01-15] preselects the default deck of the team', function () {
 
     expect($game->cards)->toBe(['1', '2', '3', '5', '8', '?'])
         ->and($game->deck_name)->toBe('Team scale');
+});
+
+it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a board from a workspace template', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $template = WhiteboardTemplate::factory()->create([
+        'workspace_id' => $team->workspace_id,
+        'name' => 'Kick-off map',
+        'scene' => ['elements' => [sceneElement(['id' => 'p18eOnly', 'x' => 300, 'y' => 200])], 'files' => []],
+        'created_by_user_id' => $alice->id,
+    ]);
+    $checked = P18eGallery.' [role="radio"][aria-checked="true"]';
+    $workspaceTile = P18eGallery.' [role="radio"]:has(span:text-is("Kick-off map"))';
+    $keepKeyDownForAMoment = fn (mixed $page, string $key): mixed => $page->script("() => { const radio = document.querySelector('".addslashes($checked)."'); radio.focus(); radio.dispatchEvent(new KeyboardEvent('keydown', { key: '{$key}', bubbles: true, cancelable: true })); return new Promise((resolve) => setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: '{$key}', bubbles: true })); resolve(true); }, 100)); }");
+    $storeBody = "(() => { const send = XMLHttpRequest.prototype.send; window.p18eBodies = []; XMLHttpRequest.prototype.send = function (body) { window.p18eBodies.push(typeof body === 'string' ? body : ''); return send.call(this, body); }; return true; })()";
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->click(P18eWhiteboardType)
+        ->assertVisible('#whiteboard-title')
+        ->assertCount(P18eGallery, 2)
+        ->assertCount($checked, 1)
+        ->assertSeeIn($checked, 'Blank');
+
+    $keepKeyDownForAMoment($page, 'ArrowRight');
+
+    $page->assertCount($checked, 1)
+        ->assertSeeIn($checked, 'Brainstorm');
+
+    $keepKeyDownForAMoment($page, 'ArrowLeft');
+
+    $page->assertSeeIn($checked, 'Blank')
+        ->click($workspaceTile)
+        ->assertCount($checked, 1)
+        ->assertSeeIn($checked, 'Kick-off map')
+        ->fill('#whiteboard-title', 'From the workspace')
+        ->assertScript($storeBody, true)
+        ->click('Create & open')
+        ->assertPathBeginsWith('/whiteboards/');
+
+    $board = Whiteboard::query()->where('title', 'From the workspace')->sole();
+
+    expect($board->elements()->count())->toBe(1)
+        ->and($board->guest_access_enabled)->toBeFalse();
+
+    $body = json_decode((string) $page->script("window.p18eBodies.find((body) => body.includes('From the workspace'))"), true);
+
+    expect($body)->toHaveKey('workspace_template_id', $template->id)
+        ->and($body)->not->toHaveKey('template');
+});
+
+it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in the confirmation dialog', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $template = WhiteboardTemplate::factory()->create([
+        'workspace_id' => $team->workspace_id,
+        'name' => 'Kick-off map',
+        'created_by_user_id' => $alice->id,
+    ]);
+    $row = '[role="dialog"] li:has(p:text-is("Kick-off map"))';
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('button:text-is("Whiteboard templates")')
+        ->assertPresent($row)
+        ->click("{$row} button[aria-label=\"Delete Kick-off map\"]")
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Boards already created from it are not changed.')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertPresent($row);
+
+    expect(WhiteboardTemplate::query()->whereKey($template->id)->exists())->toBeTrue();
+
+    $page->click("{$row} button[aria-label=\"Delete Kick-off map\"]")
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertNotPresent($row)
+        ->assertSeeIn('[role="dialog"]', 'No whiteboard templates yet.');
+
+    expect(WhiteboardTemplate::query()->count())->toBe(0);
 });

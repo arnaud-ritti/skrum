@@ -15,6 +15,7 @@ import { NewSessionDialog } from '@/components/teams/session-create/new-session-
 import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
+import { whiteboardSessionForm } from '@/components/teams/session-create/whiteboard-session-fields';
 import { WhiteboardsSection } from '@/components/teams/whiteboards-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -155,6 +156,14 @@ export default function ShowTeam({
                                   })
                                 : undefined
                         }
+                        whiteboard={
+                            canCreateWhiteboard
+                                ? whiteboardSessionForm({
+                                      workspaceSlug: workspace.slug,
+                                      gallery: whiteboardGallery,
+                                  })
+                                : undefined
+                        }
                     />
                 </div>
 
@@ -248,11 +257,8 @@ export default function ShowTeam({
                 />
                 <WhiteboardsSection
                     workspaceSlug={workspace.slug}
-                    teamId={team.id}
                     boards={whiteboards}
-                    canCreate={canCreateWhiteboard}
                     templates={whiteboardTemplates}
-                    gallery={whiteboardGallery}
                 />
                 <HealthStatementsSection
                     statements={healthStatements}

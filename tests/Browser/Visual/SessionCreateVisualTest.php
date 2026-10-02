@@ -23,3 +23,17 @@ it('[P18e-01-08b] renders the poker form of the new session dialog without overf
             ->assertCount('[role="dialog"] button[type="submit"]', 1),
     );
 });
+
+it('[P18e-01-08c] renders the whiteboard form of the new session dialog and the templates manager without overflow', function () {
+    $this->captureVisuals(
+        'session-create-whiteboard',
+        '/dev/design-system/session-create-whiteboard',
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertPresent('[data-bench-section="session-create-whiteboard"]')
+            ->assertCount('[data-slot="session-create-whole"] [role="radiogroup"] [role="radio"]', 10)
+            ->assertPresent('[data-slot="whiteboard-templates-panel"][data-state="rows"] form')
+            ->assertPresent('[data-slot="whiteboard-templates-panel"][data-state="empty"] [data-slot="empty-state"]')
+            ->assertPresent('[role="dialog"] [data-slot="whiteboard-template-gallery"]')
+            ->assertCount('[role="dialog"] button[type="submit"]', 1),
+    );
+});
