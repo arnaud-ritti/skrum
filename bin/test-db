@@ -15,6 +15,10 @@
 # The user must be allowed to create them: Sail grants every database named `testing%`.
 # From a git worktree, whose folder is not the Compose project: TEST_DB_CONTAINER names the running
 # application container and TEST_DB_WORKDIR the worktree's path inside it.
+#
+# Before the tests, the schema is migrated once on <TEST_DB_DATABASE>. If a migration fails, the
+# script says which and exits 3 without running a test: every database test would fail on it and
+# re-run the migrations, which takes hours on a server engine. TEST_DB_SKIP_PREFLIGHT=1 skips it.
 
 set -u
 
@@ -54,17 +58,18 @@ server() {
         "DB_DATABASE=$database"
         "DB_USERNAME=${TEST_DB_USERNAME:-$sail_user}"
         "DB_PASSWORD=$password"
+        "DB_URL="
     )
 }
 
 case "$driver" in
     sqlite)
-        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=:memory:")
+        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=:memory:" "DB_URL=")
         ;;
     sqlite-file)
         rm -f "database/$database.sqlite"*
         : > "database/$database.sqlite"
-        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=database/$database.sqlite")
+        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=database/$database.sqlite" "DB_URL=")
         ;;
     pgsql)
         server pgsql sail 5432 5432
@@ -106,6 +111,24 @@ mkdir -p storage/logs/test-db
 log="storage/logs/test-db/$driver$([ "$concurrency" = 1 ] && echo -concurrency).log"
 
 run artisan config:clear --ansi >/dev/null
+
+case "$database" in
+    testing*) ;;
+    *)
+        echo "TEST_DB_DATABASE must start with 'testing': the preflight wipes it." >&2
+        exit 2
+        ;;
+esac
+
+if [ "${TEST_DB_SKIP_PREFLIGHT:-0}" != 1 ]; then
+    preflight="storage/logs/test-db/$driver-migrate.log"
+
+    if ! run artisan migrate:fresh --force --no-interaction > "$preflight" 2>&1; then
+        stopped=$(sed -E $'s/\x1b\\[[0-9;]*m//g' "$preflight" | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+' | tail -1)
+        echo "test-db $driver: FAIL, the migrations stop at ${stopped:-an unknown migration}. No test was run. Log $preflight"
+        exit 3
+    fi
+fi
 
 if [ "$concurrency" = 1 ]; then
     run artisan test --compact tests/Concurrency "$@" 2>&1 | tee "$log"
