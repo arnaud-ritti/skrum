@@ -37,6 +37,10 @@ class SearchBoards extends SkrumTool
 
     private const int MatchesPerKind = 5;
 
+    /**
+     * Exact matches kept per kind, newest first. A term holding a wildcard character gets near
+     * misses from SQL: rows are read by this many until that number of exact matches is reached.
+     */
     private const int MaxRowsPerKind = 200;
 
     protected string $name = 'retro.boards.search';
@@ -120,9 +124,12 @@ class SearchBoards extends SkrumTool
             ->whereIn('id', $retroIds)
             ->whereContains('title', $term)
             ->latest()
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'title'])
+            ->orderByDesc('id')
+            ->select(['id', 'title'])
+            ->lazy(self::MaxRowsPerKind)
             ->filter(fn (Retro $retro): bool => SearchText::contains($retro->title, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'title', 'id' => null, 'snippet' => LikePattern::snippet($retro->title, $term)]);
     }
 
@@ -146,9 +153,12 @@ class SearchBoards extends SkrumTool
             ->where('summary_status', SummaryStatus::Ready)
             ->whereContains('summary', $term)
             ->latest()
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'summary'])
+            ->orderByDesc('id')
+            ->select(['id', 'summary'])
+            ->lazy(self::MaxRowsPerKind)
             ->filter(fn (Retro $retro): bool => SearchText::contains($retro->summary, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
     }
 
@@ -160,11 +170,14 @@ class SearchBoards extends SkrumTool
     {
         return ActionItem::query()
             ->whereIn('retro_id', $retroIds)
-            ->whereContains('content', $term)->latest()
+            ->whereContains('content', $term)
+            ->latest()
             ->orderByDesc('id')
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'retro_id', 'content', 'created_at'])
+            ->select(['id', 'retro_id', 'content', 'created_at'])
+            ->lazy(self::MaxRowsPerKind)
             ->filter(fn (ActionItem $item): bool => SearchText::contains($item->content, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->reverse()
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $items) => $items->take(self::MatchesPerKind))
@@ -188,11 +201,14 @@ class SearchBoards extends SkrumTool
             ->whereContains('content', $term)
             ->where(fn (Builder $query) => $query
                 ->whereNotIn('retro_id', $hidingRetroIds)
-                ->orWhereIn('participant_id', $ownParticipantIds))->latest()
+                ->orWhereIn('participant_id', $ownParticipantIds))
+            ->latest()
             ->orderByDesc('id')
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'retro_id', 'content', 'position'])
+            ->select(['id', 'retro_id', 'content', 'position'])
+            ->lazy(self::MaxRowsPerKind)
             ->filter(fn (Card $card): bool => SearchText::contains($card->content, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->sortBy('position')
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $cards) => $cards->take(self::MatchesPerKind))

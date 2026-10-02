@@ -123,6 +123,26 @@ it('escapes wildcards', function () {
         ->and(collect(mcpSearch($user, ['query' => 'h\\t']))->pluck('board.title')->all())->toBe(['path\\to\\file']);
 });
 
+it('finds an accented text by a term of another case', function () {
+    [$team, $user] = mcpSearchTeam();
+    $retro = Retro::factory()->for($team)->create(['title' => 'Bilan de l\'été']);
+    Retro::factory()->for($team)->create(['title' => 'Bilan de l\'ete']);
+
+    expect(collect(mcpSearch($user, ['query' => 'ÉTÉ']))->pluck('board.id')->all())->toBe([$retro->id]);
+});
+
+it('finds a literal match older than more near misses than it reads at once', function () {
+    [$team, $user] = mcpSearchTeam();
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 9']);
+    $literal = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'done at 100% today', 'created_at' => now()->subDay()]);
+    Card::factory()->count(201)->create(['retro_id' => $retro->id, 'content' => 'done at 1000 today', 'created_at' => now()]);
+
+    $results = mcpSearch($user, ['query' => '100%']);
+
+    expect($results)->toHaveCount(1)
+        ->and(collect($results[0]['matches'])->pluck('id')->all())->toBe([$literal->id]);
+});
+
 it('searches only visible boards and one team when asked', function () {
     [$team, $user] = mcpSearchTeam();
     $other = Team::factory()->create(['workspace_id' => $team->workspace_id]);

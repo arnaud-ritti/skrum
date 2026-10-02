@@ -13,6 +13,12 @@ class AdminCandidatesController extends Controller
 {
     private const int MaxResults = 10;
 
+    private const int RowsPerRead = 100;
+
+    /**
+     * A term holding a wildcard character gets near misses from SQL: rows are read until the list
+     * is full of exact matches, so a near miss never takes the place of a match.
+     */
     public function index(AdminCandidatesRequest $request): JsonResponse
     {
         $term = $request->string('query')->toString();
@@ -24,9 +30,9 @@ class AdminCandidatesController extends Controller
                 ->orWhereLike('email', '%'.$this->escapeLike($term).'%'))
             ->orderBy('name')
             ->orderBy('id')
-            ->limit(self::MaxResults)
-            ->get()
+            ->lazy(self::RowsPerRead)
             ->filter(fn (User $user): bool => SearchText::contains($user->name, $term) || SearchText::contains($user->email, $term))
+            ->take(self::MaxResults)
             ->values()
             ->map(fn (User $user): array => [
                 'id' => $user->id,
