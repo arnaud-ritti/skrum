@@ -3749,5 +3749,6 @@
     "Admin added.": "Administrateur ajouté.",
     "Admin removed.": "Administrateur retiré.",
     "See DiceBear": "Voir DiceBear",
-    "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Saisissez la couleur en hexadécimal à 3 ou 6 chiffres, par exemple #2b63b0."
+    "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Saisissez la couleur en hexadécimal à 3 ou 6 chiffres, par exemple #2b63b0.",
+    "Name another instance admin before deleting your account.": "Nommez un autre administrateur de l’instance avant de supprimer votre compte."
 }

@@ -3522,5 +3522,6 @@
     "Admin added.": "Admin added.",
     "Admin removed.": "Admin removed.",
     "See DiceBear": "See DiceBear",
-    "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0."
+    "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.",
+    "Name another instance admin before deleting your account.": "Name another instance admin before deleting your account."
 }
