@@ -32,6 +32,49 @@ class ActionItemQuery
     public function filter(Builder $query, User $user, ActionItemFilters $filters): Builder
     {
         $this->filterByStatus($query, $filters->status);
+
+        return $this->filterByScope($query, $user, $filters);
+    }
+
+    /**
+     * Counts under the team and assignee filters, whatever the status filter.
+     *
+     * @return array{
+     *     open: int,
+     *     overdue: int,
+     *     completed: int,
+     *     mine: int,
+     *     rituals: int
+     * }
+     */
+    public function counts(User $user, Workspace $workspace, ActionItemFilters $filters): array
+    {
+        $today = ActionItem::today()->toDateString();
+
+        $totals = $this->filterByScope($this->visibleTo($user, $workspace), $user, $filters)
+            ->toBase()
+            ->selectRaw('count(*) filter (where completed_at is null) as open')
+            ->selectRaw('count(*) filter (where completed_at is null and due_on is not null and due_on < ?) as overdue', [$today])
+            ->selectRaw('count(*) filter (where completed_at is not null) as completed')
+            ->selectRaw('count(*) filter (where completed_at is null and assignee_user_id = ?) as mine', [$user->id])
+            ->selectRaw('count(distinct retro_id) as rituals')
+            ->first();
+
+        return [
+            'open' => (int) $totals->open,
+            'overdue' => (int) $totals->overdue,
+            'completed' => (int) $totals->completed,
+            'mine' => (int) $totals->mine,
+            'rituals' => (int) $totals->rituals,
+        ];
+    }
+
+    /**
+     * @param  Builder<ActionItem>  $query
+     * @return Builder<ActionItem>
+     */
+    private function filterByScope(Builder $query, User $user, ActionItemFilters $filters): Builder
+    {
         $this->filterByAssignee($query, $user, $filters->assignee);
 
         if ($filters->teamId !== null) {

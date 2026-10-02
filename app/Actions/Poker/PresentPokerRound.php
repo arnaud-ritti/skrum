@@ -26,7 +26,11 @@ use App\Models\PokerVote;
  *         distribution: array<int, array{value: string, count: int}>,
  *         mode: array<int, string>,
  *         consensus: bool,
- *         nearestCard: ?string
+ *         nearestCard: ?string,
+ *         median: ?float,
+ *         spread: ?array{min: float, max: float},
+ *         agreement: ?float,
+ *         outliers: array{low: list<string>, high: list<string>}
  *     }
  * }
  */

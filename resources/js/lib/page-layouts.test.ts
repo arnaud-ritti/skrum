@@ -8,7 +8,6 @@ const pageFiles = Object.keys(import.meta.glob('../pages/**/*.tsx')).map(
 describe('page layouts', () => {
     it('lets the rewritten pages render their own layout', () => {
         for (const name of [
-            'welcome',
             'about',
             'admin/branding',
             'admin/admins',

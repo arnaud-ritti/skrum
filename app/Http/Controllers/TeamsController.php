@@ -8,8 +8,11 @@ use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\TopTeamTemplates;
+use App\Actions\Retros\PresentTeamRetro;
+use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
+use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
@@ -37,6 +40,8 @@ class TeamsController extends Controller
         private TeamHealthStatements $teamHealthStatements,
         private PresentHealthStatement $presentHealthStatement,
         private PresentPokerGameSummary $presentPokerGameSummary,
+        private PresentTeamRetro $presentTeamRetro,
+        private PokerPresenceRoster $pokerPresenceRoster,
         private PresentWhiteboardSummary $presentWhiteboardSummary,
     ) {}
 
@@ -63,6 +68,7 @@ class TeamsController extends Controller
         BuildWhiteboardGallery $buildWhiteboardGallery,
         TopTeamTemplates $topTeamTemplates,
         GameRulesRegistry $gameRulesRegistry,
+        BuildTeamMoodTrend $buildTeamMoodTrend,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -73,20 +79,19 @@ class TeamsController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'members' => $team->members()->orderBy('name')->get()
-                ->map(fn (User $member) => $member->only(['id', 'name', 'email'])),
+                ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()]),
             'availableMembers' => $canManage
                 ? $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('name')->get()
-                    ->map(fn (User $member) => $member->only(['id', 'name', 'email']))
+                    ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()])
                 : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
-            'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro): array => [
-                'id' => $retro->id,
-                'title' => $retro->title,
-                'phase' => $retro->phase->value,
-                'phaseLabel' => $retro->phase->label(),
-                'createdAt' => $retro->created_at?->toIso8601String(),
-            ]),
+            'retros' => $team->retros()
+                ->with(['workspaceTemplate', 'facilitator.user'])
+                ->withAvg('rotiVotes', 'score')
+                ->latest()
+                ->get()
+                ->map(fn (Retro $retro): array => $this->presentTeamRetro->handle($retro)),
             'templateCategories' => TemplateCategory::options(),
             'topTemplates' => $topTeamTemplates->handle($team),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
@@ -110,6 +115,7 @@ class TeamsController extends Controller
                 ->latest('updated_at')
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
+            'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'defaultPokerDeck' => [
                 'deck' => $team->default_poker_deck,
@@ -133,8 +139,29 @@ class TeamsController extends Controller
                     'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
                 ]),
             'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
+            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend'),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
+    }
+
+    /**
+     * @return ?array<string, ?int>
+     */
+    private function pokerPresence(Team $team): ?array
+    {
+        $presence = [];
+
+        foreach ($team->pokerGames()->whereNull('ended_at')->get() as $game) {
+            $playerIds = $this->pokerPresenceRoster->playerIds($game);
+
+            if ($playerIds === null) {
+                return null;
+            }
+
+            $presence[$game->id] = count($playerIds);
+        }
+
+        return $presence;
     }
 
     /**

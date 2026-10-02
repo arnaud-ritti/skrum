@@ -9,8 +9,23 @@ export type WorkspaceSummary = {
     slug: string;
 };
 
+export type SwitcherWorkspace = WorkspaceSummary & {
+    teamsCount: number;
+    role: WorkspaceRole;
+};
+
 export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
+};
+
+export type WorkspaceTeamMember = {
+    name: string;
+    avatarUrl: string;
+};
+
+export type WorkspaceTeamTile = TeamSummary & {
+    membersCount: number;
+    members: WorkspaceTeamMember[];
 };
 
 export type TeamSummary = {
@@ -26,6 +41,10 @@ export type MemberSummary = {
     id: string;
     name: string;
     email: string;
+};
+
+export type TeamMember = MemberSummary & {
+    avatarUrl: string;
 };
 
 export type WorkspaceMember = MemberSummary & {
@@ -45,6 +64,9 @@ export type RetroSummary = {
     phase: string;
     phaseLabel: string;
     createdAt: string;
+    templateName: string;
+    facilitator: { name: string; avatarUrl: string } | null;
+    rotiAverage: number | null;
 };
 
 export type TemplateCategory =
@@ -107,4 +129,15 @@ export type TeamHealthStatement = {
     text: string;
     isBuiltin: boolean;
     isArchived: boolean;
+};
+
+export type TeamMoodPoint = {
+    retroId: string;
+    title: string;
+    completedAt: string;
+    url: string;
+    mood: number | null;
+    moodVoters: number;
+    roti: number | null;
+    rotiVoters: number;
 };

@@ -80,6 +80,10 @@ it('has no result numbers when every vote is special', function () {
         'mode' => [],
         'consensus' => false,
         'nearestCard' => null,
+        'median' => null,
+        'spread' => null,
+        'agreement' => null,
+        'outliers' => ['low' => [], 'high' => []],
     ]);
 });
 

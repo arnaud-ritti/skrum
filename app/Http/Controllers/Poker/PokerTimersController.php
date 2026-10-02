@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class PokerTimersController extends Controller
 {
+    public const MaxSeconds = 3600;
+
     public function update(Request $request, PokerGame $game, PokerRound $round): JsonResponse
     {
         $player = PokerPlayer::current($request);
@@ -23,7 +25,7 @@ class PokerTimersController extends Controller
         PokerGuard::facilitator($game, $player);
 
         $validated = $request->validate([
-            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:3600'],
+            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:'.self::MaxSeconds],
         ]);
 
         // Whole seconds: the column keeps no fraction, and the job compares

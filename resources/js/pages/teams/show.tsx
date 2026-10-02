@@ -28,11 +28,12 @@ import type {
     CategoryOption,
     GameOption,
     LlmAvailability,
-    MemberSummary,
+    TeamMember,
     PokerDeckOption,
     PokerGameSummary,
     RetroSummary,
     TeamHealthStatement,
+    TeamMoodPoint,
     TeamSummary,
     WhiteboardGalleryItem,
     WhiteboardSummary,
@@ -44,8 +45,8 @@ import type {
 type Props = {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    members: MemberSummary[];
-    availableMembers: MemberSummary[];
+    members: TeamMember[];
+    availableMembers: TeamMember[];
     canManage: boolean;
     openActionItemCount: number;
     retros: RetroSummary[];
@@ -70,6 +71,8 @@ type Props = {
     canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
+    moodTrend?: TeamMoodPoint[];
+    pokerPresence?: Record<string, number> | null;
 };
 
 export default function ShowTeam({

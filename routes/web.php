@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AboutPagesController;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BrandAssetsController;
@@ -87,6 +86,7 @@ use App\Http\Controllers\Poker\PokerStatusesController;
 use App\Http\Controllers\Poker\PokerTaskEstimatesController;
 use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
+use App\Http\Controllers\Poker\PokerTimerExtensionsController;
 use App\Http\Controllers\Poker\PokerTimersController;
 use App\Http\Controllers\Poker\PokerVotesController;
 use App\Http\Controllers\PokerDeckDuplicatesController;
@@ -168,12 +168,12 @@ use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('welcome', [
-    'canRegister' => resolve(SignupGate::class)->canShowRegistration(),
-]))->name('home');
+Route::get('/', fn (Request $request) => $request->user() === null
+    ? to_route('login')
+    : to_route('dashboard'))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
 
@@ -496,6 +496,7 @@ Route::prefix('poker/{game}')
         Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
         Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
         Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update')->whereUuid('round');
+        Route::post('rounds/{round}/timer/extension', [PokerTimerExtensionsController::class, 'store'])->name('poker.rounds.timer.extension.store')->whereUuid('round');
 
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');

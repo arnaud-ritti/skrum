@@ -4,7 +4,6 @@
  * list once every page is on it.
  */
 export const ownLayoutPages: readonly string[] = [
-    'welcome',
     'about',
     'retros/show',
     'poker/show',

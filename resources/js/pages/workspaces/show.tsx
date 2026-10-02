@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
-import type { TeamSummary, WorkspaceSummary } from '@/types';
+import type { TeamSummary, WorkspaceSummary, WorkspaceTeamTile } from '@/types';
 
 type Props = {
     workspace: WorkspaceSummary;
-    teams: TeamSummary[];
+    teams: (TeamSummary | WorkspaceTeamTile)[];
+    membersCount?: number;
+    adminsCount?: number;
     canManage: boolean;
 };
 
