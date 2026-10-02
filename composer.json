@@ -9,7 +9,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "dicebear/core": "^10.7",
         "dicebear/styles": "^10.6",
         "inertiajs/inertia-laravel": "^3.0",
