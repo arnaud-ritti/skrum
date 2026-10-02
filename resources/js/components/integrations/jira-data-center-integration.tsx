@@ -9,8 +9,11 @@ import type {
 } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { JiraTokenDialog } from './jira-token-dialog';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
@@ -39,9 +42,8 @@ export function JiraDataCenterIntegration({
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={ServerCog}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, ServerCog, t)}
                 actions={
                     <>
                         {allowsOAuth && (
@@ -82,7 +84,7 @@ export function JiraDataCenterIntegration({
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
                 </p>
-            </IntegrationCard>
+            </ProviderCard>
         );
     }
 
@@ -117,9 +119,8 @@ function ConnectedJiraDataCenter({
         : '';
 
     return (
-        <IntegrationCard
-            icon={ServerCog}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, ServerCog, t)}
             actions={
                 <>
                     {usesToken && allowsToken && (
@@ -202,7 +203,7 @@ function ConnectedJiraDataCenter({
                     </div>
                 </div>
             )}
-            <IntegrationDetails
+            <ProviderDetails
                 connection={connection}
                 rows={[
                     {
@@ -247,6 +248,6 @@ function ConnectedJiraDataCenter({
                 </>
             )}
             {active && statusSection}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

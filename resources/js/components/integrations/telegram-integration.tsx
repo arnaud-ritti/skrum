@@ -1,10 +1,11 @@
 import { usePoll } from '@inertiajs/react';
-import { Copy, ExternalLink, Send } from 'lucide-react';
+import { Check, Copy, ExternalLink, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import TelegramConnectCodesController from '@/actions/App/Http/Controllers/Integrations/TelegramConnectCodesController';
+import { LoadingButton } from '@/components/skrum/loading-button';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { formatSeconds, useCountdown } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
@@ -18,8 +19,11 @@ import type {
 } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -105,21 +109,37 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
     };
 
     const connectButton = (
-        <Button
+        <LoadingButton
+            type="button"
             size="sm"
             variant={connection === null ? 'default' : 'outline'}
-            disabled={busy || telegram?.botUsername === null}
+            className="max-w-full"
+            loading={busy}
+            disabled={telegram?.botUsername === null}
             onClick={() => void createCode()}
         >
-            {busy && <Spinner />}
-            {connection === null ? t('Connect') : t('Connect another chat')}
-        </Button>
+            <span className="truncate">
+                {connection === null ? t('Connect') : t('Connect another chat')}
+            </span>
+        </LoadingButton>
     );
 
     return (
-        <IntegrationCard
-            icon={Send}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, Send, t)}
+            details={
+                connection !== null && (
+                    <ProviderDetails
+                        connection={connection}
+                        rows={[
+                            {
+                                label: t('Chat'),
+                                value: connection.settings.chatTitle,
+                            },
+                        ]}
+                    />
+                )
+            }
             actions={
                 connection === null ? (
                     connectButton
@@ -148,70 +168,84 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
             }
         >
             {telegram?.conflict && (
-                <p className="text-sm text-destructive">
-                    {t(
+                <Alert
+                    variant="warning"
+                    title={t(
                         'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.',
                     )}
-                </p>
+                />
             )}
             {telegram?.botUsername === null && (
-                <p className="text-sm text-destructive">
-                    {t(
+                <Alert
+                    variant="warning"
+                    title={t(
                         'Telegram did not answer. Check the bot token of this instance.',
                     )}
-                </p>
+                />
             )}
-            {connection === null ? (
+            {connection === null && (
                 <p className="text-sm text-muted-foreground">
                     {t(
                         'Post board links and results to a Telegram group, channel or private chat.',
                     )}
                 </p>
-            ) : (
-                <IntegrationDetails
-                    connection={connection}
-                    rows={[
-                        {
-                            label: t('Chat'),
-                            value: connection.settings.chatTitle,
-                        },
-                    ]}
-                />
             )}
             {pending !== null && !connectedSinceCode && (
-                <div className="space-y-2 rounded-md border p-3 text-sm">
+                <div
+                    data-slot="telegram-pending-code"
+                    className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/50 p-4 text-sm"
+                >
                     <p>
                         {t(
                             'Add the bot to your group or channel (as an administrator for channels) or open a private chat with it, then send this command:',
                         )}
                     </p>
-                    <div className="flex items-center gap-2">
-                        <code className="min-w-0 flex-1 rounded bg-muted px-2 py-1 font-mono break-all">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <code className="min-w-0 flex-1 basis-64 rounded-md border bg-card px-2.5 py-1.5 font-mono break-all">
                             {pending.code.command}
                         </code>
                         <Button
+                            type="button"
                             size="sm"
                             variant="outline"
                             onClick={() => void copy(pending.code.command)}
                         >
-                            <Copy className="size-4" aria-hidden />
-                            {copied === pending.code.command
-                                ? t('Copied')
-                                : t('Copy')}
+                            {copied === pending.code.command ? (
+                                <Check aria-hidden="true" />
+                            ) : (
+                                <Copy aria-hidden="true" />
+                            )}
+                            <span className="truncate">
+                                {copied === pending.code.command
+                                    ? t('Copied')
+                                    : t('Copy')}
+                            </span>
                         </Button>
                     </div>
                     <a
                         href={`https://t.me/${pending.code.botUsername}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 underline"
+                        className="inline-flex max-w-full items-center gap-1 self-start rounded-xs font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
-                        {t('Open @:bot in Telegram', {
-                            bot: pending.code.botUsername,
-                        })}
-                        <ExternalLink className="size-3" aria-hidden />
+                        <span className="min-w-0 break-words">
+                            {t('Open @:bot in Telegram', {
+                                bot: pending.code.botUsername,
+                            })}
+                        </span>
+                        <ExternalLink
+                            className="size-3 shrink-0"
+                            aria-hidden="true"
+                        />
                     </a>
-                    <p className="text-muted-foreground">
+                    <p
+                        data-slot="telegram-pending-state"
+                        className={
+                            expired
+                                ? 'font-medium text-foreground'
+                                : 'text-muted-foreground'
+                        }
+                    >
                         {expired
                             ? t('This code has expired. Create a new one.')
                             : t('Waiting for the command… (:time left)', {
@@ -220,6 +254,6 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
                     </p>
                 </div>
             )}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

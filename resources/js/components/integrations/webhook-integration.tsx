@@ -29,8 +29,11 @@ import type {
 } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { WebhookDeliveriesPanel } from './webhook-deliveries-panel';
 import { WebhookEventsPanel } from './webhook-events-panel';
 import {
@@ -133,9 +136,8 @@ export function WebhookIntegration({ card, scope, events }: Props) {
     };
 
     return (
-        <IntegrationCard
-            icon={Webhook}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, Webhook, t)}
             actions={
                 connection === null ? (
                     <Button size="sm" onClick={openDialog}>
@@ -188,7 +190,7 @@ export function WebhookIntegration({ card, scope, events }: Props) {
                 </p>
             ) : (
                 <>
-                    <IntegrationDetails
+                    <ProviderDetails
                         connection={connection}
                         rows={[
                             {
@@ -291,7 +293,7 @@ export function WebhookIntegration({ card, scope, events }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
-        </IntegrationCard>
+        </ProviderCard>
     );
 }
 

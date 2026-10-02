@@ -5,8 +5,11 @@ import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { GitHubPriorityLabels } from './github-priority-labels';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { PeoplePanel } from './people-panel';
 
 type Props = {
@@ -26,9 +29,8 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={GitBranch}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, GitBranch, t)}
                 actions={
                     <ConnectLink
                         scope={scope}
@@ -42,7 +44,7 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                         'Import issues into planning poker by milestone or search, write estimates into issue descriptions and export action items.',
                     )}
                 </p>
-            </IntegrationCard>
+            </ProviderCard>
         );
     }
 
@@ -55,9 +57,8 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
     const active = connection.status === 'active';
 
     return (
-        <IntegrationCard
-            icon={GitBranch}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, GitBranch, t)}
             actions={
                 <>
                     <ConnectLink
@@ -86,7 +87,7 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                 </>
             }
         >
-            <IntegrationDetails
+            <ProviderDetails
                 connection={connection}
                 rows={[
                     {
@@ -141,6 +142,6 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                 </>
             )}
             {active && statusSection}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

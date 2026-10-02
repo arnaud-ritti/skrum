@@ -197,3 +197,48 @@ None: the task has no "Places left" line.
 | An empty state in the list card | parity row 49 |
 | At 390 a token card names its values (Team, Created, Expires, Last used) and has a "Revoke" button with a border | README of the mockup ("table des jetons en cartes") |
 | One page per section, the "Settings" title and the sub-navigation of 10.1 | Task 10.1 |
+
+## Task 10.5 — team settings shell, provider card, chat channels
+
+Page `teams/integrations` renders `TeamSettingsShell` itself and is in `ownLayoutPages`. In `resources/js/components/integrations/`: `TeamSettingsShell` (`team-settings-shell.tsx`: `AppLayout active="settings"`, the head of the mockup with the mark and the name of the team, and the sub-navigation "Team settings"), `ProviderCard`, `ProviderDetails` and `providerCardProps` (`provider-card.tsx`). Rewritten in place: `slack-integration`, `telegram-integration`, `url-channel-integration`, `integration-actions`, `disconnect-integration-dialog`. `integration-card`, `integration-status-badge` and `integration-details` are deleted; the five cards of 10.6 and 10.7 (`webhook`, `jira`, `jira-data-center`, `linear`, `github`) now sit in `ProviderCard` with their old content, which those tasks rewrite. Captures: `team-integrations-page-*`, `team-integrations-url-dialog-*`, `team-integrations-telegram-code-*`.
+
+### Parity (brief 10 §3.5, rows 53–64)
+
+| # | Action | Control | Done |
+|---|---|---|---|
+| 53 | Page frame | `TeamSettingsShell`: crumbs team › Team settings › Integrations; `h1` the team; `h2` "Integrations" with "Connect :team to the tools it already uses."; `<Head title="Integrations">`. "Back to the team" is the "Team" entry of the sub-navigation and the first crumb | yes |
+| 54 | One card per enabled provider | `ProviderCard`: `section[data-test="integration-card-{provider}"]` named by `[data-slot="card-title"]`; its first `[data-slot="badge"]` is the status ("Not connected", or the server's label) | yes |
+| 55 | Reconnect-required error | destructive `Alert` at the top of the card body, only while the status is `reconnect_required` | yes |
+| 56 | Details, "Connected by", "Last checked" | `ProviderDetails`, a `dl`; "Former member", "Never" | yes |
+| 57 | OAuth connect / reconnect | `ConnectLink`: `Button asChild` on a plain `<a href>`, whose own text is the label (`a:text-is("Reconnect")`) | yes |
+| 58 | Test connection | `TestConnectionButton`: `LoadingButton`, the providers are reloaded after a success and after a failure | yes |
+| 59 | Disconnect | outline button in the destructive colour with the unplug icon, then a dialog with the warning icon, focus on "Cancel"; custom label and title kept for the Jira token | yes |
+| 60 | Slack: open the channel configuration | external link on the channel name | yes |
+| 61 | Telegram: create a code | "Connect" / "Connect another chat"; disabled while the bot has no username | yes |
+| 62 | Telegram: command, copy, bot link, countdown, poll | bordered box in the card: the command in one `code`, "Copy" / "Copied" with a check, "Open @:bot in Telegram", "Waiting for the command… (:time left)" or "This code has expired. Create a new one."; same hooks (`useCountdown`, `usePoll` 5 s on `providers`) | yes |
+| 63 | Telegram: no answer, conflict | warning `Alert` in the card | yes |
+| 64 | Teams / Mattermost: connect, replace the URL, label | `FormDialog` with `TextField` "Webhook URL" (`type="url"`, never prefilled) and "Channel label (optional)" (80 characters); a refusal shows under its field, which takes the focus, and is forgotten when the dialog opens again | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| The other sections of the team settings (General, Members & rituals, Data & export) | `TeamSettingsShell` builds its sub-navigation from the list `entries` (`section`, `label`, `icon`, `href`); `TeamSettingsSection` is the union of their keys. A new section is one more entry and one more page that wraps itself in the shell | WS-3 |
+
+### Differences with the mockup (ScreenSettings, frame a; the integration rows of frame b)
+
+| Difference | Covered by |
+|---|---|
+| A sub-navigation "Team" and "Integrations" on the left (a horizontal list below `lg`), not the segmented tabs at the right of the head | O: 10-D4, 10-D5 |
+| No "General", "Members & rituals", "Data & export" and nothing of what they hold | D-27 |
+| Under the name of the team: ":count members" only, not "Product team · 11 members · created in March 2025". The team has no description (D-24); **its creation date is held by the server and not sent to this page** | D-24 for the description; the date: no row, reported |
+| Three crumbs (team › Team settings › Integrations), the mockup has two | none: reported (brief 10 row 53) |
+| No "Changes saved" indicator in the topbar: nothing on this page saves by itself | none: reported |
+| The mark of the team in the head has one letter ("A", as the mockup); the sidebar of 18b shows two ("AT") | none: reported |
+| One card per provider (head with the logo box, the name and the status; body; footer band with the actions), not one row per provider in a single card: a connection has up to four details and three actions, and the trackers hold whole panels | brief 10 §6 ("no mockup: designed from `.st-card` / `.st-int`"); no row, reported |
+| The status is a badge at the end of the head ("Connected" in the success colours), not a coloured line under the name with the workspace and the channel; those are in the details list | `Plan12a`, `Plan14a` (the first badge of the card is the status); no row, reported |
+| No switch per integration and no "Configure": a connection is connected or not, it has no "off" state; the actions are "Connect", "Reconnect", "Replace URL", "Send a test message", "Disconnect" | N proposed (the product has no disabled connection): no row, reported |
+| Slack has the `hash` icon, not `slack`: lucide marks its brand icons deprecated, and no dependency may be added for the official kits | none: reported |
+| "Disconnect" has an icon and the destructive colour | A: rule 6 |
+| The disconnect confirmation is a `dialog`, not an `alertdialog` (so not `ConfirmDialog`): `P12a-07a` clicks `[role="dialog"] button:has-text("Disconnect")` and waits for no `[role="dialog"]`, and the task lists no test change | plan, Task 10.5 ("Browser tests changed: none") |
+| Telegram and Mattermost cards, the Telegram command box, the URL dialog: no mockup | brief 10 §6 |

@@ -3,8 +3,11 @@ import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
@@ -20,9 +23,8 @@ export function LinearIntegration({ card, scope }: Props) {
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={ListTodo}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, ListTodo, t)}
                 actions={
                     <>
                         <ConnectLink
@@ -46,14 +48,13 @@ export function LinearIntegration({ card, scope }: Props) {
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
                 </p>
-            </IntegrationCard>
+            </ProviderCard>
         );
     }
 
     return (
-        <IntegrationCard
-            icon={ListTodo}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, ListTodo, t)}
             actions={
                 <>
                     <ConnectLink
@@ -91,7 +92,7 @@ export function LinearIntegration({ card, scope }: Props) {
                 </>
             }
         >
-            <IntegrationDetails
+            <ProviderDetails
                 connection={connection}
                 rows={[
                     {
@@ -128,6 +129,6 @@ export function LinearIntegration({ card, scope }: Props) {
                     connection={connection}
                 />
             )}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

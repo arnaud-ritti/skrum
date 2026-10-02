@@ -3,6 +3,7 @@
     "(and :count more errors)": "(et :count erreur en plus)|(et :count erreurs en plus)|(et :count erreurs en plus)",
     "2FA recovery codes": "Codes de récupération 2FA",
     ":count members": ":count membres",
+    "1 member": "1 membre",
     ":inviterName has invited you to join the :teamName team.": ":inviterName vous a invité à rejoindre l'équipe :teamName.",
     "A Timeout Occurred": "Temps d'attente dépassé",
     "A decryption key is required.": "Une clé de déchiffrement est requise.",

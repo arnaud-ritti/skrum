@@ -1,14 +1,18 @@
 <?php
 
 use App\Actions\Mcp\IssueMcpToken;
+use App\Enums\IntegrationProvider;
+use App\Enums\IntegrationStatus;
 use App\Enums\McpScope;
 use App\Enums\WorkspaceRole;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
 use Carbon\CarbonInterface;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider as TwoFactorAuthenticationProviderContract;
 use Laravel\Fortify\TwoFactorAuthenticationProvider;
@@ -500,6 +504,132 @@ it('renders a new token, shown once in the form, without overflow', function () 
                     ->assertPresent('[data-slot="new-token-panel"] input[readonly]')
                     ->assertPresent('[data-slot="token-list"] [data-slot="badge"]'),
             );
+        },
+    );
+});
+
+/**
+ * A workspace admin of a team of eleven, with Slack connected, Microsoft Teams
+ * to reconnect, and Telegram and Mattermost not connected yet.
+ */
+function p18eTeamSettingsAdmin(): User
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost);
+    Http::fake([
+        'api.telegram.org/*/getMe' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_bot']]),
+        'api.telegram.org/*' => Http::response(['ok' => true, 'result' => true]),
+    ]);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $admin = User::factory()->create([
+        'id' => '0199a000-0000-7000-8000-000000000020',
+        'name' => 'Ada Admin',
+        'email' => 'ada.admin@example.com',
+    ]);
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
+    $team->members()->attach($admin);
+
+    foreach (User::factory()->count(10)->create() as $member) {
+        $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
+        $team->members()->attach($member);
+    }
+
+    TeamIntegration::factory()->slack()->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-28 16:20:00',
+    ]);
+    TeamIntegration::factory()->microsoftTeams()->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => null,
+        'status' => IntegrationStatus::ReconnectRequired,
+        'last_error' => 'The workflow answered 404. Paste the URL of the workflow again.',
+        'last_checked_at' => '2026-09-30 06:00:00',
+    ]);
+
+    return $admin;
+}
+
+function p18eIntegrationsPath(): string
+{
+    $team = Team::query()->where('name', 'Atlas')->sole();
+
+    return route('teams.integrations.index', [$team->workspace, $team], false);
+}
+
+it('renders the team integrations without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eTeamSettingsAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-page',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-msteams"] [data-slot="alert"]',
+        )->assertPresent('nav[aria-label] a[aria-current="page"]')
+            ->assertCount('[data-test^="integration-card-"]', 4),
+    );
+});
+
+it('renders the dialog that connects a channel by its URL, with a refused URL, without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eTeamSettingsAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-url-dialog',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-mattermost"]',
+        )->click('[data-test="integration-card-mattermost"] button')
+            ->fill('[role="dialog"] input[type="url"]', 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
+            ->fill('[role="dialog"] input[maxlength="80"]', 'town-square')
+            ->click('[role="dialog"] button[type="submit"]')
+            ->assertPresent('[role="dialog"] [data-slot="field-error"]'),
+    );
+});
+
+it('renders the Telegram command of a pending connection without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eTeamSettingsAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-telegram-code',
+        p18eIntegrationsPath(),
+        function (string $path, array $options) use ($admin) {
+            $page = p18eSettingsVisit(
+                $admin,
+                $path,
+                $options,
+                '[data-slot="team-settings-shell"] [data-test="integration-card-telegram"]',
+            )->click('[data-test="integration-card-telegram"] button')
+                ->assertPresent('[data-slot="telegram-pending-code"] code');
+
+            $page->script(<<<'JS'
+                () => {
+                    document.querySelector('[data-slot="telegram-pending-code"] code').textContent = '/connect@skrum_bot K7M2QX9D';
+                    document.querySelector('[data-slot="telegram-pending-state"]').textContent =
+                        document.querySelector('[data-slot="telegram-pending-state"]').textContent.replace(/\d+:\d+/, '9:58');
+
+                    return true;
+                }
+                JS);
+
+            return $page;
         },
     );
 });
