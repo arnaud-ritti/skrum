@@ -3911,7 +3911,7 @@
     "Logo drop zone: empty, stored, staged, busy, refused": "Zona de carga del logo: vacía, guardado, pendiente, en curso, rechazado",
     "Logo, colour and corners applied to the whole instance, guests included.": "Logo, color y esquinas aplicados a toda la instancia, invitados incluidos.",
     "Not saved": "Sin guardar",
-    "Radius: four segments, 10 px stored shows Standard": "Radio: cuatro segmentos, 10 px guardados muestran Estándar",
+    "Radius: the default of 10 px shows Standard, a stored 6 px shows its exact value": "Radio: los 10 px por defecto muestran Estándar, 6 px guardados muestran su valor exacto",
     "Sample switch": "Interruptor de ejemplo",
     "Section": "Sección",
     "See the 6 action items": "Ver las 6 acciones",

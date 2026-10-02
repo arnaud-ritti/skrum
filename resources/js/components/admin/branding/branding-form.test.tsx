@@ -392,6 +392,154 @@ describe('BrandingForm images', () => {
     });
 });
 
+describe('BrandingForm image undo', () => {
+    const revokeObjectURL = vi.fn();
+
+    beforeEach(() => {
+        let created = 0;
+
+        revokeObjectURL.mockReset();
+        URL.createObjectURL = vi.fn(() => `blob:undo-${++created}`);
+        URL.revokeObjectURL = revokeObjectURL;
+    });
+
+    function previewLogo(container: HTMLElement): string | null {
+        return (
+            container
+                .querySelector('[data-slot=brand-preview-logo]')
+                ?.getAttribute('src') ?? null
+        );
+    }
+
+    async function removeStoredImage(): Promise<void> {
+        fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+        fireEvent.click(
+            Array.from(
+                screen.getByRole('alertdialog').querySelectorAll('button'),
+            ).find(
+                (button) => button.textContent === 'Remove',
+            ) as HTMLButtonElement,
+        );
+
+        await vi.waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+    }
+
+    it('undoes one staged removal and keeps the other staged image', async () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=3',
+                logoDarkUrl: null,
+                faviconUrl: null,
+            },
+        });
+
+        await removeStoredImage();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Favicon' }));
+        fireEvent.change(
+            container.querySelector('input[type=file]') as HTMLInputElement,
+            {
+                target: {
+                    files: [new File(['x'], 'icon.png', { type: 'image/png' })],
+                },
+            },
+        );
+
+        expect(status()).toBe('2 unsaved changes');
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Light logo' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+        expect(status()).toBe('1 unsaved change');
+        expect(previewLogo(container)).toBe('/brand/logo-light?v=3');
+        expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+        expect(revokeObjectURL).not.toHaveBeenCalled();
+
+        await act(async () => {
+            fireEvent.submit(screen.getByRole('form', { name: 'Branding' }));
+        });
+
+        expect(removeAsset).not.toHaveBeenCalled();
+        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith(
+            'favicon',
+            expect.any(File),
+        );
+    });
+
+    it('undoes a staged file, which shows the stored image again', () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=3',
+                logoDarkUrl: null,
+                faviconUrl: null,
+            },
+        });
+
+        fireEvent.change(
+            container.querySelector('input[type=file]') as HTMLInputElement,
+            {
+                target: {
+                    files: [new File(['x'], 'new.png', { type: 'image/png' })],
+                },
+            },
+        );
+
+        expect(previewLogo(container)).toBe('blob:undo-1');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+        expect(status()).toBe('No unsaved changes');
+        expect(previewLogo(container)).toBe('/brand/logo-light?v=3');
+        expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:undo-1');
+    });
+});
+
+describe('BrandingForm radius', () => {
+    it('shows the exact value of a stored radius outside the segments and saves nothing until it changes', () => {
+        setup({ brandRadius: 6 });
+
+        const group = screen.getByRole('radiogroup', { name: 'Corner radius' });
+
+        expect(
+            within(group)
+                .getAllByRole('radio')
+                .filter((item) => item.getAttribute('aria-checked') === 'true'),
+        ).toEqual([]);
+        expect(
+            (
+                screen.getByRole('spinbutton', {
+                    name: 'Exact radius in pixels',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('6');
+        expect(status()).toBe('No unsaved changes');
+
+        fireEvent.click(within(group).getByRole('radio', { name: 'Soft' }));
+
+        expect(status()).toBe('1 unsaved change');
+        expect(screen.getByRole('spinbutton')).toBeTruthy();
+    });
+
+    it('has no exact field for a stored segment value', () => {
+        setup({ brandRadius: 8 });
+
+        expect(screen.queryByRole('spinbutton')).toBeNull();
+    });
+
+    it('shows Standard, as the mockup, while the default of 10 pixels applies', () => {
+        setup({ brandRadius: null });
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Standard' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(screen.queryByRole('spinbutton')).toBeNull();
+    });
+});
+
 describe('BrandingForm preview', () => {
     it('paints the stage with the stored palette, then with the typed colour', async () => {
         vi.useFakeTimers();

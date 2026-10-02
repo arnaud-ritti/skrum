@@ -46,10 +46,16 @@ function InteractiveColor() {
     );
 }
 
-function InteractiveRadius() {
-    const [value, setValue] = useState(10);
+function InteractiveRadius({
+    initial,
+    exact = false,
+}: {
+    initial: number;
+    exact?: boolean;
+}) {
+    const [value, setValue] = useState(initial);
 
-    return <RadiusControl value={value} onChange={setValue} />;
+    return <RadiusControl value={value} onChange={setValue} exact={exact} />;
 }
 
 const avatarStyles: AdminAvatarStyle[] = [
@@ -157,9 +163,14 @@ export default function AdminBrandingSection() {
                 </div>
             </Example>
             <Example
-                label={t('Radius: four segments, 10 px stored shows Standard')}
+                label={t(
+                    'Radius: the default of 10 px shows Standard, a stored 6 px shows its exact value',
+                )}
             >
-                <InteractiveRadius />
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(80)),1fr))] gap-6">
+                    <InteractiveRadius initial={10} />
+                    <InteractiveRadius initial={6} exact />
+                </div>
             </Example>
             <Example
                 label={t('Live preview: light and dark, square and round')}
@@ -221,6 +232,7 @@ export default function AdminBrandingSection() {
                         staged
                         onUpload={noop}
                         onRemove={settled}
+                        onUndo={noop}
                     />
                     <AssetUploader
                         label={t('Favicon')}
@@ -236,6 +248,7 @@ export default function AdminBrandingSection() {
                         error={t('Use a PNG, JPEG, WebP or SVG image.')}
                         onUpload={noop}
                         onRemove={settled}
+                        onUndo={noop}
                     />
                 </div>
             </Example>

@@ -3686,7 +3686,7 @@
     "Logo drop zone: empty, stored, staged, busy, refused": "Logo drop zone: empty, stored, staged, busy, refused",
     "Logo, colour and corners applied to the whole instance, guests included.": "Logo, colour and corners applied to the whole instance, guests included.",
     "Not saved": "Not saved",
-    "Radius: four segments, 10 px stored shows Standard": "Radius: four segments, 10 px stored shows Standard",
+    "Radius: the default of 10 px shows Standard, a stored 6 px shows its exact value": "Radius: the default of 10 px shows Standard, a stored 6 px shows its exact value",
     "Sample switch": "Sample switch",
     "Section": "Section",
     "See the 6 action items": "See the 6 action items",

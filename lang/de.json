@@ -3911,7 +3911,7 @@
     "Logo drop zone: empty, stored, staged, busy, refused": "Logo-Ablagezone: leer, gespeichert, vorgemerkt, in Arbeit, abgelehnt",
     "Logo, colour and corners applied to the whole instance, guests included.": "Logo, Farbe und Ecken gelten für die ganze Instanz, Gäste eingeschlossen.",
     "Not saved": "Nicht gespeichert",
-    "Radius: four segments, 10 px stored shows Standard": "Radius: vier Segmente, gespeicherte 10 px zeigen Standard",
+    "Radius: the default of 10 px shows Standard, a stored 6 px shows its exact value": "Radius: der Standard von 10 px zeigt Standard, gespeicherte 6 px zeigen ihren genauen Wert",
     "Sample switch": "Beispielschalter",
     "Section": "Bereich",
     "See the 6 action items": "Die 6 Aktionspunkte ansehen",

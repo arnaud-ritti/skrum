@@ -25,6 +25,7 @@ import {
     countChanges,
     followsDefault,
     initialFormData,
+    isRadiusPreset,
     toPayload,
 } from './branding';
 import type {
@@ -234,14 +235,12 @@ export function BrandingForm({
 
     function stageRemoval(asset: BrandAssetName): void {
         setAssetErrors((current) => ({ ...current, [asset]: undefined }));
-
-        if (assets.staged[asset]?.type === 'file') {
-            assets.drop(asset);
-
-            return;
-        }
-
         assets.stageRemoval(asset);
+    }
+
+    function undoStaged(asset: BrandAssetName): void {
+        setAssetErrors((current) => ({ ...current, [asset]: undefined }));
+        assets.drop(asset);
     }
 
     async function reset(): Promise<void> {
@@ -377,6 +376,7 @@ export function BrandingForm({
                                             stageFile(variant, file)
                                         }
                                         onRemove={() => stageRemoval(variant)}
+                                        onUndo={() => undoStaged(variant)}
                                     />
                                 </div>
                                 <TextField
@@ -416,6 +416,10 @@ export function BrandingForm({
                                 />
                                 <RadiusControl
                                     value={data.brand_radius}
+                                    exact={
+                                        props.brandRadius !== null &&
+                                        !isRadiusPreset(props.brandRadius)
+                                    }
                                     onChange={(value) =>
                                         form.setData('brand_radius', value)
                                     }
