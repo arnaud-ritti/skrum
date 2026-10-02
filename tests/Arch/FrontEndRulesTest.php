@@ -12,9 +12,13 @@ const FrontEndRuleExemptions = [
         'resources/js/components/ui/chart.tsx' => 'attribute selectors on the strokes Recharts writes, replaced by tokens',
         'resources/js/lib/whiteboard/palette.ts' => 'Excalidraw stores a colour as hex in the scene',
         'resources/js/lib/games/drawing.ts' => 'pixels of the drawing canvas',
+        'resources/js/lib/whiteboard/presence-slot.ts' => 'the Excalidraw canvas draws the cursors itself: it takes a colour value computed from the presence token, not a class',
+        'resources/js/pages/dev/sections/session-create-whiteboard.tsx' => 'scene colours of the template previews on the bench: canvas data, as the server sends them',
     ],
     'px' => [
         'resources/js/pages/dev/sections/notifications-panel.tsx' => 'a bench label names a viewport width',
+        'resources/js/components/session/session-presence.tsx' => 'media query of the sm breakpoint, read by matchMedia: a breakpoint has no token',
+        'resources/js/components/whiteboard/board-header.tsx' => 'media queries of the md and 2xl breakpoints, read by matchMedia: a breakpoint has no token',
     ],
     'inline-svg' => [
         'resources/js/components/skrum/skrum-logo.tsx' => 'the Skrüm logo, drawn from the brand files',
@@ -26,12 +30,23 @@ const FrontEndRuleExemptions = [
         'resources/js/components/skrum/timer.tsx' => 'progress ring of the timer',
         'resources/js/components/skrum/live-cursor.tsx' => 'cursor arrow coloured per participant',
         'resources/js/components/skrum/action-item.tsx' => 'status glyph filled with the status tokens, kept from the reviewed 18c component',
+        'resources/js/components/auth/error-art.tsx' => 'illustration of the error pages, drawn on the tokens',
+        'resources/js/components/games/hangman-figure.tsx' => 'the hangman drawing, one stroke per wrong guess, on the tokens',
+        'resources/js/components/retro/results/health-radar.tsx' => 'radar of the health check, drawn by hand on the chart tokens',
+        'resources/js/components/retro/results/health-trend.tsx' => 'trend line of the health check, drawn by hand on the chart tokens',
+        'resources/js/components/teams/whiteboard-template-preview.tsx' => 'preview of a whiteboard template, drawn from the shapes of its scene',
+        'resources/js/pages/dev/sections/settings-account.tsx' => 'stand-in on the bench for the QR code Fortify sends as SVG markup',
+    ],
+    'scripted-motion' => [
+        'resources/js/components/session/session-reactions.tsx' => 'live-reactions animates with its own stylesheet, which holds a reaction in place under prefers-reduced-motion',
+        'resources/js/components/session/use-flying-reactions.ts' => 'state of the flying reactions only; live-reactions animates with its own stylesheet, which honours prefers-reduced-motion',
     ],
 ];
 
 /**
- * Files that broke a rule when the tests were written, in the middle of the rewrite: to empty in plan 18g Task 4/5.
- * A listed file is not read for that rule; any other file that breaks it fails the test. Nothing is added here.
+ * Old files that break a rule and are about to be deleted: the action items page, the old application shell it is the
+ * last page to mount, the old auth layout and the old bell, which the last screens of plans 18e and 18f replace.
+ * To empty in the final pass of plan 18g, with the constant. A listed file is not read for that rule; nothing is added here.
  */
 const FrontEndRuleBaseline = [
     'arbitrary-size' => [
@@ -43,28 +58,13 @@ const FrontEndRuleBaseline = [
         'resources/js/components/app-logo.tsx',
         'resources/js/components/nav-main.tsx',
         'resources/js/components/notification-bell.tsx',
-        'resources/js/components/session/live-cursors.tsx',
         'resources/js/layouts/auth/auth-simple-layout.tsx',
-        'resources/js/lib/whiteboard/presence-slot.ts',
-        'resources/js/pages/dev/sections/session-create-whiteboard.tsx',
     ],
     'px' => [
         'resources/js/components/notification-bell.tsx',
-        'resources/js/components/session/session-presence.tsx',
-        'resources/js/components/whiteboard/board-header.tsx',
     ],
     'inline-svg' => [
         'resources/js/components/app-logo-icon.tsx',
-        'resources/js/components/auth/error-art.tsx',
-        'resources/js/components/games/hangman-figure.tsx',
-        'resources/js/components/retro/results/health-radar.tsx',
-        'resources/js/components/retro/results/health-trend.tsx',
-        'resources/js/components/teams/whiteboard-template-preview.tsx',
-        'resources/js/pages/dev/sections/settings-account.tsx',
-    ],
-    'scripted-motion' => [
-        'resources/js/components/session/session-reactions.tsx',
-        'resources/js/components/session/use-flying-reactions.ts',
     ],
 ];
 
