@@ -91,7 +91,7 @@ export function StatCard({
                     </span>
                     <span
                         data-slot="stat-card-value"
-                        className="truncate font-display text-xl font-bold tracking-tight tabular-nums"
+                        className="font-display text-xl font-bold tracking-tight wrap-anywhere tabular-nums"
                     >
                         {value}
                     </span>
