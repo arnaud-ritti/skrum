@@ -59,12 +59,10 @@ describe('BoardShare', () => {
         const guest = {
             id: 'member-gia',
             name: 'Guest Gia',
-            avatarUrl: null,
+            avatarUrl: '/avatars/g.svg',
             isGuest: true,
         };
-        const state = boardState({
-            online: [guest] as ReturnType<typeof boardState>['online'],
-        });
+        const state = boardState({ online: [guest] });
 
         renderWithProviders(<BoardShare state={state} />);
         openShare();
