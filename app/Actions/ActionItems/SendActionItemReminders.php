@@ -104,7 +104,7 @@ class SendActionItemReminders
                 'action_item_id' => $item->id,
                 'user_id' => $user->id,
                 'kind' => $this->kind($item, $today),
-                'due_on' => (string) $item->due_on?->toDateString(),
+                'due_on' => $item->due_on?->startOfDay(),
             ],
             ['sent_at' => now()],
         )->wasRecentlyCreated;
