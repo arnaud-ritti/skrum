@@ -1,0 +1,405 @@
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+    RetroTemplatePicker,
+    columnColorClass,
+} from '@/components/skrum/retro-template-picker';
+import type {
+    RetroTemplate,
+    RetroTemplatePickerProps,
+} from '@/components/skrum/retro-template-picker';
+import { renderWithProviders } from '@/test/render';
+
+function makeTemplate(
+    index: number,
+    extra: Partial<RetroTemplate> = {},
+): RetroTemplate {
+    return {
+        id: `tpl-${index}`,
+        name: `Template ${index}`,
+        description: `Description ${index}`,
+        source: 'builtin',
+        columns: [
+            { title: 'Went well', color: 'green', description: 'Good things' },
+            { title: 'To improve', color: 'sky' },
+        ],
+        ...extra,
+    };
+}
+
+const templates: RetroTemplate[] = [
+    makeTemplate(1, { name: 'Start Stop Continue', isTeamDefault: true }),
+    makeTemplate(2, { name: 'Glad Sad Mad' }),
+    makeTemplate(3, { name: 'Sailboat' }),
+    makeTemplate(4, { name: '4L' }),
+    makeTemplate(5, {
+        name: 'Ours',
+        source: 'workspace',
+        workspaceName: 'Nordlys',
+        usageCount: 6,
+        defaults: {
+            votesPerPerson: 5,
+            anonymous: true,
+            timers: { writing: 300 },
+        },
+    }),
+];
+
+function renderPicker(props: Partial<RetroTemplatePickerProps> = {}) {
+    const onValueChange = vi.fn();
+
+    const result = renderWithProviders(
+        <RetroTemplatePicker
+            value="tpl-1"
+            onValueChange={onValueChange}
+            templates={templates}
+            {...props}
+        />,
+    );
+
+    return { onValueChange, ...result };
+}
+
+function mockGridOffsets(columns: number): void {
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+        configurable: true,
+        get(this: HTMLElement) {
+            const index = Array.from(
+                this.parentElement?.children ?? [],
+            ).indexOf(this);
+
+            return Math.floor(index / columns) * 100;
+        },
+    });
+}
+
+afterEach(() => {
+    Reflect.deleteProperty(HTMLElement.prototype, 'offsetTop');
+    vi.useRealTimers();
+});
+
+describe('columnColorClass', () => {
+    it('maps both colour sets to the col-* context class', () => {
+        expect(columnColorClass('green')).toBe('col-moss');
+        expect(columnColorClass('red')).toBe('col-coral');
+        expect(columnColorClass('blue')).toBe('col-sky');
+        expect(columnColorClass('amber')).toBe('col-sun');
+        expect(columnColorClass('purple')).toBe('col-plum');
+        expect(columnColorClass('slate')).toBe('col-iris');
+        expect(columnColorClass('lagoon')).toBe('col-lagoon');
+        expect(columnColorClass('apricot')).toBe('col-apricot');
+        expect(columnColorClass('unknown')).toBe('col-iris');
+    });
+});
+
+describe('RetroTemplatePicker', () => {
+    it('lists built-in templates then the blank card, with the value checked', () => {
+        renderPicker();
+
+        const radios = within(screen.getByRole('radiogroup')).getAllByRole(
+            'radio',
+        );
+
+        expect(radios).toHaveLength(5);
+        expect(radios[4].textContent).toContain('Start from scratch');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Start Stop Continue' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Sailboat' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+    });
+
+    it('selects a card on click and reflects a new value prop', () => {
+        const { onValueChange, rerender } = renderPicker();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Sailboat' }));
+        expect(onValueChange).toHaveBeenCalledWith('tpl-3');
+
+        rerender(
+            <RetroTemplatePicker
+                value="tpl-3"
+                onValueChange={onValueChange}
+                templates={templates}
+            />,
+        );
+        expect(
+            screen
+                .getByRole('radio', { name: 'Sailboat' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(screen.getByRole('heading', { name: 'Sailboat' })).toBeTruthy();
+    });
+
+    it('submits the value through a hidden input', () => {
+        const { container } = renderPicker({
+            name: 'template',
+            value: 'tpl-2',
+        });
+
+        expect(
+            (
+                container.querySelector(
+                    'input[type="hidden"][name="template"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('tpl-2');
+    });
+
+    it('moves in two dimensions with the arrow keys', () => {
+        mockGridOffsets(2);
+        const { onValueChange } = renderPicker();
+        const first = screen.getByRole('radio', {
+            name: 'Start Stop Continue',
+        });
+
+        first.focus();
+        fireEvent.keyDown(first, { key: 'ArrowDown' });
+        expect(onValueChange).toHaveBeenLastCalledWith('tpl-3');
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Sailboat' }),
+        );
+
+        fireEvent.keyDown(document.activeElement as HTMLElement, {
+            key: 'ArrowRight',
+        });
+        expect(onValueChange).toHaveBeenLastCalledWith('tpl-4');
+
+        fireEvent.keyDown(document.activeElement as HTMLElement, {
+            key: 'ArrowUp',
+        });
+        expect(onValueChange).toHaveBeenLastCalledWith('tpl-2');
+
+        fireEvent.keyDown(document.activeElement as HTMLElement, {
+            key: 'End',
+        });
+        expect(onValueChange).toHaveBeenLastCalledWith('blank');
+    });
+
+    it('uses a roving tab stop on the selected card', () => {
+        renderPicker({ value: 'tpl-2' });
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Glad Sad Mad' })
+                .getAttribute('tabindex'),
+        ).toBe('0');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Sailboat' })
+                .getAttribute('tabindex'),
+        ).toBe('-1');
+    });
+
+    it('calls onUse on Enter and from the detail button', () => {
+        const onUse = vi.fn();
+
+        renderPicker({ onUse });
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Sailboat' }), {
+            key: 'Enter',
+        });
+        expect(onUse).toHaveBeenLastCalledWith('tpl-3');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Use this template' }),
+        );
+        expect(onUse).toHaveBeenLastCalledWith('tpl-1');
+    });
+
+    it('does not render the use or duplicate buttons without callbacks', () => {
+        renderPicker();
+
+        expect(
+            screen.queryByRole('button', { name: 'Use this template' }),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Duplicate and edit' }),
+        ).toBeNull();
+    });
+
+    it('duplicates the selected template', () => {
+        const onDuplicate = vi.fn();
+
+        renderPicker({ onDuplicate });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Duplicate and edit' }),
+        );
+        expect(onDuplicate).toHaveBeenCalledWith('tpl-1');
+    });
+
+    it('filters by search, keeps the blank card last, and clears with Escape', () => {
+        renderPicker();
+        const search = screen.getByRole('searchbox', {
+            name: 'Search templates',
+        });
+
+        fireEvent.change(search, { target: { value: 'sail' } });
+        const radios = within(screen.getByRole('radiogroup')).getAllByRole(
+            'radio',
+        );
+
+        expect(radios).toHaveLength(2);
+        expect(radios[1].textContent).toContain('Start from scratch');
+
+        fireEvent.keyDown(search, { key: 'Escape' });
+        expect((search as HTMLInputElement).value).toBe('');
+        expect(
+            within(screen.getByRole('radiogroup')).getAllByRole('radio'),
+        ).toHaveLength(5);
+    });
+
+    it('shows the no-result state and recovers with Clear search or blank', () => {
+        const { onValueChange } = renderPicker();
+
+        fireEvent.change(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+            {
+                target: { value: 'zzz' },
+            },
+        );
+        expect(screen.getByText('No template matches "zzz"')).toBeTruthy();
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Start from scratch' }),
+        );
+        expect(onValueChange).toHaveBeenCalledWith('blank');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+        expect(screen.getByRole('radiogroup')).toBeTruthy();
+    });
+
+    it('focuses the search with the slash key but not while typing', () => {
+        renderPicker();
+        const search = screen.getByRole('searchbox', {
+            name: 'Search templates',
+        });
+
+        fireEvent.keyDown(document.body, { key: '/' });
+        expect(document.activeElement).toBe(search);
+
+        fireEvent.keyDown(search, { key: '/' });
+        expect(document.activeElement).toBe(search);
+    });
+
+    it('announces the result count after the debounce', () => {
+        vi.useFakeTimers();
+        renderPicker();
+
+        fireEvent.change(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+            {
+                target: { value: 'sail' },
+            },
+        );
+        act(() => {
+            vi.advanceTimersByTime(300);
+        });
+        expect(screen.getByRole('status').textContent).toBe(
+            '1 templates found',
+        );
+    });
+
+    it('names tabs with their counts and switches to workspace templates', () => {
+        renderPicker();
+
+        expect(screen.getByRole('tab', { name: /Built-in.*4/ })).toBeTruthy();
+        fireEvent.mouseDown(
+            screen.getByRole('tab', { name: /My workspace.*1/ }),
+        );
+        fireEvent.click(screen.getByRole('tab', { name: /My workspace.*1/ }));
+
+        expect(screen.getByRole('radio', { name: 'Ours' })).toBeTruthy();
+        expect(screen.queryByRole('radio', { name: 'Sailboat' })).toBeNull();
+    });
+
+    it('shows workspace badges and detail settings for a workspace template', () => {
+        renderPicker({ value: 'tpl-5', tab: 'workspace' });
+
+        expect(screen.getAllByText('Nordlys').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Used 6 times').length).toBeGreaterThan(0);
+        expect(screen.getByText('5 votes per person')).toBeTruthy();
+        expect(screen.getByText('Anonymous')).toBeTruthy();
+        expect(screen.getByText('Writing 5 min')).toBeTruthy();
+    });
+
+    it('shows an empty workspace tab with a create action', () => {
+        const onCreate = vi.fn();
+
+        renderPicker({
+            templates: templates.slice(0, 4),
+            tab: 'workspace',
+            onCreate,
+        });
+        expect(screen.getByText('No workspace template yet.')).toBeTruthy();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Create a template' }),
+        );
+        expect(onCreate).toHaveBeenCalled();
+    });
+
+    it('handles zero templates', () => {
+        renderPicker({ templates: [], value: '' });
+
+        expect(screen.getByText('No template available.')).toBeTruthy();
+    });
+
+    it('is busy while loading and renders no cards', () => {
+        const { container } = renderPicker({ loading: true });
+
+        expect(container.querySelector('[aria-busy="true"]')).toBeTruthy();
+        expect(screen.getByText('Loading templates…')).toBeTruthy();
+        expect(screen.queryByRole('radio')).toBeNull();
+    });
+
+    it('shows the blank detail when blank is selected', () => {
+        renderPicker({ value: 'blank', onUse: vi.fn(), onDuplicate: vi.fn() });
+
+        expect(
+            screen.getByRole('heading', { name: 'Start from scratch' }),
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Duplicate and edit' }),
+        ).toBeNull();
+    });
+
+    it('renders 40 templates and a long name', () => {
+        const many = Array.from({ length: 40 }, (_, i) =>
+            makeTemplate(i, {
+                name: `Rétrospective de fin de sprint très détaillée numéro ${i}`,
+            }),
+        );
+
+        renderPicker({ templates: many, value: 'tpl-0' });
+        expect(
+            within(screen.getByRole('radiogroup')).getAllByRole('radio'),
+        ).toHaveLength(41);
+    });
+
+    it('works controlled inside a stateful parent', () => {
+        function Parent() {
+            const [value, setValue] = useState('tpl-1');
+
+            return (
+                <RetroTemplatePicker
+                    value={value}
+                    onValueChange={setValue}
+                    templates={templates}
+                />
+            );
+        }
+
+        renderWithProviders(<Parent />);
+        fireEvent.click(screen.getByRole('radio', { name: '4L' }));
+        expect(
+            screen
+                .getByRole('radio', { name: '4L' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
+});
