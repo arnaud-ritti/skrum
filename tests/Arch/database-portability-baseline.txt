@@ -1,0 +1,72 @@
+app/Actions/ActionItems/ActionItemQuery.php|filter (where|4
+app/Actions/ActionItems/ActionItemQuery.php|nulls first or last|1
+app/Actions/ActionItems/ActionItemQuery.php|orderByRaw|4
+app/Actions/ActionItems/ActionItemQuery.php|selectRaw|5
+app/Actions/ActionItems/SendActionItemReminders.php|insertOrIgnore|1
+app/Actions/ActionItems/SendActionItemReminders.php|raw expression|1
+app/Actions/Auth/ResolveSsoUser.php|whereRaw|1
+app/Actions/Games/DrawGameWord.php|insertOrIgnore|1
+app/Actions/Games/GameStreaks.php|groupByRaw|1
+app/Actions/Games/GameStreaks.php|postgres function or clause|2
+app/Actions/Games/GameStreaks.php|selectRaw|1
+app/Actions/Games/RoomLeaderboard.php|selectRaw|1
+app/Actions/Games/TeamGameLeaderboard.php|orderByRaw|1
+app/Actions/Games/TeamGameLeaderboard.php|selectRaw|1
+app/Actions/HealthCheck/BuildHealthTrend.php|selectRaw|1
+app/Actions/HealthCheck/SummarizeHealthCheck.php|selectRaw|2
+app/Actions/Integrations/TrackedIssues.php|boolean literal in raw sql|2
+app/Actions/Integrations/TrackedIssues.php|like comparison|1
+app/Actions/Integrations/TrackedIssues.php|whereRaw|2
+app/Actions/Poker/SavedPokerDeckRules.php|whereRaw|1
+app/Actions/Retros/BuildBoardSnapshot.php|selectRaw|2
+app/Actions/Retros/BuildSummaryInput.php|orderByRaw|1
+app/Actions/Retros/BuildSummaryInput.php|selectRaw|2
+app/Actions/Retros/SummarizeRoti.php|selectRaw|1
+app/Actions/Retros/TopTeamTemplates.php|selectRaw|1
+app/Actions/Surveys/CloseOpenSurveys.php|raw expression|1
+app/Actions/Teams/BuildTeamMoodTrend.php|selectRaw|1
+app/Actions/Whiteboards/WhiteboardTemplateRules.php|whereRaw|1
+app/Actions/Workspaces/CreateWorkspaceInvitation.php|whereRaw|1
+app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|2
+app/Http/Controllers/PokerDecksController.php|selectRaw|1
+app/Http/Controllers/TeamEstimatesController.php|ilike|1
+app/Http/Controllers/WorkspaceInvitationsController.php|whereRaw|2
+app/Http/Controllers/WorkspaceTemplatesController.php|selectRaw|1
+app/Http/Requests/WorkspaceTemplateRequest.php|whereRaw|1
+app/Mcp/Presenters/McpMessage.php|selectRaw|1
+app/Mcp/Tools/Retro/SearchBoards.php|ilike|4
+database/migrations/2026_09_29_110028_create_workspace_invitations_table.php|non-null timestamp|1
+database/migrations/2026_10_01_100300_create_workspace_templates_table.php|raw statement|1
+database/migrations/2026_10_01_110000_create_team_health_statements_table.php|driver branch|1
+database/migrations/2026_10_01_110000_create_team_health_statements_table.php|raw statement|1
+database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|driver branch|1
+database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|raw expression|4
+database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|raw statement|3
+database/migrations/2026_10_02_100500_create_action_item_reminders_table.php|non-null timestamp|1
+database/migrations/2026_10_03_100100_create_poker_decks_table.php|driver branch|1
+database/migrations/2026_10_03_100100_create_poker_decks_table.php|raw statement|1
+database/migrations/2026_10_05_100000_create_integration_tables.php|non-null timestamp|1
+database/migrations/2026_10_06_100000_create_game_tables.php|cast with ::|5
+database/migrations/2026_10_06_100000_create_game_tables.php|expression default|5
+database/migrations/2026_10_06_100000_create_game_tables.php|non-null timestamp|3
+database/migrations/2026_10_06_100000_create_game_tables.php|raw expression|5
+database/migrations/2026_10_07_100000_extend_integration_tables_for_sync_and_channels.php|non-null timestamp|1
+database/migrations/2026_10_10_100000_create_whiteboard_templates_table.php|driver branch|1
+database/migrations/2026_10_10_100000_create_whiteboard_templates_table.php|raw statement|1
+database/migrations/2026_10_15_100000_add_workspace_to_poker_decks_table.php|driver branch|1
+database/migrations/2026_10_15_100000_add_workspace_to_poker_decks_table.php|raw statement|2
+tests/Feature/ActionItems/ActionItemModelTest.php|ddl in a test|1
+tests/Feature/Admin/InstanceAdminsTest.php|lock syntax|1
+tests/Feature/Admin/InstanceAdminsTest.php|reads sql text|2
+tests/Feature/Branding/BrandInPageTest.php|ddl in a test|1
+tests/Feature/Games/GameAccessTest.php|reads sql text|2
+tests/Feature/Games/IcebreakerRoomTest.php|lock syntax|1
+tests/Feature/Games/IcebreakerRoomTest.php|reads sql text|1
+tests/Feature/InstanceSettingsTest.php|ddl in a test|1
+tests/Feature/Integrations/ActionItemExportTest.php|lock syntax|1
+tests/Feature/Integrations/ActionItemExportTest.php|reads sql text|1
+tests/Feature/Integrations/WebhookEventsTest.php|sql error as a failure|1
+tests/Feature/Integrations/WebhookRedeliveryTest.php|reads sql text|2
+tests/Feature/Integrations/WebhookSharesTest.php|sql error as a failure|1
+tests/Feature/Poker/WorkspacePokerDecksTest.php|driver branch|1
+tests/Feature/Retros/HealthStatementModelsTest.php|driver branch|1
