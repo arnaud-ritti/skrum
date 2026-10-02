@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
@@ -264,6 +265,48 @@ describe('BrandingForm images', () => {
         expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
             'blob:staged-1',
         );
+    });
+
+    it('sends the staged image before the changed fields', async () => {
+        const visit = vi.spyOn(router, 'visit').mockImplementation(() => {});
+        const { container } = setup();
+
+        choose(container, png());
+        fireEvent.change(screen.getByLabelText('Display name'), {
+            target: { value: 'Nordlys' },
+        });
+
+        await submit();
+
+        expect(uploadAsset).toHaveBeenCalledOnce();
+        expect(visit).toHaveBeenCalledOnce();
+        expect(visit.mock.calls[0][1]?.method).toBe('put');
+        expect(vi.mocked(uploadAsset).mock.invocationCallOrder[0]).toBeLessThan(
+            visit.mock.invocationCallOrder[0],
+        );
+
+        visit.mockRestore();
+    });
+
+    it('does not send the fields when an image is refused', async () => {
+        const visit = vi.spyOn(router, 'visit').mockImplementation(() => {});
+        vi.mocked(uploadAsset).mockRejectedValueOnce(
+            new BrandingVisitError({ file: 'The image is not valid.' }),
+        );
+
+        const { container } = setup();
+
+        choose(container, png());
+        fireEvent.change(screen.getByLabelText('Display name'), {
+            target: { value: 'Nordlys' },
+        });
+
+        await submit();
+
+        expect(visit).not.toHaveBeenCalled();
+        expect(status()).toBe('2 unsaved changes');
+
+        visit.mockRestore();
     });
 
     it('stages nothing for a 600 KB file or a GIF', () => {

@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { sampleProps } from '@/components/admin/branding/samples';
@@ -13,19 +14,27 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     Head: () => null,
 }));
 
+const shellMounts = vi.hoisted(() => ({ count: 0 }));
+
 vi.mock('@/components/admin/admin-shell', () => ({
-    AdminShell: ({
+    AdminShell: function AdminShell({
         actions,
         children,
     }: {
         actions?: ReactNode;
         children: ReactNode;
-    }) => (
-        <div>
-            <header>{actions}</header>
-            {children}
-        </div>
-    ),
+    }) {
+        useEffect(() => {
+            shellMounts.count++;
+        }, []);
+
+        return (
+            <div>
+                <header>{actions}</header>
+                {children}
+            </div>
+        );
+    },
 }));
 
 describe('AdminBranding page', () => {
@@ -38,6 +47,25 @@ describe('AdminBranding page', () => {
         expect(
             bar.querySelector('button[type=submit]')?.getAttribute('form'),
         ).toBe(screen.getByRole('form', { name: 'Branding' }).id);
+    });
+});
+
+describe('AdminBranding page shell', () => {
+    it('keeps the admin shell mounted when a save remounts the form', () => {
+        shellMounts.count = 0;
+
+        const { rerender } = renderWithProviders(
+            <AdminBranding {...sampleProps()} />,
+        );
+
+        rerender(
+            <AdminBranding {...sampleProps({ displayName: 'Nordlys' })} />,
+        );
+
+        expect(shellMounts.count).toBe(1);
+        expect(
+            screen.getByRole('banner').querySelector('[data-slot=unsaved-bar]'),
+        ).not.toBeNull();
     });
 });
 
