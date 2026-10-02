@@ -20,11 +20,11 @@ class BrandingUpdateRequest extends FormRequest
             'brand_color' => ['nullable', 'string', 'regex:/^#[0-9a-f]{6}$/D'],
             'brand_radius' => ['nullable', 'integer', 'between:'.InstanceSettings::MinRadius.','.InstanceSettings::MaxRadius],
             'display_name' => ['nullable', 'string', 'max:60'],
-            'powered_by' => ['required', 'boolean'],
+            'powered_by' => ['nullable', 'boolean'],
             'avatar_style' => ['nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->selectable())],
-            'avatar_member_choice' => ['required', 'boolean'],
+            'avatar_member_choice' => ['nullable', 'boolean'],
             'gif_provider' => ['nullable', 'string', Rule::in(InstanceSettings::GifProviders)],
-            'gif_enabled' => ['required', 'boolean'],
+            'gif_enabled' => ['nullable', 'boolean'],
             'gif_rating' => ['nullable', 'string', Rule::in(InstanceSettings::GifRatings)],
             'gif_key' => ['nullable', 'string', 'max:255'],
             'gif_key_clear' => ['sometimes', 'boolean'],
@@ -42,7 +42,8 @@ class BrandingUpdateRequest extends FormRequest
     }
 
     /**
-     * The values to hand to InstanceSettings::setMany: null clears a setting, and the GIF key is listed only when it changes.
+     * The values to hand to InstanceSettings::setMany: null clears a setting (the form sends null for a field the admin
+     * left on its default, so nothing gets pinned), and the GIF key is listed only when it changes.
      *
      * @return array<string, mixed>
      */
@@ -54,11 +55,11 @@ class BrandingUpdateRequest extends FormRequest
             InstanceSettingKey::BrandColor->value => $validated['brand_color'] ?? null,
             InstanceSettingKey::BrandRadius->value => $validated['brand_radius'] ?? null,
             InstanceSettingKey::DisplayName->value => $validated['display_name'] ?? null,
-            InstanceSettingKey::PoweredBy->value => $this->boolean('powered_by'),
+            InstanceSettingKey::PoweredBy->value => $this->nullableBoolean('powered_by'),
             InstanceSettingKey::AvatarStyle->value => $validated['avatar_style'] ?? null,
-            InstanceSettingKey::AvatarMemberChoice->value => $this->boolean('avatar_member_choice'),
+            InstanceSettingKey::AvatarMemberChoice->value => $this->nullableBoolean('avatar_member_choice'),
             InstanceSettingKey::GifProvider->value => $validated['gif_provider'] ?? null,
-            InstanceSettingKey::GifEnabled->value => $this->boolean('gif_enabled'),
+            InstanceSettingKey::GifEnabled->value => $this->nullableBoolean('gif_enabled'),
             InstanceSettingKey::GifRating->value => $validated['gif_rating'] ?? null,
         ];
 
@@ -81,6 +82,15 @@ class BrandingUpdateRequest extends FormRequest
             'brand_color' => $this->normalisedColor($this->input('brand_color')),
             'display_name' => $this->withoutInvisibleCharacters($this->input('display_name')),
         ]);
+    }
+
+    private function nullableBoolean(string $field): ?bool
+    {
+        if ($this->input($field) === null) {
+            return null;
+        }
+
+        return $this->boolean($field);
     }
 
     private function normalisedColor(mixed $color): mixed

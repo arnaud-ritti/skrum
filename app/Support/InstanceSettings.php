@@ -22,6 +22,13 @@ class InstanceSettings
 
     public const string DefaultGifRating = 'g';
 
+    public const bool DefaultPoweredBy = true;
+
+    public const bool DefaultAvatarMemberChoice = false;
+
+    /** Without a provider and a key GIFs stay off whatever this switch says. */
+    public const bool DefaultGifEnabled = true;
+
     /** @var array<int, string> */
     public const array GifRatings = ['g', 'pg', 'pg-13', 'r'];
 
@@ -65,12 +72,27 @@ class InstanceSettings
 
     public function displayName(): string
     {
-        return $this->storedString(InstanceSettingKey::DisplayName) ?? (string) config('app.name');
+        return $this->storedDisplayName() ?? $this->defaultDisplayName();
+    }
+
+    public function storedDisplayName(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::DisplayName);
+    }
+
+    public function defaultDisplayName(): string
+    {
+        return (string) config('app.name');
     }
 
     public function poweredBy(): bool
     {
-        return $this->storedBool(InstanceSettingKey::PoweredBy) ?? true;
+        return $this->storedPoweredBy() ?? self::DefaultPoweredBy;
+    }
+
+    public function storedPoweredBy(): ?bool
+    {
+        return $this->storedBool(InstanceSettingKey::PoweredBy);
     }
 
     public function logoLight(): ?string
@@ -90,20 +112,42 @@ class InstanceSettings
 
     public function avatarStyle(): string
     {
-        return $this->avatarStyleFrom($this->stored(InstanceSettingKey::AvatarStyle))
-            ?? $this->avatarStyleFrom(config('skrum.avatar_style'))
-            ?? self::DefaultAvatarStyle;
+        return $this->storedAvatarStyle() ?? $this->defaultAvatarStyle();
+    }
+
+    public function storedAvatarStyle(): ?string
+    {
+        return $this->avatarStyleFrom($this->stored(InstanceSettingKey::AvatarStyle));
+    }
+
+    public function defaultAvatarStyle(): string
+    {
+        return $this->avatarStyleFrom(config('skrum.avatar_style')) ?? self::DefaultAvatarStyle;
     }
 
     public function avatarMemberChoice(): bool
     {
-        return $this->storedBool(InstanceSettingKey::AvatarMemberChoice) ?? false;
+        return $this->storedAvatarMemberChoice() ?? self::DefaultAvatarMemberChoice;
+    }
+
+    public function storedAvatarMemberChoice(): ?bool
+    {
+        return $this->storedBool(InstanceSettingKey::AvatarMemberChoice);
     }
 
     public function gifProvider(): ?string
     {
-        return $this->oneOf($this->stored(InstanceSettingKey::GifProvider), self::GifProviders)
-            ?? $this->oneOf(config('services.gifs.provider'), self::GifProviders);
+        return $this->storedGifProvider() ?? $this->defaultGifProvider();
+    }
+
+    public function storedGifProvider(): ?string
+    {
+        return $this->oneOf($this->stored(InstanceSettingKey::GifProvider), self::GifProviders);
+    }
+
+    public function defaultGifProvider(): ?string
+    {
+        return $this->oneOf(config('services.gifs.provider'), self::GifProviders);
     }
 
     public function gifEnabled(): bool
@@ -116,14 +160,27 @@ class InstanceSettings
             return false;
         }
 
-        return $this->storedBool(InstanceSettingKey::GifEnabled) ?? true;
+        return $this->storedGifEnabled() ?? self::DefaultGifEnabled;
+    }
+
+    public function storedGifEnabled(): ?bool
+    {
+        return $this->storedBool(InstanceSettingKey::GifEnabled);
     }
 
     public function gifRating(): string
     {
-        return $this->oneOf($this->stored(InstanceSettingKey::GifRating), self::GifRatings)
-            ?? $this->oneOf(config('services.gifs.rating'), self::GifRatings)
-            ?? self::DefaultGifRating;
+        return $this->storedGifRating() ?? $this->defaultGifRating();
+    }
+
+    public function storedGifRating(): ?string
+    {
+        return $this->oneOf($this->stored(InstanceSettingKey::GifRating), self::GifRatings);
+    }
+
+    public function defaultGifRating(): string
+    {
+        return $this->oneOf(config('services.gifs.rating'), self::GifRatings) ?? self::DefaultGifRating;
     }
 
     public function gifKey(): ?string

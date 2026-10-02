@@ -29,11 +29,11 @@ function brandingPayload(array $overrides = []): array
         'brand_color' => null,
         'brand_radius' => null,
         'display_name' => null,
-        'powered_by' => true,
+        'powered_by' => null,
         'avatar_style' => null,
-        'avatar_member_choice' => false,
+        'avatar_member_choice' => null,
         'gif_provider' => null,
-        'gif_enabled' => false,
+        'gif_enabled' => null,
         'gif_rating' => null,
         ...$overrides,
     ];
@@ -57,7 +57,7 @@ beforeEach(function () {
     ]);
 });
 
-it('shows the defaults when nothing is stored', function () {
+it('shows no stored value and the effective defaults when nothing is stored', function () {
     $admin = brandingAdmin($this);
 
     $this->get(route('admin.branding.edit'))
@@ -66,15 +66,25 @@ it('shows the defaults when nothing is stored', function () {
             ->component('admin/branding')
             ->where('brandColor', null)
             ->where('brandRadius', null)
-            ->where('displayName', 'Configured Name')
-            ->where('poweredBy', true)
-            ->where('avatarStyle', 'thumbs')
-            ->where('avatarMemberChoice', false)
+            ->where('displayName', null)
+            ->where('poweredBy', null)
+            ->where('avatarStyle', null)
+            ->where('avatarMemberChoice', null)
             ->where('gifProvider', null)
-            ->where('gifEnabled', false)
-            ->where('gifRating', 'g')
+            ->where('gifEnabled', null)
+            ->where('gifRating', null)
             ->where('hasGifKey', false)
-            ->where('defaults', ['brandColor' => '#bb4d2a', 'brandRadius' => 10, 'displayName' => 'Configured Name'])
+            ->where('defaults', [
+                'brandColor' => '#bb4d2a',
+                'brandRadius' => 10,
+                'displayName' => 'Configured Name',
+                'poweredBy' => true,
+                'avatarStyle' => 'thumbs',
+                'avatarMemberChoice' => false,
+                'gifProvider' => null,
+                'gifEnabled' => true,
+                'gifRating' => 'g',
+            ])
             ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null])
             ->where('palette', null)
             ->has('avatarStyles', count(resolve(AvatarStyleCatalogue::class)->selectable()))
@@ -403,7 +413,7 @@ it('refuses unknown values for the avatar style, the GIF provider and the rating
     'unknown provider' => ['gif_provider', 'imgur'],
     'unknown rating' => ['gif_rating', 'x'],
     'powered by not boolean' => ['powered_by', 'maybe'],
-    'member choice missing' => ['avatar_member_choice', null],
+    'member choice not boolean' => ['avatar_member_choice', 'perhaps'],
     'gif switch not boolean' => ['gif_enabled', 'sometimes'],
     'key too long' => ['gif_key', str_repeat('k', 256)],
 ]);
@@ -507,7 +517,8 @@ it('resets every setting and removes the images', function () {
     $html = $this->get(route('admin.branding.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('brandColor', null)
-            ->where('displayName', 'Configured Name')
+            ->where('displayName', null)
+            ->where('defaults.displayName', 'Configured Name')
             ->where('hasGifKey', false)
             ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null])
             ->where('palette', null))
@@ -561,3 +572,70 @@ it('returns to the configured name when the name holds nothing but joiners', fun
 
     expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
 });
+
+it('stores nothing when the untouched form of a fresh instance is saved', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload())
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertSessionHasNoErrors();
+
+    $this->assertDatabaseCount('instance_settings', 0);
+});
+
+it('stores only the colour when only the colour changed', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#FFD600']))
+        ->assertSessionHasNoErrors();
+
+    expect(InstanceSetting::query()->pluck('value', 'key')->all())->toBe(['brand_color' => '#ffd600']);
+});
+
+it('keeps following the environment after a save that left the avatar style and the GIF settings alone', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
+        ->assertSessionHasNoErrors();
+
+    config([
+        'skrum.avatar_style' => 'lorelei',
+        'services.gifs.provider' => 'giphy',
+        'services.gifs.key' => 'environment-key',
+        'services.gifs.rating' => 'pg',
+    ]);
+
+    $settings = storedBrandingSettings();
+
+    expect($settings->avatarStyle())->toBe('lorelei')
+        ->and($settings->gifProvider())->toBe('giphy')
+        ->and($settings->gifRating())->toBe('pg')
+        ->and($settings->gifEnabled())->toBeTrue();
+
+    $this->get(route('admin.branding.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('avatarStyle', null)
+            ->where('gifProvider', null)
+            ->where('gifRating', null)
+            ->where('gifEnabled', null)
+            ->where('defaults.avatarStyle', 'lorelei')
+            ->where('defaults.gifProvider', 'giphy')
+            ->where('defaults.gifRating', 'pg')
+            ->where('defaults.gifEnabled', true));
+});
+
+it('clears a stored switch when the form sends it back empty', function (string $field) {
+    brandingAdmin($this);
+    storedBrandingSettings()->setMany(['powered_by' => false, 'avatar_member_choice' => true, 'gif_enabled' => false]);
+    app()->forgetScopedInstances();
+
+    $this->put(route('admin.branding.update'), brandingPayload([
+        'powered_by' => false,
+        'avatar_member_choice' => true,
+        'gif_enabled' => false,
+        $field => null,
+    ]))->assertSessionHasNoErrors();
+
+    $this->assertDatabaseMissing('instance_settings', ['key' => $field]);
+    $this->assertDatabaseCount('instance_settings', 2);
+})->with(['powered_by', 'avatar_member_choice', 'gif_enabled']);
