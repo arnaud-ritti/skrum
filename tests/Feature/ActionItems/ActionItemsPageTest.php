@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemPriority;
 use App\Enums\RetroPhase;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\ActionItem;
 use App\Models\ActionItemComment;
 use App\Models\Participant;
@@ -299,7 +300,7 @@ it('loads the counts lazily with the items', function () {
     $url = route('workspaces.actionItems.index', $team->workspace);
     $partial = fn (string $only) => $this->actingAs($user)->get($url, [
         'X-Inertia' => 'true',
-        'X-Inertia-Version' => Inertia\Inertia::getVersion(),
+        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
         'X-Inertia-Partial-Component' => 'action-items/index',
         'X-Inertia-Partial-Data' => $only,
     ])->assertOk()->json('props');

@@ -509,6 +509,25 @@ describe('PokerTable revealed', () => {
         expect(screen.getByRole('img', { name: 'Malik: ☕' })).toBeTruthy();
     });
 
+    it('takes the outliers and the missing agreement as the server sends them', () => {
+        const { container } = renderTable({
+            seats,
+            revealed: true,
+            result: {
+                ...dispersion,
+                agreement: null,
+                outliers: { low: ['u2'], high: ['u1'] },
+            },
+        });
+
+        expect(
+            container.querySelectorAll(
+                '[data-slot="poker-seat-card"][data-outlier]',
+            ),
+        ).toHaveLength(2);
+        expect(screen.queryByText('Agreement')).toBeNull();
+    });
+
     it('keeps a non-numeric spread and shows the most played cards without an average', () => {
         renderTable({
             seats,

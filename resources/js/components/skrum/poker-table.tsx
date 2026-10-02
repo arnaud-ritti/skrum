@@ -54,14 +54,25 @@ export interface PokerSeat {
 }
 
 /**
- * The server result as it is, plus the statistics of the design system the
- * server does not compute yet: each one is shown only when it is given.
+ * The server result as it is (B39). `outliers` is also taken as a flat list of
+ * user ids, the shape of the design system. Each statistic is shown only when
+ * it is given.
  */
-export type PokerResult = ServerPokerResult & {
-    median?: number | null;
-    agreement?: number;
-    outliers?: string[];
+export type PokerResult = Omit<ServerPokerResult, 'outliers'> & {
+    outliers?: string[] | { low: string[]; high: string[] };
 };
+
+function outlierIdsOf(result: PokerResult | null | undefined): string[] {
+    const outliers = result?.outliers;
+
+    if (!outliers) {
+        return [];
+    }
+
+    return Array.isArray(outliers)
+        ? outliers
+        : [...outliers.low, ...outliers.high];
+}
 
 export interface PokerStory {
     key?: string;
@@ -599,7 +610,7 @@ function helpSentence(
 
     const outliers = anonymous
         ? []
-        : (result.outliers ?? [])
+        : outlierIdsOf(result)
               .map((id) => seats.find((seat) => seat.user.id === id))
               .filter((seat): seat is PokerSeat => seat !== undefined);
 
@@ -922,12 +933,13 @@ export function PokerResultPanel({
                             value={result.mode.join(', ')}
                         />
                     )}
-                    {result.agreement !== undefined && (
-                        <Stat
-                            label={t('Agreement')}
-                            value={`${Math.round(result.agreement * 100)}%`}
-                        />
-                    )}
+                    {result.agreement !== undefined &&
+                        result.agreement !== null && (
+                            <Stat
+                                label={t('Agreement')}
+                                value={`${Math.round(result.agreement * 100)}%`}
+                            />
+                        )}
                 </dl>
             ) : (
                 <p className="text-sm text-muted-foreground">
@@ -1050,7 +1062,7 @@ export function PokerTable({
     const players = seats.filter((seat) => seat.state !== 'watching');
     const watchers = seats.filter((seat) => seat.state === 'watching');
     const outlierIds = new Set(
-        revealed && !anonymous ? (result?.outliers ?? []) : [],
+        revealed && !anonymous ? outlierIdsOf(result) : [],
     );
     const isOval = players.length <= MaxOvalSeats;
     const hasVotes = players.some((seat) => seat.state === 'voted');
