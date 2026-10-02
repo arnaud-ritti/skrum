@@ -51,6 +51,7 @@ use App\Support\Integrations\Trackers\TrackerIssue;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -75,6 +76,10 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+pest()->extend(TestCase::class)
+    ->use(DatabaseMigrations::class)
+    ->in('Upgrade');
 
 pest()->extend(BrowserTestCase::class)
     ->use(RefreshDatabase::class)

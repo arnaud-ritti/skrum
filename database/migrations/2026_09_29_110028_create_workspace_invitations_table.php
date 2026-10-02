@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('role');
             $table->string('token_hash', 64)->unique();
             $table->foreignUuid('invited_by_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('expires_at');
+            $table->dateTime('expires_at');
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
 

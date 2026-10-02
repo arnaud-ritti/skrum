@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignUuid('survey_option_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('participant_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
-            $table->unique(['survey_id', 'participant_id', 'survey_option_id']);
+            $table->unique(['survey_id', 'participant_id', 'survey_option_id'], 'survey_responses_survey_id_participant_id_survey_option_id_uniq');
         });
     }
 };

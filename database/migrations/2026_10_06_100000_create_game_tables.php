@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -51,18 +50,18 @@ return new class extends Migration
             $table->string('game', 20);
             $table->foreignUuid('leader_player_id')->nullable()->constrained('game_players')->nullOnDelete();
             $table->string('word', 24)->nullable();
-            $table->jsonb('revealed_positions')->default(new Expression("'[]'::jsonb"));
-            $table->jsonb('picked_letters')->default(new Expression("'[]'::jsonb"));
-            $table->jsonb('picked_by')->default(new Expression("'[]'::jsonb"));
+            $table->jsonb('revealed_positions');
+            $table->jsonb('picked_letters');
+            $table->jsonb('picked_by');
             $table->unsignedSmallInteger('misses')->default(0);
-            $table->jsonb('clue')->default(new Expression("'[]'::jsonb"));
+            $table->jsonb('clue');
             $table->string('question', 200)->nullable();
-            $table->jsonb('drawing')->default(new Expression("'[]'::jsonb"));
+            $table->jsonb('drawing');
             $table->unsignedInteger('drawing_points')->default(0);
             $table->foreignUuid('winner_player_id')->nullable()->constrained('game_players')->nullOnDelete();
             $table->timestamp('revealed_at')->nullable();
             $table->string('outcome', 20)->nullable();
-            $table->timestamp('started_at');
+            $table->dateTime('started_at');
             $table->timestamp('ended_at')->nullable();
             $table->timestamps();
 
@@ -115,7 +114,7 @@ return new class extends Migration
             $table->string('game', 20);
             $table->unsignedSmallInteger('points');
             $table->boolean('is_win')->default(false);
-            $table->timestamp('created_at');
+            $table->dateTime('created_at');
 
             $table->unique(['game_round_id', 'player_id']);
             $table->index(['game_room_id', 'created_at']);
@@ -126,7 +125,7 @@ return new class extends Migration
             $table->foreignUuid('team_id')->constrained()->cascadeOnDelete();
             $table->string('locale', 5);
             $table->string('word', 24);
-            $table->timestamp('created_at');
+            $table->dateTime('created_at');
 
             $table->primary(['team_id', 'locale', 'word']);
         });

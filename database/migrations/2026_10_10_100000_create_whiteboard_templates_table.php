@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,10 +21,5 @@ return new class extends Migration
             $table->index('workspace_id');
         });
 
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        DB::statement('create unique index whiteboard_templates_workspace_name_unique on whiteboard_templates (workspace_id, lower(name))');
     }
 };

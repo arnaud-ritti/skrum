@@ -9,50 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-
-it('backfills the new columns from legacy rows', function () {
-    Schema::table('action_items', function (Blueprint $table) {
-        $table->boolean('is_done')->default(false);
-    });
-    $retro = Retro::factory()->create();
-    $member = Participant::factory()->create(['retro_id' => $retro->id]);
-    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $strayTeam = Team::factory()->create();
-    $done = ActionItem::factory()->create([
-        'retro_id' => $retro->id,
-        'team_id' => $strayTeam->id,
-        'created_by_participant_id' => $member->id,
-        'created_by_user_id' => null,
-        'assignee_participant_id' => $member->id,
-    ]);
-    $open = ActionItem::factory()->create([
-        'retro_id' => $retro->id,
-        'created_by_participant_id' => $guest->id,
-        'created_by_user_id' => null,
-        'assignee_participant_id' => $guest->id,
-    ]);
-    DB::table('action_items')->where('id', $done->id)->update(['is_done' => true, 'updated_at' => '2026-09-01 10:00:00']);
-
-    $migration = require database_path('migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php');
-    $migration->backfill();
-
-    $done->refresh();
-    $open->refresh();
-
-    expect($done->team_id)->toBe($retro->team_id)
-        ->and($done->completed_at?->toDateTimeString())->toBe('2026-09-01 10:00:00')
-        ->and($done->assignee_user_id)->toBe($member->user_id)
-        ->and($done->assignee_participant_id)->toBeNull()
-        ->and($done->created_by_user_id)->toBe($member->user_id)
-        ->and($open->team_id)->toBe($retro->team_id)
-        ->and($open->completed_at)->toBeNull()
-        ->and($open->assignee_participant_id)->toBe($guest->id)
-        ->and($open->assignee_user_id)->toBeNull()
-        ->and($open->created_by_user_id)->toBeNull();
-});
 
 it('derives the team and the author from the creating participant', function () {
     $item = ActionItem::factory()->create();

@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->string('kind');
             $table->date('due_on');
-            $table->timestamp('sent_at');
+            $table->dateTime('sent_at');
 
             $table->unique(['action_item_id', 'user_id', 'kind', 'due_on']);
             $table->index('sent_at');

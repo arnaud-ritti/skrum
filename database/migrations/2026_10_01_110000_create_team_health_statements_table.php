@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,15 +21,5 @@ return new class extends Migration
             $table->unique(['team_id', 'builtin']);
         });
 
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        DB::statement(<<<'SQL'
-            alter table team_health_statements add constraint team_health_statements_builtin_or_custom check (
-                (builtin is not null and text is null and label is null)
-                or (builtin is null and text is not null and label is not null)
-            )
-            SQL);
     }
 };

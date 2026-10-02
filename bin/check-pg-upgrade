@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+#
+# Proves that a PostgreSQL install from before the portability work, once migrated, has all its
+# rows and the schema of a fresh install. One difference is expected and asserted: the five check
+# constraints the old migrations added. The Schema builder cannot drop a check constraint, so
+# existing installs keep them; a fresh install has none (docs/database.md, "Upgrading").
+#
+#   bin/check-pg-upgrade
+#
+# Inside Sail by default. From a git worktree: TEST_DB_CONTAINER and TEST_DB_WORKDIR as for
+# bin/test-db, PG_CONTAINER (default skrum-pgsql-1). TEST_DB_ON_HOST=1 uses the host's PHP and
+# 127.0.0.1; PG_EXEC is then the command that reaches psql and pg_dump (CI:
+# `docker exec -i <postgres container>`). PG_USER is the database user (default sail).
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+user="${PG_USER:-sail}"
+base="${TEST_DB_DATABASE:-testing}"
+old="${base}_upgrade_old"
+fresh="${base}_upgrade_fresh"
+fixture=tests/Fixtures/pgsql/before-portability.sql
+legacy_checks="action_items_guest_assignee_needs_retro action_items_recurrence_needs_due_date action_items_single_assignee poker_decks_single_owner team_health_statements_builtin_or_custom"
+
+if [ "${TEST_DB_ON_HOST:-0}" = 1 ]; then
+    read -r -a pg <<< "${PG_EXEC:?Set PG_EXEC to the command that runs psql in the PostgreSQL container}"
+    artisan() { DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_URL= DB_DATABASE="$1" php artisan "${@:2}"; }
+elif [ -n "${TEST_DB_CONTAINER:-}" ]; then
+    pg=(docker exec -i "${PG_CONTAINER:-skrum-pgsql-1}")
+    artisan() { docker exec -u sail -w "${TEST_DB_WORKDIR:-/var/www/html}" -e DB_CONNECTION=pgsql -e DB_URL= -e DB_DATABASE="$1" "$TEST_DB_CONTAINER" php artisan "${@:2}"; }
+else
+    pg=(docker compose exec -T pgsql)
+    artisan() { docker compose exec -T -u sail -e DB_CONNECTION=pgsql -e DB_URL= -e DB_DATABASE="$1" laravel.test php artisan "${@:2}"; }
+fi
+
+sql() { "${pg[@]}" psql -U "$user" -v ON_ERROR_STOP=1 -q -At -d "$1" -c "$2"; }
+
+checks() { sql "$1" "select conname from pg_constraint where contype = 'c' and conrelid <> 0 order by conname" | tr '\n' ' ' | sed 's/ $//'; }
+
+schema() {
+    "${pg[@]}" pg_dump -U "$user" --schema-only --no-owner --no-privileges "$1" \
+        | grep -vE '^(--|\\restrict|\\unrestrict|SET |SELECT pg_catalog)' \
+        | grep -vE "CONSTRAINT (${legacy_checks// /|}) CHECK" \
+        | sed -E 's/,$//' \
+        | grep -vE '^$'
+}
+
+rows() {
+    for table in workspace_templates whiteboard_templates poker_decks game_rounds game_points action_items cards workspace_invitations users workspaces teams; do
+        echo "$table $(sql "$1" "select count(*) from $table")"
+    done
+
+    sql "$1" "select 'workspace_templates', id, name from workspace_templates order by id"
+    sql "$1" "select 'whiteboard_templates', id, name from whiteboard_templates order by id"
+    sql "$1" "select 'poker_decks', id, name from poker_decks order by id"
+}
+
+for database in "$old" "$fresh"; do
+    sql postgres "drop database if exists $database"
+    sql postgres "create database $database"
+done
+
+"${pg[@]}" psql -U "$user" -v ON_ERROR_STOP=1 -q -d "$old" < "$fixture" >/dev/null
+
+before=$(rows "$old")
+
+artisan "$old" migrate --force
+artisan "$fresh" migrate --force
+
+after=$(rows "$old")
+
+status=0
+
+if [ "$before" != "$after" ]; then
+    echo "check-pg-upgrade: FAIL, rows changed:"
+    diff <(echo "$before") <(echo "$after") || true
+    status=1
+fi
+
+mkdir -p storage/logs
+
+if ! diff <(schema "$old") <(schema "$fresh") > storage/logs/check-pg-upgrade.diff; then
+    echo "check-pg-upgrade: FAIL, the upgraded schema differs from a fresh one (storage/logs/check-pg-upgrade.diff):"
+    cat storage/logs/check-pg-upgrade.diff
+    status=1
+fi
+
+if [ "$(checks "$old")" != "$legacy_checks" ] || [ -n "$(checks "$fresh")" ]; then
+    echo "check-pg-upgrade: FAIL, check constraints: upgraded has [$(checks "$old")], fresh has [$(checks "$fresh")]; expected the five legacy ones and none."
+    status=1
+fi
+
+for database in "$old" "$fresh"; do
+    sql postgres "drop database $database"
+done
+
+if [ "$status" -eq 0 ]; then
+    echo "check-pg-upgrade: PASS, every row is there, and the schemas are equal apart from the five legacy check constraints"
+fi
+
+exit "$status"

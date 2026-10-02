@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('external_account_id', 128)->nullable();
             $table->string('external_display_name', 255)->nullable();
             $table->string('matched_by', 20);
-            $table->timestamp('checked_at');
+            $table->dateTime('checked_at');
             $table->timestamps();
 
             $table->unique(['team_integration_id', 'user_id']);

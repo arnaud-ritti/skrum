@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('integration_delivery_payloads', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('integration_delivery_id')->unique()->constrained()->cascadeOnDelete();
-            $table->text('message');
-            $table->text('request_headers')->nullable();
-            $table->text('request_body')->nullable();
+            $table->longText('message');
+            $table->longText('request_headers')->nullable();
+            $table->longText('request_body')->nullable();
             $table->unsignedSmallInteger('response_status')->nullable();
-            $table->text('response_excerpt')->nullable();
+            $table->longText('response_excerpt')->nullable();
             $table->timestamps();
 
             $table->index('created_at');

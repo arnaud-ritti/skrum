@@ -36,43 +36,27 @@ return new class extends Migration
             $table->index(['assignee_user_id', 'completed_at']);
             $table->index(['completed_at', 'due_on']);
         });
-
-        $this->addChecks();
     }
 
-    /**
-     * Public so a test can run it against rows shaped like the legacy table.
-     */
-    public function backfill(): void
+    private function backfill(): void
     {
-        DB::table('action_items')->whereNotNull('retro_id')->update([
-            'team_id' => DB::raw('(select retros.team_id from retros where retros.id = action_items.retro_id)'),
-        ]);
+        DB::table('retros')->select(['id', 'team_id'])->lazyById(500)->each(
+            fn (object $retro) => DB::table('action_items')->where('retro_id', $retro->id)->update(['team_id' => $retro->team_id]),
+        );
 
-        DB::table('action_items')->where('is_done', true)->update([
-            'completed_at' => DB::raw('action_items.updated_at'),
-        ]);
+        DB::table('action_items')->where('is_done', true)->select(['id', 'updated_at'])->lazyById(500)->each(
+            fn (object $item) => DB::table('action_items')->where('id', $item->id)->update(['completed_at' => $item->updated_at]),
+        );
 
-        DB::table('action_items')->whereNull('created_by_user_id')->whereNotNull('created_by_participant_id')->update([
-            'created_by_user_id' => DB::raw('(select participants.user_id from participants where participants.id = action_items.created_by_participant_id)'),
-        ]);
+        DB::table('participants')->whereNotNull('user_id')->select(['id', 'user_id'])->lazyById(500)->each(function (object $participant): void {
+            DB::table('action_items')
+                ->where('created_by_participant_id', $participant->id)
+                ->whereNull('created_by_user_id')
+                ->update(['created_by_user_id' => $participant->user_id]);
 
-        DB::table('action_items')
-            ->whereIn('assignee_participant_id', DB::table('participants')->select('id')->whereNotNull('user_id'))
-            ->update([
-                'assignee_user_id' => DB::raw('(select participants.user_id from participants where participants.id = action_items.assignee_participant_id)'),
-                'assignee_participant_id' => null,
-            ]);
-    }
-
-    private function addChecks(): void
-    {
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        DB::statement('alter table action_items add constraint action_items_single_assignee check (assignee_user_id is null or assignee_participant_id is null)');
-        DB::statement('alter table action_items add constraint action_items_guest_assignee_needs_retro check (retro_id is not null or assignee_participant_id is null)');
-        DB::statement('alter table action_items add constraint action_items_recurrence_needs_due_date check (recurrence is null or due_on is not null)');
+            DB::table('action_items')
+                ->where('assignee_participant_id', $participant->id)
+                ->update(['assignee_user_id' => $participant->user_id, 'assignee_participant_id' => null]);
+        });
     }
 };

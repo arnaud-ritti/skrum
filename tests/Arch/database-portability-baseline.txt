@@ -35,27 +35,6 @@ app/Http/Controllers/WorkspaceTemplatesController.php|selectRaw|1
 app/Http/Requests/WorkspaceTemplateRequest.php|whereRaw|1
 app/Mcp/Presenters/McpMessage.php|selectRaw|1
 app/Mcp/Tools/Retro/SearchBoards.php|ilike|4
-database/migrations/2026_09_29_110028_create_workspace_invitations_table.php|non-null timestamp|1
-database/migrations/2026_10_01_100300_create_workspace_templates_table.php|raw statement|1
-database/migrations/2026_10_01_110000_create_team_health_statements_table.php|driver branch|1
-database/migrations/2026_10_01_110000_create_team_health_statements_table.php|raw statement|1
-database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|driver branch|1
-database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|raw expression|4
-database/migrations/2026_10_02_100000_add_v2_columns_to_action_items_table.php|raw statement|3
-database/migrations/2026_10_02_100500_create_action_item_reminders_table.php|non-null timestamp|1
-database/migrations/2026_10_03_100100_create_poker_decks_table.php|driver branch|1
-database/migrations/2026_10_03_100100_create_poker_decks_table.php|raw statement|1
-database/migrations/2026_10_05_100000_create_integration_tables.php|non-null timestamp|1
-database/migrations/2026_10_06_100000_create_game_tables.php|cast with ::|5
-database/migrations/2026_10_06_100000_create_game_tables.php|expression default|5
-database/migrations/2026_10_06_100000_create_game_tables.php|non-null timestamp|3
-database/migrations/2026_10_06_100000_create_game_tables.php|raw expression|5
-database/migrations/2026_10_07_100000_extend_integration_tables_for_sync_and_channels.php|non-null timestamp|1
-database/migrations/2026_10_10_100000_create_whiteboard_templates_table.php|driver branch|1
-database/migrations/2026_10_10_100000_create_whiteboard_templates_table.php|raw statement|1
-database/migrations/2026_10_15_100000_add_workspace_to_poker_decks_table.php|driver branch|1
-database/migrations/2026_10_15_100000_add_workspace_to_poker_decks_table.php|raw statement|2
-tests/Feature/ActionItems/ActionItemModelTest.php|ddl in a test|1
 tests/Feature/Admin/InstanceAdminsTest.php|lock syntax|1
 tests/Feature/Admin/InstanceAdminsTest.php|reads sql text|2
 tests/Feature/Branding/BrandInPageTest.php|ddl in a test|1

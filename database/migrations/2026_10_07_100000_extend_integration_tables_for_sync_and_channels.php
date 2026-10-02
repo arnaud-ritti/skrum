@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('sync_error', 500)->nullable();
             $table->timestamp('missing_at')->nullable();
 
-            $table->index(['source', 'external_site', 'external_id']);
+            $table->index(['source', 'external_site', 'external_id'], 'action_item_external_links_source_external_site_external_id_ind');
         });
 
         Schema::table('poker_tasks', function (Blueprint $table) {
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->string('event_type', 100);
             $table->string('status', 10);
             $table->string('detail', 500)->nullable();
-            $table->timestamp('received_at');
+            $table->dateTime('received_at');
 
             $table->unique(['provider', 'event_key']);
             $table->index('received_at');
