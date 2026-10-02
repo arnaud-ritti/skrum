@@ -118,3 +118,34 @@ it('renders the team games page without overflow', function (string $name, bool 
     'rooms and leaderboard' => ['games-index-page', true, '[data-slot="team-games"] [data-slot="leaderboard-row"]'],
     'empty' => ['games-index-empty-page', false, '[data-slot="team-games"] [data-slot="games-empty"]'],
 ]);
+
+it('renders the guest join page of a game room without overflow', function (string $name, bool $valid, string $marker) {
+    config(['app.name' => 'Skrum']);
+
+    p18eVisualGames(false);
+
+    $room = GameRoom::factory()->create([
+        'team_id' => Team::query()->sole()->id,
+        'name' => 'Friday fun',
+        'game' => GameKind::Hangman,
+        'access' => $valid ? GameRoomAccess::Link : GameRoomAccess::Team,
+    ]);
+
+    $players = User::query()->orderBy('email')->limit(3)->get()
+        ->map(fn (User $user): GamePlayer => GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id]));
+
+    $room->update(['host_player_id' => $players->firstOrFail()->id]);
+
+    $this->captureVisuals(
+        $name,
+        route('games.join.show', $room->guest_token, false),
+        function (string $path, array $options) use ($valid, $marker) {
+            $page = visit($path, $options)->assertPresent($marker);
+
+            return $valid ? $page->fill('#name', 'Happy Otter') : $page;
+        },
+    );
+})->with([
+    'join' => ['games-join-page', true, '[data-slot="guest-join"]'],
+    'invalid link' => ['games-join-invalid-page', false, '[data-slot="access-notice"]'],
+]);

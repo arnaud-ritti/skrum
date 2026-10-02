@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\GameKind;
+use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Team;
@@ -157,4 +158,24 @@ it('[P18e-06-11] shows a room created, renamed, started and deleted in one brows
     $b->assertNotPresent($link)
         ->assertSee('No game rooms yet.')
         ->assertScript('window.p18eStayed === true', true);
+});
+
+it('[P18e-06-03] shows the notice of an invalid guest link with HTTP 404', function () {
+    $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday fun']);
+    $path = route('games.join.show', $room->guest_token, false);
+
+    $guest = visit($path);
+
+    $guest->assertSeeIn('[data-slot="guest-join-session"]', 'Friday fun')
+        ->assertVisible('#name');
+
+    $room->update(['access' => GameRoomAccess::Team]);
+
+    $guest->navigate($path)
+        ->assertSee('Join a game')
+        ->assertSee('This guest link is no longer valid.')
+        ->assertNotPresent('#name')
+        ->assertNotPresent('[data-slot="guest-join"]');
+
+    expect((int) $guest->script('() => fetch(window.location.href).then((response) => response.status)'))->toBe(404);
 });

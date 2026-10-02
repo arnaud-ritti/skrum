@@ -441,7 +441,7 @@ it('[P13d-07] lets a visitor open the guest link of a link room, type a name and
 
     $c = visit(route('games.join.show', $room->guest_token, false));
     $c->assertSee('Friday fun')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->fill('#name', 'Casey')
         ->click('Join')
         ->assertPathIs("/games/{$room->id}");
@@ -669,7 +669,7 @@ it('[P13d-12b] posts the guest join link of a link room when "Include the guest 
 
     $visitor->assertPathIs("/play/{$room->guest_token}")
         ->assertSee('Friday fun')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->assertVisible('#name');
 });
 

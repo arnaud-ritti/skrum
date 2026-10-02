@@ -15,6 +15,7 @@ describe('page layouts', () => {
             'retros/show',
             'poker/show',
             'games/index',
+            'games/join',
             'games/show',
             'whiteboards/show',
         ]) {

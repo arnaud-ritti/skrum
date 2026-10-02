@@ -39,3 +39,33 @@ None. The deviations of D-20 that concern this page stay backlog.
 | Streak badge on the podium and in the rows; the mockup has none | parity row 10, Task 0.10; no row in the table |
 | Status labels are the mockup's ("Live", "Waiting for players"); the plan text says "Playing" and "Waiting" | the mockup wins (rule 13) |
 | The rooms card scrolls inside itself beyond 30rem (`GameRoomList`), the mockup shows four rooms only | component of plan 18c |
+
+## Task G2: guest join (`games/join`)
+
+Page `resources/js/pages/games/join.tsx` renders `GuestJoinPage` (`components/session/`, Task 0.7) with `kind="game"`; the page is in `ownLayoutPages`.
+
+### Parity (brief 06 §3 rows 13–15, brief 11 §3 row 34)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 13 | Join with a name (required, 50 characters at most, prefilled with `suggestedName`) | `#name` "Your nickname", prefilled (6-D9); "Join" posts `{name}` to `games.join.store`; the server error shows under the field | done |
+| 14 | Invalid link, HTTP 404 | notice "Join a game" / "This guest link is no longer valid." in the centred frame, no form | done |
+| 15 | Already a player: redirect to the room | server, unchanged | done |
+| 34 (brief 11) | Session card of the join page | room name, game name, "Live", "n participants", ":name facilitates" (the host), from the `session` prop of R2a (M28); sticky "Join" on a phone | done |
+
+### Places left
+
+None in the page. The colour picker and the short code of D-32 have their place in `GuestJoin` (`takenColors`, `session.code`), not given today.
+
+### Differences with the mockup
+
+| Difference | Covered by |
+|---|---|
+| No avatar colour picker, no short code | D-32 |
+| The preview avatar is neutral (no presence colour) | D-32 |
+| The session card starts with the game name ("Hangman") before the state | `GuestJoin` of plan 18c, plan text of G2; no row in the table |
+| Button "Join", the mockup "Rejoindre la session" (Join the session) | `GuestJoin` of plan 18c and the browser contract (`click('Join')`); no row in the table |
+| The Skrüm logo shows twice at 1440 and 390: in the frame's header and in the card | `AuthLayout` centred of Task 0.7 with the card of the mockup; no row in the table |
+| Language select in the frame's header; the mockup card stands alone | `AuthLayout` of Task 0.7; no row in the table |
+| The page sends no "Another random nickname" button: the name is prefilled, so the empty-name state only appears once the guest clears the field, and it then has no suggestion | O: 6-D9 (prefilled); `defaultName` not given, no row in the table |
+| Invalid link: a notice card; the mockup has no such state | brief 06 row 14 |

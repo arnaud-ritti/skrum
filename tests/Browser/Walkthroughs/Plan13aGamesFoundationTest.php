@@ -140,8 +140,8 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
     $guest = visit($joinUrl);
 
     $guest->assertSee('Lunch')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
-        ->assertSee('Display name')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
+        ->assertSee('Your nickname')
         ->assertVisible('#name');
 
     [$adjective, $animal] = explode(' ', $guest->value('#name'));
