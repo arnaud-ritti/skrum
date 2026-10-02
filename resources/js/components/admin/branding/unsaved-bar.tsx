@@ -1,4 +1,3 @@
-import { Save } from 'lucide-react';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -8,14 +7,16 @@ export type UnsavedBarProps = {
     count: number;
     saving?: boolean;
     onCancel: () => void;
+    /** Id of the form that "Save" submits: the bar sits in the topbar, outside it. */
+    form?: string;
     className?: string;
 };
 
-/** Sits inside the form it saves: "Save" is its submit button. */
 export function UnsavedBar({
     count,
     saving = false,
     onCancel,
+    form,
     className,
 }: UnsavedBarProps) {
     const { t } = useTrans();
@@ -30,20 +31,20 @@ export function UnsavedBar({
             data-slot="unsaved-bar"
             data-dirty={dirty ? '' : undefined}
             className={cn(
-                'flex min-w-0 flex-wrap items-center gap-2 rounded-lg border bg-card p-3 shadow-card data-[dirty]:border-primary',
+                'flex min-w-0 shrink-0 items-center gap-2',
                 className,
             )}
         >
             <p
                 role="status"
-                className="min-w-0 flex-1 basis-40 truncate text-sm font-medium data-[dirty]:text-skrum-primary-text"
                 data-dirty={dirty ? '' : undefined}
+                className="sr-only truncate text-xs text-muted-foreground data-[dirty]:font-semibold data-[dirty]:text-skrum-primary-text md:not-sr-only"
             >
                 {message}
             </p>
             <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 disabled={!dirty || saving}
                 onClick={onCancel}
                 className="max-w-full min-w-0"
@@ -52,11 +53,11 @@ export function UnsavedBar({
             </Button>
             <LoadingButton
                 type="submit"
+                form={form}
                 loading={saving}
                 disabled={!dirty}
                 className="max-w-full min-w-0"
             >
-                <Save aria-hidden="true" />
                 <span className="truncate">{t('Save')}</span>
             </LoadingButton>
         </div>

@@ -13,12 +13,17 @@ export default function AdminBranding(props: BrandingPageProps) {
     const firstSignature = useRef(signature);
 
     return (
-        <AdminShell active="branding">
+        <>
             <Head title={t('Branding')} />
             <BrandingForm
                 key={signature}
                 focusOnMount={signature !== firstSignature.current}
                 adminName={auth.user.name}
+                frame={(bar, content) => (
+                    <AdminShell active="branding" actions={bar}>
+                        {content}
+                    </AdminShell>
+                )}
                 brandColor={props.brandColor}
                 brandRadius={props.brandRadius}
                 displayName={props.displayName}
@@ -34,6 +39,6 @@ export default function AdminBranding(props: BrandingPageProps) {
                 palette={props.palette}
                 avatarStyles={props.avatarStyles}
             />
-        </AdminShell>
+        </>
     );
 }

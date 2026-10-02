@@ -95,7 +95,26 @@ export const MaxRadius = 16;
 export const MaxAssetBytes = 512 * 1024;
 export const PreviewDelayMs = 250;
 
-export const RadiusPresets = [0, 6, 10, 16] as const;
+export const RadiusPresets = [0, 4, 8, 16] as const;
+
+export type RadiusPreset = (typeof RadiusPresets)[number];
+
+export const BrandAssetNames: BrandAssetName[] = [
+    'logo-light',
+    'logo-dark',
+    'favicon',
+];
+
+/** The styles of the short list, in the order of the mockup. */
+export const FeaturedAvatarStyles = [
+    'initials',
+    'notionists',
+    'thumbs',
+    'lorelei',
+    'glass',
+    'shapes',
+    'fun-emoji',
+];
 
 export const AssetMimeTypes = [
     'image/png',
@@ -135,6 +154,20 @@ export function clampRadius(value: number): number {
     }
 
     return Math.min(MaxRadius, Math.max(MinRadius, Math.round(value)));
+}
+
+/**
+ * The segment shown for a stored radius: the server accepts 0 to 16, the
+ * control offers four values. Between two segments the smaller one wins.
+ */
+export function nearestRadiusPreset(value: number): RadiusPreset {
+    const radius = clampRadius(value);
+
+    return RadiusPresets.reduce((nearest, preset) =>
+        Math.abs(preset - radius) < Math.abs(nearest - radius)
+            ? preset
+            : nearest,
+    );
 }
 
 export type ContrastLevel = 'AAA' | 'AA' | 'below';
