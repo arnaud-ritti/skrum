@@ -325,3 +325,21 @@ RW-P1, RW-P2 and their fix pass are merged with the RW-C2 header (`poker-room.ts
 The 28 `poker-room-*-1440-*` captures are the lane's files and predate the RW-C2 header; no capture was run at this integration, they are to regenerate at the end-of-phase run.
 
 Open for the owner: the N key after a reveal (moves on without saving, no visible control), and the row of players partly under the fold on a phone while the team votes.
+
+## Integration of wave 4 (2026-10-02)
+
+RW-P3 (settings popover) and RW-P4 (ticket key, games count) are merged. No test was run and no capture was opened: what follows is read from the code and the lane's review.
+
+Fixed at the integration (the lane had no fix pass): the tooltip of "Game settings" shows the comma key; the comma key does nothing on an expired session; the summary of the history never reads "across 0 games".
+
+Remaining differences with the mockup:
+
+| Screen | Difference | Row |
+|---|---|---|
+| Room, settings | the popover stays open after "Apply"; a player who does not facilitate reads the values; the button is in the bar under the header on a phone; no name field in the deck editor of the popover; no button once the game has ended; no side sheet on a wide screen | D-70 |
+| Room, settings | closing while "Apply" is pending asks "Discard n changes?" for a change being saved (shared `SessionSettingsPopover`, same on the retro) | none: to fix in the shared component |
+| Room, settings | after the popover closes, the tooltip "Game settings" shows until the button loses focus | none: cosmetic |
+| Room, settings | "Manage decks" leaves the room without the question when changes are pending; a reader sees the link too | none |
+| Estimation history | the game name after the ticket key; "in 1 game"; the team name alone under a filter; the search matches titles only; the chip is not a link | D-72 |
+
+Stale captures: `poker-room-settings-*` (popover at 1440, drawer at 390), `poker-estimates-*` (new summary; the seed has no imported task, so no chip shows).

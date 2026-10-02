@@ -212,3 +212,19 @@ Review round (fixes and points left to the owner):
 Tests written or changed, not run (owner's rule): feature `TeamHealthCheckPageTest` (new, 7 cases with the dataset); Vitest `roti-trend-card.test.tsx`, `health-check-summary.test.tsx`, `team-health-card.test.tsx`, `team-roti-card.test.tsx`, `trend-states.test.tsx`, `team-health-check-page.test.tsx` (new), `team-health-manager.test.tsx` (the former `team-health-card.test.tsx`, renamed with its component, cases unchanged), `team-mood-card.test.tsx`, `team-page.test.tsx`, `mood-adapter.test.ts` (rewritten for the new elements); browser `[P08b-01a]`, `[P08b-01b]` (start on the team card, follow its link), `[P08b-07]` (opens the health check page), `[P18e-04-09]` (ROTI on the team page, mood on the health check page), `[P18e-04-02]`, `[P18e-04-02b]` (new selectors and bench states). Captures not regenerated.
 
 The "Fix later" line above about the failed deferred fetch is done by this task for a failure on the server; a request that never gets an answer (network) still leaves the skeleton.
+
+## Integration of wave 4 (2026-10-02)
+
+RW-T1 and RW-T2 are merged with their fix pass. No test was run. The safety check was unavailable while RW-T2 ran, so its commits were re-read at the integration: the route `teams.healthCheck.show` sits in the scoped workspace group (a team of another workspace is a 404), authorises `view` on the team as the team page does, and sends only `id`, `name` of the team and `id`, `name`, `slug` of the workspace; the five write routes still ask `update`. `Inertia::defer(…, rescue: true)` exists in the installed inertia-laravel; a rescued prop is absent from the reload, which the feature test now asserts. The join aggregate is one `withExists`, portable.
+
+Remaining differences with the mockup:
+
+| Screen | Difference | Row |
+|---|---|---|
+| Team page, retro cards | info tone for every open phase but Voting; no gear for a plain member; "New session" after the gear | D-73 |
+| Team page, members | English reads "Remove from team" where it read "Remove" (the key had to differ for the French "Retirer") | none: owner decision |
+| Team page, health check | real count, "1–10", "Custom" badge, "Details" for a member | D-76 |
+| Team page, ROTI | day labels and "since :day"; under the sessions in the main column; no table view, no link per retro, no voter count | D-77 |
+| Health check page | no mockup; opens on `view`; "Mood & ROTI" active in the sidebar while that entry leads to the ROTI card | D-96, D-76 |
+
+Stale captures: the bench states `mood-roti`, `mood-empty`, `mood-loading` no longer exist (now `roti-single`, `roti-empty`, `roti-loading`, `trend-error`, `health-check-page`, `health-check-page-member`); `team-page-*` (compact health card, ROTI card, gear). The real health check page has no capture.

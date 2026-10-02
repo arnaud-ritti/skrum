@@ -151,3 +151,18 @@ Back end added in this task (PB-15, PB-21): `usageCount` on each entry of `templ
 | While searching, a section without a match is not shown; with none left, "No template matches “…”" and "Clear search" | D-94 |
 | The editor opens in a side sheet (no frame in the mockup) without the sheet's close cross ("Cancel", Escape and a click outside close it) | D-94 |
 
+
+## Integration of wave 4 (2026-10-02)
+
+Tasks 9a, 9b and 9c are merged with their fix pass; no test was run and no capture was made. The rows marked "new row" above are numbered: **D-91** (workspace page), **D-92** (leaving), **D-93** (members), **D-94** (templates). D-24 is reworded: the activity lines and the usage of a template are built.
+
+Still open after the fix pass:
+
+| Screen | Point | Status |
+|---|---|---|
+| Templates page | toasts sit bottom-right, over "Save" of the editor sheet; the walkthroughs submit with Enter | to look at in a browser |
+| Templates page | "Use" on a workspace deck assumes the team's poker form lists workspace decks | unverified |
+| Members page | the narrow layout (table as blocks under 36rem) was never rendered, in any language | unverified |
+| Members page | focus after a dialog opened from a row menu has no test | unverified |
+| All three | FR, ES and DE wording of about eighty keys is the implementer's | to review |
+| Old files | `components/workspace-switcher.tsx`, `confirm-form-dialog.tsx`, `templates/template-chips.tsx`, `heading.tsx` have fewer or no importers | F1 |
