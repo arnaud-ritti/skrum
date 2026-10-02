@@ -3735,5 +3735,8 @@
     "Type the workspace name to confirm.": "Saisissez le nom de l'espace de travail pour confirmer.",
     "The name does not match.": "Le nom ne correspond pas.",
     ":count participant has not voted": ":count participant n'a pas voté",
-    ":count guest": ":count invité"
+    ":count guest": ":count invité",
+    "Nearly neutral colour: active states will rely on lightness alone.": "Couleur quasi neutre : les états actifs reposeront sur la luminosité seule.",
+    "Too light to carry text: lightness adjusted from :from % to :to % in the light theme.": "Trop claire pour porter du texte : luminosité ajustée de :from % à :to % en thème clair.",
+    "Hue close to the destructive red: destructive actions keep their icon and label, do not remove them.": "Teinte proche du rouge « destructive » : les actions destructives gardent leur icône et leur libellé, ne les retirez pas."
 }

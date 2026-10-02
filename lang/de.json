@@ -3735,5 +3735,8 @@
     "Type the workspace name to confirm.": "Geben Sie zur Bestätigung den Namen des Arbeitsbereichs ein.",
     "The name does not match.": "Der Name stimmt nicht überein.",
     ":count participant has not voted": ":count Teilnehmer hat nicht abgestimmt",
-    ":count guest": ":count Gast"
+    ":count guest": ":count Gast",
+    "Nearly neutral colour: active states will rely on lightness alone.": "Fast neutrale Farbe: Aktive Zustände beruhen allein auf der Helligkeit.",
+    "Too light to carry text: lightness adjusted from :from % to :to % in the light theme.": "Zu hell, um Text zu tragen: Helligkeit im hellen Design von :from % auf :to % angepasst.",
+    "Hue close to the destructive red: destructive actions keep their icon and label, do not remove them.": "Farbton nahe am Rot für destruktive Aktionen: Destruktive Aktionen behalten Symbol und Beschriftung, entfernen Sie sie nicht."
 }

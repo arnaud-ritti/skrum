@@ -3508,5 +3508,8 @@
     "Type the workspace name to confirm.": "Type the workspace name to confirm.",
     "The name does not match.": "The name does not match.",
     ":count participant has not voted": ":count participant has not voted",
-    ":count guest": ":count guest"
+    ":count guest": ":count guest",
+    "Nearly neutral colour: active states will rely on lightness alone.": "Nearly neutral colour: active states will rely on lightness alone.",
+    "Too light to carry text: lightness adjusted from :from % to :to % in the light theme.": "Too light to carry text: lightness adjusted from :from % to :to % in the light theme.",
+    "Hue close to the destructive red: destructive actions keep their icon and label, do not remove them.": "Hue close to the destructive red: destructive actions keep their icon and label, do not remove them."
 }
