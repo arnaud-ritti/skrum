@@ -9,20 +9,17 @@ export type IntegrationProviderKey =
     | 'mattermost'
     | 'webhook';
 
-export type IntegrationStatus =
-    | 'active'
-    | 'setup_required'
-    | 'reconnect_required';
+type IntegrationStatus = 'active' | 'setup_required' | 'reconnect_required';
 
 export type IntegrationAccess = 'read' | 'write';
 
-export type IntegrationAuthMethod = 'oauth' | 'pat';
+type IntegrationAuthMethod = 'oauth' | 'pat';
 
-export type JiraSite = { cloudId: string; url: string; name: string };
+type JiraSite = { cloudId: string; url: string; name: string };
 
-export type JiraField = { id: string; name: string };
+type JiraField = { id: string; name: string };
 
-export type IntegrationSettings = {
+type IntegrationSettings = {
     teamName?: string;
     channelName?: string;
     configurationUrl?: string;
@@ -110,7 +107,7 @@ export type ShareChannel =
 
 export type DeliveryChannel = ShareChannel | 'email';
 
-export type DeliveryKind =
+type DeliveryKind =
     | 'retro_link'
     | 'poker_link'
     | 'retro_results'
@@ -130,9 +127,9 @@ export type WebhookEventOption = {
     description: string;
 };
 
-export type WebhookDisabledReason = 'failures' | 'gone';
+type WebhookDisabledReason = 'failures' | 'gone';
 
-export type WebhookHealth = {
+type WebhookHealth = {
     consecutiveFailures: number;
     lastDeliverySucceededAt: string | null;
 };
@@ -191,28 +188,28 @@ export type TrackerProviderKey = 'jira' | 'linear' | 'jira_dc' | 'github';
 
 export type PriorityLevel = 'high' | 'medium' | 'low';
 
-export type JiraPriorityChoice = { id: string; name: string };
+type JiraPriorityChoice = { id: string; name: string };
 
-export type IntegrationPriorityMap = Partial<
+type IntegrationPriorityMap = Partial<
     Record<PriorityLevel, JiraPriorityChoice | number | null>
 >;
 
-export type InboundMode = 'webhook' | 'polling' | 'off';
+type InboundMode = 'webhook' | 'polling' | 'off';
 
-export type WebhookStatus = 'pending' | 'active' | 'failing';
+type WebhookStatus = 'pending' | 'active' | 'failing';
 
-export type JiraStatusMapping = {
+type JiraStatusMapping = {
     doneStatusIds: string[] | null;
     completeStatusId: string | null;
     reopenStatusId: string | null;
 };
 
-export type LinearStatusMapping = {
+type LinearStatusMapping = {
     completeStateId: string | null;
     reopenStateId: string | null;
 };
 
-export type StatusMapping = {
+type StatusMapping = {
     projects?: Record<string, JiraStatusMapping>;
     teams?: Record<string, LinearStatusMapping>;
 };
@@ -256,7 +253,7 @@ export type UserMappingRow = {
 
 export type UserMappings = { members: UserMappingRow[]; matching: boolean };
 
-export type ExternalLinkSyncState =
+type ExternalLinkSyncState =
     | 'off'
     | 'synced'
     | 'pending'

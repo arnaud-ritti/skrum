@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import RecentSessionsController from '@/actions/App/Http/Controllers/RecentSessionsController';
 import { retroRequest } from '@/lib/retro/api';
 
-export type RecentSessionKind = 'retro' | 'poker' | 'whiteboard' | 'game';
+type RecentSessionKind = 'retro' | 'poker' | 'whiteboard' | 'game';
 
 export type RecentSession = {
     kind: RecentSessionKind;

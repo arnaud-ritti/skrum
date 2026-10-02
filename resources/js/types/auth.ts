@@ -23,15 +23,6 @@ export type Passkey = {
     last_used_at_diff: string | null;
 };
 
-export type TwoFactorSetupData = {
-    svg: string;
-    url: string;
-};
-
-export type TwoFactorSecretKey = {
-    secretKey: string;
-};
-
 export type SsoProviderKey = 'google' | 'github' | 'entra' | 'oidc';
 
 export type SsoProviderOption = {

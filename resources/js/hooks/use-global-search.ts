@@ -21,7 +21,7 @@ export type SearchResult = {
 };
 
 export const SearchDelayMs = 150;
-export const SearchMinLength = 2;
+const SearchMinLength = 2;
 
 type Found = { results: SearchResult[]; term: string };
 
