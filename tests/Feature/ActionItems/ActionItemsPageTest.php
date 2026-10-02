@@ -163,8 +163,12 @@ it('offers creatable teams, assignees, channels and the viewer context', functio
 
     actionItemsPage($this, $admin, $team->workspace)
         ->assertInertia(fn (Assert $page) => $page
-            ->where('teams.0.name', 'Alpha')
-            ->where('teams.1.name', 'Beta')
+            ->where('filterTeams.0.name', 'Alpha')
+            ->where('filterTeams.1.name', 'Beta')
+            ->where('teams', [
+                ['id' => $team->id, 'name' => 'Alpha'],
+                ['id' => $adminOnlyTeam->id, 'name' => 'Beta'],
+            ])
             ->has('creatableTeams', 1)
             ->where('creatableTeams.0.id', $team->id)
             ->where('realtimeTeamIds', [$team->id, $adminOnlyTeam->id])
@@ -220,4 +224,86 @@ it('counts open action items on the team page', function () {
     $this->actingAs($user)
         ->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page->where('openActionItemCount', 2));
+});
+
+it('counts open, overdue, completed, own and ritual items ignoring the status filter', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-10 12:00:00'));
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $colleague = teamMember($team);
+    $firstRetro = Retro::factory()->create(['team_id' => $team->id]);
+    $secondRetro = Retro::factory()->create(['team_id' => $team->id]);
+    ActionItem::factory()->create(['team_id' => $team->id, 'retro_id' => $firstRetro->id, 'assignee_user_id' => $user->id]);
+    ActionItem::factory()->create(['team_id' => $team->id, 'retro_id' => $firstRetro->id, 'due_on' => '2026-10-01', 'assignee_user_id' => $colleague->id]);
+    ActionItem::factory()->create(['team_id' => $team->id, 'retro_id' => $secondRetro->id, 'completed_at' => '2026-10-02 10:00:00', 'assignee_user_id' => $user->id]);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['due_on' => '2026-10-20']);
+
+    foreach (['open', 'overdue', 'completed', 'all'] as $status) {
+        actionItemsPage($this, $user, $team->workspace, ['status' => $status])
+            ->assertInertia(fn (Assert $page) => $page->where('counts', [
+                'open' => 3,
+                'overdue' => 1,
+                'completed' => 1,
+                'mine' => 1,
+                'rituals' => 2,
+            ]));
+    }
+});
+
+it('narrows the counts by team and assignee', function () {
+    $team = Team::factory()->create();
+    $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $user = teamMember($team);
+    $otherTeam->members()->attach($user);
+    $colleague = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create();
+    ActionItem::factory()->withoutRetro($team, $user)->assignedTo($colleague)->create();
+    ActionItem::factory()->withoutRetro($team, $user)->completed()->create();
+    ActionItem::factory()->withoutRetro($otherTeam, $user)->create();
+
+    actionItemsPage($this, $user, $team->workspace, ['team' => $otherTeam->id])
+        ->assertInertia(fn (Assert $page) => $page->where('counts', [
+            'open' => 1, 'overdue' => 0, 'completed' => 0, 'mine' => 0, 'rituals' => 0,
+        ]));
+
+    actionItemsPage($this, $user, $team->workspace, ['assignee' => $colleague->id])
+        ->assertInertia(fn (Assert $page) => $page->where('counts', [
+            'open' => 1, 'overdue' => 0, 'completed' => 0, 'mine' => 0, 'rituals' => 0,
+        ]));
+
+    actionItemsPage($this, $user, $team->workspace, ['team' => $team->id, 'assignee' => 'me'])
+        ->assertInertia(fn (Assert $page) => $page->where('counts', [
+            'open' => 1, 'overdue' => 0, 'completed' => 0, 'mine' => 1, 'rituals' => 0,
+        ]));
+});
+
+it('counts nothing from a team the user cannot see', function () {
+    $team = Team::factory()->create();
+    $hiddenTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $member = teamMember($team);
+    $hiddenRetro = Retro::factory()->create(['team_id' => $hiddenTeam->id]);
+    ActionItem::factory()->withoutRetro($team, $member)->create();
+    ActionItem::factory()->create(['team_id' => $hiddenTeam->id, 'retro_id' => $hiddenRetro->id, 'due_on' => '2020-01-01']);
+    ActionItem::factory()->create(['team_id' => $hiddenTeam->id, 'retro_id' => $hiddenRetro->id, 'completed_at' => '2026-10-02 10:00:00']);
+
+    actionItemsPage($this, $member, $team->workspace)
+        ->assertInertia(fn (Assert $page) => $page->where('counts', [
+            'open' => 1, 'overdue' => 0, 'completed' => 0, 'mine' => 0, 'rituals' => 0,
+        ]));
+});
+
+it('loads the counts lazily with the items', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->create();
+    $url = route('workspaces.actionItems.index', $team->workspace);
+    $partial = fn (string $only) => $this->actingAs($user)->get($url, [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => Inertia\Inertia::getVersion(),
+        'X-Inertia-Partial-Component' => 'action-items/index',
+        'X-Inertia-Partial-Data' => $only,
+    ])->assertOk()->json('props');
+
+    expect($partial('items'))->toHaveKey('items')->not->toHaveKey('counts')
+        ->and($partial('items,counts'))->toHaveKey('counts');
 });

@@ -60,7 +60,8 @@ class WorkspaceActionItemsController extends Controller
             'filters' => $filters->toArray(),
             'items' => fn (): array => $this->items($user, $workspace, $filters, $actor),
             'focusedItem' => fn (): ?array => $this->focusedItem($user, $workspace, $filters, $actor),
-            'teams' => $this->presentTeams($teams),
+            'counts' => fn (): array => $this->actionItemQuery->counts($user, $workspace, $filters),
+            'filterTeams' => $this->presentTeams($teams),
             'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team) => $team->members->contains('id', $user->id))),
             'assignees' => $teams->flatMap(fn (Team $team) => $team->members)
                 ->unique('id')
