@@ -148,7 +148,7 @@ describe('the whiteboards of a team', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    it('keeps the date whole beside a facilitator name that is cut', () => {
+    it('keeps the date whole, on a second line when the facilitator leaves it no room', () => {
         section();
 
         const link = screen.getByRole('link', { name: /Sprint board/ });
@@ -157,9 +157,9 @@ describe('the whiteboards of a team', () => {
         expect(link.textContent).toContain(
             'Facilitated by Fran Facilitator · Sep 24, 2026',
         );
-        expect(date?.textContent).toBe(' · Sep 24, 2026');
-        expect(date?.className).toContain('shrink-0');
-        expect(date?.className).not.toContain('truncate');
+        expect(date?.textContent).toBe('Sep 24, 2026');
+        expect(date?.className).toContain('whitespace-nowrap');
+        expect(date?.parentElement?.className).toContain('flex-wrap');
     });
 
     it('moves the focus to the heading of the section once a board is deleted', async () => {

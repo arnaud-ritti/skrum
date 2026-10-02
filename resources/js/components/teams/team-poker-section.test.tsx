@@ -149,7 +149,7 @@ describe('the planning poker section of a team', () => {
         section();
 
         const folded = within(rowOf('Sprint 43 refinement')).getByText(
-            '· Fibonacci · 12 minutes ago',
+            'Fibonacci · 12 minutes ago',
         );
 
         expect(folded.className).toContain('sm:hidden');

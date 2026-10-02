@@ -148,22 +148,20 @@ export function TeamWhiteboardsSection({
                                         <span className="truncate text-sm font-semibold">
                                             {board.title}
                                         </span>
-                                        <span className="flex min-w-0 text-xs text-muted-foreground">
+                                        <span className="flex min-w-0 flex-wrap gap-x-1 text-xs text-muted-foreground">
                                             {board.facilitatorName && (
-                                                <span className="truncate">
+                                                <span className="max-w-full truncate">
                                                     {t('Facilitated by :name', {
                                                         name: board.facilitatorName,
                                                     })}
+                                                    {board.updatedAt && ' · '}
                                                 </span>
                                             )}
                                             {board.updatedAt && (
                                                 <span
                                                     data-slot="whiteboard-date"
-                                                    className="shrink-0 whitespace-pre"
+                                                    className="whitespace-nowrap"
                                                 >
-                                                    {board.facilitatorName
-                                                        ? ' · '
-                                                        : ''}
                                                     {formatDate.format(
                                                         new Date(
                                                             board.updatedAt,

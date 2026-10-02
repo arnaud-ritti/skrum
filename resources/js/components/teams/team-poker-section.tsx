@@ -207,9 +207,9 @@ function GamesTable({
                                                 </span>
                                                 <span
                                                     data-slot="poker-game-phone-meta"
-                                                    className="sm:hidden"
+                                                    className="w-full sm:hidden"
                                                 >
-                                                    {`· ${game.deckLabel} · ${lastActivity}`}
+                                                    {`${game.deckLabel} · ${lastActivity}`}
                                                 </span>
                                                 {presence === undefined && (
                                                     <Skeleton
