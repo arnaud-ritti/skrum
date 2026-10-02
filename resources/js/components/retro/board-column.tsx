@@ -2,7 +2,7 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import ColumnOrdersController from '@/actions/App/Http/Controllers/Retros/ColumnOrdersController';
 import ColumnsController from '@/actions/App/Http/Controllers/Retros/ColumnsController';
@@ -49,7 +49,7 @@ export function BoardColumn({
     className?: string;
     /**
      * The host writes the new card somewhere else (the drawer of the phone
-     * board): the column then has no card open for writing.
+     * board): the column then has neither "Add a card" nor a card in editing.
      */
     onAdd?: () => void;
     /** Place of the "… is writing a card" line of the Writing mockup (RT-1). */
@@ -62,6 +62,8 @@ export function BoardColumn({
     const sectionRef = useRef<HTMLElement | null>(null);
     const drop = useColumnDropZone(column.id);
     const [isSortedByVotes, setIsSortedByVotes] = useState(true);
+    const [isComposing, setIsComposing] = useState(false);
+    const returnsFocusToAdd = useRef(false);
     const busy = useRef(false);
     const props = toColumnProps(column, ctx.board);
     const { hasCards, canManage, ...columnProps } = props;
@@ -164,13 +166,39 @@ export function BoardColumn({
         return <Fragment key={card.id}>{draw(card)}</Fragment>;
     };
 
-    const focusComposer = () => {
+    useEffect(() => {
+        if (isComposing || !returnsFocusToAdd.current) {
+            return;
+        }
+
+        returnsFocusToAdd.current = false;
+        sectionRef.current
+            ?.querySelector<HTMLButtonElement>('[data-slot="retro-column-add"]')
+            ?.focus();
+    }, [isComposing]);
+
+    const openComposer = () => {
+        setIsComposing(true);
         sectionRef.current
             ?.querySelector<HTMLTextAreaElement>(
                 '[data-slot="retro-card-composer"] textarea',
             )
             ?.focus();
     };
+
+    const closeComposer = () => {
+        returnsFocusToAdd.current = true;
+        setIsComposing(false);
+    };
+
+    const composer = isComposing ? (
+        <CardComposer
+            columnId={column.id}
+            color={column.color}
+            autoFocus
+            onCancel={closeComposer}
+        />
+    ) : undefined;
 
     return (
         <RetroColumn
@@ -193,12 +221,8 @@ export function BoardColumn({
             onSortByVotesChange={
                 canSortByVotes ? setIsSortedByVotes : undefined
             }
-            onAdd={onAdd ?? focusComposer}
-            composer={
-                onAdd ? null : (
-                    <CardComposer columnId={column.id} color={column.color} />
-                )
-            }
+            onAdd={onAdd ?? openComposer}
+            composer={onAdd ? null : composer}
             {...(canManage && {
                 onRename: (title: string) => void update({ title }),
                 onColorChange: (color: ColumnColor) => void update({ color }),
