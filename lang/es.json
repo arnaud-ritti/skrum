@@ -2637,6 +2637,7 @@
     "Collapse group": "Contraer el grupo",
     "+ :count cards": "+ :count tarjetas",
     ":count votes in total": ":count votos en total",
+    "Group vote": "Voto de grupo",
     ":count of them yours": "de los cuales :count tuyos",
     "Group: :title, :count cards": "Grupo: :title, :count tarjetas",
     "Group title": "Título del grupo",

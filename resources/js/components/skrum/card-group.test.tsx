@@ -199,6 +199,27 @@ describe('CardGroup', () => {
         expect(screen.queryByText(/votes in total/)).toBeNull();
     });
 
+    it('puts the vote controls of the group on a "Group vote" line, in place of the total', () => {
+        const { container, rerender } = renderWithProviders(
+            group({
+                votes: { total: 11, mine: 2 },
+                voteControls: <button type="button">Add a vote</button>,
+            }),
+        );
+        const line = container.querySelector('[data-slot="card-group-votes"]');
+
+        expect(line?.textContent).toContain('Group vote');
+        expect(line?.querySelector('button')?.textContent).toBe('Add a vote');
+        expect(screen.queryByText(/votes in total/)).toBeNull();
+        expect(line?.closest('article')).toBeNull();
+
+        rerender(group({ votes: { total: 11, mine: 2 } }));
+
+        expect(
+            container.querySelector('[data-slot="card-group-votes"]'),
+        ).toBeNull();
+    });
+
     it('never uses the text of a masked card in the title or the labels', () => {
         const secret = 'A secret nobody may read';
         const { container } = renderWithProviders(

@@ -35,6 +35,12 @@ export type CardGroupProps = Omit<
     collapsed?: boolean;
     editingTitle?: boolean;
     votes?: { total: number | null; mine: number };
+    /**
+     * The controls of the vote on the whole group (`CardVotes`), on the line
+     * "Group vote" under the cards. They say the total themselves, so the
+     * line "n votes in total" of an open group is left out.
+     */
+    voteControls?: ReactNode;
     canEdit?: boolean;
     dropTarget?: boolean;
     titleMaxLength?: number;
@@ -81,6 +87,7 @@ export function CardGroup({
     collapsed,
     editingTitle = false,
     votes,
+    voteControls,
     canEdit = false,
     dropTarget = false,
     titleMaxLength = 60,
@@ -187,6 +194,7 @@ export function CardGroup({
                 all.findIndex((other) => other.id === author.id) === index,
         );
     const showTotal = votes !== undefined && votes.total !== null;
+    const hasVoteControls = voteControls !== undefined && voteControls !== null;
 
     function toggle(): void {
         const next = !isCollapsed;
@@ -283,7 +291,8 @@ export function CardGroup({
             </span>
         </div>
     ) : (
-        showTotal && (
+        showTotal &&
+        !hasVoteControls && (
             <div
                 data-slot="card-group-footer"
                 className="flex min-w-0 items-center gap-2 px-0.5 text-xs text-muted-foreground"
@@ -515,6 +524,17 @@ export function CardGroup({
             )}
 
             {footer}
+            {hasVoteControls && (
+                <div
+                    data-slot="card-group-votes"
+                    className="flex min-w-0 items-center gap-2 px-0.5"
+                >
+                    <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
+                        {t('Group vote')}
+                    </span>
+                    <div className="min-w-0 flex-1">{voteControls}</div>
+                </div>
+            )}
         </section>
     );
 }

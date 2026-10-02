@@ -2637,6 +2637,7 @@
     "Collapse group": "Gruppe zuklappen",
     "+ :count cards": "+ :count Karten",
     ":count votes in total": ":count Stimmen insgesamt",
+    "Group vote": "Abstimmung für die Gruppe",
     ":count of them yours": "davon :count von dir",
     "Group: :title, :count cards": "Gruppe: :title, :count Karten",
     "Group title": "Gruppentitel",
