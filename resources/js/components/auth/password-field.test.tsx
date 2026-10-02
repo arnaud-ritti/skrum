@@ -82,4 +82,21 @@ describe('PasswordField', () => {
                 .hasAttribute('disabled'),
         ).toBe(true);
     });
+
+    it('shows a mark in the field, before the show / hide button', () => {
+        renderWithProviders(
+            <PasswordField
+                label="Confirm new password"
+                mark={<span role="img" aria-label="Passwords match" />}
+            />,
+        );
+
+        const mark = screen.getByRole('img', { name: 'Passwords match' });
+        const toggle = screen.getByRole('button', { name: 'Show password' });
+
+        expect(
+            mark.compareDocumentPosition(toggle) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
 });
