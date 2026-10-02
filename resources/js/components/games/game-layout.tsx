@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,22 @@ export function useHasRightColumn(): boolean {
     return useMinWidth(RightColumnFromRem);
 }
 const LeftColumnFromRem = 80;
+const PhoneUnderRem = 48;
+
+const StageFooterContext = createContext<HTMLElement | null>(null);
+
+/**
+ * Where a game docks what the thumb needs, at the bottom of the screen of a
+ * phone: the hangman keyboard, the guess field of a drawing. Null on a wider
+ * screen and outside a `GameLayout`: the game keeps it in its flow then.
+ */
+export function useStageFooter(): HTMLElement | null {
+    return useContext(StageFooterContext);
+}
+
+/** The inset of the home indicator stands under a docked panel, in its own colour. */
+export const dockedPanelClass =
+    'border-t pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]';
 
 const columns = {
     choice: {
@@ -80,6 +96,8 @@ export function GameLayout({
     const isWideForLeft = useMinWidth(LeftColumnFromRem);
     const [panelId, setPanelId] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const isPhone = !useMinWidth(PhoneUnderRem);
+    const [footer, setFooter] = useState<HTMLElement | null>(null);
 
     const hasLeftColumn = left !== undefined && isWideForLeft;
     const hasRightColumn = right !== undefined && isWideForRight;
@@ -175,7 +193,9 @@ export function GameLayout({
                     </div>
                 )}
                 <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 py-5 sm:px-8">
-                    {stage}
+                    <StageFooterContext value={isPhone ? footer : null}>
+                        {stage}
+                    </StageFooterContext>
                 </div>
                 {dock !== undefined && dock !== null && (
                     <div
@@ -184,6 +204,13 @@ export function GameLayout({
                     >
                         {dock}
                     </div>
+                )}
+                {isPhone && (
+                    <div
+                        ref={setFooter}
+                        data-slot="game-footer"
+                        className="shrink-0 empty:hidden"
+                    />
                 )}
             </div>
             {hasRightColumn && (

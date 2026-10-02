@@ -211,7 +211,7 @@ it('renders a hangman room without overflow', function (string $name, bool $play
     'between two rounds' => ['games-room-hangman-end', false, '[data-slot="round-end-card"]'],
 ]);
 
-it('renders a Draw & Guess room and a Decoded room without overflow', function (string $name, GameKind $game, bool $leads, string $marker) {
+it('renders a Draw & Guess room and a Decoded room without overflow', function (string $name, GameKind $game, bool $leads, string $marker, bool $opensGuesses = false) {
     config(['app.name' => 'Skrum']);
 
     p18eVisualGames(false);
@@ -268,14 +268,25 @@ it('renders a Draw & Guess room and a Decoded room without overflow', function (
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
-            ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
-            ->assertCount('[data-realtime]', 1)
-            ->assertPresent('section[aria-labelledby="game-guesses"]'),
+        function (string $path, array $options, int $width) use ($users, $marker, $opensGuesses) {
+            $page = p18eVisualGamesVisit($users[0], $path, $options, $marker)
+                ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+                ->assertCount('[data-realtime]', 1)
+                ->assertPresent('section[aria-labelledby="game-guesses"]');
+
+            if ($opensGuesses && $width === 390) {
+                $page->resize(390, 844)
+                    ->click('[data-slot="guess-dock"] button[aria-haspopup="dialog"]')
+                    ->assertPresent('[role="dialog"] [role="log"]');
+            }
+
+            return $page;
+        },
     );
 })->with([
     'the drawer' => ['games-room-draw', GameKind::DrawAndGuess, true, '[data-slot="drawing-toolbar"]'],
     'a guesser of the drawing' => ['games-room-draw-guesser', GameKind::DrawAndGuess, false, '[data-slot="draw-sheet"] canvas:not(.cursor-crosshair)'],
+    'the guesses of the drawing, in their drawer on a phone' => ['games-room-draw-guesses', GameKind::DrawAndGuess, false, '[data-slot="draw-sheet"] canvas:not(.cursor-crosshair)', true],
     'the clue giver' => ['games-room-decoded', GameKind::Decoded, true, '[data-slot="clue-editor"]'],
     'a guesser of the clue' => ['games-room-decoded-guesser', GameKind::Decoded, false, '[data-slot="clue-row"]'],
 ]);

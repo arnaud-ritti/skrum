@@ -2,7 +2,22 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { Shapes, Users } from 'lucide-react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import { GameLayout, type GameLayoutPanel } from './game-layout';
+import { createPortal } from 'react-dom';
+import {
+    GameLayout,
+    useStageFooter,
+    type GameLayoutPanel,
+} from './game-layout';
+
+function Docking() {
+    const footer = useStageFooter();
+
+    return footer === null ? (
+        <p>in the flow</p>
+    ) : (
+        createPortal(<p>docked</p>, footer)
+    );
+}
 
 function viewport(widestRem: number): void {
     vi.spyOn(window, 'matchMedia').mockImplementation(
@@ -148,5 +163,35 @@ describe('GameLayout', () => {
         expect(
             screen.getByRole('button', { name: 'Choose a game' }),
         ).toBeTruthy();
+    });
+
+    it('gives a game a footer under the stage on a phone, and none on a wider screen', () => {
+        viewport(24);
+
+        const { unmount } = renderWithProviders(
+            <GameLayout
+                right={players}
+                stage={<Docking />}
+                dock={<p>bar</p>}
+            />,
+        );
+
+        const footer = document.querySelector('[data-slot="game-footer"]');
+
+        expect(footer?.textContent).toBe('docked');
+        expect(screen.queryByText('in the flow')).toBeNull();
+        expect(
+            document
+                .querySelector('[data-slot="game-dock"]')
+                ?.compareDocumentPosition(footer as Element),
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+        unmount();
+        viewport(50);
+
+        renderWithProviders(<GameLayout right={players} stage={<Docking />} />);
+
+        expect(document.querySelector('[data-slot="game-footer"]')).toBeNull();
+        expect(screen.getByText('in the flow')).toBeTruthy();
     });
 });

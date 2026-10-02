@@ -1,5 +1,6 @@
 import { Pencil } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import GameDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameDrawingOpsController';
 import GameDrawingsController from '@/actions/App/Http/Controllers/Games/GameDrawingsController';
 import GameLastDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameLastDrawingOpsController';
@@ -30,8 +31,8 @@ import {
     type PreviewStroke,
 } from './drawing-canvas';
 import { DrawingToolbar } from './drawing-toolbar';
-import { useHasRightColumn } from './game-layout';
-import { GuessChat } from './guess-chat';
+import { useHasRightColumn, useStageFooter } from './game-layout';
+import { GuessChat, GuessDock } from './guess-chat';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
 import { useRoom } from './room-context';
@@ -62,6 +63,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
     const mask = round.mask ?? [];
     const isMobile = useIsMobile();
     const hasRightColumn = useHasRightColumn();
+    const footer = useStageFooter();
 
     const receive = useCallback((message: StrokeMessage) => {
         setRemote((current) => {
@@ -292,7 +294,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
                     onClear={clear}
                 />
             )}
-            {!hasRightColumn && (
+            {!hasRightColumn && footer === null && (
                 <GuessChat
                     fieldFirst
                     round={round}
@@ -300,6 +302,11 @@ export function DrawBoard({ round }: { round: GameRound }) {
                     className="max-h-72 w-full max-w-4xl shrink-0"
                 />
             )}
+            {footer !== null &&
+                createPortal(
+                    <GuessDock round={round} isLeader={isDrawer} />,
+                    footer,
+                )}
         </div>
     );
 }

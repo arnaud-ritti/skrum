@@ -251,8 +251,8 @@ Remaining differences:
 | Room rows with rounds and access, "n rounds · n wins", streak badges | D-56 |
 | Shell: Players / Scores tabs, columns, "Back to the team", check on the selected card | D-57 |
 | Reaction bar in its own strip | D-58 |
-| Hangman: no whole-word field; keyboard in the flow on a phone | D-59 |
-| Draw: "Fill", pencil tag colour, guesses on the stage on a phone | D-60 |
+| Hangman: no whole-word field (keyboard docked on a phone since RW-G3) | D-59 |
+| Draw: "Fill", pencil tag colour (guesses in a drawer on a phone since RW-G3) | D-60 |
 | GIF: dialog picker, immediate send, voting on the results gallery, labels | D-61 |
 | GIF: `<img alt="">`, no reduced-motion still (spec §5 rule 8) | D-62, owner decision |
 | No turn banner, turn order, round counter, per-turn timer, settings card, caption, podium of a GIF round | D-20 |
@@ -349,3 +349,32 @@ No test removed. Vitest: new `gif-your-pick.test.tsx`, `gif-answer-stage.test.ts
 | Tiles are the proxied pictures (4:3 in the fake provider), stills are placeholders under reduced motion; no duration pill, no title on hover | D-62 |
 | The picker is a `group`, the mockup a `dialog` | D-61 (A) |
 | Phone: picker in the flow of the stage (16rem body), "Your pick" under it; the mockup asks for a full-screen drawer | D-61 |
+
+## RW-G3 — games on a phone (owner round 4b, D-59 and D-60)
+
+`GameLayout` holds a footer under the stage and under the strip of the reaction bar, on a phone only (under 48rem): `[data-slot="game-footer"]`, read by a game through `useStageFooter()` (null on a wider screen and outside a `GameLayout`, such as the retro stage of `game-panel.tsx`, where the game keeps everything in its flow). A docked panel pads the inset of the home indicator (`dockedPanelClass`).
+
+- **Hangman**: the keyboard is docked in the footer, on the muted ground of the mockup; the gallows, the misses, the word and the last three letters stay on the stage above it. From 48rem on, nothing changes.
+- **Draw & Guess**: the footer holds the latest guess (announced, `aria-live`), a "Guesses" button with the count, and the guess field of who may guess; the button opens a `Drawer` with the whole list (`role="log"`). Who draws has the line and the button, no field; the drawer says why. From 48rem to 64rem the guesses stay on the stage as before; from 64rem on, in their column.
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `P18e-06-05` | at 390 the keyboard is in the footer, at the bottom of the viewport, the gallows and the word above it and in view; the assertion "keyboard above the last letters" is gone (the last letters stay in the board, asserted) | docked keyboard |
+| `P18e-06-08` | at 390 the reaction bar is above the keyboard, without overlap; at 1440 the keyboard is above the bar, as before | docked keyboard, D-58 |
+| `P18e-06-08b` | renamed; at 390 the field is in the footer at the bottom of the viewport, under the bar and the drawing; a guess shows in the line above the field and in the drawer, which has no field and closes on Escape; back at 1440 the guess is in the right column | guesses drawer |
+| `GamesPagesVisualTest` | new captures `games-room-draw-guesses-*`: the drawer open at 390 (the 1440 ones are the guesser's room) | capture of the drawer |
+
+No test removed. Vitest: new `hangman-board.test.tsx`, `guess-dock.test.tsx`; one more case in `game-layout.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| Hangman: the reaction bar's strip between the stage and the keyboard | D-58 |
+| Hangman: no "Guess the word" button in the last row of keys; gallows centred above the word, no "tries left" and hint beside them; players as chips in the bar with a sheet | D-59, D-20 |
+| Draw & Guess: the drawer's toolbar is in the flow under the drawing, not docked; the secret word is a card, not a band | D-60 |
+| Decoded: the guesses stay on the stage on a phone | D-60 |
+| The page does not declare `viewport-fit=cover`, so the inset of the home indicator is zero today; the panels already pad it | none (blade shared, not changed) |
+
