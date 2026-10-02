@@ -95,3 +95,59 @@ No mockup of this page exists; the reference is the Members card of `ScreenSetti
 | The link of an invitation just sent, in a band under the header | new row (existing feature, parity row 15) |
 | Under 36rem of card the table is a list of blocks; the role stays a select in the row, not in a drawer | new row |
 | The page has a "Delete workspace" card under the members card | new row (existing feature, parity row 19) |
+
+## Task 9c — Templates page: "All", the full picker, "Use", Poker and Whiteboard tabs
+
+Built on PB-14 (option A), PB-15 (option A), PB-17 and PB-21, which win over the plan text: an "All" tab as the mockup, the "Retro" tab as the full picker. No test, capture or browser was run (owner decision); the differences below are read from the code and the mockup's `preview.html`.
+
+### Parity (brief 09 §3, rows 21–38)
+
+| # | Old behaviour | New control | Done |
+|---|---|---|---|
+| 21 | Templates list, read by every role: name, category, column chips | "All" tab: one card per template (`[data-test="workspace-template-{id}"]`): columns in their colours with their titles, name, "n columns · used n×", author with avatar, "Use". The category is read in the "Retro" tab: the picker's category filter and the badge of its preview | yes |
+| 22 | Subtitle | "Templates shared by every team of this workspace" under the `h1` | yes |
+| 23 | Empty state "No workspace templates yet." | the same sentence in a dashed block of the Retrospective section; "Create a template" for a manager | yes |
+| 24 | New template (manager); the catalogue is loaded when the editor opens | "New template" in the page header → side sheet (`role="dialog"`) with `TemplateEditor` in create mode; `catalogue` is asked for when the editor opens on a new template or when the Retro tab opens, and again after a visit dropped it | yes |
+| 25 | Start from a built-in template | `#template-source` of the editor; fills the name when it is empty, the category and the columns | yes |
+| 26 | Name (80), category | `#template-name`, `#template-category` | yes |
+| 27 | Column title, colour, description | "Column :position title", the colour picker, "Column :position help question" (TemplateEditor README) | yes (labels changed, listed in the plan) |
+| 28 | Reorder columns | the handle "Reorder “:title”, position n of m": pointer, or Space, arrows, Space | yes (control changed, listed in the plan) |
+| 29 | Remove a column (not the last) | "Delete column “:title”", with a 5 s "Undo" toast | yes |
+| 30 | Add a column (10 at most) | "Add a column" | yes |
+| 31 | Save (create) | submit "Save" → `workspaces.templates.store`; the sheet closes; "Template saved." | yes |
+| 32 | Edit, save (update) | "Edit" in the "…" menu of a card, or "Edit" in the preview of the picker → the sheet in edit mode → `workspaces.templates.update` | yes |
+| 33 | Delete a template | "Delete" in the "…" menu of a card, or "Delete template" in the editor → `alertdialog` "Delete this template?" / "Retros already created from it are not affected." (9-D7) → `workspaces.templates.destroy`; "Template deleted." | yes |
+| 34 | Cancel | "Cancel" of the editor, Escape, a click outside the sheet | yes |
+| 35 | Validation errors | `errors` of the visit handed to the editor (name, category, columns, each column); "n fields to fix" | yes |
+| 36 | A member only reads | no "New template", no "…" menu, no Edit or Duplicate in the picker; "Use" stays | yes |
+| 37 | Duplicate (new) | "Duplicate" in the "…" menu of a card and in the editor; "Duplicate and edit" in the picker, on a built-in template too (third round, point 16): the editor opens on a new template named "Copy of :name" | yes |
+| 38 | Flash toasts | unchanged | yes |
+
+Added by the owner's answers: "Use" on every card and in the picker (9-D1) — a link to the page of the current team with `?new=retro&template=<key>`, `?new=poker&deck=<id>` or `?new=whiteboard&template=workspace:<id>`, read there by `useNewSessionIntent`; without a team the button stays, inert (`aria-disabled`), with the hint "Pick a team first". The Poker tab lists the decks of the workspace (B30) with create, edit, duplicate and delete for a workspace manager; the Whiteboard tab lists the whiteboard templates with rename and delete for who may manage them.
+
+Back end added in this task (PB-15, PB-21): `usageCount` on each entry of `templates` (the retros created from it), `author` as `{ name, avatarUrl }` or `null` on each entry of `templates` and of `pokerDecks`.
+
+### Places left
+
+| Mockup or roadmap element | Slot | Later |
+|---|---|---|
+| Visibility badge of a template | `slots.templateVisibilityFor` of `TemplatesPage` → `badge` of `TemplateCard`, beside the name | WS-2 |
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The "Retro" tab is the full picker (built-in templates, categories, preview with "Use this template", "Duplicate and edit", "Edit"), not the card grid; the page's search field gives way to the picker's own there (one query for both) | PB-14 |
+| A card has a "…" menu for a manager (Edit, Duplicate, Delete) | PB-21 |
+| The line of a deck is its usage ("n games"), the section says "Deck values" | PB-21 |
+| The whiteboard empty state has no button | PB-17 |
+| The whiteboard empty state is the `EmptyState` component (its illustration and its "Whiteboard" overline), not the lagoon tile with the pen | new row |
+| A whiteboard template card (the mockup shows none): outline of the board on white paper, name, description, "Use"; no author (the page is not sent one) | new row |
+| "Create a deck" in the header of the Planning poker section, and a dashed empty block "No workspace decks yet." / "No workspace templates yet." when a kind is empty | new row (B30; parity row 23) |
+| "New template" is shown to a manager only, and creates a retro template on every tab | new row (existing rule; decks have "Create a deck") |
+| The column titles of a card's preview are read by assistive technology (the mockup hides the preview); they are set in the overline size (0.6875rem), the mockup's 0.625rem is outside the scale | new row (accessibility; rule 3) |
+| No author line on a card whose author's account is gone | new row |
+| Without a team "Use" is disabled with "Pick a team first" | new row (plan, 9-D1) |
+| While searching, a section without a match is not shown; with none left, "No template matches “…”" and "Clear search" | new row |
+| The editor opens in a side sheet (no frame in the mockup) without the sheet's close cross ("Cancel", Escape and a click outside close it) | new row |
+

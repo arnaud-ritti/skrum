@@ -36,6 +36,7 @@ export const ownLayoutPages: readonly string[] = [
     'workspaces/show',
     'workspaces/create',
     'workspaces/members',
+    'workspaces/templates',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

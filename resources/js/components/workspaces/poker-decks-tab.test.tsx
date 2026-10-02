@@ -1,0 +1,182 @@
+import { act, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PokerDecksTab } from '@/components/workspaces/poker-decks-tab';
+import { renderWithProviders } from '@/test/render';
+import type { WorkspacePokerDeck } from '@/types';
+
+type VisitOptions = {
+    onSuccess?: () => void;
+    onError?: (errors: Record<string, string>) => void;
+    onFinish?: () => void;
+};
+
+const mocks = vi.hoisted(() => ({
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    reload: vi.fn(),
+}));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => ({ props: { translations: {}, locale: 'en' } }),
+    Link: ({
+        href,
+        children,
+        ...props
+    }: {
+        href: string;
+        children: ReactNode;
+    }) => (
+        <a href={href} {...props}>
+            {children}
+        </a>
+    ),
+    router: {
+        post: mocks.post,
+        patch: mocks.patch,
+        delete: mocks.delete,
+        reload: mocks.reload,
+    },
+}));
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
+const deck: WorkspacePokerDeck = {
+    id: 'deck-1',
+    name: 'T-shirt sizing',
+    cards: ['S', 'M', 'L', '?'],
+    usageCount: 4,
+    author: { name: 'Bastien L', avatarUrl: '' },
+    canManage: true,
+};
+
+function tab(decks: WorkspacePokerDeck[], canCreate: boolean) {
+    renderWithProviders(
+        <PokerDecksTab
+            workspace={{ id: 'w1', name: 'Nordlys', slug: 'nordlys' }}
+            decks={decks}
+            canCreate={canCreate}
+            hrefFor={(kind, key) => `/team?new=${kind}&deck=${key}`}
+        />,
+    );
+}
+
+beforeEach(() => {
+    for (const mock of [mocks.post, mocks.patch, mocks.delete, mocks.reload]) {
+        mock.mockReset();
+    }
+});
+
+describe('PokerDecksTab', () => {
+    it('shows a deck with its values, its usage, its author and "Use"', () => {
+        tab([deck], false);
+
+        const card = screen.getByRole('article', { name: 'T-shirt sizing' });
+
+        expect(within(card).getByText('4 games')).toBeTruthy();
+        expect(within(card).getByText('By Bastien L')).toBeTruthy();
+        expect(
+            within(card).getByRole('group', { name: 'Values' }).textContent,
+        ).toContain('S');
+        expect(
+            within(card)
+                .getByRole('link', { name: 'Use T-shirt sizing' })
+                .getAttribute('href'),
+        ).toBe('/team?new=poker&deck=deck-1');
+    });
+
+    it('gives a member no control on a deck', () => {
+        tab([{ ...deck, canManage: false }], false);
+
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('says when the workspace has no deck, with the creation for a manager only', () => {
+        tab([], false);
+
+        expect(screen.getByText('No workspace decks yet.')).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Create a deck' }),
+        ).toBeNull();
+    });
+
+    it('creates a deck of the workspace', async () => {
+        tab([deck], true);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Create a deck' }),
+        );
+
+        expect(
+            within(screen.getByRole('dialog')).getByRole('heading', {
+                name: 'Create a deck',
+            }),
+        ).toBeTruthy();
+    });
+
+    it('edits a deck through the workspace route', async () => {
+        tab([deck], true);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Actions for T-shirt sizing' }),
+        );
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(
+            within(dialog).getByRole('heading', {
+                name: 'Edit T-shirt sizing',
+            }),
+        ).toBeTruthy();
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.patch.mock.calls[0][0]).toBe(
+            '/w/nordlys/poker-decks/deck-1',
+        );
+        expect(mocks.patch.mock.calls[0][1]).toEqual({
+            name: 'T-shirt sizing',
+            cards: ['S', 'M', 'L'],
+            include_unknown: true,
+            include_coffee: false,
+        });
+    });
+
+    it('deletes a deck after the confirmation, and shows why it could not', async () => {
+        tab([deck], true);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Actions for T-shirt sizing' }),
+        );
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+        const confirm = screen.getByRole('alertdialog');
+
+        expect(
+            within(confirm).getByText('Games that use it keep their cards.'),
+        ).toBeTruthy();
+
+        await userEvent.click(
+            within(confirm).getByRole('button', { name: 'Delete deck' }),
+        );
+
+        expect(mocks.delete.mock.calls[0][0]).toBe(
+            '/w/nordlys/poker-decks/deck-1',
+        );
+
+        await act(async () => {
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onFinish?.();
+        });
+
+        expect(
+            within(screen.getByRole('alertdialog')).getByRole('alert')
+                .textContent,
+        ).toContain('Something went wrong. Please try again.');
+    });
+});

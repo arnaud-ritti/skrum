@@ -5,6 +5,8 @@ import { DeleteWorkspaceSection } from '@/components/workspaces/delete-workspace
 import { LeaveWorkspacePanel } from '@/components/workspaces/leave-workspace-dialog';
 import { MembersTable } from '@/components/workspaces/members-table';
 import type { WorkspaceMembersProps } from '@/components/workspaces/members-table';
+import { TemplatesPage } from '@/components/workspaces/templates-page';
+import type { TemplatesPageProps } from '@/components/workspaces/templates-page';
 import { WorkspaceOverview } from '@/components/workspaces/workspace-overview';
 import type { WorkspaceOverviewProps } from '@/components/workspaces/workspace-overview';
 import { useTrans } from '@/hooks/use-trans';
@@ -177,6 +179,203 @@ const longMemberList: WorkspaceMembersProps = {
     ],
 };
 
+function author(name: string, digit: string) {
+    return { name, avatarUrl: avatar(digit) };
+}
+
+const templates: TemplatesPageProps = {
+    workspace,
+    templates: [
+        {
+            id: 'template-1',
+            name: '4L',
+            category: 'essentials',
+            author: author('Camille Roux', '4'),
+            usageCount: 12,
+            columns: [
+                { title: 'Liked', description: null, color: 'moss' },
+                { title: 'Learned', description: null, color: 'sky' },
+                { title: 'Lacked', description: null, color: 'coral' },
+                { title: 'Longed for', description: null, color: 'sun' },
+            ],
+        },
+        {
+            id: 'template-2',
+            name: 'Start / Stop / Continue',
+            category: 'essentials',
+            author: author('Arnaud Ritti', '1'),
+            usageCount: 9,
+            columns: [
+                { title: 'Start', description: null, color: 'moss' },
+                { title: 'Stop', description: null, color: 'coral' },
+                { title: 'Continue', description: null, color: 'sky' },
+            ],
+        },
+        {
+            id: 'template-3',
+            name: 'Mad / Sad / Glad',
+            category: 'team_mood',
+            author: author('Malik Kone', '6'),
+            usageCount: 4,
+            columns: [
+                { title: 'Mad', description: null, color: 'coral' },
+                { title: 'Sad', description: null, color: 'iris' },
+                { title: 'Glad', description: null, color: 'sun' },
+            ],
+        },
+        {
+            id: 'template-4',
+            name: 'Sailboat',
+            category: 'themed',
+            author: null,
+            usageCount: 2,
+            columns: [
+                { title: 'Wind', description: null, color: 'lagoon' },
+                { title: 'Anchors', description: null, color: 'apricot' },
+                { title: 'Rocks', description: null, color: 'plum' },
+                { title: 'Island', description: null, color: 'moss' },
+            ],
+        },
+    ],
+    categories: [
+        { value: 'essentials', label: 'Essentials' },
+        { value: 'team_mood', label: 'Team & mood' },
+        { value: 'themed', label: 'Themed' },
+    ],
+    whiteboardTemplates: [],
+    pokerDecks: [
+        {
+            id: 'deck-1',
+            name: 'Fibonacci + coffee',
+            cards: ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'],
+            usageCount: 18,
+            author: author('Camille Roux', '4'),
+            canManage: true,
+        },
+        {
+            id: 'deck-2',
+            name: 'T-shirt sizing',
+            cards: ['XS', 'S', 'M', 'L', 'XL', '?'],
+            usageCount: 1,
+            author: author('Bao Lin', '3'),
+            canManage: true,
+        },
+    ],
+    canCreatePokerDeck: true,
+    canManage: true,
+    catalogue: [
+        {
+            key: 'went_well_to_improve_actions',
+            name: 'Went well, To improve, Actions',
+            category: 'essentials',
+            isCommon: true,
+            isWorkspace: false,
+            columns: [
+                {
+                    title: 'Went well',
+                    description: 'What helped us this sprint',
+                    color: 'moss',
+                },
+                {
+                    title: 'To improve',
+                    description: 'What slowed us down',
+                    color: 'coral',
+                },
+                {
+                    title: 'Actions',
+                    description: 'What we change next',
+                    color: 'sky',
+                },
+            ],
+        },
+        {
+            key: 'start_stop_continue',
+            name: 'Start, Stop, Continue',
+            category: 'essentials',
+            isCommon: true,
+            isWorkspace: false,
+            columns: [
+                { title: 'Start', description: null, color: 'moss' },
+                { title: 'Stop', description: null, color: 'coral' },
+                { title: 'Continue', description: null, color: 'sky' },
+            ],
+        },
+        {
+            key: 'sailboat',
+            name: 'Sailboat',
+            category: 'themed',
+            isCommon: false,
+            isWorkspace: false,
+            columns: [
+                { title: 'Wind', description: null, color: 'lagoon' },
+                { title: 'Anchors', description: null, color: 'apricot' },
+            ],
+        },
+    ],
+};
+
+const longTemplates: TemplatesPageProps = {
+    ...templates,
+    templates: [
+        {
+            ...templates.templates[0],
+            name: 'Quarterly retrospective of the platform reliability, observability and developer experience teams',
+            author: author(
+                'Maximilian-Alexander von Hohenberg-Lichtenstein',
+                '5',
+            ),
+            usageCount: 1284,
+            columns: Array.from({ length: 10 }, (_, index) => ({
+                title: `Observability and reliability ${index + 1}`,
+                description: null,
+                color: templates.templates[index % 4].columns[0].color,
+            })),
+        },
+    ],
+    pokerDecks: [
+        {
+            ...templates.pokerDecks[0],
+            name: 'Fibonacci extended with halves, infinity and coffee',
+            cards: Array.from({ length: 20 }, (_, index) => `${index * 13}`),
+        },
+    ],
+    whiteboardTemplates: [
+        {
+            id: 'board-1',
+            name: 'Kickoff map of the Northern Europe business unit',
+            description:
+                'Goals, risks, owners and the first milestones of a project, on one board',
+            preview: {
+                width: 400,
+                height: 240,
+                shapes: [
+                    {
+                        kind: 'text',
+                        x: 20,
+                        y: 20,
+                        width: 160,
+                        height: 24,
+                        fill: null,
+                        stroke: null,
+                        points: [],
+                    },
+                    {
+                        kind: 'text',
+                        x: 20,
+                        y: 80,
+                        width: 360,
+                        height: 120,
+                        fill: null,
+                        stroke: null,
+                        points: [],
+                    },
+                ],
+            },
+            canManage: true,
+        },
+    ],
+};
+
 function Example({
     name,
     label,
@@ -285,6 +484,51 @@ export default function WorkspaceSection() {
             </Example>
             <Example name="create" label={t('Workspace creation')}>
                 <CreateWorkspaceForm autoFocus={false} />
+            </Example>
+            <Example name="templates" label={t('Templates page, for an admin')}>
+                <TemplatesPage {...templates} team="team-atlas" />
+            </Example>
+            <Example
+                name="templates-member"
+                label={t('Templates page, for a member')}
+            >
+                <TemplatesPage
+                    {...templates}
+                    pokerDecks={templates.pokerDecks.map((deck) => ({
+                        ...deck,
+                        canManage: false,
+                    }))}
+                    canCreatePokerDeck={false}
+                    canManage={false}
+                    team="team-atlas"
+                />
+            </Example>
+            <Example
+                name="templates-retro"
+                label={t('Templates page, the Retro tab')}
+            >
+                <TemplatesPage
+                    {...templates}
+                    initialTab="retro"
+                    team="team-atlas"
+                />
+            </Example>
+            <Example
+                name="templates-empty"
+                label={t('Templates page of a new workspace, without a team')}
+            >
+                <TemplatesPage
+                    {...templates}
+                    templates={[]}
+                    pokerDecks={[]}
+                    team={null}
+                />
+            </Example>
+            <Example
+                name="templates-long"
+                label={t('Templates page, long names')}
+            >
+                <TemplatesPage {...longTemplates} team={null} />
             </Example>
         </div>
     );

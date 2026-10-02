@@ -273,11 +273,13 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
         ]);
 });
 
-it('[P08a-07a] shows the workspace templates to a member as a read-only list', function () {
+it('[P08a-07a] shows the workspace templates to a member as read-only cards, and in the full picker', function () {
     $team = Team::factory()->create();
     $alice = p08aMember($team);
-    p08aTemplate($team->workspace);
-    $row = 'li:has-text("Team pulse")';
+    $template = p08aTemplate($team->workspace);
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
+    $radio = '[data-slot="retro-template-picker"] [role="radio"]:has-text("Team pulse")';
+    $preview = 'section[aria-label="Template preview"]';
 
     $page = $this->signIn($alice, p08aTeamPath($team));
 
@@ -285,12 +287,22 @@ it('[P08a-07a] shows the workspace templates to a member as a read-only list', f
         ->click('a[href$="/templates"]')
         ->assertPathIs("/w/{$team->workspace->slug}/templates")
         ->assertSee('Templates shared by every team of this workspace')
-        ->assertSeeIn($row, 'Team pulse')
-        ->assertSeeIn($row, 'Team & mood')
-        ->assertSeeIn($row, 'Energy')
-        ->assertSeeIn($row, 'Blockers')
-        ->assertNotPresent("{$row} button")
-        ->assertNotPresent('button:has-text("New template")');
+        ->assertSeeIn($card, 'Team pulse')
+        ->assertSeeIn($card, 'Energy')
+        ->assertSeeIn($card, 'Blockers')
+        ->assertSeeIn($card, '2 columns · used 0×')
+        ->assertPresent("{$card} a:has-text(\"Use\")")
+        ->assertNotPresent("{$card} button")
+        ->assertNotPresent('button:has-text("New template")')
+        ->click('[role="tab"]:has-text("Retro")')
+        ->click('[data-slot="retro-template-picker"] [role="tab"]:has-text("My workspace")')
+        ->click($radio)
+        ->assertAttribute($radio, 'aria-checked', 'true')
+        ->assertSeeIn($preview, 'Team & mood')
+        ->assertSeeIn($preview, 'How much energy the sprint left us')
+        ->assertPresent("{$preview} button:has-text(\"Use this template\")")
+        ->assertNotPresent("{$preview} button:text-is(\"Edit\")")
+        ->assertNotPresent("{$preview} button:has-text(\"Duplicate\")");
 
     expect(WorkspaceTemplate::query()->count())->toBe(1);
 });
@@ -298,10 +310,9 @@ it('[P08a-07a] shows the workspace templates to a member as a read-only list', f
 it('[P08a-07b] lets an Owner create a workspace template from a built-in one', function () {
     $team = Team::factory()->create();
     $olivia = p08aOwner($team);
-    $row = 'li:has-text("Team pulse")';
-    $titles = "[...document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Column title\"]')].map((input) => input.value).join(' | ')";
-    $moveFirstDown = '[role="dialog"] fieldset > div:nth-of-type(1) [aria-label="Move down"]';
-    $removeThird = '[role="dialog"] fieldset > div:nth-of-type(3) [aria-label="Remove column"]';
+    $card = '[data-slot="template-card"]:has(h3:text-is("Team pulse"))';
+    $titles = "[...document.querySelectorAll('[role=\"dialog\"] input[aria-label^=\"Column \"][aria-label$=\" title\"]')].map((input) => input.value).join(' | ')";
+    $firstHandle = '[role="dialog"] button[aria-label^="Reorder “Start”"]';
 
     $page = $this->signIn($olivia, "/w/{$team->workspace->slug}/templates");
 
@@ -314,6 +325,7 @@ it('[P08a-07b] lets an Owner create a workspace template from a built-in one', f
         ->click('[role="option"]:has-text("Start, Stop, Continue")')
         ->assertNotPresent('[role="listbox"]')
         ->assertValue('#template-name', 'Start, Stop, Continue')
+        ->assertValue('[role="dialog"] [aria-label="Column 1 title"]', 'Start')
         ->assertScript($titles, 'Start | Stop | Continue');
 
     $page->fill('#template-name', 'Team pulse')
@@ -321,20 +333,26 @@ it('[P08a-07b] lets an Owner create a workspace template from a built-in one', f
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Team & mood")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn('#template-category', 'Team & mood')
-        ->click($moveFirstDown)
-        ->assertScript($titles, 'Stop | Start | Continue')
-        ->click($removeThird)
+        ->assertSeeIn('#template-category', 'Team & mood');
+
+    $this->dragWithKeyboard($page, $firstHandle, ['Space', 'ArrowDown', 'Space']);
+
+    $page->assertScript($titles, 'Stop | Start | Continue')
+        ->assertPresent('[role="dialog"] button:has-text("Add a column")')
+        ->click('[role="dialog"] [aria-label="Delete column “Continue”"]')
         ->assertScript($titles, 'Stop | Start')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->assertPresent('[role="dialog"] button[type="submit"]')
+        ->keys('#template-name', 'Enter')
         ->assertSee('Template saved.')
         ->assertNotPresent('[role="dialog"]')
-        ->assertSeeIn($row, 'Team & mood')
-        ->assertSeeIn($row, 'Stop')
-        ->assertSeeIn($row, 'Start')
-        ->assertDontSeeIn($row, 'Continue')
-        ->assertPresent("{$row} button:has-text(\"Edit\")")
-        ->assertPresent("{$row} button:has-text(\"Delete\")");
+        ->assertSeeIn($card, 'Stop')
+        ->assertSeeIn($card, 'Start')
+        ->assertDontSeeIn($card, 'Continue')
+        ->assertSeeIn($card, 'By Olivia Owner')
+        ->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->assertPresent('[role="menuitem"]:has-text("Edit")')
+        ->assertPresent('[role="menuitem"]:has-text("Duplicate")')
+        ->assertPresent('[role="menuitem"]:has-text("Delete")');
 
     $template = WorkspaceTemplate::query()->where('name', 'Team pulse')->firstOrFail();
 
@@ -412,17 +430,22 @@ it('[P08a-07d] keeps the columns of a retro when its workspace template is delet
     }
 
     retroFacilitator($retro);
-    $row = 'li:has-text("Team pulse")';
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
 
     $page = $this->signIn($olivia, "/w/{$team->workspace->slug}/templates");
 
-    $page->assertSeeIn($row, 'Energy')
-        ->click("{$row} button:has-text(\"Delete\")")
-        ->assertSeeIn('[role="dialog"]', 'Delete this template?')
-        ->assertSeeIn('[role="dialog"]', 'Retrospectives created from it keep their columns.')
-        ->click('[role="dialog"] button:has-text("Delete")')
+    $page->assertSeeIn($card, 'Energy')
+        ->assertSeeIn($card, '2 columns · used 1×')
+        ->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Edit")')
+        ->assertValue('#template-name', 'Team pulse')
+        ->click('[role="dialog"] button:has-text("Delete template")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Retros already created from it are not affected.')
+        ->click('[role="alertdialog"] button:has-text("Delete template")')
         ->assertSee('Template deleted.')
         ->assertSee('No workspace templates yet.')
+        ->assertNotPresent('[role="dialog"]')
         ->navigate("/retros/{$retro->id}")
         ->assertSeeIn('header >> h1', 'Pulse check')
         ->assertCount('[data-test^="retro-column-"]', 2)

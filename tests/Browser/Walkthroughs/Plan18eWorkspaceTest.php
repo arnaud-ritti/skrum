@@ -1,12 +1,19 @@
 <?php
 
+use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
+use App\Enums\TemplateCategory;
 use App\Enums\WorkspaceRole;
+use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Models\WorkspaceTemplate;
+use App\Models\WorkspaceTemplateColumn;
 
 const P18eWorkspaceSwitcher = '[data-sidebar="header"] button[data-sidebar="menu-button"]';
 const P18eLeavePanel = '[role="alertdialog"][data-slot="leave-workspace-panel"]';
@@ -27,6 +34,43 @@ function p18eWorkspacePath(Workspace $workspace): string
 function p18eMembersPath(Workspace $workspace): string
 {
     return route('workspaces.members.index', $workspace, false);
+}
+
+function p18eTemplatesPath(Workspace $workspace): string
+{
+    return route('workspaces.templates.index', $workspace, false);
+}
+
+function p18eTeamPagePath(Team $team): string
+{
+    return route('teams.show', [$team->workspace, $team], false);
+}
+
+function p18eTemplateCard(string $name): string
+{
+    return '[data-slot="template-card"]:has(h3:text-is("'.$name.'"))';
+}
+
+function p18eWorkspaceTemplate(Workspace $workspace, User $author, string $name = 'Team pulse'): WorkspaceTemplate
+{
+    $template = WorkspaceTemplate::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => $name,
+        'category' => TemplateCategory::TeamMood,
+        'created_by_user_id' => $author->id,
+    ]);
+
+    foreach ([['Energy', ColumnColor::Moss], ['Blockers', ColumnColor::Coral]] as $position => [$title, $color]) {
+        WorkspaceTemplateColumn::factory()->create([
+            'workspace_template_id' => $template->id,
+            'title' => $title,
+            'description' => null,
+            'color' => $color,
+            'position' => $position,
+        ]);
+    }
+
+    return $template->fresh();
 }
 
 function p18eMemberRow(User $member): string
@@ -434,4 +478,293 @@ it('[P18e-09-06] lets the owner delete the workspace once its name is typed', fu
 
     expect(Workspace::query()->whereKey($workspace->id)->exists())->toBeFalse()
         ->and(Team::query()->where('workspace_id', $workspace->id)->exists())->toBeFalse();
+});
+
+it('[P18e-09-07] lets a manager duplicate, edit and delete a workspace template from the menu of its card', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $template = p18eWorkspaceTemplate($workspace, $camille);
+    $original = p18eTemplateCard('Team pulse');
+    $copy = p18eTemplateCard('Copy of Team pulse');
+    $renamed = p18eTemplateCard('Pulse, second take');
+
+    $page = $this->signIn($camille, p18eTemplatesPath($workspace));
+
+    $page->assertSeeIn('h1', 'Templates')
+        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
+        ->assertSeeIn('[role="tablist"]', 'Retro · 1')
+        ->assertSeeIn($original, 'By Camille Roux')
+        ->click("{$original} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Duplicate")')
+        ->assertValue('#template-name', 'Copy of Team pulse')
+        ->assertValue('[role="dialog"] [aria-label="Column 2 title"]', 'Blockers')
+        ->assertNotPresent('[role="dialog"] button:has-text("Delete template")')
+        ->keys('#template-name', 'Enter')
+        ->assertSee('Template saved.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('[data-slot="retro-template-cards"] [data-slot="template-card"]', 2)
+        ->assertSeeIn('[role="tablist"]', 'Retro · 2')
+        ->assertSeeIn($copy, 'Energy');
+
+    $page->click("{$copy} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Edit")')
+        ->assertValue('#template-name', 'Copy of Team pulse')
+        ->fill('#template-name', 'Pulse, second take')
+        ->fill('[role="dialog"] [aria-label="Column 1 title"]', 'Mood')
+        ->keys('#template-name', 'Enter')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($renamed, 'Mood')
+        ->assertDontSeeIn($renamed, 'Energy')
+        ->assertNotPresent($copy);
+
+    $page->click("{$renamed} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Retros already created from it are not affected.')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertPresent($renamed)
+        ->click("{$renamed} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
+        ->click('[role="alertdialog"] button:has-text("Delete template")')
+        ->assertNotPresent($renamed)
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertCount('[data-slot="retro-template-cards"] [data-slot="template-card"]', 1)
+        ->assertPathIs(p18eTemplatesPath($workspace))
+        ->assertNoJavaScriptErrors();
+
+    expect($workspace->templates()->pluck('name')->all())->toBe(['Team pulse'])
+        ->and($template->fresh()->columns->pluck('title')->all())->toBe(['Energy', 'Blockers']);
+});
+
+it('[P18e-09-09] offers "Use" and "Duplicate" on a built-in template, no Edit or Delete, and opens the session dialog of the team on it', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $atlas = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $atlas->members()->attach($camille);
+    p18eWorkspaceTemplate($workspace, $camille);
+    $picker = '[data-slot="retro-template-picker"]';
+    $preview = 'section[aria-label="Template preview"]';
+    $builtIn = "{$picker} [role=\"radio\"]:has-text(\"Start, Stop, Continue\")";
+    $own = "{$picker} [role=\"radio\"]:has-text(\"Team pulse\")";
+
+    $page = $this->signIn($camille, p18eTemplatesPath($workspace));
+
+    $page->click('[role="tab"]:has-text("Retro")')
+        ->assertPresent($picker)
+        ->click($builtIn)
+        ->assertAttribute($builtIn, 'aria-checked', 'true')
+        ->assertPresent("{$preview} button:has-text(\"Use this template\")")
+        ->assertPresent("{$preview} button:has-text(\"Duplicate and edit\")")
+        ->assertNotPresent("{$preview} button:text-is(\"Edit\")")
+        ->assertNotPresent('button:has-text("Delete template")')
+        ->click("{$preview} button:has-text(\"Duplicate and edit\")")
+        ->assertValue('#template-name', 'Copy of Start, Stop, Continue')
+        ->assertValue('[role="dialog"] [aria-label="Column 3 title"]', 'Continue')
+        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="dialog"]');
+
+    $page->click("{$picker} [role=\"tab\"]:has-text(\"My workspace\")")
+        ->click($own)
+        ->assertSeeIn($preview, 'By Camille Roux')
+        ->assertPresent("{$preview} button:text-is(\"Edit\")")
+        ->click("{$picker} [role=\"tab\"]:has-text(\"Built-in\")")
+        ->click($builtIn)
+        ->click("{$preview} button:has-text(\"Use this template\")")
+        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertVisible('#new-retro-title')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
+        ->assertScript('window.location.search', '')
+        ->assertNoJavaScriptErrors();
+
+    expect($workspace->templates()->count())->toBe(1);
+});
+
+it('[P18e-09-09b] opens the session dialog of the team on a workspace template from "Use" on its card', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $theo = p18eWorkspaceUser($workspace, 'Théo Martin');
+    $atlas = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $atlas->members()->attach($theo);
+    $template = p18eWorkspaceTemplate($workspace, $theo);
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
+
+    $page = $this->signIn($theo, p18eTemplatesPath($workspace));
+
+    $page->assertNotPresent("{$card} [data-slot=\"template-card-menu\"]")
+        ->click("{$card} a:has-text(\"Use\")")
+        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertVisible('#new-retro-title')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Team pulse')
+        ->assertScript('window.location.search', '')
+        ->fill('#new-retro-title', 'From the templates page')
+        ->click('[role="dialog"] button[type="submit"]')
+        ->assertPathBeginsWith('/retros/');
+
+    expect(Retro::query()->where('title', 'From the templates page')->sole()->workspace_template_id)->toBe($template->id);
+});
+
+it('[P18e-09-10] lists the decks of the workspace in the Poker tab, lets a manager create, edit and delete one, and opens the game form on a deck', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $theo = p18eWorkspaceUser($workspace, 'Théo Martin');
+    $atlas = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $atlas->members()->attach([$camille->id, $theo->id]);
+    $shared = SavedPokerDeck::factory()->forWorkspace($workspace)->create([
+        'name' => 'Nordlys scale',
+        'cards' => ['1', '2', '3', '?'],
+        'created_by_user_id' => $camille->id,
+    ]);
+    SavedPokerDeck::factory()->create(['team_id' => $atlas->id, 'name' => 'Atlas only', 'created_by_user_id' => $theo->id]);
+    PokerGame::factory()->create(['team_id' => $atlas->id])->forceFill(['saved_deck_id' => $shared->id])->save();
+    $sharedCard = '[data-test="workspace-deck-'.$shared->id.'"]';
+    $halves = p18eTemplateCard('Halves');
+    $quarters = p18eTemplateCard('Quarters');
+
+    $memberPage = $this->signIn($theo, p18eTemplatesPath($workspace));
+
+    $memberPage->click('[role="tab"]:has-text("Poker")')
+        ->assertSeeIn('[role="tablist"]', 'Poker · 1')
+        ->assertCount('[data-slot="poker-deck-cards"] [data-slot="template-card"]', 1)
+        ->assertSeeIn($sharedCard, 'Nordlys scale')
+        ->assertSeeIn($sharedCard, '1 game')
+        ->assertSeeIn($sharedCard, 'By Camille Roux')
+        ->assertDontSee('Atlas only')
+        ->assertNotPresent("{$sharedCard} button")
+        ->assertNotPresent('button:has-text("Create a deck")')
+        ->click("{$sharedCard} a:has-text(\"Use\")")
+        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertVisible('#new-poker-title')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Deck"] [role="radio"][aria-checked="true"]', 'Nordlys scale')
+        ->assertScript('window.location.search', '');
+
+    $page = $this->signIn($camille, p18eTemplatesPath($workspace));
+
+    $page->click('[role="tab"]:has-text("Poker")')
+        ->click('button:has-text("Create a deck")')
+        ->assertSeeIn('[role="dialog"]', 'Create a deck')
+        ->fill('#deck-new-name', 'Halves')
+        ->fill('#deck-new-cards', '1, 2, 3')
+        ->click('[role="dialog"] button:has-text("Save")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($halves, '0 games')
+        ->assertSeeIn($halves, 'By Camille Roux')
+        ->assertSeeIn('[role="tablist"]', 'Poker · 2');
+
+    $created = SavedPokerDeck::query()->where('name', 'Halves')->sole();
+
+    expect($created->workspace_id)->toBe($workspace->id)
+        ->and($created->team_id)->toBeNull()
+        ->and($created->cards)->toBe(['1', '2', '3', '?', '☕']);
+
+    $page->click("{$halves} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Edit")')
+        ->assertSeeIn('[role="dialog"]', 'Edit Halves')
+        ->fill("#deck-{$created->id}-name", 'Quarters')
+        ->click('[role="dialog"] button:has-text("Save")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent($quarters)
+        ->assertNotPresent($halves)
+        ->click("{$quarters} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this deck?')
+        ->assertSeeIn('[role="alertdialog"]', 'Games that use it keep their cards.')
+        ->click('[role="alertdialog"] button:has-text("Delete deck")')
+        ->assertNotPresent($quarters)
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertSeeIn('[role="tablist"]', 'Poker · 1')
+        ->assertNoJavaScriptErrors();
+
+    expect(SavedPokerDeck::query()->whereKey($created->id)->exists())->toBeFalse()
+        ->and(SavedPokerDeck::query()->whereKey($shared->id)->exists())->toBeTrue();
+});
+
+it('[P18e-09-11] shows the whiteboard templates with their preview, opens the board form on one, renames and deletes it after a confirmation, then the empty state', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $atlas = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $atlas->members()->attach($camille);
+    $template = WhiteboardTemplate::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => 'Kick-off map',
+        'description' => 'Goals, risks and owners',
+        'created_by_user_id' => $camille->id,
+    ]);
+    $card = '[data-test="workspace-whiteboard-template-'.$template->id.'"]';
+    $empty = '[data-slot="whiteboard-templates-empty"]';
+
+    $page = $this->signIn($camille, p18eTemplatesPath($workspace));
+
+    $page->click('[role="tab"]:has-text("Whiteboard")')
+        ->assertSeeIn('[role="tablist"]', 'Whiteboard · 1')
+        ->assertSeeIn($card, 'Kick-off map')
+        ->assertSeeIn($card, 'Goals, risks and owners')
+        ->assertPresent("{$card} [data-slot=\"whiteboard-template-preview\"] svg")
+        ->click("{$card} a:has-text(\"Use\")")
+        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertVisible('#whiteboard-title')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Template"] [role="radio"][aria-checked="true"]', 'Kick-off map')
+        ->assertScript('window.location.search', '');
+
+    $page->navigate(p18eTemplatesPath($workspace))
+        ->click('[role="tab"]:has-text("Whiteboard")')
+        ->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Rename")')
+        ->assertValue('[role="dialog"] input[name="name"]', 'Kick-off map')
+        ->fill('[role="dialog"] input[name="name"]', 'Project kick-off')
+        ->click('[role="dialog"] button[type="submit"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($card, 'Project kick-off')
+        ->assertSeeIn($card, 'Goals, risks and owners');
+
+    expect($template->fresh()->name)->toBe('Project kick-off');
+
+    $page->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Boards already created from it are not changed.')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertPresent($card);
+
+    expect(WhiteboardTemplate::query()->whereKey($template->id)->exists())->toBeTrue();
+
+    $page->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent($card)
+        ->assertSeeIn('[role="tablist"]', 'Whiteboard · 0')
+        ->assertSeeIn($empty, 'No whiteboard templates yet.')
+        ->assertSeeIn($empty, 'Save any whiteboard as a template from its menu — every team of Nordlys will be able to start from it.')
+        ->assertNotPresent("{$empty} button")
+        ->assertNoJavaScriptErrors();
+
+    expect(WhiteboardTemplate::query()->whereKey($template->id)->exists())->toBeFalse();
+});
+
+it('[P18e-09-12] keeps "Use" in place, disabled with its hint, for a member of no team', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $lea = p18eWorkspaceUser($workspace, 'Lea Garnier');
+    Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $template = p18eWorkspaceTemplate($workspace, $camille);
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
+    $use = "{$card} button:has-text(\"Use\")";
+    $pickerUse = 'section[aria-label="Template preview"] button:has-text("Use this template")';
+
+    $page = $this->signIn($lea, p18eTemplatesPath($workspace));
+
+    $page->assertSeeIn($card, 'Team pulse')
+        ->assertNotPresent("{$card} a")
+        ->assertAttribute($use, 'aria-disabled', 'true')
+        ->assertScript("document.getElementById(document.querySelector('".addslashes($use)."').getAttribute('aria-describedby')).textContent", 'Pick a team first')
+        ->click($use)
+        ->assertPathIs(p18eTemplatesPath($workspace))
+        ->click('[role="tab"]:has-text("Retro")')
+        ->assertAttribute($pickerUse, 'aria-disabled', 'true')
+        ->assertSeeIn('section[aria-label="Template preview"]', 'Pick a team first')
+        ->click($pickerUse)
+        ->assertPathIs(p18eTemplatesPath($workspace))
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
 });

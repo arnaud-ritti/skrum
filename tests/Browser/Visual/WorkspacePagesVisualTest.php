@@ -1,14 +1,19 @@
 <?php
 
+use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
+use App\Enums\TemplateCategory;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Models\WorkspaceTemplate;
+use App\Models\WorkspaceTemplateColumn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -120,7 +125,17 @@ it('[P18e-09-20b] renders the states of the workspace page on the bench without 
             ->assertCount('[data-state="members-admin"] [data-slot="member-row"] [role="combobox"]', 4)
             ->assertCount('[data-state="members-long"] [data-slot="member-row"]', 2)
             ->assertPresent('[data-state="delete-workspace"] [data-slot="settings-card"][data-tone="destructive"]')
-            ->assertPresent('[data-state="create"] [data-slot="create-workspace"] #name'),
+            ->assertPresent('[data-state="create"] [data-slot="create-workspace"] #name')
+            ->assertCount('[data-state="templates"] [data-slot="retro-template-cards"] [data-slot="template-card"]', 4)
+            ->assertCount('[data-state="templates"] [data-slot="poker-deck-cards"] [data-slot="template-card"]', 2)
+            ->assertCount('[data-state="templates"] [data-slot="template-card-menu"]', 6)
+            ->assertPresent('[data-state="templates"] [data-slot="whiteboard-templates-empty"]')
+            ->assertNotPresent('[data-state="templates-member"] [data-slot="template-card-menu"]')
+            ->assertPresent('[data-state="templates-retro"] [data-slot="retro-template-picker"] [role="radiogroup"]')
+            ->assertPresent('[data-state="templates-empty"] [data-slot="retro-templates-empty"]')
+            ->assertPresent('[data-state="templates-empty"] [data-slot="poker-decks-empty"]')
+            ->assertCount('[data-state="templates-long"] [data-slot="template-card"]', 3)
+            ->assertCount('[data-state="templates-long"] [data-slot="template-card"] button[aria-disabled="true"]', 3),
     );
 });
 
@@ -187,4 +202,92 @@ it('[P18e-09-20d] renders the members page of an owner without overflow', functi
     $this->captureVisuals('workspace-members-invite', $path, fn (string $path, array $options) => workspaceVisualSignIn($owner, $path, $options)
         ->click('[data-slot="members-header"] button')
         ->assertPresent('[role="dialog"] input[name="email"]'));
+});
+
+it('[P18e-09-20e] renders the templates page of an admin without overflow', function () {
+    config(['app.name' => 'Skrum']);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $authors = [];
+
+    foreach (['Camille Roux' => WorkspaceRole::Admin, 'Arnaud Ritti' => WorkspaceRole::Owner, 'Malik Kone' => WorkspaceRole::Member] as $name => $role) {
+        $user = User::factory()->create([
+            'id' => sprintf('0199a000-0000-7000-8000-0000000009%02d', 70 + count($authors)),
+            'name' => $name,
+            'email' => str($name)->slug('.').'@nordlys.example',
+        ]);
+        $workspace->members()->attach($user, ['role' => $role->value]);
+        $authors[$name] = $user;
+    }
+
+    $admin = $authors['Camille Roux'];
+    $atlas = Team::factory()->for($workspace)->create([
+        'id' => '0199a000-0000-7000-8000-000000000870',
+        'name' => 'Atlas',
+    ]);
+    $atlas->members()->attach($admin);
+
+    $templates = [
+        ['4L', 'Camille Roux', TemplateCategory::Essentials, [['Liked', ColumnColor::Moss], ['Learned', ColumnColor::Sky], ['Lacked', ColumnColor::Coral], ['Longed for', ColumnColor::Sun]], 12],
+        ['Start / Stop / Continue', 'Arnaud Ritti', TemplateCategory::Essentials, [['Start', ColumnColor::Moss], ['Stop', ColumnColor::Coral], ['Continue', ColumnColor::Sky]], 9],
+        ['Mad / Sad / Glad', 'Malik Kone', TemplateCategory::TeamMood, [['Mad', ColumnColor::Coral], ['Sad', ColumnColor::Iris], ['Glad', ColumnColor::Sun]], 4],
+    ];
+
+    foreach ($templates as $index => [$name, $author, $category, $columns, $uses]) {
+        $template = WorkspaceTemplate::factory()->create([
+            'id' => sprintf('0199a000-0000-7000-8000-0000000007%02d', $index),
+            'workspace_id' => $workspace->id,
+            'name' => $name,
+            'category' => $category,
+            'created_by_user_id' => $authors[$author]->id,
+        ]);
+
+        foreach ($columns as $position => [$title, $color]) {
+            WorkspaceTemplateColumn::factory()->create([
+                'workspace_template_id' => $template->id,
+                'title' => $title,
+                'description' => null,
+                'color' => $color,
+                'position' => $position,
+            ]);
+        }
+
+        Retro::factory()->for($atlas)->count($uses)->create([
+            'template' => 'workspace',
+            'workspace_template_id' => $template->id,
+        ]);
+    }
+
+    SavedPokerDeck::factory()->forWorkspace($workspace)->create([
+        'id' => '0199a000-0000-7000-8000-000000000760',
+        'name' => 'Fibonacci + coffee',
+        'cards' => ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'],
+        'created_by_user_id' => $admin->id,
+    ]);
+    SavedPokerDeck::factory()->forWorkspace($workspace)->create([
+        'id' => '0199a000-0000-7000-8000-000000000761',
+        'name' => 'T-shirt sizing',
+        'cards' => ['XS', 'S', 'M', 'L', 'XL', '?'],
+        'created_by_user_id' => $authors['Malik Kone']->id,
+    ]);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $path = route('workspaces.templates.index', $workspace, false);
+
+    $this->captureVisuals('workspace-templates', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+        ->assertCount('[data-slot="retro-template-cards"] [data-slot="template-card"]', 3)
+        ->assertCount('[data-slot="poker-deck-cards"] [data-slot="template-card"]', 2)
+        ->assertPresent('[data-slot="whiteboard-templates-empty"]')
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
+
+    $this->captureVisuals('workspace-templates-retro', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+        ->click('[data-slot="templates-tabs"] [role="tab"]:nth-of-type(2)')
+        ->assertPresent('[data-slot="retro-template-picker"] [role="radiogroup"]')
+        ->assertPresent('section[aria-label="Template preview"]'));
+
+    $this->captureVisuals('workspace-templates-editor', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+        ->click('[data-slot="workspace-templates-page"] > header button')
+        ->assertPresent('[role="dialog"] #template-name')
+        ->assertPresent('[role="dialog"] #template-source'));
 });
