@@ -108,6 +108,8 @@ export function TwoFactorCard({
     const [codesRegenerated, setCodesRegenerated] = useState(false);
     const [turnOffOpen, setTurnOffOpen] = useState(false);
     const [turnOffError, setTurnOffError] = useState<string>();
+    const [regenerateOpen, setRegenerateOpen] = useState(false);
+    const [regenerateError, setRegenerateError] = useState<string>();
     const wasEnabled = useRef(enabled);
     const codesId = useId();
 
@@ -259,6 +261,40 @@ export function TwoFactorCard({
         void loadCodes();
     };
 
+    /** Settles like `deleteVisit`: resolved by the redirect, rejected by a visit that ended without one. */
+    const regenerate = async (): Promise<void> => {
+        setRegenerateError(undefined);
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                router.post(
+                    regenerateRecoveryCodes.url(),
+                    {},
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => resolve(),
+                        onError: () => reject(new Error()),
+                        onFinish: () => reject(new Error()),
+                    },
+                );
+            });
+        } catch (failure) {
+            setRegenerateError(t('Something went wrong. Please try again.'));
+
+            throw failure;
+        }
+
+        showRegeneratedCodes();
+    };
+
+    const changeRegenerateOpen = (open: boolean): void => {
+        if (!open) {
+            setRegenerateError(undefined);
+        }
+
+        setRegenerateOpen(open);
+    };
+
     const codesLeft = summary.recoveryCodesRemaining;
 
     /** With no code left there is nothing to view: only a regeneration helps. */
@@ -350,11 +386,11 @@ export function TwoFactorCard({
                 </span>
                 {anyMethodOn ? (
                     <Badge variant="success" shape="pill" icon={Check}>
-                        {t('On')}
+                        {t('Two-factor on')}
                     </Badge>
                 ) : (
                     <Badge variant="muted" shape="pill">
-                        {t('Off')}
+                        {t('Two-factor off')}
                     </Badge>
                 )}
             </>
@@ -487,7 +523,7 @@ export function TwoFactorCard({
                             {title}
                         </span>
                         <Badge variant="muted" shape="pill">
-                            {t('Off')}
+                            {t('Two-factor off')}
                         </Badge>
                     </>
                 }
@@ -562,27 +598,18 @@ export function TwoFactorCard({
                             </span>
                         </Button>
                     )}
-                    <Form
-                        {...regenerateRecoveryCodes.form()}
-                        options={{ preserveScroll: true }}
-                        onSuccess={showRegeneratedCodes}
-                        className="max-w-full min-w-0"
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="max-w-full"
+                        onClick={() => setRegenerateOpen(true)}
                     >
-                        {({ processing }) => (
-                            <LoadingButton
-                                type="submit"
-                                variant="outline"
-                                size="sm"
-                                loading={processing}
-                                className="max-w-full"
-                            >
-                                <RotateCcw aria-hidden="true" />
-                                <span className="truncate">
-                                    {t('Regenerate codes')}
-                                </span>
-                            </LoadingButton>
-                        )}
-                    </Form>
+                        <RotateCcw aria-hidden="true" />
+                        <span className="truncate">
+                            {t('Regenerate codes')}
+                        </span>
+                    </Button>
                 </div>
             }
         >
@@ -692,11 +719,11 @@ export function TwoFactorCard({
                     </span>
                     {anyMethodOn ? (
                         <Badge variant="success" shape="pill" icon={Check}>
-                            {t('On')}
+                            {t('Two-factor on')}
                         </Badge>
                     ) : (
                         <Badge variant="muted" shape="pill">
-                            {t('Off')}
+                            {t('Two-factor off')}
                         </Badge>
                     )}
                 </>
@@ -740,6 +767,20 @@ export function TwoFactorCard({
                             </span>
                         </Button>
                     }
+                />
+            )}
+            {enabled && (
+                <ConfirmDialog
+                    open={regenerateOpen}
+                    onOpenChange={changeRegenerateOpen}
+                    error={regenerateError}
+                    tone="destructive"
+                    title={t('Regenerate the recovery codes?')}
+                    description={t(
+                        'Your current codes stop working at once. Store the new ones in a safe place.',
+                    )}
+                    confirmLabel={t('Regenerate codes')}
+                    onConfirm={regenerate}
                 />
             )}
             {enabled && (

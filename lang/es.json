@@ -4356,5 +4356,9 @@
     "Group with another card": "Agrupar con otra tarjeta",
     "Focus the selected card": "Destacar la tarjeta seleccionada",
     "Create a password": "Crea una contraseña",
-    "Create my account and join :workspace": "Crear mi cuenta y unirme a :workspace"
+    "Create my account and join :workspace": "Crear mi cuenta y unirme a :workspace",
+    "Two-factor on": "Activada",
+    "Two-factor off": "Desactivada",
+    "Regenerate the recovery codes?": "¿Regenerar los códigos de recuperación?",
+    "Your current codes stop working at once. Store the new ones in a safe place.": "Tus códigos actuales dejan de funcionar al instante. Guarda los nuevos en un lugar seguro."
 }

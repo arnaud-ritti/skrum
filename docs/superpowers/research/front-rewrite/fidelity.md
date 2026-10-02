@@ -62,7 +62,7 @@ Plan 18g Task 8, reduced by the owner to **one configuration: light theme, 1440 
 | Settings, appearance | `settings-appearance-page` | ScreenUserSettings | differences | D-25, V22. |
 | Settings, notifications | `settings-notifications-page`, `-reminders-off` | ScreenUserSettings | differences | Two events of six: D-25. D-84. |
 | Settings, API tokens | `settings-api-tokens-page`, `-empty`, `-error`, `-new-token` | ScreenUserSettings | differences | D-82, D-83. |
-| Settings, security | `settings-security-page` and its six states | ScreenSecurity | faithful | D-26, D-79, D-80, D-81, D-95, V23. Seen: with the e-mail code on, the card says "Activée" while the app row offers "Activer la 2FA". |
+| Settings, security | `settings-security-page` and its six states | ScreenSecurity | faithful | D-26, D-79, D-80, D-95, V23. Seen: with the e-mail code on, the card says "Activée" while the app row offers "Activer la 2FA". |
 | Team settings, integrations | `team-integrations-page` and its ten states | ScreenSettings a | differences | D-27, D-85 to D-89. Seen: a stored connection error is shown in English on a French page. |
 | Admin, branding | `admin-branding-page`, `-exact-radius-staged` | ScreenSettings b | differences | D-35, D-90. **Fixed**: the four image tabs were cut; "Sauvegarder" → "Enregistrer" (`cabda665`). |
 | Admin, admins and sign-in | `admin-admins-page`, `admin-sign-in-*` | none | no mockup | D-35. **Fixed**: the breadcrumb was cut by the unsaved line (`cabda665`). Seen: the entry "Authentificatio…" is cut by its badge in the sub-navigation. |
