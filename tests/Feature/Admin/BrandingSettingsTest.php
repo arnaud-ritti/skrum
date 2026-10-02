@@ -516,11 +516,48 @@ it('resets every setting and removes the images', function () {
     expect($html)->not->toContain('skrum-brand');
 });
 
-it('strips bidirectional overrides and zero-width characters from the display name', function () {
+it('strips bidirectional controls, the zero-width space and the byte-order mark from the display name', function (string $typed) {
     brandingAdmin($this);
 
-    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => "Skr\u{202E}üm\u{200B}"]))
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
         ->assertSessionHasNoErrors();
 
     expect(storedBrandingSettings()->displayName())->toBe('Skrüm');
+})->with([
+    'right-to-left override and zero-width space' => ["Skr\u{202E}üm\u{200B}"],
+    'left-to-right and right-to-left marks' => ["\u{200E}Skr\u{200F}üm"],
+    'embeddings and pop' => ["\u{202A}Skr\u{202B}ü\u{202C}m\u{202D}"],
+    'isolates' => ["\u{2066}Skr\u{2067}ü\u{2068}m\u{2069}"],
+    'byte-order mark' => ["\u{FEFF}Skrüm"],
+]);
+
+it('keeps the joiners of a display name', function (string $typed) {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->displayName())->toBe($typed);
+})->with([
+    'family emoji joined by zero-width joiners' => ["Team \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"],
+    'persian word with a zero-width non-joiner' => ["می\u{200C}خواهم"],
+]);
+
+it('removes a right-to-left override next to a joined emoji and keeps the emoji whole', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => "\u{202E}Acme \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->displayName())->toBe("Acme \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}");
+});
+
+it('returns to the configured name when the name holds nothing but joiners', function () {
+    brandingAdmin($this);
+    storedBrandingSettings()->set('display_name', 'Acme');
+
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => " \u{200D}\u{200C} "]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
 });

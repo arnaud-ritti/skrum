@@ -108,14 +108,18 @@ class BrandingUpdateRequest extends FormRequest
         return "#{$digits}";
     }
 
+    /**
+     * Control characters, bidirectional controls, the zero-width space and the byte-order mark go; the zero-width
+     * joiner and non-joiner stay, because joined emoji and Persian or Indic spellings need them.
+     */
     private function withoutInvisibleCharacters(mixed $name): mixed
     {
         if (! is_string($name)) {
             return $name;
         }
 
-        $name = trim((string) preg_replace('/[\p{Cc}\p{Cf}]+/u', '', $name));
+        $name = trim((string) preg_replace('/[\p{Cc}\x{200B}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]+/u', '', $name));
 
-        return $name === '' ? null : $name;
+        return preg_match('/^[\x{200C}\x{200D}\s]*$/u', $name) === 1 ? null : $name;
     }
 }
