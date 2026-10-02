@@ -102,7 +102,8 @@ describe('the retrospectives of a team', () => {
         expect(card.getAttribute('href')).toBe('/retros/retro-1');
         expect(status.textContent).toBe('Writing');
         expect(status.dataset.tone).toBe('info');
-        expect(within(card).getByText(/4L ·/)).toBeTruthy();
+        expect(within(card).getByText('4L')).toBeTruthy();
+        expect(card.textContent).toContain('4L · ');
         expect(
             within(card).getByText('Facilitated by Camille Roux'),
         ).toBeTruthy();

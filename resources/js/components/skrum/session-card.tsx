@@ -155,8 +155,15 @@ export function SessionCard({
                     <span className="line-clamp-2 block font-semibold">
                         {title}
                     </span>
-                    <span className="block truncate text-xs font-medium text-muted-foreground">
-                        {team} · {when}
+                    <span className="flex min-w-0 text-xs font-medium text-muted-foreground">
+                        <span className="truncate">{team}</span>
+                        <span
+                            data-slot="session-card-when"
+                            className="shrink-0 whitespace-pre"
+                        >
+                            {' · '}
+                            {when}
+                        </span>
                     </span>
                 </span>
                 <Badge

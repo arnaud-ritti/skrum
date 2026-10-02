@@ -166,6 +166,45 @@ describe('the members card of a team', () => {
         expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
+    it('moves the focus to the heading of the card once a member is removed', async () => {
+        const user = userEvent.setup();
+        let visit: VisitOptions = {};
+        mocks.delete.mockImplementation(
+            (_url: string, options: VisitOptions) => {
+                visit = options;
+            },
+        );
+
+        const { rerender } = card();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+        );
+        await user.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Remove',
+            }),
+        );
+
+        rerender(
+            <TeamMembersCard
+                workspaceSlug="nordlys"
+                team={{ id: 'team-1', name: 'Atlas' }}
+                members={members.filter(({ id }) => id !== 'user-1')}
+                availableMembers={[]}
+                canManage
+            />,
+        );
+        await act(async () => {
+            visit.onSuccess?.();
+            visit.onFinish?.();
+        });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('heading', { level: 2, name: /Members/ }),
+        );
+    });
+
     it('adds the chosen workspace member and shows the server error', () => {
         mocks.props.errors = { user_id: 'This person is already in the team.' };
 

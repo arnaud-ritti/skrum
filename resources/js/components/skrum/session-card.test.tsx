@@ -122,6 +122,16 @@ describe('SessionCard', () => {
         expect(screen.queryByText('cards')).toBeNull();
     });
 
+    it('keeps the date whole beside a team or template name that is cut', () => {
+        const { container } = render(<SessionCard {...base} />);
+        const when = container.querySelector('[data-slot="session-card-when"]');
+
+        expect(when?.textContent).toBe(` · ${base.when}`);
+        expect(when?.className).toContain('shrink-0');
+        expect(when?.previousElementSibling?.textContent).toBe(base.team);
+        expect(when?.previousElementSibling?.className).toContain('truncate');
+    });
+
     it('shows the status word the host gives and a meta line', () => {
         render(
             <SessionCard

@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { LayoutTemplate, PenTool, Trash2, TriangleAlert } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
@@ -44,9 +44,27 @@ export function TeamWhiteboardsSection({
     const [processing, setProcessing] = useState(false);
     const [managing, setManaging] = useState(false);
     const menuRef = useRef<HTMLButtonElement>(null);
+    const headingRef = useRef<HTMLHeadingElement>(null);
+    const boardLeft = useRef(false);
+    const dialogOpen = deleting !== null;
     const formatDate = new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
     });
+
+    // The button that opened the dialog leaves with its board: the focus goes
+    // to the heading of the section instead of falling back to the page.
+    useEffect(() => {
+        if (!dialogOpen && boardLeft.current) {
+            boardLeft.current = false;
+            headingRef.current?.focus();
+        }
+    }, [dialogOpen]);
+
+    const leaveDeletedBoard = (): void => {
+        router.reload({ only: ['whiteboards'] });
+        boardLeft.current = true;
+        setDeleting(null);
+    };
 
     const confirmDelete = async (): Promise<void> => {
         if (deleting === null) {
@@ -57,14 +75,17 @@ export function TeamWhiteboardsSection({
 
         try {
             await retroRequest(WhiteboardsController.destroy(deleting.id));
-            router.reload({ only: ['whiteboards'] });
-            setDeleting(null);
+            leaveDeletedBoard();
         } catch (error) {
             toast.error(
                 error instanceof RetroRequestError && error.status > 0
                     ? error.message
                     : t('Something went wrong. Please try again.'),
             );
+
+            if (error instanceof RetroRequestError && error.status === 404) {
+                leaveDeletedBoard();
+            }
         } finally {
             setProcessing(false);
         }
@@ -75,6 +96,7 @@ export function TeamWhiteboardsSection({
             icon={PenTool}
             title={t('Whiteboards')}
             count={boards.length}
+            headingRef={headingRef}
             actions={
                 <SectionActionsMenu
                     label={t('Whiteboards actions')}
@@ -126,18 +148,29 @@ export function TeamWhiteboardsSection({
                                         <span className="truncate text-sm font-semibold">
                                             {board.title}
                                         </span>
-                                        <span className="truncate text-xs text-muted-foreground">
-                                            {board.facilitatorName &&
-                                                t('Facilitated by :name', {
-                                                    name: board.facilitatorName,
-                                                })}
-                                            {board.facilitatorName &&
-                                                board.updatedAt &&
-                                                ' · '}
-                                            {board.updatedAt &&
-                                                formatDate.format(
-                                                    new Date(board.updatedAt),
-                                                )}
+                                        <span className="flex min-w-0 text-xs text-muted-foreground">
+                                            {board.facilitatorName && (
+                                                <span className="truncate">
+                                                    {t('Facilitated by :name', {
+                                                        name: board.facilitatorName,
+                                                    })}
+                                                </span>
+                                            )}
+                                            {board.updatedAt && (
+                                                <span
+                                                    data-slot="whiteboard-date"
+                                                    className="shrink-0 whitespace-pre"
+                                                >
+                                                    {board.facilitatorName
+                                                        ? ' · '
+                                                        : ''}
+                                                    {formatDate.format(
+                                                        new Date(
+                                                            board.updatedAt,
+                                                        ),
+                                                    )}
+                                                </span>
+                                            )}
                                         </span>
                                     </span>
                                 </Link>
@@ -172,7 +205,7 @@ export function TeamWhiteboardsSection({
             />
 
             <Dialog
-                open={deleting !== null}
+                open={dialogOpen}
                 onOpenChange={(open) => {
                     if (!open && !processing) {
                         setDeleting(null);

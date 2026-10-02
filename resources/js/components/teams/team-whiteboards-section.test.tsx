@@ -148,6 +148,61 @@ describe('the whiteboards of a team', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
+    it('keeps the date whole beside a facilitator name that is cut', () => {
+        section();
+
+        const link = screen.getByRole('link', { name: /Sprint board/ });
+        const date = link.querySelector('[data-slot="whiteboard-date"]');
+
+        expect(link.textContent).toContain(
+            'Facilitated by Fran Facilitator · Sep 24, 2026',
+        );
+        expect(date?.textContent).toBe(' · Sep 24, 2026');
+        expect(date?.className).toContain('shrink-0');
+        expect(date?.className).not.toContain('truncate');
+    });
+
+    it('moves the focus to the heading of the section once a board is deleted', async () => {
+        const user = userEvent.setup();
+        mocks.request.mockResolvedValue(null);
+
+        section();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Delete Sprint board' }),
+        );
+        await user.click(
+            screen.getByRole('button', { name: 'Delete this board' }),
+        );
+        await act(async () => {});
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('heading', { level: 2, name: /Whiteboards/ }),
+        );
+    });
+
+    it('closes the dialog and reloads the boards when the board was already deleted', async () => {
+        const user = userEvent.setup();
+        mocks.request.mockRejectedValue(
+            new RetroRequestError(404, 'This board no longer exists.'),
+        );
+
+        section();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Delete Sprint board' }),
+        );
+        await user.click(
+            screen.getByRole('button', { name: 'Delete this board' }),
+        );
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'This board no longer exists.',
+        );
+        expect(mocks.reload).toHaveBeenCalledWith({ only: ['whiteboards'] });
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
     it('keeps the dialog and says why when the server refuses', async () => {
         const user = userEvent.setup();
         mocks.request.mockRejectedValue(

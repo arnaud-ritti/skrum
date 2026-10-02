@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { UserMinus } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -53,6 +53,8 @@ export function TeamMembersCard({
         errors?: Record<string, string | undefined>;
     };
     const headingId = useId();
+    const headingRef = useRef<HTMLHeadingElement>(null);
+    const memberLeft = useRef(false);
     const [expanded, setExpanded] = useState(false);
     const [removing, setRemoving] = useState<TeamMember | null>(null);
     const [confirming, setConfirming] = useState(false);
@@ -62,6 +64,15 @@ export function TeamMembersCard({
     const visible = expanded ? members : members.slice(0, VisibleMembers);
     const hiddenCount = members.length - visible.length;
 
+    // The "Remove" button of the row leaves with its member: the focus goes
+    // to the heading of the card instead of falling back to the page.
+    useEffect(() => {
+        if (!confirming && memberLeft.current) {
+            memberLeft.current = false;
+            headingRef.current?.focus();
+        }
+    }, [confirming]);
+
     const remove = (member: TeamMember): Promise<void> =>
         new Promise((resolve) => {
             router.delete(
@@ -69,7 +80,13 @@ export function TeamMembersCard({
                     ...params,
                     member: member.id,
                 }),
-                { preserveScroll: true, onFinish: () => resolve() },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        memberLeft.current = true;
+                    },
+                    onFinish: () => resolve(),
+                },
             );
         });
 
@@ -98,7 +115,9 @@ export function TeamMembersCard({
                 <CardHeader>
                     <h2
                         id={headingId}
-                        className="flex min-w-0 items-center gap-2 text-base leading-snug font-title"
+                        ref={headingRef}
+                        tabIndex={-1}
+                        className="flex min-w-0 items-center gap-2 rounded-sm text-base leading-snug font-title outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                         <span className="truncate">{t('Members')}</span>
                         <Badge variant="muted" shape="pill">
