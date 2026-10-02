@@ -135,6 +135,20 @@ it('filters by game and title', function () {
         ->assertInertia(fn (Assert $page) => $page->where('filters.game', null));
 });
 
+it('finds an accented title by a term of another case, and a wildcard as text', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+    $summer = estimatedPokerTask($game, 'Offre d\'été', '2026-09-01 10:00:00');
+    estimatedPokerTask($game, 'Offre d\'ete', '2026-09-02 10:00:00');
+    $underscore = estimatedPokerTask($game, 'Rename user_id', '2026-09-03 10:00:00');
+    estimatedPokerTask($game, 'Rename user-id', '2026-09-04 10:00:00');
+
+    $ids = fn (string $search) => collect(pokerEstimateRows(pokerEstimatesPage($this, $user, $game->team, ['q' => $search])))->pluck('id')->all();
+
+    expect($ids('ÉTÉ'))->toBe([$summer->id])
+        ->and($ids('R_I'))->toBe([$underscore->id]);
+});
+
 it('paginates by 50', function () {
     $game = PokerGame::factory()->create();
     [$user] = pokerFacilitator($game);

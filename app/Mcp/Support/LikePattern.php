@@ -4,11 +4,6 @@ namespace App\Mcp\Support;
 
 class LikePattern
 {
-    public static function contains(string $term): string
-    {
-        return '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
-    }
-
     public static function snippet(string $text, string $term, int $length = 160): string
     {
         $text = trim((string) preg_replace('/\s+/u', ' ', $text));

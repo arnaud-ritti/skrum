@@ -15,6 +15,7 @@ use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Database\SearchText;
 use App\Support\Llm\Llm;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,6 +37,10 @@ class SearchBoards extends SkrumTool
 
     private const int MatchesPerKind = 5;
 
+    /**
+     * Exact matches kept per kind, newest first. A term holding a wildcard character gets near
+     * misses from SQL: rows are read by this many until that number of exact matches is reached.
+     */
     private const int MaxRowsPerKind = 200;
 
     protected string $name = 'retro.boards.search';
@@ -82,14 +87,13 @@ class SearchBoards extends SkrumTool
             ? [$this->context->team($validated['team_id'])->id]
             : $this->visibleTeams->ids($grant);
         $term = $validated['query'];
-        $pattern = LikePattern::contains($term);
         $retroIds = Retro::query()->whereIn('team_id', $teamIds)->select('id');
 
         $matches = collect()
-            ->concat($this->titles($retroIds, $pattern, $term))
-            ->concat($this->summaries($retroIds, $pattern, $term))
-            ->concat($this->actions($retroIds, $pattern, $term))
-            ->concat($this->messages($retroIds, $pattern, $term, $grant))
+            ->concat($this->titles($retroIds, $term))
+            ->concat($this->summaries($retroIds, $term))
+            ->concat($this->actions($retroIds, $term))
+            ->concat($this->messages($retroIds, $term, $grant))
             ->groupBy('retroId');
 
         $retros = Retro::query()
@@ -114,14 +118,18 @@ class SearchBoards extends SkrumTool
      * @param  Builder<Retro>  $retroIds
      * @return Collection<int, array{retroId: string, kind: 'title', id: null, snippet: string}>
      */
-    private function titles(Builder $retroIds, string $pattern, string $term): Collection
+    private function titles(Builder $retroIds, string $term): Collection
     {
         return Retro::query()
             ->whereIn('id', $retroIds)
-            ->where('title', 'ilike', $pattern)
+            ->whereContains('title', $term)
             ->latest()
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'title'])
+            ->orderByDesc('id')
+            ->select(['id', 'title'])
+            ->lazy(self::MaxRowsPerKind)
+            ->filter(fn (Retro $retro): bool => SearchText::contains($retro->title, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'title', 'id' => null, 'snippet' => LikePattern::snippet($retro->title, $term)]);
     }
 
@@ -132,7 +140,7 @@ class SearchBoards extends SkrumTool
      * @param  Builder<Retro>  $retroIds
      * @return Collection<int, array{retroId: string, kind: 'summary', id: null, snippet: string}>
      */
-    private function summaries(Builder $retroIds, string $pattern, string $term): Collection
+    private function summaries(Builder $retroIds, string $term): Collection
     {
         if ($this->llm->providerName() === null) {
             return collect();
@@ -143,10 +151,14 @@ class SearchBoards extends SkrumTool
             ->where('phase', RetroPhase::Completed)
             ->where('ai_summary_enabled', true)
             ->where('summary_status', SummaryStatus::Ready)
-            ->where('summary', 'ilike', $pattern)
+            ->whereContains('summary', $term)
             ->latest()
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'summary'])
+            ->orderByDesc('id')
+            ->select(['id', 'summary'])
+            ->lazy(self::MaxRowsPerKind)
+            ->filter(fn (Retro $retro): bool => SearchText::contains($retro->summary, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
     }
 
@@ -154,14 +166,18 @@ class SearchBoards extends SkrumTool
      * @param  Builder<Retro>  $retroIds
      * @return Collection<int, array{retroId: string, kind: 'action', id: string, snippet: string}>
      */
-    private function actions(Builder $retroIds, string $pattern, string $term): Collection
+    private function actions(Builder $retroIds, string $term): Collection
     {
         return ActionItem::query()
             ->whereIn('retro_id', $retroIds)
-            ->where('content', 'ilike', $pattern)->latest()
+            ->whereContains('content', $term)
+            ->latest()
             ->orderByDesc('id')
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'retro_id', 'content', 'created_at'])
+            ->select(['id', 'retro_id', 'content', 'created_at'])
+            ->lazy(self::MaxRowsPerKind)
+            ->filter(fn (ActionItem $item): bool => SearchText::contains($item->content, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->reverse()
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $items) => $items->take(self::MatchesPerKind))
@@ -175,20 +191,24 @@ class SearchBoards extends SkrumTool
      * @param  Builder<Retro>  $retroIds
      * @return Collection<int, array{retroId: string, kind: 'message', id: string, snippet: string}>
      */
-    private function messages(Builder $retroIds, string $pattern, string $term, McpGrant $grant): Collection
+    private function messages(Builder $retroIds, string $term, McpGrant $grant): Collection
     {
         $ownParticipantIds = Participant::query()->where('user_id', $grant->user->id)->select('id');
         $hidingRetroIds = Retro::query()->whereIn('phase', RetroPhase::hidingOthersCards())->select('id');
 
         return Card::query()
             ->whereIn('retro_id', $retroIds)
-            ->where('content', 'ilike', $pattern)
+            ->whereContains('content', $term)
             ->where(fn (Builder $query) => $query
                 ->whereNotIn('retro_id', $hidingRetroIds)
-                ->orWhereIn('participant_id', $ownParticipantIds))->latest()
+                ->orWhereIn('participant_id', $ownParticipantIds))
+            ->latest()
             ->orderByDesc('id')
-            ->limit(self::MaxRowsPerKind)
-            ->get(['id', 'retro_id', 'content', 'position'])
+            ->select(['id', 'retro_id', 'content', 'position'])
+            ->lazy(self::MaxRowsPerKind)
+            ->filter(fn (Card $card): bool => SearchText::contains($card->content, $term))
+            ->take(self::MaxRowsPerKind)
+            ->collect()
             ->sortBy('position')
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $cards) => $cards->take(self::MatchesPerKind))

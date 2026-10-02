@@ -14,7 +14,8 @@ function databasePortabilityRules(): array
         'insertOrIgnore' => '/->insertOrIgnore\(/',
         'json contains or length' => '/->(?:or)?where(?:Json(?:Doesnt)?Contain|JsonLength)\w*\(/i',
         'upsert' => '/->upsert\(/',
-        'like comparison' => '/->(?:or)?where(?:Not)?Like\(|[\'"](?:not )?like[\'"]/i',
+        'like comparison' => '/[\'"](?:not )?like[\'"]|->(?:or)?where(?:Not)?Like\((?:(?!caseSensitive:\s*true)(?!\)\s*->)[^;])*(?:;|\)\s*->)/i',
+        'write without model events' => '/WithoutModelEvents|withoutEvents\(|->(?:save|update|create|createMany|forceCreate|push|delete|forceDelete|restore)Quietly\(/',
         'driver branch' => '/getDriverName\(|getDriverTitle\(|instanceof\s+\\\\?(?:[\w\\\\]*\\\\)?(?:Postgres|MySql|MariaDb|SQLite|SqlServer)\w*|config\(\s*[\'"]database\.default[\'"]\s*\)\s*[=!]==?/',
         'boolean literal in raw sql' => '/Raw\(\s*[\'"](?:false|true)[\'"]/i',
         'whereRaw' => '/->(?:or)?whereRaw\(/',
@@ -123,6 +124,7 @@ function databasePortabilityMessage(string $heading, array $lines): string
         .'no Expression object, no raw index or constraint SQL in a migration, and no getDriverName() or other branch on the driver. '
         .'Only Eloquent models, relationships, scopes, the standard methods of the query builder, and the Schema builder in migrations; '
         .'what SQL cannot say the same way on PostgreSQL, MySQL, MariaDB and SQLite is done in PHP. '
+        .'No write skips the model events (WithoutModelEvents, withoutEvents, saveQuietly, …): the derived columns are written by them. '
         .'No helper may wrap raw SQL. Tests do not read SQL text, branch on the driver or change the schema. '
         .'The rules are in docs/database.md ("Rules for database code"). Fix the code: '
         .'tests/Arch/database-portability-baseline.txt only shrinks, and ends empty.';
@@ -153,3 +155,22 @@ it('lists nothing that is no longer there', function () {
 
     expect($stale)->toBe([], databasePortabilityMessage('Fixed constructs still on the baseline: delete the line or lower its count', $stale));
 });
+
+it('checks every like comparison of a statement, not only the first', function () {
+    $rule = databasePortabilityRules()['source']['like comparison'];
+    $folded = "\$query->whereLike('title_search', \$pattern, caseSensitive: true)";
+
+    expect(preg_match_all($rule, "{$folded}->orWhereLike('email', \$pattern)->get();"))->toBe(1)
+        ->and(preg_match_all($rule, "\$query->whereLike('email', \$pattern)->orWhereLike('title_search', \$pattern, caseSensitive: true);"))->toBe(1)
+        ->and(preg_match_all($rule, "{$folded}->orWhereLike('summary_search', \$pattern, caseSensitive: true);"))->toBe(0)
+        ->and(preg_match_all($rule, "{$folded};"))->toBe(0);
+});
+
+it('refuses a write that skips the model events', function (string $code) {
+    expect(preg_match(databasePortabilityRules()['source']['write without model events'], $code))->toBe(1);
+})->with([
+    'use WithoutModelEvents;',
+    'User::withoutEvents(fn () => $user->save());',
+    '$user->saveQuietly();',
+    'User::factory()->createQuietly();',
+]);

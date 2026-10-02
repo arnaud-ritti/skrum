@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Contracts\DeliverySubject;
 use App\Enums\GameKind;
 use App\Enums\RetroPhase;
@@ -71,6 +72,7 @@ class Retro extends Model implements DeliverySubject
     /** @use HasFactory<RetroFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     protected static function booted(): void
@@ -324,6 +326,12 @@ class Retro extends Model implements DeliverySubject
         }
 
         return SummaryStatus::Pending;
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['title' => 'title_search', 'summary' => 'summary_search'];
     }
 
     protected function casts(): array

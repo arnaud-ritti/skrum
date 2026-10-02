@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Enums\WorkspaceRole;
 use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
@@ -55,6 +56,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
     use Notifiable;
     use PasskeyAuthenticatable;
@@ -64,6 +66,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         'action_item_reminders_by_email' => true,
         'action_item_reminders_in_app' => true,
     ];
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['name' => 'name_search'];
+    }
 
     /**
      * Get the attributes that should be cast.

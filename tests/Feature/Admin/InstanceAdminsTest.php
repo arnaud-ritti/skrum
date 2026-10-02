@@ -233,6 +233,17 @@ it('takes wildcard characters of the search literally', function () {
         ->assertJsonPath('candidates.0.id', $literal->id);
 });
 
+it('finds a literal match that sorts after more near misses than the list holds', function () {
+    actingAsInstanceAdmin($this);
+    User::factory()->count(12)->sequence(fn ($sequence): array => ['name' => "Aa {$sequence->index}"])->create();
+    $literal = User::factory()->create(['name' => 'Zed 100%_sure']);
+
+    $this->getJson(route('admin.adminCandidates.index', ['query' => '%_']))
+        ->assertOk()
+        ->assertJsonCount(1, 'candidates')
+        ->assertJsonPath('candidates.0.id', $literal->id);
+});
+
 it('keeps the candidate search away from non-admins', function () {
     $this->actingAs(User::factory()->create());
     User::factory()->create(['name' => 'Marta']);

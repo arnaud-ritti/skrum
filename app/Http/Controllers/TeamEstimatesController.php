@@ -11,8 +11,10 @@ use App\Models\PokerVote;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Database\SearchText;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,7 +38,7 @@ class TeamEstimatesController extends Controller
             ->whereIn('poker_game_id', $games->modelKeys())
             ->whereNotNull('estimated_at')
             ->when($gameId !== null, fn ($query) => $query->where('poker_game_id', $gameId))
-            ->when($search !== '', fn ($query) => $query->where('title', 'ilike', '%'.$this->escapeLike($search).'%'))
+            ->when($search !== '', fn ($query) => $query->whereContains('title', $search))
             ->with([
                 'game.players.user',
                 'rounds' => fn ($query) => $query->whereNotNull('revealed_at')->reorder()->orderByDesc('number')->with('votes'),
@@ -52,7 +54,10 @@ class TeamEstimatesController extends Controller
             'team' => $team->only(['id', 'name']),
             'games' => $games->map(fn (PokerGame $game): array => ['id' => $game->id, 'title' => $game->title])->values(),
             'filters' => ['game' => $gameId, 'q' => $search],
-            'tasks' => collect($tasks->items())->map(fn (PokerTask $task): array => $this->presentRow($task, $user))->values(),
+            'tasks' => collect($tasks->items())
+                ->when($search !== '', fn (SupportCollection $page) => $page->filter(fn (PokerTask $task): bool => SearchText::contains($task->title, $search)))
+                ->map(fn (PokerTask $task): array => $this->presentRow($task, $user))
+                ->values(),
             'pagination' => [
                 'currentPage' => $tasks->currentPage(),
                 'lastPage' => $tasks->lastPage(),
@@ -150,10 +155,5 @@ class TeamEstimatesController extends Controller
         $search = $request->query('q');
 
         return is_string($search) ? trim($search) : '';
-    }
-
-    private function escapeLike(string $value): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 }
