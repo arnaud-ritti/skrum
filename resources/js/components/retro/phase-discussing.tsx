@@ -164,6 +164,10 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     useShortcut(
         'f',
         (event) => {
+            if (event.repeat) {
+                return;
+            }
+
             const topic = topicOfFocus(topics, event.target);
 
             if (topic !== null) {

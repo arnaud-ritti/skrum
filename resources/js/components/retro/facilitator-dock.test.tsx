@@ -466,6 +466,30 @@ describe('FacilitatorDock, the next phase from the keyboard', () => {
         expect(phaseCalls()[0][1]).toEqual({ phase: 'grouping' });
     });
 
+    it('answers while the focus is on the main button, where a plain arrow moves inside the toolbar', async () => {
+        const { ctx } = renderInBoard(<FacilitatorDock />, boardContext());
+        const primary = screen.getByRole('button', { name: 'Grouping' });
+
+        primary.focus();
+        fireEvent.keyDown(primary, { key: 'ArrowRight', metaKey: true });
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(phaseCalls()).toHaveLength(1);
+        expect(phaseCalls()[0][1]).toEqual({ phase: 'grouping' });
+    });
+
+    it('moves one phase only while the key is held', () => {
+        renderInBoard(<FacilitatorDock />, boardContext());
+
+        fireEvent.keyDown(document.body, {
+            key: 'ArrowRight',
+            metaKey: true,
+            repeat: true,
+        });
+
+        expect(phaseCalls()).toHaveLength(0);
+    });
+
     it('still answers while single-key shortcuts are off, and shows its key on the button', async () => {
         renderInBoard(<FacilitatorDock />, boardContext());
 
@@ -473,7 +497,10 @@ describe('FacilitatorDock, the next phase from the keyboard', () => {
             screen
                 .getByRole('button', { name: 'Grouping' })
                 .getAttribute('aria-keyshortcuts'),
-        ).toMatch(/→$/);
+        ).toMatch(/^(Meta|Control)\+ArrowRight$/);
+        expect(
+            screen.getByRole('button', { name: 'Grouping' }).textContent,
+        ).not.toContain('ArrowRight');
 
         setSingleKeyShortcuts(false);
         fireEvent.keyDown(document.body, { key: 'ArrowRight', ctrlKey: true });

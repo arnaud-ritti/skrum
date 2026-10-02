@@ -40,6 +40,8 @@ export type FacilitatorTools = {
     busy?: boolean;
     /** How the key of the main button is written on this system: "⌘→" or "Ctrl+→". */
     phaseShortcut?: string;
+    /** The same key for `aria-keyshortcuts`: "Meta+ArrowRight" or "Control+ArrowRight". */
+    phaseKeyShortcuts?: string;
     /** The topics of the discussion: moving between them, and bringing everyone along. */
     topics?: {
         canPrevious: boolean;
@@ -170,7 +172,13 @@ export function facilitatorActions(
 export function facilitatorPrimary(
     phase: RetroPhase,
     board: DockBoard,
-    { t, onPhase, busy = false, phaseShortcut }: FacilitatorTools,
+    {
+        t,
+        onPhase,
+        busy = false,
+        phaseShortcut,
+        phaseKeyShortcuts,
+    }: FacilitatorTools,
 ): FacilitatorAction | undefined {
     const target = nextPhase(board.retro.phases, phase);
 
@@ -185,6 +193,7 @@ export function facilitatorPrimary(
             icon: Flag,
             disabled: busy,
             shortcut: phaseShortcut,
+            ariaKeyShortcuts: phaseKeyShortcuts,
             onSelect: () => onPhase(target),
         };
     }
@@ -198,6 +207,7 @@ export function facilitatorPrimary(
         iconPosition: 'end',
         disabled: busy,
         shortcut: phaseShortcut,
+        ariaKeyShortcuts: phaseKeyShortcuts,
         onSelect: () => onPhase(target),
     };
 }
@@ -335,6 +345,8 @@ export function FacilitatorDock({
         t,
         busy,
         phaseShortcut: platform === 'mac' ? '⌘→' : 'Ctrl+→',
+        phaseKeyShortcuts:
+            platform === 'mac' ? 'Meta+ArrowRight' : 'Control+ArrowRight',
         roti,
         topics:
             discussion && (phase === 'discussing' || phase === 'actions')
@@ -373,10 +385,19 @@ export function FacilitatorDock({
 
     // The main button from the keyboard. Never from a field, where the key
     // moves the caret; elsewhere it would be "forward" in the history of
-    // the browser, which `useShortcut` prevents.
-    useShortcut('mod+arrowright', () => primary?.onSelect(), {
-        enabled: primary !== undefined && !primary.disabled,
-    });
+    // the browser, which `useShortcut` prevents. A held key moves one phase
+    // only: the last one ends the session, without a confirmation.
+    useShortcut(
+        'mod+arrowright',
+        (event) => {
+            if (event.repeat) {
+                return;
+            }
+
+            primary?.onSelect();
+        },
+        { enabled: primary !== undefined && !primary.disabled },
+    );
 
     return (
         <>
