@@ -4416,5 +4416,7 @@
     "all have an owner and a due date": "toutes ont un responsable et une échéance",
     "More actions": "Plus d’actions",
     "Session ended — 1 action created": "Session terminée — 1 action créée",
-    "Session ended — :count actions created": "Session terminée — :count actions créées"
+    "Session ended — :count actions created": "Session terminée — :count actions créées",
+    "Go to the retro": "Passer à la rétro",
+    "The facilitator chooses the game.": "Le facilitateur choisit le jeu."
 }

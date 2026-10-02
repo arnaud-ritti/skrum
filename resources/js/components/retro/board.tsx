@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
@@ -25,7 +26,6 @@ import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
 import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
-import { IcebreakerStage } from './icebreaker-stage';
 import {
     DiscussionProvider,
     PhaseDiscussing,

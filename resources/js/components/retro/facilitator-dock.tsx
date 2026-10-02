@@ -162,7 +162,29 @@ export function facilitatorActions(
     return [lock];
 }
 
-/** The main button names the phase it leads to; the last phase ends the session. */
+function primaryLabel(
+    phase: RetroPhase,
+    target: RetroPhase,
+    t: Translate,
+): string {
+    if (phase === 'icebreaker') {
+        return t('Go to the retro');
+    }
+
+    // Actions says "Next phase" (ruling 26): the mockup closes the retro
+    // from here, and the retro still has its ROTI to go through.
+    if (phase === 'actions') {
+        return t('Next phase');
+    }
+
+    return t(PhaseLabels[target]);
+}
+
+/**
+ * The main button names the phase it leads to; the last phase ends the
+ * session. The icebreaker is left for "the retro", whatever its first phase
+ * (mockup ScreenIcebreaker).
+ */
 export function facilitatorPrimary(
     phase: RetroPhase,
     board: DockBoard,
@@ -186,9 +208,7 @@ export function facilitatorPrimary(
 
     return {
         id: 'next-phase',
-        // Actions says "Next phase" (ruling 26): the mockup closes the retro
-        // from here, and the retro still has its ROTI to go through.
-        label: phase === 'actions' ? t('Next phase') : t(PhaseLabels[target]),
+        label: primaryLabel(phase, target, t),
         icon: ArrowRight,
         iconPosition: 'end',
         disabled: busy,

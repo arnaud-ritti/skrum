@@ -4194,5 +4194,7 @@
     "all have an owner and a due date": "all have an owner and a due date",
     "More actions": "More actions",
     "Session ended — 1 action created": "Session ended — 1 action created",
-    "Session ended — :count actions created": "Session ended — :count actions created"
+    "Session ended — :count actions created": "Session ended — :count actions created",
+    "Go to the retro": "Go to the retro",
+    "The facilitator chooses the game.": "The facilitator chooses the game."
 }

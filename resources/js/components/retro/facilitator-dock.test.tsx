@@ -236,6 +236,29 @@ describe('facilitatorPrimary', () => {
         expect(given.onPhase).toHaveBeenCalledWith('roti');
     });
 
+    it('says "Go to the retro" during the icebreaker, and leads to the first phase of the retro', () => {
+        const given = tools();
+        const primary = facilitatorPrimary(
+            'icebreaker',
+            retroSnapshot({
+                retro: {
+                    phase: 'icebreaker',
+                    phases: ['icebreaker', 'writing', 'completed'],
+                },
+            }),
+            given,
+        );
+
+        expect(primary).toMatchObject({
+            id: 'next-phase',
+            label: 'Go to the retro',
+        });
+
+        primary?.onSelect();
+
+        expect(given.onPhase).toHaveBeenCalledWith('writing');
+    });
+
     it('names Actions as the phase after Discussing', () => {
         expect(
             facilitatorPrimary(

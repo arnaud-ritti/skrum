@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GamePanel } from '@/components/games/game-panel';
-import { GameSwitcher } from '@/components/games/game-switcher';
-import { HistoryDrawer } from '@/components/games/history-drawer';
-import {
-    RoomProvider,
-    type RoomContextValue,
-} from '@/components/games/room-context';
-import { Badge } from '@/components/ui/badge';
+import { useBoard } from '@/components/retro/board-context';
+import { BoardCursors } from '@/components/retro/board-cursors';
+import { Spinner } from '@/components/ui/spinner';
 import { useGameRoom } from '@/hooks/use-game-room';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameSnapshot } from '@/lib/games/types';
 import type { PresenceMember } from '@/lib/retro/types';
-import { useBoard } from './board-context';
+import { GameLayout } from './game-layout';
+import { GameStage } from './game-stage';
+import { PlayerChips } from './player-chips';
+import { RoomProvider, type RoomContextValue } from './room-context';
+import { useRoomPanels } from './room-panels';
 
 const UnknownPlayerRefetchDelay = 1500;
 const UnknownPlayerRefetchAttempts = 3;
@@ -114,8 +113,12 @@ function withBoardTimer(
  * The retro's presence channel carries the game: its members are
  * participants, which are the icebreaker players' presence ids, so live
  * strokes and cursors share one channel (spec §6).
+ *
+ * The stage is the layout of a game room without its header: the session
+ * header, the timer and the reaction bar are the board's. The facilitator
+ * chooses the game on the cards; the players see them beside the stage.
  */
-export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
+function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
     const board = useBoard();
     const { t } = useTrans();
     const room = useGameRoom(snapshot, { subscribe: false });
@@ -136,6 +139,11 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
         () => withBoardTimer(room.state.snapshot, timerEndsAt),
         [room.state.snapshot, timerEndsAt],
     );
+    const panels = useRoomPanels({
+        snapshot: gameSnapshot,
+        lastEnded: room.state.lastEnded,
+        watchChoice: true,
+    });
 
     const ctx: RoomContextValue = {
         snapshot: gameSnapshot,
@@ -150,29 +158,53 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
         serverOffset: room.serverOffset,
         sessionExpired: board.sessionExpired || room.sessionExpired,
     };
-    const { room: info, games } = gameSnapshot;
-    const gameLabel =
-        games.find((option) => option.value === info.game)?.label ?? info.game;
 
     return (
         <RoomProvider value={ctx}>
             <section
                 aria-label={t('Icebreaker game')}
-                className="flex flex-1 flex-col"
+                className="flex min-h-0 flex-1 flex-col"
             >
-                <div className="flex flex-wrap items-center gap-3 border-b px-4 py-2">
-                    <h2 className="text-sm font-semibold">{t('Icebreaker')}</h2>
-                    {info.isHost ? (
-                        <GameSwitcher />
-                    ) : (
-                        <Badge variant="outline">{gameLabel}</Badge>
-                    )}
-                    <div className="ml-auto">
-                        <HistoryDrawer />
-                    </div>
-                </div>
-                <GamePanel landmark={false} />
+                <GameLayout
+                    {...panels}
+                    stage={<GameStage />}
+                    summary={<PlayerChips />}
+                    summaryFor="players"
+                    className="h-auto flex-1 border-t"
+                />
             </section>
         </RoomProvider>
+    );
+}
+
+/**
+ * The board area during the Icebreaker phase: the game instead of columns.
+ * It takes the height the board has left, so that the columns of the game
+ * scroll on their own and a drawing fits the stage.
+ */
+export function IcebreakerStage({ hideMyCursor }: { hideMyCursor: boolean }) {
+    const { board } = useBoard();
+    const [element, setElement] = useState<HTMLElement | null>(null);
+
+    if (board.icebreaker === null) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-8">
+                <Spinner />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            ref={setElement}
+            data-slot="icebreaker-stage"
+            className="relative flex min-h-0 flex-1 flex-col"
+        >
+            <IcebreakerGame
+                key={board.icebreaker.room.id}
+                snapshot={board.icebreaker}
+            />
+            <BoardCursors container={element} hidden={hideMyCursor} />
+        </div>
     );
 }

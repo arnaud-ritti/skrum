@@ -13,6 +13,8 @@ import { useRoom } from './room-context';
 export type GamePickerProps = {
     /** Place left under the game cards for the settings card of a game (GM-1). */
     settings?: ReactNode;
+    /** For a player of a retro's icebreaker: the cards tell the game in play, the facilitator chooses. */
+    readOnly?: boolean;
 };
 
 /**
@@ -49,14 +51,14 @@ function focusAfterSwitch(): void {
  * The host's choice of game, one card per game the server lists. Switching
  * mid-round abandons the round for everyone (spec §4).
  */
-export function GamePicker({ settings }: GamePickerProps) {
+export function GamePicker({ settings, readOnly = false }: GamePickerProps) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
     const { room, games } = ctx.snapshot;
 
     const change = async (game: GameKind) => {
-        if (busy || game === room.game) {
+        if (readOnly || busy || game === room.game) {
             return;
         }
 
@@ -84,9 +86,13 @@ export function GamePicker({ settings }: GamePickerProps) {
             className="flex min-h-0 flex-1 flex-col gap-4"
         >
             <div className="flex flex-col gap-1">
-                <h2 className="text-base font-title">{t('Choose a game')}</h2>
+                <h2 className="text-base font-title">
+                    {readOnly ? t('Games') : t('Choose a game')}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                    {t('The host starts, everyone plays.')}
+                    {readOnly
+                        ? t('The facilitator chooses the game.')
+                        : t('The host starts, everyone plays.')}
                 </p>
             </div>
             <IcebreakerGameGrid className="grid-cols-2 gap-3 sm:grid-cols-2">
@@ -99,6 +105,7 @@ export function GamePicker({ settings }: GamePickerProps) {
                         available={option.available}
                         selected={option.value === room.game}
                         inPlay
+                        readOnly={readOnly}
                         onSelect={(game) => void change(game)}
                     />
                 ))}
