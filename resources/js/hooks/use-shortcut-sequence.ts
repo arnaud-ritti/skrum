@@ -4,18 +4,10 @@ import {
     matchesShortcut,
     overlaysOfEvent,
 } from '@/hooks/use-shortcut';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 
 /** How long the second key of a sequence may wait for after the first. */
 export const SequenceWindowMs = 1000;
-
-/**
- * Whether single-key shortcuts are on. The preference of Task 25
- * (`singleKeyShortcutsEnabled()` of `lib/shortcuts/preference`) replaces
- * this once it exists.
- */
-function singleKeyShortcutsEnabled(): boolean {
-    return true;
-}
 
 /**
  * Two keys pressed one after the other (`G` then `A`). The first key is left

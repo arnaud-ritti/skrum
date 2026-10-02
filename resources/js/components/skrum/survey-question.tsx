@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export type SurveyQuestionKind =
@@ -579,6 +580,10 @@ export function SurveyQuestion({
         const digit = Number(event.key);
 
         if (!Number.isInteger(digit) || digit < 1 || digit > 5) {
+            return;
+        }
+
+        if (!singleKeyShortcutsEnabled()) {
             return;
         }
 

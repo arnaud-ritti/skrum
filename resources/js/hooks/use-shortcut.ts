@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
+import {
+    isCharacterKeyCombo,
+    singleKeyShortcutsEnabled,
+} from '@/lib/shortcuts/preference';
 
 export type UseShortcutOptions = {
     enabled?: boolean;
@@ -185,7 +189,15 @@ export function useShortcut(
                 return;
             }
 
-            if (!combos.some((entry) => matchesShortcut(event, entry))) {
+            const matched = combos.find((entry) =>
+                matchesShortcut(event, entry),
+            );
+
+            if (matched === undefined) {
+                return;
+            }
+
+            if (!singleKeyShortcutsEnabled() && isCharacterKeyCombo(matched)) {
                 return;
             }
 

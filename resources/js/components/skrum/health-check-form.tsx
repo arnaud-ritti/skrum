@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { isEditableTarget } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 /** An integer from 1 to the scale; the server stores 1..10. */
@@ -112,6 +113,10 @@ function ScaleQuestion({
         }
 
         if (isEditableTarget(event.target)) {
+            return;
+        }
+
+        if (/^[0-9]$/.test(event.key) && !singleKeyShortcutsEnabled()) {
             return;
         }
 

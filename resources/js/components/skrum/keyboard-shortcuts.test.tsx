@@ -247,6 +247,43 @@ describe('KeyboardShortcuts', () => {
         expect(within(dialog).getByRole('searchbox')).toBeTruthy();
     });
 
+    it('says that single-key shortcuts are off, and names the key that still opens it', () => {
+        renderWithProviders(<Harness singleKeyDisabled />);
+
+        const status = screen
+            .getAllByRole('status')
+            .find((node) =>
+                node.textContent?.startsWith('Single-key shortcuts are off.'),
+            );
+
+        expect(status?.textContent).toBe(
+            'Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.',
+        );
+        expect(
+            document.querySelector('[data-slot="keyboard-shortcuts"] footer')
+                ?.textContent,
+        ).toContain('⌘/at any time');
+    });
+
+    it('has no such line while they are on, and renders the extra control at the end of the footer', () => {
+        renderWithProviders(
+            <Harness footerExtra={<button type="button">Extra</button>} />,
+        );
+
+        expect(
+            document.querySelector(
+                '[data-slot="keyboard-shortcuts-single-key-off"]',
+            ),
+        ).toBeNull();
+
+        const footer = document.querySelector(
+            '[data-slot="keyboard-shortcuts"] footer',
+        );
+
+        expect(footer?.lastElementChild?.textContent).toBe('Extra');
+        expect(footer?.textContent).toContain('?at any time');
+    });
+
     it('renders nothing when closed', () => {
         renderWithProviders(<Harness open={false} />);
 

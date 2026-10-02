@@ -63,6 +63,10 @@ export type KeyboardShortcutsProps = {
     query?: string;
     onQueryChange?: (query: string) => void;
     onOpenCommandPalette?: () => void;
+    /** Single-key shortcuts are turned off: the reference says so. */
+    singleKeyDisabled?: boolean;
+    /** A control at the end of the footer: the switch, or the way to it. */
+    footerExtra?: ReactNode;
 };
 
 type KeyLabel = { text: string; spoken: string };
@@ -391,6 +395,8 @@ function ShortcutsContent({
     query: queryProp,
     onQueryChange,
     onOpenCommandPalette,
+    singleKeyDisabled = false,
+    footerExtra,
 }: Omit<KeyboardShortcutsPanelProps, 'className'> & {
     title: ReactNode;
     description?: ReactNode;
@@ -499,6 +505,17 @@ function ShortcutsContent({
                     <Kbd aria-hidden="true">/</Kbd>
                 )}
             </div>
+            {singleKeyDisabled && (
+                <p
+                    role="status"
+                    data-slot="keyboard-shortcuts-single-key-off"
+                    className="shrink-0 border-b bg-skrum-warning-soft px-5 py-2 text-xs font-medium text-skrum-warning-text"
+                >
+                    {t(
+                        'Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.',
+                    )}
+                </p>
+            )}
 
             <div
                 ref={bodyRef}
@@ -547,9 +564,16 @@ function ShortcutsContent({
                 )}
             </div>
 
-            <footer className="flex flex-wrap gap-x-4 gap-y-1 border-t bg-muted px-5 py-2 text-xs text-muted-foreground">
+            <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t bg-muted px-5 py-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                    <Kbd>?</Kbd>
+                    {singleKeyDisabled ? (
+                        <>
+                            <Kbd>{keyLabel('mod', platform).text}</Kbd>
+                            <Kbd>/</Kbd>
+                        </>
+                    ) : (
+                        <Kbd>?</Kbd>
+                    )}
                     {t('at any time')}
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -568,6 +592,14 @@ function ShortcutsContent({
                     />
                     {t('facilitator only')}
                 </span>
+                {footerExtra && (
+                    <span
+                        data-slot="keyboard-shortcuts-footer-extra"
+                        className="ml-auto flex min-w-0 items-center gap-2"
+                    >
+                        {footerExtra}
+                    </span>
+                )}
             </footer>
         </>
     );
