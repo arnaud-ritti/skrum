@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Database\NameKey;
 use Database\Factories\SavedPokerDeckFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $team_id
  * @property string|null $workspace_id
  * @property string $name
+ * @property string $name_key
  * @property array<int, string> $cards
  * @property string|null $created_by_user_id
  * @property-read Team|null $team
@@ -61,6 +64,18 @@ class SavedPokerDeck extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    /**
+     * The key always follows the name: no caller sets it.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $name): array => ['name' => $name, 'name_key' => NameKey::of($name)],
+        );
     }
 
     protected function casts(): array

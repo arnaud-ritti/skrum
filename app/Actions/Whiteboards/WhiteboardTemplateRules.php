@@ -4,6 +4,7 @@ namespace App\Actions\Whiteboards;
 
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Database\NameKey;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -26,7 +27,7 @@ class WhiteboardTemplateRules
     public static function ensureNameIsFree(Workspace $lockedWorkspace, string $name, ?WhiteboardTemplate $ignore = null): void
     {
         $isTaken = $lockedWorkspace->whiteboardTemplates()
-            ->whereRaw('lower(name) = lower(?)', [trim($name)])
+            ->where('name_key', NameKey::of($name))
             ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
             ->exists();
 

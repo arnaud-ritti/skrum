@@ -5,6 +5,7 @@ namespace App\Actions\Poker;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Database\NameKey;
 use Closure;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -29,7 +30,7 @@ class SavedPokerDeckRules
                 }
 
                 $isTaken = $owner->pokerDecks()
-                    ->whereRaw('lower(name) = ?', [mb_strtolower(trim($value))])
+                    ->where('name_key', NameKey::of($value))
                     ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
                     ->exists();
 
