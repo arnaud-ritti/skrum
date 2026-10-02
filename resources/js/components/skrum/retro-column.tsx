@@ -73,8 +73,8 @@ export type RetroColumnProps = Omit<
     notice?: ReactNode;
     footer?: ReactNode;
     /**
-     * Takes the place of the "Add a card" button when the host keeps a card
-     * open for writing; `onAdd` (and N) then brings the focus to it.
+     * Takes the place of the "Add a card" button while the host has a card
+     * in editing; `onAdd` (and N) then brings the focus to it.
      */
     composer?: ReactNode;
     onAdd?: () => void;
