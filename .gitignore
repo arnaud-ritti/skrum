@@ -45,3 +45,5 @@ yarn-error.log
 /opencode.jsonc
 /frankenphp
 /public/frankenphp-worker.php
+/database/testing.sqlite*
+/storage/logs/test-db

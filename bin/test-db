@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+#
+# Runs the Pest suites against one database engine.
+#
+#   bin/test-db <sqlite|sqlite-file|pgsql|mariadb|mysql> [--concurrency] [-- arguments of `artisan test`]
+#
+# Without arguments: Unit, Feature and Arch in parallel (TEST_DB_PROCESSES, default 8).
+# With arguments: they are passed to `artisan test`, which then runs in one process.
+# --concurrency: tests/Concurrency, in one process, never on SQLite in memory.
+#
+# Inside Sail by default; the engine must be up (`docker compose up -d mariadb mysql`).
+# TEST_DB_ON_HOST=1 uses the host's PHP and 127.0.0.1 (CI); TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USERNAME
+# and TEST_DB_PASSWORD override the host, the port, the user and the password.
+# TEST_DB_DATABASE (default `testing`) names the database; a parallel run uses <name>_test_<n>.
+# The user must be allowed to create them: Sail grants every database named `testing%`.
+# From a git worktree, whose folder is not the Compose project: TEST_DB_CONTAINER names the running
+# application container and TEST_DB_WORKDIR the worktree's path inside it.
+
+set -u
+
+cd "$(dirname "$0")/.."
+
+driver="${1:-}"
+shift || true
+
+concurrency=0
+
+if [ "${1:-}" = "--concurrency" ]; then
+    concurrency=1
+    shift
+fi
+
+if [ "${1:-}" = "--" ]; then
+    shift
+fi
+
+on_host="${TEST_DB_ON_HOST:-0}"
+password="${TEST_DB_PASSWORD:-password}"
+database="${TEST_DB_DATABASE:-testing}"
+
+server() {
+    local sail_host="$1" sail_user="$2" host_port="$3"
+    local host="$sail_host" port="${4:-3306}"
+
+    if [ "$on_host" = 1 ]; then
+        host=127.0.0.1
+        port="$host_port"
+    fi
+
+    variables=(
+        "DB_CONNECTION=$driver"
+        "DB_HOST=${TEST_DB_HOST:-$host}"
+        "DB_PORT=${TEST_DB_PORT:-$port}"
+        "DB_DATABASE=$database"
+        "DB_USERNAME=${TEST_DB_USERNAME:-$sail_user}"
+        "DB_PASSWORD=$password"
+    )
+}
+
+case "$driver" in
+    sqlite)
+        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=:memory:")
+        ;;
+    sqlite-file)
+        rm -f "database/$database.sqlite"*
+        : > "database/$database.sqlite"
+        variables=("DB_CONNECTION=sqlite" "DB_DATABASE=database/$database.sqlite")
+        ;;
+    pgsql)
+        server pgsql sail 5432 5432
+        ;;
+    mariadb)
+        server mariadb sail 3306
+        ;;
+    mysql)
+        server mysql sail 3307
+        ;;
+    *)
+        echo "Usage: bin/test-db <sqlite|sqlite-file|pgsql|mariadb|mysql> [--concurrency] [-- arguments of artisan test]" >&2
+        exit 2
+        ;;
+esac
+
+if [ "$concurrency" = 1 ] && [ "$driver" = sqlite ]; then
+    echo "The concurrency suite needs a database two processes can open: use sqlite-file." >&2
+    exit 2
+fi
+
+if [ "$on_host" = 1 ]; then
+    run() { env "${variables[@]}" php "$@"; }
+else
+    flags=()
+
+    for variable in "${variables[@]}"; do
+        flags+=(-e "$variable")
+    done
+
+    if [ -n "${TEST_DB_CONTAINER:-}" ]; then
+        run() { docker exec -u sail -w "${TEST_DB_WORKDIR:-/var/www/html}" "${flags[@]}" "$TEST_DB_CONTAINER" php "$@"; }
+    else
+        run() { docker compose exec -T -u sail "${flags[@]}" laravel.test php "$@"; }
+    fi
+fi
+
+mkdir -p storage/logs/test-db
+log="storage/logs/test-db/$driver$([ "$concurrency" = 1 ] && echo -concurrency).log"
+
+run artisan config:clear --ansi >/dev/null
+
+if [ "$concurrency" = 1 ]; then
+    run artisan test --compact tests/Concurrency "$@" 2>&1 | tee "$log"
+elif [ $# -gt 0 ]; then
+    run artisan test --compact "$@" 2>&1 | tee "$log"
+else
+    run -d memory_limit=1G artisan test --compact --parallel --processes="${TEST_DB_PROCESSES:-8}" --recreate-databases 2>&1 | tee "$log"
+fi
+
+status=${PIPESTATUS[0]}
+
+summary=$(sed -E $'s/\x1b\\[[0-9;]*m//g' "$log" | grep -E 'Tests:' | tail -1 | sed -E 's/^ +//')
+
+if [ "$status" -eq 0 ]; then
+    echo "test-db $driver: PASS, ${summary:-no summary line}, log $log"
+else
+    echo "test-db $driver: FAIL (exit $status), ${summary:-no summary line}, log $log"
+fi
+
+exit "$status"
