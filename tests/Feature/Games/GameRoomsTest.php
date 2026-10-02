@@ -34,7 +34,7 @@ it('lists the standalone rooms of the team', function () {
     $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Lunch']);
     GamePlayer::factory()->count(2)->create(['game_room_id' => $room->id]);
     GameRound::factory()->ended()->create(['game_room_id' => $room->id]);
-    activeGameRound($room);
+    $round = activeGameRound($room);
     GameRoom::factory()->icebreaker(Retro::factory()->inPhase(RetroPhase::Icebreaker)->create(['team_id' => $team->id]))->create();
     GameRoom::factory()->create();
 
@@ -50,8 +50,15 @@ it('lists the standalone rooms of the team', function () {
                 'game' => 'hangman',
                 'gameLabel' => __('Hangman'),
                 'access' => 'team',
+                'status' => 'playing',
+                'players' => $room->players->map(fn (GamePlayer $player): array => [
+                    'id' => $player->id,
+                    'name' => $player->displayName(),
+                    'avatarUrl' => $player->avatarUrl(),
+                ])->all(),
                 'playersCount' => 2,
                 'roundsCount' => 1,
+                'roundStartedAt' => $round->started_at->toIso8601String(),
                 'updatedAt' => $room->fresh()->updated_at?->toIso8601String(),
             ])
             ->where('canCreate', true)
