@@ -1,8 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
-import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
+import { teamSettingsHref as settingsHrefOf } from '@/lib/teams/settings-href';
 import {
     icebreakerSessionForm,
     roomLimitReason,
@@ -71,7 +70,7 @@ export type TeamPageProps = {
     canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
-    /** Deferred: absent while it loads, null when the server could not build it. */
+    /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     pokerPresence?: Record<string, number | null> | null;
 };
@@ -101,8 +100,7 @@ export type TeamPageSlots = {
 
 /**
  * The gear of the header leads where the "Team settings" entry of the sidebar
- * leads: the integrations page when the viewer manages them, the settings
- * card of this page otherwise, and nowhere for a plain member.
+ * leads: both read `lib/teams/settings-href.ts`.
  */
 export function teamSettingsHref({
     workspace,
@@ -113,18 +111,12 @@ export function teamSettingsHref({
     TeamPageProps,
     'workspace' | 'team' | 'canManage' | 'canManageIntegrations'
 >): string | undefined {
-    if (canManageIntegrations) {
-        return TeamIntegrationsController.index.url({
-            workspace: workspace.slug,
-            team: team.id,
-        });
-    }
-
-    if (!canManage) {
-        return undefined;
-    }
-
-    return `${TeamsController.show.url({ workspace: workspace.slug, team: team.id })}#settings`;
+    return settingsHrefOf({
+        workspace: workspace.slug,
+        team: team.id,
+        canManage: canManage || canManageIntegrations,
+        hasIntegrationsPage: canManageIntegrations,
+    });
 }
 
 export function TeamPage({

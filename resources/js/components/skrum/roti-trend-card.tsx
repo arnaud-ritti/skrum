@@ -296,6 +296,18 @@ export function RotiTrendCard({
                                 </g>
                             </svg>
                         )}
+                        {points.length > 0 && (
+                            <ul
+                                data-slot="roti-trend-values"
+                                className="sr-only"
+                            >
+                                {points.map((point) => (
+                                    <li key={point.id}>
+                                        {`${point.title ?? point.label} · ${format(point.mean)} / 5`}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </CardContent>
             </section>

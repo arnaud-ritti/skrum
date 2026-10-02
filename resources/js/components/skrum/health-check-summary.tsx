@@ -54,10 +54,14 @@ export function HealthCheckSummary({
                         {t('Health check')}
                     </h2>
                     <CardDescription data-slot="health-check-summary-facts">
-                        {t(
-                            ':count statements asked at the end of each retro, scored 1–10.',
-                            { count: statements.length },
-                        )}
+                        {statements.length === 1
+                            ? t(
+                                  '1 statement asked at the end of each retro, scored 1–10.',
+                              )
+                            : t(
+                                  ':count statements asked at the end of each retro, scored 1–10.',
+                                  { count: statements.length },
+                              )}
                     </CardDescription>
                     {manageHref !== undefined && (
                         <CardAction>

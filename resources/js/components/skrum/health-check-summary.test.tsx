@@ -59,6 +59,18 @@ describe('HealthCheckSummary', () => {
         ).toBeTruthy();
     });
 
+    it('counts a single statement in the singular', () => {
+        renderWithProviders(
+            <HealthCheckSummary statements={statements.slice(0, 1)} />,
+        );
+
+        expect(
+            screen.getByText(
+                '1 statement asked at the end of each retro, scored 1–10.',
+            ),
+        ).toBeTruthy();
+    });
+
     it('lists each statement with its short label, its origin and its text, in the order given', () => {
         renderWithProviders(<HealthCheckSummary statements={statements} />);
 

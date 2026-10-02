@@ -199,6 +199,16 @@ Differences with the mockup that remain:
 | ROTI card: the x axis shows the day the retro closed, and the badge reads "since :day" (no sprint number); labels are thinned out when they would collide; the card is under the session sections of the team page, the mockup shows it in the right column of ScreenDashboard beside "Open actions" (owner answer: main column) | D-77 (reworded) |
 | The health check page has no mockup: built from the manager and the chart, two columns from 80rem | new row |
 
+Review round (fixes and points left to the owner):
+
+- Authorisation of the health check page: it opens on `view`, not on `update` as the plan text reads; requiring `update` would take the read-only list and the Mood trend away from plain members. Recorded in D-76, to confirm by the owner.
+- ROTI card: the old ROTI tab had "View as table", a link per retro and the number of voters; the card keeps none of them (mockup strict, recorded in D-77). A visually hidden list beside the curve gives "retro · value / 5" for every point.
+- Sidebar: the health check page marks "Mood & ROTI" as the entry in use, while that entry leads to `#mood` of the team page, now the ROTI card. The Mood trend chart is reached only through "Manage" / "Details" of the health check card. Accepted as built; a link from the ROTI card to the health check page is the alternative.
+- "Team settings": the gear and the sidebar entry now read one helper (`lib/teams/settings-href.ts`); a Vitest case pins the two to the same address.
+- Health check card: one active statement reads "1 statement asked…" (singular key in the four languages).
+- "Remove from team": the key written to get "Retirer" in French also changed the English label of the row button and of the dialog confirm from "Remove" to "Remove from team". Left as built; the owner chooses between the longer English label and an `en` value of "Remove".
+- A rescued deferred prop is not sent as null: it stays absent and is listed in `rescuedProps`. The feature test now asserts `missing('moodTrend')` after the reload.
+
 Tests written or changed, not run (owner's rule): feature `TeamHealthCheckPageTest` (new, 7 cases with the dataset); Vitest `roti-trend-card.test.tsx`, `health-check-summary.test.tsx`, `team-health-card.test.tsx`, `team-roti-card.test.tsx`, `trend-states.test.tsx`, `team-health-check-page.test.tsx` (new), `team-health-manager.test.tsx` (the former `team-health-card.test.tsx`, renamed with its component, cases unchanged), `team-mood-card.test.tsx`, `team-page.test.tsx`, `mood-adapter.test.ts` (rewritten for the new elements); browser `[P08b-01a]`, `[P08b-01b]` (start on the team card, follow its link), `[P08b-07]` (opens the health check page), `[P18e-04-09]` (ROTI on the team page, mood on the health check page), `[P18e-04-02]`, `[P18e-04-02b]` (new selectors and bench states). Captures not regenerated.
 
 The "Fix later" line above about the failed deferred fetch is done by this task for a failure on the server; a request that never gets an answer (network) still leaves the skeleton.

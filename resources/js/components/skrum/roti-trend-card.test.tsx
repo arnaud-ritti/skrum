@@ -87,6 +87,17 @@ describe('RotiTrendCard', () => {
         ).toBe('Sprint 35 · 3.2 / 5');
     });
 
+    it('lists every retro with its value for assistive technology, beside the chart', () => {
+        renderWithProviders(<RotiTrendCard points={eight} />);
+
+        const items = screen.getAllByRole('listitem');
+
+        expect(items).toHaveLength(8);
+        expect(items[0].textContent).toBe('Sprint 35 · 3.2 / 5');
+        expect(items[3].textContent).toBe('Sprint 38 · 3.6 / 5');
+        expect(items[7].textContent).toBe('Sprint 42 · 4.1 / 5');
+    });
+
     it('keeps the label of the last retro when the labels would collide', () => {
         const { container } = renderWithProviders(
             <RotiTrendCard points={makePoints(Array(20).fill(3))} />,
