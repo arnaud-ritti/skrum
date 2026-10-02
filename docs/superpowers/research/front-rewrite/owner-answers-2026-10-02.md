@@ -177,3 +177,63 @@ Decisions the first round had left on their default. **≠ default** as above.
 | 18f remember | Normal session, no long-lived cookie. |
 | 18f code mail context | Browser and time, no location. |
 | 18g boundary | **≠ default**: old view components still imported after 18e are rewritten in 18g; none remains at the end. |
+
+## Third round (same day) — open points, security, deviations
+
+### Reading of rule 13 and ordering
+
+- The rewrite (18e–18g) delivers every existing screen faithful to the mockup, built with whatever the server already holds; a mockup element with no data is omitted there and listed as a deviation.
+- **Then** every such element becomes a feature with its own spec and plan (19, 20, …), in an order the owner sets. "Rewrite first, features after." The screens leave the element's place so it can be added without a new layout.
+
+### Security
+
+| Topic | Answer |
+|---|---|
+| `sso_required` and passkeys | Passkeys are refused too: only SSO signs in. |
+| `sso_required` break-glass | Both: instance admins can always sign in with password (+ second factor); and when no SSO provider is enabled the setting is ignored for everyone, with an alert shown to instance admins. |
+| Invitation through SSO | An SSO address the provider does not mark verified is refused, even with a matching invitation (today it creates a verified account). |
+| Invitation in the bell | The notification links to the existing invitation page; no token-less accept route (drop S33's route). |
+
+### Open points of spec §15
+
+| Point | Answer |
+|---|---|
+| 1 Poll | A standalone survey entity, specified apart, after 18e (plan 19). Until then session creation offers four types (retro, poker, whiteboard, icebreaker); the Poll entry arrives with plan 19. |
+| Health check | Becomes a default survey template (no dedicated retro phase), with plan 19. Plan 18e keeps the health-check phase as it is (deviation D-03 stands until then). |
+| 2 Start of a retro | First activity (first card, health answer, timer start or phase change). |
+| 3 / 4 Timer | "+2 min" on every timer (retro, poker, games, whiteboard); poker keeps "Custom…" beside 1/3/5/10. |
+| 5 Default deck | As proposed, but usage counts start from now: no backfill. |
+| 6 Poker tab of the templates page | Workspace-level decks (new: decks shared across the workspace), not a per-team list. |
+| 7 Drawing ink | Eight theme colours plus black. |
+| 8 Rooms list | Live (new team-level games channel). |
+| 10 Mood | Health-check score + ROTI. |
+| 12 Single-key shortcuts | "Accessibility" card on the Appearance page; also turns off `?`. |
+| 16 Built-in templates | "Duplicate" beside "Use". |
+| 9, 13, 14, 15, 17 | As written in the spec (17 superseded by the security answer above). |
+
+### Deviations kept by decision
+
+| Row | Answer |
+|---|---|
+| D-01 | "More emoji…" kept. |
+| D-04 | "Next phase" to ROTI (not "Close the retro"). |
+| D-21 toolbars | Whiteboard toolbars rebuilt to the mockup (vertical tool bar, selection bar, zoom, minimap) in a separate plan after 18e; 18e ships themed Excalidraw. |
+
+### Features to specify after the rewrite (owner wants all of these built)
+
+Retro: "is writing… / is moving…" indicators and Pause; max votes per card and "I have finished voting"; per-topic timer, shared notes, "discussed" flag, action items linked to a card; ROTI reveal and nudge; bulk export to Jira.
+Sessions: Sessions index page and scheduling ("Schedule…", "starts in 5 min" notification); advanced creation options (max per card, timer per phase / per task, re-vote after reveal, Jira import, write estimates to Jira).
+Team page: sprint and next retro, recent sessions table, aggregated open actions, activity feed, per-retro counts, member role, whiteboard thumbnails.
+Onboarding: the four-step onboarding.
+Action items: bulk selection bar, filters (priority, due date, source), status "In progress", export.
+Games: settings card, turn order and rounds, GIF captions and podium, the four games the engine lacks.
+Whiteboard: comments, "follow", sticky authors, convert to actions; rebuilt toolbars.
+Poker: Jira ticket details in the room (type, labels, acceptance criteria, description).
+Surveys: standalone survey, multi-question builder, scale and NPS questions, compare, CSV; health check as a default template.
+Account: photo upload, active sessions, linked accounts, presence colours, "reduce animations", breach check.
+Workspace and team: descriptions, template usage and visibility, remaining team-settings tabs.
+Invitations: team invitations, inviter's message, "Decline", team invite link.
+Admin and errors: remaining admin sections, version line, status page, access request on the 403 page, maintenance message.
+Mentions and their notifications. Guest colour picker and short session code.
+
+Not requested (stay backlog): "Team name" on register, terms and privacy pages, version in the footer; export PDF/CSV/Markdown of a retro; poker CSV export and history filters.
