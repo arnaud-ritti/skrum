@@ -571,7 +571,9 @@ describe('SessionEnd', () => {
                 roti.querySelector('li[data-rating="4"] b')?.textContent,
             ).toBe('2');
             expect(
-                screen.queryByRole('group', { name: 'How was this retro?' }),
+                screen.queryByRole('group', {
+                    name: 'Was this time together worth it?',
+                }),
             ).toBeNull();
         });
 
@@ -589,9 +591,11 @@ describe('SessionEnd', () => {
 
             expect(
                 screen
-                    .getByRole('group', { name: 'How was this retro?' })
+                    .getByRole('group', {
+                        name: 'Was this time together worth it?',
+                    })
                     .querySelector('button[aria-pressed="true"]')?.textContent,
-            ).toContain('Good use of time');
+            ).toContain('Useful');
         });
 
         it('says so when nobody has voted', () => {

@@ -253,7 +253,9 @@ describe('Board', () => {
                 container.querySelector('[data-slot="retro-roti"]'),
             ).not.toBeNull();
             expect(
-                screen.getByRole('group', { name: 'How was this retro?' }),
+                screen.getByRole('group', {
+                    name: 'Was this time together worth it?',
+                }),
             ).toBeTruthy();
             expect(
                 screen.getByRole('heading', { name: 'Who has voted' }),

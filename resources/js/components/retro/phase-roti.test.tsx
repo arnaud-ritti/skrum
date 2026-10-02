@@ -41,7 +41,8 @@ function rotiBoard(roti = {}, phase: 'roti' | 'completed' = 'roti') {
     });
 }
 
-const group = () => screen.getByRole('group', { name: 'How was this retro?' });
+const group = () =>
+    screen.getByRole('group', { name: 'Was this time together worth it?' });
 const rows = () =>
     [...document.querySelectorAll('[data-test="retro-roti-voters"] > li')].map(
         (row) =>
@@ -150,7 +151,7 @@ describe('PhaseRoti', () => {
         const { ctx } = renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
 
         fireEvent.click(
-            within(group()).getByRole('button', { name: /Good use of time/ }),
+            within(group()).getByRole('button', { name: /Useful/ }),
         );
 
         await waitFor(() =>
@@ -196,9 +197,7 @@ describe('PhaseRoti', () => {
         retroRequest.mockRejectedValue(new Error('refused'));
         const { ctx } = renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
 
-        fireEvent.click(
-            within(group()).getByRole('button', { name: /Break-even/ }),
-        );
+        fireEvent.click(within(group()).getByRole('button', { name: /OK/ }));
 
         await waitFor(() => expect(retroRequest).toHaveBeenCalled());
         await Promise.resolve();
@@ -244,7 +243,7 @@ describe('RotiVote', () => {
 
         fireEvent.click(
             within(group()).getByRole('button', {
-                name: /Excellent use of time/,
+                name: /Excellent/,
             }),
         );
 

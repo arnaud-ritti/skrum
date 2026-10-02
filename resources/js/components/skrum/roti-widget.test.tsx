@@ -17,7 +17,7 @@ describe('ROTIWidget vote', () => {
     it('exposes the group and the five toggle buttons the board tests look for', () => {
         const { container } = render(<ROTIWidget mode="vote" />);
         const group = container.querySelector(
-            '[role="group"][aria-label="How was this retro?"]',
+            '[role="group"][aria-label="Was this time together worth it?"]',
         );
 
         expect(group).not.toBeNull();
@@ -26,11 +26,11 @@ describe('ROTIWidget vote', () => {
                 (button) => button.textContent,
             ),
         ).toEqual([
-            '1Time wasted',
-            '2Not really worth it',
-            '3Break-even',
-            '4Good use of time',
-            '5Excellent use of time',
+            '1Waste of time',
+            '2Not very useful',
+            '3OK',
+            '4Useful',
+            '5Excellent',
         ]);
         expect(
             group!.querySelectorAll('button[aria-pressed="false"]'),
@@ -43,7 +43,9 @@ describe('ROTIWidget vote', () => {
         const { rerender } = render(<ROTIWidget mode="vote" />);
 
         expect(
-            screen.getByRole('group', { name: 'How was this retro?' }),
+            screen.getByRole('group', {
+                name: 'Was this time together worth it?',
+            }),
         ).toBeTruthy();
 
         rerender(
@@ -84,9 +86,7 @@ describe('ROTIWidget vote', () => {
         const onVote = vi.fn();
         const { rerender } = render(<ROTIWidget mode="vote" onVote={onVote} />);
 
-        fireEvent.click(
-            screen.getByRole('button', { name: /Good use of time/ }),
-        );
+        fireEvent.click(screen.getByRole('button', { name: /Useful/ }));
         expect(onVote).toHaveBeenCalledWith(4);
 
         rerender(<ROTIWidget mode="vote" value={4} onVote={onVote} />);
@@ -141,12 +141,14 @@ describe('ROTIWidget vote, row layout', () => {
             />,
         );
         const group = screen.getByRole('group', {
-            name: 'How was this retro?',
+            name: 'Was this time together worth it?',
         });
 
         expect(group.getAttribute('data-layout')).toBe('row');
         expect(
-            screen.getByRole('heading', { name: 'How was this retro?' }),
+            screen.getByRole('heading', {
+                name: 'Was this time together worth it?',
+            }),
         ).toBeTruthy();
         expect(screen.getByText('Last step')).toBeTruthy();
         expect(
@@ -154,7 +156,7 @@ describe('ROTIWidget vote, row layout', () => {
         ).toHaveLength(5);
 
         fireEvent.keyDown(screen.getAllByRole('button')[0], { key: '2' });
-        fireEvent.click(screen.getByRole('button', { name: /Break-even/ }));
+        fireEvent.click(screen.getByRole('button', { name: /OK/ }));
 
         expect(onVote.mock.calls).toEqual([[2], [3]]);
     });
