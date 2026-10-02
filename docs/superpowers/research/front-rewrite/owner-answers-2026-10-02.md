@@ -237,3 +237,7 @@ Admin and errors: remaining admin sections, version line, status page, access re
 Mentions and their notifications. Guest colour picker and short session code.
 
 Not requested (stay backlog): "Team name" on register, terms and privacy pages, version in the footer; export PDF/CSV/Markdown of a retro; poker CSV export and history filters.
+
+## Approval (same day)
+
+The owner approved the amended spec and the three plans ("Go"), with the recommendations on the open items: spec §15 points 1–4 as written; 18f: invitation notification kept with its link (token stored encrypted in the notification), private user channel kept for live arrival, bell and palette data kept in 18f. Speed levers approved ("ok go"): parallel lanes in worktrees, back-end tasks first in parallel, per-task narrow tests, one review and one full browser run per group, non-blocking visual review, 18f back end in parallel with 18e.
