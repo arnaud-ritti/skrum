@@ -43,7 +43,10 @@ class WorkspacesController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'membersCount' => $workspace->members()->count(),
             'adminsCount' => $workspace->members()
-                ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
+                ->wherePivotIn('role', collect(WorkspaceRole::cases())
+                    ->filter(fn (WorkspaceRole $role): bool => $role->canManageWorkspace())
+                    ->map(fn (WorkspaceRole $role): string => $role->value)
+                    ->all())
                 ->count(),
             'teams' => $teams->map(fn (Team $team): array => [
                 ...$team->only(['id', 'name']),

@@ -117,23 +117,32 @@ it('shows the member and admin counts of a workspace and the counts of each team
             ->where('teams.1.members', []));
 });
 
-it('lists the first five members of a team by name next to its total', function () {
+it('lists the first five members of each team by name next to its total', function () {
     $workspace = Workspace::factory()->create();
     $owner = workspaceManager($workspace, WorkspaceRole::Owner);
-    $team = Team::factory()->for($workspace)->create();
-    $names = ['Gina', 'Alice', 'Frank', 'Bob', 'Eve', 'Dan', 'Carol'];
-    foreach ($names as $name) {
-        $team->members()->attach(User::factory()->create(['name' => $name]));
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    foreach (['Gina', 'Alice', 'Frank', 'Bob', 'Eve', 'Dan', 'Carol'] as $name) {
+        $alpha->members()->attach(User::factory()->create(['name' => $name]));
+    }
+    foreach (['Zoe', 'Uma', 'Yan', 'Vic', 'Xav', 'Wes'] as $name) {
+        $beta->members()->attach(User::factory()->create(['name' => $name]));
     }
 
     $this->actingAs($owner)
         ->get(route('workspaces.show', $workspace))
         ->assertInertia(fn (Assert $page) => $page
+            ->where('teams.0.name', 'Alpha')
             ->where('teams.0.membersCount', 7)
             ->has('teams.0.members', 5)
             ->where('teams.0.members.0.name', 'Alice')
             ->where('teams.0.members.4.name', 'Eve')
-            ->has('teams.0.members.0.avatarUrl'));
+            ->has('teams.0.members.0.avatarUrl')
+            ->where('teams.1.name', 'Beta')
+            ->where('teams.1.membersCount', 6)
+            ->has('teams.1.members', 5)
+            ->where('teams.1.members.0.name', 'Uma')
+            ->where('teams.1.members.4.name', 'Yan'));
 });
 
 it('leaves out of the workspace page a team the user cannot see', function () {
