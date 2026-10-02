@@ -57,6 +57,10 @@ class ActionItem extends Model
 
     use HasUuids;
 
+    public const int CompletedSortRank = 2_000_000_000;
+
+    private const int UndatedSortRank = 1_000_000_000;
+
     public static function today(): CarbonImmutable
     {
         return CarbonImmutable::now((string) config('app.timezone'));
@@ -71,6 +75,26 @@ class ActionItem extends Model
     public static function presentationRelations(): array
     {
         return ['team.members', 'team.integrations', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks', 'externalLinks'];
+    }
+
+    /**
+     * The list's first sort key, stored (ActionItemQuery::order): open items by due date then
+     * priority, undated ones after them, completed ones last. An overdue date is an earlier
+     * date, so "overdue first" needs no key of its own and the rank does not depend on today.
+     */
+    public static function sortRankFor(bool $isCompleted, ?string $dueOn, ?ActionItemPriority $priority): int
+    {
+        if ($isCompleted) {
+            return self::CompletedSortRank;
+        }
+
+        $weight = $priority?->sortWeight() ?? ActionItemPriority::Low->sortWeight();
+
+        if ($dueOn === null) {
+            return self::UndatedSortRank + $weight;
+        }
+
+        return (int) str_replace('-', '', substr($dueOn, 0, 10)) * 10 + $weight;
     }
 
     public function loadForPresentation(): static
@@ -153,6 +177,19 @@ class ActionItem extends Model
         return $this->hasMany(ActionItemExternalLink::class);
     }
 
+    /**
+     * The rank is set here and not in a `saving` listener: a faked or muted event dispatcher
+     * (Event::fake, saveQuietly) would skip the listener and leave the row without its rank.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $this->sort_rank = self::sortRankFor($this->completed_at !== null, $this->due_on?->toDateString(), $this->priority);
+
+        return parent::save($options);
+    }
+
     public function isCompleted(): bool
     {
         return $this->completed_at !== null;
@@ -183,6 +220,7 @@ class ActionItem extends Model
             'recurrence' => ActionItemRecurrence::class,
             'due_on' => 'date',
             'completed_at' => 'datetime',
+            'sort_rank' => 'integer',
         ];
     }
 }

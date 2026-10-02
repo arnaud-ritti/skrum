@@ -1,7 +1,3 @@
-app/Actions/ActionItems/ActionItemQuery.php|filter (where|4
-app/Actions/ActionItems/ActionItemQuery.php|nulls first or last|1
-app/Actions/ActionItems/ActionItemQuery.php|orderByRaw|4
-app/Actions/ActionItems/ActionItemQuery.php|selectRaw|5
 app/Actions/ActionItems/SendActionItemReminders.php|insertOrIgnore|1
 app/Actions/ActionItems/SendActionItemReminders.php|raw expression|1
 app/Actions/Auth/ResolveSsoUser.php|whereRaw|1
