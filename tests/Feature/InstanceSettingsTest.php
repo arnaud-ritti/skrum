@@ -236,9 +236,8 @@ it('leaves no new value in the cache when the surrounding transaction rolls back
             ->and(Cache::get(InstanceSettings::CacheKey))->toBe(['display_name' => 'Before']);
 
         throw new RuntimeException('abort');
-    }))->toThrow(RuntimeException::class);
-
-    expect(Cache::get(InstanceSettings::CacheKey, []))->not->toContain('Rolled Back')
+    }))->toThrow(RuntimeException::class)
+        ->and(Cache::get(InstanceSettings::CacheKey, []))->not->toContain('Rolled Back')
         ->and($settings->displayName())->toBe('Before')
         ->and(freshInstanceSettings()->displayName())->toBe('Before');
 });
@@ -251,9 +250,8 @@ it('does not cache rows read inside a transaction that has uncommitted writes', 
         $settings->displayName();
 
         throw new RuntimeException('abort');
-    }))->toThrow(RuntimeException::class);
-
-    expect(Cache::has(InstanceSettings::CacheKey))->toBeFalse()
+    }))->toThrow(RuntimeException::class)
+        ->and(Cache::has(InstanceSettings::CacheKey))->toBeFalse()
         ->and(freshInstanceSettings()->displayName())->toBe('Configured Name');
 });
 
