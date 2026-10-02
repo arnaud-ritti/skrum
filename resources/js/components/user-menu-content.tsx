@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { Info, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -9,6 +9,7 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
+import { show as about } from '@/routes/about';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 import { useTrans } from '@/hooks/use-trans';
@@ -44,6 +45,17 @@ export function UserMenuContent({ user }: Props) {
                     >
                         <Settings className="mr-2" />
                         {t('Settings')}
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={about()}
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Info className="mr-2" />
+                        {t('About')}
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
