@@ -74,12 +74,19 @@ trait CapturesVisuals
     }))
     JS_WRAP;
 
+    /**
+     * An open menu or popover is placed again after the resize, a frame or more later under load:
+     * the capture waits for it, or the overflow check meets it at its old place.
+     */
     private const string SettleScript = <<<'JS'
         () => document.fonts.ready
             .then(() => Promise.allSettled(document.getAnimations()
                 .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
                 .map((animation) => animation.finished)))
             .then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))
+            .then(() => document.querySelector('[data-radix-popper-content-wrapper]') === null
+                ? true
+                : new Promise((resolve) => setTimeout(() => resolve(true), 200)))
         JS;
 
     /**
