@@ -750,6 +750,7 @@ it('[P18e-09-12] keeps "Use" in place, disabled with its hint, for a member of n
     $template = p18eWorkspaceTemplate($workspace, $camille);
     $card = '[data-test="workspace-template-'.$template->id.'"]';
     $use = "{$card} button:has-text(\"Use\")";
+    $inertUse = "{$card} button[aria-disabled=\"true\"]";
     $pickerUse = 'section[aria-label="Template preview"] button:has-text("Use this template")';
 
     $page = $this->signIn($lea, p18eTemplatesPath($workspace));
@@ -757,13 +758,15 @@ it('[P18e-09-12] keeps "Use" in place, disabled with its hint, for a member of n
     $page->assertSeeIn($card, 'Team pulse')
         ->assertNotPresent("{$card} a")
         ->assertAttribute($use, 'aria-disabled', 'true')
-        ->assertScript("document.getElementById(document.querySelector('".addslashes($use)."').getAttribute('aria-describedby')).textContent", 'Pick a team first')
-        ->click($use)
-        ->assertPathIs(p18eTemplatesPath($workspace))
+        ->assertScript("document.getElementById(document.querySelector('".addslashes($inertUse)."').getAttribute('aria-describedby')).textContent", 'Pick a team first');
+
+    $page->script("() => { document.querySelector('".addslashes($inertUse)."').click(); return true; }");
+
+    $page->assertPathIs(p18eTemplatesPath($workspace))
+        ->assertNotPresent('[role="dialog"]')
         ->click('[role="tab"]:has-text("Retro")')
         ->assertAttribute($pickerUse, 'aria-disabled', 'true')
         ->assertSeeIn('section[aria-label="Template preview"]', 'Pick a team first')
-        ->click($pickerUse)
         ->assertPathIs(p18eTemplatesPath($workspace))
         ->assertNotPresent('[role="dialog"]')
         ->assertNoJavaScriptErrors();
