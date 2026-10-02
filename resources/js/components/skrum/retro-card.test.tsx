@@ -149,7 +149,37 @@ describe('RetroCard', () => {
             .closest('[data-slot="retro-card-vote-wrapper"]');
 
         expect(wrapper?.getAttribute('tabindex')).toBe('0');
-        expect(wrapper?.textContent).toContain('You have used all your votes');
+        expect(wrapper).toBe(
+            screen.getByRole('group', { name: 'You have used all your votes' }),
+        );
+    });
+
+    it('moves the focus off the vote button when the press spends the last vote', () => {
+        const spent = (canVote: boolean, voteBlocked?: string) =>
+            card({
+                votes: { total: 1, mine: canVote ? 0 : 1 },
+                canVote,
+                labels: { voteBlocked },
+            });
+        const { rerender } = renderWithProviders(spent(true));
+
+        screen.getByRole('button', { name: 'Add a vote' }).focus();
+        rerender(spent(false, 'You have used all your votes'));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('group', { name: 'You have used all your votes' }),
+        );
+    });
+
+    it('moves the focus to the card when voting closes without a stated reason', () => {
+        const spent = (canVote: boolean) =>
+            card({ votes: { total: 1, mine: 1 }, canVote });
+        const { rerender } = renderWithProviders(spent(true));
+
+        screen.getByRole('button', { name: 'Add a vote' }).focus();
+        rerender(spent(false));
+
+        expect(document.activeElement).toBe(screen.getByRole('article'));
     });
 
     it('starts editing on Enter only for editable, unlocked cards', () => {

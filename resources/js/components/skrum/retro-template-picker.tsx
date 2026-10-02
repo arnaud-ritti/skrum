@@ -711,7 +711,7 @@ export function RetroTemplatePicker({
         window.addEventListener('keydown', clearOnEscape, true);
 
         return () => window.removeEventListener('keydown', clearOnEscape, true);
-    });
+    }, [query]);
 
     function clearQuery(): void {
         setQuery('');

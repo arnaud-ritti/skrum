@@ -165,6 +165,32 @@ describe('TextareaField', () => {
         expect(onSubmitShortcut).toHaveBeenCalledTimes(2);
     });
 
+    it('listens for Escape on the window only while the field has focus', () => {
+        const added = vi.spyOn(window, 'addEventListener');
+        const removed = vi.spyOn(window, 'removeEventListener');
+        const keydownCalls = (spy: typeof added | typeof removed): number =>
+            spy.mock.calls.filter(
+                ([type, , capture]) => type === 'keydown' && capture === true,
+            ).length;
+
+        render(<TextareaField label="Card" onCancel={vi.fn()} />);
+        const field = screen.getByLabelText('Card');
+
+        expect(keydownCalls(added)).toBe(0);
+
+        fireEvent.focusIn(field);
+
+        expect(keydownCalls(added)).toBe(1);
+        expect(keydownCalls(removed)).toBe(0);
+
+        fireEvent.focusOut(field);
+
+        expect(keydownCalls(removed)).toBe(1);
+
+        added.mockRestore();
+        removed.mockRestore();
+    });
+
     it('cancels on Escape', () => {
         const onCancel = vi.fn();
         render(<TextareaField label="Card" onCancel={onCancel} />);

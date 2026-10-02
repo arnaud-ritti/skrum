@@ -11,21 +11,28 @@ const result: ROTIResult = {
 };
 
 describe('ROTIWidget vote', () => {
-    it('shows five labelled options in a radiogroup with none selected', () => {
-        render(<ROTIWidget mode="vote" />);
+    it('exposes the group and the five toggle buttons the board tests look for', () => {
+        const { container } = render(<ROTIWidget mode="vote" />);
+        const group = container.querySelector(
+            '[role="group"][aria-label="How was this retro?"]',
+        );
 
-        const group = screen.getByRole('radiogroup');
-
-        expect(group.getAttribute('aria-labelledby')).toBeTruthy();
-        expect(screen.getAllByRole('radio')).toHaveLength(5);
+        expect(group).not.toBeNull();
         expect(
-            screen.getByRole('radio', { name: /Waste of time/ }),
-        ).toBeTruthy();
+            [...group!.querySelectorAll('button')].map(
+                (button) => button.textContent,
+            ),
+        ).toEqual([
+            '1Time wasted',
+            '2Not really worth it',
+            '3Break-even',
+            '4Good use of time',
+            '5Excellent use of time',
+        ]);
         expect(
-            screen
-                .getAllByRole('radio')
-                .every((r) => r.getAttribute('aria-checked') === 'false'),
-        ).toBe(true);
+            group!.querySelectorAll('button[aria-pressed="false"]'),
+        ).toHaveLength(5);
+        expect(group!.querySelector('button[aria-pressed="true"]')).toBeNull();
         expect(screen.queryByRole('status')).toBeNull();
     });
 
@@ -33,7 +40,7 @@ describe('ROTIWidget vote', () => {
         const { rerender } = render(<ROTIWidget mode="vote" />);
 
         expect(
-            screen.getByRole('radiogroup', { name: 'How was this retro?' }),
+            screen.getByRole('group', { name: 'How was this retro?' }),
         ).toBeTruthy();
 
         rerender(
@@ -44,7 +51,7 @@ describe('ROTIWidget vote', () => {
         );
 
         expect(
-            screen.getByRole('radiogroup', { name: 'Worth your time?' }),
+            screen.getByRole('group', { name: 'Worth your time?' }),
         ).toBeTruthy();
     });
 
@@ -61,7 +68,7 @@ describe('ROTIWidget vote', () => {
         render(<ROTIWidget mode="vote" onVote={vi.fn()} />);
 
         const notPrevented = fireEvent.keyDown(
-            screen.getAllByRole('radio')[0],
+            screen.getAllByRole('button')[0],
             {
                 key: '3',
             },
@@ -70,19 +77,21 @@ describe('ROTIWidget vote', () => {
         expect(notPrevented).toBe(false);
     });
 
-    it('votes on click and shows confirmation when a value is set', () => {
+    it('votes on click, marks the score as pressed and shows the confirmation', () => {
         const onVote = vi.fn();
         const { rerender } = render(<ROTIWidget mode="vote" onVote={onVote} />);
 
-        fireEvent.click(screen.getByRole('radio', { name: /Useful/ }));
+        fireEvent.click(
+            screen.getByRole('button', { name: /Good use of time/ }),
+        );
         expect(onVote).toHaveBeenCalledWith(4);
 
         rerender(<ROTIWidget mode="vote" value={4} onVote={onVote} />);
         expect(
             screen
-                .getByRole('radio', { name: /Useful/ })
-                .getAttribute('aria-checked'),
-        ).toBe('true');
+                .getAllByRole('button', { pressed: true })
+                .map((button) => button.getAttribute('data-rating')),
+        ).toEqual(['4']);
         expect(screen.getByRole('status').textContent).toContain(
             'Vote recorded',
         );
@@ -92,26 +101,28 @@ describe('ROTIWidget vote', () => {
         const onVote = vi.fn();
         render(<ROTIWidget mode="vote" onVote={onVote} />);
 
-        fireEvent.keyDown(screen.getAllByRole('radio')[0], { key: '5' });
-        fireEvent.keyDown(screen.getAllByRole('radio')[0], { key: '6' });
+        fireEvent.keyDown(screen.getAllByRole('button')[0], { key: '5' });
+        fireEvent.keyDown(screen.getAllByRole('button')[0], { key: '6' });
 
         expect(onVote).toHaveBeenCalledTimes(1);
         expect(onVote).toHaveBeenCalledWith(5);
     });
 
-    it('moves with arrows, wrapping around', () => {
+    it('moves the focus with arrows, wrapping around, without voting', () => {
         const onVote = vi.fn();
         render(<ROTIWidget mode="vote" value={5} onVote={onVote} />);
+        const buttons = screen.getAllByRole('button');
 
-        fireEvent.keyDown(screen.getByRole('radio', { name: /Excellent/ }), {
-            key: 'ArrowRight',
-        });
-        expect(onVote).toHaveBeenLastCalledWith(1);
+        buttons[4].focus();
+        fireEvent.keyDown(buttons[4], { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(buttons[0]);
 
-        fireEvent.keyDown(screen.getByRole('radio', { name: /Excellent/ }), {
-            key: 'ArrowLeft',
-        });
-        expect(onVote).toHaveBeenLastCalledWith(4);
+        fireEvent.keyDown(buttons[0], { key: 'ArrowLeft' });
+        expect(document.activeElement).toBe(buttons[4]);
+
+        fireEvent.keyDown(buttons[4], { key: 'ArrowLeft' });
+        expect(document.activeElement).toBe(buttons[3]);
+        expect(onVote).not.toHaveBeenCalled();
     });
 });
 
@@ -124,7 +135,7 @@ describe('ROTIWidget result', () => {
         expect(screen.getByRole('img').getAttribute('aria-label')).toContain(
             '4: 4',
         );
-        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(screen.queryByRole('group')).toBeNull();
     });
 
     it('shows the average for any count by default', () => {

@@ -1,5 +1,5 @@
 import { CircleCheck, Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import type { AvatarStackProps } from '@/components/skrum/avatar-stack';
@@ -49,11 +49,11 @@ function useRotiLabels(): Record<Roti, string> {
     const { t } = useTrans();
 
     return {
-        1: t('Waste of time'),
-        2: t('Not very useful'),
-        3: t('Okay'),
-        4: t('Useful'),
-        5: t('Excellent'),
+        1: t('Time wasted'),
+        2: t('Not really worth it'),
+        3: t('Break-even'),
+        4: t('Good use of time'),
+        5: t('Excellent use of time'),
     };
 }
 
@@ -88,15 +88,12 @@ function VotePanel({
 }: Pick<ROTIWidgetProps, 'value' | 'onVote' | 'labels'>) {
     const { t } = useTrans();
     const labels = useRotiLabels();
-    const questionId = useId();
+    const question = overrides?.question ?? t('How was this retro?');
     const optionRefs = useRef<Record<number, HTMLButtonElement | null>>({});
     const focusable: Roti = value ?? 1;
 
-    function choose(next: Roti, focus: boolean) {
-        if (focus) {
-            optionRefs.current[next]?.focus();
-        }
-
+    function choose(next: Roti) {
+        optionRefs.current[next]?.focus();
         onVote?.(next);
     }
 
@@ -119,7 +116,7 @@ function VotePanel({
 
         if (/^[1-5]$/.test(event.key)) {
             event.preventDefault();
-            choose(Number(event.key) as Roti, true);
+            choose(Number(event.key) as Roti);
 
             return;
         }
@@ -135,28 +132,30 @@ function VotePanel({
             return;
         }
 
+        const current = Number(
+            (event.target as Element)
+                .closest('[data-rating]')
+                ?.getAttribute('data-rating') ?? focusable,
+        );
+
         event.preventDefault();
-        const next = (((focusable - 1 + step + 5) % 5) + 1) as Roti;
-        choose(next, true);
+        optionRefs.current[((current - 1 + step + 5) % 5) + 1]?.focus();
     }
 
     return (
         <>
-            <p
-                id={questionId}
-                className="text-ui-lg font-semibold text-card-foreground"
-            >
-                {overrides?.question ?? t('How was this retro?')}
+            <p className="text-ui-lg font-semibold text-card-foreground">
+                {question}
             </p>
             <div
-                role="radiogroup"
-                aria-labelledby={questionId}
+                role="group"
+                aria-label={question}
                 data-slot="roti-options"
                 onKeyDown={handleKeyDown}
                 className="flex flex-col gap-1.5"
             >
                 {scale.map((rating) => {
-                    const checked = value === rating;
+                    const pressed = value === rating;
 
                     return (
                         <button
@@ -165,14 +164,13 @@ function VotePanel({
                                 optionRefs.current[rating] = node;
                             }}
                             type="button"
-                            role="radio"
-                            aria-checked={checked}
+                            aria-pressed={pressed}
                             tabIndex={rating === focusable ? 0 : -1}
                             data-rating={rating}
-                            onClick={() => choose(rating, false)}
+                            onClick={() => onVote?.(rating)}
                             className={cn(
                                 'flex min-w-0 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm font-medium transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
-                                checked &&
+                                pressed &&
                                     'border-foreground ring-1 ring-foreground',
                             )}
                         >

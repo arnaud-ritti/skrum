@@ -234,6 +234,31 @@ describe('RetroTemplatePicker', () => {
         expect(onDuplicate).toHaveBeenCalledWith('tpl-1');
     });
 
+    it('does not re-register the Escape listener of the search on an unrelated render', () => {
+        const { rerender } = renderPicker();
+
+        fireEvent.change(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+            { target: { value: 'sail' } },
+        );
+
+        const added = vi.spyOn(window, 'addEventListener');
+
+        rerender(
+            <RetroTemplatePicker
+                value="tpl-1"
+                onValueChange={vi.fn()}
+                templates={templates}
+            />,
+        );
+
+        expect(
+            added.mock.calls.filter(([type]) => type === 'keydown'),
+        ).toHaveLength(0);
+
+        added.mockRestore();
+    });
+
     it('filters by search, keeps the blank card last, and clears with Escape', () => {
         renderPicker();
         const search = screen.getByRole('searchbox', {

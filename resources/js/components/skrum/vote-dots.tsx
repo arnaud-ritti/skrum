@@ -1,5 +1,5 @@
 import { EyeOff, Minus, ThumbsUp, Vote, CircleSlash } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,6 +106,19 @@ export function CardVotes({
               max: maxPerCard ?? 0,
           });
 
+    const voteButtonRef = useRef<HTMLButtonElement>(null);
+    const wrapperRef = useRef<HTMLSpanElement>(null);
+
+    /**
+     * The press that spends the last vote disables the button it was made on.
+     * Focus moves to the wrapper, so V and Shift+V keep reaching this control.
+     */
+    useEffect(() => {
+        if (isVoteBlocked && document.activeElement === voteButtonRef.current) {
+            wrapperRef.current?.focus();
+        }
+    }, [isVoteBlocked]);
+
     function vote(): void {
         if (isVoteBlocked) {
             return;
@@ -143,6 +156,7 @@ export function CardVotes({
 
     const voteButton = (
         <button
+            ref={voteButtonRef}
             type="button"
             data-slot="vote-button"
             aria-label={t('Add a vote')}
@@ -225,14 +239,14 @@ export function CardVotes({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <span
+                        ref={wrapperRef}
                         data-slot="vote-button-wrapper"
+                        role={isVoteBlocked ? 'group' : undefined}
+                        aria-label={isVoteBlocked ? blockedReason : undefined}
                         tabIndex={isVoteBlocked ? 0 : undefined}
                         className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         {voteButton}
-                        {isVoteBlocked && (
-                            <span className="sr-only">{blockedReason}</span>
-                        )}
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>

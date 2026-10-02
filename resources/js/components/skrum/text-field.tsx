@@ -205,10 +205,29 @@ export function TextareaField({
             }
         };
 
-        window.addEventListener('keydown', claimOwnEscape, true);
+        const field = document.getElementById(fieldId);
 
-        return () =>
+        if (field === null) {
+            return;
+        }
+
+        const listen = (): void =>
+            window.addEventListener('keydown', claimOwnEscape, true);
+        const unlisten = (): void =>
             window.removeEventListener('keydown', claimOwnEscape, true);
+
+        field.addEventListener('focusin', listen);
+        field.addEventListener('focusout', unlisten);
+
+        if (document.activeElement === field) {
+            listen();
+        }
+
+        return () => {
+            field.removeEventListener('focusin', listen);
+            field.removeEventListener('focusout', unlisten);
+            unlisten();
+        };
     }, [cancels, fieldId]);
 
     const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {

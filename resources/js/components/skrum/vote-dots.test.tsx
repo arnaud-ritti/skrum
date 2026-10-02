@@ -99,13 +99,66 @@ describe('CardVotes', () => {
         fireEvent.click(button);
 
         expect((button as HTMLButtonElement).disabled).toBe(true);
-        expect(screen.getByText('You have used all your votes')).toBeTruthy();
         expect(
-            button
-                .closest('[data-slot="vote-button-wrapper"]')
-                ?.getAttribute('tabindex'),
+            screen
+                .getByRole('group', { name: 'You have used all your votes' })
+                .getAttribute('tabindex'),
         ).toBe('0');
+        expect(button.closest('[data-slot="vote-button-wrapper"]')).toBe(
+            screen.getByRole('group', { name: 'You have used all your votes' }),
+        );
         expect(onVote).not.toHaveBeenCalled();
+    });
+
+    it('moves the focus to the named wrapper when the press spends the last vote, so Shift+V still works', () => {
+        const onUnvote = vi.fn();
+        const votes = (mine: number, budgetLeft: number) => (
+            <CardVotes
+                mine={mine}
+                total={mine}
+                budgetLeft={budgetLeft}
+                onVote={vi.fn()}
+                onUnvote={onUnvote}
+            />
+        );
+        const { rerender } = renderWithProviders(votes(0, 1));
+        const button = screen.getByRole('button', { name: 'Add a vote' });
+
+        button.focus();
+        fireEvent.click(button);
+        rerender(votes(1, 0));
+
+        const wrapper = screen.getByRole('group', {
+            name: 'You have used all your votes',
+        });
+
+        expect(document.activeElement).toBe(wrapper);
+
+        fireEvent.keyDown(wrapper, { key: 'V', shiftKey: true });
+
+        expect(onUnvote).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the focus alone when the budget runs out while it is elsewhere', () => {
+        const votes = (budgetLeft: number) => (
+            <>
+                <button type="button">Elsewhere</button>
+                <CardVotes
+                    mine={0}
+                    total={0}
+                    budgetLeft={budgetLeft}
+                    onVote={vi.fn()}
+                    onUnvote={vi.fn()}
+                />
+            </>
+        );
+        const { rerender } = renderWithProviders(votes(1));
+        const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+
+        elsewhere.focus();
+        rerender(votes(0));
+
+        expect(document.activeElement).toBe(elsewhere);
     });
 
     it('blocks voting once the max per card is reached', () => {

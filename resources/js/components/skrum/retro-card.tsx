@@ -217,6 +217,8 @@ export function RetroCard({
     const { t } = useTrans();
     const articleRef = useRef<HTMLElement | null>(null);
     const addReactionRef = useRef<HTMLButtonElement>(null);
+    const voteButtonRef = useRef<HTMLButtonElement>(null);
+    const voteWrapperRef = useRef<HTMLSpanElement>(null);
     const editorHadFocus = useRef(false);
     const [draft, setDraft] = useState(text ?? '');
     const [wasEditing, setWasEditing] = useState(editing);
@@ -247,6 +249,25 @@ export function RetroCard({
             articleRef.current?.focus();
         }
     }, [editing]);
+
+    /**
+     * The press that spends the last vote disables the button it was made on.
+     * Focus moves to the wrapper that explains why, or to the card, so the
+     * keyboard keeps a place on the card.
+     */
+    useEffect(() => {
+        if (canVote || document.activeElement !== voteButtonRef.current) {
+            return;
+        }
+
+        if (voteWrapperRef.current?.tabIndex === 0) {
+            voteWrapperRef.current.focus();
+
+            return;
+        }
+
+        articleRef.current?.focus();
+    }, [canVote]);
 
     const isLocked = lockedBy !== null;
     const isEditing = editing;
@@ -383,11 +404,15 @@ export function RetroCard({
         <Tooltip>
             <TooltipTrigger asChild>
                 <span
+                    ref={voteWrapperRef}
                     data-slot="retro-card-vote-wrapper"
+                    role={voteBlockedReason === undefined ? undefined : 'group'}
+                    aria-label={voteBlockedReason}
                     tabIndex={voteBlockedReason === undefined ? undefined : 0}
                     className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     <button
+                        ref={voteButtonRef}
                         type="button"
                         data-slot="retro-card-vote"
                         aria-label={labels?.vote ?? t('Add a vote')}
@@ -407,9 +432,6 @@ export function RetroCard({
                             <span aria-hidden>{votes.total}</span>
                         )}
                     </button>
-                    {voteBlockedReason !== undefined && (
-                        <span className="sr-only">{voteBlockedReason}</span>
-                    )}
                 </span>
             </TooltipTrigger>
             {voteBlockedReason === undefined ? (
