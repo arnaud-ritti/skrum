@@ -71,6 +71,7 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\MailPreviewsController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerAutoRevealsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
@@ -175,6 +176,7 @@ Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->n
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
+Route::get('dev/mail/{mail}', [MailPreviewsController::class, 'show'])->where('mail', '[a-z-]+')->name('dev.mail.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
 // Outside the web group, like the brand assets below.
