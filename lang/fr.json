@@ -975,6 +975,8 @@
     "Only the facilitator or a workspace admin can delete this game.": "Seul l'animateur ou un administrateur de l'espace de travail peut supprimer cette partie.",
     "You no longer have access to this game.": "Vous n'avez plus accès à cette partie.",
     "Voting is closed for this round.": "Le vote est clos pour ce tour.",
+    "No timer is running.": "Aucun minuteur n'est en cours.",
+    "A timer cannot run longer than one hour.": "Un minuteur ne peut pas durer plus d'une heure.",
     "Join a planning poker game": "Rejoindre une partie de planning poker",
     "Choose the name other players will see.": "Choisissez le nom que les autres joueurs verront.",
     "Give between 2 and 20 cards.": "Indiquez entre 2 et 20 cartes.",
