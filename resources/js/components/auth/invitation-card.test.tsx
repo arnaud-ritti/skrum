@@ -397,4 +397,63 @@ describe('InvitationCard', () => {
         ).toBeNull();
         expect(screen.queryByRole('button')).toBeNull();
     });
+
+    it('starts single sign-on with a link that carries neither a query nor the invitation token', () => {
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                ssoProviders={[{ key: 'google', label: 'Google' }]}
+            />,
+        );
+
+        const href = screen
+            .getByRole('link', { name: 'Continue with Google' })
+            .getAttribute('href');
+
+        expect(href).toBe('/auth/google/redirect');
+        expect(href).not.toContain('?');
+        expect(href).not.toContain('secret-token');
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).not.toBeNull();
+        expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe(
+            'mona@example.com',
+        );
+    });
+
+    it('draws no provider and no separator when none is enabled', () => {
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        expect(document.querySelector('[data-slot="sso-buttons"]')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(document.querySelector('a[href^="/auth/"]')).toBeNull();
+    });
+
+    it.each([
+        ['an invalid link', { isInvalid: true }],
+        ['an expired invitation', { isExpired: true }],
+        ['the invited account', { isLoggedIn: true, emailMatches: true }],
+        ['another account', { isLoggedIn: true, emailMatches: false }],
+    ])('offers no provider to %s, whatever the list holds', (_, props) => {
+        page.props = { ...page.props, auth: { user: mona } };
+
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                {...props}
+                ssoProviders={[
+                    { key: 'google', label: 'Google' },
+                    { key: 'github', label: 'GitHub' },
+                ]}
+            />,
+        );
+
+        expect(document.querySelector('[data-slot="sso-buttons"]')).toBeNull();
+        expect(document.querySelector('a[href^="/auth/"]')).toBeNull();
+        expect(
+            screen.queryByRole('link', { name: /Continue with/ }),
+        ).toBeNull();
+    });
 });
