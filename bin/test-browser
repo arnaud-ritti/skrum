@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Runs tests/Browser in N processes side by side (Pest --shard), each with its own
-# database (testing_browser_<i>), Reverb port (<base port> + i) and storage disk.
+# database (<prefix>_<i>, prefix from BROWSER_DB_PREFIX, default testing_browser), Reverb port (<base port> + i) and storage disk.
 #
 #   bin/test-browser [shards=4] [base-port=8098] [-- extra pest arguments]
 #
@@ -35,6 +35,7 @@ done
 
 database_container="${BROWSER_DB_CONTAINER:-skrum-pgsql-1}"
 database_user="${BROWSER_DB_USER:-sail}"
+database_prefix="${BROWSER_DB_PREFIX:-testing_browser}"
 log_directory="storage/logs/browser-shards"
 
 if [ ! -f public/build/manifest.json ]; then
@@ -50,7 +51,7 @@ for i in $(seq 1 "$shards"); do
         exit 2
     fi
 
-    database="testing_browser_$i"
+    database="${database_prefix}_$i"
 
     if ! docker exec "$database_container" psql -U "$database_user" -d postgres -tAc "select 1 from pg_database where datname = '$database'" | grep -q 1; then
         docker exec "$database_container" createdb -U "$database_user" "$database" || exit 2
@@ -85,7 +86,7 @@ for i in $(seq 1 "$shards"); do
     BROWSER_SHARD="$i" \
     BROWSER_REVERB_PORT=$(( base_port + i )) \
     DB_HOST=127.0.0.1 \
-    DB_DATABASE="testing_browser_$i" \
+    DB_DATABASE="${database_prefix}_$i" \
         php -d memory_limit=2G vendor/bin/pest tests/Browser --shard="$i/$shards" "$@" \
         > "$log_directory/shard-$i.log" 2>&1 &
 
