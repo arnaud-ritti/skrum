@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BoardProvider } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
@@ -317,6 +318,31 @@ describe('ColumnsBoard in Writing', () => {
         expect(
             screen.queryByRole('button', { name: 'Delete card' }),
         ).toBeNull();
+    });
+
+    it('drops the card in editing when the board locks, and leaves the focus alone when it opens again', () => {
+        const { container, rerender, ctx } = board();
+        const at = (isLocked: boolean) => (
+            <BoardProvider
+                value={{
+                    ...ctx,
+                    board: retroSnapshot({ columns, retro: { isLocked } }),
+                }}
+            >
+                <ColumnsBoard hideMyCursor />
+            </BoardProvider>
+        );
+
+        openComposer(container, 'stop');
+        rerender(at(true));
+        (document.activeElement as HTMLElement | null)?.blur();
+        rerender(at(false));
+
+        expect(screen.queryByLabelText('Add a card…')).toBeNull();
+        expect(document.activeElement).toBe(document.body);
+        expect(
+            screen.getAllByRole('button', { name: 'Add a card' }),
+        ).toHaveLength(2);
     });
 
     it('saves an edited card with the Save button', async () => {

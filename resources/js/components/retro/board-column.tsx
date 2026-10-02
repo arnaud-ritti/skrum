@@ -67,6 +67,12 @@ export function BoardColumn({
     const busy = useRef(false);
     const props = toColumnProps(column, ctx.board);
     const { hasCards, canManage, ...columnProps } = props;
+
+    // A card left in editing when the column stops taking cards would take
+    // the focus back from the reader when writing opens again.
+    if (isComposing && !columnProps.canAdd) {
+        setIsComposing(false);
+    }
     const { phase } = ctx.board.retro;
     const retroId = ctx.board.retro.id;
     // Discussing shows the topics, not the columns: the Board tab of a
