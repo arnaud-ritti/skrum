@@ -641,22 +641,56 @@ describe('SessionEnd', () => {
             },
         ];
 
-        it('shows the figures, the radar, the trend and each statement with its move since the previous retro', () => {
+        const openDetails = async () => {
+            await userEvent.click(
+                within(section('Health check')).getByRole('button', {
+                    name: 'Details',
+                }),
+            );
+
+            return screen.getByRole('dialog', { name: 'Team health' });
+        };
+
+        it('is the compact card: answers, average, one row per statement with its move, the alert', () => {
             show(withHealth(trend));
 
-            const card = section('Team health');
+            const card = section('Health check');
             const row = (key: string) =>
                 card.querySelector(`[data-statement-key="${key}"]`);
 
+            expect(card.textContent).toContain('2 answers · avg 5.5');
+            expect(within(card).getAllByRole('listitem')).toHaveLength(2);
+            expect(
+                row('vision')?.querySelector(
+                    '[data-slot="health-compact-delta"]',
+                )?.textContent,
+            ).toBe('+0.5vs Sprint 41');
+            expect(row('processes')?.getAttribute('data-alert')).toBe('true');
             expect(
                 card.querySelector('svg[aria-label="Team health radar"]'),
+            ).toBeNull();
+            expect(screen.queryByRole('dialog')).toBeNull();
+        });
+
+        it('opens the full results from "Details": figures, radar, trend and each statement with its move since the previous retro', async () => {
+            show(withHealth(trend));
+
+            const dialog = await openDetails();
+            const row = (key: string) =>
+                dialog.querySelector(`[data-statement-key="${key}"]`);
+
+            expect(
+                dialog.querySelector('svg[aria-label="Team health radar"]'),
             ).not.toBeNull();
             expect(
-                card.querySelector('svg[aria-label="Trend across retros"]'),
+                dialog.querySelector('svg[aria-label="Trend across retros"]'),
             ).not.toBeNull();
-            expect(card.textContent).toContain(
+            expect(dialog.textContent).toContain(
                 '2 answers from 3 participants · compared with Sprint 41',
             );
+            expect(dialog.textContent).toContain('Top strength');
+            expect(dialog.textContent).toContain('High team consensus');
+            expect(dialog.textContent).toContain('Keep going.');
             expect(
                 row('vision')?.querySelector('[data-slot="health-trend"]')
                     ?.textContent,
@@ -665,19 +699,24 @@ describe('SessionEnd', () => {
                 row('processes')?.querySelector('[data-slot="health-trend"]'),
             ).toBeNull();
             expect(row('processes')?.textContent).toContain('Needs attention');
-            expect(card.textContent).toContain('-0.5 since the previous retro');
+            expect(row('processes')?.textContent).toContain(
+                'Nothing blocks me',
+            );
+            expect(dialog.textContent).toContain(
+                '-0.5 since the previous retro',
+            );
         });
 
-        it('has no trend across retros for a guest', () => {
+        it('has no trend across retros for a guest, in the details either', async () => {
             show(withHealth(null), {}, {});
 
-            const card = section('Team health');
+            const dialog = await openDetails();
 
             expect(
-                card.querySelector('svg[aria-label="Team health radar"]'),
+                dialog.querySelector('svg[aria-label="Team health radar"]'),
             ).not.toBeNull();
             expect(
-                card.querySelector('svg[aria-label="Trend across retros"]'),
+                dialog.querySelector('svg[aria-label="Trend across retros"]'),
             ).toBeNull();
         });
 
@@ -685,7 +724,7 @@ describe('SessionEnd', () => {
             show();
 
             expect(
-                screen.queryByRole('heading', { name: 'Team health' }),
+                screen.queryByRole('heading', { name: 'Health check' }),
             ).toBeNull();
         });
     });

@@ -1,5 +1,12 @@
-import { useId } from 'react';
+import { useState } from 'react';
+import { HealthCheckCompact } from '@/components/skrum/health-check-compact';
 import { HealthCheckResults } from '@/components/skrum/health-check-results';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { toHealthResults } from '@/lib/retro/session-end';
 import type { HealthResults, HealthTrendPoint } from '@/lib/retro/types';
@@ -14,13 +21,14 @@ type Props = {
 };
 
 /**
- * The health check of the retro: figures, radar, trend across retros and
- * each statement with what it scored the retro before.
+ * The health check of the retro: the compact rows on the page, and behind
+ * "Details" the figures, the radar, the trend across retros and each
+ * statement with what it scored the retro before.
  */
 export function HealthResult({ health, trend }: Props) {
     const { t } = useTrans();
     const { board } = useBoard();
-    const titleId = useId();
+    const [detailsOpen, setDetailsOpen] = useState(false);
     const { respondents, participants, results, summary } =
         toHealthResults(health);
     // The trend ends with this retro: the one before it is what each
@@ -31,31 +39,42 @@ export function HealthResult({ health, trend }: Props) {
             : undefined;
 
     return (
-        <section
-            aria-labelledby={titleId}
-            data-slot="retro-health-result"
-            className="min-w-0"
-        >
-            <h2 id={titleId} className="sr-only">
-                {t('Team health')}
-            </h2>
-            <HealthCheckResults
-                retroTitle={board.retro.title}
+        <div data-slot="retro-health-result" className="min-w-0">
+            <HealthCheckCompact
                 respondents={respondents}
-                participants={participants}
-                previousRetroTitle={previous?.title}
+                score={health.score}
                 results={results}
-                summary={summary}
-            >
-                <div className="grid min-w-0 grid-cols-1 items-center gap-4 @lg/card:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-                    <div className="mx-auto w-full max-w-72 min-w-0 px-4">
-                        <HealthRadar statements={health.statements} />
-                    </div>
-                    {trend !== null && trend.length > 0 && (
-                        <HealthTrend points={trend} />
-                    )}
-                </div>
-            </HealthCheckResults>
-        </section>
+                previousRetroTitle={previous?.title}
+                onDetails={() => setDetailsOpen(true)}
+            />
+            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogContent
+                    aria-describedby={undefined}
+                    className="sm:max-w-3xl"
+                >
+                    <DialogHeader>
+                        <DialogTitle>{t('Team health')}</DialogTitle>
+                    </DialogHeader>
+                    <HealthCheckResults
+                        retroTitle={board.retro.title}
+                        respondents={respondents}
+                        participants={participants}
+                        previousRetroTitle={previous?.title}
+                        results={results}
+                        summary={summary}
+                        className="min-w-0"
+                    >
+                        <div className="grid min-w-0 grid-cols-1 items-center gap-4 @lg/card:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+                            <div className="mx-auto w-full max-w-72 min-w-0 px-4">
+                                <HealthRadar statements={health.statements} />
+                            </div>
+                            {trend !== null && trend.length > 0 && (
+                                <HealthTrend points={trend} />
+                            )}
+                        </div>
+                    </HealthCheckResults>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }
