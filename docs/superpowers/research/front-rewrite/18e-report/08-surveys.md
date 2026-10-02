@@ -58,10 +58,10 @@ Captures were not made; the list is read from the code against `SurveyQuestion/p
 |---|---|
 | "Add survey" is a plain button of the settings panel, without the menu "Health check / Quick poll / From a template…" and its note | PB-25, D-22, D-23 |
 | The overline of a card is the type alone: no "3 / 5", no "3 max", no "anonymous" badge | PB-26, D-22, D-23 |
-| A single-choice result reads "n · p%", as multiple choice, where `SurveyQuestion/preview.html` shows "p%" alone | PB-24 (built as A, the recommendation; the owner's answer is not recorded in `pre-build-deviations.md`) |
-| Voters' avatars, reactions, comments, close / reopen / withdraw, the AI draft, "Submit" / "Update answer" on each card, answers as a list | PB-28 |
-| The surveys column, the editor dialog, the actions menu and the discussion foot have no mockup: they are composed from the neighbours (column header, `FormDialog`, card menu, card reactions) | no row needed (PB group C heading) |
-| The editor dialog is the small `FormDialog` (27.5rem), where the old dialog was 32rem | new row, or none: no mockup |
+| A single-choice result reads "n · p%", as multiple choice, where `SurveyQuestion/preview.html` shows "p%" alone | PB-24 A (ruled by the controller under the autonomy mandate: every "decide" row takes the recommended option), D-121 |
+| Voters' avatars, reactions, comments, close / reopen / withdraw, the AI draft, "Submit" / "Update answer" on each card, answers as a list | PB-28, D-121 |
+| The surveys column, the editor dialog, the actions menu and the discussion foot have no mockup: they are composed from the neighbours (column header, `FormDialog`, card menu, card reactions) | D-122 |
+| The editor dialog is the small `FormDialog` (27.5rem), where the old dialog was 32rem | D-122 |
 
 ## Task S2 — Surveys in the completed results
 
@@ -85,5 +85,5 @@ Read from the code against `SurveyQuestion/preview.html` and `ScreenSurvey/previ
 |---|---|
 | The surveys of a completed retro are the cards of the board, read only, in a "Surveys" card of the session end: no results page with the tabs Summary / Free answers / Compare, no CSV, no "Send to whiteboard" | PB-29, D-22 |
 | The "Closed" badge shows only on a survey the facilitator closed before the end. Brief 08 row 36 asks for `closed` on every card; it is not forced, since the badge would be a new element on surveys nobody closed and results mode has no control to disable | none: as before the rewrite |
-| A viewer who never answered a survey still open at the end sees its option labels without bars or figures, and "No answers yet." for a text survey (the server keeps `resultsVisible` false for them). The foot still reads "Answer to join the discussion", though nobody can answer any more | owner: should the server show the results to everyone once the retro is completed (`PresentSurvey`)? |
-| A result reads "n · p%" for single and multiple choice | PB-24 (built as A, the recommendation; the owner's answer is not recorded in `pre-build-deviations.md`) |
+| A viewer who never answered a survey still open at the end sees its option labels without bars or figures, and "No answers yet." for a text survey (the server keeps `resultsVisible` false for them). The foot still reads "Answer to join the discussion", though nobody can answer any more | D-123 (open: should the server show the results to everyone once the retro is completed, `PresentSurvey`?) |
+| A result reads "n · p%" for single and multiple choice | PB-24 A (autonomy mandate), D-121 |

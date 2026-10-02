@@ -63,12 +63,12 @@ Not compared on captures: the bench section and the captures are Task 5.3.
 | The export icon sits in the Ticket cell where the mockup has "Lier"; the "…" menu holds Edit and Delete | PB-07 |
 | Pagination, "Linked action item", side sheet, creation dialog | PB-11 |
 | No search field in the topbar | PB-12 |
-| The header line says "n open", not "n open or recent" | new row |
-| The table starts at 80rem of viewport; from 48rem to 80rem the page shows the faceted toolbar over the list of `ActionItem` | new row |
-| On a phone the chips read "Mine n", "Overdue n", "To do n", "Done" (the mockup: "Open", "Completed"), after PB-04; the list is grouped by the "Group by" control, not by retro; no long press, no bottom tab change | new row |
-| "Edit" of the "…" menu opens the sheet; the title is edited from its pencil there | new row |
-| The ticket chip is `ActionItemLinkChip` (provider and key), not the square and round marks | new row |
-| A date within three days reads "Fri, Oct 3 · in 3 days" (browser wording), not "· dans 3 j" | new row |
+| The header line says "n open", not "n open or recent" | D-116 |
+| The table starts at 80rem of viewport; from 48rem to 80rem the page shows the faceted toolbar over the list of `ActionItem` | D-117 |
+| On a phone the chips read "Mine n", "Overdue n", "To do n", "Done" (the mockup: "Open", "Completed"), after PB-04; the list is grouped by the "Group by" control, not by retro; no long press, no bottom tab change | D-118 |
+| "Edit" of the "…" menu opens the sheet; the title is edited from its pencil there | D-119 |
+| The ticket chip is `ActionItemLinkChip` (provider and key), not the square and round marks | D-119 |
+| A date within three days reads "Fri, Oct 3 · in 3 days" (browser wording), not "· dans 3 j" | D-119 |
 
 ## Task 5.3 — Bench section and captures of the action items page
 
