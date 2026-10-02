@@ -189,3 +189,81 @@ it('loads with a constant number of queries', function () {
 
     expect($countQueries())->toBe($small);
 });
+
+it('shows the deck name of a saved deck and the label of a built-in deck', function () {
+    $team = Team::factory()->create();
+    $saved = PokerGame::factory()->customCards(['1', '2'])->create(['team_id' => $team->id, 'deck_name' => 'Team scale']);
+    $builtIn = PokerGame::factory()->create(['team_id' => $team->id]);
+    [$user] = pokerFacilitator($saved);
+    estimatedPokerTask($saved, 'On saved deck', '2026-09-02 10:00:00');
+    estimatedPokerTask($builtIn, 'On built-in deck', '2026-09-01 10:00:00');
+
+    $rows = collect(pokerEstimateRows(pokerEstimatesPage($this, $user, $team)))->pluck('deck', 'title');
+
+    expect($rows['On saved deck'])->toBe('Team scale')
+        ->and($rows['On built-in deck'])->toBe($builtIn->deck->label());
+});
+
+it('lists the voters of the last revealed round with an avatar url', function () {
+    $table = pokerRevealTable();
+    $task = $table['round']->task;
+    pokerVote($table['round'], $table['facilitatorPlayer'], '5');
+    pokerVote($table['round'], $table['memberPlayer'], '8');
+    $table['round']->update(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual]);
+    $task->update(['estimate' => '8', 'estimate_numeric' => 8, 'estimated_at' => now()]);
+
+    $row = pokerEstimateRows(pokerEstimatesPage($this, $table['member'], $table['game']->team))[0];
+
+    expect($row['votersCount'])->toBe(2)
+        ->and($row['voters'])->toHaveCount(2)
+        ->and(collect($row['voters'])->pluck('name')->sort()->values()->all())->toBe(
+            collect([$table['facilitator']->name, $table['member']->name])->sort()->values()->all()
+        )
+        ->and($row['voters'][0]['avatarUrl'])->toBeString()->not->toBeEmpty();
+});
+
+it('withholds the voters of an anonymous round and keeps their count', function () {
+    $table = pokerRevealTable();
+    $task = $table['round']->task;
+    pokerVote($table['round'], $table['facilitatorPlayer'], '5');
+    pokerVote($table['round'], $table['memberPlayer'], '8');
+    $table['round']->update(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual, 'anonymous' => true]);
+    $task->update(['estimate' => '8', 'estimate_numeric' => 8, 'estimated_at' => now()]);
+
+    $row = pokerEstimateRows(pokerEstimatesPage($this, $table['member'], $table['game']->team))[0];
+
+    expect($row['voters'])->toBe([])
+        ->and($row['votersCount'])->toBe(2);
+});
+
+it('keeps the query count flat as rows grow with decks and voters', function () {
+    $game = PokerGame::factory()->create(['deck_name' => 'Team scale']);
+    [$user, $facilitatorPlayer] = pokerFacilitator($game);
+    $member = pokerMember($game)[1];
+
+    $seed = function (int $count) use ($game, $facilitatorPlayer, $member): void {
+        foreach (range(1, $count) as $index) {
+            $task = estimatedPokerTask($game, "Task {$index}", now()->subMinutes($index)->toDateTimeString());
+            $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+            pokerVote($round, $facilitatorPlayer, '5');
+            pokerVote($round, $member, '8');
+        }
+    };
+
+    $countQueries = function () use ($user, $game): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        pokerEstimatesPage($this, $user, $game->team);
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    $seed(3);
+    $countQueries();
+    $small = $countQueries();
+
+    $seed(27);
+
+    expect($countQueries())->toBe($small);
+});

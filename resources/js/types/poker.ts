@@ -61,6 +61,9 @@ export type EstimatedTaskRow = {
     estimate: string;
     roundsCount: number;
     estimatedAt: string;
+    deck: string;
+    voters: { name: string; avatarUrl: string }[];
+    votersCount: number;
     rounds: PokerRound[];
     players: { id: string; name: string }[];
 };

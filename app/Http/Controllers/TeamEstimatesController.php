@@ -70,6 +70,9 @@ class TeamEstimatesController extends Controller
      *     estimate: ?string,
      *     roundsCount: int,
      *     estimatedAt: ?string,
+     *     deck: string,
+     *     voters: array<int, array{name: string, avatarUrl: string}>,
+     *     votersCount: int,
      *     rounds: array<int, array<string, mixed>>,
      *     players: array<int, array{id: string, name: string}>
      * }
@@ -78,6 +81,9 @@ class TeamEstimatesController extends Controller
     {
         $game = $task->game;
         $viewerPlayerId = $game->players->firstWhere('user_id', $user->id)?->id;
+        $lastRound = $task->rounds->first();
+        $lastRoundVoterIds = $lastRound?->votes->pluck('poker_player_id') ?? collect();
+        $lastRoundVoters = $game->players->filter(fn (PokerPlayer $player) => $lastRoundVoterIds->contains($player->id));
         $voterIds = $task->rounds->flatMap(fn (PokerRound $round) => $round->votes->map(fn (PokerVote $vote) => $vote->poker_player_id))->unique();
 
         return [
@@ -88,6 +94,14 @@ class TeamEstimatesController extends Controller
             'estimate' => $task->estimate,
             'roundsCount' => (int) $task->rounds_count,
             'estimatedAt' => $task->estimated_at?->toIso8601String(),
+            'deck' => $game->deckLabel(),
+            'voters' => $lastRound?->anonymous ?? false
+                ? []
+                : $lastRoundVoters
+                    ->map(fn (PokerPlayer $player): array => ['name' => $player->displayName(), 'avatarUrl' => $player->avatarUrl()])
+                    ->values()
+                    ->all(),
+            'votersCount' => $lastRoundVoters->count(),
             'rounds' => $task->rounds
                 ->map(fn (PokerRound $round): array => $this->presentPokerRound->handle($round, $game, $viewerPlayerId))
                 ->values()
