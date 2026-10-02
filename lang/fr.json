@@ -3963,5 +3963,14 @@
     "One writes it in emojis, the others guess.": "L'un l'écrit en emojis, les autres devinent.",
     "New session, icebreaker form: the whole form, not scrolled": "Nouvelle session, formulaire icebreaker : le formulaire entier, sans défilement",
     "New session, icebreaker form: no GIF provider": "Nouvelle session, formulaire icebreaker : aucun fournisseur de GIF",
-    "New session dialog, open on the icebreaker type": "Boîte de dialogue Nouvelle session, ouverte sur le type icebreaker"
+    "New session dialog, open on the icebreaker type": "Boîte de dialogue Nouvelle session, ouverte sur le type icebreaker",
+    "Shared by every game of the team": "Partagés par toutes les parties de l'équipe",
+    ":count values": ":count valeurs",
+    "1 game": "1 partie",
+    ":count games": ":count parties",
+    "Create a custom deck": "Créer un deck personnalisé",
+    "Any values, emoji allowed": "Valeurs libres, emoji acceptés",
+    "Set as default": "Définir par défaut",
+    "Set :name as default": "Définir :name par défaut",
+    "Deck duplicated.": "Deck dupliqué."
 }

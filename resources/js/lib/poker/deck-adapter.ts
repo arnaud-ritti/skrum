@@ -1,5 +1,8 @@
 import type { DeckDraft } from '@/components/skrum/deck-editor';
-import { deckShapeFromCards } from '@/components/skrum/deck-picker';
+import {
+    DeckMaxNameLength,
+    deckShapeFromCards,
+} from '@/components/skrum/deck-picker';
 import type { Deck } from '@/components/skrum/deck-picker';
 import type { PokerDeckOption, SavedPokerDeck } from '@/types';
 
@@ -128,4 +131,54 @@ export function initialDeckId(
         decks[0]?.id ??
         ''
     );
+}
+
+/** What `teams.pokerDecks.store`, its `update` and the workspace routes take. */
+export function savedDeckPayload(draft: DeckDraft): {
+    name: string;
+    cards: string[];
+    include_unknown: boolean;
+    include_coffee: boolean;
+} {
+    return {
+        name: draft.name.trim(),
+        cards: draft.values,
+        include_unknown: draft.unknownCard,
+        include_coffee: draft.breakCard,
+    };
+}
+
+export function serverErrorsToSavedDeckErrors(
+    errors: Record<string, string | undefined>,
+): { name?: string; values?: string } {
+    const cardKey = Object.keys(errors).find((key) => key.startsWith('cards.'));
+    const values =
+        errors.cards ?? (cardKey === undefined ? undefined : errors[cardKey]);
+
+    return {
+        ...(values === undefined ? {} : { values }),
+        ...(errors.name === undefined ? {} : { name: errors.name }),
+    };
+}
+
+/**
+ * The name of a copy, as the server names one: cut to the longest deck name,
+ * then numbered from 2 while a deck of the team has it.
+ */
+export function copyDeckName(copyName: string, takenNames: string[]): string {
+    const taken = new Set(takenNames.map((name) => name.trim().toLowerCase()));
+    const cut = (text: string, length: number): string =>
+        Array.from(text).slice(0, length).join('');
+
+    let name = cut(copyName, DeckMaxNameLength);
+    let number = 2;
+
+    while (taken.has(name.toLowerCase())) {
+        const suffix = ` ${number}`;
+
+        name = cut(copyName, DeckMaxNameLength - suffix.length) + suffix;
+        number++;
+    }
+
+    return name;
 }

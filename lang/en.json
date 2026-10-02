@@ -3739,5 +3739,15 @@
     "One writes it in emojis, the others guess.": "One writes it in emojis, the others guess.",
     "New session, icebreaker form: the whole form, not scrolled": "New session, icebreaker form: the whole form, not scrolled",
     "New session, icebreaker form: no GIF provider": "New session, icebreaker form: no GIF provider",
-    "New session dialog, open on the icebreaker type": "New session dialog, open on the icebreaker type"
+    "New session dialog, open on the icebreaker type": "New session dialog, open on the icebreaker type",
+    "Shared by every game of the team": "Shared by every game of the team",
+    ":count values": ":count values",
+    "1 game": "1 game",
+    ":count games": ":count games",
+    "Create a custom deck": "Create a custom deck",
+    "Any values, emoji allowed": "Any values, emoji allowed",
+    "Set as default": "Set as default",
+    "Set :name as default": "Set :name as default",
+    "Duplicate :name": "Duplicate :name",
+    "Deck duplicated.": "Deck duplicated."
 }

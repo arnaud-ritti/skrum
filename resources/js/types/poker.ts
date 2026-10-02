@@ -75,3 +75,18 @@ export type SavedPokerDeck = {
     scope: 'team' | 'workspace';
     canManage?: boolean;
 };
+
+export type BuiltInDeckSummary = {
+    key: string;
+    name: string;
+    cards: string[];
+    isDefault: boolean;
+    usageCount: number;
+};
+
+export type SavedDeckSummary = SavedPokerDeck & {
+    canManage: boolean;
+    isDefault: boolean;
+    usageCount: number;
+    createdBy: string | null;
+};

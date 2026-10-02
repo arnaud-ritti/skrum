@@ -582,3 +582,148 @@ it('[P18e-01-18b] shows the Icebreaker type disabled with its reason when the te
 
     expect(GameRoom::query()->count())->toBe(GameRoom::MaxRoomsPerTeam);
 });
+
+function p18eDecksPath(Team $team): string
+{
+    return route('teams.pokerDecks.index', [$team->workspace, $team], false);
+}
+
+function p18eDeckCard(string $name): string
+{
+    return '[data-slot="deck-card"]:has(h2:text-is("'.$name.'"))';
+}
+
+it('[P18e-01-07] shows Edit and Delete on a saved deck to its creator and to a workspace admin, not to another member', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $bob = p18eMember($team, 'Bob Stone');
+    $admin = workspaceManager($team->workspace);
+    $admin->update(['name' => 'Dana Admin', 'locale' => 'en']);
+    SavedPokerDeck::factory()->create([
+        'team_id' => $team->id,
+        'name' => 'Team scale',
+        'cards' => ['1', '2', '3', '?'],
+        'created_by_user_id' => $alice->id,
+    ]);
+
+    $this->signIn($alice, p18eDecksPath($team))
+        ->assertSeeIn(p18eDeckCard('Team scale'), 'Custom · by Alice Martin · 0 games')
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->assertPresent('[aria-label="Delete Team scale"]')
+        ->assertNotPresent('[aria-label="Edit Fibonacci"]')
+        ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Built-in');
+
+    $this->signIn($bob, p18eDecksPath($team))
+        ->assertSeeIn(p18eDeckCard('Team scale'), 'Team scale')
+        ->assertPresent('[aria-label="Duplicate Team scale"]')
+        ->assertNotPresent('[aria-label="Edit Team scale"]')
+        ->assertNotPresent('[aria-label="Delete Team scale"]');
+
+    $this->signIn($admin, p18eDecksPath($team))
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->assertPresent('[aria-label="Delete Team scale"]');
+});
+
+it('[P18e-01-19] moves the Default badge with "Set as default" and preselects that deck in the new session dialog', function () {
+    $team = Team::factory()->create();
+    $admin = integrationAdmin($team);
+    $admin->update(['name' => 'Dana Admin', 'locale' => 'en']);
+    $member = p18eMember($team);
+    $deck = SavedPokerDeck::factory()->create([
+        'team_id' => $team->id,
+        'name' => 'Team scale',
+        'cards' => ['1', '2', '3', '5', '8', '?'],
+        'created_by_user_id' => $member->id,
+    ]);
+
+    $this->signIn($member, p18eDecksPath($team))
+        ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Default')
+        ->assertNotPresent('[aria-label="Set Team scale as default"]');
+
+    $page = $this->signIn($admin, p18eDecksPath($team));
+
+    $page->assertCount('[data-slot="deck-card"][data-default]', 1)
+        ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Default')
+        ->assertNotPresent('[aria-label="Set Fibonacci as default"]')
+        ->click('[aria-label="Set T-shirt sizes as default"]')
+        ->assertSeeIn(p18eDeckCard('T-shirt sizes'), 'Default')
+        ->assertCount('[data-slot="deck-card"][data-default]', 1)
+        ->assertPresent('[aria-label="Set Fibonacci as default"]');
+
+    expect($team->fresh()->default_poker_deck)->toBe('tshirt');
+
+    $page->click('[aria-label="Set Team scale as default"]')
+        ->assertSeeIn(p18eDeckCard('Team scale'), 'Default')
+        ->assertCount('[data-slot="deck-card"][data-default]', 1);
+
+    expect($team->fresh()->default_saved_poker_deck_id)->toBe($deck->id)
+        ->and($team->fresh()->default_poker_deck)->toBeNull();
+
+    $page->click('Back to the team')
+        ->assertPathIs(p18eTeamPath($team))
+        ->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertCount(P18eDecks.' [role="radio"][aria-checked="true"]', 1)
+        ->assertSeeIn(P18eDecks.' [role="radio"][aria-checked="true"]', 'Team scale');
+});
+
+it('[P18e-01-20] duplicates a built-in deck and a saved deck as decks of the team', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $bob = p18eMember($team, 'Bob Stone');
+    SavedPokerDeck::factory()->create([
+        'team_id' => $team->id,
+        'name' => 'Team scale',
+        'cards' => ['1', '2', '3', '?'],
+        'created_by_user_id' => $bob->id,
+    ]);
+
+    $page = $this->signIn($alice, p18eDecksPath($team));
+
+    $page->assertCount('[data-slot="deck-card"]', 5)
+        ->click('[aria-label="Duplicate Fibonacci"]')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Copy of Fibonacci')
+        ->assertSeeIn(p18eDeckCard('Copy of Fibonacci'), 'Custom · by Alice Martin · 0 games')
+        ->assertPresent('[aria-label="Edit Copy of Fibonacci"]')
+        ->click('[aria-label="Duplicate Team scale"]')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Copy of Team scale')
+        ->click('[aria-label="Duplicate Fibonacci"]')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Copy of Fibonacci 2')
+        ->assertCount('[data-slot="deck-card"]', 8);
+
+    $decks = $team->pokerDecks()->get()->keyBy('name');
+
+    expect($decks->keys()->sort()->values()->all())->toBe(['Copy of Fibonacci', 'Copy of Fibonacci 2', 'Copy of Team scale', 'Team scale'])
+        ->and($decks['Copy of Fibonacci']->cards)->toBe(['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'])
+        ->and($decks['Copy of Fibonacci']->created_by_user_id)->toBe($alice->id)
+        ->and($decks['Copy of Team scale']->cards)->toBe(['1', '2', '3', '?']);
+});
+
+it('[P18e-01-21] raises the usage count of a deck after a game is created from it', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    SavedPokerDeck::factory()->create([
+        'team_id' => $team->id,
+        'name' => 'Team scale',
+        'cards' => ['1', '2', '3', '?'],
+        'created_by_user_id' => $alice->id,
+    ]);
+
+    $page = $this->signIn($alice, p18eDecksPath($team));
+
+    $page->assertSeeIn(p18eDeckCard('Team scale'), '0 games')
+        ->assertSeeIn(p18eDeckCard('Fibonacci'), '13 values · 0 games')
+        ->click('Back to the team')
+        ->assertPathIs(p18eTeamPath($team))
+        ->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->fill('#new-poker-title', 'Counted game')
+        ->click(P18eDecks.' [role="radio"]:has-text("Team scale")')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/')
+        ->navigate(p18eDecksPath($team))
+        ->assertSeeIn(p18eDeckCard('Team scale'), 'Custom · by Alice Martin · 1 game')
+        ->assertSeeIn(p18eDeckCard('Fibonacci'), '13 values · 0 games');
+});

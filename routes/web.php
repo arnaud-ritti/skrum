@@ -249,6 +249,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
             Route::post('teams/{team}/whiteboards', [TeamWhiteboardsController::class, 'store'])->name('teams.whiteboards.store');
             Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
+            Route::get('teams/{team}/poker-decks', [PokerDecksController::class, 'index'])->name('teams.pokerDecks.index');
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');

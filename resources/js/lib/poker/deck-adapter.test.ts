@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Deck } from '@/components/skrum/deck-picker';
 import {
     CustomDeckId,
+    copyDeckName,
     customDeckToPayload,
     deckToPayload,
     initialDeckId,
+    savedDeckPayload,
     serverErrorsToDeckErrors,
+    serverErrorsToSavedDeckErrors,
     toCustomDeck,
     toDeck,
     toDecks,
@@ -183,5 +186,61 @@ describe('deck adapter', () => {
         expect(initialDeckId([teamScale, tshirt], none)).toBe('tshirt');
         expect(initialDeckId([teamScale], none)).toBe('deck-1');
         expect(initialDeckId([], none)).toBe('');
+    });
+
+    it('builds the payload of a saved deck with its trimmed name', () => {
+        expect(
+            savedDeckPayload({
+                name: ' Hours ',
+                values: ['1 h', '2 h'],
+                unknownCard: true,
+                breakCard: false,
+            }),
+        ).toEqual({
+            name: 'Hours',
+            cards: ['1 h', '2 h'],
+            include_unknown: true,
+            include_coffee: false,
+        });
+    });
+
+    it('maps the errors of a saved deck to the editor', () => {
+        expect(
+            serverErrorsToSavedDeckErrors({
+                name: 'A deck with this name already exists.',
+                'cards.1': 'The card is too long.',
+            }),
+        ).toEqual({
+            name: 'A deck with this name already exists.',
+            values: 'The card is too long.',
+        });
+        expect(
+            serverErrorsToSavedDeckErrors({
+                cards: 'Give between 2 and 20 cards.',
+                'cards.0': 'The card is too long.',
+            }),
+        ).toEqual({ values: 'Give between 2 and 20 cards.' });
+        expect(serverErrorsToSavedDeckErrors({})).toEqual({});
+    });
+
+    it('names a copy, numbers it while the name is taken and keeps it within 40 characters', () => {
+        expect(copyDeckName('Copy of Fibonacci', [])).toBe('Copy of Fibonacci');
+        expect(
+            copyDeckName('Copy of Fibonacci', ['copy of FIBONACCI ', 'Other']),
+        ).toBe('Copy of Fibonacci 2');
+        expect(
+            copyDeckName('Copy of Fibonacci', [
+                'Copy of Fibonacci',
+                'Copy of Fibonacci 2',
+            ]),
+        ).toBe('Copy of Fibonacci 3');
+
+        const long = `Copy of ${'a'.repeat(40)}`;
+        const first = copyDeckName(long, []);
+        const second = copyDeckName(long, [first]);
+
+        expect(first).toHaveLength(40);
+        expect(second).toHaveLength(40);
+        expect(second.endsWith(' 2')).toBe(true);
     });
 });

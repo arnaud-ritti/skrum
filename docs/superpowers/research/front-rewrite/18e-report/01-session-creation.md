@@ -173,3 +173,41 @@ ScreenSessionCreate draws the Icebreaker tile only, not its form: the form is bu
 | The pitches are new sentences ("One draws, the others guess.", …): the bench's pitches name a 60-second limit and "3 emojis", which the games do not guarantee | no row: reason F |
 | No "Schedule…", no invitation link | D-06, D-08 |
 | The type row of the bench dialog shows one tile (only the icebreaker form is passed there) | bench only |
+
+## Task 1.5 — Saved decks page
+
+### Parity (brief 01 §3 rows 30–34, brief 03 §3 rows 61–63, brief 04 §3 rows 42–44)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 30 / 61 | Open "Saved decks" | the "Saved decks" link of the poker section of `teams/show` opens the page `teams/{team}/poker-decks` (3-D3); it moves to the "…" menu in 4.1 | yes |
+| 31 | Empty list | "No saved decks yet." in the creation tile (the grid is never empty: the built-in decks are always listed); under the grid for a user who cannot create | yes |
+| 32 / 62 / 42 | Create a saved deck | "Create a deck" (header button) and the dashed tile "Create a custom deck" open `DeckEditor` in a dialog: `#deck-new-name` (required, 40), `#deck-new-cards` (a comma list is split), `#deck-new-unknown`, `#deck-new-coffee` (both on), "Save"; POST `teams.pokerDecks.store` | yes |
+| 33 / 63 | Edit a saved deck | "Edit" on the card (named "Edit :name"), the same dialog titled "Edit :name", ids `deck-{id}-*`; PATCH `teams.pokerDecks.update`, or `workspaces.pokerDecks.update` for a workspace deck | yes |
+| 34 / 63 | Delete a saved deck | "Delete" on the card (named "Delete :name"), then `ConfirmDialog` (`alertdialog`): "Delete this deck?", "Games that use it keep their cards.", "Delete deck"; DELETE `teams.pokerDecks.destroy` or `workspaces.pokerDecks.destroy`; focus goes to the page title | yes |
+| 43 | Validation errors | `name` under the name, `cards` and `cards.N` under the values, in the dialog, which stays open | yes |
+| 44 | Edit and Delete only for who may manage | `canManage` of the deck (its creator or a workspace admin; a workspace deck: a workspace manager only) | yes |
+| — | A request the server refuses (403, 404) | the page is reloaded and the dialog closes, as the old dialog did | yes |
+| — | Deck limit (30 per team) | at the limit "Create a deck", the tile and every "Duplicate" are not offered and the sentence "This team already has 30 saved decks." is shown; a refusal of the server is shown as a toast | yes |
+
+Added by the spec (B21) and the mockup: built-in decks listed locked ("Built-in") with "Duplicate"; "Default" badge; "Set as default" on every other card for who can update the team; "Duplicate" on every card for who can create (a team deck through `teams.pokerDecks.duplicate.store`; a built-in deck and a workspace deck are posted to `teams.pokerDecks.store` under "Copy of :name", numbered while the name is taken); usage of the deck by the games of the team; "Workspace" badge; author of a custom deck.
+
+### Places left
+
+None: the "Saved decks" panel of ScreenPokerQueue has no element left for a later plan. (Its neighbour, "Estimation history", is Task 3.3.)
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The header button reads "Create a deck" (the mockup: "New deck") | owner answer 1-D7 |
+| The page sits in the application layout (sidebar, topbar with the breadcrumb "team › Saved decks"); "Back to the team" is a link above the title, not a bar of its own panel, and the breadcrumb is not "Atlas › Planning poker" | no row: the task's composition (`AppLayout active="sessions"`, breadcrumbs team › Saved decks) |
+| "Set as default" on each card that is not the default: the mockup only shows the badge. With it the footer of a card takes two lines at 15rem | no row: spec B21, named in the task's composition |
+| "Delete" on a custom card (the mockup: Edit and Duplicate only) | no row: parity row 34 |
+| "Workspace" badge on a workspace deck | no row: spec B30, named in the task's composition |
+| The usage reads "13 values · 31 games" and "Custom · by Malik K · 4 games" as the mockup; the plan's "Used n times" is not used | plan text against the mockup: the mockup wins |
+| Four built-in decks (Fibonacci, Modified Fibonacci, T-shirt sizes, Powers of 2) with the product's cards; the mockup shows two built-in decks and "Powers of 2" as a custom deck | no row: the product's data |
+| The footer buttons of a custom card are grouped on the left (the mockup: Edit left, Duplicate right) | no row: four actions do not fit a left / right pair |
+| The editor opens in a dialog; the mockup has no frame for the editor on this page | no row: `DeckPicker/README.md` ("the editor opens from Create a deck or Edit") |
+| "No saved decks yet." in the creation tile when the team has none | no row: parity row 31, the mockup has no empty state |
+| FR: the title is "Jeux de cartes enregistrés" and the locked label "Intégrée" (the mockup: "Decks enregistrés", "Intégré"): existing translations of keys shared with other screens | no row |

@@ -57,6 +57,14 @@ function p10bJoinAsSpectator(PokerGame $game, string $name): mixed
     return $page;
 }
 
+/**
+ * The values a deck card of the saved decks page shows, in order.
+ */
+function p10bDeckCardValues(string $name): string
+{
+    return 'Array.from(Array.from(document.querySelectorAll(\'[data-slot="deck-card"]\')).find((card) => card.querySelector("h2").textContent === "'.$name.'").querySelectorAll(\'[data-slot="deck-card-values"] li\')).map((chip) => chip.textContent).join(" ")';
+}
+
 function p10bOpenSettings(mixed $page): mixed
 {
     return $page->click('[aria-label="Facilitator menu"]')
@@ -70,29 +78,30 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
     $ada = p10bRenamed(teamMember($team), 'Ada');
     $bob = p10bRenamed(teamMember($team), 'Bob');
     $teamPath = route('teams.show', [$team->workspace, $team], false);
-    $chips = 'Array.from(document.querySelectorAll(\'[role="dialog"] li span.font-mono\')).map((chip) => chip.textContent).join(" ")';
 
     $a = $this->signIn($ada, $teamPath);
 
     $a->assertSee('Saved decks')
         ->click('Saved decks')
+        ->assertPathEndsWith('/poker-decks')
         ->assertSee('No saved decks yet.')
-        ->click('New deck')
+        ->click('Create a deck')
         ->assertAriaAttribute('#deck-new-unknown', 'checked', 'true')
         ->assertAriaAttribute('#deck-new-coffee', 'checked', 'true')
         ->fill('#deck-new-name', 'Team scale')
         ->fill('#deck-new-cards', '1, 2, 3, 5, 8')
         ->click('Save')
-        ->assertSeeIn('[role="dialog"]', 'Team scale')
-        ->assertScript($chips, '1 2 3 5 8 ? ☕')
-        ->assertSee('Edit deck')
-        ->assertSee('New deck')
-        ->click('New deck')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
+        ->assertScript(p10bDeckCardValues('Team scale'), '1 2 3 5 8 ? ☕')
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->assertSee('Create a deck')
+        ->click('Create a deck')
         ->assertVisible('#deck-new-name')
         ->fill('#deck-new-name', 'team scale ')
         ->fill('#deck-new-cards', '1, 2')
         ->click('Save')
-        ->assertSee('A deck with this name already exists.');
+        ->assertSeeIn('[role="dialog"]', 'A deck with this name already exists.');
 
     expect(SavedPokerDeck::query()->count())->toBe(1);
 
@@ -100,9 +109,10 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
 
     $b->assertSee('Saved decks')
         ->click('Saved decks')
-        ->assertSeeIn('[role="dialog"]', 'Team scale')
-        ->assertDontSee('Edit deck')
-        ->assertDontSee('Delete deck');
+        ->assertPathEndsWith('/poker-decks')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
+        ->assertNotPresent('[aria-label="Edit Team scale"]')
+        ->assertNotPresent('[aria-label="Delete Team scale"]');
 });
 
 it('[P10b-02a] creates a game from a saved deck and keeps its cards when the deck is edited', function () {
@@ -141,12 +151,14 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
     $page->navigate($teamPath)
         ->assertSee('Saved decks')
         ->click('Saved decks')
-        ->assertSee('Edit deck')
-        ->click('Edit deck')
+        ->assertPathEndsWith('/poker-decks')
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->click('[aria-label="Edit Team scale"]')
         ->assertVisible("#deck-{$deck->id}-cards")
-        ->fill("#deck-{$deck->id}-cards", '1, 2, 3, 5, 8, 13')
+        ->fill("#deck-{$deck->id}-cards", '13,')
         ->click('Save')
-        ->assertSeeIn('[role="dialog"] li', '13');
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript(p10bDeckCardValues('Team scale'), '1 2 3 5 8 13 ? ☕');
 
     expect($deck->fresh()->cards)->toContain('13');
 
@@ -173,10 +185,11 @@ it('[P10b-02b] keeps a game unchanged when its saved deck is deleted', function 
 
     $page->assertSee('Saved decks')
         ->click('Saved decks')
-        ->assertSee('Delete deck')
-        ->click('Delete deck')
-        ->assertSee('Games that use it keep their cards.')
-        ->click('button:has-text("Delete deck") >> nth=1')
+        ->assertPathEndsWith('/poker-decks')
+        ->assertPresent('[aria-label="Delete Team scale"]')
+        ->click('[aria-label="Delete Team scale"]')
+        ->assertSeeIn('[role="alertdialog"]', 'Games that use it keep their cards.')
+        ->click('[role="alertdialog"] button:has-text("Delete deck")')
         ->assertSee('No saved decks yet.');
 
     expect(SavedPokerDeck::query()->count())->toBe(0);

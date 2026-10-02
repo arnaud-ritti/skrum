@@ -269,7 +269,6 @@ export default function ShowTeam({
                     workspaceSlug={workspace.slug}
                     teamId={team.id}
                     games={pokerGames}
-                    savedDecks={pokerDecks}
                 />
                 <WhiteboardsSection
                     workspaceSlug={workspace.slug}

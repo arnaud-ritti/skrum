@@ -1,26 +1,20 @@
 import { Link, usePage } from '@inertiajs/react';
 import PokerGamesController from '@/actions/App/Http/Controllers/Poker/PokerGamesController';
+import PokerDecksController from '@/actions/App/Http/Controllers/PokerDecksController';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { formatPoints } from '@/lib/poker/format';
-import type { PokerGameSummary, SavedPokerDeck } from '@/types';
-import { SavedDecksDialog } from './saved-decks-dialog';
+import type { PokerGameSummary } from '@/types';
 
 type Props = {
     workspaceSlug: string;
     teamId: string;
     games: PokerGameSummary[];
-    savedDecks: SavedPokerDeck[];
 };
 
-export function PokerGamesSection({
-    workspaceSlug,
-    teamId,
-    games,
-    savedDecks,
-}: Props) {
+export function PokerGamesSection({ workspaceSlug, teamId, games }: Props) {
     const { t } = useTrans();
     const active = games.filter((game) => game.endedAt === null);
     const ended = games.filter((game) => game.endedAt !== null);
@@ -40,11 +34,16 @@ export function PokerGamesSection({
                         {t('Estimation history')}
                     </Link>
                 </Button>
-                <SavedDecksDialog
-                    workspaceSlug={workspaceSlug}
-                    teamId={teamId}
-                    decks={savedDecks}
-                />
+                <Button variant="outline" asChild>
+                    <Link
+                        href={PokerDecksController.index({
+                            workspace: workspaceSlug,
+                            team: teamId,
+                        })}
+                    >
+                        {t('Saved decks')}
+                    </Link>
+                </Button>
             </div>
 
             {games.length === 0 && (
