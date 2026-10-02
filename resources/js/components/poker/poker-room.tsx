@@ -251,12 +251,14 @@ export function RoomView({
                                     <StoryCard
                                         key={currentTask.id}
                                         task={currentTask}
+                                        roundsOpen={!isPhone}
                                         className="max-w-5xl"
                                     />
                                 )}
                                 <RoomTable
                                     task={currentTask}
                                     actions={actions}
+                                    compact={isPhone}
                                 />
                                 {isPhone && (
                                     <RoomResult

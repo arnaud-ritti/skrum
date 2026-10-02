@@ -392,7 +392,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
     $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
     $a->assertPresent('section[aria-label="Anonymous votes"]')
-        ->click('button:has-text("Rounds (1)")')
+        ->assertAttribute('button:has-text("Rounds (1)")', 'aria-expanded', 'true')
         ->assertSee('3 × 1')
         ->assertSee('5 × 1')
         ->assertDontSee('Ada: 3')

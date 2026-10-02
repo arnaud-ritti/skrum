@@ -89,6 +89,22 @@ function pokerVisualGame(): array
 }
 
 /**
+ * The round that gave each estimated task its estimate, seven votes each: the queue reads "Votes: 7" on them.
+ *
+ * @param  array<string, PokerPlayer>  $players
+ */
+function pokerVisualPlayedRounds(PokerGame $game, array $players): void
+{
+    $game->tasks()->whereNotNull('estimate')->get()->each(function (PokerTask $task) use ($players): void {
+        $played = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+
+        foreach (array_slice($players, 0, 7) as $player) {
+            pokerVote($played, $player, (string) $task->estimate);
+        }
+    });
+}
+
+/**
  * @param  array<string, string>  $options
  */
 function pokerVisualRoom(User $user, string $path, array $options): mixed
@@ -110,6 +126,7 @@ function pokerVisualRoom(User $user, string $path, array $options): mixed
 
 it('[P18e-03-08] renders the poker room while the team votes without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
+    pokerVisualPlayedRounds($game, $players);
     $round = openPokerRound($game, $task);
 
     foreach (['Arnaud Ritti' => '5', 'Camille Roux' => '5', 'Théo Martin' => '5', 'Inès Benali' => '8', 'Malik Koné' => '3', 'Sofia Lindqvist' => '5', 'Lucas Durand' => '13'] as $name => $value) {
@@ -129,6 +146,7 @@ it('[P18e-03-08] renders the poker room while the team votes without overflow', 
 
 it('[P18e-03-09] renders the revealed poker room of a facilitator who watches without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
+    pokerVisualPlayedRounds($game, $players);
     $first = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
 
     foreach (['Camille Roux' => '2', 'Théo Martin' => '3', 'Inès Benali' => '5', 'Malik Koné' => '8', 'Sofia Lindqvist' => '13', 'Lucas Durand' => '13', 'Nadia Kowalski' => '☕'] as $name => $value) {

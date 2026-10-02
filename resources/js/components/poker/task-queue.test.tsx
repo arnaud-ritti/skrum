@@ -78,8 +78,47 @@ describe('TaskQueue, the list', () => {
         expect(rows()[0].getAttribute('aria-current')).toBe('true');
         expect(rows()[1].hasAttribute('aria-current')).toBe(false);
         expect(badges(rows()[0])).toEqual(['PROJ-1', '5', 'Votes: 2']);
-        expect(badges(rows()[1])).toEqual([]);
+        expect(badges(rows()[1])).toEqual(['Votes: 0']);
         expect(within(rows()[0]).getByText('Round 2')).toBeTruthy();
+    });
+
+    it('shows the votes of the last round on every row: the round being played, an estimated task, a task still to estimate', () => {
+        renderInRoom(
+            <TaskQueue />,
+            pokerSnapshot({
+                tasks: [
+                    pokerTask('t0', 'Sign up', {
+                        position: 1,
+                        estimate: '3',
+                        roundsCount: 2,
+                        votesCount: 7,
+                    }),
+                    pokerTask('t1', 'Login page', {
+                        position: 2,
+                        votesCount: 1,
+                    }),
+                    pokerTask('t2', 'Password reset', {
+                        position: 3,
+                        roundsCount: 1,
+                        votesCount: 4,
+                    }),
+                    pokerTask('t3', 'Billing', { position: 4 }),
+                ],
+                current: {
+                    taskId: 't1',
+                    round: pokerRound({ votesCount: 3 }),
+                },
+            }),
+        );
+
+        expect(badges(rows()[0])).toEqual(['3']);
+        expect(
+            rows()[0].querySelector('[data-slot="task-votes"]')?.textContent,
+        ).toBe('Votes: 7');
+        expect(badges(rows()[1])).toEqual(['Votes: 3']);
+        expect(badges(rows()[2])).toEqual(['Votes: 4']);
+        expect(badges(rows()[3])).toEqual(['Votes: 0']);
+        expect(screen.queryByText(/pts$/)).toBeNull();
     });
 
     it('lets the facilitator drag and pick a task, and nobody else', async () => {

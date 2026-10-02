@@ -13,7 +13,7 @@ import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
+    type SortingStrategy,
 } from '@dnd-kit/sortable';
 import { usePage } from '@inertiajs/react';
 import { Download, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
@@ -48,6 +48,12 @@ import { useGame } from './game-context';
 import { ImportTasksDialog } from './import-tasks-dialog';
 import { TaskFormDialog } from './room-dialogs';
 import { TaskRow } from './task-row';
+
+/**
+ * The rows stay where they are while one is dragged: a line shows where it
+ * lands (see `TaskRow`), nothing moves apart.
+ */
+const keepRowsInPlace: SortingStrategy = () => null;
 
 type Props = {
     /** Called once a task was picked: the phone drawer closes. */
@@ -249,11 +255,11 @@ export function TaskQueue({ onSelected }: Props) {
                 >
                     <SortableContext
                         items={tasks.map((task) => task.id)}
-                        strategy={verticalListSortingStrategy}
+                        strategy={keepRowsInPlace}
                     >
                         <ol
                             data-vaul-no-drag=""
-                            className="flex min-h-0 shrink flex-col gap-0.5 overflow-y-auto px-2 py-px"
+                            className="flex min-h-0 shrink flex-col gap-0.5 overflow-y-auto px-2 py-0.5"
                         >
                             {tasks.map((task) => (
                                 <TaskRow
@@ -264,6 +270,7 @@ export function TaskQueue({ onSelected }: Props) {
                                             ? current.round
                                             : null
                                     }
+                                    votesCount={task.votesCount}
                                     sortable={canSort}
                                     selectable={canSort}
                                     onSelect={() => void select(task)}

@@ -319,6 +319,124 @@ it('[P18e-03-06c] moves focus to the dock on a reveal, then validates the chosen
         ->and($game->refresh()->current_task_id)->toBe($next->id);
 });
 
+it('[P18e-03-06d] lists the past rounds open, each vote as "name: value", and folded on a phone', function () {
+    $table = p18ePokerTable();
+    $game = $table['game'];
+    p18ePokerReveal($table);
+    $second = PokerRound::factory()->create(['poker_task_id' => $table['round']->poker_task_id]);
+    pokerVote($second, $table['bobPlayer'], '5');
+
+    $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$game->id}"));
+
+    $page->assertAttribute('[data-slot="story-rounds"] button:has-text("Rounds (2)")', 'aria-expanded', 'true')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Round 1')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Bob: 3')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Dan: 8')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Not revealed · 1 votes')
+        ->assertDontSeeIn('[data-slot="story-rounds"] [data-slot="poker-round"][data-revealed="false"]', 'Bob')
+        ->click('[data-slot="story-rounds"] button:has-text("Rounds (2)")')
+        ->assertAttribute('[data-slot="story-rounds"] button:has-text("Rounds (2)")', 'aria-expanded', 'false')
+        ->assertDontSeeIn('[data-slot="story-rounds"]', 'Bob: 3');
+
+    $phone = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$game->id}"));
+
+    $phone->resize(390, 844)
+        ->assertAttribute('[data-slot="story-rounds"] button:has-text("Rounds (2)")', 'aria-expanded', 'false')
+        ->click('[data-slot="story-rounds"] button:has-text("Rounds (2)")')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Bob: 3');
+});
+
+it('[P18e-03-06e] seats the players under their first name, and in one row that scrolls on a phone', function () {
+    $table = p18ePokerTable();
+    $game = $table['game'];
+    p18ePokerNamed($table['bob'], 'Bob van der Berg');
+
+    foreach (['Eve Adams', 'Finn Baker', 'Gus Clark', 'Hal Davis', 'Ida Evans', 'Jo Ford'] as $name) {
+        [$user, $player] = pokerMember($game);
+        p18ePokerNamed($user, $name);
+        pokerVote($table['round'], $player, '5');
+    }
+
+    $ada = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$game->id}"));
+    $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$game->id}"));
+
+    $bobName = '[data-slot="poker-seat-name"][title="Bob van der Berg"]';
+    $row = 'document.querySelector(\'[data-slot="poker-seats-row"]\')';
+
+    $ada->assertVisible('[aria-label="Bob van der Berg: Not voted yet"]')
+        ->assertAttribute('section[aria-label="Players"]', 'data-layout', 'oval')
+        ->assertScript("document.querySelector('{$bobName} [aria-hidden]').textContent", 'Bob')
+        ->assertScript("document.querySelector('{$bobName} .sr-only').textContent", 'Bob van der Berg')
+        ->assertNotPresent('[data-slot="poker-seats-row"]')
+        ->resize(390, 844)
+        ->assertAttribute('section[aria-label="Players"]', 'data-layout', 'row')
+        ->assertCount('[data-slot="poker-seats-row"] [data-slot="poker-seat"]', 8)
+        ->assertVisible('[data-slot="poker-seats-row"] [aria-label="Bob van der Berg: Not voted yet"]')
+        ->assertScript("document.querySelector('{$bobName} [aria-hidden]').textContent", 'Bob')
+        ->assertScript("{$row}.scrollWidth > {$row}.clientWidth", true)
+        ->assertScript("getComputedStyle({$row}).overflowX", 'auto')
+        ->assertScript("{$row}.tabIndex", 0)
+        ->assertPresent('[data-slot="poker-bar"] [data-slot="poker-table-center"]')
+        ->assertScript('document.documentElement.scrollWidth <= document.documentElement.clientWidth', true);
+});
+
+it('[P18e-03-06f] shows "Votes: n" on every row of the queue, and a line where a dragged task lands', function () {
+    $table = p18ePokerTable();
+    $game = $table['game'];
+    PokerTask::query()->whereKey($table['round']->poker_task_id)->update(['position' => 1]);
+    pokerVote($table['round'], $table['bobPlayer'], '8');
+    $done = PokerTask::factory()->estimated('3')->create(['poker_game_id' => $game->id, 'title' => 'Password reset', 'position' => 2]);
+    $played = PokerRound::factory()->revealed()->create(['poker_task_id' => $done->id]);
+    pokerVote($played, $table['adaPlayer'], '3');
+    pokerVote($played, $table['bobPlayer'], '3');
+    pokerVote($played, $table['cleoPlayer'], '5');
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Export invoices', 'position' => 3]);
+
+    $facilitator = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$game->id}"));
+
+    $rowOf = fn (string $title): string => "[data-test=\"poker-task-row\"]:has-text(\"{$title}\")";
+    $order = "[...document.querySelectorAll('[data-test=\"poker-task-row\"]')].map((row) => row.querySelector('span span').textContent).join(' / ')";
+
+    foreach ([$facilitator, $member] as $page) {
+        $page->assertSeeIn($rowOf('Login page'), 'Votes: 1')
+            ->assertSeeIn($rowOf('Password reset'), 'Votes: 3')
+            ->assertSeeIn($rowOf('Export invoices'), 'Votes: 0')
+            ->assertDontSeeIn('#poker-tasks ol', 'pts')
+            ->assertCount('#poker-tasks ol > li', 3);
+    }
+
+    $member->assertDontSeeIn($rowOf('Login page'), '8');
+
+    $handle = $rowOf('Login page').' [aria-label="Drag to reorder"]';
+
+    $settle = '() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))';
+
+    $facilitator->assertNotPresent('[data-slot="task-drop-line"]')
+        ->keys($handle, 'Space')
+        ->assertAttribute($handle, 'aria-pressed', 'true');
+    $facilitator->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
+    $facilitator->keys($handle, 'ArrowDown');
+    $facilitator->script($settle);
+    $facilitator->assertPresent($rowOf('Password reset').' > [data-slot="task-drop-line"][data-position="after"]')
+        ->assertCount('[data-slot="task-drop-line"]', 1)
+        ->assertCount('#poker-tasks ol > li', 3)
+        ->keys($handle, 'ArrowDown');
+    $facilitator->script($settle);
+    $facilitator->assertPresent($rowOf('Export invoices').' > [data-slot="task-drop-line"][data-position="after"]')
+        ->assertCount('[data-slot="task-drop-line"]', 1)
+        ->keys($handle, 'Escape')
+        ->assertNotPresent('[data-slot="task-drop-line"]')
+        ->assertScript($order, 'Login page / Password reset / Export invoices');
+
+    $this->dragWithKeyboard($facilitator, $handle, ['Space', 'ArrowDown', 'Space']);
+
+    foreach ([$facilitator, $member] as $page) {
+        $page->assertScript($order, 'Password reset / Login page / Export invoices')
+            ->assertNotPresent('[data-slot="task-drop-line"]');
+    }
+});
+
 it('[P18e-03-07] offers one, three, five and ten minutes or a custom duration, and "+2 min" moves the countdown for everyone', function () {
     $table = p18ePokerTable();
     $round = $table['round'];

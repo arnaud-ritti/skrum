@@ -114,3 +114,82 @@ describe('StoryCard, deleting the task', () => {
         });
     });
 });
+
+describe('StoryCard, the rounds of the task', () => {
+    const round = {
+        id: 'r1',
+        number: 1,
+        anonymous: false,
+        revealedAt: '2026-10-02T09:00:00Z',
+        revealReason: 'manual' as const,
+        timerEndsAt: null,
+        version: 2,
+        votesCount: 2,
+        votes: [
+            { playerId: 'ada', value: '8' },
+            { playerId: 'bob', value: '3' },
+        ],
+        myVote: '8',
+        result: {
+            average: 5.5,
+            mode: [],
+            consensus: false,
+            nearestCard: '5',
+            distribution: [
+                { value: '3', count: 1 },
+                { value: '8', count: 1 },
+            ],
+        },
+    };
+    const voted = pokerTask('t3', 'Voted task', {
+        position: 3,
+        roundsCount: 1,
+    });
+
+    it('lists them open, each vote as "name: value", without a click', async () => {
+        mocks.request.mockReset();
+        mocks.request.mockResolvedValueOnce([round]);
+        renderInRoom(
+            <StoryCard task={voted} />,
+            pokerSnapshot({ tasks: [voted] }),
+        );
+
+        const trigger = screen.getByRole('button', { name: 'Rounds (1)' });
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('true');
+        expect(await screen.findByText('Round 1')).toBeTruthy();
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+
+        const votes = Array.from(
+            document.querySelectorAll('[data-slot="poker-round-vote"]'),
+        ).map((vote) => vote.textContent);
+
+        expect(votes).toEqual(['Ada: 8', 'Bob: 3']);
+    });
+
+    it('keeps them folded when asked, and asks the server only once opened', async () => {
+        mocks.request.mockReset();
+        mocks.request.mockResolvedValueOnce([round]);
+        renderInRoom(
+            <StoryCard task={voted} roundsOpen={false} />,
+            pokerSnapshot({ tasks: [voted] }),
+        );
+
+        const trigger = screen.getByRole('button', { name: 'Rounds (1)' });
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('false');
+        expect(mocks.request).not.toHaveBeenCalled();
+
+        await act(async () => {
+            fireEvent.click(trigger);
+        });
+
+        expect(await screen.findByText('Round 1')).toBeTruthy();
+    });
+
+    it('has no rounds list on a task that was never voted', () => {
+        story(manual);
+
+        expect(screen.queryByRole('button', { name: /Rounds/ })).toBeNull();
+    });
+});

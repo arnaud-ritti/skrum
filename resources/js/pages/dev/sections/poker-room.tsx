@@ -75,6 +75,7 @@ function jiraTask(
         estimate: null,
         estimatedAt: null,
         roundsCount: 0,
+        votesCount: 0,
         external: {
             source: 'jira',
             key,
@@ -93,10 +94,12 @@ function queue(current: Partial<PokerTask>): PokerTask[] {
         jiraTask(1, 'ATLAS-1284', 'Filter sessions by team', {
             estimate: '3',
             roundsCount: 1,
+            votesCount: 7,
         }),
         jiraTask(2, 'ATLAS-1285', 'Email reminders for late action items', {
             estimate: '8',
             roundsCount: 1,
+            votesCount: 7,
         }),
         jiraTask(3, 'ATLAS-1287', 'CSV export of retro action items', {
             description: 'As a facilitator…',
@@ -283,6 +286,48 @@ const waiting = snapshot({
     current: null,
 });
 
+/** Round 1 of the story of ScreenPokerQueue, voted again since. */
+const firstRound = round({
+    id: 'bench-round-1',
+    revealedAt: '2026-10-02T09:02:00Z',
+    revealReason: 'manual',
+    votesCount: 7,
+    votes: [
+        { playerId: camille.id, value: '2' },
+        { playerId: theo.id, value: '3' },
+        { playerId: ines.id, value: '5' },
+        { playerId: malik.id, value: '13' },
+        { playerId: sofia.id, value: '8' },
+        { playerId: lucas.id, value: '13' },
+        { playerId: nadia.id, value: '☕' },
+    ],
+    result: {
+        average: 7.3,
+        mode: ['13'],
+        consensus: false,
+        nearestCard: '8',
+        distribution: [
+            { value: '2', count: 1 },
+            { value: '3', count: 1 },
+            { value: '5', count: 1 },
+            { value: '8', count: 1 },
+            { value: '13', count: 2 },
+            { value: '☕', count: 1 },
+        ],
+    },
+});
+
+/** The rounds the bench lists under "Rounds (n)": the one on the table, and the first when it was voted again. */
+function roundsOf(source: PokerSnapshot): PokerRound[] {
+    const current = source.current?.round;
+
+    if (!current) {
+        return [];
+    }
+
+    return current.number > 1 ? [firstRound, current] : [current];
+}
+
 function online(source: PokerSnapshot): PresenceMember[] {
     return source.players.map((player) => ({
         id: player.id,
@@ -307,6 +352,7 @@ function BenchRoom({ source }: { source: PokerSnapshot }) {
         presence: SilentChannel,
         serverOffset: 0,
         deckOptions: [],
+        loadRounds: async () => roundsOf(source),
     };
 
     return (

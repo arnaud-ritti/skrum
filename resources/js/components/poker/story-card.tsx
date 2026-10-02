@@ -23,11 +23,22 @@ type LoadedRounds =
     | { state: 'failed' }
     | { state: 'ready'; rounds: PokerRound[] };
 
-/** The rounds of the task, fetched when the list is opened and again when a round is added or revealed. */
-function TaskRounds({ task }: { task: PokerTask }) {
-    const { snapshot, handleError } = useGame();
+/**
+ * The rounds of the task, fetched while the list is open and again when a
+ * round is added or revealed.
+ */
+function TaskRounds({
+    task,
+    defaultOpen,
+}: {
+    task: PokerTask;
+    defaultOpen: boolean;
+}) {
+    const { snapshot, handleError, loadRounds } = useGame();
     const { locale } = usePage().props;
-    const [open, setOpen] = useState(false);
+    // Open or folded as the screen asks, until the viewer chooses.
+    const [chosen, setChosen] = useState<boolean | null>(null);
+    const open = chosen ?? defaultOpen;
     const [loaded, setLoaded] = useState<LoadedRounds>({ state: 'loading' });
     const currentRound =
         snapshot.current?.taskId === task.id ? snapshot.current.round : null;
@@ -42,9 +53,13 @@ function TaskRounds({ task }: { task: PokerTask }) {
 
         let isCurrent = true;
 
-        retroRequest<PokerRound[]>(
-            PokerRoundsController.index({ game: gameId, task: taskId }),
-        )
+        const request = loadRounds
+            ? loadRounds(taskId)
+            : retroRequest<PokerRound[]>(
+                  PokerRoundsController.index({ game: gameId, task: taskId }),
+              );
+
+        request
             .then((rounds) => {
                 if (isCurrent) {
                     setLoaded({ state: 'ready', rounds });
@@ -60,7 +75,7 @@ function TaskRounds({ task }: { task: PokerTask }) {
         return () => {
             isCurrent = false;
         };
-    }, [open, gameId, taskId, revision, handleError]);
+    }, [open, gameId, taskId, revision, handleError, loadRounds]);
 
     return (
         <PokerRounds
@@ -71,7 +86,8 @@ function TaskRounds({ task }: { task: PokerTask }) {
             isNumeric={snapshot.game.isNumeric}
             locale={locale}
             open={open}
-            onOpenChange={setOpen}
+            onOpenChange={setChosen}
+            scrollable
         />
     );
 }
@@ -80,11 +96,21 @@ type Props = {
     task: PokerTask;
     /** Under the title: type and label chips, description and acceptance criteria of the ticket (PK-1). Nothing today. */
     details?: ReactNode;
+    /**
+     * The rounds are listed open (the owner's fourth round, D-67); false on a
+     * phone, where the mockup keeps them folded.
+     */
+    roundsOpen?: boolean;
     className?: string;
 };
 
 /** The task being estimated: its place in the game, its text, its source and its rounds. */
-export function StoryCard({ task, details, className }: Props) {
+export function StoryCard({
+    task,
+    details,
+    roundsOpen = true,
+    className,
+}: Props) {
     const { snapshot, apply, run } = useGame();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
@@ -200,7 +226,7 @@ export function StoryCard({ task, details, className }: Props) {
                         data-slot="story-rounds"
                         className="flex min-w-0 flex-col @3xl/story:border-l @3xl/story:border-border @3xl/story:pl-5"
                     >
-                        <TaskRounds task={task} />
+                        <TaskRounds task={task} defaultOpen={roundsOpen} />
                     </div>
                 )}
             </div>

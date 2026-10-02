@@ -285,3 +285,22 @@ Rows D-64 and D-65. Built:
 | "Validate 5 · Next story" without "pts"; no "discuss with the extremes" button | D-65 |
 | At 1440 × 900 with the watchers box and the banner, the bottom row of seats is under the fold (the stage scrolls); the oval and the dock are in view | D-66 (watchers box in the flow) |
 | On a phone the result card is under the seats: a reveal that takes focus brings it into view, otherwise the page is scrolled by hand | D-66 (RW-P2 turns the seats into one scrolling row) |
+
+## Rework RW-P2 — past rounds, phone layout, queue (owner, fourth round)
+
+Rows D-66, D-67 and D-68. Built:
+
+- Rounds: the list of the story card is open by default and keeps "name: value". It scrolls inside the card beyond 13rem (`PokerRounds` takes `scrollable`; the list then takes the keyboard focus under the name "Rounds"), so the table stays near the story. On a phone it is folded, as the README of ScreenPokerQueue says. The viewer's own choice (open or folded) wins until the task changes.
+- Seats: the first word of the display name ("You" for the viewer); the full name is the tooltip (`title`) and the text a screen reader gets; the card keeps its accessible name with the full name ("Bob Martin: Voted").
+- Phone: `PokerTable` takes `seatsLayout="row"`: the progress bar, then the players in one row that scrolls sideways (focusable group "Players"), the avatar pinned on the card, a trema in an empty place, the facilitator's crown, the player menu and "Offline" kept.
+- Queue: "Votes: n" on every row. The current row reads the round being played (soft badge); an estimated row shows it as a muted line under the estimate; a row still to estimate as a muted badge. Back end: `PresentPokerTask` sends `votesCount`, the number of votes of the task's last round (never a value); `BuildPokerSnapshot` loads it in one query.
+- Drop line: the rows stay in place while one is dragged; a 2px line with its ring shows where it lands (inside the `li` under it, `aria-hidden`). Keyboard drag and its announcements are unchanged; the queue stays `ol > li`.
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| A round lists "name: value" under its header, not one line of chips; the list scrolls in the card | D-67 |
+| On a phone the progress and "Reveal cards" are a bar above the row of players (no "Participants · n / m voted" heading, no alert); the row stops at the page padding | D-66 |
+| On a phone with a long story the row of players starts under the fold of an 844px screen (the stage scrolls) | D-66 |
+| Bare estimate without "pts"; the dragged row follows the pointer | D-68 |

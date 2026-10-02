@@ -51,6 +51,7 @@ function task(id: string, overrides: Partial<PokerTask> = {}): PokerTask {
         estimate: null,
         estimatedAt: null,
         roundsCount: 0,
+        votesCount: 0,
         external: null,
         ...overrides,
     };

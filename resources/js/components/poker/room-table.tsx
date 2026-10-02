@@ -95,6 +95,8 @@ function NoTasks() {
 type Props = {
     task: PokerTask | null;
     actions: RoundActions;
+    /** On a phone: the players in one row that scrolls sideways. */
+    compact?: boolean;
 };
 
 /**
@@ -102,7 +104,7 @@ type Props = {
  * cards are revealed, the oval holds the average, the median and the spread;
  * the rest of the result is in the dock.
  */
-export function RoomTable({ task, actions }: Props) {
+export function RoomTable({ task, actions, compact = false }: Props) {
     const { snapshot, online } = useGame();
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -145,6 +147,7 @@ export function RoomTable({ task, actions }: Props) {
             revealed={round.revealedAt !== null}
             result={round.result}
             showResult={false}
+            seatsLayout={compact ? 'row' : 'table'}
             anonymous={round.anonymous}
             revealReason={round.revealReason}
             facilitatorId={game.facilitatorPlayerId}

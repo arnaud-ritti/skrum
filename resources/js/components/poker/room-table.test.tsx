@@ -143,6 +143,22 @@ describe('RoomTable with a round', () => {
         expect(actions.reveal).toHaveBeenCalledTimes(1);
     });
 
+    it('puts the players in one scrolling row on a phone, the role menu kept', () => {
+        renderInRoom(
+            <RoomTable task={task} actions={roundActions()} compact />,
+        );
+        const players = screen.getByRole('region', { name: 'Players' });
+        const row = within(players).getByRole('group', { name: 'Players' });
+
+        expect(players.getAttribute('data-layout')).toBe('row');
+        expect(row.querySelectorAll('[data-slot="poker-seat"]')).toHaveLength(
+            3,
+        );
+        expect(
+            within(row).getAllByRole('button', { name: 'Player options' }),
+        ).toHaveLength(2);
+    });
+
     it('gives the facilitator a role menu on every seat but their own', () => {
         const { unmount } = renderInRoom(
             <RoomTable task={task} actions={roundActions()} />,

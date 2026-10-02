@@ -122,6 +122,8 @@ export type PokerTask = {
     estimate: string | null;
     estimatedAt: string | null;
     roundsCount: number;
+    /** Votes of the task's last round; the current round's own count is fresher. */
+    votesCount: number;
     external: PokerTaskExternal | null;
 };
 

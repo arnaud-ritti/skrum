@@ -5,7 +5,7 @@ import {
     type ReactNode,
 } from 'react';
 import type { GameAction } from '@/lib/poker/game-reducer';
-import type { PokerSnapshot } from '@/lib/poker/types';
+import type { PokerRound, PokerSnapshot } from '@/lib/poker/types';
 import type { PresenceMember } from '@/lib/retro/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import type { PokerDeckOption } from '@/types';
@@ -22,6 +22,8 @@ export type GameContextValue = {
     presence: WhisperChannel | null;
     serverOffset: number;
     deckOptions: PokerDeckOption[];
+    /** The rounds of a task. The room asks the server; the design-system bench gives its own. */
+    loadRounds?: (taskId: string) => Promise<PokerRound[]>;
 };
 
 const GameContext = createContext<GameContextValue | null>(null);
