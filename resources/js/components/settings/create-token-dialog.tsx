@@ -32,7 +32,7 @@ import type {
 const AllTeams = 'all';
 
 type Props = {
-    teams: ApiTokenTeamGroup[];
+    teamGroups: ApiTokenTeamGroup[];
     expirationOptions: ApiTokenExpirationOption[];
     defaultExpiration: ApiTokenExpiration;
 };
@@ -45,7 +45,7 @@ type TokenForm = {
 };
 
 export function CreateTokenDialog({
-    teams,
+    teamGroups,
     expirationOptions,
     defaultExpiration,
 }: Props) {
@@ -182,7 +182,7 @@ export function CreateTokenDialog({
                                 <SelectItem value={AllTeams}>
                                     {t('All my teams')}
                                 </SelectItem>
-                                {teams.map((group) => (
+                                {teamGroups.map((group) => (
                                     <SelectGroup key={group.workspace.id}>
                                         <SelectLabel>
                                             {group.workspace.name}

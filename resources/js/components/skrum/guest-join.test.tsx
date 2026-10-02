@@ -276,6 +276,33 @@ describe('GuestJoin', () => {
         expect(formData.get('name')).toBe('Thoughtful otter');
     });
 
+    it('keeps the join button in the flow by default', () => {
+        setup();
+
+        const wrapper = document.querySelector(
+            '[data-slot="guest-join-action"]',
+        );
+
+        expect(wrapper?.classList.contains('sticky')).toBe(false);
+        expect(
+            wrapper?.contains(screen.getByRole('button', { name: 'Join' })),
+        ).toBe(true);
+    });
+
+    it('pins the join button to the bottom with stickyAction', () => {
+        setup({ stickyAction: true });
+
+        const wrapper = document.querySelector(
+            '[data-slot="guest-join-action"]',
+        );
+
+        expect(wrapper?.classList.contains('sticky')).toBe(true);
+        expect(wrapper?.classList.contains('bottom-0')).toBe(true);
+        expect(
+            wrapper?.contains(screen.getByRole('button', { name: 'Join' })),
+        ).toBe(true);
+    });
+
     it('links to the login page', () => {
         setup();
 

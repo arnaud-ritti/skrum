@@ -677,6 +677,19 @@ function PodiumPlace({
                 <span className="text-xs text-muted-foreground tabular-nums">
                     {counts.points(entry.points)}
                 </span>
+                {(entry.streak ?? 0) >= StreakBadgeFrom && (
+                    <Badge
+                        variant="outline"
+                        icon={Flame}
+                        className="max-w-full"
+                    >
+                        <span className="truncate">
+                            {t(':count-week streak', {
+                                count: entry.streak ?? 0,
+                            })}
+                        </span>
+                    </Badge>
+                )}
             </div>
             <div
                 className={cn(

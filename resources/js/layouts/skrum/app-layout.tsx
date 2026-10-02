@@ -11,10 +11,13 @@ import type { BreadcrumbItem } from '@/types';
 export default function AppLayout({
     breadcrumbs = [],
     active,
+    actions,
     children,
 }: {
     breadcrumbs?: BreadcrumbItem[];
     active?: NavKey;
+    /** Page actions, at the end of the topbar, before the bell. */
+    actions?: ReactNode;
     children: ReactNode;
 }) {
     const sidebar = useSidebarModel(active);
@@ -27,7 +30,12 @@ export default function AppLayout({
             topbar={
                 <AppTopbar
                     breadcrumbs={breadcrumbs}
-                    actions={<NotificationBell />}
+                    actions={
+                        <>
+                            {actions}
+                            <NotificationBell />
+                        </>
+                    }
                 />
             }
         >

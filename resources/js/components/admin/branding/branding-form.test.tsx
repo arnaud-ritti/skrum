@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import type { BrandingPageProps } from './branding';
@@ -27,7 +27,10 @@ function setup(overrides: Partial<BrandingPageProps> = {}) {
 }
 
 function status(): string {
-    return screen.getByRole('status').textContent ?? '';
+    return (
+        document.querySelector('[data-slot=unsaved-bar] [role=status]')
+            ?.textContent ?? ''
+    );
 }
 
 function saveButton(): HTMLButtonElement {
@@ -76,7 +79,7 @@ describe('BrandingForm unsaved changes', () => {
         expect(status()).toBe('1 unsaved change');
 
         fireEvent.change(name, { target: { value: 'Nordlys Retro' } });
-        fireEvent.click(screen.getByRole('radio', { name: 'Round 16' }));
+        fireEvent.click(screen.getByRole('radio', { name: 'Round' }));
         fireEvent.click(
             screen.getByRole('switch', { name: 'Show "Powered by Skrüm"' }),
         );
@@ -90,7 +93,7 @@ describe('BrandingForm unsaved changes', () => {
         expect(name.value).toBe('');
         expect(
             screen
-                .getByRole('radio', { name: 'Standard 10' })
+                .getByRole('radio', { name: 'Standard' })
                 .getAttribute('aria-checked'),
         ).toBe('true');
     });
@@ -146,71 +149,203 @@ describe('BrandingForm GIF key', () => {
 });
 
 describe('BrandingForm images', () => {
-    function fileInputs(container: HTMLElement): HTMLInputElement[] {
-        return Array.from(container.querySelectorAll('input[type=file]'));
+    const createObjectURL = vi.fn();
+    const revokeObjectURL = vi.fn();
+
+    beforeEach(() => {
+        let created = 0;
+
+        createObjectURL
+            .mockReset()
+            .mockImplementation(() => `blob:staged-${++created}`);
+        revokeObjectURL.mockReset();
+        URL.createObjectURL = createObjectURL;
+        URL.revokeObjectURL = revokeObjectURL;
+    });
+
+    function png(name = 'logo.png'): File {
+        return new File(['x'], name, { type: 'image/png' });
     }
 
-    it('uploads a valid file for the right asset without touching the form', () => {
-        const { container } = setup();
-        const file = new File(['x'], 'logo.png', { type: 'image/png' });
+    function choose(container: HTMLElement, file: File): void {
+        fireEvent.change(
+            container.querySelector('input[type=file]') as HTMLInputElement,
+            { target: { files: [file] } },
+        );
+    }
 
-        fireEvent.change(fileInputs(container)[1], {
-            target: { files: [file] },
+    function previewLogo(container: HTMLElement): string | null {
+        return (
+            container
+                .querySelector('[data-slot=brand-preview-logo]')
+                ?.getAttribute('src') ?? null
+        );
+    }
+
+    async function submit(): Promise<void> {
+        await act(async () => {
+            fireEvent.submit(screen.getByRole('form', { name: 'Branding' }));
         });
+    }
+
+    it('offers one drop zone with the choice of the image above it', () => {
+        const { container } = setup();
+
+        expect(
+            container.querySelectorAll('[data-slot=asset-uploader]'),
+        ).toHaveLength(1);
+        expect(
+            within(screen.getByRole('radiogroup', { name: 'Image' }))
+                .getAllByRole('radio')
+                .map((item) => item.textContent),
+        ).toEqual(['Light logo', 'Dark logo', 'Favicon']);
+    });
+
+    it('counts a staged file as an unsaved change and shows it in the preview without sending it', () => {
+        const { container } = setup();
+
+        choose(container, png('atlas.png'));
+
+        expect(status()).toBe('1 unsaved change');
+        expect(saveButton().disabled).toBe(false);
+        expect(uploadAsset).not.toHaveBeenCalled();
+        expect(previewLogo(container)).toBe('blob:staged-1');
+        expect(
+            container.querySelector('[data-slot=asset-name]')?.textContent,
+        ).toBe('atlas.png');
+
+        fireEvent.change(screen.getByLabelText('Display name'), {
+            target: { value: 'Nordlys' },
+        });
+
+        expect(status()).toBe('2 unsaved changes');
+    });
+
+    it('drops the staged file on Cancel and revokes its object URL', () => {
+        const { container } = setup();
+
+        choose(container, png());
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(status()).toBe('No unsaved changes');
+        expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+            'blob:staged-1',
+        );
+        expect(previewLogo(container)).toBeNull();
+        expect(uploadAsset).not.toHaveBeenCalled();
+    });
+
+    it('revokes the object URL of a file that is replaced', () => {
+        const { container } = setup();
+
+        choose(container, png('first.png'));
+        choose(container, png('second.png'));
+
+        expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+            'blob:staged-1',
+        );
+        expect(previewLogo(container)).toBe('blob:staged-2');
+        expect(status()).toBe('1 unsaved change');
+    });
+
+    it('sends the staged file of the chosen image on Save', async () => {
+        const { container } = setup();
+        const file = png();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Dark logo' }));
+        choose(container, file);
+
+        expect(uploadAsset).not.toHaveBeenCalled();
+
+        await submit();
 
         expect(uploadAsset).toHaveBeenCalledExactlyOnceWith('logo-dark', file);
         expect(status()).toBe('No unsaved changes');
+        expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+            'blob:staged-1',
+        );
     });
 
-    it('uploads nothing for a 600 KB file or a GIF', () => {
+    it('stages nothing for a 600 KB file or a GIF', () => {
         const { container } = setup();
-        const [light] = fileInputs(container);
 
-        fireEvent.change(light, {
-            target: {
-                files: [
-                    new File([new Uint8Array(600 * 1024)], 'logo.png', {
-                        type: 'image/png',
-                    }),
-                ],
-            },
-        });
+        choose(
+            container,
+            new File([new Uint8Array(600 * 1024)], 'logo.png', {
+                type: 'image/png',
+            }),
+        );
 
         expect(screen.getByRole('alert').textContent).toBe(
             'This file is larger than 512 KB.',
         );
 
-        fireEvent.change(light, {
-            target: {
-                files: [new File(['x'], 'logo.gif', { type: 'image/gif' })],
-            },
-        });
+        choose(container, new File(['x'], 'logo.gif', { type: 'image/gif' }));
 
         expect(screen.getByRole('alert').textContent).toBe(
             'Use a PNG, JPEG, WebP or SVG image.',
         );
-        expect(uploadAsset).not.toHaveBeenCalled();
+        expect(status()).toBe('No unsaved changes');
+        expect(createObjectURL).not.toHaveBeenCalled();
     });
 
-    it('shows the server refusal under the card', async () => {
+    it('shows the server refusal under the drop zone and keeps the file staged', async () => {
         vi.mocked(uploadAsset).mockRejectedValueOnce(
             new BrandingVisitError({ file: 'The image is not valid.' }),
         );
 
         const { container } = setup();
 
-        fireEvent.change(fileInputs(container)[2], {
-            target: {
-                files: [new File(['x'], 'icon.png', { type: 'image/png' })],
-            },
-        });
+        fireEvent.click(screen.getByRole('radio', { name: 'Favicon' }));
+        choose(container, png('icon.png'));
+        fireEvent.click(screen.getByRole('radio', { name: 'Light logo' }));
+
+        await submit();
 
         const alert = await screen.findByRole('alert');
 
         expect(alert.textContent).toBe('The image is not valid.');
         expect(
-            alert.closest('[data-slot=asset-uploader]')?.textContent,
-        ).toContain('Favicon');
+            screen
+                .getByRole('radio', { name: 'Favicon' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(status()).toBe('1 unsaved change');
+        expect(revokeObjectURL).not.toHaveBeenCalled();
+    });
+
+    it('stages the removal of a stored image and deletes it on Save', async () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=3',
+                logoDarkUrl: null,
+                faviconUrl: null,
+            },
+        });
+
+        expect(previewLogo(container)).toBe('/brand/logo-light?v=3');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+        fireEvent.click(
+            Array.from(
+                screen.getByRole('alertdialog').querySelectorAll('button'),
+            ).find(
+                (button) => button.textContent === 'Remove',
+            ) as HTMLButtonElement,
+        );
+
+        await vi.waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+
+        expect(status()).toBe('1 unsaved change');
+        expect(removeAsset).not.toHaveBeenCalled();
+        expect(previewLogo(container)).toBeNull();
+
+        await submit();
+
+        expect(removeAsset).toHaveBeenCalledExactlyOnceWith('logo-light');
+        expect(uploadAsset).not.toHaveBeenCalled();
     });
 });
 
@@ -231,7 +366,7 @@ describe('BrandingForm preview', () => {
         fireEvent.change(screen.getByLabelText('Primary colour'), {
             target: { value: 'FFD600' },
         });
-        fireEvent.click(screen.getByRole('radio', { name: 'Square 0' }));
+        fireEvent.click(screen.getByRole('radio', { name: 'Square' }));
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(250);
@@ -284,7 +419,7 @@ describe('BrandingForm reset', () => {
     it('lists what is lost and resets only after confirmation', async () => {
         setup();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Reset to Skrüm' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Skrüm' }));
 
         const dialog = screen.getByRole('alertdialog');
 
@@ -347,6 +482,36 @@ describe('BrandingForm defaults', () => {
         expect(
             (screen.getByLabelText('Display name') as HTMLInputElement).value,
         ).toBe('Nordlys');
+    });
+});
+
+describe('BrandingForm bar placement', () => {
+    it('hands the bar and the form to the frame, and Save submits the form from outside it', () => {
+        renderWithProviders(
+            <BrandingForm
+                {...sampleProps()}
+                adminName="Ada Admin"
+                frame={(bar, content) => (
+                    <>
+                        <header>{bar}</header>
+                        <main>{content}</main>
+                    </>
+                )}
+            />,
+        );
+
+        const save = within(screen.getByRole('banner')).getByRole('button', {
+            name: 'Save',
+        });
+
+        expect(save.getAttribute('form')).toBe(
+            screen.getByRole('form', { name: 'Branding' }).id,
+        );
+        expect(
+            within(screen.getByRole('main')).queryByRole('button', {
+                name: 'Save',
+            }),
+        ).toBeNull();
     });
 });
 

@@ -41,13 +41,16 @@ export type ConfirmDialogProps = DialogShellProps & {
     onConfirm: () => Promise<void>;
 };
 
+type FormDialogSubmit =
+    | { submitLabel: string; onSubmit: (data: FormData) => Promise<void> }
+    /** No submit button: the body explains why, the only action is Cancel. */
+    | { submitLabel?: undefined; onSubmit?: undefined };
+
 export type FormDialogProps = DialogShellProps & {
     description?: string;
-    submitLabel: string;
     tone?: 'default' | 'destructive';
-    onSubmit: (data: FormData) => Promise<void>;
     children: ReactNode;
-};
+} & FormDialogSubmit;
 
 function usePendingGuard(onOpenChange: (open: boolean) => void) {
     const [pending, setPending] = useState(false);
@@ -279,6 +282,10 @@ export function FormDialog({
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (onSubmit === undefined) {
+            return;
+        }
+
         if (pending) {
             return;
         }
@@ -335,18 +342,24 @@ export function FormDialog({
                         >
                             <span className="truncate">{t('Cancel')}</span>
                         </Button>
-                        <Button
-                            type="submit"
-                            variant={destructive ? 'destructive' : 'default'}
-                            disabled={pending}
-                        >
-                            {pending ? (
-                                <Spinner aria-label={t('Loading')} />
-                            ) : (
-                                destructive && <Trash2Icon aria-hidden="true" />
-                            )}
-                            <span className="truncate">{submitLabel}</span>
-                        </Button>
+                        {onSubmit !== undefined && (
+                            <Button
+                                type="submit"
+                                variant={
+                                    destructive ? 'destructive' : 'default'
+                                }
+                                disabled={pending}
+                            >
+                                {pending ? (
+                                    <Spinner aria-label={t('Loading')} />
+                                ) : (
+                                    destructive && (
+                                        <Trash2Icon aria-hidden="true" />
+                                    )
+                                )}
+                                <span className="truncate">{submitLabel}</span>
+                            </Button>
+                        )}
                     </DialogFooter>
                 </form>
             </DialogContent>

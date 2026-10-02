@@ -310,6 +310,31 @@ describe('Leaderboard', () => {
                 ?.className.includes('overflow-y-auto'),
         ).toBe(true);
     });
+
+    it('shows the streak of a player on the podium, and none below two weeks', () => {
+        const list = entries(3);
+
+        list[0].streak = 2;
+        list[1].streak = 1;
+
+        renderWithProviders(
+            <Leaderboard
+                period="30d"
+                onPeriodChange={() => {}}
+                entries={list}
+            />,
+        );
+
+        const first = document.querySelector(
+            '[data-slot="podium-place"][data-place="1"]',
+        );
+        const second = document.querySelector(
+            '[data-slot="podium-place"][data-place="2"]',
+        );
+
+        expect(first?.textContent).toContain('2-week streak');
+        expect(second?.textContent).not.toContain('streak');
+    });
 });
 
 describe('GamesLeaderboard', () => {

@@ -123,6 +123,20 @@ describe('ShareDialog', () => {
         expect(onChange).toHaveBeenCalledWith({ allowGuests: false });
     });
 
+    it('gives the guest switch the id a page asks for', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({ guestSwitchId: 'poker-guest-link-access' })}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('switch', { name: 'Allow guests' })
+                .getAttribute('id'),
+        ).toBe('poker-guest-link-access');
+    });
+
     it('asks for confirmation before regenerating, focusing Cancel first', async () => {
         const onRegenerate = vi.fn().mockResolvedValue(undefined);
 

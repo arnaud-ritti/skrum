@@ -388,7 +388,7 @@ export function AppSidebar({
 
             <SidebarFooter>
                 {hasFooterLinks && (
-                    <nav aria-label={t('Settings')}>
+                    <nav aria-label={t('Team and administration')}>
                         <NavEntries
                             entries={footerEntries}
                             active={active}

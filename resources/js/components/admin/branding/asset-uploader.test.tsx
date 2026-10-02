@@ -118,6 +118,43 @@ describe('AssetUploader', () => {
         await vi.waitFor(() => expect(onRemove).toHaveBeenCalledOnce());
     });
 
+    it('takes a dropped file like a chosen one', () => {
+        const { container, onUpload } = setup();
+        const file = new File(['x'], 'logo.png', { type: 'image/png' });
+
+        fireEvent.drop(
+            container.querySelector(
+                '[data-slot=asset-drop-zone]',
+            ) as HTMLElement,
+            { dataTransfer: { files: [file] } },
+        );
+
+        expect(onUpload).toHaveBeenCalledExactlyOnceWith(file);
+    });
+
+    it('drops a staged file without confirmation and marks it as not saved', () => {
+        const onRemove = vi.fn();
+
+        renderWithProviders(
+            <AssetUploader
+                label="Light logo"
+                url="blob:staged"
+                fileName="atlas.png"
+                staged
+                onUpload={vi.fn()}
+                onRemove={onRemove}
+            />,
+        );
+
+        expect(screen.getByText('atlas.png')).toBeTruthy();
+        expect(screen.getByText('Not saved')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(onRemove).toHaveBeenCalledOnce();
+    });
+
     it('offers no removal without an image', () => {
         setup();
 

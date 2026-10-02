@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { AssetUploader } from '@/components/admin/branding/asset-uploader';
+import { AvatarStyleGrid } from '@/components/admin/branding/avatar-style-grid';
+import type { AdminAvatarStyle } from '@/components/admin/branding/branding';
 import { ColorField } from '@/components/admin/branding/color-field';
 import { ContrastBadge } from '@/components/admin/branding/contrast-badge';
 import { GifSettings } from '@/components/admin/branding/gif-settings';
@@ -50,6 +52,42 @@ function InteractiveRadius() {
     return <RadiusControl value={value} onChange={setValue} />;
 }
 
+const avatarStyles: AdminAvatarStyle[] = [
+    ['initials', 'Initials'],
+    ['notionists', 'Notionists'],
+    ['thumbs', 'Thumbs'],
+    ['lorelei', 'Lorelei'],
+    ['glass', 'Glass'],
+    ['shapes', 'Shapes'],
+    ['fun-emoji', 'Fun Emoji'],
+    ['adventurer', 'Adventurer'],
+    ['bottts-neutral', 'Bottts Neutral, a long style name'],
+    ['pixel-art', 'Pixel Art'],
+].map(([value, name]) => ({
+    value,
+    name,
+    license: value === 'fun-emoji' ? 'CC BY 4.0' : 'CC0 1.0',
+    attribution: null,
+    attributionRequired: false,
+    sampleUrls: [],
+}));
+
+function InteractiveAvatars({ initial }: { initial: string }) {
+    const [value, setValue] = useState(initial);
+    const [allow, setAllow] = useState(true);
+
+    return (
+        <AvatarStyleGrid
+            value={value}
+            onChange={setValue}
+            options={avatarStyles}
+            sampleName="Ada Lovelace"
+            allowMemberChoice={allow}
+            onAllowMemberChoiceChange={setAllow}
+        />
+    );
+}
+
 function InteractiveGif({ hasKey }: { hasKey: boolean }) {
     const [value, setValue] = useState<GifSettingsValue>({
         provider: 'giphy',
@@ -76,7 +114,7 @@ export default function AdminBrandingSection() {
             <Example
                 label={t('Unsaved changes bar: clean, one change, saving')}
             >
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col items-end gap-2 rounded-lg border bg-background p-3">
                     <UnsavedBar count={0} onCancel={noop} />
                     <UnsavedBar count={1} onCancel={noop} />
                     <UnsavedBar count={4} saving onCancel={noop} />
@@ -118,34 +156,50 @@ export default function AdminBrandingSection() {
                     />
                 </div>
             </Example>
-            <Example label={t('Radius: presets and exact value')}>
+            <Example
+                label={t('Radius: four segments, 10 px stored shows Standard')}
+            >
                 <InteractiveRadius />
             </Example>
             <Example
                 label={t('Live preview: light and dark, square and round')}
             >
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(72)),1fr))] gap-4">
-                    <PreviewPane palette={samplePalette} radius={10} />
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(80)),1fr))] gap-4">
                     <PreviewPane
                         palette={samplePalette}
-                        radius={10}
+                        radius={8}
+                        name="Atlas Retros"
+                        avatar={{ name: 'Ada Lovelace' }}
+                    />
+                    <PreviewPane
+                        palette={samplePalette}
+                        radius={8}
+                        name="Atlas Retros"
+                        logos={{ light: '/favicon.svg' }}
                         defaultTheme="dark"
                     />
-                    <PreviewPane palette={adjustedPalette} radius={0} />
+                    <PreviewPane
+                        palette={adjustedPalette}
+                        radius={0}
+                        name="An instance with a very long display name to truncate"
+                    />
                     <PreviewPane
                         palette={adjustedPalette}
                         radius={16}
+                        name="Atlas Retros"
                         defaultTheme="dark"
                         loading
                     />
                 </div>
             </Example>
             <Example
-                label={t('Image uploader: empty, with an image, busy, refused')}
+                label={t(
+                    'Logo drop zone: empty, stored, staged, busy, refused',
+                )}
             >
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(52)),1fr))] gap-3">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(80)),1fr))] gap-3">
                     <AssetUploader
-                        label={t('Logo, light theme')}
+                        label={t('Light logo')}
                         description={t(
                             'Shown in the sidebar and on the sign-in pages.',
                         )}
@@ -154,9 +208,17 @@ export default function AdminBrandingSection() {
                         onRemove={settled}
                     />
                     <AssetUploader
-                        label={t('Logo, dark theme')}
+                        label={t('Dark logo')}
                         url="/favicon.svg"
                         surface="dark"
+                        onUpload={noop}
+                        onRemove={settled}
+                    />
+                    <AssetUploader
+                        label={t('Light logo')}
+                        url="/favicon.svg"
+                        fileName="a-rather-long-file-name-for-the-atlas-logo.svg"
+                        staged
                         onUpload={noop}
                         onRemove={settled}
                     />
@@ -168,14 +230,23 @@ export default function AdminBrandingSection() {
                         onRemove={settled}
                     />
                     <AssetUploader
-                        label={t(
-                            'A very long image label that has to truncate',
-                        )}
+                        label={t('Favicon')}
                         url={null}
+                        staged
                         error={t('Use a PNG, JPEG, WebP or SVG image.')}
                         onUpload={noop}
                         onRemove={settled}
                     />
+                </div>
+            </Example>
+            <Example
+                label={t(
+                    'Avatar styles: the short list, and a selected style outside it',
+                )}
+            >
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(80)),1fr))] gap-6">
+                    <InteractiveAvatars initial="notionists" />
+                    <InteractiveAvatars initial="pixel-art" />
                 </div>
             </Example>
             <Example label={t('GIF settings: a key is set')}>

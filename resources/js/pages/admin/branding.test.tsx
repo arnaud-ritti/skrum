@@ -14,10 +14,32 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 vi.mock('@/components/admin/admin-shell', () => ({
-    AdminShell: ({ children }: { children: ReactNode }) => (
-        <div>{children}</div>
+    AdminShell: ({
+        actions,
+        children,
+    }: {
+        actions?: ReactNode;
+        children: ReactNode;
+    }) => (
+        <div>
+            <header>{actions}</header>
+            {children}
+        </div>
     ),
 }));
+
+describe('AdminBranding page', () => {
+    it('hands the unsaved-changes bar to the topbar of the admin shell', () => {
+        renderWithProviders(<AdminBranding {...sampleProps()} />);
+
+        const bar = screen.getByRole('banner');
+
+        expect(bar.querySelector('[data-slot=unsaved-bar]')).not.toBeNull();
+        expect(
+            bar.querySelector('button[type=submit]')?.getAttribute('form'),
+        ).toBe(screen.getByRole('form', { name: 'Branding' }).id);
+    });
+});
 
 describe('AdminBranding page focus', () => {
     it('leaves the focus alone on the first load', () => {

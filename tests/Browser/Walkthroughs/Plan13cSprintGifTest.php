@@ -99,11 +99,11 @@ function p13cTile(string $gifId): string
 
 function p13cPick(mixed $page, string $opener, string $query, string $gifId): mixed
 {
-    $result = "button[aria-label=\"Choose this GIF\"]:has(img[src=\"/gifs/{$gifId}/preview\"])";
+    $result = "[role=\"dialog\"] [role=\"option\"]:has(img[src=\"/gifs/{$gifId}/preview\"])";
 
     return $page->click($opener)
         ->assertSee('Powered by GIPHY')
-        ->fill('[aria-label="Search GIFs…"]', $query)
+        ->fill('[role="dialog"] [aria-label="Search GIPHY"]', $query)
         ->assertPresent($result)
         ->click($result)
         ->assertNotPresent('[role="dialog"]');
