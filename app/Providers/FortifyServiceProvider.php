@@ -20,11 +20,15 @@ use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
@@ -48,6 +52,29 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configurePasswordResetRequests();
+    }
+
+    /**
+     * Fortify tells an unknown address, and one asked again too soon, from
+     * one that was mailed, and puts no limit on the route. Every request
+     * gets the answer of a sent link, and an address of origin is limited.
+     */
+    private function configurePasswordResetRequests(): void
+    {
+        $this->app->bind(
+            FailedPasswordResetLinkRequestResponse::class,
+            fn (): SuccessfulPasswordResetLinkRequestResponse => $this->app->make(
+                SuccessfulPasswordResetLinkRequestResponse::class,
+                ['status' => PasswordBroker::RESET_LINK_SENT],
+            ),
+        );
+
+        $this->app->booted(function (): void {
+            $routes = Route::getRoutes();
+            $routes->refreshNameLookups();
+            $routes->getByName('password.email')?->middleware('throttle:passwordResetLinks');
+        });
     }
 
     private function configureSecondFactor(): void
@@ -150,6 +177,12 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('magicLinks', fn (Request $request) => Limit::perMinute(10)
             ->by('magic-link-ip:'.$request->ip())
+            ->response(fn (): RedirectResponse => back()->withErrors([
+                'email' => __('Too many attempts. Wait a minute and try again.'),
+            ])));
+
+        RateLimiter::for('passwordResetLinks', fn (Request $request) => Limit::perMinute(10)
+            ->by('password-reset-ip:'.$request->ip())
             ->response(fn (): RedirectResponse => back()->withErrors([
                 'email' => __('Too many attempts. Wait a minute and try again.'),
             ])));

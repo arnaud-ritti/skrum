@@ -3,10 +3,9 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
-use App\Support\Auth\SignInPolicy;
+use App\Jobs\Auth\SendPasswordResetLink;
 use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -103,16 +102,13 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /**
-     * The broker answers "sent" either way: the request says nothing about
-     * the setting, the account or its role.
+     * The request queues the same job for every account and the job decides
+     * who is mailed: the request says nothing about the setting, the account
+     * or its role.
      */
     public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
     {
-        if (! resolve(SignInPolicy::class)->allowsPasswordReset($this)) {
-            return;
-        }
-
-        $this->notify(new ResetPassword($token));
+        SendPasswordResetLink::dispatch($this->getKey(), $token);
     }
 
     public function preferredLocale(): ?string
