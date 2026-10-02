@@ -703,3 +703,12 @@ it('drops the toast of a save on the request after the page that showed it', fun
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->missingFlash('toast'));
 });
+
+it('words the licence and the attribution of a style in the language of the viewer', function () {
+    app()->setLocale('fr');
+
+    $style = resolve(AvatarStyleCatalogue::class)->style('avataaars');
+
+    expect($style['license'])->toBe('Gratuit pour un usage personnel et commercial')
+        ->and($style['attribution'])->toBe('Avataaars par Pablo Stanley, Gratuit pour un usage personnel et commercial');
+});

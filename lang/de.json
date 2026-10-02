@@ -3748,6 +3748,8 @@
     "Image removed.": "Bild entfernt.",
     "Admin added.": "Administrator hinzugefügt.",
     "Admin removed.": "Administrator entfernt.",
+    "Free for personal and commercial use": "Kostenlos für private und kommerzielle Nutzung",
+    ":source by :creator, :license": ":source von :creator, :license",
     "See DiceBear": "Siehe DiceBear",
     "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Geben Sie die Farbe als 3- oder 6-stelligen Hexwert ein, zum Beispiel #2b63b0.",
     "Name another instance admin before deleting your account.": "Ernenne einen weiteren Instanz-Administrator, bevor du dein Konto löschst.",

@@ -145,12 +145,17 @@ class AvatarStyleCatalogue
         }
 
         [$source, $author, $license] = $known;
+        $translatedLicense = __($license);
 
         return [
             'value' => $value,
             'name' => Str::headline($value),
-            'license' => $license,
-            'attribution' => "{$source} by {$author}, {$license}",
+            'license' => $translatedLicense,
+            'attribution' => __(':source by :creator, :license', [
+                'source' => $source,
+                'creator' => $author,
+                'license' => $translatedLicense,
+            ]),
             'attributionRequired' => $license === self::AttributionLicense,
         ];
     }
