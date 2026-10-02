@@ -313,6 +313,23 @@ describe('matchesShortcut', () => {
         );
     });
 
+    it('accepts a sign typed with AltGr, reported as ctrl and alt together', () => {
+        const altGraph = { ctrlKey: true, altKey: true };
+
+        expect(matchesShortcut(press({ key: '?', ...altGraph }), '?')).toBe(
+            true,
+        );
+        expect(matchesShortcut(press({ key: 'k', ...altGraph }), 'k')).toBe(
+            false,
+        );
+        expect(matchesShortcut(press({ key: '1', ...altGraph }), '1')).toBe(
+            false,
+        );
+        expect(matchesShortcut(press({ key: '/', ...altGraph }), 'mod+/')).toBe(
+            false,
+        );
+    });
+
     it('rejects an extra modifier', () => {
         expect(matchesShortcut(press({ key: 'k', metaKey: true }), 'k')).toBe(
             false,

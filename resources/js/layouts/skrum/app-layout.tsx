@@ -7,6 +7,8 @@ import type { NavKey } from '@/components/skrum/app-sidebar';
 import { AppTopbar } from '@/components/skrum/app-topbar';
 import { AppFrame } from '@/components/skrum/frames';
 import { CommandMenu } from '@/components/workspaces/command-menu';
+import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
+import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import type { BreadcrumbItem } from '@/types';
 
@@ -24,6 +26,7 @@ export default function AppLayout({
 }) {
     const sidebar = useSidebarModel(active);
     const { sidebarOpen } = usePage().props;
+    const shortcuts = useGlobalShortcuts();
 
     return (
         <AppFrame
@@ -44,6 +47,7 @@ export default function AppLayout({
         >
             <SignInAlert />
             {children}
+            <KeyboardShortcutsDialog shortcuts={shortcuts} />
         </AppFrame>
     );
 }

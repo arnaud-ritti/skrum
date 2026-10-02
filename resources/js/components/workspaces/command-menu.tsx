@@ -37,16 +37,16 @@ import type { SearchResult, SearchResultKind } from '@/hooks/use-global-search';
 import { useRecentSessions } from '@/hooks/use-recent-sessions';
 import type { RecentSession } from '@/hooks/use-recent-sessions';
 import { useShortcutSequence } from '@/hooks/use-shortcut-sequence';
+import {
+    openCommandMenuEvent,
+    openKeyboardShortcutsEvent,
+} from '@/lib/shortcuts/events';
 import { useTrans } from '@/hooks/use-trans';
 import { edit as notificationSettings } from '@/routes/notificationPreferences';
 import { edit as profileSettings } from '@/routes/profile';
 import { edit as securitySettings } from '@/routes/security';
 
-/** Dispatched on `window` to open the palette from elsewhere. */
-export const openCommandMenuEvent = 'skrum:open-command-menu';
-
-/** Dispatched on `window` by "Show keyboard shortcuts". */
-export const openKeyboardShortcutsEvent = 'skrum:open-keyboard-shortcuts';
+export { openCommandMenuEvent, openKeyboardShortcutsEvent };
 
 type Translate = (
     key: string,

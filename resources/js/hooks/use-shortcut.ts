@@ -82,6 +82,24 @@ export function matchesShortcut(event: KeyboardEvent, combo: string): boolean {
         return false;
     }
 
+    const keyIsLetter = key.toUpperCase() !== key.toLowerCase();
+    const keyIsNamed = key.length > 1;
+    const keyIsSign = !keyIsLetter && !keyIsNamed && !/^[0-9]$/.test(key);
+
+    // Browsers on Windows report AltGr as Ctrl and Alt held together: on a
+    // layout where a sign is typed with AltGr, they are how it is typed.
+    const typedWithAltGraph =
+        keyIsSign &&
+        event.ctrlKey &&
+        event.altKey &&
+        !event.metaKey &&
+        !modifiers.has('mod') &&
+        !modifiers.has('alt');
+
+    if (typedWithAltGraph) {
+        return true;
+    }
+
     const wantsMod = modifiers.has('mod');
     const hasMod = event.metaKey || event.ctrlKey;
 
@@ -92,9 +110,6 @@ export function matchesShortcut(event: KeyboardEvent, combo: string): boolean {
     if (modifiers.has('alt') !== event.altKey) {
         return false;
     }
-
-    const keyIsLetter = key.toUpperCase() !== key.toLowerCase();
-    const keyIsNamed = key.length > 1;
 
     if (keyIsLetter || keyIsNamed) {
         return modifiers.has('shift') === event.shiftKey;

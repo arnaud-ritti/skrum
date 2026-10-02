@@ -1,11 +1,12 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { renderWithProviders } from '@/test/render';
 import type { User } from '@/types';
 
@@ -44,5 +45,23 @@ describe('UserMenuContent', () => {
 
         expect(screen.getByRole('menuitem', { name: 'Settings' })).toBeTruthy();
         expect(screen.getByRole('menuitem', { name: 'Log out' })).toBeTruthy();
+    });
+
+    it('asks for the keyboard shortcuts dialog', () => {
+        const heard = vi.fn();
+
+        window.addEventListener(openKeyboardShortcutsEvent, heard);
+        renderMenu();
+
+        const entry = screen.getByRole('menuitem', {
+            name: 'Keyboard shortcuts',
+        });
+
+        expect(entry.getAttribute('aria-keyshortcuts')).toBe('?');
+
+        fireEvent.click(entry);
+        window.removeEventListener(openKeyboardShortcutsEvent, heard);
+
+        expect(heard).toHaveBeenCalledTimes(1);
     });
 });

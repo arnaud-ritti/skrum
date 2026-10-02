@@ -4353,5 +4353,9 @@
     "Email me the results of retrospectives": "Email me the results of retrospectives",
     "Accessibility": "Accessibility",
     "Single-key shortcuts": "Single-key shortcuts",
-    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working."
+    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.",
+    "Pause or resume the timer": "Pause or resume the timer",
+    "The whiteboard uses the shortcuts of its own toolbar.": "The whiteboard uses the shortcuts of its own toolbar.",
+    "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.",
+    "Wired in the application": "Wired in the application"
 }

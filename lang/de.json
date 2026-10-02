@@ -4574,5 +4574,9 @@
     "Email me the results of retrospectives": "Ergebnisse von Retrospektiven per E-Mail an mich senden",
     "Accessibility": "Barrierefreiheit",
     "Single-key shortcuts": "Ein-Tasten-Kürzel",
-    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "Ausgeschaltet bewirken Kürzel aus einem einzelnen Buchstaben, einer Ziffer oder einem Zeichen nichts. Kürzel mit ⌘ oder Strg, Eingabe, Escape und die Pfeiltasten funktionieren weiter."
+    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "Ausgeschaltet bewirken Kürzel aus einem einzelnen Buchstaben, einer Ziffer oder einem Zeichen nichts. Kürzel mit ⌘ oder Strg, Eingabe, Escape und die Pfeiltasten funktionieren weiter.",
+    "Pause or resume the timer": "Timer pausieren oder fortsetzen",
+    "The whiteboard uses the shortcuts of its own toolbar.": "Das Whiteboard verwendet die Tastenkürzel seiner eigenen Werkzeugleiste.",
+    "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "Das Poker-Deck, der ROTI, der Health Check und eine Umfrage erhalten die Ziffern, solange sie den Fokus haben.",
+    "Wired in the application": "In der Anwendung verdrahtet"
 }

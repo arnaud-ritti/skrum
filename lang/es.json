@@ -4574,5 +4574,9 @@
     "Email me the results of retrospectives": "Enviarme por correo los resultados de las retrospectivas",
     "Accessibility": "Accesibilidad",
     "Single-key shortcuts": "Atajos de una sola tecla",
-    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "Si están desactivados, los atajos de una sola letra, dígito o signo no hacen nada. Los atajos con ⌘ o Ctrl, Intro, Escape y las flechas siguen funcionando."
+    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "Si están desactivados, los atajos de una sola letra, dígito o signo no hacen nada. Los atajos con ⌘ o Ctrl, Intro, Escape y las flechas siguen funcionando.",
+    "Pause or resume the timer": "Pausar o reanudar el temporizador",
+    "The whiteboard uses the shortcuts of its own toolbar.": "La pizarra usa los atajos de su propia barra de herramientas.",
+    "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "La baraja del póker, el ROTI, el chequeo de salud y una encuesta reciben los dígitos mientras tienen el foco.",
+    "Wired in the application": "Conectado en la aplicación"
 }
