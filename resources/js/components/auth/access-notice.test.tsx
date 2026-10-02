@@ -44,4 +44,21 @@ describe('AccessNotice', () => {
                 ?.classList.contains('bg-skrum-destructive-soft'),
         ).toBe(true);
     });
+
+    it('marks the warning tone on its icon', () => {
+        renderWithProviders(
+            <AccessNotice
+                icon={LinkIcon}
+                tone="warning"
+                title="This invitation has expired"
+                description="It was valid until 24 September."
+            />,
+        );
+
+        expect(
+            document
+                .querySelector('[data-slot="access-notice-mark"]')
+                ?.classList.contains('bg-skrum-warning-soft'),
+        ).toBe(true);
+    });
 });

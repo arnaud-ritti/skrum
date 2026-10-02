@@ -3,13 +3,21 @@ import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+export type AccessNoticeTone = 'default' | 'warning' | 'destructive';
+
+const markClasses: Record<AccessNoticeTone, string> = {
+    default: 'bg-muted text-foreground',
+    warning: 'bg-skrum-warning-soft text-skrum-warning-text',
+    destructive: 'bg-skrum-destructive-soft text-skrum-destructive-text',
+};
+
 export type AccessNoticeProps = {
     icon: LucideIcon;
     title: string;
     description: string;
     /** A second, muted line (e.g. "Guests: ask the facilitator for the guest link."). */
     hint?: string;
-    tone?: 'default' | 'destructive';
+    tone?: AccessNoticeTone;
     action?: ReactNode;
 };
 
@@ -32,9 +40,7 @@ export function AccessNotice({
                 data-slot="access-notice-mark"
                 className={cn(
                     'flex size-10 shrink-0 items-center justify-center rounded-full',
-                    tone === 'destructive'
-                        ? 'bg-skrum-destructive-soft text-skrum-destructive-text'
-                        : 'bg-muted text-foreground',
+                    markClasses[tone],
                 )}
             >
                 <Icon className="size-5" />
