@@ -27,3 +27,12 @@ it('takes cache locks on the twin connection of a server engine and on the same 
 
     expect(config('cache.stores.database.lock_connection'))->toBe($expected);
 });
+
+it('declares the oldest version each engine is supported from', function (string $connection, string $version) {
+    expect(config("database.connections.{$connection}.minimum_version"))->toBe($version);
+})->with([
+    ['pgsql', '14.0'],
+    ['mariadb', '10.11.0'],
+    ['mysql', '8.4.0'],
+    ['sqlite', '3.35.0'],
+]);

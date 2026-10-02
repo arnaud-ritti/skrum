@@ -14,12 +14,15 @@ public/frankenphp-worker.php
 bootstrap/cache/*.php
 bootstrap/ssr
 storage
+database/*.sqlite*
 tests
 docs
 .superpowers
 frankenphp
 compose.yaml
 compose.production.yaml
+compose.production.mariadb.yaml
+compose.production.sqlite.yaml
 .claude
 .agents
 .junie

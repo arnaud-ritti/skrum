@@ -12,7 +12,7 @@ ARG TARGETARCH
 
 RUN apk add --no-cache curl xz
 
-RUN install-php-extensions bcmath intl opcache pcntl pdo_pgsql zip \
+RUN install-php-extensions bcmath intl opcache pcntl pdo_mysql pdo_pgsql pdo_sqlite zip \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && printf 'expose_php = Off\n' > "$PHP_INI_DIR/conf.d/zz-skrum.ini"
 
@@ -36,7 +36,7 @@ WORKDIR /app
 
 FROM --platform=$BUILDPLATFORM dunglas/frankenphp:1-php${PHP_VERSION}-alpine AS build
 
-RUN install-php-extensions bcmath intl pcntl pdo_pgsql zip
+RUN install-php-extensions bcmath intl pcntl pdo_mysql pdo_pgsql pdo_sqlite zip
 
 WORKDIR /app
 

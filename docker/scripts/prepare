@@ -5,7 +5,15 @@ cd /app
 
 missing=""
 
-for variable in APP_KEY REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET DB_PASSWORD; do
+required="APP_KEY DB_CONNECTION REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET"
+
+if [ "${DB_CONNECTION:-}" = "sqlite" ]; then
+    required="$required DB_DATABASE"
+else
+    required="$required DB_PASSWORD"
+fi
+
+for variable in $required; do
     eval "value=\${$variable:-}"
 
     if [ -z "$value" ]; then
@@ -38,6 +46,27 @@ if [ "${LOG_CHANNEL:-}" != "stderr" ]; then
 fi
 
 s6-setuidgid www-data php artisan optimize
+
+if [ "$DB_CONNECTION" = "sqlite" ] && [ "$DB_DATABASE" != ":memory:" ]; then
+    if [ "$(dirname "$DB_DATABASE")" = "/app/database" ]; then
+        echo "skrum: warning: DB_DATABASE is '$DB_DATABASE', inside the image; unless a volume is mounted on it, the data is lost when the container is recreated" >&2
+    fi
+
+    mkdir -p "$(dirname "$DB_DATABASE")"
+    chown www-data:www-data "$(dirname "$DB_DATABASE")"
+
+    if [ ! -f "$DB_DATABASE" ]; then
+        s6-setuidgid www-data touch "$DB_DATABASE"
+    fi
+
+    for file in "$DB_DATABASE" "$DB_DATABASE-wal" "$DB_DATABASE-shm"; do
+        if [ -f "$file" ]; then
+            chown www-data:www-data "$file"
+        fi
+    done
+fi
+
+s6-setuidgid www-data php artisan skrum:check-database
 
 if [ "${SKRUM_RUN_MIGRATIONS:-true}" = "true" ]; then
     s6-setuidgid www-data php artisan migrate --force
