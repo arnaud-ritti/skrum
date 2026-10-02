@@ -2,15 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Every agent reads **Global Constraints** and **The deletion rule** before its task.
 
-**Goal:** After phases 18e and 18f, nothing of the old front end or of the starter kit is left, the rules of the design system are held by tests instead of by reviewers, and a table proves that every route, page, action and feature of the old front end has a place in the new one or a recorded gap.
+**Goal:** After phases 18e and 18f, nothing of the old front end or of the starter kit is left — the old view components that a rewritten screen still imported are rewritten here — every page matches its mockup or has an approved deviation, the rules of the design system are held by tests instead of by reviewers, and a table proves that every route, page, action and feature of the old front end has a place in the new one or a recorded gap.
 
-**Architecture:** Two read-only Node scripts under `bin/` replace the tools the project does not have: `front-unused.mjs` (files, exports, packages, CSS and translation keys nobody uses; it stands in for `knip`) and `front-parity.mjs` (the parity table, generated from the inventories, the current code and one hand-written rulings file). The rules of spec §5 become Pest tests under `tests/Arch` that read the source files; a page catalogue under `tests/Browser/Support` gives one address per page to the capture test and to the accessibility test. Deletion comes first, enforcement second, proof last, so that no time is spent fixing files that are about to go and the proof is taken on the final tree.
+**Architecture:** Two read-only Node scripts under `bin/` do what no installed tool does: `front-unused.mjs` (files, exports, packages, CSS and translation keys nobody uses; it drives the clean-up and is the cross-check of the one `npx knip` run that gives the evidence of AC6) and `front-parity.mjs` (the parity table, generated from the inventories, the current code and one hand-written rulings file). The rules of spec §5 become Pest tests under `tests/Arch` that read the source files; a page catalogue under `tests/Browser/Support` gives one address per page to the capture test and to the accessibility test. Deletion comes first, then the rewrite of what is old and still used, then enforcement, then the mockup-fidelity pass, and proof last, so that no time is spent fixing files that are about to go and the proof is taken on the final tree. A third script, `front-old-components.mjs`, lists the view components that predate the screen rewrite and that a page still reaches.
 
 **Tech Stack:** Laravel 13, PHP 8.4, Pest 5 with the browser plugin (Playwright, axe-core bundled), Inertia 3, React 19, Tailwind 4, vite-plus (`vp`: build, oxlint, oxfmt, Vitest), Node 24 with the `typescript` package already installed.
 
 **Spec:** `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` — row 18g of §12; rules of §5; §6.1; §8; §10; §11; acceptance criteria of §13. Inputs: `docs/superpowers/research/front-rewrite/` (`inventory-pages.md`, `inventory-components.md`, `route-callers.tsv`, `notes-for-18e.md`), the phase reports of 18e and 18f in their ledgers under `.superpowers/sdd/`.
 
-**Not in this plan:** any new feature, any item of the backlog (§10), any change to a screen that is not a rule or accessibility fix, the merge into `main` and the push (both wait for the owner).
+**Owner answers of 2026-10-02** (`docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md`, section "Plan 18g"), all applied below: dead-code evidence is `knip` through a one-off `npx`, not installed (Task 5 Step 6); `@testing-library/user-event` is declared as a dev dependency (Task 1 Step 4); captures run in FR and EN (Task 8); the manual accessibility checklist is run by an agent with a real browser, and the owner reads its report (Task 9 Step 5). Second round, same day: old view components still imported after 18e are rewritten in this plan, none remains at the end (Task 4). Standing rule, same day: **the mockup must be faithfully respected** — the visual pass is a mockup-fidelity pass (Task 8), and "no unapproved deviation remains" is an acceptance check (Task 11).
+
+**Not in this plan:** any new feature, any item of the backlog (§10), any change to a screen that is not a rewrite of an old component (Task 4), a rule fix, an accessibility fix or a correction of a difference with the mockup (Task 8), the merge into `main` and the push (both wait for the owner).
 
 ## What was checked while writing this plan (2026-10-02, branch `plan-18d-branding`)
 
@@ -20,19 +22,24 @@ The code blocks of this plan were run against the repository as it was before 18
 - `bin/front-parity.mjs` finds a current caller for every one of the 256 routes that had one in `route-callers.tsv` (0 route holes on the old tree), and extracts 32 pages, 560 action rows, 76 features and 365 files.
 - The detectors of `FrontEndRulesTest.php` pass their own 46 examples and report nothing in `components/skrum`, `components/ui`, `components/admin`, `layouts/skrum`, `pages/dev`, `hooks` and `lib` except `lib/retro/colors.ts` (the old column palette, replaced by B10 in 18e).
 - The page wiring check finds 36 rendered components and 36 page files, with no difference.
-- The contrast pairs of Task 8 all hold on the current `app.css` (lowest: `input` on `card` in dark, 3.25; `primary-foreground` on `primary` in light, 4.83).
-- A static test for "focus never removed" was tried and dropped: 24 false positives on the reviewed library (the focus style sits in another string of the same `cn()` call, or the element is a focus target without being a control). Focus is checked in the browser instead (Task 8).
+- The contrast pairs of Task 9 all hold on the current `app.css` (lowest: `input` on `card` in dark, 3.25; `primary-foreground` on `primary` in light, 4.83).
+- A static test for "focus never removed" was tried and dropped: 24 false positives on the reviewed library (the focus style sits in another string of the same `cn()` call, or the element is a focus target without being a control). Focus is checked in the browser instead (Task 9).
+- `@testing-library/user-event` is in `node_modules` and in `package-lock.json` at 14.6.7 (`dev: true`), pulled by `@vitest/browser-preview` (`^14.6.1`); 30 files under `resources/js` import it; `package.json` does not declare it.
+- `npm view knip version` answered 6.39.0 (engines `^20.19.0 || >=22.12.0`; the host runs Node 24). `knip` itself was not run while writing this plan: its configuration (Task 5 Step 6) is written from its documentation and is adjusted in that step.
+- `bin/front-old-components.mjs` (Task 4) runs: against a commit of 2026-10-01 that predates the rewrite it lists 235 view files on the tree as it is before 18e (the whole old front end, as expected), 0 against the first commit of the repository, and exits 1 while the list is not empty.
+- The mockup folders named by `PageCatalogue::Mockups` (Task 8) all exist under `docs/design-system/components/` with a `preview.html`. `npx playwright screenshot` on them was not run.
 - Not run: the Pest files themselves, the browser tests, any build. `RetroPhase::Actions` and `RetroPhase::Roti`, used by the page catalogue, exist only after 18e (B1).
 
 ## Global Constraints
 
 - Branch `plan-18g-cleanup` from the head of the last phase branch (18f). No merge into `main`, no push: both wait for the owner.
-- No new dependency, PHP or JS. `knip` is not installed and is not added; `bin/front-unused.mjs` stands in for it. Packages may only be removed.
+- No new dependency, PHP or JS, with one exception the owner approved: `@testing-library/user-event` is declared in `devDependencies` at the exact version already resolved, `14.6.7` (Task 1 Step 4). `knip` is never installed: it runs once through `npx --yes knip@6.39.0` with a configuration file kept in the ledger, so neither `package.json`, `package-lock.json` nor the repository gains a line for it. Apart from that declaration, packages may only be removed.
 - PHP tests run through Sail: `vendor/bin/sail artisan test --parallel --processes=8 --compact` for the whole suite, `vendor/bin/sail artisan test --compact <path>` for one file.
 - npm runs on the host: `npm run build:front` (build, then Wayfinder generation: never `npm run build` alone before a type check), `npm run types:check`, `npm run check`, `npm run test`.
 - The browser suite runs on the host with `bin/test-browser` (4 shards, ports 8099 to 8102). One browser file alone: `BROWSER_REVERB_PORT=8098 DB_HOST=127.0.0.1 DB_DATABASE=testing_browser_1 php -d memory_limit=2G vendor/bin/pest <file>`. Never port 8097, and never kill what listens there. Never `--tia`, in any gate or inner loop of this plan.
 - Browser tests need built assets and no `public/hot`: run `npm run build:front` before them.
-- The Pest browser suite is a contract. A browser test changes only when a mockup imposes another label or flow, and that belongs to 18e, not to this plan. If a deletion breaks a browser test, the deletion is wrong: restore the file.
+- The Pest browser suite is a contract. A browser test changes only when a mockup imposes another label or flow; such a change is made in the commit that brings the screen to the mockup (Task 4 or Task 8), and is listed with the mockup line that imposes it. If a deletion breaks a browser test, the deletion is wrong: restore the file.
+- **The mockup is respected faithfully** (owner, 2026-10-02). An explicit answer of the owner in `owner-answers-2026-10-02.md` stands as written. Everything else follows the mockups and READMEs of `docs/design-system/` exactly: layout, placement, labels, states. A deviation is allowed only for something false or unsafe, for an accessibility rule, or for data the product does not have at all; an element the owner sent to the backlog (spec §10) is absent by decision. Every deviation is a line of `docs/superpowers/research/front-rewrite/deviations.md` (Task 8), with its reason. When the mockup needs data the back end lacks and the owner has not sent it to the backlog, this plan does not leave the element out and does not build the back end either: it stops on that page and reports — a back-end task belongs to 18e or 18f, and the owner decides which.
 - No test and no test file is deleted without the owner's approval, including a Vitest file whose component has become unreachable. Such files are listed in the final report and left in place.
 - Rules of spec §5 for every line written here: tokens only, rem, no arbitrary size, lucide only, literal `t('…')` keys present in `en`, `fr`, `es`, `de`.
 - The first 475 lines of `resources/css/app.css` are a verbatim copy of `docs/design-system/app.css` (`tests/Feature/DesignTokensTest.php`). They are never edited, even to remove a class nobody uses.
@@ -52,10 +59,12 @@ A file, an export, a class, a translation key or a package is deleted only when 
 ## Review Focus
 
 1. **Something kept alive by a name, not by an import** — a page the server renders by string, a class a browser test selects, a file a Vitest test reads from disk. Deleting it passes the type check and breaks at run time. Pinned by the page wiring test of Task 2 (`tests/Arch/FrontEndPagesTest.php`) and by rule 3 of the deletion rule, whose grep is part of Task 3.
-2. **A translation key that only a label map, a layout prop or the server spells** — it is missing from a lang file, or removed as unused, and the French screen shows English. Pinned by the three tests added to `TranslationKeysTest.php` in Task 6, and by the grep before deletion in Task 4.
-3. **A package nobody imports but something needs** — a font imported by CSS, a plugin named in `vite.config.ts`, a binary a command runs. Removing it works on a machine where it is hoisted and fails on a clean install. Pinned by the `toolingPackages` list of the script (each entry with its reason, and the "stale tooling" section) and by the clean install of Task 4.
-4. **A guest and a long name at 390 pixels in French** — the guest has no sidebar, the name does not fit. Pinned in the page catalogue of Task 7: a guest inside a retro (`retros-show-page--guest`) and a member named "Maximilian Alexander von Hohenberg-Lichtenstein" on every team page.
-5. **A control whose focus mark is carried by a neighbour, or motion started from script** — a static scan cannot see either. Pinned by the three harness self-tests of Task 8 (a control that hides its focus is caught, the bench is accepted, a scripted animation is caught).
+2. **A translation key that only a label map, a layout prop or the server spells** — it is missing from a lang file, or removed as unused, and the French screen shows English. Pinned by the three tests added to `TranslationKeysTest.php` in Task 7, and by the grep before deletion in Task 5.
+3. **A package nobody imports but something needs** — a font imported by CSS, a plugin named in `vite.config.ts`, a binary a command runs. Removing it works on a machine where it is hoisted and fails on a clean install. Pinned by the `toolingPackages` list of the script (each entry with its reason, and the "stale tooling" section) and by the clean install of Task 5.
+4. **A guest and a long name at 390 pixels in French** — the guest has no sidebar, the name does not fit. Pinned in the page catalogue of Task 8: a guest inside a retro (`retros-show-page--guest`) and a member named "Maximilian Alexander von Hohenberg-Lichtenstein" on every team page.
+5. **A control whose focus mark is carried by a neighbour, or motion started from script** — a static scan cannot see either. Pinned by the three harness self-tests of Task 9 (a control that hides its focus is caught, the bench is accepted, a scripted animation is caught).
+6. **An old component rewritten into something else** — the rewrite drops a state the old file had (empty, loading, error, read-only for a guest), renames a hook the browser suite uses, or changes a request. Pinned by the characterisation test of Task 4 Step 6 point 4, the hook inventory of point 3 and the browser files of point 1.
+7. **A page that resembles its mockup** — a label reworded, a block in another place, a state the mockup draws and the page lacks. Pinned by the side-by-side table of Task 8 Step 7 and the acceptance check "no unapproved deviation remains" of Task 11.
 
 ---
 
@@ -115,6 +124,31 @@ Expected: every command exits 0; `bin/test-browser` ends with `Total: PASS, <n> 
 
 If a gate that was green at the end of 18f is red now, stop and report: clean-up does not start on a red tree.
 
+- [ ] **Step 4: Declare `@testing-library/user-event` (owner approved, 2026-10-02)**
+
+The Vitest files import it; today it is installed only because `@vitest/browser-preview` depends on it. The declared version is the one already in `package-lock.json` and `node_modules`, so nothing new is downloaded.
+
+```bash
+node -p "require('./node_modules/@testing-library/user-event/package.json').version"
+grep -c '"@testing-library/user-event"' package.json
+```
+
+Expected: `14.6.7` and `0`. If the first line prints another version, 18e or 18f moved the lockfile: use the version printed, and write it in `progress.md`. If the second prints `1`, an earlier phase already declared it: skip to the commit-free end of this step and write that in `progress.md`.
+
+```bash
+npm install --save-dev --save-exact @testing-library/user-event@14.6.7
+git diff --stat package.json package-lock.json
+npm ls @testing-library/user-event
+npm run test
+```
+
+Expected: `package.json` gains one line under `devDependencies` (`"@testing-library/user-event": "14.6.7"`); `package-lock.json` changes only in the root package's `devDependencies` block (the `node_modules/@testing-library/user-event` entry keeps its version and integrity); `npm ls` shows the package once at the root, deduplicated under `@vitest/browser-preview`; Vitest passes with the count of Step 3. A lockfile diff that touches any other package is not committed: `git checkout package.json package-lock.json`, stop and report.
+
+```bash
+git add package.json package-lock.json
+git commit -m "chore(front): declare @testing-library/user-event, which the Vitest files import"
+```
+
 ---
 
 ### Task 2: The detection script and the page wiring test
@@ -125,7 +159,7 @@ If a gate that was green at the end of 18f is red now, stop and report: clean-up
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `node bin/front-unused.mjs [--json] [--lang]` — sections `unreachedFiles`, `testOnlyFiles`, `deadExports`, `localOnlyExports`, `libraryLocalOnlyExports`, `testOnlyExports`, `unusedPackages`, `undeclaredPackages`, `staleTooling`, `unusedStyles`, `unusedTranslationKeys` (only with `--lang`). Exit 1 while `unreachedFiles`, `deadExports`, `localOnlyExports`, `unusedPackages`, `undeclaredPackages`, `staleTooling` or `unusedStyles` is not empty. `pageComponents(string $root): array` and `renderedComponents(string $root): array` in `tests/Arch/FrontEndPagesTest.php`, reused by Task 7.
+- Produces: `node bin/front-unused.mjs [--json] [--lang]` — sections `unreachedFiles`, `testOnlyFiles`, `deadExports`, `localOnlyExports`, `libraryLocalOnlyExports`, `testOnlyExports`, `unusedPackages`, `undeclaredPackages`, `staleTooling`, `unusedStyles`, `unusedTranslationKeys` (only with `--lang`). Exit 1 while `unreachedFiles`, `deadExports`, `localOnlyExports`, `unusedPackages`, `undeclaredPackages`, `staleTooling` or `unusedStyles` is not empty. `pageComponents(string $root): array` and `renderedComponents(string $root): array` in `tests/Arch/FrontEndPagesTest.php`, reused by Task 8.
 
 - [ ] **Step 1: Write the script**
 
@@ -925,7 +959,7 @@ Expected: `npm run check` exits 0. If oxlint reports a finding in the script, fi
 
 **Interfaces:**
 - Consumes: `node bin/front-unused.mjs --json` (Task 2).
-- Produces: a tree where `unreachedFiles`, `deadExports` and `localOnlyExports` are empty, and `$LEDGER/reports/deleted-files.txt`, read by Task 9 and by the final report.
+- Produces: a tree where `unreachedFiles`, `deadExports` and `localOnlyExports` are empty, and `$LEDGER/reports/deleted-files.txt`, read by Task 10 and by the final report.
 
 Known candidates, from `inventory-components.md` §1.11, `inventory-pages.md` §I and the notes of the 18e controller. None is deleted because it is on this list: the script and the deletion rule decide. The list is there so that a candidate that is still imported is noticed and explained.
 
@@ -968,7 +1002,7 @@ done | tee "$LEDGER/reports/candidates.txt"
 ls resources/js/components/action-items 2>/dev/null
 ```
 
-Expected: one line per candidate that still exists. A candidate with no importer will be in the script's list (Step 2). A candidate with an importer is still used by a rewritten screen: it stays, and the line goes in `progress.md` as "old file still in use: <file>, by <importers>" for the parity table (Task 9) and the final report.
+Expected: one line per candidate that still exists. A candidate with no importer will be in the script's list (Step 2). A candidate with an importer is still used by a rewritten screen: it is not deleted here, and the line goes in `progress.md` as "old file still in use: <file>, by <importers>". Task 4 rewrites it (owner, 2026-10-02: none remains at the end).
 
 - [ ] **Step 2: List what the script would delete and check that nothing names it**
 
@@ -1043,7 +1077,277 @@ Expected: same pass counts as the baseline of Task 1 for the feature and browser
 
 ---
 
-### Task 4: Remove dead CSS, translation keys, packages and starter-kit leftovers
+### Task 4: Rewrite the old view components a rewritten screen still imports
+
+Owner's answer of 2026-10-02 (second round, "18g boundary"): the old view components still imported after 18e are **rewritten in 18g; none remains at the end**. The first version of this plan kept them and reported them; that line moved. This task finds them, rewrites each on the design-system library, and leaves a check that fails as long as one is left.
+
+**Files:**
+- Create: `bin/front-old-components.mjs`
+- Rewrite or delete: each file the script lists
+- Create or modify: one Vitest file per rewritten component; the captures of the pages that mount it
+
+**Interfaces:**
+- Consumes: `node bin/front-unused.mjs --json` (Task 2); the tree Task 3 left; `$LEDGER/reports/candidates.txt` (Task 3 Step 1); the 18e report's list "old file kept, with its importer" (18e Task F1 Step 1); `docs/superpowers/research/front-rewrite/inventory-components.md`; the mockups of spec §7.
+- Produces: `node bin/front-old-components.mjs <base> [--json]` — sections `old`, `headless`, `exempt`, `staleExemptions`; exit 1 while `old` or `staleExemptions` is not empty. `$LEDGER/base-18e` (the commit the screen rewrite started from). `$LEDGER/reports/rewrites/<component>.md`, one per component, read by Task 11.
+
+**What "old view component" means here.** A `.tsx` file under `resources/js/components` or `resources/js/layouts`, outside the folders the design-system phases wrote (`components/ui`, `components/skrum`, `components/admin`, `layouts/skrum`), that existed when plan 18e started, that no commit of 18e, 18f or this plan has touched since, that renders markup of its own, and that a page still reaches. A file 18e rewrote in place is not old, whatever its name. A file without markup (a context, a provider, a headless helper) is not a view: it is classified by reading, and exempted in the script with its reason.
+
+- [ ] **Step 1: The base commit**
+
+```bash
+cat .superpowers/sdd/*plan-18e*/progress.md | grep -m1 -i "^Branch:"
+git merge-base plan-18d-branding HEAD
+```
+
+The first line is the ledger of 18e ("Branch: … (from <commit>)"); the second is the fallback. They name the same commit unless `plan-18d-branding` moved after 18e branched: the ledger wins. Write it down:
+
+```bash
+echo "<commit>" > "$LEDGER/base-18e"
+git cat-file -t "$(cat "$LEDGER/base-18e")"
+```
+
+Expected: `commit`.
+
+- [ ] **Step 2: Write the detection script**
+
+`bin/front-old-components.mjs`:
+
+```js
+#!/usr/bin/env node
+/**
+ * Lists the view components of the old front end that a page still reaches.
+ * Read-only.
+ *
+ *   node bin/front-old-components.mjs <base commit> [--json]
+ *
+ * <base commit> is the commit the screen rewrite (plan 18e) started from.
+ * A file is "old" when it existed at that commit, lies outside the
+ * design-system library, renders markup, and no commit has touched it since.
+ * Exit 1 while one is listed, or while an exemption no longer applies.
+ */
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const root = process.cwd();
+const [base] = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
+
+if (base === undefined) {
+    console.error('usage: node bin/front-old-components.mjs <base commit> [--json]');
+    process.exit(2);
+}
+
+/** Folders the design-system phases (18a–18d) wrote: never old. */
+const libraryFolders = [
+    'resources/js/components/ui/',
+    'resources/js/components/skrum/',
+    'resources/js/components/admin/',
+    'resources/js/layouts/skrum/',
+];
+
+/**
+ * Files that existed before the rewrite, are still untouched, and are not
+ * views: a context, a provider or a headless helper kept on purpose (spec
+ * §6.1). Each entry carries its reason. An entry is added only for a file
+ * that returns no element of its own.
+ */
+const notViews = new Map([]);
+
+const git = (...parameters) =>
+    execFileSync('git', parameters, { cwd: root, encoding: 'utf8' }).trim();
+
+const unused = JSON.parse(
+    spawnSync('node', [join(root, 'bin/front-unused.mjs'), '--json'], {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+    }).stdout,
+);
+const notReached = new Set([...unused.unreachedFiles, ...unused.testOnlyFiles]);
+
+const rendersMarkup = (path) =>
+    /<[A-Za-z][\w.]*[\s/>]/.test(
+        readFileSync(join(root, path), 'utf8').replace(/<[A-Z]\w*(?:,\s*\w+)*>\(/g, '('),
+    );
+
+const candidates = git('ls-tree', '-r', '--name-only', base, '--', 'resources/js/components', 'resources/js/layouts')
+    .split('\n')
+    .filter((path) => path.endsWith('.tsx') && !/\.test\.tsx$/.test(path))
+    .filter((path) => !libraryFolders.some((folder) => path.startsWith(folder)))
+    .filter((path) => existsSync(join(root, path)) && !notReached.has(path));
+
+const untouched = candidates.filter(
+    (path) => git('log', '--oneline', `${base}..HEAD`, '--', path) === '',
+);
+
+const importersOf = (path) => {
+    const module = `@/${path.replace(/^resources\/js\//, '').replace(/\.tsx$/, '')}`;
+    const found = spawnSync('git', ['grep', '-lF', `'${module}'`, '--', 'resources/js'], {
+        cwd: root,
+        encoding: 'utf8',
+    }).stdout;
+
+    return found
+        .split('\n')
+        .filter((file) => file !== '' && !/\.test\.tsx?$/.test(file) && file !== path);
+};
+
+const old = untouched
+    .filter((path) => !notViews.has(path))
+    .filter(rendersMarkup)
+    .map((path) => ({ path, importers: importersOf(path) }));
+const headless = untouched.filter((path) => !notViews.has(path) && !rendersMarkup(path));
+const staleExemptions = [...notViews.keys()].filter((path) => !untouched.includes(path));
+
+const report = { old, headless, exempt: [...notViews], staleExemptions };
+
+if (process.argv.includes('--json')) {
+    console.log(JSON.stringify(report, null, 2));
+} else {
+    console.log(`\n## Old view components a page still reaches (${old.length})`);
+
+    for (const { path, importers } of old) {
+        console.log(`${path} — imported by: ${importers.join(', ') || '(a relative import: git grep the file name)'}`);
+    }
+
+    console.log(`\n## Untouched files without markup, to classify by reading (${headless.length})`);
+
+    for (const path of headless) {
+        console.log(path);
+    }
+
+    console.log(`\n## Exempt: not a view (${notViews.size})`);
+
+    for (const [path, reason] of notViews) {
+        console.log(`${path} — ${reason}`);
+    }
+
+    console.log(`\n## Exemptions that no longer apply (${staleExemptions.length})`);
+
+    for (const path of staleExemptions) {
+        console.log(path);
+    }
+}
+
+process.exit(old.length > 0 || staleExemptions.length > 0 ? 1 : 0);
+```
+
+```bash
+chmod +x bin/front-old-components.mjs
+```
+
+- [ ] **Step 3: Prove the script on two bases whose answer is known**
+
+```bash
+node bin/front-old-components.mjs "$(git rev-list --max-parents=0 HEAD | tail -1)" | grep "^## Old view components"
+node bin/front-old-components.mjs HEAD | grep "^## Old view components"
+```
+
+Expected: the first line ends with `(0)` — nothing existed at the first commit of the repository, so nothing is old. The second ends with the number of view files outside the library that a page reaches today — with `HEAD` as the base every file is "untouched since": it is the upper bound of the real run, and it must be greater than 0. Then the real run:
+
+```bash
+node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")" | tee "$LEDGER/reports/old-components-before.txt"; echo "exit ${PIPESTATUS[0]}"
+```
+
+Expected: the list of this task. Before 18e the same command, run on `plan-18d-branding` against a commit that predates the rewrite, listed 235 files: the whole old front end. After 18e it should list what 18e's report calls "old file kept, with its importer", and no more. Compare the two lists; a file on one and not on the other is explained in `progress.md` (touched by a formatting commit: then it is old all the same — add it by hand to the work list of Step 5; listed by 18e but since rewritten by 18f: nothing to do).
+
+- [ ] **Step 4: Classify what is not a view**
+
+The section "Untouched files without markup, to classify by reading" holds contexts, providers and headless helpers. Read each one. A file that returns no element of its own (only `children`, a context provider, or nothing) goes into the `notViews` map of the script with its reason, for instance:
+
+```js
+const notViews = new Map([
+    ['resources/js/components/games/room-context.tsx', 'context of the game room, no markup (spec §6.1: kept)'],
+]);
+```
+
+A file that does render something through a helper the regular expression missed is a view: it joins the work list. Run the script again: the section is empty or holds only files that are in neither list by mistake, which is fixed before going on.
+
+- [ ] **Step 5: The work list, in dependency order**
+
+```bash
+node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")" --json > "$LEDGER/reports/old-components.json"
+node -e '
+const { old } = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+const paths = new Set(old.map((entry) => entry.path));
+const order = [...old].sort((a, b) =>
+    a.importers.filter((file) => paths.has(file)).length - b.importers.filter((file) => paths.has(file)).length || a.path.localeCompare(b.path));
+for (const { path, importers } of order) console.log(`- [ ] ${path} — ${importers.length} importer(s)`);
+' "$LEDGER/reports/old-components.json" | tee -a "$LEDGER/progress.md"
+```
+
+A component that other old components import comes after them (leaves first), so that each rewrite stands on files already rewritten. Group the list by screen (spec §7 row) in `progress.md`; one agent per screen group may take its components in parallel only when no two groups share a file.
+
+- [ ] **Step 6: Rewrite one component — the pattern, applied to every line of the list**
+
+One component, one commit. For the component `<path>`:
+
+1. **Read.** The file; its importers; its row in `inventory-components.md`; the mockup of the screen that mounts it (spec §7) and the README of the library component that draws the same thing (`docs/design-system/components/<Name>/README.md`); every browser test that reaches into it:
+
+   ```bash
+   name=$(basename "<path>" .tsx)
+   grep -rnE "data-test=|data-realtime|data-presence-id|id=|aria-label=|data-slot=" "<path>"
+   grep -rln -e "<each data-test, id and label found above>" tests/Browser | sort -u
+   ```
+
+2. **Decide, and write the decision** in `$LEDGER/reports/rewrites/$name.md` (target, hooks kept, tests run, captures taken, mockup differences):
+   - **Replace**: a library component already does the job (`components/skrum/*` or `components/ui/*`). The importers call it directly, through the adapter 18e wrote for that screen if there is one; the old file is deleted.
+   - **Rewrite in place**: the file is a container (it holds state, requests or a channel). It keeps its path and exports and becomes a container over library components: tokens only, no arbitrary size, lucide icons, `t('…')` keys — the rules of spec §5 that Task 6 then enforces.
+   - **Compose**: no library component exists for it. It is composed from `components/ui` primitives in the anatomy of the nearest mockup, and listed in the final report under "components composed from primitives because the design system has none". It is never left as it is.
+   
+   No new feature, no change of behaviour, no new base folder, no new dependency.
+
+3. **Hooks kept.** Every `data-test`, `data-realtime`, `data-presence-id`, element id and English accessible name the browser suite uses stays, on an element of the same role. The mockup may impose another label or another flow: then the browser test changes in this commit, and the report file names the test, the old and new assertion, and the line of the mockup's README or `preview.html` that imposes it (owner's rule of 2026-10-02: a browser test that contradicts the mockup changes, and the task lists it).
+
+4. **Test first.** `resources/js/components/…/$name.test.tsx` (or the importer's test when the file is deleted): one case per state the old component had (read its conditionals), one per callback, one per hook of point 3. Run it: it fails against the new markup or passes against the old one — in the second case it is a characterisation test and must stay green through the rewrite.
+
+5. **Rewrite**, then:
+
+   ```bash
+   npm run test -- "$name"
+   npm run types:check && npm run check && npm run build:front
+   BROWSER_REVERB_PORT=8098 DB_HOST=127.0.0.1 DB_DATABASE=testing_browser_1 php -d memory_limit=2G vendor/bin/pest <each browser file of point 1>
+   ```
+
+   Expected: all pass.
+
+6. **Captures, against the mockup.** Run the visual test of each page that mounts the component (`tests/Browser/Visual/*` of 18e for that screen, single file as above). Open every capture that changed beside the mockup's `preview.html`: the component must now match it — layout, placement, labels, states. A difference is fixed, or written in the report file as a deviation with its reason (false or unsafe, accessibility, data the product does not have at all), and carried to the deviations table of Task 8.
+
+7. **Commit.**
+
+   ```bash
+   git add -A resources/js tests lang
+   git commit -m "refactor(front): <component> on the design-system library"
+   ```
+
+   Then `node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")" | head -3`: the count went down by one (or more, when the importers of a deleted file were the last users of another).
+
+Stop and report, without committing, when: a rewrite needs a product decision the mockups and the owner's answers do not give; a browser test fails for a reason other than a label or flow the mockup imposes; the component is the only user of a package that would have to change version.
+
+- [ ] **Step 7: Nothing old is left**
+
+```bash
+node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")"; echo "exit $?"
+node bin/front-unused.mjs | grep -E "^## (Files that no page|Exports that nothing uses|Exports used only inside)"
+```
+
+Expected: `## Old view components a page still reaches (0)`, `## Exemptions that no longer apply (0)`, `exit 0`; the three counts of the second command are `(0)` — a rewrite can leave a file or an export without user: run Task 3 Steps 2 to 5 again on what appears.
+
+- [ ] **Step 8: Gate of the task**
+
+```bash
+npm run build:front && npm run types:check && npm run check && npm run test
+vendor/bin/sail artisan test --parallel --processes=8 --compact
+bin/test-browser
+git add bin/front-old-components.mjs
+git commit -m "chore(front): script that lists the old view components a page still reaches"
+```
+
+Expected: every command exits 0; `bin/test-browser` ends with `Total: PASS`, with the count of the baseline, or the baseline changed only by the tests listed in the `rewrites/*.md` files. The script is committed last, with its final `notViews` map; `npm run check` passes on it.
+
+---
+
+### Task 5: Remove dead CSS, translation keys, packages and starter-kit leftovers
 
 **Files:**
 - Modify: `resources/css/app.css` (after line 475 only), `resources/css/excalidraw-theme.css`
@@ -1053,7 +1357,7 @@ Expected: same pass counts as the baseline of Task 1 for the feature and browser
 
 **Interfaces:**
 - Consumes: `node bin/front-unused.mjs --json --lang` (Task 2), the tree left by Task 3.
-- Produces: a tree where `unusedStyles`, `unusedPackages` and `staleTooling` are empty; `$LEDGER/reports/removed-keys.txt` and `$LEDGER/reports/removed-packages.txt` for the final report.
+- Produces: a tree where `unusedStyles`, `unusedPackages` and `staleTooling` are empty; `$LEDGER/reports/removed-keys.txt` and `$LEDGER/reports/removed-packages.txt` for the final report; `$LEDGER/knip.json` (configuration, untracked), `$LEDGER/reports/knip.json`, `knip.txt` and `knip-classified.txt` (the evidence of AC6, read by Task 11).
 
 - [ ] **Step 1: CSS**
 
@@ -1156,7 +1460,7 @@ echo "<package>" >> "$LEDGER/reports/removed-packages.txt"
 
 Candidates named by the spec and the inventory: `@radix-ui/react-navigation-menu` (already gone if 18a removed it), the Radix packages of primitives that no longer exist (`@radix-ui/react-toggle`, `-toggle-group`, `-collapsible`, `-separator`, `-avatar`, `-label`, `-tooltip`), `frimousse` if the emoji picker was rebuilt without it. `live-cursors`, `live-reactions`, `@dnd-kit/*`, `@excalidraw/excalidraw`, `input-otp` and `sonner` are kept by spec §4.1: if the script lists one of them, the browser suite still targets `.lc-overlay` and `button[frimousse-emoji]`, so stop and report instead of uninstalling.
 
-A package under "Imported packages that package.json does not declare" is never added here (no new dependency). `@testing-library/user-event` is imported by the Vitest files and installed only as a dependency of another package: write it in `progress.md` under "Awaiting the owner" and leave it. `optionalDependencies` are not read by the script and are not touched.
+A package under "Imported packages that package.json does not declare" is never added here (no new dependency). `@testing-library/user-event` is no longer in that section: Task 1 Step 4 declared it. Any other package listed there is written in `progress.md` under "Awaiting the owner" and left. `optionalDependencies` are not read by the script and are not touched.
 
 A line under "Tooling entries of this script that package.json no longer declares" means the script's `toolingPackages` names a package that is gone: delete that entry from the script.
 
@@ -1188,7 +1492,81 @@ Expected: the first, second and last commands print nothing. `public` holds `bra
 git commit -am "chore(front): remove the last starter-kit files"
 ```
 
-- [ ] **Step 6: Gate of the task**
+- [ ] **Step 6: The one `knip` run (evidence of AC6), cross-checked with the script**
+
+`knip` is run once, through `npx`, at a pinned version. It is not installed: its configuration lives in the ledger (untracked), and the step ends by proving that the manifest did not move.
+
+```bash
+cat > "$LEDGER/knip.json" <<'JSON'
+{
+    "entry": [
+        "resources/js/app.tsx",
+        "resources/js/pages/**/*.tsx",
+        "resources/js/**/*.test.{ts,tsx}",
+        "resources/js/test/**/*.{ts,tsx}",
+        "bin/*.mjs",
+        "vite.config.ts"
+    ],
+    "project": ["resources/js/**/*.{ts,tsx}", "bin/*.mjs"],
+    "ignore": [
+        "resources/js/actions/**",
+        "resources/js/routes/**",
+        "resources/js/wayfinder/**"
+    ],
+    "ignoreExportsUsedInFile": false
+}
+JSON
+npx --yes knip@6.39.0 --config "$LEDGER/knip.json" --reporter json --no-exit-code > "$LEDGER/reports/knip.json"
+npx --yes knip@6.39.0 --config "$LEDGER/knip.json" --no-exit-code > "$LEDGER/reports/knip.txt"
+git status --short package.json package-lock.json | wc -l
+```
+
+Expected: both report files are written; the last count is `0` (`npx` keeps the package in its own cache). Every page is an entry because the server names pages by a string, as in the script. If `knip` stops on its configuration (an option renamed in the version run), read `npx --yes knip@6.39.0 --help`, correct `$LEDGER/knip.json`, and write the change in `progress.md`; the entries, the three ignored generated folders and `ignoreExportsUsedInFile: false` are the part that must not change, because they are what makes the two tools comparable.
+
+Classify every finding. The JSON reporter prints `{ "issues": [ { "file": "…", "files": […], "exports": [{ "name": … }], "types": [{ "name": … }], "dependencies": […], "devDependencies": […], "unlisted": […], … } ] }`:
+
+```bash
+node -e '
+const fs = require("fs");
+const knip = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const ours = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const kept = new Set(ours.libraryLocalOnlyExports);
+const testOnly = new Set(ours.testOnlyFiles);
+const library = /^resources\/js\/components\/(ui|skrum)\//;
+const lines = { keptLibrary: [], keptTestOnly: [], toResolve: [] };
+for (const issue of knip.issues) {
+    for (const [kind, items] of Object.entries(issue)) {
+        if (!Array.isArray(items)) continue;
+        for (const item of items) {
+            const line = `${issue.file}: ${item.name}`;
+            if ((kind === "exports" || kind === "types") && library.test(issue.file) && kept.has(line)) lines.keptLibrary.push(line);
+            else if (kind === "files" && testOnly.has(issue.file)) lines.keptTestOnly.push(issue.file);
+            else lines.toResolve.push(`${kind} — ${line}`);
+        }
+    }
+}
+const missed = [...kept].filter((line) => !lines.keptLibrary.includes(line));
+console.log(`kept as public surface of the library: ${lines.keptLibrary.length}`);
+console.log(`kept for their test (awaiting the owner): ${lines.keptTestOnly.length}`);
+console.log(`to resolve: ${lines.toResolve.length}`);
+for (const line of lines.toResolve) console.log(`  ${line}`);
+console.log(`listed by the script and not by knip: ${missed.length}`);
+for (const line of missed) console.log(`  ${line}`);
+' "$LEDGER/reports/knip.json" <(node bin/front-unused.mjs --json) | tee "$LEDGER/reports/knip-classified.txt"
+```
+
+How each class is treated:
+
+| Class | Treatment |
+|---|---|
+| **Kept as public surface of the library** — an export or a prop type of `components/ui` or `components/skrum` that `knip` reports and the script lists under `libraryLocalOnlyExports` (224 before 18e) | **Reported, kept.** The `export` keyword stays: a container types against these props, and the design-system bench documents them. The count and the file `knip-classified.txt` go in the final report under "Code deleted — what was not deleted". They are the only findings of `knip` that AC6 accepts without a change. |
+| **Kept for their test** — a file only a test reaches | Kept, already in `progress.md` under "Awaiting the owner" (Task 3 Step 3). |
+| **To resolve** | Each line is one of three things, and the ledger says which: (a) dead code the script missed — it goes through the deletion rule and Task 3's commands, then both tools run again; (b) a false positive of `knip` (a package used by a tool or by CSS, which the script's `toolingPackages` names with its reason; a file the server names) — written in `progress.md` with the reason, and added to `ignoreDependencies` or `entry` of `$LEDGER/knip.json` only when the reason is one the script already records; (c) a difference between the tools that is neither — stop and report. |
+| **Listed by the script and not by knip** | Expected `0`. A line here means the two tools read an export differently: look at the file, write the cause in `progress.md`. It does not block. |
+
+Expected at the end of the step: `to resolve: 0`, with every (b) written in the ledger. `knip` is not run again after this step except to confirm a fix of class (a); the final gates use the script.
+
+- [ ] **Step 7: Gate of the task**
 
 ```bash
 node bin/front-unused.mjs; echo "exit $?"
@@ -1196,18 +1574,18 @@ vendor/bin/sail artisan test --parallel --processes=8 --compact
 bin/test-browser
 ```
 
-Expected: `exit 0` when nothing awaits the owner; `exit 1` with only "Imported packages that package.json does not declare" not empty when `@testing-library/user-event` is still undeclared (written in the ledger in Step 3). Both suites: 0 failed.
+Expected: `exit 0` when nothing awaits the owner; `exit 1` with only "Imported packages that package.json does not declare" not empty when a package other than `@testing-library/user-event` is imported without being declared (written in the ledger in Step 3). Both suites: 0 failed.
 
 ---
 
-### Task 5: The rules of the design system as tests
+### Task 6: The rules of the design system as tests
 
 **Files:**
 - Create: `tests/Arch/FrontEndRulesTest.php`
 - Modify: the source files the test reports
 
 **Interfaces:**
-- Consumes: the tree left by Tasks 3 and 4 (no file about to be deleted is fixed here).
+- Consumes: the tree left by Tasks 3 and 5 (no file about to be deleted is fixed here).
 - Produces: `FrontEndRuleExemptions` (rule => path => reason) and the detectors `arbitrarySizeOffences`, `colourLiteralOffences`, `pixelOffences`, `designSystemClassOffences`, `iconPackageOffences`, `inlineSvgOffences`, `scriptedMotionOffences`, `presentationalImportOffences`, each `(string $source): array<int, string>`.
 
 What each rule of spec §5 becomes:
@@ -1217,12 +1595,12 @@ What each rule of spec §5 becomes:
 | 1 Tokens only; AC5 | `colour`: no hex, no `rgb()`/`hsl()`/`oklch()`, no default-palette class, no `-white`/`-black` utility, in `resources/js`; palette classes in Blade views |
 | 2 rem everywhere | `px`: no pixel length above 2px in `resources/js` |
 | 3 No arbitrary size; AC5 | `arbitrary-size`: no literal length between brackets on a size utility; `calc()`, `env()`, `var()`, grid templates and `color-mix` stay allowed |
-| 8 Motion | `scripted-motion`: a file that animates from script asks for the reduced-motion preference; the browser side is Task 8 |
+| 8 Motion | `scripted-motion`: a file that animates from script asks for the reduced-motion preference; the browser side is Task 9 |
 | 9 Icons | `icon-package` and the `package.json` test: lucide-react only; `inline-svg`: an inline `<svg>` only in a file listed with its reason |
 | 11 Presentational components | `presentational`: what `components/skrum/*` may import and call |
 | AC8 | `design-system-class`: no `sk-*` class |
-| 4, 5, 6, 7 | not checkable on source: overflow by the captures (Task 7), focus and contrast in the browser and on the tokens (Task 8) |
-| 10 i18n | Task 6 |
+| 4, 5, 6, 7 | not checkable on source: overflow by the captures (Task 8), focus and contrast in the browser and on the tokens (Task 9) |
+| 10 i18n | Task 7 |
 
 - [ ] **Step 1: Write the test**
 
@@ -1671,7 +2049,7 @@ For each offence, in this order of preference:
 | A skrum component that imports the router, page props, a channel hook, a Wayfinder module or a domain container | Move that code to the container in `components/<domain>/` and pass the value or the callback as a prop. |
 | Canvas or scene data, or text that quotes a value (a hex an admin types, a pixel count in a label) | Add the file to the rule's exemptions with the reason. No other kind of exemption is accepted. |
 
-A fix that changes how a screen looks is checked against its mockup and its capture is taken again in Task 7.
+A fix that changes how a screen looks is checked against its mockup and its capture is taken again in Task 8.
 
 Run after each batch: `vendor/bin/sail artisan test --compact tests/Arch/FrontEndRulesTest.php`
 Expected at the end: 59 passed.
@@ -1699,7 +2077,7 @@ Expected: all exit 0.
 
 ---
 
-### Task 6: Translation keys the literal scan cannot see
+### Task 7: Translation keys the literal scan cannot see
 
 **Files:**
 - Modify: `tests/Feature/TranslationKeysTest.php` (append; the existing three tests and their helpers are not changed)
@@ -1952,19 +2330,21 @@ git commit -m "test(i18n): check the keys of label maps and layout props, and na
 
 ---
 
-### Task 7: Full visual pass
+### Task 8: Mockup-fidelity pass — every page captured and compared with its mockup
 
 **Files:**
 - Create: `tests/Browser/Support/PageCatalogue.php`
 - Create: `tests/Browser/Visual/PagesVisualTest.php`
-- Modify: `tests/Arch/FrontEndPagesTest.php` (append the capture coverage)
+- Create: `docs/superpowers/research/front-rewrite/fidelity.md` (the comparison, page by page), `docs/superpowers/research/front-rewrite/deviations.md` (the deviations table)
+- Modify: `tests/Arch/FrontEndPagesTest.php` (append the capture coverage and the fidelity coverage)
+- Modify: the components and pages the comparison finds different from their mockup
 - Create or replace: `tests/visual/__screenshots__/*.png`
 
 **Interfaces:**
 - Consumes: `pageComponents(string $root): array` (Task 2); `captureVisuals(string $name, string $path, ?callable $visit)` and `overflowingElements(mixed $page)` of `tests/Browser/Support/CapturesVisuals.php`; the helpers of `tests/Pest.php` (`teamMember`, `openPokerRound`, `pokerVote`); `RetroPhase::Actions` and `RetroPhase::Roti` (18e, B1).
-- Produces: `Tests\Browser\Support\PageCatalogue` — `PageCatalogue::Pages` (capture name => `[component, actor]`), `PageCatalogue::build(): self`, `->open(string $name, array $options = []): mixed`, used again by Task 8. Capture names: the component with dashes and `-page` (`retros/show` → `retros-show-page`), a state adds `--state`.
+- Produces: `Tests\Browser\Support\PageCatalogue` — `PageCatalogue::Pages` (capture name => `[component, actor]`), `PageCatalogue::build(): self`, `->open(string $name, array $options = []): mixed`, used again by Task 9. Capture names: the component with dashes and `-page` (`retros/show` → `retros-show-page`), a state adds `--state`.
 
-A capture is taken for every page in light and dark, at 1440 and 390, in English and French; `captureVisuals` fails on horizontal overflow before it writes the file. If 18e already added a visual test for a screen under the same capture name, keep one of the two: delete the row from `PageCatalogue::Pages` here only if the 18e test covers the eight variants.
+A capture is taken for every page in light and dark, at 1440 and 390, in French and English — the two capture languages the owner confirmed on 2026-10-02 (no Spanish or German capture; those two languages are held by `TranslationKeysTest` and by the label-length rule of spec §5); `captureVisuals` fails on horizontal overflow before it writes the file. If 18e already added a visual test for a screen under the same capture name, keep one of the two: delete the row from `PageCatalogue::Pages` here only if the 18e test covers the eight variants.
 
 - [ ] **Step 1: Append the coverage tests**
 
@@ -2130,7 +2510,6 @@ class PageCatalogue
      * @var array<string, array{0: string, 1: string}>
      */
     public const array Pages = [
-        'welcome-page' => ['welcome', self::Guest],
         'auth-login-page' => ['auth/login', self::Guest],
         'auth-register-page' => ['auth/register', self::Guest],
         'auth-forgot-password-page' => ['auth/forgot-password', self::Guest],
@@ -2198,7 +2577,6 @@ class PageCatalogue
         $ada->forceFill(['name' => 'Maximilian Alexander von Hohenberg-Lichtenstein', 'email' => 'maximilian.alexander.von.hohenberg@a-rather-long-domain.example.com'])->save();
 
         $paths = [
-            'welcome-page' => '/',
             'auth-login-page' => '/login',
             'auth-register-page' => '/register',
             'auth-forgot-password-page' => '/forgot-password',
@@ -2410,7 +2788,7 @@ it('renders every page without overflow', function (string $name) {
 
 - [ ] **Step 5: Add the pages the catalogue does not know yet**
 
-The catalogue lists the 32 pages of the inventory with the states that have a mockup. Pages added by 18d are captured by `tests/Browser/Visual/AdminPagesVisualTest.php`. For every other name the coverage test still asks for (the error pages of B15, the pages of 18f such as the magic-link request), add a line to `PageCatalogue::Pages` and its path in `build()`, with the actor that can open it. An error page is opened by the address that produces it: `/this-page-does-not-exist` for 404 as a guest, `/admin/branding` as the member for 403. A page that cannot be produced on demand (500, 503) goes in `PagesWithoutCapture` with that reason, and its bench section under `pages/dev/sections` carries its capture.
+The catalogue lists the pages of the inventory with the states that have a mockup (the `welcome` page is gone: the owner's answer BLOCK-3 makes `/` a redirect, spec B32 — it has no line here, and `pageComponents()` no longer finds it). Pages added by 18d are captured by `tests/Browser/Visual/AdminPagesVisualTest.php`. For every other name the coverage test still asks for (the error pages of B15, the pages of 18f such as the magic-link request), add a line to `PageCatalogue::Pages` and its path in `build()`, with the actor that can open it. An error page is opened by the address that produces it: `/this-page-does-not-exist` for 404 as a guest, `/admin/branding` as the member for 403. A page that cannot be produced on demand (500, 503) goes in `PagesWithoutCapture` with that reason, and its bench section under `pages/dev/sections` carries its capture.
 
 - [ ] **Step 6: Take the captures**
 
@@ -2428,38 +2806,203 @@ git status --short tests/visual/__screenshots__ | wc -l
 
 Expected: 4 passed; the count is the number of captures added or changed.
 
-- [ ] **Step 7: Look at the captures**
+- [ ] **Step 7: Compare every page with its mockup, side by side**
 
-Every capture added or changed is opened and compared with its mockup. Split the names between reviewers by screen group; each reviewer reads the PNG files and the `preview.html` of the mockup, and writes findings in `$LEDGER/reports/visual-review.md` as `capture — what is wrong — rule`.
+Owner's rule of 2026-10-02: the mockup must be faithfully respected. This step is where it is checked on the whole application: the capture of each page is put beside the `preview.html` of its mockup, every difference is listed, and each is fixed or entered in the deviations table. Nothing is settled by "close enough".
 
-| Captures | Mockup under `docs/design-system/components/` |
-|---|---|
-| `retros-show-page*`, `retros-join-page`, `retros-session-ended-page` | ScreenRetroWriting, ScreenRetroGrouping, ScreenRetroVote, ScreenRetroDiscussion, ScreenRetroActions, ScreenRetroROTI, MobileRetro |
-| `poker-*` | ScreenPokerBefore, ScreenPokerAfter, ScreenPokerQueue, MobilePoker |
-| `teams-show-page` | ScreenDashboard, ScreenTeam, MobileDashboard |
-| `action-items-index-page` | ScreenActions |
-| `games-*` | ScreenIcebreaker, ScreenDraw, ScreenEmoji, ScreenGif, MobileRituals |
-| `whiteboards-*` | ScreenWhiteboard |
-| `workspaces-*` | ScreenWorkspace |
-| `settings-*`, `teams-integrations-page`, `admin-*` | ScreenSettings, ScreenUserSettings, ScreenSecurity |
-| `auth-*`, `invitations-show-page`, error pages | ScreenAuth, ScreenOnboarding, ScreenErrors, MobileAccess |
-| `welcome-page` | ScreenLanding |
+**The mockup of each page.** Add to `PageCatalogue` the constant `Mockups`, capture name (or its prefix up to `--`) to the mockup folders under `docs/design-system/components/`, from spec §7:
 
-What a reviewer looks for, on every capture: a label cut without an ellipsis or wrapped inside a button, a tab, a select or a menu item (rule 4); a leading icon or avatar not on the first line of its title (rule 7); text on a solid colour that is not its `*-foreground` (rule 1); in dark, a surface that stayed light or a border that vanished; in French, a width that was sized for the English label (rule 10); at 390, a sidebar instead of the tab bar, or a control under the tab bar; a difference with the mockup that the 18e report does not list as a gap.
+```php
+    /**
+     * The mockups each page is compared with (spec §7). A page the design
+     * system does not draw names the mockup it was designed from.
+     *
+     * @var array<string, array<int, string>>
+     */
+    public const array Mockups = [
+        'retros-show-page' => ['ScreenRetroWriting', 'ScreenRetroGrouping', 'ScreenRetroVote', 'ScreenRetroDiscussion', 'ScreenRetroActions', 'ScreenRetroROTI', 'ScreenSurvey', 'MobileRetro'],
+        'retros-join-page' => ['GuestJoin', 'MobileAccess'],
+        'retros-session-ended-page' => ['ScreenRetroROTI'],
+        'poker-show-page' => ['ScreenPokerBefore', 'ScreenPokerAfter', 'ScreenPokerQueue', 'MobilePoker'],
+        'poker-join-page' => ['GuestJoin', 'MobileAccess'],
+        'poker-estimates-page' => ['ScreenPokerAfter'],
+        'poker-decks-page' => ['ScreenPokerQueue'],
+        'teams-show-page' => ['ScreenDashboard', 'ScreenTeam', 'ScreenSessionCreate', 'MobileDashboard'],
+        'teams-integrations-page' => ['ScreenSettings'],
+        'action-items-index-page' => ['ScreenActions'],
+        'games-index-page' => ['ScreenIcebreaker', 'MobileRituals'],
+        'games-show-page' => ['ScreenIcebreaker', 'ScreenIcebreakerDraw', 'ScreenIcebreakerEmoji', 'ScreenIcebreakerGif', 'MobileRituals'],
+        'games-join-page' => ['GuestJoin', 'MobileAccess'],
+        'whiteboards-show-page' => ['ScreenWhiteboard'],
+        'whiteboards-join-page' => ['GuestJoin', 'MobileAccess'],
+        'workspaces-show-page' => ['ScreenWorkspace'],
+        'workspaces-create-page' => ['ScreenWorkspace', 'ScreenOnboarding'],
+        'workspaces-members-page' => ['ScreenWorkspace', 'ScreenTeam'],
+        'workspaces-templates-page' => ['ScreenWorkspace', 'TemplateEditor', 'RetroTemplatePicker'],
+        'settings-profile-page' => ['ScreenUserSettings'],
+        'settings-security-page' => ['ScreenSecurity'],
+        'settings-appearance-page' => ['ScreenUserSettings'],
+        'settings-notifications-page' => ['ScreenUserSettings'],
+        'settings-api-tokens-page' => ['ScreenUserSettings', 'ScreenSettings'],
+        'admin-branding-page' => ['ScreenSettings'],
+        'admin-admins-page' => ['ScreenSettings'],
+        'admin-sign-in-page' => ['ScreenSettings'],
+        'auth-login-page' => ['ScreenAuth', 'MobileAccess'],
+        'auth-register-page' => ['ScreenAuth', 'MobileAccess'],
+        'auth-forgot-password-page' => ['ScreenAuth'],
+        'auth-reset-password-page' => ['ScreenAuth'],
+        'auth-verify-email-page' => ['ScreenAuth'],
+        'auth-confirm-password-page' => ['ScreenAuth'],
+        'auth-two-factor-challenge-page' => ['ScreenAuth', 'ScreenSecurity'],
+        'auth-magic-link-page' => ['ScreenAuth'],
+        'auth-reminder-unsubscribe-page' => ['ScreenAuth'],
+        'auth-recap-unsubscribe-page' => ['ScreenAuth'],
+        'invitations-show-page' => ['ScreenAuth', 'MobileAccess'],
+        'errors-page' => ['ScreenErrors'],
+    ];
+```
 
-One fix wave for the findings (the product is fixed, then the capture is taken again with the command of Step 6). A finding that is a gap with a mockup already recorded by 18e is not fixed: it is copied into the final report.
+The keys are the capture names of `PageCatalogue::Pages` as they stand after 18e and 18f: add a line for a page that list has and this one lacks, with the mockup spec §7 gives it, and remove a line whose page is gone. A page with no mockup of its own (spec §7, "Designed from neighbouring mockups") names the mockup it was designed from; the comparison is then on what that mockup fixes — frame, spacing, component anatomy, labels of shared controls.
+
+**The coverage test**, appended to `tests/Arch/FrontEndPagesTest.php`, written and run before the comparison (it fails until the two documents exist):
+
+```php
+/**
+ * @return array<int, array{id: string, reason: string, explanation: string}>
+ */
+function recordedDeviations(string $root): array
+{
+    $rows = [];
+
+    foreach (file("{$root}/docs/superpowers/research/front-rewrite/deviations.md", FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        if (preg_match('/^\| (D\d+) \|/', $line) !== 1) {
+            continue;
+        }
+
+        $cells = array_map(trim(...), explode('|', trim($line, '| ')));
+
+        $rows[] = ['id' => $cells[0], 'reason' => $cells[5] ?? '', 'explanation' => $cells[6] ?? ''];
+    }
+
+    return $rows;
+}
+
+it('has a mockup comparison for every page', function () {
+    $root = dirname(__DIR__, 2);
+    $fidelity = (string) file_get_contents("{$root}/docs/superpowers/research/front-rewrite/fidelity.md");
+    $pages = array_values(array_unique(array_map(
+        fn (string $name): string => explode('--', $name)[0],
+        array_keys(PageCatalogue::Pages),
+    )));
+
+    expect(array_values(array_diff($pages, array_keys(PageCatalogue::Mockups))))->toBe([])
+        ->and(array_values(array_filter(
+            array_merge(...array_values(PageCatalogue::Mockups)),
+            fn (string $mockup): bool => ! is_file("{$root}/docs/design-system/components/{$mockup}/preview.html"),
+        )))->toBe([])
+        ->and(array_values(array_filter($pages, fn (string $page): bool => ! str_contains($fidelity, "## {$page}\n"))))->toBe([]);
+});
+
+it('leaves no difference with a mockup open', function () {
+    $fidelity = (string) file_get_contents(dirname(__DIR__, 2).'/docs/superpowers/research/front-rewrite/fidelity.md');
+
+    expect(preg_match_all('/\|\s*open\s*\|/', $fidelity))->toBe(0);
+});
+
+it('gives every deviation an allowed reason and an explanation', function () {
+    $deviations = recordedDeviations(dirname(__DIR__, 2));
+
+    expect($deviations)->not->toBeEmpty()
+        ->and(array_values(array_filter(
+            $deviations,
+            fn (array $row): bool => ! in_array($row['reason'], ['owner', 'backlog', 'false', 'unsafe', 'a11y', 'no data'], true) || $row['explanation'] === '',
+        )))->toBe([]);
+});
+
+it('points every deviation of the comparison to a line of the table', function () {
+    $root = dirname(__DIR__, 2);
+    $fidelity = (string) file_get_contents("{$root}/docs/superpowers/research/front-rewrite/fidelity.md");
+    preg_match_all('/\bD\d+\b/', $fidelity, $used);
+
+    expect(array_values(array_diff(array_unique($used[0]), array_column(recordedDeviations($root), 'id'))))->toBe([]);
+});
+```
+
+(`use Tests\Browser\Support\PageCatalogue;` at the top of the file.)
+
+**The pictures of the mockups.** Playwright is installed for the browser suite; its command line draws each `preview.html` at the two widths and in the two themes, into the ledger (untracked):
+
+```bash
+mkdir -p "$LEDGER/reports/mockups"
+for mockup in $(ls docs/design-system/components | grep -E "^(Screen|Mobile|GuestJoin|TemplateEditor|RetroTemplatePicker)"); do
+  for theme in light dark; do
+    for width in 1440 390; do
+      npx playwright screenshot --full-page --color-scheme="$theme" --viewport-size="$width,900" \
+        "file://$PWD/docs/design-system/components/$mockup/preview.html" \
+        "$LEDGER/reports/mockups/$mockup-$theme-$width.png"
+    done
+  done
+done
+ls "$LEDGER/reports/mockups" | wc -l
+```
+
+Expected: four pictures per mockup. A `Mobile*` mockup is read at 390; a `Screen*` mockup at 1440 and, for its mobile section, at 390. A preview that draws both themes side by side whatever the colour scheme is read as it is.
+
+**The comparison.** Split the pages between reviewers by screen group (the rows of spec §7); each reviewer reads, for each page: its captures (`tests/visual/__screenshots__/<name>-{light,dark}-{1440,390}-{fr,en}.png`), the pictures of its mockups, the mockup's `README.md` (zones, states, behaviour, labels), and the answers of `owner-answers-2026-10-02.md` for that screen group (an explicit answer stands as written, even against the mockup). It writes in `docs/superpowers/research/front-rewrite/fidelity.md` one section per page:
+
+```markdown
+## retros-show-page
+
+Mockups: ScreenRetroWriting, ScreenRetroGrouping, ScreenRetroVote, ScreenRetroDiscussion, ScreenRetroActions, ScreenRetroROTI, ScreenSurvey, MobileRetro. States compared: writing, grouping, voting, discussing, actions, roti, completed, guest, 390.
+
+| Zone | Element | Mockup | Application | Status |
+|---|---|---|---|---|
+| Top bar | timer presets | 1, 3, 5, 10 min | 1, 3, 5, 10 min | same |
+| Column | add-card label | "Ajouter une carte…" | "Add a card…" / "Ajouter une carte…" | same |
+| Facilitator bar | "+2 min" | shown while a timer runs | missing | open |
+```
+
+Every zone the mockup's README names has at least one line; every state the README lists is compared (a state the catalogue cannot reach gets a new entry in `PageCatalogue::Pages` and its capture, Step 5 and Step 6). What is compared, in this order: **layout** (which zones, in what order, in which column, at both widths), **placement** (where each control sits inside its zone), **labels** (word for word, in French against the mockup's French, in English against its English where the mockup has one), **states** (every state of the README exists and looks as drawn), then the rules of spec §5 the first version of this step looked for (a label cut without an ellipsis or wrapped inside a button, a tab, a select or a menu item; a leading icon or avatar not on the first line of its title; text on a solid colour that is not its `*-foreground`; in dark, a surface that stayed light or a border that vanished; in French, a width sized for the English label; at 390, a sidebar instead of the tab bar, or a control under the tab bar).
+
+`Status` is one of: `same`; `open` (a difference not yet handled); `fixed in <commit>`; `D<n>` (a line of the deviations table); `owner <id>` (an explicit answer of the owner, by its id in `owner-answers-2026-10-02.md`); `backlog` (spec §10).
+
+**The deviations table.** `docs/superpowers/research/front-rewrite/deviations.md` — "Deviations from the mockup", one table for the whole application:
+
+```markdown
+| Id | Page | Mockup | Element | Built instead | Reason | Why |
+|---|---|---|---|---|---|---|
+| D1 | auth-login-page | ScreenAuth | "Nous avons envoyé un lien de connexion à …" | "If an account exists for …" | unsafe | The answer must not say whether the address has an account (18f, S8). |
+```
+
+Its first lines are copied from what the earlier phases recorded, each re-checked against the page as it is now and against the allowed reasons: the Deviations table of plan 18f (V1–V23, renumbered D1…), the "gaps with the mockups" of the 18e report, the `rewrites/*.md` files of Task 4. `Reason` is one of `owner`, `backlog`, `false`, `unsafe`, `a11y`, `no data` — the last four are the only reasons this plan may give by itself: something false or unsafe, an accessibility rule, data the product does not have at all. A gap that an earlier report recorded with another reason ("out of scope", "later", "not wired") is **not** a deviation: it is an `open` line.
+
+**Closing every `open` line.** One fix wave per screen group, each fix in its own commit (`fix(<screen>): <element> as the mockup draws it`), with the Vitest case that pins it when it is a label, a state or an order; then the captures of that page are taken again (Step 6) and the line becomes `fixed in <commit>`. A browser test that asserted the old label or flow changes in the same commit, and the commit message names the mockup that imposes it. An `open` line that cannot be fixed here is one of three things:
+
+1. It fits an allowed reason: it becomes a `D<n>` line, with the reason spelled out.
+2. The mockup needs data the back end does not give, and the owner has not sent it to the backlog: this plan does not build back end. The line stays `open`, the page is listed in `progress.md` under "Awaiting the owner: mockup element without data", and the plan stops at the end of this task — the acceptance check "no unapproved deviation remains" cannot pass, and the owner decides between a back-end task (18e or 18f reopened), the backlog, or a deviation.
+3. The mockup and an owner answer disagree: the answer stands, the line reads `owner <id>`.
+
+```bash
+vendor/bin/sail artisan test --compact tests/Arch/FrontEndPagesTest.php
+grep -c "| open |" docs/superpowers/research/front-rewrite/fidelity.md
+grep -c "^| D" docs/superpowers/research/front-rewrite/deviations.md
+```
+
+Expected: the four fidelity tests pass; `0` open lines; the number of deviations, written in `progress.md`. The owner approves the deviations table by reading it in the final report: until then a deviation is "recorded with an allowed reason", and Task 11 says so in those words.
 
 - [ ] **Step 8: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-git add tests/Browser/Support/PageCatalogue.php tests/Browser/Visual/PagesVisualTest.php tests/Arch/FrontEndPagesTest.php tests/visual/__screenshots__ resources
-git commit -m "test(front): a capture of every page in both themes, both widths and both languages"
+git add tests/Browser/Support/PageCatalogue.php tests/Browser/Visual/PagesVisualTest.php tests/Arch/FrontEndPagesTest.php tests/visual/__screenshots__ resources docs/superpowers/research/front-rewrite/fidelity.md docs/superpowers/research/front-rewrite/deviations.md
+git commit -m "test(front): a capture of every page, compared with its mockup; deviations recorded"
 ```
+
+(The fixes of the fix wave are already committed, one by one; this commit holds the catalogue, the tests, the captures and the two documents.)
 
 ---
 
-### Task 8: Accessibility pass
+### Task 9: Accessibility pass
 
 **Files:**
 - Create: `tests/Browser/Smoke/AccessibilityTest.php`
@@ -2467,18 +3010,18 @@ git commit -m "test(front): a capture of every page in both themes, both widths 
 - Modify: the components the tests report
 
 **Interfaces:**
-- Consumes: `PageCatalogue` (Task 7); `customPropertiesOfFirstBlock(string $stylesheet, string $selector): array` of `LightScopeTokensTest.php`; `App\Support\Branding\BrandPalette::contrast(array $x, array $y): float`.
-- Produces: `controlsWithoutFocusMark(mixed $page): array<int, string>`; the manual checklist results in `$LEDGER/reports/accessibility.md`.
+- Consumes: `PageCatalogue` (Task 8); `customPropertiesOfFirstBlock(string $stylesheet, string $selector): array` of `LightScopeTokensTest.php`; `App\Support\Branding\BrandPalette::contrast(array $x, array $y): float`.
+- Produces: `controlsWithoutFocusMark(mixed $page): array<int, string>`; the checklist report for the owner in `$LEDGER/reports/accessibility.md` (Step 5), written by the agent that ran it in a real browser.
 
 What is automated and what is not:
 
-| Point | Automated | By hand |
+| Point | Automated | Checklist of Step 5 (an agent in a real browser) |
 |---|---|---|
 | Contrast (rule 6) | Token pairs computed from `app.css` in both themes (AAA body, AA secondary, 3:1 controls); axe `color-contrast` on every page in both themes (AA) | Text over a column colour, a presence colour or a GIF; the brand colour of a rebranded instance is covered by `BrandPaletteTest` |
 | Visible focus (rule 5) | Every control of every page is focused and must change look | Focus order follows reading order; focus returns to the trigger when a dialog, sheet or drawer closes; focus is not lost after a realtime update |
-| Reduced motion (rule 8, AC12) | No CSS animation or transition longer than 50 ms, and none looping, on any page under `prefers-reduced-motion`; source rule of Task 5 for scripted motion; Vitest of `reaction-bar`, `timer`, `gif-picker` | Flying reactions, confetti and the card flip, which only start on an action |
+| Reduced motion (rule 8, AC12) | No CSS animation or transition longer than 50 ms, and none looping, on any page under `prefers-reduced-motion`; source rule of Task 6 for scripted motion; Vitest of `reaction-bar`, `timer`, `gif-picker` | Flying reactions, confetti and the card flip, which only start on an action |
 | Keyboard paths | `tests/Browser/Smoke/KeyboardDragTest.php` (drag and drop), the walkthroughs that use `keys()` | The paths of the checklist below |
-| Names, roles, labels | axe on every page, level "serious" and above | Screen-reader reading of the live regions (timer, votes, connection state) |
+| Names, roles, labels | axe on every page, level "serious" and above | The live regions (timer, votes, connection state) read in the DOM and in the accessibility tree: role, `aria-live`, and that the text changes once per event. **No real screen reader is used**: what VoiceOver or NVDA actually says is not verified by this plan |
 
 - [ ] **Step 1: Append the token contrast test**
 
@@ -2713,23 +3256,40 @@ Expected at the end: all pass. On the way:
 
 The whiteboard page holds a canvas: an axe violation inside `.excalidraw` is third-party and is written in the ledger, not fixed; if it blocks the test, the whiteboard pages keep the focus and motion checks and leave the axe dataset, with the reason in the test.
 
-- [ ] **Step 5: Manual checklist**
+- [ ] **Step 5: The accessibility checklist, run by an agent in a real browser**
 
-Done in a browser on the Sail application (`http://localhost`, demo users of `DemoSeeder`), once in light and once in dark, with the operating system set to reduce motion for the last block. Each line is written in `$LEDGER/reports/accessibility.md` as pass, or as a finding with the page and what happened. A finding is fixed in this task when the fix is a class or an attribute; otherwise it goes in the final report.
+Owner's answer (2026-10-02): the checklist is run by an agent with a real browser, and the owner reads the report. Nobody else runs it.
+
+**Who and with what.** One agent, with the Chrome automation tools of the session (`claude-in-chrome`: load the skill first, then `tabs_context_mcp`, `tabs_create_mcp`, `navigate`, `computer` for keys and screenshots, `read_page` for the accessibility tree, `javascript_tool` for computed styles, `resize_window`, `read_console_messages`). It drives the owner's Chrome on the Sail application (`http://localhost`, never port 8097), signed in as the demo users of `DemoSeeder`. It works in new tabs it opens itself and closes them at the end. Steps that need a second account or a guest (the two realtime lines) use a second tab signed in through the guest link, which is the rule recorded for the plan 17 walkthroughs: a guest tab, not a second browser profile.
+
+**What it is not.** No real screen reader is used: the agent has no VoiceOver, NVDA or JAWS. The block that the first version of this plan called "Screen reader (VoiceOver)" is replaced by checks of the accessibility tree and of the live regions in the DOM, which prove that the right element exists and changes once, not what assistive technology says aloud. The report states this in its first lines, and lists a real screen-reader pass as an open item for the owner.
+
+**How each kind of line is checked.**
+
+| Kind | How the agent checks it | Evidence written in the report |
+|---|---|---|
+| Keyboard only | Every action through `computer` key presses (`Tab`, `Shift+Tab`, `Enter`, `Space`, arrows, `Escape`, the shortcut); no click, no `javascript_tool` call that moves focus or triggers a handler. After each step, `javascript_tool` reads `document.activeElement` (tag, accessible name, `data-test`). | The key sequence, the focused element after it, a screenshot |
+| Focus return | `document.activeElement` read before opening and after closing the overlay; they must be the same element. | Both readings |
+| Contrast by eye | A screenshot, plus the computed `color` and `background-color` of the element read with `javascript_tool` and the ratio computed from them (text over an image: the screenshot only, marked "not measurable"). | Ratio, threshold (4.5 text, 3 large text and controls), screenshot |
+| Reduced motion | The preference is emulated for the tab: `chrome://settings/accessibility` cannot be driven, so the agent sets it through the DevTools rendering emulation if the tools expose it, otherwise it asks the owner once to turn on "Reduce motion" in the operating system and waits. Each line is then checked by reading `getAnimations()` on the document right after the action (`javascript_tool`): no running animation longer than 50 ms. | The animations list, a screenshot |
+| Live regions | `read_page` on the region before and after the event; `javascript_tool` installs a `MutationObserver` on it and counts the text changes during the event. | Role, `aria-live` value, number of changes (expected: 1 per event) |
+
+Run once in light and once in dark for the keyboard and contrast blocks; once for the two others.
 
 Keyboard only, no pointer:
 
-- [ ] Log in, open the team page from the sidebar, open "New retrospective", choose a template, create, land on the board.
+- [ ] Log in, open the team page from the sidebar, open "New session", choose the retrospective type and a template, create, land on the board.
 - [ ] On the board: add a card with the keyboard, edit it, delete it; move a card to another column and group two cards with the drag handle (Space, arrows, Space); vote and remove a vote; open the card menu and close it with Escape.
 - [ ] As facilitator: go through every phase to Completed with the forward button; start, pause and stop the timer; open the settings popover and change one setting.
 - [ ] `?` opens the shortcuts panel and Escape closes it; ⌘K opens the command palette, a search result opens with Enter.
+- [ ] The shortcuts built in 18f: `G` starts the keyboard move of a card in the Grouping phase and `F` highlights a card in Discussing, `⌘→` moves to the next phase, `C` plays the coffee card and `⇧R` starts a re-vote at poker; with "Single-key shortcuts" turned off in the settings, none of the single-letter ones fires and `⌘→`, `⌘K` still do.
 - [ ] Poker: play a card with a digit, reveal, re-vote, save an estimate, reorder the queue with the drag handle.
 - [ ] Action items: change a filter, open an item, mark it done, close the sheet; focus is back on the row.
 - [ ] Settings: move through the sub-navigation, change the theme, create and revoke an API token.
 - [ ] Every dialog, sheet, drawer, popover and menu met on the way: focus goes inside on opening, Tab stays inside, Escape closes, focus returns to what opened it.
-- [ ] At 390 wide: the tab bar is reachable and its five entries are in reading order.
+- [ ] At 390 wide (`resize_window`): the tab bar is reachable and its five entries are in reading order.
 
-Contrast, by eye, in both themes:
+Contrast, in both themes:
 
 - [ ] Card text on each of the eight column colours; the column title on its header.
 - [ ] Initials on each presence colour in the presence stack and on live cursors.
@@ -2737,17 +3297,26 @@ Contrast, by eye, in both themes:
 - [ ] A destructive action always shows an icon and a label, never colour alone.
 - [ ] The focus ring is visible on a primary button, on a card, on a column colour and on the dark sidebar.
 
-Reduced motion (operating system setting on), spec AC12:
+Reduced motion, spec AC12:
 
 - [ ] Sending a reaction shows it without flying across the screen.
 - [ ] Completing a retro, and a poker consensus, show no confetti.
 - [ ] Revealing poker cards fades them instead of flipping.
 - [ ] Opening a dialog, a sheet and a drawer has no slide; skeletons do not pulse.
 
-Screen reader (VoiceOver), one pass:
+Live regions (accessibility tree and DOM; not a screen reader):
 
-- [ ] The timer announces its end once, not every second.
-- [ ] A vote, a new card from another participant and a lost connection are announced.
+- [ ] The timer's region changes once when the time is up, not every second, and its accessible name is "Time's up!".
+- [ ] A vote, a new card from another participant (guest tab) and a lost connection each change a region with `aria-live` or a `status` / `alert` role, once.
+
+**The report.** `$LEDGER/reports/accessibility.md`, written for the owner, who reads it without having watched the run:
+
+1. First lines, verbatim: `Run by an agent driving Chrome (claude-in-chrome), not by a person. No real screen reader was used: the "Live regions" block checks the accessibility tree and the DOM, not speech output. A pass with VoiceOver or NVDA is still open.` Then the date, the commit (`git rev-parse --short HEAD`), the Chrome version, the two themes.
+2. One table per block: line, result (`pass`, `finding`, `not checked` with the reason), evidence as in the table above, screenshot file under `$LEDGER/reports/accessibility/`.
+3. Findings: page, what was pressed, what happened, what was expected, and whether it was fixed in this task (commit) or left for the final report.
+4. What the agent could not check and why (a tool that was missing, the motion preference the owner did not turn on, a step that needed a person).
+
+A finding is fixed in this task when the fix is a class or an attribute; otherwise it goes in the final report. A line marked `not checked` is never counted as a pass in Task 11. If the Chrome tools are not available in the session that runs the plan, the whole step is `not checked`, the report says so in its first line, and Task 11 lists the checklist under "What waits for the owner".
 
 - [ ] **Step 6: Gates and commit**
 
@@ -2758,11 +3327,11 @@ git add tests/Browser/Smoke/AccessibilityTest.php tests/Feature/LightScopeTokens
 git commit -m "test(a11y): axe, focus mark and reduced motion on every page, and token contrast in both themes"
 ```
 
-A component fixed here has its capture taken again (Task 7, Step 6) before the commit.
+A component fixed here has its capture taken again (Task 8, Step 6) before the commit.
 
 ---
 
-### Task 9: Parity table
+### Task 10: Parity table
 
 **Files:**
 - Create: `bin/front-parity.mjs`
@@ -3273,7 +3842,7 @@ One agent per screen group of spec §7, each with the inventory section of its p
 
 ```text
 action	auth/login.tsx :: Show/hide password	kept: resources/js/pages/auth/login.tsx, PasswordField toggle; tests/Browser/Walkthroughs/Plan04RetroCoreTest.php
-action	welcome.tsx :: External links "Documentation", "Laracasts", "Deploy now"	gap: starter-kit links, the landing is rewritten from ScreenLanding (spec §7 row 12)
+action	welcome.tsx :: External links "Documentation", "Laracasts", "Deploy now"	gap: starter-kit links; no landing page is built, `/` redirects (owner, BLOCK-3; spec B32)
 feature	Retro: presentation mode	kept: resources/js/components/retro/presentation-overlay.tsx; tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php
 ```
 
@@ -3302,7 +3871,7 @@ for (const [, file] of inventory.matchAll(/^- `(resources\/js\/[\w./-]+\.(?:tsx|
 grep -c "FILL" docs/superpowers/research/front-rewrite/parity-rulings.tsv
 ```
 
-Each `FILL` line is rewritten: `moved: resources/js/components/skrum/<component>.tsx` (or the container that took over) when the 18e report or `git log --diff-filter=D --follow` shows what replaced the file; `gap: starter kit, nothing replaces it` for the starter-kit files; `gap: <reason>` for a feature removed with the owner's decision. A file that is `kept:` although it is an old view component (the "old file still in use" lines of Task 3) keeps its `kept:` and is listed in the final report under goal 1 of the spec.
+Each `FILL` line is rewritten: `moved: resources/js/components/skrum/<component>.tsx` (or the container that took over) when the 18e report or `git log --diff-filter=D --follow` shows what replaced the file; `gap: starter kit, nothing replaces it` for the starter-kit files; `gap: <reason>` for a feature removed with the owner's decision. No file of the table is an old view component any more: Task 4 rewrote or deleted them. A row whose file Task 4 deleted reads `moved: <the library component or container that took over>`, from `$LEDGER/reports/rewrites/`.
 
 ```bash
 grep -c "FILL" docs/superpowers/research/front-rewrite/parity-rulings.tsv
@@ -3332,7 +3901,7 @@ If `npm run check` reformats or flags the script, run Step 6 again after the fix
 
 ---
 
-### Task 10: Acceptance sweep, final gates, review, report and close-out
+### Task 11: Acceptance sweep, final gates, review, report and close-out
 
 **Files:**
 - Create (untracked): `$LEDGER/reports/final-report.md`
@@ -3356,12 +3925,14 @@ vendor/bin/sail composer types:check
 vendor/bin/sail composer rector:check
 bin/test-browser
 node bin/front-unused.mjs; echo "unused exit $?"
+node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")"; echo "old components exit $?"
+grep -c "| open |" docs/superpowers/research/front-rewrite/fidelity.md
 vendor/bin/sail artisan route:list --json > "$LEDGER/reports/routes.json"
 node bin/front-parity.mjs "$LEDGER/reports/routes.json" --check; echo "parity exit $?"
 git status --short | wc -l
 ```
 
-Expected: every command exits 0 (PHPStan and Rector: no finding that was not in the baseline of Task 1); `bin/test-browser` ends with `Total: PASS, <n> passed, 0 failed, 4 shards`, with `<n>` at least the baseline plus the tests of Tasks 7 and 8; `unused exit 0`, or 1 with only the undeclared package awaiting the owner; `parity exit 0`; the last count is `0` (`parity.md` regenerated identical, no capture changed by the run). A capture that changed during the suite is a real difference: look at it before committing it.
+Expected: every command exits 0 (PHPStan and Rector: no finding that was not in the baseline of Task 1); `bin/test-browser` ends with `Total: PASS, <n> passed, 0 failed, 4 shards`, with `<n>` at least the baseline plus the tests of Tasks 8 and 9; `unused exit 0`; `old components exit 0`; `0` open lines in the fidelity report; `parity exit 0`; the last count is `0` (`parity.md` regenerated identical, no capture changed by the run). A capture that changed during the suite is a real difference: look at it before committing it.
 
 - [ ] **Step 2: The acceptance criteria of spec §13, one by one**
 
@@ -3369,23 +3940,25 @@ Write the table in the final report, with the evidence of this run:
 
 | AC | Evidence to record |
 |---|---|
-| 1 Every page, new layout, 1440/390, light/dark, four languages, no overflow | `tests/Arch/FrontEndPagesTest.php` passed; number of captures (`ls tests/visual/__screenshots__ | wc -l`). Captures are EN and FR (spec §4); ES and DE are covered by `TranslationKeysTest` only: say so. |
+| 1 Every page, new layout, 1440/390, light/dark, four languages, no overflow | `tests/Arch/FrontEndPagesTest.php` passed; number of captures (`ls tests/visual/__screenshots__ | wc -l`). Captures are FR and EN (spec §4, confirmed by the owner on 2026-10-02); ES and DE are covered by `TranslationKeysTest` only: say so. |
 | 2 Every action has a control | `parity.md`: rows, holes 0, gaps listed |
 | 3 Browser suite passes; changed tests justified | The `bin/test-browser` total; `git log --oneline main..HEAD -- tests/Browser/Walkthroughs tests/Browser/Smoke` for the 18e–18g range, each changed test with its mockup reason from the 18e report |
 | 4 All gates | Step 1 |
-| 5 The grep | Task 5 Step 4, run again now |
-| 6 `npx knip` reports nothing | Not run: `knip` is not installed and adding it is a new dependency. `bin/front-unused.mjs` exit code and its eleven counts stand in. Listed in the open questions for the owner. |
-| 7 No starter-kit file | Task 4 Step 5, run again now; the "old file still in use" lines of Task 3 |
-| 8 No `sk-*`, no `_preview-bundle.css` | Task 5 Step 4 |
+| 5 The grep | Task 6 Step 4, run again now |
+| 6 `npx knip` reports nothing | Task 5 Step 6: the one run of `npx --yes knip@6.39.0` (not installed), `$LEDGER/reports/knip-classified.txt`: `to resolve: 0`; the findings left are the exports and prop types of `components/ui` and `components/skrum`, reported and kept as the public surface of the library (their count), and the files kept for their test. `bin/front-unused.mjs` exit code and its eleven counts on the final tree are the cross-check. Say plainly that `knip` does not print an empty report: it prints the kept list. |
+| 7 No starter-kit file | Task 5 Step 5, run again now |
+| 7b No import of an old view component remains (owner, 2026-10-02) | `node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")"` on the final tree: `Old view components a page still reaches (0)`, exit 0; the `notViews` exemptions, each with its reason; the number of components rewritten, replaced and composed (`ls "$LEDGER/reports/rewrites" | wc -l`) |
+| 7c No unapproved deviation from the mockups remains (owner, 2026-10-02) | Task 8: `docs/superpowers/research/front-rewrite/deviations.md`, every line with one of the allowed reasons or "backlog" or "owner"; `docs/superpowers/research/front-rewrite/fidelity.md` with no line left `open`; `tests/Arch/FrontEndPagesTest.php` `has a mockup comparison for every page` passed |
+| 8 No `sk-*`, no `_preview-bundle.css` | Task 6 Step 4 |
 | 9 A retro runs Writing → Completed with a member and a guest in two browsers, without reload | `grep -rnE "RetroPhase::(Actions|Roti)|'actions'|'roti'" tests/Browser/Walkthroughs | head` shows the walkthrough that 18e extended for B1; name the test and its result in this run. If no browser test walks the nine phases with a guest page open, stop: it is a deliverable of 18e (B1), not written here. |
 | 10 Brand contrast, Branding screen | `tests/Unit/Branding/BrandPaletteTest.php` and `tests/Browser/Walkthroughs/Plan18dBrandingTest.php` passed |
 | 11 Avatars and GIFs served by the application | `grep -rn "api.dicebear.com\|tenor.googleapis\|api.giphy.com" resources/js` prints nothing; the feature tests of `tests/Feature/Avatars` passed |
-| 12 Reduced motion | Task 8: the motion test on every page, the Vitest files, the manual lines |
+| 12 Reduced motion | Task 9: the motion test on every page, the Vitest files, the reduced-motion block of the agent's checklist report (`not checked` lines named) |
 | 13 §9 items covered; B12 and B13 security review | The 18f report |
 
 - [ ] **Step 3: Whole-branch review**
 
-One reviewer on the most capable model, read-only, with the diff `git diff <base of plan-18g-cleanup>..HEAD` and this plan. It checks, in this order: a deleted file or key that something still names (Review Focus 1 and 2); an exemption in `FrontEndRuleExemptions`, `DynamicTranslationSources`, `PagesWithoutCapture` or `data-focus-mark-ok` whose reason does not hold; a `kept:` ruling of `parity-rulings.tsv` sampled against the code (twenty rows at random, at least two per screen group); a rule or accessibility fix that changed behaviour. It does not run the browser or feature suites.
+One reviewer on the most capable model, read-only, with the diff `git diff <base of plan-18g-cleanup>..HEAD` and this plan. It checks, in this order: a deleted file or key that something still names (Review Focus 1 and 2); ten rewrites of Task 4 sampled against their old file (`git show <base>:<path>`): every state, callback and browser hook of the old component is in the new one (Review Focus 6); twenty lines of `fidelity.md` marked `same` or `fixed`, at least two per screen group, checked against the capture and the mockup picture, and every line of `deviations.md` checked against the three allowed reasons (Review Focus 7); an exemption in `FrontEndRuleExemptions`, `DynamicTranslationSources`, `PagesWithoutCapture` or `data-focus-mark-ok` whose reason does not hold; a `kept:` ruling of `parity-rulings.tsv` sampled against the code (twenty rows at random, at least two per screen group); a rule or accessibility fix that changed behaviour. It does not run the browser or feature suites.
 
 One fix wave for its findings, then Step 1 again, then a re-review limited to the fixes.
 
@@ -3394,13 +3967,13 @@ One fix wave for its findings, then Step 1 again, then a re-review limited to th
 `$LEDGER/reports/final-report.md`, in this order (spec §12, end-of-phase report):
 
 1. **Done** — one line per task, with the commit range and the numbers: files deleted (`wc -l < $LEDGER/reports/deleted-files.txt`), lines removed (`git diff --shortstat <base>..HEAD -- resources/js resources/css lang`), exports removed, translation keys removed, packages removed, tests added (Arch, Feature, Browser), captures taken.
-2. **Gaps with the mockups, and why** — every `gap:` line of `parity.md`, grouped by screen, with the gaps the 18e and 18f reports recorded and the findings of the visual review that were not fixed.
-3. **Old features verified** — the parity counts (routes, pages, actions, features), the acceptance table of Step 2, the manual accessibility checklist with its results.
-4. **Code deleted** — the groups of Task 3, the CSS, keys and packages of Task 4; and what was not deleted: files reached only by a test, old files still in use, each with its reason.
+2. **Mockup fidelity** — the numbers of `fidelity.md` (pages compared, lines `same`, fixed, deviations, owner answers, backlog; `open` must be 0), the deviations table of `deviations.md` in full with the sentence "each line carries one of the allowed reasons; the owner's approval of this table is what turns it from recorded to approved", the browser tests changed because a mockup imposed it (test, old and new assertion, mockup line), and every `gap:` line of `parity.md`, grouped by screen.
+3. **Old features verified** — the parity counts (routes, pages, actions, features), the acceptance table of Step 2, the accessibility checklist report of Task 9 Step 5 (`$LEDGER/reports/accessibility.md`, copied in full), introduced by the sentence that it was run by an agent driving Chrome and that no real screen reader was used.
+4. **Code deleted and rewritten** — the old view components of Task 4, one line each from `rewrites/*.md` (replaced by a library component, rewritten in place, or composed from primitives), with the count and the proof that none is left; the groups of Task 3, the CSS, keys and packages of Task 5; the package declared (`@testing-library/user-event` 14.6.7, Task 1); and what was not deleted: files reached only by a test, old files still in use, each with its reason, and the library exports and prop types that `knip` reports and that stay exported as public surface (count, and the list in `knip-classified.txt`).
 5. **Missing tokens or components** — sizes added to `@theme`, files that needed a rule exemption, components composed from primitives because the design system has none (from the 18e report).
-6. **Backlog** — spec §10 unchanged, plus what this phase adds: the open questions below, the manual checklist lines that failed, the undeclared package.
+6. **Backlog** — spec §10 unchanged, plus what this phase adds: the open questions below, the checklist lines that are a finding or `not checked`, a pass with a real screen reader (VoiceOver or NVDA), which no agent can do.
 7. **Decisions taken for the owner** — every ruling line of the ledger.
-8. **What waits for the owner** — review of this report, approval to delete the tests of unreachable code, `knip` or not, the merge into `main`, the push.
+8. **What waits for the owner** — review of this report and of the accessibility report, approval of the deviations table (and a decision on any mockup element left without data, if Task 8 stopped on one), approval to delete the tests of unreachable code, a screen-reader pass by a person, the merge into `main`, the push.
 
 - [ ] **Step 5: Memory and ledger close-out**
 
@@ -3424,14 +3997,25 @@ Expected: `0`, the last commit of this plan, `plan-18g-cleanup`. The run ends he
 
 ---
 
-## Open questions for the owner
+## Owner answers (2026-10-02) and what is still open
 
-1. **`knip` (AC6).** The spec asks for `npx knip` clean; `knip` is not installed and this plan may not add a dependency. `bin/front-unused.mjs` stands in. Accept it as the evidence for AC6, or approve `knip` as a dev dependency (or a one-off `npx --yes knip`, which changes no manifest)?
-2. **`@testing-library/user-event`** is imported by 18 Vitest files and is not in `package.json` (it is installed as a dependency of another package). Declaring it is formally a new dependency: approve it, or leave it undeclared?
-3. **Unreachable code kept for its test.** Before 18e the script lists four such files (`layouts/skrum/auth-layout.tsx`, `onboarding-layout.tsx`, `session-layout.tsx`, `lib/brand.ts`); 18e should bring them into use. Whatever is still in that state at the end needs a yes or no to delete the file with its test.
-4. **Library exports.** Prop types that `components/ui` and `components/skrum` export and nobody imports (224 before 18e) are kept as the public surface of the library, where `knip` would report them. Keep, or remove the `export` keyword there too?
-5. **Captures in Spanish and German.** AC1 says four languages; spec §4 and §11 say captures run in FR and EN. This plan follows §4 and §11. Add ES and DE captures (twice the files and the time), or keep two?
-6. **Does 18e add a capture per screen under the name `<component with dashes>-page`?** This plan works either way, but if 18e uses other names the coverage test will ask for a second set: the 18e plan should use this convention, or this plan's `captureName()` should follow 18e's.
-7. **AC9 walkthrough.** This plan expects 18e to extend the phase walkthrough to Actions and ROTI with a guest page open (B1). If the 18e plan does not include it, it has to be added there, or here once the labels of the rewritten phase controls are known.
-8. **Manual accessibility checklist.** It needs a person, or an agent with a real browser and the owner's approval for second-account and guest steps (the rule recorded for the plan 17 walkthroughs). Who runs it?
-9. **Old view components still imported by a rewritten screen** at the end of 18e are kept and reported, not rewritten here. Is that the wanted line between 18e and 18g, or should 18g finish those rewrites?
+Answered, and applied in the tasks named:
+
+| Was question | Answer | Where |
+|---|---|---|
+| 9. Old view components still imported after 18e | Second round: they are rewritten in this plan; none remains at the end. | Task 4; acceptance 7b in Task 11. |
+| (standing rule) | The mockup must be faithfully respected; allowed deviations only for something false or unsafe, an accessibility rule, or data the product does not have at all, each listed with its reason. | Global Constraints; Task 4 Step 6; Task 8 Step 7; acceptance 7c in Task 11. |
+| 1. `knip` (AC6) | `knip` through a one-off `npx`, not installed. | Task 5 Step 6; the home-made script stays as the cross-check and as the tool of every gate. |
+| 2. `@testing-library/user-event` | Declare it as a dev dependency. | Task 1 Step 4, at 14.6.7, the version already resolved. |
+| 4. Library exports | Follows from the `knip` answer: the exports and prop types of `components/ui` and `components/skrum` that nobody imports (224 before 18e) are reported by `knip` and by the script, and kept exported as the public surface of the library. | Task 3 Step 5 (kept), Task 5 Step 6 (classified), final report point 4. |
+| 5. Capture languages | FR and EN. | Task 8. |
+| 8. Accessibility checklist | Run by an agent with a real browser; the owner reads the report. No real screen reader is used, and the report says so. | Task 9 Step 5. |
+
+Still open:
+
+1. **Unreachable code kept for its test.** Before 18e the script lists four such files (`layouts/skrum/auth-layout.tsx`, `onboarding-layout.tsx`, `session-layout.tsx`, `lib/brand.ts`); 18e should bring them into use. Whatever is still in that state at the end needs a yes or no to delete the file with its test.
+2. **Does 18e add a capture per screen under the name `<component with dashes>-page`?** This plan works either way, but if 18e uses other names the coverage test will ask for a second set: the 18e plan should use this convention, or this plan's `captureName()` should follow 18e's.
+3. **AC9 walkthrough.** This plan expects 18e to extend the phase walkthrough to Actions and ROTI with a guest page open (B1). If the 18e plan does not include it, it has to be added there, or here once the labels of the rewritten phase controls are known.
+4. **A mockup element that needs data the server does not give.** Task 8 stops on such a page instead of leaving the element out or building back end here. If it happens, the owner chooses: a back-end task (18e or 18f reopened), the backlog, or a deviation.
+5. **A pass with a real screen reader.** The agent's checklist proves the live regions exist and change once; what VoiceOver or NVDA says is not verified by any plan of the rewrite. A person has to do it, or it stays in the backlog.
+6. **AC6 wording.** The spec says "`npx knip` reports nothing"; with the library's public surface kept, `knip` reports that list and nothing else. Either the spec line is amended to "nothing but the library's exported prop types", or the `export` keywords are removed there too (the bench and the containers that type against them would then import nothing less, but the library would stop documenting its props).
