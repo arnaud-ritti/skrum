@@ -190,7 +190,12 @@ export function WebhookDeliveryDialog({
                                                     </span>
                                                 </Button>
                                             </div>
-                                            <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs">
+                                            <pre
+                                                tabIndex={0}
+                                                role="region"
+                                                aria-label={t('Body')}
+                                                className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
                                                 {prettyBody(body)}
                                             </pre>
                                         </div>
@@ -225,7 +230,12 @@ export function WebhookDeliveryDialog({
                                             {t('No response body.')}
                                         </p>
                                     ) : (
-                                        <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs whitespace-pre-wrap">
+                                        <pre
+                                            tabIndex={0}
+                                            role="region"
+                                            aria-label={t('Response')}
+                                            className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
                                             {details.response.excerpt}
                                         </pre>
                                     )}

@@ -120,7 +120,12 @@ export function NewTokenPanel({
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value={snippet}>
-                    <pre className="max-h-60 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
+                    <pre
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t('Client configuration')}
+                        className="max-h-60 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                         {snippets[snippet]}
                     </pre>
                 </TabsContent>

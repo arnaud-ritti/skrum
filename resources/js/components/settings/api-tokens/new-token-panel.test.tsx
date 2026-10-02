@@ -112,4 +112,15 @@ describe('NewTokenPanel', () => {
 
         expect(onDone).toHaveBeenCalledOnce();
     });
+
+    it('lets the keyboard reach and scroll the client configuration', () => {
+        panel();
+
+        const snippet = screen.getByRole('region', {
+            name: 'Client configuration',
+        });
+
+        expect(snippet.tagName).toBe('PRE');
+        expect(snippet.tabIndex).toBe(0);
+    });
 });

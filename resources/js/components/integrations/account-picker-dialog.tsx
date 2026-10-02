@@ -46,12 +46,14 @@ export function AccountPickerDialog({
     const { t } = useTrans();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<ExternalAccount[]>([]);
-    const [searching, setSearching] = useState(false);
+    const [answered, setAnswered] = useState('');
     const [failure, setFailure] = useState<Failure | null>(null);
     const { workspace, team } = scope;
     const integration = connection.id;
     const trimmed = query.trim();
     const searchable = trimmed.length >= MinimumQueryLength;
+    /** From the keystroke on, debounce included: no answer yet for what is typed. */
+    const searching = searchable && answered !== trimmed;
 
     useEffect(() => {
         if (trimmed.length < MinimumQueryLength) {
@@ -60,8 +62,6 @@ export function AccountPickerDialog({
 
         let cancelled = false;
         const timer = setTimeout(() => {
-            setSearching(true);
-
             retroRequest<ExternalAccount[]>(
                 IntegrationAccountsController.index(
                     { workspace, team, integration },
@@ -81,7 +81,7 @@ export function AccountPickerDialog({
                 })
                 .finally(() => {
                     if (!cancelled) {
-                        setSearching(false);
+                        setAnswered(trimmed);
                     }
                 });
         }, SearchDelayMs);
@@ -134,7 +134,7 @@ export function AccountPickerDialog({
                     data-slot="account-results"
                     className="flex min-w-0 flex-col gap-2 empty:hidden"
                 >
-                    {failure !== null && (
+                    {failure !== null && !searching && (
                         <p className="text-sm text-skrum-destructive-text">
                             {integrationErrorMessage(
                                 failure.error,
@@ -142,9 +142,7 @@ export function AccountPickerDialog({
                             )}
                         </p>
                     )}
-                    {searchable && searching && (
-                        <Spinner aria-label={t('Loading')} />
-                    )}
+                    {searching && <Spinner aria-label={t('Loading')} />}
                     {searchable &&
                         !searching &&
                         failure === null &&
@@ -153,7 +151,7 @@ export function AccountPickerDialog({
                                 {t('No account found.')}
                             </p>
                         )}
-                    {searchable && results.length > 0 && (
+                    {searchable && !searching && results.length > 0 && (
                         <ul className="flex max-h-64 min-w-0 flex-col gap-0.5 overflow-y-auto">
                             {results.map((account) => (
                                 <li key={account.accountId} className="p-0.5">

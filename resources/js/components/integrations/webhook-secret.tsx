@@ -114,7 +114,12 @@ export function WebhookSecretDialog({ secret, onClose }: SecretDialogProps) {
                             'Verify each request: compute the signature with your secret and reject requests older than 5 minutes.',
                         )}
                     </p>
-                    <pre className="overflow-x-auto rounded-md border bg-muted p-3 font-mono text-xs">
+                    <pre
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t('Verification example')}
+                        className="overflow-x-auto rounded-md border bg-muted p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                         {VerificationSnippet}
                     </pre>
                 </div>

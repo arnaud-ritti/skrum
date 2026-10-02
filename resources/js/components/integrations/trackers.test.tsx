@@ -784,6 +784,10 @@ describe('AccountPickerDialog', () => {
             'zz',
         );
 
+        expect(screen.queryByText('No account found.')).toBeNull();
+        expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
+        expect(request).not.toHaveBeenCalled();
+
         expect(await screen.findByText('No account found.')).toBeTruthy();
     });
 });

@@ -102,18 +102,20 @@ function DeliveryActions({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="max-w-full"
                 onClick={() => onView(line.delivery)}
             >
-                {t('View')}
+                <span className="truncate">{t('View')}</span>
             </Button>
             {line.redeliverable && (
                 <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="max-w-full"
                     onClick={() => onRedeliver(line.delivery)}
                 >
-                    {t('Redeliver')}
+                    <span className="truncate">{t('Redeliver')}</span>
                 </Button>
             )}
         </div>
@@ -512,11 +514,11 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-foreground"
+                        className="max-w-full text-foreground"
                         disabled={busy}
                         onClick={() => void load(page?.currentPage ?? 1)}
                     >
-                        {t('Retry')}
+                        <span className="truncate">{t('Retry')}</span>
                     </Button>
                 </div>
             )}
@@ -556,11 +558,12 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="max-w-full min-w-0"
                             disabled={busy || page.currentPage <= 1}
                             onClick={() => void load(page.currentPage - 1)}
                         >
                             <ChevronLeft aria-hidden="true" />
-                            {t('Previous')}
+                            <span className="truncate">{t('Previous')}</span>
                         </Button>
                         <span className="min-w-0 text-center text-body-sm text-muted-foreground tabular-nums">
                             {t('Page :page of :pages', {
@@ -572,10 +575,11 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="max-w-full min-w-0"
                             disabled={busy || page.currentPage >= page.lastPage}
                             onClick={() => void load(page.currentPage + 1)}
                         >
-                            {t('Next')}
+                            <span className="truncate">{t('Next')}</span>
                             <ChevronRight aria-hidden="true" />
                         </Button>
                     </div>

@@ -167,190 +167,209 @@ export function CreateTokenForm({
                     ) : undefined
                 }
             >
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-4">
-                    <TextField
-                        id="token-name"
-                        label={t('Token name')}
-                        value={form.data.name}
-                        maxLength={60}
-                        required
-                        autoComplete="off"
-                        error={errors.name}
-                        onChange={(event) =>
-                            form.setData('name', event.target.value)
-                        }
-                    />
-
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                        <Label htmlFor="token-expiration">
-                            {t('Expiration')}
-                        </Label>
-                        <Select
-                            value={form.data.expiration}
-                            onValueChange={(value) =>
-                                form.setData(
-                                    'expiration',
-                                    value as ApiTokenExpiration,
-                                )
+                <fieldset
+                    data-slot="create-token-fields"
+                    disabled={newToken !== null}
+                    className="flex min-w-0 flex-col gap-5"
+                >
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-4">
+                        <TextField
+                            id="token-name"
+                            label={t('Token name')}
+                            value={form.data.name}
+                            maxLength={60}
+                            required
+                            autoComplete="off"
+                            error={errors.name}
+                            onChange={(event) =>
+                                form.setData('name', event.target.value)
                             }
-                        >
-                            <SelectTrigger
-                                id="token-expiration"
-                                className="w-full"
-                                aria-invalid={
-                                    errors.expiration ? true : undefined
-                                }
-                                aria-describedby={
-                                    errors.expiration
-                                        ? 'token-expiration-error'
-                                        : undefined
-                                }
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {expirationOptions.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FieldError
-                            id="token-expiration-error"
-                            message={errors.expiration}
                         />
-                    </div>
 
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                        <Label htmlFor="token-team">{t('Team')}</Label>
-                        <Select
-                            value={form.data.team_id ?? AllTeams}
-                            onValueChange={(value) =>
-                                form.setData(
-                                    'team_id',
-                                    value === AllTeams ? null : value,
-                                )
-                            }
-                        >
-                            <SelectTrigger
-                                id="token-team"
-                                className="w-full"
-                                aria-invalid={errors.team_id ? true : undefined}
-                                aria-describedby={
-                                    errors.team_id
-                                        ? 'token-team-error'
-                                        : undefined
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                            <Label htmlFor="token-expiration">
+                                {t('Expiration')}
+                            </Label>
+                            <Select
+                                value={form.data.expiration}
+                                onValueChange={(value) =>
+                                    form.setData(
+                                        'expiration',
+                                        value as ApiTokenExpiration,
+                                    )
                                 }
                             >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={AllTeams}>
-                                    {t('All my teams')}
-                                </SelectItem>
-                                {teamGroups.map((group) => (
-                                    <SelectGroup key={group.workspace.id}>
-                                        <SelectLabel>
-                                            {group.workspace.name}
-                                        </SelectLabel>
-                                        {group.teams.map((team) => (
-                                            <SelectItem
-                                                key={team.id}
-                                                value={team.id}
-                                            >
-                                                {team.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FieldError
-                            id="token-team-error"
-                            message={errors.team_id}
-                        />
-                    </div>
-                </div>
-
-                <fieldset className="flex min-w-0 flex-col gap-2">
-                    <legend className="mb-2 text-sm font-medium">
-                        {t('Scopes')}
-                    </legend>
-                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-x-4 gap-y-2">
-                        <div className="flex min-w-0 items-start gap-2">
-                            <Checkbox
-                                id="scope-read"
-                                checked
-                                disabled
-                                className="mt-0.5"
-                            />
-                            <label
-                                htmlFor="scope-read"
-                                className="flex min-w-0 flex-col items-start text-body-sm"
-                            >
-                                <ScopeCode scope="mcp:read" />{' '}
-                                <span className="text-muted-foreground">
-                                    {t('Read')}
-                                </span>
-                            </label>
-                        </div>
-                        <div className="flex min-w-0 items-start gap-2">
-                            <Checkbox
-                                id="scope-write"
-                                checked={form.data.scopes.includes('mcp:write')}
-                                className="mt-0.5"
-                                onCheckedChange={(checked) =>
-                                    toggleScope('mcp:write', checked === true)
-                                }
-                            />
-                            <label
-                                htmlFor="scope-write"
-                                className="flex min-w-0 cursor-pointer flex-col items-start text-body-sm"
-                            >
-                                <ScopeCode scope="mcp:write" />{' '}
-                                <span className="text-muted-foreground">
-                                    {t('Create and update')}
-                                </span>
-                            </label>
-                        </div>
-                        <div className="flex min-w-0 items-start gap-2">
-                            <Checkbox
-                                id="scope-delete"
-                                checked={form.data.scopes.includes(
-                                    'mcp:delete',
-                                )}
-                                aria-describedby="scope-delete-help"
-                                className="mt-0.5"
-                                onCheckedChange={(checked) =>
-                                    toggleScope('mcp:delete', checked === true)
-                                }
-                            />
-                            <div className="flex min-w-0 flex-col items-start text-body-sm">
-                                <label
-                                    htmlFor="scope-delete"
-                                    className="flex min-w-0 cursor-pointer flex-col items-start"
+                                <SelectTrigger
+                                    id="token-expiration"
+                                    className="w-full"
+                                    aria-invalid={
+                                        errors.expiration ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        errors.expiration
+                                            ? 'token-expiration-error'
+                                            : undefined
+                                    }
                                 >
-                                    <ScopeCode scope="mcp:delete" />{' '}
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {expirationOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldError
+                                id="token-expiration-error"
+                                message={errors.expiration}
+                            />
+                        </div>
+
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                            <Label htmlFor="token-team">{t('Team')}</Label>
+                            <Select
+                                value={form.data.team_id ?? AllTeams}
+                                onValueChange={(value) =>
+                                    form.setData(
+                                        'team_id',
+                                        value === AllTeams ? null : value,
+                                    )
+                                }
+                            >
+                                <SelectTrigger
+                                    id="token-team"
+                                    className="w-full"
+                                    aria-invalid={
+                                        errors.team_id ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        errors.team_id
+                                            ? 'token-team-error'
+                                            : undefined
+                                    }
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={AllTeams}>
+                                        {t('All my teams')}
+                                    </SelectItem>
+                                    {teamGroups.map((group) => (
+                                        <SelectGroup key={group.workspace.id}>
+                                            <SelectLabel>
+                                                {group.workspace.name}
+                                            </SelectLabel>
+                                            {group.teams.map((team) => (
+                                                <SelectItem
+                                                    key={team.id}
+                                                    value={team.id}
+                                                >
+                                                    {team.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldError
+                                id="token-team-error"
+                                message={errors.team_id}
+                            />
+                        </div>
+                    </div>
+
+                    <fieldset className="flex min-w-0 flex-col gap-2">
+                        <legend className="mb-2 text-sm font-medium">
+                            {t('Scopes')}
+                        </legend>
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-x-4 gap-y-2">
+                            <div className="flex min-w-0 items-start gap-2">
+                                <Checkbox
+                                    id="scope-read"
+                                    checked
+                                    disabled
+                                    className="mt-0.5"
+                                />
+                                <label
+                                    htmlFor="scope-read"
+                                    className="flex min-w-0 flex-col items-start text-body-sm"
+                                >
+                                    <ScopeCode scope="mcp:read" />{' '}
                                     <span className="text-muted-foreground">
-                                        {t('Delete my messages')}
+                                        {t('Read')}
                                     </span>
                                 </label>
-                                <span
-                                    id="scope-delete-help"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    {t(
-                                        'Lets the client delete messages you wrote.',
+                            </div>
+                            <div className="flex min-w-0 items-start gap-2">
+                                <Checkbox
+                                    id="scope-write"
+                                    checked={form.data.scopes.includes(
+                                        'mcp:write',
                                     )}
-                                </span>
+                                    className="mt-0.5"
+                                    onCheckedChange={(checked) =>
+                                        toggleScope(
+                                            'mcp:write',
+                                            checked === true,
+                                        )
+                                    }
+                                />
+                                <label
+                                    htmlFor="scope-write"
+                                    className="flex min-w-0 cursor-pointer flex-col items-start text-body-sm"
+                                >
+                                    <ScopeCode scope="mcp:write" />{' '}
+                                    <span className="text-muted-foreground">
+                                        {t('Create and update')}
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="flex min-w-0 items-start gap-2">
+                                <Checkbox
+                                    id="scope-delete"
+                                    checked={form.data.scopes.includes(
+                                        'mcp:delete',
+                                    )}
+                                    aria-describedby="scope-delete-help"
+                                    className="mt-0.5"
+                                    onCheckedChange={(checked) =>
+                                        toggleScope(
+                                            'mcp:delete',
+                                            checked === true,
+                                        )
+                                    }
+                                />
+                                <div className="flex min-w-0 flex-col items-start text-body-sm">
+                                    <label
+                                        htmlFor="scope-delete"
+                                        className="flex min-w-0 cursor-pointer flex-col items-start"
+                                    >
+                                        <ScopeCode scope="mcp:delete" />{' '}
+                                        <span className="text-muted-foreground">
+                                            {t('Delete my messages')}
+                                        </span>
+                                    </label>
+                                    <span
+                                        id="scope-delete-help"
+                                        className="text-xs text-muted-foreground"
+                                    >
+                                        {t(
+                                            'Lets the client delete messages you wrote.',
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <FieldError id="token-scopes-error" message={scopeError} />
+                        <FieldError
+                            id="token-scopes-error"
+                            message={scopeError}
+                        />
+                    </fieldset>
                 </fieldset>
 
                 {newToken !== null && (

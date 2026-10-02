@@ -41,7 +41,7 @@ export function SettingsCard({
                 className="min-w-0"
             >
                 <Card className="border-[color-mix(in_oklch,var(--destructive)_40%,var(--border))]">
-                    <div className="flex flex-wrap items-center gap-4 p-5">
+                    <div className="flex flex-wrap items-start gap-4 p-5 [&>button]:self-center">
                         <span
                             data-slot="settings-card-icon"
                             className="grid size-10 shrink-0 place-items-center rounded-full bg-skrum-destructive-soft text-skrum-destructive-text"

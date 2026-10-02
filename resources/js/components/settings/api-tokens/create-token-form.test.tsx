@@ -242,8 +242,16 @@ describe('CreateTokenForm', () => {
             screen.getByRole('textbox', { name: 'API token' }),
         );
 
-        await userEvent.type(screen.getByLabelText('Token name'), 'x{Enter}');
-
+        expect(
+            (
+                document.querySelector(
+                    '[data-slot="create-token-fields"]',
+                ) as HTMLFieldSetElement
+            ).disabled,
+        ).toBe(true);
+        expect(screen.getByLabelText('Token name').matches(':disabled')).toBe(
+            true,
+        );
         expect(form.submit).not.toHaveBeenCalled();
 
         await userEvent.click(screen.getByRole('button', { name: 'Done' }));
