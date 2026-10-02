@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 export type AccessNoticeProps = {
     icon: LucideIcon;
     title: string;
-    description: string;
+    description?: string;
     /** A second, muted line (e.g. "Guests: ask the facilitator for the guest link."). */
     hint?: string;
     tone?: 'default' | 'destructive';
@@ -43,7 +43,9 @@ export function AccessNotice({
                 <h2 className="text-xl font-title tracking-subheading break-words">
                     {title}
                 </h2>
-                <p className="text-sm/snug break-words">{description}</p>
+                {description !== undefined && (
+                    <p className="text-sm/snug break-words">{description}</p>
+                )}
                 {hint !== undefined && (
                     <p className="text-sm/snug break-words text-muted-foreground">
                         {hint}

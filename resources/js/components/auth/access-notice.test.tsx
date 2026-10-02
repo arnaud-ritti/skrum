@@ -44,4 +44,19 @@ describe('AccessNotice', () => {
                 ?.classList.contains('bg-skrum-destructive-soft'),
         ).toBe(true);
     });
+
+    it('shows a title and a hint without a description', () => {
+        renderWithProviders(
+            <AccessNotice
+                icon={LinkIcon}
+                title="Your session has ended."
+                hint="Guests: ask the facilitator for the guest link."
+            />,
+        );
+
+        expect(
+            screen.getByText('Guests: ask the facilitator for the guest link.'),
+        ).toBeTruthy();
+        expect(document.querySelectorAll('p')).toHaveLength(1);
+    });
 });
