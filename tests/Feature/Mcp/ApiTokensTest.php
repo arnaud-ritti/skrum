@@ -56,8 +56,8 @@ it('lists the user tokens without their secrets', function () {
             ->component('settings/account')
             ->has('apiTokens.protected.tokens', 2)
             ->where('apiTokens.protected.mcpUrl', url('/mcp'))
-            ->where('apiTokens.protected.defaultExpiration', '90_days')
-            ->has('apiTokens.protected.expirationOptions', 4)
+            ->where('apiTokens.defaultExpiration', '90_days')
+            ->has('apiTokens.expirationOptions', 4)
             ->has('apiTokens.protected.teamGroups', 1)
             ->where('apiTokens.protected.teamGroups.0.teams.0.name', 'Platform')
             ->where('teams', [['id' => $team->id, 'name' => 'Platform']]));
