@@ -3733,5 +3733,10 @@
     "New session, whiteboard form: the whole form, not scrolled": "New session, whiteboard form: the whole form, not scrolled",
     "Whiteboard templates manager: the rows, one being edited": "Whiteboard templates manager: the rows, one being edited",
     "Whiteboard templates manager: no template": "Whiteboard templates manager: no template",
-    "New session dialog, open on the whiteboard type": "New session dialog, open on the whiteboard type"
+    "New session dialog, open on the whiteboard type": "New session dialog, open on the whiteboard type",
+    "Board name": "Board name",
+    "Rename the board": "Rename the board",
+    "It is no longer available to anyone.": "It is no longer available to anyone.",
+    "Ask the facilitator if you still need it.": "Ask the facilitator if you still need it.",
+    "Check your connection, then try again.": "Check your connection, then try again."
 }

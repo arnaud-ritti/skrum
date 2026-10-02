@@ -49,7 +49,7 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
     $this->awaitWhiteboardElements($page, 0);
 
     $page->assertPathIs($this->whiteboardPath($board))
-        ->assertSeeIn('header > h1', 'Sprint planning board')
+        ->assertSeeIn('header span > h1', 'Sprint planning board')
         ->assertPresent('[role="toolbar"][aria-label="Facilitation tools"]')
         ->assertPresent('header img[data-presence-id][alt="Fran Facilitator"]');
 
@@ -348,15 +348,17 @@ it('[P17a-05a] replays the edit a member made while the board could not be reach
 it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the facilitator turns guest access off', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $joinPath = $this->whiteboardJoinPath($board);
-    $guestSwitch = '[role="menuitemcheckbox"]:has-text("Allow guests to join with a link")';
+    $guestSwitch = '#whiteboard-guest-access';
+    $share = '[data-slot="share-dialog"]';
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($joinPath, 'Guest Gia'));
 
-    $this->openWhiteboardMenu($franPage)
+    $franPage->click('button[aria-label="Share"]')
         ->assertAriaAttribute($guestSwitch, 'checked', 'true')
-        ->assertPresent('[role="menuitem"]:has-text("Replace the guest link")')
-        ->assertPresent('[role="menuitem"]:has-text("Copy the guest link")')
+        ->assertPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertPresent("{$share} input[aria-label=\"Guest link\"]")
+        ->assertPresent("{$share} button:has-text(\"Copy link\")")
         ->click($guestSwitch);
 
     $guestPage->assertSee('Your access to this board has ended.')
@@ -365,10 +367,13 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
     expect($board->fresh()->guest_access_enabled)->toBeFalse()
         ->and(fn () => $this->whiteboardSnapshot($guestPage, $board))->toThrow(RuntimeException::class, 'HTTP 403');
 
-    $this->openWhiteboardMenu($franPage)
-        ->assertAriaAttribute($guestSwitch, 'checked', 'false')
-        ->assertNotPresent('[role="menuitem"]:has-text("Replace the guest link")')
-        ->assertNotPresent('[role="menuitem"]:has-text("Copy the guest link")');
+    $franPage->assertAriaAttribute($guestSwitch, 'checked', 'false')
+        ->assertNotPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertNotPresent("{$share} input[aria-label=\"Guest link\"]")
+        ->assertNotPresent("{$share} button:has-text(\"Copy link\")");
+
+    $this->openWhiteboardMenu($franPage->click("{$share} button:has-text(\"Done\")"))
+        ->assertDontSeeIn('[role="menu"]', 'guest');
 
     $visitorPage = visit($joinPath);
 
@@ -405,8 +410,9 @@ it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($oldJoinPath, 'Guest Gia'));
 
-    $this->openWhiteboardMenu($franPage)
-        ->click('[role="menuitem"]:has-text("Replace the guest link")');
+    $franPage->click('button[aria-label="Share"]')
+        ->click('[data-slot="share-dialog"] button:has-text("Create a new link")')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]');

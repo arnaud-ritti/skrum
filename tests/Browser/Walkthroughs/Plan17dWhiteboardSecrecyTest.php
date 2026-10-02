@@ -125,6 +125,6 @@ it('[P17d-07a] refuses a change of the settings sent by a guest with 403 and cha
         ->and($snapshot['board']['guestUrl'])->toBeNull()
         ->and($snapshot['links']['team'])->toBeNull();
 
-    $guestPage->assertSeeIn('header > h1', 'Sprint board')
+    $guestPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertPresent('[data-realtime="connected"]');
 });

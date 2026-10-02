@@ -4,7 +4,6 @@ import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import WhiteboardDuplicatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardDuplicatesController';
 import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
-import WhiteboardGuestTokensController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardGuestTokensController';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
 import { Button } from '@/components/ui/button';
@@ -81,15 +80,6 @@ export function BoardMenu({
                 settings,
             ),
         );
-
-    const copyGuestLink = async () => {
-        if (!board.guestUrl) {
-            return;
-        }
-
-        await navigator.clipboard.writeText(board.guestUrl);
-        toast.success(t('Link copied.'));
-    };
 
     const duplicate = async () => {
         try {
@@ -199,37 +189,7 @@ export function BoardMenu({
                             >
                                 {t('Show flying reactions')}
                             </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                                checked={board.guestAccessEnabled}
-                                onCheckedChange={(checked) =>
-                                    updateSettings({
-                                        guest_access_enabled: checked,
-                                    })
-                                }
-                            >
-                                {t('Allow guests to join with a link')}
-                            </DropdownMenuCheckboxItem>
-                            {board.guestAccessEnabled && (
-                                <DropdownMenuItem
-                                    onSelect={() =>
-                                        run(
-                                            retroRequest(
-                                                WhiteboardGuestTokensController.store(
-                                                    board.id,
-                                                ),
-                                            ),
-                                        )
-                                    }
-                                >
-                                    {t('Replace the guest link')}
-                                </DropdownMenuItem>
-                            )}
                         </>
-                    )}
-                    {!me.isGuest && board.guestAccessEnabled && (
-                        <DropdownMenuItem onSelect={copyGuestLink}>
-                            {t('Copy the guest link')}
-                        </DropdownMenuItem>
                     )}
                     {me.canDelete && (
                         <>

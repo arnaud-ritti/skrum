@@ -1,13 +1,9 @@
 import { usePage } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { ConnectionBanner } from '@/components/retro/connection-banner';
-import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
-import { TimerDisplay } from '@/components/retro/timer-display';
-import { Button } from '@/components/ui/button';
-import { useLocalPreference } from '@/hooks/use-local-preference';
+import { useHideMyCursor } from '@/components/session/cursor-preference';
+import { SessionShell } from '@/components/session/session-shell';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
@@ -34,16 +30,20 @@ import type {
     SceneElement,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
+import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
-import { BoardMenu } from './board-menu';
+import {
+    BoardActions,
+    BoardPresence,
+    BoardTitle,
+    useFacilitationInHeader,
+} from './board-header';
+import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
+import { BoardTimer } from './board-timer';
 import { SceneExport } from './scene-export';
-import { FacilitatorBar } from './facilitator-bar';
-import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
-import { TopBar } from './top-bar';
 
-const HideMyCursorKey = 'skrum.hideMyCursor';
 const PollMs = 5000;
 
 export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
@@ -54,10 +54,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const viewOnly = board.locked && !me.isFacilitator;
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
-    const [hideMyCursor, setHideMyCursor] = useLocalPreference(
-        HideMyCursorKey,
-        false,
-    );
+    const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
+    const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
@@ -169,6 +167,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     if (state.status !== 'active') {
         return (
             <BoardGone
+                title={board.title}
                 reason={state.status}
                 teamUrl={state.snapshot.links.team}
             />
@@ -176,64 +175,57 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }
 
     return (
-        <div
-            ref={root}
-            className="flex h-dvh flex-col"
-            data-realtime={realtimeState(
+        <SessionShell
+            kind="whiteboard"
+            title={<BoardTitle state={state} />}
+            timer={!me.isFacilitator && <BoardTimer state={state} />}
+            presence={<BoardPresence state={state} />}
+            actions={
+                <BoardActions
+                    state={state}
+                    onExport={
+                        api
+                            ? () =>
+                                  api.updateScene({
+                                      appState: {
+                                          openDialog: { name: 'jsonExport' },
+                                      },
+                                  })
+                            : undefined
+                    }
+                    hideMyCursor={hideMyCursor}
+                    onHideMyCursorChange={setHideMyCursor}
+                    sticky={
+                        api &&
+                        !toolbarSlot &&
+                        !viewOnly && <StickyTool api={api} />
+                    }
+                />
+            }
+            realtime={realtimeState(
                 state.connected && api !== null,
                 state.online,
             )}
-            data-scene={initialStamp}
+            connection={{
+                reconnecting: state.reconnecting || offline,
+                expired: state.sessionExpired,
+            }}
+            rootRef={root}
+            rootProps={{ 'data-scene': initialStamp }}
         >
-            {state.sessionExpired && <SessionExpiredBanner />}
-            <div
-                className="flex min-h-0 flex-1 flex-col"
-                inert={state.sessionExpired}
-            >
-                <TopBar state={state}>
-                    <TimerDisplay
-                        endsAt={board.timerEndsAt}
-                        offset={state.serverOffset}
-                    />
-                    {me.isFacilitator && <FacilitatorBar state={state} />}
-                    {api && !toolbarSlot && !viewOnly && (
-                        <StickyTool api={api} />
-                    )}
-                    <BoardMenu
-                        state={state}
-                        hideMyCursor={hideMyCursor}
-                        onHideMyCursorChange={setHideMyCursor}
-                    />
-                </TopBar>
-                <ConnectionBanner
-                    reconnecting={state.reconnecting || offline}
+            <div className="flex h-full min-h-0 flex-col">
+                {me.isFacilitator && !facilitationInHeader && (
+                    <div className="flex shrink-0 justify-center border-b bg-background p-1.5">
+                        <BoardFacilitation state={state} compact />
+                    </div>
+                )}
+                <BoardNotices
+                    locked={viewOnly}
+                    leading={board.followEnabled && me.isFacilitator}
+                    following={follow.following}
+                    paused={follow.paused}
+                    onResume={follow.resume}
                 />
-                <StatusBar>
-                    {viewOnly && (
-                        <span className="flex items-center gap-1.5">
-                            <Lock className="size-4" aria-hidden="true" />
-                            {t('This board is locked.')}
-                        </span>
-                    )}
-                    {board.followEnabled && me.isFacilitator && (
-                        <span>{t('Everyone follows your view.')}</span>
-                    )}
-                    {follow.following && !follow.paused && (
-                        <span>{t('Following the facilitator')}</span>
-                    )}
-                    {follow.paused && (
-                        <span className="flex items-center gap-2">
-                            {t('Following paused')}
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={follow.resume}
-                            >
-                                {t('Resume')}
-                            </Button>
-                        </span>
-                    )}
-                </StatusBar>
                 {api &&
                     toolbarSlot &&
                     createPortal(
@@ -305,6 +297,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 </div>
                 <BoardReactions state={state} />
             </div>
-        </div>
+        </SessionShell>
     );
 }

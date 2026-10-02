@@ -127,10 +127,10 @@ it('[P17c-01c] shows the time-up notice in the top bar and as a toast to the fac
     expect(p17cTimerSeconds($franPage))->toBeBetween(1, 11)
         ->and(p17cTimerSeconds($guestPage))->toBeBetween(1, 11);
 
-    $franPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $franPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertPresent(P17cTimesUpToast);
 
-    $guestPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $guestPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertPresent(P17cTimesUpToast);
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->toBe($started['body']['timerEndsAt']);
@@ -149,7 +149,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
-    $guestPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $guestPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertNotPresent('[data-sonner-toast]');
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->not->toBeNull();
@@ -158,7 +158,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
-    $guestPage->assertSeeIn('header > h1', 'Sprint board')
+    $guestPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertNotPresent('[role="timer"]');
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->toBeNull()
@@ -821,7 +821,7 @@ it('[P17c-08] duplicates a locked board with a running timer and follow-me into 
 
     $this->openWhiteboardMenu($page)
         ->click('[role="menuitem"]:has-text("Duplicate this board")')
-        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+        ->assertSeeIn('header span > h1', 'Sprint board (copy)');
 
     $copy = Whiteboard::query()->where('title', 'Sprint board (copy)')->sole();
 

@@ -3957,5 +3957,10 @@
     "New session, whiteboard form: the whole form, not scrolled": "Nueva sesión, formulario de pizarra: el formulario entero, sin desplazamiento",
     "Whiteboard templates manager: the rows, one being edited": "Gestor de plantillas de pizarra: las filas, una en edición",
     "Whiteboard templates manager: no template": "Gestor de plantillas de pizarra: ninguna plantilla",
-    "New session dialog, open on the whiteboard type": "Diálogo Nueva sesión, abierto en el tipo pizarra"
+    "New session dialog, open on the whiteboard type": "Diálogo Nueva sesión, abierto en el tipo pizarra",
+    "Board name": "Nombre de la pizarra",
+    "Rename the board": "Renombrar la pizarra",
+    "It is no longer available to anyone.": "Ya no está disponible para nadie.",
+    "Ask the facilitator if you still need it.": "Pregunta al facilitador si aún la necesitas.",
+    "Check your connection, then try again.": "Comprueba tu conexión e inténtalo de nuevo."
 }

@@ -5,6 +5,7 @@ import {
 } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import { presenceCursorColor } from '@/lib/whiteboard/presence-slot';
 
 const SendEveryMs = 40;
 const TimeToLiveMs = 3000;
@@ -39,19 +40,6 @@ function isCursorMessage(raw: unknown): raw is CursorMessage {
         Number.isFinite(x) &&
         Number.isFinite(y)
     );
-}
-
-function colorFor(memberId: string): { background: string; stroke: string } {
-    let hash = 0;
-
-    for (const character of memberId) {
-        hash = (hash * 31 + character.charCodeAt(0)) % 360;
-    }
-
-    return {
-        background: `hsl(${hash} 70% 45%)`,
-        stroke: `hsl(${hash} 70% 30%)`,
-    };
 }
 
 export function useWhiteboardCursors({
@@ -104,7 +92,7 @@ export function useWhiteboardCursors({
                             roster.current.find(
                                 (member) => member.id === memberId,
                             )?.name ?? '',
-                        color: colorFor(memberId),
+                        color: presenceCursorColor(memberId),
                         pointer: { x: cursor.x, y: cursor.y, tool: 'pointer' },
                     },
                 ]),
