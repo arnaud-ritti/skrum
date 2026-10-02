@@ -20,11 +20,36 @@ it('stores the monday of the week a points row was created in', function (string
     'a sunday at the last second' => ['2026-10-11 23:59:59', '2026-10-05'],
 ]);
 
+it('stores the week of the instant, in UTC, when the creation time is given in another timezone', function () {
+    $point = GamePoint::factory()->create(['created_at' => CarbonImmutable::parse('2026-10-05 01:00:00', '+02:00')]);
+
+    $stored = DB::table('game_points')->where('id', $point->id)->first();
+
+    expect(substr((string) $stored->week_start, 0, 10))->toBe('2026-09-28')
+        ->and(substr((string) $stored->created_at, 0, 19))->toBe('2026-10-04 23:00:00');
+});
+
+it('stores the week of a creation time given as a string', function () {
+    $point = GamePoint::factory()->create(['created_at' => '2026-09-16 09:30:00']);
+
+    expect(substr((string) DB::table('game_points')->where('id', $point->id)->value('week_start'), 0, 10))->toBe('2026-09-14');
+});
+
+it('moves the week with the creation time when a saved point is given another one', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-07 12:00:00', 'UTC'));
+    $point = GamePoint::factory()->create();
+
+    $point->created_at = CarbonImmutable::parse('2026-09-20 23:59:59', 'UTC');
+    $point->save();
+
+    expect(substr((string) DB::table('game_points')->where('id', $point->id)->value('week_start'), 0, 10))->toBe('2026-09-14');
+});
+
 it('has the index the streak reads', function () {
     expect(Schema::hasIndex('game_points', ['team_id', 'user_id', 'week_start']))->toBeTrue();
 });
 
-it('counts consecutive weeks from the stored week, reading one row per week', function () {
+it('counts consecutive weeks from the stored week, two rows of one week counting once', function () {
     $team = Team::factory()->create();
     $user = User::factory()->create();
 

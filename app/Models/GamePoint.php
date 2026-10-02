@@ -38,7 +38,7 @@ class GamePoint extends Model
     public const UPDATED_AT = null;
 
     /**
-     * The week is stored with the creation time, by a mutator: a model event would not run under Event::fake().
+     * The week is stored with the creation time, both in UTC, by a mutator: a model event would not run under Event::fake().
      *
      * @return Attribute<Carbon|null, mixed>
      */
@@ -49,11 +49,11 @@ class GamePoint extends Model
                 return ['created_at' => null, 'week_start' => null];
             }
 
-            $createdAt = $this->asDateTime($value);
+            $createdAt = CarbonImmutable::instance($this->asDateTime($value))->utc();
 
             return [
                 'created_at' => $this->fromDateTime($createdAt),
-                'week_start' => CarbonImmutable::instance($createdAt)->utc()->startOfWeek(CarbonInterface::MONDAY)->toDateString(),
+                'week_start' => $createdAt->startOfWeek(CarbonInterface::MONDAY)->toDateString(),
             ];
         });
     }
