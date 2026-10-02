@@ -317,3 +317,11 @@ Open, for the owner:
 
 - `N` after the reveal still moves the room to the next task without saving, with no visible control. Either drop it after the reveal (the queue opens any task) or show a small "Skip" beside "Re-vote" that carries the hint.
 - On a phone the row of players is partly under the fold while the team votes (see the D-66 row above). Fitting it needs the description clamped with a way to read it whole, or a one-line progress bar.
+
+## Integration of wave 3 (2026-10-02)
+
+RW-P1, RW-P2 and their fix pass are merged with the RW-C2 header (`poker-room.tsx` passes `self`, `room-topbar.tsx` the overline). Rows D-64 to D-68 of the plan are brought up to the fix pass: the dock repeats the average and the median, the watchers box sits under the seats, the rounds list scrolls beyond 8rem. D-69 keeps the RW-C2 wording.
+
+The 28 `poker-room-*-1440-*` captures are the lane's files and predate the RW-C2 header; no capture was run at this integration, they are to regenerate at the end-of-phase run.
+
+Open for the owner: the N key after a reveal (moves on without saving, no visible control), and the row of players partly under the fold on a phone while the team votes.

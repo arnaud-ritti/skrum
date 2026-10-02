@@ -378,3 +378,9 @@ No test removed. Vitest: new `hangman-board.test.tsx`, `guess-dock.test.tsx`; on
 | Decoded: the guesses stay on the stage on a phone | D-60 |
 | The page does not declare `viewport-fit=cover`, so the inset of the home indicator is zero today; the panels already pad it | none (blade shared, not changed) |
 
+
+## Integration of wave 3 (2026-10-02)
+
+RW-G1 to RW-G3 are merged with the RW-C2 header. `game-room.tsx` passes `self` to `SessionShell` and `RoomTitle` passes the overline "team · Games" (or "team · Icebreaker"), as the poker room and the whiteboard do; nothing had to be reconciled by hand. Row D-57 now says what remains of the header: "Back to the team", not "Back to games".
+
+The 40 `games-room-*-1440-*` captures are the lane's files: they show the new layouts and the old header (no overline, no "Synced", no avatar). No capture was run at this integration; they are to regenerate at the end-of-phase run.
