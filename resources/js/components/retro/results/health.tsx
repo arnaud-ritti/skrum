@@ -53,7 +53,7 @@ export function HealthResult({ health, trend }: Props) {
                     className="sm:max-w-3xl"
                 >
                     <DialogHeader>
-                        <DialogTitle>{t('Team health')}</DialogTitle>
+                        <DialogTitle>{t('Health check')}</DialogTitle>
                     </DialogHeader>
                     <HealthCheckResults
                         retroTitle={board.retro.title}

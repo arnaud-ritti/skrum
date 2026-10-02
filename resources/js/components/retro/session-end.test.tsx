@@ -648,7 +648,7 @@ describe('SessionEnd', () => {
                 }),
             );
 
-            return screen.getByRole('dialog', { name: 'Team health' });
+            return screen.getByRole('dialog', { name: 'Health check' });
         };
 
         it('is the compact card: answers, average, one row per statement with its move, the alert', () => {
