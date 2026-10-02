@@ -2,6 +2,7 @@
 
 use App\Models\ActionItem;
 use App\Models\ActionItemReminder;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -41,4 +42,28 @@ it('does not see a change when the same day is given again', function () {
     $item->due_on = Carbon::parse('2026-10-10 18:00:00');
 
     expect($item->isDirty('due_on'))->toBeFalse();
+});
+
+it('reads a due date as the immutable date the application uses', function () {
+    $item = ActionItem::factory()->create(['due_on' => '2026-10-10'])->fresh();
+
+    expect($item->due_on)->toBeInstanceOf(CarbonImmutable::class);
+});
+
+it('does not write back a due date that was changed in place', function () {
+    $item = ActionItem::factory()->create(['due_on' => '2026-10-10'])->fresh();
+
+    $item->due_on->addDay();
+    $item->due_on->locale('fr');
+
+    expect($item->isDirty('due_on'))->toBeFalse()
+        ->and($item->due_on->toDateString())->toBe('2026-10-10');
+});
+
+it('reads midnight right after a date and a time were assigned', function () {
+    $item = ActionItem::factory()->create(['due_on' => '2026-10-09'])->fresh();
+
+    $item->due_on = Carbon::parse('2026-10-10 18:00:00');
+
+    expect($item->due_on->toDateTimeString())->toBe('2026-10-10 00:00:00');
 });

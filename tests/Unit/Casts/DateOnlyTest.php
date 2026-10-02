@@ -2,6 +2,7 @@
 
 use App\Casts\DateOnly;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -24,10 +25,22 @@ it('writes ten characters whatever it is given', function (mixed $value, ?string
 it('reads midnight of the stored day, from the short and from the long form', function (string $stored) {
     $read = (new DateOnly)->get(dateOnlyModel(), 'due_on', $stored, []);
 
-    expect($read)->toBeInstanceOf(Carbon::class)
+    expect($read)->toBeInstanceOf(CarbonInterface::class)
         ->and($read->toDateTimeString())->toBe('2026-10-10 00:00:00');
 })->with(['2026-10-10', '2026-10-10 00:00:00']);
 
 it('reads null as null', function () {
     expect((new DateOnly)->get(dateOnlyModel(), 'due_on', null, []))->toBeNull();
+});
+
+it('serialises a date instance without reading its string form', function () {
+    Carbon::setToStringFormat('d/m/Y');
+
+    try {
+        $serialised = (new DateOnly)->serialize(dateOnlyModel(), 'due_on', Carbon::parse('2026-10-10 18:00:00'), []);
+    } finally {
+        Carbon::resetToStringFormat();
+    }
+
+    expect($serialised)->toBe('2026-10-10T00:00:00.000000Z');
 });

@@ -40,6 +40,24 @@ it('refuses a recurrence that loses its due date on update', function () {
         ->and($item->fresh()->due_on?->toDateString())->toBe('2026-10-10');
 });
 
+it('refuses a guest assignee added to an item that already has a member', function () {
+    $guest = Participant::factory()->guest()->create();
+    $member = User::factory()->create();
+    $item = ActionItem::factory()->assignedTo($member)->create(['retro_id' => $guest->retro_id]);
+
+    expect(fn () => $item->update(['assignee_participant_id' => $guest->id]))->toThrow(ModelInvariantViolation::class)
+        ->and($item->fresh()->assignee_participant_id)->toBeNull()
+        ->and($item->fresh()->assignee_user_id)->toBe($member->id);
+});
+
+it('refuses an item that leaves its retro while a guest is assigned', function () {
+    $guest = Participant::factory()->guest()->create();
+    $item = ActionItem::factory()->assignedToGuest($guest)->create();
+
+    expect(fn () => $item->update(['retro_id' => null]))->toThrow(ModelInvariantViolation::class)
+        ->and($item->fresh()->retro_id)->toBe($guest->retro_id);
+});
+
 it('refuses a built-in team statement that also has a text, and a custom one without a label', function (array $attributes) {
     expect(fn () => TeamHealthStatement::factory()->create($attributes))->toThrow(ModelInvariantViolation::class);
 })->with([

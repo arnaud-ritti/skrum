@@ -44,6 +44,10 @@ class SavedPokerDeck extends Model
      * event dispatcher skips. A stored row is checked when one of its owners changes: a model read
      * without them knows nothing about its state.
      *
+     * The check reads the attributes the model holds: a row read with a partial select must have
+     * loaded every column of a rule before one of them is written. A query builder or mass update
+     * goes through no model and is not checked.
+     *
      * @param  array<string, mixed>  $options
      */
     public function save(array $options = []): bool

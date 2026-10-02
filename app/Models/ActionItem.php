@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $retro_id
  * @property string $content
  * @property ActionItemPriority $priority
- * @property Carbon|null $due_on
+ * @property CarbonInterface|null $due_on
  * @property Carbon|null $completed_at
  * @property string|null $completed_via_source
  * @property string|null $assignee_user_id
@@ -195,6 +195,10 @@ class ActionItem extends Model
      * A stored row keeps its rank unless one of the three columns it comes from changes: a model
      * read without them knows nothing about its state. The three rules of the model are checked
      * here for the same two reasons.
+     *
+     * The check reads the attributes the model holds: a row read with a partial select must have
+     * loaded every column of a rule before one of them is written. A query builder or mass update
+     * goes through no model and is not checked.
      *
      * @param  array<string, mixed>  $options
      */
