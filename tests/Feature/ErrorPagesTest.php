@@ -1,0 +1,225 @@
+<?php
+
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\Team;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Testing\AssertableInertia as Assert;
+
+function brokenSharedPropsRoute(): void
+{
+    Route::middleware('web')->get('/error-pages-probe/broken', function () {
+        Inertia::share('teams', fn () => throw new RuntimeException('The teams cannot be read.'));
+
+        return Inertia::render('about');
+    });
+}
+
+function useProcessLocalMaintenanceMode(): void
+{
+    config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
+}
+
+/**
+ * Runs the callback while the default connection points at a closed port, then
+ * gives the test its own connection back.
+ */
+function withUnreachableDatabase(Closure $callback): void
+{
+    $default = config('database.default');
+
+    config([
+        'database.connections.unreachable' => [...config("database.connections.{$default}"), 'host' => '127.0.0.1', 'port' => 1],
+        'database.default' => 'unreachable',
+    ]);
+
+    try {
+        $callback();
+    } finally {
+        config(['database.default' => $default]);
+        DB::purge('unreachable');
+    }
+}
+
+it('renders the 404 page for an unknown url', function (bool $signedIn) {
+    $user = $signedIn ? teamMember(Team::factory()->create()) : null;
+
+    if ($user !== null) {
+        $this->actingAs($user);
+    }
+
+    $this->get('/no-such-page')
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 404)
+            ->when($user === null, fn (Assert $page) => $page->where('auth.user', null))
+            ->when($user !== null, fn (Assert $page) => $page->where('auth.user.id', $user->id))
+            ->missing('requestId')
+            ->missing('retryAfter'));
+})->with([
+    'a guest' => false,
+    'a signed-in user' => true,
+]);
+
+it('renders the 404 page in the language of the visitor', function () {
+    $this->get('/no-such-page', ['Accept-Language' => 'fr'])
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('locale', 'fr'));
+});
+
+it('renders the 403 page when registration is closed', function () {
+    config(['skrum.signup_mode' => 'invite']);
+    User::factory()->create();
+
+    $this->get(route('register'))
+        ->assertForbidden()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 403)
+            ->where('auth.user', null)
+            ->missing('requestId'));
+});
+
+it('renders the 419 page for a post with a stale csrf token', function () {
+    Route::middleware('web')->post('/error-pages-probe/expired', fn () => throw new TokenMismatchException('CSRF token mismatch.'));
+
+    $this->post('/error-pages-probe/expired')
+        ->assertStatus(419)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 419)
+            ->missing('requestId'));
+});
+
+it('renders the 429 page with the delay of a throttled request', function () {
+    Route::middleware(['web', 'throttle:1,1'])->get('/error-pages-probe/throttled', fn () => 'ok');
+
+    $this->get('/error-pages-probe/throttled')->assertOk();
+
+    $this->get('/error-pages-probe/throttled')
+        ->assertTooManyRequests()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 429)
+            ->where('retryAfter', fn (int $seconds): bool => $seconds > 0 && $seconds <= 60)
+            ->missing('requestId'));
+});
+
+it('keeps the json body and status of a json request', function (int $status) {
+    config(['app.debug' => false]);
+    Route::middleware('web')->get('/error-pages-probe/json', fn () => abort($status, 'Refused by the probe.'));
+
+    $this->getJson('/error-pages-probe/json')
+        ->assertStatus($status)
+        ->assertExactJson(['message' => 'Refused by the probe.']);
+})->with([403, 404, 410, 419, 429]);
+
+it('keeps the json answer of a live endpoint', function () {
+    $this->actingAs(teamMember(Team::factory()->create()))
+        ->getJson('/retros/'.Str::uuid().'/snapshot')
+        ->assertNotFound()
+        ->assertJsonStructure(['message'])
+        ->assertHeaderMissing('X-Inertia');
+});
+
+it('answers an inertia visit with the error page', function () {
+    $response = $this->get('/no-such-page', [
+        'X-Inertia' => 'true',
+        'X-Requested-With' => 'XMLHttpRequest',
+        'Accept' => 'text/html, application/xhtml+xml',
+    ]);
+
+    $response->assertNotFound()->assertHeader('X-Inertia', 'true');
+
+    expect($response->json('component'))->toBe('errors/error')
+        ->and($response->json('props.status'))->toBe(404);
+});
+
+it('leaves a 500 to the framework in debug mode', function () {
+    config(['app.debug' => true]);
+    brokenSharedPropsRoute();
+
+    $response = $this->get('/error-pages-probe/broken');
+
+    $response->assertInternalServerError();
+    expect($response->getContent())->toContain('The teams cannot be read.');
+});
+
+it('renders the 500 page with the request id when the shared props cannot be built', function () {
+    config(['app.debug' => false]);
+    brokenSharedPropsRoute();
+
+    $response = $this->get('/error-pages-probe/broken', ['Accept-Language' => 'fr']);
+
+    $response->assertInternalServerError()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 500)
+            ->where('requestId', $response->headers->get('X-Request-Id'))
+            ->where('occurredAt', fn (string $moment): bool => preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/D', $moment) === 1)
+            ->where('locale', 'fr')
+            ->where('translations.Language', 'Langue')
+            ->missing('teams')
+            ->missing('auth')
+            ->missing('workspaces'));
+});
+
+it('still renders the page of another status when the shared props cannot be built', function () {
+    app()->bind(HandleInertiaRequests::class, fn () => new class extends HandleInertiaRequests
+    {
+        public function share(Request $request): array
+        {
+            throw new RuntimeException('The shared props cannot be read.');
+        }
+    });
+
+    $this->get('/no-such-page', ['Accept-Language' => 'fr'])
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('status', 404)
+            ->where('locale', 'fr')
+            ->has('translations')
+            ->missing('auth')
+            ->missing('requestId'));
+});
+
+it('renders the static 503 view while the database is unreachable', function () {
+    Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
+
+    withUnreachableDatabase(function (): void {
+        expect(fn () => DB::select('select 1'))->toThrow(PDOException::class);
+
+        $this->get('/error-pages-probe/unavailable?from=probe', ['Accept-Language' => 'fr'])
+            ->assertServiceUnavailable()
+            ->assertSee('lang="fr"', false)
+            ->assertSee('Réessayer maintenant')
+            ->assertSee('href="/error-pages-probe/unavailable?from=probe"', false)
+            ->assertSee('data-slot="maintenance-page"', false)
+            ->assertDontSee('<script', false)
+            ->assertDontSee('data-page', false);
+    });
+});
+
+it('renders the static 503 view in maintenance mode', function () {
+    useProcessLocalMaintenanceMode();
+
+    $this->artisan('down')->assertSuccessful();
+
+    try {
+        $this->get('/')
+            ->assertServiceUnavailable()
+            ->assertSee('data-slot="maintenance-page"', false)
+            ->assertDontSee('<script', false);
+    } finally {
+        $this->artisan('up');
+    }
+});

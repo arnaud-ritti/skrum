@@ -5,7 +5,11 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
+use Tests\Browser\Support\CaptureFile;
 
 it('renders the access pages without overflow', function (string $name, string $path, string $marker) {
     config([
@@ -197,3 +201,107 @@ it('renders the invitation page without overflow', function (string $name, strin
     'expired' => ['access-invitation-expired-page', 'expired-token', null, '[data-slot="access-notice"][data-tone="warning"]'],
     'invalid' => ['access-invitation-invalid-page', 'unknown-token', null, '[data-slot="access-notice"][data-tone="default"]'],
 ]);
+
+it('renders the error pages without overflow', function (string $name, int $status, bool $signedIn) {
+    config(['app.name' => 'Skrum', 'app.debug' => false]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    Route::middleware('web')->get('/visual-error/403', fn () => abort(403));
+    Route::middleware('web')->get('/visual-error/419', fn () => throw new TokenMismatchException('CSRF token mismatch.'));
+    Route::middleware('web')->get('/visual-error/429', fn () => abort(429, headers: ['Retry-After' => 42]));
+    Route::middleware('web')->get('/visual-error/500', fn () => throw new RuntimeException('Broken on purpose.'));
+
+    $member = User::factory()->create([
+        'name' => 'Nadia Benali',
+        'email' => 'nadia@nordlys.io',
+    ]);
+
+    $this->captureVisuals(
+        $name,
+        $status === 404 ? '/t/atlas/retro/sprint-24' : "/visual-error/{$status}",
+        function (string $path, array $options) use ($member, $signedIn, $status) {
+            $marker = "[data-slot=\"error-page\"][data-status=\"{$status}\"]";
+
+            if ($status === 500) {
+                $page = visit($path, $options)->assertPresent("{$marker} [data-slot=\"error-id\"] code");
+
+                $page->script(<<<'JS'
+                    () => {
+                        const id = document.querySelector('[data-slot="error-id"] code');
+
+                        id.textContent = '0198c0de-0000-4000-8000-000000000001';
+                        id.nextElementSibling.textContent = '· 2026-10-01 12:02:37 UTC';
+
+                        return true;
+                    }
+                    JS);
+
+                return $page;
+            }
+
+            if (! $signedIn) {
+                return visit($path, $options)->assertPresent($marker);
+            }
+
+            User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $member->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page->navigate($path);
+
+            return $page->assertPresent($marker);
+        },
+    );
+})->with([
+    '404' => ['access-error-404-page', 404, true],
+    '404 for a guest' => ['access-error-404-guest-page', 404, false],
+    '403' => ['access-error-403-page', 403, true],
+    '419' => ['access-error-419-page', 419, false],
+    '429' => ['access-error-429-page', 429, false],
+    '500' => ['access-error-500-page', 500, false],
+]);
+
+it('renders the static maintenance page without overflow, in the theme of the system', function () {
+    config(['app.name' => 'Skrum']);
+    Route::middleware('web')->get('/visual-error/503', fn () => abort(503));
+    File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
+
+    foreach (['light', 'dark'] as $theme) {
+        foreach (['en' => 'en-US', 'fr' => 'fr-FR'] as $locale => $browserLocale) {
+            foreach ([1440 => 900, 390 => 844] as $width => $height) {
+                $label = "access-error-503-page-{$theme}-{$width}-{$locale}";
+
+                $page = visit('/visual-error/503', [
+                    'colorScheme' => $theme,
+                    'locale' => $browserLocale,
+                    'reducedMotion' => 'reduce',
+                ]);
+
+                $page->assertPresent('[data-slot="maintenance-page"]')->resize($width, $height);
+
+                $appearance = json_decode((string) $page->script(<<<'JS'
+                    () => JSON.stringify({
+                        lang: document.documentElement.lang,
+                        dark: matchMedia('(prefers-color-scheme: dark)').matches,
+                        scripts: document.scripts.length,
+                    })
+                    JS), true, flags: JSON_THROW_ON_ERROR);
+
+                expect($appearance)->toBe(['lang' => $locale, 'dark' => $theme === 'dark', 'scripts' => 0], $label)
+                    ->and($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
+
+                $page->screenshot(fullPage: true, filename: "{$label}.candidate");
+
+                CaptureFile::replaceWhenPictureDiffers(
+                    base_path("tests/Browser/Screenshots/{$label}.candidate"),
+                    base_path("tests/visual/__screenshots__/{$label}.png"),
+                );
+            }
+        }
+    }
+});

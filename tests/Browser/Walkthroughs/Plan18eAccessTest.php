@@ -5,6 +5,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use Illuminate\Support\Facades\Route;
 
 function p18eAccessMember(): User
 {
@@ -231,4 +232,49 @@ it('[P18e-11-08] shows the inviter, the role and the members, and the SSO button
         ->assertSeeIn('@accept-invitation-button', 'Join Nordlys')
         ->assertNotPresent('[data-slot="sso-buttons"]')
         ->assertNotPresent('a[href$="/auth/github/redirect"]');
+});
+
+it('[P18e-11-07] an unknown URL shows "Error 404" and its action; a guest\'s action is "Log in"', function () {
+    $member = p18eAccessMember();
+
+    $page = visit('/no-such-page');
+
+    $page->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404')
+        ->assertSeeIn('[data-slot="error-page"] h1', "This page doesn't exist (anymore)")
+        ->assertPresent('[data-slot="error-page-actions"] a[href="/login"]')
+        ->assertNotPresent('[data-slot="error-page-actions"] a[href="/dashboard"]')
+        ->assertNotPresent('[data-slot="error-id"]')
+        ->click('Log in')
+        ->assertPathIs('/login');
+
+    $page = $this->signIn($member, '/no-such-page');
+
+    $page->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404')
+        ->assertNotPresent('[data-slot="error-page-actions"] a[href="/login"]')
+        ->click('Back to my teams')
+        ->assertPathIsNot('/no-such-page')
+        ->assertSee('Demo Team');
+});
+
+it('[P18e-11-09] the 500 page shows the id of the request and "Copy error ID" copies it', function () {
+    config(['app.debug' => false]);
+    Route::middleware('web')->get('/p18e-broken', fn () => throw new RuntimeException('Broken on purpose.'));
+
+    $page = visit('/p18e-broken');
+
+    $page->assertSeeIn('[data-slot="error-page"][data-status="500"]', 'ERROR 500')
+        ->assertSeeIn('[data-slot="error-page"] h1', 'Something broke on our side')
+        ->assertSee('Try again')
+        ->assertPresent('[data-slot="error-id"] code');
+
+    $requestId = $page->script('() => document.querySelector(\'[data-slot="error-id"] code\').textContent');
+
+    expect($requestId)->toBeUuid();
+
+    $page->script('() => { navigator.clipboard.writeText = (text) => { window.copiedErrorId = text; return Promise.resolve(); }; return true; }');
+
+    $page->click('[aria-label="Copy error ID"]')
+        ->assertSeeIn('[aria-label="Copy error ID"]', 'Copied');
+
+    expect($page->script('() => window.copiedErrorId'))->toBe($requestId);
 });

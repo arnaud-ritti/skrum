@@ -190,3 +190,51 @@ Nothing is rendered while the props are undefined. The bench shows the three pla
 | Header: the logo and the language switcher; the mockup shows "skrum.nordlys.fr · Nordlys" at the right | `AuthFrame`; the workspace is named in the card: reported |
 | The notices (expired, invalid) use the 28rem `AccessNotice` card with a 2.5rem mark and a `text-xl` title, where the mockup's variant card is 22rem with a 2.25rem mark | `AccessNotice` (Task 0.7): reported |
 | 390: the card keeps its border and 1.25rem padding inside the frame's 1.5rem gutter, where the mockup says full width | `AuthFrame`: reported |
+
+## Task 11.7 — error pages (B15)
+
+`App\Http\ErrorPageResponder`, registered through `$exceptions->respond()` in `bootstrap/app.php`, renders the page `errors/error` for an HTML or Inertia request that meets 403, 404, 419, 429 or 500; a JSON request (`api/*` or `expectsJson()`) keeps its body. The page is in `ownLayoutPages` and renders `ErrorPage` (`resources/js/components/auth/error-page.tsx`, illustrations in `error-art.tsx`). `resources/views/errors/503.blade.php` is the static maintenance page. Captures: `access-error-{404,404-guest,403,419,429,500,503}-page-*`.
+
+How the page gets its props:
+
+- 403, 404, 419, 429: the shared props. A request that matched no route went through no route middleware, so the responder runs cookies, session, appearance and locale for it first: a signed-in visitor of an unknown URL is known, and reads the page in their language.
+- 500: no shared prop. The page receives `status`, `requestId`, `occurredAt` (UTC), `locale` and `translations` (read from the language file, no database). In debug mode the framework page is kept.
+- When the shared props cannot be built for another status, the page is rendered the same way, without them. When even that fails, the framework's own answer is returned.
+
+### Parity (brief 11 §3)
+
+| # | Behaviour | Control | Done |
+|---|---|---|---|
+| 40 | Throttle 429 on a join POST | the 429 page: "Too many requests", "You can retry in :seconds seconds." when the response carries `Retry-After`, "Try again" (reloads) | yes |
+| 42 | Errors 403 / 404 / 500 / 503 | 404: "Back to my teams", or "Log in" for a guest. 403: the same, the account named in bold and "Switch account" (logs out) when signed in. 500: "Try again", "Back to my teams", the request id in a `code` element with "Copy" (named "Copy error ID", "Copied" for 2 s). 419: "Reload". 503: static view with "Retry now", a link to the current URL | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Instance status" link (and "Help") at the end of the header | `ErrorPage` prop `headerLinks`, rendered in `[data-slot="error-page-links"]`; a Blade comment in the header of `503.blade.php` | AD-3 |
+| Version after the instance name in the footer | `ErrorPage` prop `version`, rendered in `[data-slot="error-page-version"]`; a Blade comment in the footer of `503.blade.php` | AD-2 |
+| Access request of the 403 page (team block, message, "Request access", team admins) | `ErrorPage` prop `accessRequest`, rendered in `[data-slot="error-page-access-request"]` between the text and the actions | AD-4 |
+| "Search sessions ⌘K" of the 404 page | `ErrorPage` prop `search`, rendered in `[data-slot="error-page-search"]` after the first action | command palette (brief: 18f) |
+| "Back at" block and admin's message of the 503 page | a Blade comment between the sentence and "Retry now" | AD-5 |
+
+Nothing is rendered while the props are undefined.
+
+### Differences with the mockup (ScreenErrors)
+
+| Difference | Covered by |
+|---|---|
+| No "Instance status" and "Help" links; the footer shows the instance name without a version (the mockup shows the host name) | D-31 |
+| 403: no team block, message field, "Request access" or team admins; the primary action is "Back to my teams" ("Log in" for a guest) | D-31 |
+| 403: the title is "You don't have access to this page": the handler does not know that the refused page is a team (closed registration is a 403 too) | F: no row, reported |
+| 404: no "Search sessions ⌘K" button | no row (the command palette is not built): reported |
+| 404, 403: a guest gets "Log in" and a sentence without "your teams" | plan 11.7 |
+| 500: the id is the request id (a UUID), in a field of 28rem where the mockup has 24rem, so that it fits on one line at 1440 | B36 |
+| 500: no shared prop, so no instance name in the footer and the default logo on a rebranded instance | B15 |
+| 503: no "Back at" block, no admin message | D-31 |
+| 503: no "This page reloads by itself" line and no loader: the view has no script | F (B15: no script): no row, reported |
+| 503: overline "Maintenance" (not "Scheduled maintenance"), the title names `config('app.name')` (not the host), no "installing version …": the view also serves every other 503 and reads no setting | F; B15 |
+| 503: system fonts, the default logo and default colours: the view loads no asset and no brand | B15 |
+| 419 and 429 have no mockup: same frame, the clock illustration of the maintenance view | 11-D7 / 11-D10 |
+| The heading is an `h1` (the mockup's frames use `h2` inside a bench) | A |
+| 390: no mockup frame; one column, 1rem padding, full-width stacked actions | ScreenErrors README, "Mobile" |
