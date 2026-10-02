@@ -222,6 +222,7 @@ export function RoomView({
                                 <WatchSwitch />
                                 {tasksToggle}
                                 <TakeControlButton />
+                                <CopyGuestLinkButton />
                             </>
                         )}
                     </div>
@@ -247,6 +248,7 @@ export function RoomView({
                             >
                                 {currentTask && (
                                     <StoryCard
+                                        key={currentTask.id}
                                         task={currentTask}
                                         className="max-w-5xl"
                                     />

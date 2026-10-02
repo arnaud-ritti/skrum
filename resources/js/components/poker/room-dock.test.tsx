@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GameProvider } from '@/components/poker/game-context';
 import { RoomDock } from '@/components/poker/room-dock';
 import type { RoundActions } from '@/components/poker/use-round-actions';
 import {
@@ -393,5 +394,164 @@ describe('RoomDock on a phone', () => {
         );
 
         expect(screen.queryByRole('button', { name: 'All deck' })).toBeNull();
+    });
+});
+
+describe('RoomDock, the focus when the round changes state', () => {
+    it('moves focus to the deck when the pressed Re-vote leaves with the reveal', () => {
+        const actions = roundActions();
+        const { ctx, rerender } = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        screen.getByRole('button', { name: 'Re-vote' }).focus();
+
+        rerender(
+            <GameProvider
+                value={{
+                    ...ctx,
+                    snapshot: pokerSnapshot({
+                        current: {
+                            taskId: 't1',
+                            round: pokerRound({ id: 'round-2', number: 2 }),
+                        },
+                    }),
+                }}
+            >
+                <RoomDock actions={actions} compact={false} />
+            </GameProvider>,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
+        expect(
+            screen
+                .getByRole('group', { name: 'Your cards' })
+                .contains(document.activeElement),
+        ).toBe(true);
+    });
+
+    it('moves focus to the result when a reveal disables the focused card', () => {
+        const result = document.createElement('section');
+
+        result.tabIndex = -1;
+        result.setAttribute('data-slot', 'poker-result');
+        document.body.append(result);
+
+        const actions = roundActions();
+        const { ctx, rerender } = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+        );
+
+        screen.getByRole('button', { name: 'Play 5' }).focus();
+
+        rerender(
+            <GameProvider
+                value={{
+                    ...ctx,
+                    snapshot: pokerSnapshot({
+                        current: { taskId: 't1', round: revealed },
+                    }),
+                }}
+            >
+                <RoomDock actions={actions} compact={false} />
+            </GameProvider>,
+        );
+
+        expect(document.activeElement).toBe(result);
+
+        result.remove();
+    });
+
+    it('leaves focus alone when it was not in the dock', () => {
+        const outside = document.createElement('button');
+
+        document.body.append(outside);
+        outside.focus();
+
+        const actions = roundActions();
+        const { ctx, rerender } = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        rerender(
+            <GameProvider
+                value={{
+                    ...ctx,
+                    snapshot: pokerSnapshot({
+                        current: {
+                            taskId: 't1',
+                            round: pokerRound({ id: 'round-2', number: 2 }),
+                        },
+                    }),
+                }}
+            >
+                <RoomDock actions={actions} compact={false} />
+            </GameProvider>,
+        );
+
+        expect(document.activeElement).toBe(outside);
+
+        outside.remove();
+    });
+});
+
+describe('RoomDock, the N shortcut', () => {
+    it('goes to the next task once the cards are revealed, and not while the round is open', () => {
+        const actions = roundActions();
+        const { unmount } = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+        );
+
+        fireEvent.keyDown(document.body, { key: 'n' });
+
+        expect(actions.goToNext).not.toHaveBeenCalled();
+        unmount();
+
+        renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'n' });
+
+        expect(actions.goToNext).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('RoomDock on a phone, once revealed', () => {
+    it('folds the deck away and keeps the facilitator actions', () => {
+        const { container } = renderInRoom(
+            <RoomDock actions={roundActions()} compact />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        expect(
+            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
+        ).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="poker-dock-status"]')
+                ?.textContent,
+        ).toContain('8');
+    });
+
+    it('does not tell a watcher about a deck that is folded away', () => {
+        const { container } = renderInRoom(
+            <RoomDock actions={roundActions()} compact />,
+            pokerSnapshot({
+                me: { isSpectator: true, canVote: false },
+                current: {
+                    taskId: 't1',
+                    round: { ...revealed, myVote: null },
+                },
+            }),
+        );
+
+        expect(
+            container.querySelector('[data-slot="poker-dock-status"]')
+                ?.textContent,
+        ).toBe('The cards are revealed.');
     });
 });

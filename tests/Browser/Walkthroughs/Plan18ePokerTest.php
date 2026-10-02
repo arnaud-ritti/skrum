@@ -73,12 +73,14 @@ function p18ePokerReveal(array $table): void
 const P18ePokerResult = '[aria-labelledby="poker-result"]';
 
 it('[P18e-03-01] opens the queue in a drawer and votes through the vote drawer on a phone', function () {
-    $table = p18ePokerTable();
+    $table = p18ePokerTable(['guest_access_enabled' => true]);
     PokerTask::factory()->create(['poker_game_id' => $table['game']->id, 'title' => 'Password reset']);
 
     $page = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}"));
 
     $page->resize(390, 844)
+        ->assertVisible('[data-slot="poker-subbar"] [aria-label="Copy guest link"]')
+        ->assertCount('[aria-label="Copy guest link"]', 1)
         ->assertNotPresent('#poker-tasks')
         ->assertNotPresent('button:has-text("Hide tasks")')
         ->click('Tasks')
@@ -133,11 +135,12 @@ it('[P18e-03-03] collapses the task queue with "Hide tasks" and brings it back',
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
 
     $page->assertVisible('aside#poker-tasks')
-        ->assertAttribute('button:has-text("Hide tasks")', 'aria-pressed', 'true')
+        ->assertAttribute('button:has-text("Hide tasks")', 'aria-expanded', 'true')
         ->assertAttribute('button:has-text("Hide tasks")', 'aria-controls', 'poker-tasks')
         ->click('Hide tasks')
         ->assertNotPresent('#poker-tasks')
-        ->assertAttribute('button:has-text("Show tasks")', 'aria-pressed', 'false')
+        ->assertAttribute('button:has-text("Show tasks")', 'aria-expanded', 'false')
+        ->assertAttributeMissing('button:has-text("Show tasks")', 'aria-controls')
         ->assertVisible('section[aria-label="Players"]')
         ->click('Show tasks')
         ->assertVisible('aside#poker-tasks')
@@ -149,17 +152,20 @@ it('[P18e-03-04] keeps the reaction bar above the deck without overlap, on a pag
     pokerVote($table['round'], $table['bobPlayer'], '3');
     $table['round']->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual])->save();
     $gap = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); const deck = document.querySelector(\'[data-slot="poker-deckbar"]\').getBoundingClientRect(); return Math.round(deck.top - bar.bottom); })()';
-    $overlaps = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); return [\'[data-slot="poker-deckbar"]\', \'[data-slot="facilitator-bar"]\', \'[role="group"][aria-label="Your cards"]\'].filter((selector) => { const box = document.querySelector(selector).getBoundingClientRect(); return !(box.top >= bar.bottom || box.bottom <= bar.top || box.left >= bar.right || box.right <= bar.left); }).join(); })()';
+    $overlaps = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); return [\'[data-slot="poker-deckbar"]\', \'[data-slot="facilitator-bar"]\', \'[role="group"][aria-label="Your cards"]\'].filter((selector) => document.querySelector(selector) !== null).filter((selector) => { const box = document.querySelector(selector).getBoundingClientRect(); return !(box.top >= bar.bottom || box.bottom <= bar.top || box.left >= bar.right || box.right <= bar.left); }).join(); })()';
 
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
 
     $page->assertCount('[data-realtime]', 1)
         ->assertVisible('[role="toolbar"][aria-label="Reactions"]')
         ->assertVisible('[data-slot="poker-deckbar"] [data-slot="facilitator-bar"]')
+        ->assertVisible('[role="group"][aria-label="Your cards"]')
         ->assertScript($gap, 12)
         ->assertScript($overlaps, '')
         ->resize(390, 844)
         ->assertVisible('[role="toolbar"][aria-label="Reactions"]')
+        ->assertNotPresent('[role="group"][aria-label="Your cards"]')
+        ->assertVisible('[data-slot="poker-deckbar"] [data-slot="facilitator-bar"]')
         ->assertScript($gap, 12)
         ->assertScript($overlaps, '')
         ->assertCount('[data-realtime]', 1);

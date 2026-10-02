@@ -1,5 +1,5 @@
 import { EyeOff, LayoutGrid, RotateCcw, Save, SkipForward } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
@@ -67,9 +67,11 @@ function FacilitatorActions({
         scope,
         enabled: canSave,
     });
+    // A single key at document level: live with the result only, so that a
+    // stray "n" cannot leave an open round behind.
     useShortcut('n', () => void actions.goToNext(), {
         scope,
-        enabled: canGoNext,
+        enabled: canGoNext && isRevealed,
     });
 
     if (round === null) {
@@ -97,7 +99,7 @@ function FacilitatorActions({
         id: 'next-task',
         label: t('Next task'),
         icon: SkipForward,
-        shortcut: 'N',
+        shortcut: isRevealed ? 'N' : undefined,
         disabled: !canGoNext,
         disabledReason:
             next === null ? t('Every other task has an estimate.') : undefined,
@@ -109,7 +111,11 @@ function FacilitatorActions({
             <FacilitatorBar
                 label={t('Facilitator tools')}
                 compact={compact}
-                className="border-0 bg-transparent p-0 shadow-none"
+                className={cn(
+                    'border-0 bg-transparent p-0 shadow-none',
+                    compact &&
+                        '[&>[data-slot=facilitator-bar-separator]]:hidden',
+                )}
                 actions={isRevealed ? [revote] : []}
                 end={
                     isRevealed ? (
@@ -181,11 +187,54 @@ export function RoomDock({ reactions, actions, compact }: Props) {
     const isClosed = round === null || isRevealed || isEnded;
     const hasDeck = snapshot.tasks.length > 0;
     const showsActions = me.isFacilitator && !isEnded && round !== null;
+    const showsCards = !(compact && isRevealed);
     const deckClassName =
         'mx-auto max-w-full flex-nowrap justify-start overflow-x-auto';
+    const dockRef = useRef<HTMLDivElement>(null);
+    const hadFocusInside = useRef(false);
+    const wasRevealed = useRef(isRevealed);
+
+    // The control that held focus leaves with the state it belonged to
+    // (Re-vote on a new round, a card on the reveal): focus follows to the
+    // deck, or to the result.
+    useEffect(() => {
+        const before = wasRevealed.current;
+
+        wasRevealed.current = isRevealed;
+
+        if (before === isRevealed || !hadFocusInside.current) {
+            return;
+        }
+
+        const dock = dockRef.current;
+        const active = document.activeElement;
+        const isLost =
+            active === null ||
+            active === document.body ||
+            (dock !== null &&
+                dock.contains(active) &&
+                active.matches(':disabled'));
+
+        if (!isLost) {
+            return;
+        }
+
+        const seats = document.querySelector<HTMLElement>(
+            '[data-slot="poker-table"] > section[tabindex="-1"]',
+        );
+        const target = isRevealed
+            ? (document.querySelector<HTMLElement>(
+                  '[data-slot="poker-result"]',
+              ) ?? seats)
+            : (dock?.querySelector<HTMLElement>(
+                  '[data-slot="poker-deckbar"] [role="group"] button:not(:disabled)',
+              ) ?? seats);
+
+        target?.focus();
+    }, [isRevealed]);
 
     const status = (): ReactNode => {
-        if (!me.canVote) {
+        if (!me.canVote && showsCards) {
             return (
                 <>
                     <EyeOff aria-hidden className="size-4 shrink-0" />
@@ -224,7 +273,16 @@ export function RoomDock({ reactions, actions, compact }: Props) {
 
     return (
         <div
+            ref={dockRef}
             data-slot="poker-dock"
+            onFocus={() => {
+                hadFocusInside.current = true;
+            }}
+            onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                    hadFocusInside.current = false;
+                }
+            }}
             className="flex w-full shrink-0 flex-col items-center gap-3"
         >
             {reactions}
@@ -261,7 +319,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                             />
                         )}
                     </div>
-                    {me.canVote ? (
+                    {showsCards && me.canVote && (
                         <PokerDeck
                             values={game.cards}
                             value={round?.myVote ?? null}
@@ -271,7 +329,8 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                             onChange={(card) => void play(card)}
                             onRetract={() => void withdraw()}
                         />
-                    ) : (
+                    )}
+                    {showsCards && !me.canVote && (
                         <WatchedDeck
                             className={cn(
                                 'flex items-end gap-2 px-2 pt-4 pb-2',

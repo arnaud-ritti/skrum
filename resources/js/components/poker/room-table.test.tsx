@@ -1,5 +1,6 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { GameProvider } from '@/components/poker/game-context';
 import { RoomTable } from '@/components/poker/room-table';
 import type { RoundActions } from '@/components/poker/use-round-actions';
 import {
@@ -9,6 +10,14 @@ import {
     pokerTask,
     renderInRoom,
 } from '@/test/poker-room';
+
+const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+
+    return { ...original, retroRequest: mocks.request };
+});
 
 function roundActions(overrides: Partial<RoundActions> = {}): RoundActions {
     return {
@@ -220,5 +229,73 @@ describe('RoomTable with a round', () => {
         expect(
             screen.queryByRole('button', { name: 'Player options' }),
         ).toBeNull();
+    });
+});
+
+describe('RoomTable, a spectator who voted before a named reveal', () => {
+    it('is offered "Make player", as the player record says', async () => {
+        mocks.request.mockResolvedValue({});
+        renderInRoom(
+            <RoomTable task={task} actions={roundActions()} />,
+            pokerSnapshot({
+                players: [
+                    pokerPlayer('ada', 'Ada'),
+                    pokerPlayer('bob', 'Bob', { isSpectator: true }),
+                    pokerPlayer('cleo', 'Cleo'),
+                ],
+                current: { taskId: 't1', round: revealed },
+            }),
+        );
+
+        const bob = screen
+            .getByRole('img', { name: /^Bob/ })
+            .closest('[data-slot="poker-seat"]') as HTMLElement;
+
+        fireEvent.keyDown(
+            within(bob).getByRole('button', { name: 'Player options' }),
+            { key: 'Enter' },
+        );
+
+        await act(async () => {
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Make player' }),
+            );
+        });
+
+        expect(mocks.request.mock.calls[0][1]).toEqual({ spectator: false });
+    });
+});
+
+describe('RoomTable, when the cards are revealed', () => {
+    it('brings the result into view', () => {
+        const scrollIntoView = vi.fn();
+
+        Element.prototype.scrollIntoView = scrollIntoView;
+
+        const { ctx, rerender, container } = renderInRoom(
+            <RoomTable task={task} actions={roundActions()} />,
+        );
+
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        act(() => {
+            rerender(
+                <GameProvider
+                    value={{
+                        ...ctx,
+                        snapshot: pokerSnapshot({
+                            current: { taskId: 't1', round: revealed },
+                        }),
+                    }}
+                >
+                    <RoomTable task={task} actions={roundActions()} />
+                </GameProvider>,
+            );
+        });
+
+        expect(scrollIntoView).toHaveBeenCalledTimes(1);
+        expect(scrollIntoView.mock.instances[0]).toBe(
+            container.querySelector('[aria-labelledby="poker-result"]'),
+        );
     });
 });

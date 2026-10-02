@@ -282,7 +282,8 @@ describe('TasksToggle', () => {
         );
         const hide = screen.getByRole('button', { name: 'Hide tasks' });
 
-        expect(hide.getAttribute('aria-pressed')).toBe('true');
+        expect(hide.getAttribute('aria-expanded')).toBe('true');
+        expect(hide.hasAttribute('aria-pressed')).toBe(false);
         expect(hide.getAttribute('aria-controls')).toBe('poker-tasks');
 
         fireEvent.click(hide);
@@ -298,11 +299,10 @@ describe('TasksToggle', () => {
             />,
         );
 
-        expect(
-            screen
-                .getByRole('button', { name: 'Show tasks' })
-                .getAttribute('aria-pressed'),
-        ).toBe('false');
+        const show = screen.getByRole('button', { name: 'Show tasks' });
+
+        expect(show.getAttribute('aria-expanded')).toBe('false');
+        expect(show.hasAttribute('aria-controls')).toBe(false);
     });
 
     it('opens the drawer on a narrow screen', () => {

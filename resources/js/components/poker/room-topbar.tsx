@@ -212,7 +212,7 @@ export function RoomTimer() {
 
     const route = { game: game.id, round: round.id };
 
-    const set = async (seconds: number | null) => {
+    const set = async (seconds: number | null): Promise<boolean> => {
         const response = await run(
             retroRequest<{ timerEndsAt: string | null }>(
                 PokerTimersController.update(route),
@@ -221,7 +221,7 @@ export function RoomTimer() {
         );
 
         if (!response) {
-            return;
+            return false;
         }
 
         setStarted(
@@ -234,6 +234,8 @@ export function RoomTimer() {
             roundId: round.id,
             timerEndsAt: response.timerEndsAt,
         });
+
+        return true;
     };
 
     const extend = async () => {
@@ -356,8 +358,8 @@ export function TasksToggle({
             size="sm"
             variant="ghost"
             className="shrink-0"
-            aria-pressed={!collapsed}
-            aria-controls="poker-tasks"
+            aria-expanded={!collapsed}
+            aria-controls={collapsed ? undefined : 'poker-tasks'}
             onClick={() => onCollapsedChange(!collapsed)}
         >
             {collapsed ? (
