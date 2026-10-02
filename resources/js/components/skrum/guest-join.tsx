@@ -68,6 +68,8 @@ export type GuestJoinProps = {
     children?: ReactNode;
     /** Draws another random nickname; the button is absent without it. */
     onRandomName?: () => void;
+    /** Another nickname is being drawn: the draw button ignores clicks. */
+    drawingName?: boolean;
     /** Pins the join button to the bottom of the viewport (phone). */
     stickyAction?: boolean;
     loginUrl: string;
@@ -149,6 +151,7 @@ export function GuestJoin({
     onSubmit,
     children,
     onRandomName,
+    drawingName = false,
     stickyAction = false,
     loginUrl,
     logo = true,
@@ -168,11 +171,13 @@ export function GuestJoin({
         PresenceNumbers.find((n) => n === initialPresence) ?? null,
     );
     const [editedPast, setEditedPast] = useState<typeof error>(null);
+    const [announcedName, setAnnouncedName] = useState('');
 
     if (initialName !== syncedInitialName) {
         setSyncedInitialName(initialName);
         setName(initialName);
         setEditedPast(error);
+        setAnnouncedName(initialName);
     }
 
     const showColors = takenColors !== undefined;
@@ -521,18 +526,32 @@ export function GuestJoin({
                 )}
 
                 {onRandomName && (
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full"
-                        disabled={processing}
-                        onClick={onRandomName}
-                    >
-                        <Dices aria-hidden />
-                        <span className="truncate">
-                            {t('Another random nickname')}
+                    <>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full aria-disabled:opacity-50"
+                            disabled={processing}
+                            aria-disabled={drawingName || undefined}
+                            onClick={() => {
+                                if (!drawingName) {
+                                    onRandomName();
+                                }
+                            }}
+                        >
+                            <Dices aria-hidden />
+                            <span className="truncate">
+                                {t('Another random nickname')}
+                            </span>
+                        </Button>
+                        <span
+                            role="status"
+                            data-slot="guest-join-drawn-name"
+                            className="sr-only"
+                        >
+                            {announcedName}
                         </span>
-                    </Button>
+                    </>
                 )}
 
                 {children}
