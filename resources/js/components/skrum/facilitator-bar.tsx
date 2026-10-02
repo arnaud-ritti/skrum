@@ -38,6 +38,8 @@ export type FacilitatorBarProps = {
     actions: FacilitatorAction[];
     start?: ReactNode;
     primary?: FacilitatorAction;
+    /** Actions after the main button, such as moving on to the next item. */
+    trailing?: FacilitatorAction[];
     end?: ReactNode;
     compact?: boolean;
     /** Accessible name of the toolbar; "Facilitation tools" by default. */
@@ -247,6 +249,7 @@ export function FacilitatorBar({
     actions,
     start,
     primary,
+    trailing = [],
     end,
     compact = false,
     label,
@@ -270,6 +273,7 @@ export function FacilitatorBar({
         ...inlineActions.map((action) => action.id),
         ...(overflowActions.length > 0 ? [moreKey] : []),
         ...(primary ? [primary.id] : []),
+        ...trailing.map((action) => action.id),
     ];
     const currentKey =
         activeKey !== null && keys.includes(activeKey) ? activeKey : keys[0];
@@ -378,6 +382,16 @@ export function FacilitatorBar({
                     />
                 </>
             )}
+            {trailing.map((action) => (
+                <ActionButton
+                    key={action.id}
+                    action={action}
+                    iconOnly={compact}
+                    tabIndex={tabIndexFor(action.id)}
+                    rovingKey={action.id}
+                    onRovingFocus={setActiveKey}
+                />
+            ))}
         </div>
     );
 }

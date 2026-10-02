@@ -247,6 +247,42 @@ describe('FacilitatorBar', () => {
         ).toBe('true');
     });
 
+    it('puts the trailing actions after the main button, in the arrow-key order', () => {
+        const onSkip = vi.fn();
+        renderWithProviders(
+            <FacilitatorBar
+                actions={makeActions().slice(0, 1)}
+                primary={next}
+                trailing={[
+                    {
+                        id: 'skip',
+                        label: 'Next task',
+                        icon: ArrowRight,
+                        onSelect: onSkip,
+                    },
+                ]}
+            />,
+        );
+        const names = within(screen.getByRole('toolbar'))
+            .getAllByRole('button')
+            .map((button) => button.getAttribute('aria-label'));
+
+        expect(names).toEqual(['Reveal cards', 'Grouping', 'Next task']);
+
+        const main = screen.getByRole('button', { name: 'Grouping' });
+        const skip = screen.getByRole('button', { name: 'Next task' });
+
+        main.focus();
+        fireEvent.keyDown(main, { key: 'ArrowRight' });
+
+        expect(document.activeElement).toBe(skip);
+        expect(skip.textContent).toBe('Next task');
+
+        fireEvent.click(skip);
+
+        expect(onSkip).toHaveBeenCalledTimes(1);
+    });
+
     it('handles an empty action list', () => {
         renderWithProviders(<FacilitatorBar actions={[]} />);
 
