@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PhaseRoti, RotiVote, rotiVoters } from '@/components/retro/phase-roti';
 import type { PresenceMember } from '@/lib/retro/types';
+import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -101,6 +102,32 @@ describe('PhaseRoti', () => {
             screen.getByRole('img', { name: 'Distribution hidden' }),
         ).toBeTruthy();
         expect(screen.queryByRole('status')).toBeNull();
+    });
+
+    it('lists no action item, open or carried: they are ticked from the action items page', () => {
+        const item = actionItemFixture();
+        const carried = actionItemFixture({
+            id: 'item-2',
+            content: 'Rotate the on-call',
+        });
+
+        renderInBoard(
+            <PhaseRoti />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'roti' },
+                    actionItems: [item],
+                    carriedActionItems: [carried],
+                }),
+            ),
+        );
+
+        expect(group()).toBeTruthy();
+        expect(screen.queryByText(item.content)).toBeNull();
+        expect(screen.queryByText(carried.content)).toBeNull();
+        expect(
+            document.querySelector('[data-test="retro-action-items-panel"]'),
+        ).toBeNull();
     });
 
     it('lists everyone present with "Voted" or "Thinking…", the count, and never a score', () => {

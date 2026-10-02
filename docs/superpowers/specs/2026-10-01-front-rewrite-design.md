@@ -297,7 +297,7 @@ Known limit of B12 with B13: a magic link followed by an e-mail code proves cont
 
 ### 9.1 B1 — what is allowed in phases `actions` and `roti`
 
-Principle: `actions` behaves like `discussing` for everything that touches cards and action items. `roti` is a rating step: the board is read-only, action items stay editable so there is no phase in which an open retro's items cannot be ticked. Surveys are unchanged.
+Principle: `actions` behaves like `discussing` for everything that touches cards and action items. `roti` is a rating step: the board is read-only, action items stay editable on the server so there is no phase in which an open retro's items cannot be ticked. The ROTI screen itself lists no action item, as the mockup: the items are ticked from the action items page, or on the board after "Previous". Surveys are unchanged.
 
 | Capability | Guard (file) | discussing | actions | roti | completed |
 |---|---|---|---|---|---|
