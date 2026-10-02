@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
@@ -54,8 +55,10 @@ import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
 import { CanvasColors } from './canvas-colors';
+import { ReadModeLayer } from './read-mode-toggle';
 import { SceneExport } from './scene-export';
 import { StickyTool } from './sticky-tool';
+import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
 
 const PollMs = 5000;
 
@@ -77,6 +80,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const state = useWhiteboard(snapshot);
     const { board, me } = state.snapshot;
     const viewOnly = board.locked && !me.isFacilitator;
+    const isPhone = useIsMobile();
+    const { reading, setReading } = useReadMode(isPhone);
+    const viewMode = isViewMode(viewOnly, reading);
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
     const [colors, setColors] = useState<ColorBarState>(HiddenColorBar);
@@ -170,7 +176,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }, [api, boardId, fail, listeners, refetch]);
 
     useEffect(() => {
-        if (!api || !viewOnly) {
+        if (!api || !viewMode) {
             return;
         }
 
@@ -179,7 +185,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             closeTextEditor();
             api.updateScene({ appState: { selectedElementIds: {} } });
         });
-    }, [api, viewOnly]);
+    }, [api, viewMode]);
 
     useEffect(() => {
         if (state.connected || state.status !== 'active') {
@@ -225,7 +231,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     sticky={
                         api &&
                         !toolbarSlot &&
-                        !viewOnly && (
+                        !viewMode && (
                             <StickyTool
                                 api={api}
                                 onOpenChange={setStickyOpen}
@@ -274,7 +280,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     data-facilitator={me.isFacilitator}
                 >
                     <Excalidraw
-                        viewModeEnabled={viewOnly ? true : undefined}
+                        viewModeEnabled={viewMode ? true : undefined}
                         excalidrawAPI={setApi}
                         initialData={{
                             elements: initialElements as never,
@@ -357,8 +363,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <MainMenu.DefaultItems.ChangeCanvasBackground />
                         </MainMenu>
                     </Excalidraw>
-                    {api && !viewOnly && !stickyOpen && (
+                    {api && !viewMode && !stickyOpen && (
                         <CanvasColors api={api} state={colors} />
+                    )}
+                    {api && canSwitchReadMode(isPhone, viewOnly) && (
+                        <ReadModeLayer
+                            reading={reading}
+                            onChange={setReading}
+                        />
                     )}
                 </div>
                 <BoardReactions state={state} />

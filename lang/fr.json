@@ -90,7 +90,7 @@
     "Duplicate": "Dupliquer",
     "Duplicate :name": "Dupliquer :name",
     "Each recovery code can be used once to access your account and will be removed after use. If you need more, click Regenerate codes above.": "Chaque code de récupération ne peut être utilisé qu'une seule fois pour accéder à votre compte et sera supprimé après utilisation. Si vous en avez besoin d'autres, cliquez sur Régénérer les codes ci-dessus.",
-    "Edit": "Éditer",
+    "Edit": "Modifier",
     "Edit :name": "Modifier :name",
     "Email": "E-mail",
     "Email address": "Adresse e-mail",
@@ -1110,7 +1110,7 @@
     "No saved decks yet.": "Aucun jeu de cartes enregistré pour l'instant.",
     "Your team's decks": "Les jeux de cartes de votre équipe",
     "Copy guest link": "Copier le lien invité",
-    "Read": "Lecture",
+    "Read": "Lire",
     "Create and update": "Créer et modifier",
     "Delete my messages": "Supprimer mes messages",
     "You can have at most 25 active tokens.": "Vous pouvez avoir au plus 25 jetons actifs.",
@@ -3962,5 +3962,6 @@
     "Rename the board": "Renommer le tableau",
     "It is no longer available to anyone.": "Il n'est plus disponible pour personne.",
     "Ask the facilitator if you still need it.": "Demandez à l'animateur si vous en avez encore besoin.",
-    "Check your connection, then try again.": "Vérifiez votre connexion, puis réessayez."
+    "Check your connection, then try again.": "Vérifiez votre connexion, puis réessayez.",
+    "Reading": "Lecture"
 }

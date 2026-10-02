@@ -255,3 +255,137 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
     $templatePage->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Coral\"][aria-checked=\"true\"]")
         ->assertCount("{$bar} [role=\"radio\"][aria-checked=\"true\"]", 1);
 });
+
+it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode and back, has no toggle at 1440, and gives a guest of a locked board no toggle', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
+    $toggle = '.whiteboard-canvas [data-slot="read-mode-toggle"]';
+    $tools = '.whiteboard-canvas .App-toolbar [data-testid="toolbar-rectangle"]';
+    $scrollBack = '.whiteboard-canvas .scroll-back-to-content';
+    $wheel = <<<'JS'
+        async ([zooming, deltaY, steps]) => {
+            const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
+            const box = canvas.getBoundingClientRect();
+
+            // The canvas zooms around the last place of the pointer: an empty corner.
+            canvas.dispatchEvent(new PointerEvent('pointermove', {
+                bubbles: true,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true,
+                clientX: box.right - 4,
+                clientY: box.bottom - 4,
+            }));
+            await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
+
+            for (let step = 0; step < steps; step += 1) {
+                canvas.dispatchEvent(new WheelEvent('wheel', {
+                    bubbles: true,
+                    cancelable: true,
+                    ctrlKey: zooming,
+                    deltaX: 0,
+                    deltaY,
+                    clientX: box.right - 4,
+                    clientY: box.bottom - 4,
+                }));
+                await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
+            }
+
+            return true;
+        }
+        JS;
+    $dockIsClear = <<<'JS'
+        (() => {
+            const apart = (first, second) => first.bottom <= second.top || first.top >= second.bottom || first.right <= second.left || first.left >= second.right;
+            const dock = document.querySelector('.whiteboard-canvas [data-slot="read-mode-toggle"]').getBoundingClientRect();
+            const bar = document.querySelector('.whiteboard-reactions').getBoundingClientRect();
+            const bottom = document.querySelector('.whiteboard-canvas .App-bottom-bar .App-toolbar').getBoundingClientRect();
+
+            return dock.width > 0 && dock.right <= window.innerWidth && apart(dock, bar) && apart(dock, bottom);
+        })()
+        JS;
+
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+
+    $sticky = $this->addWhiteboardElement($page, $board, ['x' => 60, 'y' => 200, 'width' => 200, 'height' => 200]);
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertPresent($tools)
+        ->assertNotPresent($toggle)
+        ->assertNotPresent('[data-slot="read-mode-state"]');
+
+    $page->resize(390, 844);
+
+    $page = $this->awaitRealtime($page->navigate($this->whiteboardPath($board)));
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertSeeIn('.whiteboard-canvas [data-slot="read-mode-state"]', 'Reading')
+        ->assertSeeIn($toggle, 'Edit')
+        ->assertAttribute($toggle, 'aria-pressed', 'true')
+        ->assertNotPresent($tools)
+        ->assertNotPresent('button[aria-label="Sticky note"]')
+        ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-colors"]')
+        ->assertScript($dockIsClear, true)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+
+    $this->dragOnWhiteboard($page, [160, 300], [200, 420]);
+    $this->settleWhiteboard($page);
+
+    expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole()->data)
+        ->toMatchArray(['x' => $sticky['x'], 'y' => $sticky['y']]);
+
+    $page->assertNotPresent($scrollBack);
+    $page->script("() => ({$wheel})([true, -400, 30])");
+    $page->assertPresent($scrollBack)
+        ->click($scrollBack)
+        ->assertNotPresent($scrollBack);
+    $page->script("() => ({$wheel})([false, 1500, 12])");
+    $page->assertPresent($scrollBack)
+        ->assertScript($dockIsClear, true);
+
+    $page = $this->awaitRealtime($page->navigate($this->whiteboardPath($board)));
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->click($toggle)
+        ->assertSeeIn($toggle, 'Read')
+        ->assertAttribute($toggle, 'aria-pressed', 'false')
+        ->assertNotPresent('[data-slot="read-mode-state"]')
+        ->assertPresent($tools)
+        ->assertScript($dockIsClear, true);
+
+    $this->addWhiteboardSticky($page, 'Sky');
+    $this->awaitWhiteboardStored($page, $board, 2);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('is_sticky', true)->where('author_member_id', $franMember->id)->latest('seq')->first()->data['backgroundColor'])
+        ->toBe('#e2f3ff');
+
+    $page->click($toggle)
+        ->assertSeeIn($toggle, 'Edit')
+        ->assertSeeIn('.whiteboard-canvas [data-slot="read-mode-state"]', 'Reading')
+        ->assertNotPresent($tools)
+        ->assertCount('[data-realtime]', 1);
+
+    $page->resize(1440, 900)
+        ->assertNotPresent($toggle)
+        ->assertNotPresent('[data-slot="read-mode-state"]')
+        ->assertPresent($tools);
+
+    $board->update(['locked' => true]);
+
+    $guestPage = $this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia');
+    $guestPage->resize(390, 844);
+    $guestPage = $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
+    $this->awaitWhiteboardElements($guestPage, 2);
+
+    $guestPage->assertPresent('div[role="status"]:has-text("This board is locked.")')
+        ->assertNotPresent($toggle)
+        ->assertNotPresent('[data-slot="read-mode-state"]')
+        ->assertNotPresent($tools)
+        ->assertNotPresent('button[aria-label="Sticky note"]');
+
+    $this->dragOnWhiteboard($guestPage, [160, 300], [200, 420]);
+    $this->settleWhiteboard($guestPage);
+
+    expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('element_id', $sticky['id'])->sole()->data)
+        ->toMatchArray(['x' => $sticky['x'], 'y' => $sticky['y']]);
+});

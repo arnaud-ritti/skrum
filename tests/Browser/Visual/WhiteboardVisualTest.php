@@ -101,7 +101,7 @@ it('[P18e-07-03] renders the notice of an invalid whiteboard guest link without 
     );
 });
 
-it('[P18e-07-05] renders the board chrome of the facilitator without overflow', function () {
+it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a phone, without overflow', function () {
     ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
     [$mia] = whiteboardMember($board);
     renamedWhiteboardUser($mia, 'Mia Member');
@@ -121,9 +121,13 @@ it('[P18e-07-05] renders the board chrome of the facilitator without overflow', 
                 ->click('@login-button')
                 ->assertPathIsNot('/login');
 
+            // Opened at the phone's width: the 390 capture is the read mode, the 1440 one has no toggle.
+            $page->resize(390, 844);
+
             $page = $this->awaitRealtime($page->navigate($path))
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('[role="toolbar"][aria-label]')
+                ->assertPresent('.whiteboard-canvas [data-slot="read-mode-toggle"][aria-pressed="true"]')
                 ->assertCount('[data-realtime]', 1)
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 

@@ -177,3 +177,43 @@ Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `R
 ### Captures
 
 `tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-colors-*` (the rectangle tool: the colour bar and the canvas's panel without its quick picks) and `whiteboard-board-sticky-colors-*` (the colours of the sticky tool) and `whiteboard-board-export-*` (the export card; at 390 in French its button label is cut with an ellipsis), the facilitator, light and dark, 390 and 1440, EN and FR, taken on the real page. The earlier `whiteboard-board-*` captures change by the canvas background.
+
+## Task 7.5 — Read mode on a phone
+
+### Parity (answer 7-D7, spec §6.4; brief 07 §6 row D7 is flipped by the answer)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| — | A board opened below 768 px is in read mode | `useReadMode(isPhone)`: the canvas is in Excalidraw's view mode (pan and zoom, no tool bar, no sticky tool, no colour bar); the pill "Reading" (eye) is at the top left of the canvas | yes |
+| — | Edit, and back | `ReadModeToggle` in the bottom dock, at the right of the reactions: "Edit" (pencil, primary) while reading, "Read" (eye, outline) while editing; `aria-pressed` follows the read mode. French: "Modifier" / "Lire" | yes |
+| — | The mode is local | React state of the board: not stored, not sent; a reload on a phone reads again | yes |
+| 37 | Locked board, viewer who is not the facilitator | `viewModeEnabled = locked for the viewer or reading` (`isViewMode`): the lock keeps the last word; such a viewer has no toggle and no pill, only the notice "This board is locked." | yes |
+| — | From 768 px | no toggle, no pill, edit mode (unless locked), as before | yes |
+| 8, 9, 54 | Sticky tool, colour bar | unchanged in edit mode; hidden in read mode as under the lock | yes |
+
+The default is taken when the board opens: a board opened on a wide screen whose window narrows below 768 px stays in edit mode and gets the "Read" button; a phone that turns to a width of 768 px or more edits, and reads again when it turns back.
+
+French wording: `"Edit"` becomes "Modifier" (it was "Éditer") and `"Read"` becomes "Lire" (it was "Lecture") in `lang/fr.json`, for every use of the two keys (a key is its English text, so the button cannot have a wording of its own). New key "Reading" ("Lecture", "Lectura", "Lesemodus").
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Follow :name" pill, at the top right of the phone canvas | `follow` of `ReadModeLayer` (`read-mode-toggle.tsx`): the top row is a `justify-between` of the "Reading" pill and this slot | WB-3 |
+| "Fit to screen" and "Comments" tools of the phone dock | `tools` of `ReadModeLayer`, rendered in the dock before the toggle | WB-1, WB-2 |
+
+### Differences with the mockup (MobileRituals, first phone)
+
+| Difference | Row |
+|---|---|
+| No "Follow Camille" pill | D-21 (WB-3) |
+| The dock is in two parts on one line: the reactions bar (three emoji and "…") at the left, the "Edit" button at the right. The mockup has one centred bar: move the view, fit to screen, react, comments, "Edit". Moving the view is the read mode itself (one finger); fit and comments are not built | D-21 (WB-1, WB-2); the reactions bar is the shared `SessionReactions` |
+| The canvas's own bottom bar (its menu button) stays under the dock | D-21 (the library's bars are kept until WB-1) |
+| A "Read" button in edit mode: the mockup shows the read mode only | answer 7-D7 ("switches to edit mode and back", spec §6.4) |
+| The read mode is a view mode of this browser, not a right | D-36 |
+| Header: the counter "n online" alone, no subtitle "Whiteboard · n online", no small avatars; the board menu after "Share"; for the facilitator the facilitation tools in a strip under the header | header budget of Task 0.14; brief 07 §6 (existing features) |
+| The plan puts the toggle in the header (`board-header.tsx`): it is built in the canvas dock, where the mockup has it; below 768 px the header has no room for a labelled button | rule 13; reported |
+
+### Captures
+
+`tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-*-390-*` is now the board as a phone opens it (read mode: the pill and "Edit"); the test opens the board at 390 and the 1440 capture is unchanged (no toggle). The other 390 captures of the facilitator (`-colors-`, `-sticky-colors-`, `-menu-`, `-save-template-`, `-hand-over-`, `-delete-`) open at the desktop width and are resized, so they show the phone in edit mode, with the "Read" button. `whiteboard-board-locked-guest-*-390-*` is unchanged: no toggle under the lock.

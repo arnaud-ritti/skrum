@@ -535,6 +535,32 @@
 }
 
 /*
+ * The phone's read mode (`[data-slot='read-mode-dock']`, as tall as the
+ * reactions bar) makes one dock with the reactions: in the mobile layout it
+ * sits on the same line, at the right, and the bar moves to the left; the
+ * scroll-back button goes above both, with or without the bar. Like the bar,
+ * it gives way to the panel of shape actions.
+ */
+.whiteboard-canvas:has(.excalidraw--mobile) [data-slot='read-mode-dock'] {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+.whiteboard-canvas:has(.excalidraw--mobile):has([data-slot='read-mode-dock'])
+    ~ [data-slot='reaction-bar'] {
+    margin-left: 1rem;
+}
+
+.whiteboard-canvas:has([data-slot='read-mode-dock'])
+    .excalidraw--mobile
+    .scroll-back-to-content {
+    bottom: calc(64px + 4rem + 2px) !important;
+}
+
+.whiteboard-canvas:has(.App-mobile-menu) [data-slot='read-mode-dock'] {
+    display: none;
+}
+
+/*
  * Only the facilitator may lock or unlock an element (spec §11.2). The
  * context menu of Excalidraw 0.18.1 names its entries by action; the
  * keyboard shortcut cannot be removed, and the server rejects what it does.
