@@ -3891,5 +3891,18 @@
     "Reminder e-mails": "Erinnerungs-E-Mails",
     "Stop the action item reminders sent by e-mail?": "Erinnerungen an Maßnahmen per E-Mail beenden?",
     "You no longer receive action item reminders by e-mail.": "Sie erhalten keine Erinnerungen an Maßnahmen mehr per E-Mail.",
-    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Sie erhalten diese E-Mail, weil Sie an dieser Retrospektive teilgenommen haben oder zu ihrem Team gehören."
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Sie erhalten diese E-Mail, weil Sie an dieser Retrospektive teilgenommen haben oder zu ihrem Team gehören.",
+    "Your sign-in link for :app": "Ihr Anmeldelink für :app",
+    "Sign in to :app": "Bei :app anmelden",
+    "Use the button to sign in as": "Melden Sie sich über die Schaltfläche an als",
+    "The link works once and expires in :minutes minutes.": "Der Link funktioniert einmal und läuft in :minutes Minuten ab.",
+    "Sign in": "Anmelden",
+    "Or paste this link in your browser:": "Oder fügen Sie diesen Link in Ihren Browser ein:",
+    "You did not ask for this? Ignore this e-mail: nobody can sign in without the link.": "Sie haben das nicht angefordert? Ignorieren Sie diese E-Mail: Ohne den Link kann sich niemand anmelden.",
+    "This sign-in link is no longer valid. Request a new one.": "Dieser Anmeldelink ist nicht mehr gültig. Fordern Sie einen neuen an.",
+    "Too many attempts. Wait a minute and try again.": "Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.",
+    "This link no longer works": "Dieser Link funktioniert nicht mehr",
+    "You are about to sign in as :email.": "Sie melden sich gleich als :email an.",
+    "It has expired or was already used. Request a new one from the log in page.": "Er ist abgelaufen oder wurde bereits verwendet. Fordern Sie auf der Anmeldeseite einen neuen an.",
+    "Back to log in": "Zurück zur Anmeldung"
 }

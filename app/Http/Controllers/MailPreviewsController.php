@@ -6,8 +6,10 @@ use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Integrations\BuildRetroRecap;
 use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
+use App\Mail\MagicLinkMail;
 use App\Mail\WorkspaceInvitationMail;
 use App\Models\ActionItem;
+use App\Models\MagicLink;
 use App\Models\Retro;
 use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
@@ -60,6 +62,7 @@ class MailPreviewsController extends Controller
                     resolve(BuildRetroRecap::class)->handle($retro),
                     resolve(SummarizeHealthCheck::class)->handle($retro),
                 ),
+            'magic-link' => fn (): Mailable => new MagicLinkMail(url('/magic-link/'.str_repeat('a', 64).'?expires=0&signature=sample'), 'ada@example.com', MagicLink::LifetimeMinutes),
         ];
     }
 }

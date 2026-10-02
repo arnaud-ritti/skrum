@@ -71,6 +71,8 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\MagicLinksController;
+use App\Http\Controllers\MagicLinkSessionsController;
 use App\Http\Controllers\MailPreviewsController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerAutoRevealsController;
@@ -211,6 +213,15 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
 Route::middleware('guest')->group(function (): void {
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
     Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
+    Route::post('magic-link', [MagicLinksController::class, 'store'])->middleware('throttle:magicLinks')->name('magicLinks.store');
+    Route::get('magic-link/{token}', [MagicLinksController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->middleware('throttle:20,1,magicLinkOpens')
+        ->name('magicLinks.show');
+    Route::post('magic-link/{token}/session', [MagicLinkSessionsController::class, 'store'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->middleware('throttle:20,1,magicLinkOpens')
+        ->name('magicLinks.sessions.store');
 });
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');

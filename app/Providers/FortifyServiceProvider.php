@@ -9,7 +9,9 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\SsoProvider;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
+use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -64,6 +66,7 @@ class FortifyServiceProvider extends ServiceProvider
             'canRegister' => resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
             'status' => $request->session()->get('status'),
             'ssoProviders' => SsoProvider::options(),
+            'canUseMagicLink' => resolve(IntegrationAvailability::class)->emailEnabled(),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
@@ -112,6 +115,12 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(
             LoginAddress::throttleKey((string) $request->input(Fortify::username())).'|'.$request->ip(),
         ));
+
+        RateLimiter::for('magicLinks', fn (Request $request) => Limit::perMinute(10)
+            ->by('magic-link-ip:'.$request->ip())
+            ->response(fn (): RedirectResponse => back()->withErrors([
+                'email' => __('Too many attempts. Wait a minute and try again.'),
+            ])));
 
         RateLimiter::for('passkeys', fn (Request $request) => Limit::perMinute(10)->by(
             ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),

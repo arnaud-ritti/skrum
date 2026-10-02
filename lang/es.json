@@ -3891,5 +3891,18 @@
     "Reminder e-mails": "Correos de recordatorio",
     "Stop the action item reminders sent by e-mail?": "¿Dejar de recibir por correo los recordatorios de acciones?",
     "You no longer receive action item reminders by e-mail.": "Ya no recibe por correo los recordatorios de acciones.",
-    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Recibe este correo porque participó en esta retrospectiva o pertenece a su equipo."
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Recibe este correo porque participó en esta retrospectiva o pertenece a su equipo.",
+    "Your sign-in link for :app": "Su enlace de inicio de sesión en :app",
+    "Sign in to :app": "Inicie sesión en :app",
+    "Use the button to sign in as": "Use el botón para iniciar sesión como",
+    "The link works once and expires in :minutes minutes.": "El enlace funciona una sola vez y caduca en :minutes minutos.",
+    "Sign in": "Iniciar sesión",
+    "Or paste this link in your browser:": "O pegue este enlace en su navegador:",
+    "You did not ask for this? Ignore this e-mail: nobody can sign in without the link.": "¿No lo ha pedido? Ignore este correo: nadie puede iniciar sesión sin el enlace.",
+    "This sign-in link is no longer valid. Request a new one.": "Este enlace de inicio de sesión ya no es válido. Solicite uno nuevo.",
+    "Too many attempts. Wait a minute and try again.": "Demasiados intentos. Espere un minuto y vuelva a intentarlo.",
+    "This link no longer works": "Este enlace ya no funciona",
+    "You are about to sign in as :email.": "Va a iniciar sesión como :email.",
+    "It has expired or was already used. Request a new one from the log in page.": "Ha caducado o ya se ha usado. Solicite uno nuevo desde la página de inicio de sesión.",
+    "Back to log in": "Volver al inicio de sesión"
 }

@@ -3666,5 +3666,18 @@
     "Reminder e-mails": "Reminder e-mails",
     "Stop the action item reminders sent by e-mail?": "Stop the action item reminders sent by e-mail?",
     "You no longer receive action item reminders by e-mail.": "You no longer receive action item reminders by e-mail.",
-    "You receive this e-mail because you took part in this retrospective or belong to its team.": "You receive this e-mail because you took part in this retrospective or belong to its team."
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "You receive this e-mail because you took part in this retrospective or belong to its team.",
+    "Your sign-in link for :app": "Your sign-in link for :app",
+    "Sign in to :app": "Sign in to :app",
+    "Use the button to sign in as": "Use the button to sign in as",
+    "The link works once and expires in :minutes minutes.": "The link works once and expires in :minutes minutes.",
+    "Sign in": "Sign in",
+    "Or paste this link in your browser:": "Or paste this link in your browser:",
+    "You did not ask for this? Ignore this e-mail: nobody can sign in without the link.": "You did not ask for this? Ignore this e-mail: nobody can sign in without the link.",
+    "This sign-in link is no longer valid. Request a new one.": "This sign-in link is no longer valid. Request a new one.",
+    "Too many attempts. Wait a minute and try again.": "Too many attempts. Wait a minute and try again.",
+    "This link no longer works": "This link no longer works",
+    "You are about to sign in as :email.": "You are about to sign in as :email.",
+    "It has expired or was already used. Request a new one from the log in page.": "It has expired or was already used. Request a new one from the log in page.",
+    "Back to log in": "Back to log in"
 }

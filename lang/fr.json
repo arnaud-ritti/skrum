@@ -3891,5 +3891,18 @@
     "Reminder e-mails": "E-mails de rappel",
     "Stop the action item reminders sent by e-mail?": "Arrêter les rappels d'actions envoyés par e-mail ?",
     "You no longer receive action item reminders by e-mail.": "Vous ne recevez plus les rappels d'actions par e-mail.",
-    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Vous recevez cet e-mail parce que vous avez participé à cette rétrospective ou faites partie de son équipe."
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Vous recevez cet e-mail parce que vous avez participé à cette rétrospective ou faites partie de son équipe.",
+    "Your sign-in link for :app": "Votre lien de connexion à :app",
+    "Sign in to :app": "Connectez-vous à :app",
+    "Use the button to sign in as": "Utilisez le bouton pour vous connecter en tant que",
+    "The link works once and expires in :minutes minutes.": "Le lien ne fonctionne qu'une fois et expire dans :minutes minutes.",
+    "Sign in": "Se connecter",
+    "Or paste this link in your browser:": "Ou collez ce lien dans votre navigateur :",
+    "You did not ask for this? Ignore this e-mail: nobody can sign in without the link.": "Vous n'avez rien demandé ? Ignorez cet e-mail : personne ne peut se connecter sans ce lien.",
+    "This sign-in link is no longer valid. Request a new one.": "Ce lien de connexion n'est plus valide. Demandez-en un nouveau.",
+    "Too many attempts. Wait a minute and try again.": "Trop de tentatives. Patientez une minute puis réessayez.",
+    "This link no longer works": "Ce lien ne fonctionne plus",
+    "You are about to sign in as :email.": "Vous allez vous connecter en tant que :email.",
+    "It has expired or was already used. Request a new one from the log in page.": "Il a expiré ou a déjà été utilisé. Demandez-en un nouveau depuis la page de connexion.",
+    "Back to log in": "Retour à la connexion"
 }
