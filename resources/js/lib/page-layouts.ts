@@ -33,6 +33,8 @@ export const ownLayoutPages: readonly string[] = [
     'settings/notifications',
     'settings/api-tokens',
     'teams/integrations',
+    'workspaces/show',
+    'workspaces/create',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];
