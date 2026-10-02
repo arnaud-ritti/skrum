@@ -1,4 +1,3 @@
-import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { CalendarIcon, CalendarX, CircleAlert } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
@@ -7,6 +6,11 @@ import { Calendar } from '@/components/ui/calendar';
 import type { CalendarLocale } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -299,8 +303,8 @@ export function DatePicker({
             >
                 {label}
             </Label>
-            <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-                <PopoverPrimitive.Trigger asChild>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
                     <Button
                         id={fieldId}
                         type="button"
@@ -327,108 +331,105 @@ export function DatePicker({
                                 : (placeholder ?? t('Pick a date'))}
                         </span>
                     </Button>
-                </PopoverPrimitive.Trigger>
-                <PopoverPrimitive.Portal>
-                    <PopoverPrimitive.Content
-                        data-slot="date-picker-content"
-                        aria-label={label}
-                        align="start"
-                        sideOffset={4}
-                        className="z-50 w-auto max-w-(--radix-popover-content-available-width) rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover outline-none"
-                    >
-                        <div className="@container flex w-112 max-w-full flex-col gap-3">
-                            {allowTyping && (
-                                <div className="flex flex-col gap-1">
-                                    <Input
-                                        value={typed}
-                                        onChange={(event) =>
-                                            setTyped(event.target.value)
-                                        }
-                                        onKeyDown={onTypedKeyDown}
-                                        placeholder={typedFormat}
-                                        aria-label={t('Type a date')}
-                                        aria-describedby={typedHelpId}
-                                        aria-invalid={
-                                            typed.trim() !== '' &&
-                                            (parsed === null ||
-                                                parsedIsDisabled)
-                                                ? true
-                                                : undefined
-                                        }
-                                        autoComplete="off"
-                                    />
-                                    <p
-                                        id={typedHelpId}
-                                        aria-live="polite"
-                                        className="text-body-sm text-muted-foreground"
-                                    >
-                                        {interpretation}
-                                    </p>
+                </PopoverTrigger>
+                <PopoverContent
+                    data-slot="date-picker-content"
+                    aria-label={label}
+                    align="start"
+                    sideOffset={4}
+                    className="z-50 w-auto max-w-(--radix-popover-content-available-width) rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover outline-none"
+                >
+                    <div className="@container flex w-112 max-w-full flex-col gap-3">
+                        {allowTyping && (
+                            <div className="flex flex-col gap-1">
+                                <Input
+                                    value={typed}
+                                    onChange={(event) =>
+                                        setTyped(event.target.value)
+                                    }
+                                    onKeyDown={onTypedKeyDown}
+                                    placeholder={typedFormat}
+                                    aria-label={t('Type a date')}
+                                    aria-describedby={typedHelpId}
+                                    aria-invalid={
+                                        typed.trim() !== '' &&
+                                        (parsed === null || parsedIsDisabled)
+                                            ? true
+                                            : undefined
+                                    }
+                                    autoComplete="off"
+                                />
+                                <p
+                                    id={typedHelpId}
+                                    aria-live="polite"
+                                    className="text-body-sm text-muted-foreground"
+                                >
+                                    {interpretation}
+                                </p>
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-3 @md:flex-row">
+                            {shortcuts && shortcuts.length > 0 && (
+                                <div
+                                    data-slot="date-picker-shortcuts"
+                                    className="flex flex-wrap gap-1 @md:w-32 @md:shrink-0 @md:flex-col @md:flex-nowrap @md:gap-0.5 @md:border-r @md:pr-3"
+                                >
+                                    {shortcuts.map((shortcut) => {
+                                        const active =
+                                            shortcut.date === null
+                                                ? value === undefined
+                                                : value !== undefined &&
+                                                  isSameDay(
+                                                      shortcut.date,
+                                                      value,
+                                                  );
+
+                                        return (
+                                            <button
+                                                key={shortcut.label}
+                                                type="button"
+                                                data-active={active}
+                                                aria-pressed={active}
+                                                onClick={() =>
+                                                    commit(
+                                                        shortcut.date ??
+                                                            undefined,
+                                                    )
+                                                }
+                                                className="flex min-w-0 flex-col items-start rounded-sm border px-2 py-1 text-left text-sm transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-skrum-primary-soft data-[active=true]:text-skrum-primary-text motion-reduce:transition-none @md:border-transparent"
+                                            >
+                                                <span className="w-full truncate">
+                                                    {shortcut.label}
+                                                </span>
+                                                {shortcut.date && (
+                                                    <span className="hidden w-full truncate text-xs text-muted-foreground @md:block">
+                                                        {formatShortDate(
+                                                            shortcut.date,
+                                                            locale,
+                                                            referenceDay,
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
-                            <div className="flex flex-col gap-3 @md:flex-row">
-                                {shortcuts && shortcuts.length > 0 && (
-                                    <div
-                                        data-slot="date-picker-shortcuts"
-                                        className="flex flex-wrap gap-1 @md:w-32 @md:shrink-0 @md:flex-col @md:flex-nowrap @md:gap-0.5 @md:border-r @md:pr-3"
-                                    >
-                                        {shortcuts.map((shortcut) => {
-                                            const active =
-                                                shortcut.date === null
-                                                    ? value === undefined
-                                                    : value !== undefined &&
-                                                      isSameDay(
-                                                          shortcut.date,
-                                                          value,
-                                                      );
-
-                                            return (
-                                                <button
-                                                    key={shortcut.label}
-                                                    type="button"
-                                                    data-active={active}
-                                                    aria-pressed={active}
-                                                    onClick={() =>
-                                                        commit(
-                                                            shortcut.date ??
-                                                                undefined,
-                                                        )
-                                                    }
-                                                    className="flex min-w-0 flex-col items-start rounded-sm border px-2 py-1 text-left text-sm transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-skrum-primary-soft data-[active=true]:text-skrum-primary-text motion-reduce:transition-none @md:border-transparent"
-                                                >
-                                                    <span className="w-full truncate">
-                                                        {shortcut.label}
-                                                    </span>
-                                                    {shortcut.date && (
-                                                        <span className="hidden w-full truncate text-xs text-muted-foreground @md:block">
-                                                            {formatShortDate(
-                                                                shortcut.date,
-                                                                locale,
-                                                                referenceDay,
-                                                            )}
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                <Calendar
-                                    mode="single"
-                                    required
-                                    selected={value}
-                                    onSelect={(date) => commit(date)}
-                                    locale={locale}
-                                    weekStartsOn={weekStartsOn}
-                                    disabled={isDateDisabled}
-                                    today={today}
-                                    defaultMonth={value ?? referenceDay}
-                                />
-                            </div>
+                            <Calendar
+                                mode="single"
+                                required
+                                selected={value}
+                                onSelect={(date) => commit(date)}
+                                locale={locale}
+                                weekStartsOn={weekStartsOn}
+                                disabled={isDateDisabled}
+                                today={today}
+                                defaultMonth={value ?? referenceDay}
+                            />
                         </div>
-                    </PopoverPrimitive.Content>
-                </PopoverPrimitive.Portal>
-            </PopoverPrimitive.Root>
+                    </div>
+                </PopoverContent>
+            </Popover>
             {showOverdue && !error && (
                 <span
                     id={helpId}

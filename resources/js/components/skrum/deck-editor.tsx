@@ -1,4 +1,3 @@
-import * as Switch from '@radix-ui/react-switch';
 import { CircleAlert, GripVertical, X } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
@@ -17,6 +16,7 @@ import type { Deck } from '@/components/skrum/deck-picker';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
     Tooltip,
     TooltipContent,
@@ -111,14 +111,12 @@ function SpecialCardRow({
                     {description}
                 </span>
             </span>
-            <Switch.Root
+            <Switch
                 checked={checked}
                 onCheckedChange={onCheckedChange}
                 aria-labelledby={labelId}
-                className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent bg-input transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary motion-reduce:transition-none"
-            >
-                <Switch.Thumb className="pointer-events-none block size-4 rounded-full bg-card shadow-card transition-transform duration-140 ease-spring data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0.5 motion-reduce:transition-none" />
-            </Switch.Root>
+                className="cursor-pointer"
+            />
         </div>
     );
 }

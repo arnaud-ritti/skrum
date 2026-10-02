@@ -15,7 +15,6 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import * as SwitchPrimitive from '@radix-ui/react-switch';
 import {
     EllipsisIcon,
     GripVerticalIcon,
@@ -32,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CardMenu } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -176,16 +176,13 @@ function StatementSwitch({
     onCheckedChange: (checked: boolean) => void;
 }) {
     return (
-        <SwitchPrimitive.Root
-            data-slot="switch"
+        <Switch
             checked={checked}
             disabled={disabled}
             aria-label={label}
             onCheckedChange={onCheckedChange}
-            className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent bg-input transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary motion-reduce:transition-none"
-        >
-            <SwitchPrimitive.Thumb className="pointer-events-none block size-4 translate-x-0.5 rounded-full bg-card shadow-xs transition-transform duration-140 ease-standard data-[state=checked]:translate-x-4.5 motion-reduce:transition-none" />
-        </SwitchPrimitive.Root>
+            className="cursor-pointer"
+        />
     );
 }
 

@@ -1,6 +1,4 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
-import * as SwitchPrimitive from '@radix-ui/react-switch';
 import {
     ChevronDown,
     ClipboardList,
@@ -18,6 +16,13 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import {
+    Popover,
+    PopoverAnchor,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -190,18 +195,13 @@ function SettingSwitch({
     onChange: (checked: boolean) => void;
 }) {
     return (
-        <SwitchPrimitive.Root
+        <Switch
             aria-labelledby={labelId}
             checked={checked}
             disabled={disabled}
             onCheckedChange={onChange}
-            className={cn(
-                'peer inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 border-transparent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input',
-                changed && 'ring-2 ring-primary/40',
-            )}
-        >
-            <SwitchPrimitive.Thumb className="pointer-events-none block size-4 rounded-full bg-background shadow-raised transition-transform duration-(--duration-base) data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0 motion-reduce:transition-none" />
-        </SwitchPrimitive.Root>
+            className={cn(changed && 'ring-2 ring-primary/40')}
+        />
     );
 }
 
@@ -910,26 +910,22 @@ export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
     }
 
     return (
-        <PopoverPrimitive.Root open={open} onOpenChange={requestOpenChange}>
+        <Popover open={open} onOpenChange={requestOpenChange}>
             {trigger !== undefined ? (
-                <PopoverPrimitive.Trigger asChild>
-                    {trigger}
-                </PopoverPrimitive.Trigger>
+                <PopoverTrigger asChild>{trigger}</PopoverTrigger>
             ) : (
-                <PopoverPrimitive.Anchor />
+                <PopoverAnchor />
             )}
-            <PopoverPrimitive.Portal>
-                <PopoverPrimitive.Content
-                    role="dialog"
-                    aria-labelledby={titleId}
-                    align="end"
-                    sideOffset={6}
-                    className="z-50 flex max-h-(--radix-popover-content-available-height) w-92 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border bg-popover p-0 text-popover-foreground shadow-popover outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none"
-                >
-                    {panel('h2')}
-                </PopoverPrimitive.Content>
-            </PopoverPrimitive.Portal>
-        </PopoverPrimitive.Root>
+            <PopoverContent
+                role="dialog"
+                aria-labelledby={titleId}
+                align="end"
+                sideOffset={6}
+                className="z-50 flex max-h-(--radix-popover-content-available-height) w-92 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border bg-popover p-0 text-popover-foreground shadow-popover outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none"
+            >
+                {panel('h2')}
+            </PopoverContent>
+        </Popover>
     );
 }
 

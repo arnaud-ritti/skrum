@@ -1,4 +1,8 @@
-import * as PopoverPrimitive from '@radix-ui/react-popover';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useTrans } from '@/hooks/use-trans';
@@ -177,8 +181,8 @@ export function ColumnColorPicker({
     };
 
     return (
-        <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-            <PopoverPrimitive.Trigger asChild>
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
                 <button
                     type="button"
                     data-slot="column-color-trigger"
@@ -193,104 +197,100 @@ export function ColumnColorPicker({
                 >
                     <ColorSwatch color={value} />
                 </button>
-            </PopoverPrimitive.Trigger>
-            <PopoverPrimitive.Portal>
-                <PopoverPrimitive.Content
-                    align="start"
-                    sideOffset={6}
-                    data-slot="column-color-picker"
-                    className="@container/cpick z-50 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover outline-none"
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                sideOffset={6}
+                data-slot="column-color-picker"
+                className="@container/cpick z-50 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover outline-none"
+            >
+                <p className="mb-2 truncate text-sm font-semibold">
+                    {t('Color of “:title”', { title: displayTitle })}
+                </p>
+                <div
+                    role="radiogroup"
+                    aria-label={t('Color of “:title”', {
+                        title: displayTitle,
+                    })}
+                    className="grid grid-cols-4 gap-1 @sm/cpick:grid-cols-8"
                 >
-                    <p className="mb-2 truncate text-sm font-semibold">
-                        {t('Color of “:title”', { title: displayTitle })}
-                    </p>
-                    <div
-                        role="radiogroup"
-                        aria-label={t('Color of “:title”', {
-                            title: displayTitle,
-                        })}
-                        className="grid grid-cols-4 gap-1 @sm/cpick:grid-cols-8"
-                    >
-                        {columnColors.map((color) => {
-                            const taken = usedBy[color];
-                            const checked = color === value;
-                            const name = colorName(color);
+                    {columnColors.map((color) => {
+                        const taken = usedBy[color];
+                        const checked = color === value;
+                        const name = colorName(color);
 
-                            return (
-                                <button
-                                    key={color}
-                                    ref={(node) => {
-                                        if (node === null) {
-                                            delete optionRefs.current[color];
+                        return (
+                            <button
+                                key={color}
+                                ref={(node) => {
+                                    if (node === null) {
+                                        delete optionRefs.current[color];
 
-                                            return;
-                                        }
+                                        return;
+                                    }
 
-                                        optionRefs.current[color] = node;
-                                    }}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={checked}
-                                    aria-label={
-                                        taken === undefined
-                                            ? name
-                                            : t(':color, used by :title', {
-                                                  color: name,
-                                                  title: taken,
-                                              })
-                                    }
-                                    tabIndex={checked ? 0 : -1}
-                                    data-state={
-                                        checked ? 'checked' : 'unchecked'
-                                    }
-                                    data-color={color}
-                                    onClick={() => commit(color)}
-                                    onKeyDown={(event) =>
-                                        handleKeyDown(event, color)
-                                    }
-                                    className="flex min-w-0 flex-col items-center gap-1 rounded-sm p-1 text-overline text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=checked]:text-foreground"
+                                    optionRefs.current[color] = node;
+                                }}
+                                type="button"
+                                role="radio"
+                                aria-checked={checked}
+                                aria-label={
+                                    taken === undefined
+                                        ? name
+                                        : t(':color, used by :title', {
+                                              color: name,
+                                              title: taken,
+                                          })
+                                }
+                                tabIndex={checked ? 0 : -1}
+                                data-state={checked ? 'checked' : 'unchecked'}
+                                data-color={color}
+                                onClick={() => commit(color)}
+                                onKeyDown={(event) =>
+                                    handleKeyDown(event, color)
+                                }
+                                className="flex min-w-0 flex-col items-center gap-1 rounded-sm p-1 text-overline text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=checked]:text-foreground"
+                            >
+                                <span
+                                    className={cn(
+                                        'relative grid size-7 place-items-center rounded-full',
+                                        columnColorClasses[color].dot,
+                                        checked &&
+                                            'ring-2 ring-ring ring-offset-2 ring-offset-popover',
+                                    )}
                                 >
-                                    <span
-                                        className={cn(
-                                            'relative grid size-7 place-items-center rounded-full',
-                                            columnColorClasses[color].dot,
-                                            checked &&
-                                                'ring-2 ring-ring ring-offset-2 ring-offset-popover',
-                                        )}
-                                    >
-                                        {taken !== undefined && (
-                                            <span
-                                                aria-hidden="true"
-                                                data-slot="used-dot"
-                                                className="size-1.5 rounded-full bg-foreground"
-                                            />
-                                        )}
-                                    </span>
-                                    <span
-                                        aria-hidden="true"
-                                        className="max-w-full truncate"
-                                    >
-                                        {name}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                    {anyUsed && (
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span
-                                aria-hidden="true"
-                                className="size-1.5 shrink-0 rounded-full bg-foreground"
-                            />
-                            <span>
-                                {t(
-                                    'Used by another column. Pick it to swap colors.',
-                                )}
-                            </span>
-                        </p>
-                    )}
-                </PopoverPrimitive.Content>
-            </PopoverPrimitive.Portal>
-        </PopoverPrimitive.Root>
+                                    {taken !== undefined && (
+                                        <span
+                                            aria-hidden="true"
+                                            data-slot="used-dot"
+                                            className="size-1.5 rounded-full bg-foreground"
+                                        />
+                                    )}
+                                </span>
+                                <span
+                                    aria-hidden="true"
+                                    className="max-w-full truncate"
+                                >
+                                    {name}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+                {anyUsed && (
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span
+                            aria-hidden="true"
+                            className="size-1.5 shrink-0 rounded-full bg-foreground"
+                        />
+                        <span>
+                            {t(
+                                'Used by another column. Pick it to swap colors.',
+                            )}
+                        </span>
+                    </p>
+                )}
+            </PopoverContent>
+        </Popover>
     );
 }

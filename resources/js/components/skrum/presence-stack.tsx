@@ -1,10 +1,14 @@
-import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { UserPlus, WandSparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence, AvatarSize } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -190,8 +194,8 @@ export function PresenceStack({
                 className,
             )}
         >
-            <PopoverPrimitive.Root modal>
-                <PopoverPrimitive.Trigger asChild>
+            <Popover modal>
+                <PopoverTrigger asChild>
                     <button
                         type="button"
                         aria-label={t(
@@ -232,78 +236,74 @@ export function PresenceStack({
                             {t(':count online', { count: connected.length })}
                         </span>
                     </button>
-                </PopoverPrimitive.Trigger>
-                <PopoverPrimitive.Portal>
-                    <PopoverPrimitive.Content
-                        aria-label={t('Participants')}
-                        align="end"
-                        sideOffset={8}
-                        data-slot="presence-stack-popover"
-                        className="z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-2 text-popover-foreground shadow-popover outline-hidden duration-(--duration-base) ease-(--ease-enter) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
-                    >
-                        <div className="flex items-center justify-between px-2 pt-2 pb-1">
-                            <span className="text-body-sm font-semibold">
-                                {t('Participants')}
-                            </span>
-                            <Badge variant="secondary" shape="pill">
-                                {t(':count online', {
-                                    count: connected.length,
-                                })}
-                            </Badge>
-                        </div>
-                        <ul className="max-h-80 overflow-y-auto">
-                            {listed.map((participant) => (
-                                <li
-                                    key={participant.id}
-                                    data-slot="presence-stack-item"
-                                    data-status={participant.status}
-                                    className="flex items-center gap-3 rounded-sm px-2 py-1.5 text-body-sm"
-                                >
-                                    <ParticipantAvatar
-                                        participant={participant}
-                                        size="md"
+                </PopoverTrigger>
+                <PopoverContent
+                    aria-label={t('Participants')}
+                    align="end"
+                    sideOffset={8}
+                    data-slot="presence-stack-popover"
+                    className="z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-2 text-popover-foreground shadow-popover outline-hidden duration-(--duration-base) ease-(--ease-enter) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
+                >
+                    <div className="flex items-center justify-between px-2 pt-2 pb-1">
+                        <span className="text-body-sm font-semibold">
+                            {t('Participants')}
+                        </span>
+                        <Badge variant="secondary" shape="pill">
+                            {t(':count online', {
+                                count: connected.length,
+                            })}
+                        </Badge>
+                    </div>
+                    <ul className="max-h-80 overflow-y-auto">
+                        {listed.map((participant) => (
+                            <li
+                                key={participant.id}
+                                data-slot="presence-stack-item"
+                                data-status={participant.status}
+                                className="flex items-center gap-3 rounded-sm px-2 py-1.5 text-body-sm"
+                            >
+                                <ParticipantAvatar
+                                    participant={participant}
+                                    size="md"
+                                />
+                                <span className="flex min-w-0 flex-1 flex-col">
+                                    <span className="truncate font-semibold">
+                                        {participant.isMe
+                                            ? t(':name (you)', {
+                                                  name: participant.name,
+                                              })
+                                            : participant.name}
+                                    </span>
+                                    <span className="truncate text-xs text-muted-foreground">
+                                        {roleText(participant)}
+                                        {' · '}
+                                        {statusText(participant)}
+                                    </span>
+                                </span>
+                                {participant.role === 'facilitator' && (
+                                    <WandSparkles
+                                        aria-hidden
+                                        className="size-4 shrink-0 text-skrum-primary-text"
                                     />
-                                    <span className="flex min-w-0 flex-1 flex-col">
-                                        <span className="truncate font-semibold">
-                                            {participant.isMe
-                                                ? t(':name (you)', {
-                                                      name: participant.name,
-                                                  })
-                                                : participant.name}
-                                        </span>
-                                        <span className="truncate text-xs text-muted-foreground">
-                                            {roleText(participant)}
-                                            {' · '}
-                                            {statusText(participant)}
-                                        </span>
-                                    </span>
-                                    {participant.role === 'facilitator' && (
-                                        <WandSparkles
-                                            aria-hidden
-                                            className="size-4 shrink-0 text-skrum-primary-text"
-                                        />
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                        {onInvite && (
-                            <div className="mt-2 flex items-center justify-end border-t px-2 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={onInvite}
-                                >
-                                    <UserPlus aria-hidden />
-                                    <span className="truncate">
-                                        {t('Invite')}
-                                    </span>
-                                </Button>
-                            </div>
-                        )}
-                    </PopoverPrimitive.Content>
-                </PopoverPrimitive.Portal>
-            </PopoverPrimitive.Root>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                    {onInvite && (
+                        <div className="mt-2 flex items-center justify-end border-t px-2 pt-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={onInvite}
+                            >
+                                <UserPlus aria-hidden />
+                                <span className="truncate">{t('Invite')}</span>
+                            </Button>
+                        </div>
+                    )}
+                </PopoverContent>
+            </Popover>
             {guestCount > 0 && (
                 <Badge variant="secondary" shape="pill">
                     {t(':count guests', { count: guestCount })}

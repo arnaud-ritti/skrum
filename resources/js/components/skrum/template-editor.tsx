@@ -21,7 +21,6 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import * as SwitchPrimitive from '@radix-ui/react-switch';
 import {
     Building2,
     GripVertical,
@@ -53,6 +52,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import type { ToggleOption } from '@/components/ui/toggle-group';
@@ -1168,16 +1168,13 @@ export function TemplateEditor({
                             <span className="min-w-0 text-sm">
                                 {t('Anonymous cards')}
                             </span>
-                            <SwitchPrimitive.Root
+                            <Switch
                                 checked={defaults.anonymous}
                                 aria-label={t('Anonymous cards')}
                                 onCheckedChange={(anonymous) =>
                                     updateDefaults({ anonymous })
                                 }
-                                className="peer inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-transparent bg-input transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary motion-reduce:transition-none"
-                            >
-                                <SwitchPrimitive.Thumb className="pointer-events-none block size-4 translate-x-0.5 rounded-full bg-background shadow-xs transition-transform duration-140 ease-standard data-[state=checked]:translate-x-4.5 motion-reduce:transition-none" />
-                            </SwitchPrimitive.Root>
+                            />
                         </div>
                         <TimerSelect
                             label={t('Writing timer')}
