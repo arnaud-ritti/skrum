@@ -34,7 +34,7 @@ class DatabaseRequirements
             $problems[] = "The connection collation is {$collation}. Skrum needs a binary collation (DB_COLLATION): with this one, different emoji and words that differ by case or accent are treated as equal.";
         }
 
-        if (array_key_exists('isolation_level', $config) && $config['isolation_level'] !== 'READ COMMITTED') {
+        if (array_key_exists('isolation_level', $config) && strtoupper((string) $config['isolation_level']) !== 'READ COMMITTED') {
             $problems[] = 'The isolation_level of the connection must be READ COMMITTED: limits and uniqueness checks can otherwise be passed by two requests at once.';
         }
 
@@ -46,18 +46,29 @@ class DatabaseRequirements
             $problems[] = "The journal_mode is {$config['journal_mode']}. Skrum needs wal: readers would otherwise block the writer.";
         }
 
-        if (array_key_exists('foreign_key_constraints', $config) && ! filter_var($config['foreign_key_constraints'], FILTER_VALIDATE_BOOLEAN)) {
+        if (array_key_exists('foreign_key_constraints', $config) && ! $config['foreign_key_constraints']) {
             $problems[] = 'Foreign keys are off (DB_FOREIGN_KEYS): deleting a team or a retro would leave its rows behind.';
         }
 
-        $looseTables = collect($connection->getSchemaBuilder()->getTables())
-            ->filter(fn (array $table): bool => ($table['collation'] ?? null) !== null && ! str_ends_with($table['collation'], '_bin'))
-            ->pluck('name');
+        $looseTables = collect(static::tablesWithoutBinaryCollation($connection->getSchemaBuilder()->getTables()));
 
         if ($looseTables->isNotEmpty()) {
             $problems[] = "{$looseTables->count()} tables were created with a collation that is not binary ({$looseTables->take(5)->implode(', ')}): they were created before the collation was set, and compare without regard to case.";
         }
 
         return $problems;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $tables
+     * @return array<int, string>
+     */
+    public static function tablesWithoutBinaryCollation(array $tables): array
+    {
+        return collect($tables)
+            ->filter(fn (array $table): bool => ($table['collation'] ?? null) !== null && ! str_ends_with($table['collation'], '_bin'))
+            ->pluck('name')
+            ->values()
+            ->all();
     }
 }

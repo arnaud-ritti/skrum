@@ -61,6 +61,42 @@ it('accepts a sqlite file opened with the settings of the application', function
     expect($problems)->toBe('');
 });
 
+it('accepts an isolation level written in lower case', function () {
+    $problems = problemsOfConnection('lower_case', ['isolation_level' => 'read committed']);
+
+    expect($problems)->not->toContain('READ COMMITTED');
+});
+
+it('reads the foreign key option the way the sqlite connector does', function (mixed $value, bool $isReported) {
+    $path = tempnam(sys_get_temp_dir(), 'skrum-check-');
+
+    $problems = problemsOfConnection('foreign_keys', [
+        'database' => $path,
+        'foreign_key_constraints' => $value,
+    ], 'sqlite');
+
+    array_map(unlink(...), glob("{$path}*"));
+
+    expect(str_contains($problems, 'DB_FOREIGN_KEYS'))->toBe($isReported);
+})->with([
+    'true' => [true, false],
+    'a non-empty string, which the connector turns on' => ['off', false],
+    'false' => [false, true],
+    'not set, which leaves the default of SQLite, off' => [null, true],
+]);
+
+it('names the tables whose collation is not binary', function () {
+    $tables = [
+        ['name' => 'cards', 'collation' => 'utf8mb4_bin'],
+        ['name' => 'teams', 'collation' => 'utf8mb4_unicode_ci'],
+        ['name' => 'retros', 'collation' => null],
+        ['name' => 'votes'],
+        ['name' => 'users', 'collation' => 'utf8mb4_uca1400_ai_ci'],
+    ];
+
+    expect(DatabaseRequirements::tablesWithoutBinaryCollation($tables))->toBe(['teams', 'users']);
+});
+
 it('refuses a server older than the minimum of its connection', function () {
     $problems = problemsOfConnection('too_old', ['minimum_version' => '999.0.0']);
 
