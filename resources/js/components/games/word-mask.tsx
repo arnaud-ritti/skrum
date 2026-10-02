@@ -6,6 +6,8 @@ type Props = {
     mask: GameMask;
     /** `lg` on the hangman stage; `md` beside a drawing and in the history. */
     size?: 'md' | 'lg';
+    /** Draw & Guess and Decoded: every letter shown came from a hint. */
+    hint?: boolean;
     className?: string;
 };
 
@@ -16,7 +18,12 @@ const cellClasses = {
 
 const gapClasses = { md: 'w-3', lg: 'w-4 sm:w-5' };
 
-export function WordMask({ mask, size = 'md', className }: Props) {
+export function WordMask({
+    mask,
+    size = 'md',
+    hint = false,
+    className,
+}: Props) {
     const { t } = useTrans();
     const hidden = mask.filter((character) => character === null).length;
 
@@ -54,9 +61,13 @@ export function WordMask({ mask, size = 'md', className }: Props) {
                 return (
                     <span
                         key={index}
+                        data-hint={(hint && character !== null) || undefined}
                         className={cn(
                             'grid place-items-center border-foreground font-display font-bold uppercase',
                             cellClasses[size],
+                            hint &&
+                                character !== null &&
+                                'border-primary text-skrum-primary-text',
                         )}
                     >
                         {character ?? ''}

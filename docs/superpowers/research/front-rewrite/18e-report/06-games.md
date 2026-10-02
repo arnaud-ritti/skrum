@@ -139,4 +139,49 @@ New with the owner's answers: the reaction bar docked under the stage while `roo
 | The reaction bar is docked under the stage, in its own strip, not floating over it | it can then never cover the keyboard or a guess field (plan, P18e-06-08) |
 | Phone: the keyboard is in the flow under the word, not a docked panel; the players are chips with their points, the full lists in a sheet; no "guess the word" button, no hint line | D-20 for the hint and the turn; the rest has no row |
 | No user avatar at the right end of the topbar | `SessionFrame` of plan 18a (the user menu is in the sidebar) |
-| Draw & Guess, Decoded and Sprint in one GIF still show their old boards inside the new stage | Tasks G4 and G5 |
+| Sprint in one GIF still shows its old board inside the new stage | Task G5 |
+
+## Task G4: Draw & Guess and Decoded
+
+New bodies, same files: `draw-board.tsx`, `drawing-toolbar.tsx`, `guess-chat.tsx`, `hint-button.tsx`, `leader-word.tsx` (now also `WordCard` and `MaskedWord`), `decoded-board.tsx`, `clue-editor.tsx`; rewritten in place with the same exports: `drawing-canvas.tsx`, `clue-row.tsx` (the retro results import them). Touched for the stage: `game-stage.tsx` (`RoundStatus`, the line above the name of the game; a drawing takes the height the stage has left), `room-sidebar.tsx` (the guesses under the players, where the right column exists), `game-layout.tsx` (`useHasRightColumn`), `word-mask.tsx` (`hint`), `game-panel.tsx` (the status line, for the retro frame G6 replaces). Two utilities at the end of `resources/css/app.css` (`draw-area`, `draw-sheet`): the sheet is the largest 4:3 box of its area.
+
+### Parity (brief 06 §3 rows 44–48)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 44 | Drawer: word, canvas, tools, hints | word card "Your word to draw · only you see it" with "Reveal a letter (n left)" at its right end; `canvas[aria-label="Your drawing"]`; `[role="toolbar"][aria-label="Drawing tools"]`: Pencil (P), Eraser (E), Fill, three strokes, Ink and the eight theme colours (`aria-pressed`), Undo (⌘Z / Ctrl+Z), "Clear" then "Click again to clear" (3 s) | done |
+| 45 | Guesser: mask, read-only canvas, live strokes | word card with the blanks (a revealed letter in the primary colour) and "Letters revealed: n of m"; `canvas[aria-label="The drawing"]`; ":name is drawing" above the name of the game; the drawer's pencil and name follow the stroke being drawn | done |
+| 46 | Guesses, "Very close!", leader notice | `section[aria-labelledby="game-guesses"]` in the right column (on the stage under 64rem, the field first): `role="log"`, avatar, name and text per guess, own near miss on the warning background with the badge "Very close!"; `input[aria-label="Your guess"]` and "Guess"; the leader reads "You know the word, so you cannot guess."; "No guesses yet."; toast "You found it!" | done |
+| 47 | Reveal a letter | `HintButton` in the word card of the leader (Draw & Guess and Decoded) | done |
+| 48 | Decoded clue editor | five slots in the sky card: `[aria-label="Remove 🚀"]`, `[aria-label="Add an emoji"]` (quick row, "More emoji…", the full list), 300 ms debounce, "Use emoji only, without letters or digits."; guessers see `[role="img"][aria-label="Clue: …"]` | done |
+
+Kept from the old boards without change: the serial queue of drawing operations, the optimistic previews, the 40 ms whisper, the three-second drop of an abandoned live stroke, `useSecretWord`, `committedOpIds`. The legacy colours (red, orange, green, blue, purple) are drawn and never offered.
+
+New with rule 13 (M20): `P`, `E` and `⌘Z` / `Ctrl+Z`, for the drawer, on the stage only (`useShortcut`: not in a field, not under a dialog or a menu); shown in the tooltips, `P` and `E` also in the corner of their key. They are always on until plan 18f brings `single_key_shortcuts` (B35).
+
+### Places left
+
+None new. "Round n of m" keeps the `roundInfo` slot of G3, above the status line.
+
+### Differences with the mockup
+
+| Difference | Covered by |
+|---|---|
+| No Redo, no "New word" (the hint button stands in its place in the word card) | D-20 |
+| No "found · 0:18" per player, no "Found by · n / m" block, no system line ":name found it! +120" in the guesses: the first right guess ends the round | D-20 ("found by" chips) |
+| No drawing order, no settings card, no "Round n of m", no turn timer on the stage | D-20 (places left by G3) |
+| The hint block reads "Letters revealed: n of m"; the mockup "Hint · 2 words · next letter in 0:12" (hints are given by the leader, not by a clock) | D-20 (auto hints) |
+| Left column: the game cards of G3 (host only); right column: Players / Scores tabs, then the guesses. The mockup has the players on the left and the guesses alone on the right | G3 layout (brief 06 row 32 and the browser contract); no row in the table |
+| A "Fill" tool beside Pencil and Eraser | parity row 44 and the browser contract (`[aria-label="Fill"]`); no row in the table |
+| The sheet is white in both themes; the mockup's is `--card` | spec ruling 36 (canvas data) |
+| The swatches follow the theme (the `-text` tokens, pastel in the dark theme) while the strokes are the light literals on the white sheet: in the dark theme a swatch is lighter than the line it draws, and "Ink" is a light dot that draws black | plan text of G4 and ruling 36; no row in the table — reported |
+| The live pencil tag is in the primary colour, not in a presence colour | game rooms give no presence colour to a player; no row in the table |
+| Under the guess field: "Enter to send. Only you are told when you are close."; the mockup "Enter to send · close guesses stay private" (a close guess is shown to all, only its "Very close!" is private) | F |
+| Phone: the guesses stand on the stage under the game, the field first; the mockup has them in a drawer with the field at the keyboard. The toolbar wraps on two rows at 390 | no row in the table |
+| Decoded: a player gives the clue; the mockup's riddle bank, timed hints, "Hint now (−20)", attempts chips, "Found" chips, rounds list and round leaderboard are not built. Taken from it: the sky card, the emoji tiles, the hint block. The guesses are the shared list of the right column | D-20 (emoji riddle bank) |
+| Decoded: one meta badge, "n letters"; the mockup has category, words and time | D-20 |
+| The clue giver's view (editor in the sky card) has no mockup | brief 06 §6 |
+
+### Browser tests
+
+Changed: none in this task (`Plan13bDrawAndDecodedTest` already reads "Coral" and its RGB since G0a). New in `Plan18eGamesTest.php`: `[P18e-06-06]`, `[P18e-06-10a]`, `[P18e-06-10b]` (the plan's `[P18e-06-10]` in two tests: live inks and keys; the legacy red replay in the retro results). The RGB of each ink is read from `lib/games/drawing.ts` by the test.

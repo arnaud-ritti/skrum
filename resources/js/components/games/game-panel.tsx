@@ -1,4 +1,4 @@
-import { RoundBoard } from './game-stage';
+import { RoundBoard, RoundStatus } from './game-stage';
 import { PassRoundButton } from './pass-round-button';
 import { useRoom } from './room-context';
 import { RoomSidebar } from './room-sidebar';
@@ -17,6 +17,7 @@ export function GamePanel() {
             <main className="flex min-w-0 flex-1 flex-col items-center gap-4">
                 {round ? (
                     <div className="flex w-full flex-col items-center gap-4">
+                        <RoundStatus round={round} />
                         <RoundBoard round={round} />
                         <div className="flex w-full max-w-5xl justify-end">
                             <PassRoundButton round={round} />

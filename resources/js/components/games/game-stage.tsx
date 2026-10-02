@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { TimeUpBadge } from '@/components/session/session-timer';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRound } from '@/lib/games/types';
+import { cn } from '@/lib/utils';
 import { DecodedBoard } from './decoded-board';
 import { DrawBoard } from './draw-board';
 import { HangmanBoard } from './hangman-board';
@@ -33,6 +34,43 @@ export function RoundBoard({ round }: { round: GameRound }) {
     }
 }
 
+/** Who leads the round in play: the line above the name of the game. */
+export function RoundStatus({ round }: { round: GameRound }) {
+    const { snapshot } = useRoom();
+    const { t } = useTrans();
+
+    if (round.game !== 'draw' && round.game !== 'decoded') {
+        return null;
+    }
+
+    const isDraw = round.game === 'draw';
+    const leader = snapshot.players.find(
+        (player) => player.id === round.leaderPlayerId,
+    );
+    let status: string | null = null;
+
+    if (round.leaderPlayerId === snapshot.me.playerId) {
+        status = isDraw ? t('You are drawing') : t('You are giving clues');
+    } else if (leader) {
+        status = isDraw
+            ? t(':name is drawing', { name: leader.name })
+            : t(':name is giving clues', { name: leader.name });
+    }
+
+    if (status === null) {
+        return null;
+    }
+
+    return (
+        <p
+            data-slot="round-status"
+            className="min-w-0 truncate text-overline text-muted-foreground uppercase"
+        >
+            {status}
+        </p>
+    );
+}
+
 export type GameStageProps = {
     /** Place left above the title for "Round n of m" (GM-2). */
     roundInfo?: ReactNode;
@@ -55,11 +93,16 @@ export function GameStage({ roundInfo }: GameStageProps) {
         <section
             aria-labelledby="game-stage-title"
             data-slot="game-stage-content"
-            className="flex w-full max-w-5xl flex-col items-center gap-5"
+            className={cn(
+                'flex w-full max-w-5xl flex-col items-center gap-5',
+                /** A drawing takes the height the stage has left. */
+                round?.game === 'draw' && 'min-h-0 flex-1',
+            )}
         >
-            <div className="flex w-full flex-wrap items-end justify-between gap-3">
+            <div className="flex w-full shrink-0 flex-wrap items-end justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-1">
                     {roundInfo}
+                    {round && <RoundStatus round={round} />}
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <h2
                             id="game-stage-title"

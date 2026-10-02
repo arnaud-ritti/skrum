@@ -2,8 +2,12 @@
 
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
+use App\Enums\GameRoundOutcome;
+use App\Enums\RetroPhase;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Models\GameRound;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 
@@ -401,4 +405,215 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
     expect($room->fresh()->access)->toBe(GameRoomAccess::Team);
 
     visit("/play/{$newToken}")->assertSee('This guest link is no longer valid.');
+});
+
+/**
+ * A Draw & Guess round in play: Bob draws, Ada (the host) guesses.
+ *
+ * @return array{0: GameRoom, 1: User, 2: User, 3: GameRound}
+ */
+function p18eGamesDrawing(): array
+{
+    [$room, $ada] = p18eGamesRoom(['game' => GameKind::DrawAndGuess]);
+    $bob = p18eGamesMember($room->team, 'Bob Leader');
+    $round = activeGameRound($room, ['word' => 'lantern', 'leader_player_id' => p18eGamesPlayer($room, $bob)->id]);
+
+    return [$room, $ada, $bob, $round];
+}
+
+/**
+ * The inks the toolbar offers, as the canvas paints them: read from the palette, never copied.
+ *
+ * @return array<string, string> colour name => "r g b 255"
+ */
+function p18eGamesInks(): array
+{
+    $source = (string) file_get_contents(resource_path('js/lib/games/drawing.ts'));
+
+    preg_match('/export const DrawingColors: DrawingColor\[\] = \[(.*?)\];/s', $source, $offered);
+    preg_match_all("/'([a-z]+)'/", $offered[1], $names);
+    preg_match_all("/\['([a-z]+)', \[(\d+), (\d+), (\d+)\]\]/", $source, $palette, PREG_SET_ORDER);
+
+    $inks = [];
+
+    foreach ($palette as [, $name, $red, $green, $blue]) {
+        if (in_array($name, $names[1], true)) {
+            $inks[$name] = "{$red} {$green} {$blue} 255";
+        }
+    }
+
+    return $inks;
+}
+
+/**
+ * @param  array<int, array<int, float>>  $points  fractions of the sheet
+ */
+function p18eGamesStroke(mixed $page, array $points): void
+{
+    $path = json_encode($points);
+
+    $page->script(<<<JS
+        () => {
+            const canvas = document.querySelector('canvas[aria-label="Your drawing"]');
+            const box = canvas.getBoundingClientRect();
+            const path = {$path};
+            canvas.setPointerCapture = () => {};
+            path.forEach(([x, y], index) => {
+                const type = index === 0 ? "pointerdown" : "pointermove";
+                canvas.dispatchEvent(new PointerEvent(type, {
+                    bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1,
+                    clientX: box.left + box.width * x, clientY: box.top + box.height * y,
+                }));
+            });
+            const [x, y] = path[path.length - 1];
+            canvas.dispatchEvent(new PointerEvent("pointerup", {
+                bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: 0,
+                clientX: box.left + box.width * x, clientY: box.top + box.height * y,
+            }));
+            return true;
+        }
+        JS);
+}
+
+function p18eGamesPixel(string $label, int $x, int $y): string
+{
+    return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
+}
+
+/**
+ * @param  array<string, bool>  $modifiers
+ */
+function p18eGamesPress(mixed $page, string $key, array $modifiers = []): void
+{
+    $init = json_encode(['key' => $key, 'bubbles' => true, 'cancelable' => true, ...$modifiers]);
+
+    $page->script("() => { document.body.dispatchEvent(new KeyboardEvent('keydown', {$init})); return true; }");
+}
+
+it('[P18e-06-06] keeps the colours of the drawing toolbar in a popover at phone width, and the toolbar inside the screen', function () {
+    [$room, $ada, $bob] = p18eGamesDrawing();
+    $toolbar = '[role="toolbar"][aria-label="Drawing tools"]';
+    $coral = p18eGamesInks()['coral'];
+
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $drawer = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+
+    $drawer->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertVisible("{$toolbar} [aria-label=\"Coral\"]")
+        ->assertNotPresent("{$toolbar} [aria-label^=\"Ink colour\"]")
+        ->resize(390, 844)
+        ->assertVisible($toolbar)
+        ->assertNotPresent("{$toolbar} [aria-label=\"Coral\"]")
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertScript("[...document.querySelectorAll('{$toolbar} button')].every((key) => key.getBoundingClientRect().height >= 44 && key.getBoundingClientRect().left >= 0 && key.getBoundingClientRect().right <= window.innerWidth)", true)
+        ->assertScript(p18eGamesAbove('canvas[aria-label="Your drawing"]', $toolbar), true)
+        ->click("{$toolbar} [aria-label=\"Ink colour: Ink\"]")
+        ->assertCount('[role="dialog"] [data-color]', 9)
+        ->assertAriaAttribute('[role="dialog"] [aria-label="Ink"]', 'pressed', 'true')
+        ->click('[role="dialog"] [aria-label="Coral"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertAttribute("{$toolbar} [aria-label=\"Ink colour: Coral\"]", 'data-color', 'coral')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+
+    p18eGamesStroke($drawer, [[0.25, 0.5], [0.5, 0.5], [0.75, 0.5]]);
+
+    $drawer->assertScript(p18eGamesPixel('Your drawing', 400, 300), $coral);
+    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 300), $coral)
+        ->assertScript(p18eGamesPixel('The drawing', 400, 100), '255 255 255 255');
+});
+
+it('[P18e-06-10a] draws each of the eight colours with its own ink on the canvas of the guesser, erases after E and undoes with the undo keys', function () {
+    [$room, $ada, $bob, $round] = p18eGamesDrawing();
+    $inks = p18eGamesInks();
+    $themeInks = array_diff_key($inks, ['black' => true]);
+
+    expect(array_keys($themeInks))->toBe(['sun', 'apricot', 'coral', 'plum', 'iris', 'sky', 'lagoon', 'moss'])
+        ->and(array_unique($inks))->toHaveCount(9);
+
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $drawer = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+
+    $drawer->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertAriaAttribute('[aria-label="Pencil"]', 'pressed', 'true')
+        ->assertAriaAttribute('[aria-label="Ink"]', 'pressed', 'true');
+
+    $row = 0;
+
+    foreach ($themeInks as $name => $rgb) {
+        $row++;
+        $label = ucfirst($name);
+
+        $drawer->click("[aria-label=\"{$label}\"]")
+            ->assertAriaAttribute("[aria-label=\"{$label}\"]", 'pressed', 'true');
+
+        p18eGamesStroke($drawer, [[0.25, $row / 10], [0.5, $row / 10], [0.75, $row / 10]]);
+
+        $guesser->assertScript(p18eGamesPixel('The drawing', 400, $row * 60), $rgb);
+    }
+
+    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 570), '255 255 255 255');
+
+    expect(array_column($round->fresh()->drawing, 'color'))->toBe(array_keys($themeInks));
+
+    p18eGamesPress($drawer, 'e');
+
+    $drawer->assertAriaAttribute('[aria-label="Eraser"]', 'pressed', 'true')
+        ->assertAriaAttribute('[aria-label="Pencil"]', 'pressed', 'false');
+
+    p18eGamesStroke($drawer, [[0.4, 0.1], [0.5, 0.1], [0.6, 0.1]]);
+
+    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 60), '255 255 255 255')
+        ->assertScript(p18eGamesPixel('The drawing', 240, 60), $themeInks['sun']);
+
+    p18eGamesPress($drawer, 'z', ['metaKey' => true]);
+
+    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 60), $themeInks['sun']);
+
+    p18eGamesPress($drawer, 'z', ['ctrlKey' => true]);
+
+    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 480), '255 255 255 255')
+        ->assertScript(p18eGamesPixel('The drawing', 400, 420), $themeInks['lagoon']);
+
+    p18eGamesPress($drawer, 'p');
+
+    $drawer->assertAriaAttribute('[aria-label="Pencil"]', 'pressed', 'true');
+
+    p18eGamesPress($guesser, 'e');
+    $guesser->assertNotPresent('[role="toolbar"][aria-label="Drawing tools"]');
+
+    expect($round->fresh()->drawing)->toHaveCount(7);
+});
+
+it('[P18e-06-10b] replays a round drawn in red before the eight theme colours with its old colour, in the results of the retro', function () {
+    $retro = Retro::factory()
+        ->withIcebreaker()
+        ->inPhase(RetroPhase::Completed)
+        ->create(['title' => 'Sprint 13 retro', 'icebreaker_game' => GameKind::DrawAndGuess, 'completed_at' => now()]);
+    [$ada, $adaParticipant] = retroFacilitator($retro);
+    [$bob, $bobParticipant] = retroMember($retro);
+    $room = GameRoom::factory()->icebreaker($retro->fresh())->game(GameKind::DrawAndGuess)->create();
+    $adaPlayer = GamePlayer::factory()->forParticipant($adaParticipant)->create(['game_room_id' => $room->id]);
+    $bobPlayer = GamePlayer::factory()->forParticipant($bobParticipant)->create(['game_room_id' => $room->id]);
+    $round = GameRound::factory()->game(GameKind::DrawAndGuess)->ended(GameRoundOutcome::Guessed)->create([
+        'game_room_id' => $room->id,
+        'word' => 'rocket',
+        'leader_player_id' => $adaPlayer->id,
+        'winner_player_id' => $bobPlayer->id,
+        'drawing' => [
+            ['type' => 'stroke', 'color' => 'red', 'size' => 10, 'points' => [[250, 375], [750, 375]]],
+            ['type' => 'stroke', 'color' => 'black', 'size' => 10, 'points' => [[250, 125], [750, 125]]],
+        ],
+    ]);
+    $room->forceFill(['current_round_id' => $round->id])->save();
+    awardGamePoints($room, $bobPlayer, 10, true, ['game_round_id' => $round->id, 'game' => GameKind::DrawAndGuess]);
+    $bob->forceFill(['locale' => 'en'])->save();
+
+    $page = $this->signIn($bob, "/retros/{$retro->id}");
+
+    $page->click('section:has(> h2:has-text("Games we played")) button:has-text("Replay")')
+        ->assertVisible('[role="dialog"] canvas[aria-label="Drawing of rocket"]')
+        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 300), '220 38 38 255')
+        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 100), '23 23 23 255')
+        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 200), '255 255 255 255')
+        ->assertNotPresent('[role="dialog"] [role="toolbar"]');
 });

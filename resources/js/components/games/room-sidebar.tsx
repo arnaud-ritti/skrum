@@ -3,6 +3,8 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useTrans } from '@/hooks/use-trans';
+import { useHasRightColumn } from './game-layout';
+import { GuessChat } from './guess-chat';
 import { HangmanFeed } from './hangman-feed';
 import { PlayerRow } from './player-row';
 import { useRoom } from './room-context';
@@ -85,6 +87,8 @@ export function RoomSidebar({
     const { t } = useTrans();
     const [tab, setTab] = useState<SidebarTab>('players');
     const { round } = snapshot;
+    const hasRightColumn = useHasRightColumn();
+    const hasGuesses = round?.game === 'draw' || round?.game === 'decoded';
 
     return (
         <>
@@ -107,6 +111,13 @@ export function RoomSidebar({
             </Tabs>
             {turnOrder}
             {round?.game === 'hangman' && <HangmanFeed round={round} />}
+            {round && hasGuesses && hasRightColumn && (
+                <GuessChat
+                    round={round}
+                    isLeader={round.leaderPlayerId === snapshot.me.playerId}
+                    className="min-h-64 flex-1 border-t pt-5"
+                />
+            )}
         </>
     );
 }

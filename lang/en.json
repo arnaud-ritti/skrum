@@ -3700,5 +3700,20 @@
     "Players can send emoji reactions during the game.": "Players can send emoji reactions during the game.",
     "The host starts, everyone plays.": "The host starts, everyone plays.",
     "in the word": "in the word",
-    "not in the word": "not in the word"
+    "not in the word": "not in the word",
+    "Ink": "Ink",
+    "Stroke": "Stroke",
+    "Stroke: Thin": "Stroke: Thin",
+    "Stroke: Medium": "Stroke: Medium",
+    "Stroke: Thick": "Stroke: Thick",
+    "Ink colour": "Ink colour",
+    "Ink colour: :color": "Ink colour: :color",
+    "only you see it": "only you see it",
+    ":count guesses": ":count guesses",
+    "Enter to send. Only you are told when you are close.": "Enter to send. Only you are told when you are close.",
+    "Hint": "Hint",
+    "Letters revealed: :count of :max": "Letters revealed: :count of :max",
+    "You are drawing": "You are drawing",
+    "You are giving clues": "You are giving clues",
+    ":count letters": ":count letters"
 }

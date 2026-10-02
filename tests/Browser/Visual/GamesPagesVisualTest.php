@@ -4,6 +4,7 @@ use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
 use App\Enums\GameRoundOutcome;
 use App\Enums\WorkspaceRole;
+use App\Models\GameGuess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Team;
@@ -203,4 +204,73 @@ it('renders a hangman room without overflow', function (string $name, bool $play
 })->with([
     'a round in play' => ['games-room-hangman', true, '[data-slot="hangman-board"]'],
     'between two rounds' => ['games-room-hangman-end', false, '[data-slot="round-end-card"]'],
+]);
+
+it('renders a Draw & Guess room and a Decoded room without overflow', function (string $name, GameKind $game, bool $leads, string $marker) {
+    config(['app.name' => 'Skrum']);
+
+    p18eVisualGames(false);
+
+    $team = Team::query()->sole();
+    $users = User::query()->orderBy('email')->get();
+    $room = GameRoom::factory()->create([
+        'id' => '0199b000-0000-7000-9000-0000000000b1',
+        'team_id' => $team->id,
+        'name' => 'Monday warm-up of the platform guild',
+        'game' => $game,
+        'access' => GameRoomAccess::Link,
+        'created_by_user_id' => $users[0]->id,
+    ]);
+    $players = $users->take(6)
+        ->map(fn (User $user): GamePlayer => GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id]));
+
+    $room->update(['host_player_id' => $players[0]->id]);
+
+    foreach ($players as $index => $player) {
+        awardGamePoints($room, $player, 60 - 10 * $index, $index === 0, ['created_at' => now()]);
+    }
+
+    $round = activeGameRound($room, [
+        'word' => 'pause café',
+        'leader_player_id' => $players[$leads ? 0 : 1]->id,
+        'revealed_positions' => [2],
+        'clue' => $game === GameKind::Decoded ? ['☕', '🥐', '⏸️'] : [],
+        'drawing' => $game === GameKind::DrawAndGuess ? [
+            ['type' => 'stroke', 'color' => 'black', 'size' => 10, 'points' => [[330, 300], [330, 520], [360, 560], [560, 560], [590, 520], [590, 300], [330, 300]]],
+            ['type' => 'stroke', 'color' => 'apricot', 'size' => 10, 'points' => [[590, 350], [670, 360], [680, 430], [590, 470]]],
+            ['type' => 'stroke', 'color' => 'coral', 'size' => 4, 'points' => [[400, 250], [380, 200], [410, 160], [390, 110]]],
+            ['type' => 'stroke', 'color' => 'coral', 'size' => 4, 'points' => [[500, 250], [480, 200], [510, 160], [490, 110]]],
+            ['type' => 'stroke', 'color' => 'sky', 'size' => 24, 'points' => [[240, 640], [700, 640]]],
+            ['type' => 'fill', 'color' => 'sun', 'x' => 460, 'y' => 430],
+        ] : [],
+        'drawing_points' => 24,
+    ]);
+
+    $guesses = [[2, 'tasse', false], [3, 'cuisine', false], [4, 'chocolat chaud', false], [$leads ? 2 : 0, 'pause thé', true], [5, 'une réponse longue de cinquante caractères environ', false]];
+
+    foreach ($guesses as $index => [$player, $text, $isNearMiss]) {
+        GameGuess::factory()->create([
+            'game_round_id' => $round->id,
+            'player_id' => $players[$player]->id,
+            'text' => $text,
+            'is_near_miss' => $isNearMiss,
+            'created_at' => now()->subSeconds(60 - $index),
+        ]);
+    }
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        $name,
+        "/games/{$room->id}",
+        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
+            ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+            ->assertCount('[data-realtime]', 1)
+            ->assertPresent('section[aria-labelledby="game-guesses"]'),
+    );
+})->with([
+    'the drawer' => ['games-room-draw', GameKind::DrawAndGuess, true, '[data-slot="drawing-toolbar"]'],
+    'a guesser of the drawing' => ['games-room-draw-guesser', GameKind::DrawAndGuess, false, '[data-slot="draw-sheet"] canvas:not(.cursor-crosshair)'],
+    'the clue giver' => ['games-room-decoded', GameKind::Decoded, true, '[data-slot="clue-editor"]'],
+    'a guesser of the clue' => ['games-room-decoded-guesser', GameKind::Decoded, false, '[data-slot="clue-row"]'],
 ]);

@@ -28,6 +28,11 @@ export type GameLayoutProps = {
 };
 
 const RightColumnFromRem = 64;
+
+/** False where the right column is a sheet: what a game needs at hand then stands on the stage. */
+export function useHasRightColumn(): boolean {
+    return useMinWidth(RightColumnFromRem);
+}
 const LeftColumnFromRem = 80;
 
 type Panel = 'left' | 'right' | null;

@@ -3925,5 +3925,20 @@
     "Players can send emoji reactions during the game.": "Les joueurs peuvent envoyer des réactions emoji pendant la partie.",
     "The host starts, everyone plays.": "L'hôte lance, tout le monde joue.",
     "in the word": "dans le mot",
-    "not in the word": "pas dans le mot"
+    "not in the word": "pas dans le mot",
+    "Ink": "Encre",
+    "Stroke": "Trait",
+    "Stroke: Thin": "Trait : fin",
+    "Stroke: Medium": "Trait : moyen",
+    "Stroke: Thick": "Trait : épais",
+    "Ink colour": "Couleur de l'encre",
+    "Ink colour: :color": "Couleur de l'encre : :color",
+    "only you see it": "vous seul le voyez",
+    ":count guesses": ":count propositions",
+    "Enter to send. Only you are told when you are close.": "Entrée pour envoyer. Vous seul savez quand vous êtes tout près.",
+    "Hint": "Indice",
+    "Letters revealed: :count of :max": "Lettres révélées : :count sur :max",
+    "You are drawing": "Vous dessinez",
+    "You are giving clues": "Vous donnez les indices",
+    ":count letters": ":count lettres"
 }
