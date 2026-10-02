@@ -27,7 +27,7 @@ class WorkspaceTemplatesController extends Controller
     {
         return Inertia::render('workspaces/templates', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'templates' => $workspace->templates()->with(['columns', 'creator'])->orderBy('name')->get()
+            'templates' => $workspace->templates()->with(['columns', 'creator'])->withCount('retros')->orderBy('name')->get()
                 ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
                 ->values(),
             'categories' => TemplateCategory::options(),
@@ -117,13 +117,14 @@ class WorkspaceTemplatesController extends Controller
      *     name: string,
      *     cards: array<int, string>,
      *     usageCount: int,
+     *     author: array{name: string, avatarUrl: string}|null,
      *     canManage: bool
      * }>
      */
     private function pokerDecks(User $user, Workspace $workspace): array
     {
         $canManage = $user->canManage($workspace);
-        $decks = $workspace->pokerDecks()->orderBy('name')->get();
+        $decks = $workspace->pokerDecks()->with('creator')->orderBy('name')->get();
 
         $usageCounts = PokerGame::query()
             ->whereIn('saved_deck_id', $decks->modelKeys())
@@ -138,6 +139,7 @@ class WorkspaceTemplatesController extends Controller
                 'name' => $deck->name,
                 'cards' => $deck->cards,
                 'usageCount' => (int) ($usageCounts[$deck->id] ?? 0),
+                'author' => $this->author($deck->creator),
                 'canManage' => $canManage,
             ])
             ->all();
@@ -160,7 +162,8 @@ class WorkspaceTemplatesController extends Controller
      *     id: string,
      *     name: string,
      *     category: string,
-     *     author: ?string,
+     *     author: array{name: string, avatarUrl: string}|null,
+     *     usageCount: int,
      *     columns: array<int, array{title: string, description: ?string, color: string}>
      * }
      */
@@ -170,8 +173,27 @@ class WorkspaceTemplatesController extends Controller
             'id' => $template->id,
             'name' => $template->name,
             'category' => $template->category->value,
-            'author' => $template->creator?->name,
+            'author' => $this->author($template->creator),
+            'usageCount' => (int) $template->retros_count,
             'columns' => $template->presentColumns(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     name: string,
+     *     avatarUrl: string
+     * }|null
+     */
+    private function author(?User $creator): ?array
+    {
+        if ($creator === null) {
+            return null;
+        }
+
+        return [
+            'name' => $creator->name,
+            'avatarUrl' => $creator->avatarUrl(),
         ];
     }
 }

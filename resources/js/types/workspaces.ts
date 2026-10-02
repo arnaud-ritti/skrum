@@ -108,11 +108,18 @@ export type CatalogueTemplate = {
     columns: TemplateColumn[];
 };
 
+export type TemplateAuthor = {
+    name: string;
+    avatarUrl: string;
+};
+
 export type WorkspaceTemplateSummary = {
     id: string;
     name: string;
     category: TemplateCategory;
-    author: string | null;
+    author: TemplateAuthor | null;
+    /** Retros created from this template, in every team of the workspace. */
+    usageCount: number;
     columns: TemplateColumn[];
 };
 
@@ -129,6 +136,7 @@ export type WorkspacePokerDeck = {
     name: string;
     cards: string[];
     usageCount: number;
+    author: TemplateAuthor | null;
     canManage: boolean;
 };
 
