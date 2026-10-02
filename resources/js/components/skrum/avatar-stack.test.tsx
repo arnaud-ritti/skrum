@@ -37,6 +37,16 @@ describe('AvatarStack', () => {
         expect(screen.getByRole('img', { name: '8 more' })).toBeTruthy();
     });
 
+    it('draws the remainder over the avatar it overlaps', () => {
+        render(<AvatarStack people={people} />);
+
+        expect(
+            screen
+                .getByRole('img', { name: '4 more' })
+                .classList.contains('relative'),
+        ).toBe(true);
+    });
+
     it('shows no remainder when everyone fits', () => {
         render(<AvatarStack people={people.slice(0, 3)} />);
 

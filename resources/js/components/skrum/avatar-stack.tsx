@@ -65,7 +65,7 @@ export function AvatarStack({
                     role="img"
                     aria-label={t(':count more', { count: hiddenCount })}
                     className={cn(
-                        'inline-flex shrink-0 items-center justify-center bg-muted font-bold text-muted-foreground',
+                        'relative inline-flex shrink-0 items-center justify-center bg-muted font-bold text-muted-foreground',
                         overflowSizeClasses[size],
                     )}
                 >
