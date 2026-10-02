@@ -8,6 +8,10 @@ export type PokerResult = {
     mode: string[];
     consensus: boolean;
     nearestCard: string | null;
+    median?: number | null;
+    spread?: { min: number; max: number } | null;
+    agreement?: number | null;
+    outliers?: { low: string[]; high: string[] };
 };
 
 export type PokerRoundVote = { playerId: string; value: string | null };

@@ -17,26 +17,39 @@ class PokerResult
      *     distribution: array<int, array{value: string, count: int}>,
      *     mode: array<int, string>,
      *     consensus: bool,
-     *     nearestCard: ?string
+     *     nearestCard: ?string,
+     *     median: ?float,
+     *     spread: ?array{min: float, max: float},
+     *     agreement: ?float,
+     *     outliers: array{low: list<string>, high: list<string>}
      * }
      */
     public static function for(PokerRound $round, PokerGame $game): array
     {
-        return self::compute($game->cards, $round->votes->map(fn (PokerVote $vote): string => $vote->value)->all());
+        return self::compute(
+            $game->cards,
+            $round->votes->map(fn (PokerVote $vote): string => $vote->value)->all(),
+            $round->anonymous ? [] : $round->votes->pluck('value', 'poker_player_id')->all(),
+        );
     }
 
     /**
      * @param  array<int, string>  $deckCards
      * @param  array<int, string>  $values
+     * @param  array<string, string>  $valuesByPlayer  empty on an anonymous round, so that nobody is named
      * @return array{
      *     average: ?float,
      *     distribution: array<int, array{value: string, count: int}>,
      *     mode: array<int, string>,
      *     consensus: bool,
-     *     nearestCard: ?string
+     *     nearestCard: ?string,
+     *     median: ?float,
+     *     spread: ?array{min: float, max: float},
+     *     agreement: ?float,
+     *     outliers: array{low: list<string>, high: list<string>}
      * }
      */
-    public static function compute(array $deckCards, array $values): array
+    public static function compute(array $deckCards, array $values, array $valuesByPlayer = []): array
     {
         $distribution = self::distribution($deckCards, $values);
         $countable = array_values(array_filter($distribution, fn (array $entry): bool => ! PokerDeck::isSpecial($entry['value'])));
@@ -48,17 +61,27 @@ class PokerResult
                 'mode' => [],
                 'consensus' => false,
                 'nearestCard' => null,
+                'median' => null,
+                'spread' => null,
+                'agreement' => null,
+                'outliers' => ['low' => [], 'high' => []],
             ];
         }
 
         $average = PokerDeck::isNumericDeck($deckCards) ? self::average($countable) : null;
+        $mode = self::mode($countable);
+        $numericVotes = self::numericVotes($countable);
 
         return [
             'average' => $average,
             'distribution' => $distribution,
-            'mode' => self::mode($countable),
+            'mode' => $mode,
             'consensus' => count($countable) === 1,
             'nearestCard' => $average === null ? null : self::nearestCard($deckCards, $average),
+            'median' => self::median($numericVotes),
+            'spread' => $numericVotes === [] ? null : ['min' => min($numericVotes), 'max' => max($numericVotes)],
+            'agreement' => self::agreement($countable),
+            'outliers' => self::outliers($valuesByPlayer, $mode, $numericVotes),
         ];
     }
 
@@ -144,5 +167,90 @@ class PokerResult
         }
 
         return $nearest;
+    }
+
+    /**
+     * @param  array<int, array{value: string, count: int}>  $countable
+     * @return list<float>
+     */
+    private static function numericVotes(array $countable): array
+    {
+        $numericVotes = [];
+
+        foreach ($countable as $entry) {
+            $value = PokerDeck::numericValue($entry['value']);
+
+            if ($value === null) {
+                continue;
+            }
+
+            array_push($numericVotes, ...array_fill(0, $entry['count'], $value));
+        }
+
+        sort($numericVotes);
+
+        return $numericVotes;
+    }
+
+    /**
+     * @param  list<float>  $sortedVotes
+     */
+    private static function median(array $sortedVotes): ?float
+    {
+        $count = count($sortedVotes);
+
+        if ($count === 0) {
+            return null;
+        }
+
+        $middle = intdiv($count, 2);
+
+        if ($count % 2 === 1) {
+            return $sortedVotes[$middle];
+        }
+
+        return ($sortedVotes[$middle - 1] + $sortedVotes[$middle]) / 2;
+    }
+
+    /**
+     * @param  array<int, array{value: string, count: int}>  $countable
+     */
+    private static function agreement(array $countable): float
+    {
+        $highest = max(array_column($countable, 'count'));
+
+        return round($highest / array_sum(array_column($countable, 'count')), 2);
+    }
+
+    /**
+     * @param  array<string, string>  $valuesByPlayer
+     * @param  array<int, string>  $mode
+     * @param  list<float>  $sortedVotes
+     * @return array{low: list<string>, high: list<string>}
+     */
+    private static function outliers(array $valuesByPlayer, array $mode, array $sortedVotes): array
+    {
+        $outliers = ['low' => [], 'high' => []];
+
+        if ($valuesByPlayer === [] || $sortedVotes === []) {
+            return $outliers;
+        }
+
+        $modeValues = array_map(fn (string $card): ?float => PokerDeck::numericValue($card), $mode);
+        $ends = ['low' => $sortedVotes[0], 'high' => $sortedVotes[count($sortedVotes) - 1]];
+
+        foreach ($ends as $side => $end) {
+            if (in_array($end, $modeValues, true)) {
+                continue;
+            }
+
+            foreach ($valuesByPlayer as $playerId => $value) {
+                if (PokerDeck::numericValue($value) === $end) {
+                    $outliers[$side][] = (string) $playerId;
+                }
+            }
+        }
+
+        return $outliers;
     }
 }
