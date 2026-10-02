@@ -7,7 +7,7 @@ export interface ResendCodeProps {
     remaining: number;
     onResend: () => void;
     sentTo?: string;
-    locale: 'fr' | 'en';
+    locale: string;
 }
 
 function formatCountdown(seconds: number, locale: string): string {
