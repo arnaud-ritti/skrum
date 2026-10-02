@@ -245,6 +245,10 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 4)
         ->assertAriaAttribute(p18eGamesCard('Hangman'), 'checked', 'true')
+        ->assertSeeIn(p18eGamesCard('Hangman'), 'In play')
+        ->assertDontSeeIn(p18eGamesCard('Decoded'), 'In play')
+        ->assertNotPresent('[role="tab"]')
+        ->assertSeeIn('[data-slot="game-right"] section[aria-labelledby="game-players"] h2', 'Scores')
         ->assertAriaAttribute(p18eGamesCard('Sprint in one GIF'), 'disabled', 'true')
         ->assertSeeIn(p18eGamesCard('Sprint in one GIF'), 'Not available')
         ->assertSeeIn('header [data-slot="room-game"]', 'Hangman');

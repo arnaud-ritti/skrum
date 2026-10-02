@@ -4155,5 +4155,8 @@
     "Mood card, for a team that only has ROTI votes": "Stimmungskarte, für ein Team, das nur ROTI-Stimmen hat",
     "Mood card, for a team without results": "Stimmungskarte, für ein Team ohne Ergebnisse",
     "Mood card, while the trend loads": "Stimmungskarte, während der Trend lädt",
-    "In play": "Läuft"
+    "In play": "Läuft",
+    "guessing…": "rät…",
+    "drawing": "zeichnet",
+    "giving clues": "gibt Hinweise"
 }

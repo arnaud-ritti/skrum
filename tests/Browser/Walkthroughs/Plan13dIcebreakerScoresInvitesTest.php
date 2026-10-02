@@ -496,10 +496,10 @@ it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both brow
             ->assertSee('Casey found it!')
             ->assertSeeIn('ul[aria-label="Points of this round"]', '+6 Casey')
             ->assertSeeIn('ul[aria-label="Points of this round"]', '+5 Ada')
-            ->click('[role="tab"]:has-text("Scores")')
-            ->assertPresent('[role="tabpanel"] li:has-text("Casey") [aria-label="6 points"]')
-            ->assertSeeIn('[role="tabpanel"] li:has-text("Casey")', '(guest)')
-            ->assertPresent('[role="tabpanel"] li:has-text("Ada") [aria-label="5 points"]');
+            ->assertNotPresent('[role="tab"]')
+            ->assertPresent('[data-slot="room-scores"] li:has-text("Casey") [aria-label="6 points"]')
+            ->assertSeeIn('[data-slot="room-scores"] li:has-text("Casey")', '(guest)')
+            ->assertPresent('[data-slot="room-scores"] li:has-text("Ada") [aria-label="5 points"]');
     }
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Solved)
@@ -527,9 +527,9 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
-            ->click('[role="tab"]:has-text("Scores")')
-            ->assertPresent('[role="tabpanel"] li:has-text("Ada") [aria-label="7 points"]')
-            ->assertPresent('[role="tabpanel"] li:has-text("Bob") [aria-label="4 points"]');
+            ->assertNotPresent('[role="tab"]')
+            ->assertPresent('[data-slot="room-scores"] li:has-text("Ada") [aria-label="7 points"]')
+            ->assertPresent('[data-slot="room-scores"] li:has-text("Bob") [aria-label="4 points"]');
     }
 
     $b->assertDontSee('Reset scores');
@@ -540,8 +540,9 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
         ->assertNotPresent('[role="dialog"]');
 
     foreach ([$a, $b] as $page) {
-        $page->assertSeeIn('[role="tabpanel"]', 'No points yet.')
-            ->assertNotPresent('[role="tabpanel"] ol');
+        $page->assertSeeIn('[data-slot="room-scores"]', 'No points yet.')
+            ->assertCount('[data-slot="room-scores"] li [aria-label="0 points"]', 2)
+            ->assertNotPresent('[data-slot="room-scores"] [data-slot="player-rank"]:has-text("2")');
     }
 
     expect($room->fresh()->scores_reset_at)->not->toBeNull()

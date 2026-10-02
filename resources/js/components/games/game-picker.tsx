@@ -67,6 +67,7 @@ export function GamePicker({ settings }: GamePickerProps) {
                         compact
                         available={option.available}
                         selected={option.value === room.game}
+                        inPlay
                         onSelect={(game) => void change(game)}
                     />
                 ))}

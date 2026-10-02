@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +10,9 @@ export type PlayerRowProps = {
     avatarUrl: string | null;
     isGuest: boolean;
     isMe?: boolean;
+    isHost?: boolean;
+    /** Whose turn it is: the drawer, the clue giver. */
+    isTurn?: boolean;
     offline?: boolean;
     /** A position, or an icon in its place (the crown of the first). */
     rank?: ReactNode;
@@ -24,6 +28,8 @@ export function PlayerRow({
     avatarUrl,
     isGuest,
     isMe = false,
+    isHost = false,
+    isTurn = false,
     offline = false,
     rank,
     detail,
@@ -36,10 +42,13 @@ export function PlayerRow({
         <li
             data-slot="player-row"
             data-me={isMe || undefined}
+            data-turn={isTurn || undefined}
             data-offline={offline || undefined}
             className={cn(
                 'flex min-w-0 items-center gap-3 rounded-md px-2.5 py-2',
                 isMe && 'bg-accent',
+                isTurn &&
+                    'bg-skrum-primary-soft ring-1 ring-primary ring-inset',
                 offline && 'opacity-55',
                 className,
             )}
@@ -76,6 +85,14 @@ export function PlayerRow({
                         <span className="shrink-0 font-medium text-muted-foreground">
                             {t('(you)')}
                         </span>
+                    )}
+                    {isHost && (
+                        <Badge
+                            variant="muted"
+                            className="min-h-4.5 shrink-0 self-center px-1.5"
+                        >
+                            {t('Host')}
+                        </Badge>
                     )}
                 </span>
                 {detail !== undefined && (

@@ -126,7 +126,13 @@ it('[P13c-01] lets the host switch to Sprint in one GIF, start, shuffle and edit
         ->assertSee('Waiting for the host to start.');
 
     $a->click('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")')
-        ->assertAriaAttribute('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")', 'checked', 'true');
+        ->assertSeeIn('#game-stage-title', 'Sprint in one GIF')
+        ->assertNotPresent('[data-slot="game-left"] [role="radiogroup"]')
+        ->click('[data-slot="game-left"] button:has-text("Choose a game")')
+        ->assertAriaAttribute('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")', 'checked', 'true')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")', 'In play')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
 
     $c->assertSeeIn('header:has(h1)', 'Sprint in one GIF');
 
@@ -500,8 +506,9 @@ it('[P13c-06] closes a round in its voting window with its points when the host 
             ->assertDontSee('Vote for your favourite GIF.');
     }
 
-    $b->click('[role="tab"]:has-text("Scores")')
-        ->assertPresent('[role="tabpanel"] li:has-text("Ada") [aria-label="2 points"]');
+    $b->assertNotPresent('[role="tab"]')
+        ->assertPresent('[data-slot="game-right"] [data-slot="room-scores"] li:has-text("Ada") [aria-label="2 points"]')
+        ->assertNotPresent('[data-slot="game-left"] [data-slot="player-points"]');
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Revealed)
         ->and(GamePoint::query()->where('player_id', $adaPlayer->id)->sole()->points)->toBe(2)

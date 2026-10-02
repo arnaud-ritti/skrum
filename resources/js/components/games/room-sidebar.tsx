@@ -1,146 +1,75 @@
-import { Check, Crown } from 'lucide-react';
-import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useTrans } from '@/hooks/use-trans';
-import { pendingAnswers } from '@/lib/games/gif';
-import type { GameRound } from '@/lib/games/types';
+import type { GameKind } from '@/lib/games/types';
 import { useHasRightColumn } from './game-layout';
 import { GifSteps, useGifStep } from './gif-steps';
 import { GuessChat } from './guess-chat';
 import { HangmanFeed } from './hangman-feed';
-import { PlayerRow } from './player-row';
 import { useRoom } from './room-context';
-import { RoomScores } from './room-scores';
+import { RoomPlayers } from './room-players';
 
-type SidebarTab = 'players' | 'scores';
-
-/** Who has done the step in play of a Sprint in one GIF round; null for another game. */
-function gifDoneIds(
-    round: GameRound | null,
-    myPlayerId: string,
-): Set<string> | null {
-    if (round?.game !== 'gif') {
-        return null;
-    }
-
-    if (round.revealedAt !== null) {
-        return new Set(round.voters ?? []);
-    }
-
-    const answered = pendingAnswers(round).map((answer) => answer.playerId);
-
-    return new Set(round.myAnswer ? [...answered, myPlayerId] : answered);
+/** Draw & Guess and Sprint in one GIF put their players on the left, as their mockups do. */
+export function hasPlayersOnLeft(game: GameKind): boolean {
+    return game === 'draw' || game === 'gif';
 }
 
-function GifPlayerStatus({ done, voting }: { done: boolean; voting: boolean }) {
-    const { t } = useTrans();
-
-    if (!done) {
-        return voting ? t('voting…') : t('picking…');
-    }
-
-    return (
-        <span className="inline-flex items-center gap-1 text-skrum-success-text">
-            <Check aria-hidden className="size-3.5 shrink-0" />
-            {voting ? t('voted') : t('GIF picked')}
-        </span>
-    );
-}
-
-function PlayersList({
-    highlightPlayerId,
-}: {
+export type RoomPlayersSideProps = {
+    /** The winner of the round that just ended. */
     highlightPlayerId: string | null;
-}) {
-    const { snapshot, online } = useRoom();
+    /** Place left under the players for the drawing order (GM-2). */
+    turnOrder?: ReactNode;
+    /** Place left at the foot of the column for the settings card of the game (GM-1). */
+    settings?: ReactNode;
+};
+
+/** The left column of Draw & Guess and Sprint in one GIF: who plays, then what the game adds. */
+export function RoomPlayersSide({
+    highlightPlayerId,
+    turnOrder,
+    settings,
+}: RoomPlayersSideProps) {
+    const { snapshot } = useRoom();
     const { t } = useTrans();
-    const onlineIds = new Set(online.map((member) => member.id));
-    const { round } = snapshot;
-    const gifDone = gifDoneIds(round, snapshot.me.playerId);
-    const isPicking = gifDone !== null && round?.revealedAt === null;
-    const expected = Math.max(online.length, gifDone?.size ?? 0);
-    const players = [...snapshot.players].sort(
-        (first, second) =>
-            Number(onlineIds.has(second.presenceId)) -
-            Number(onlineIds.has(first.presenceId)),
-    );
+    const gifStep = useGifStep();
+    const isGif = snapshot.room.game === 'gif';
 
     return (
-        <section
-            aria-labelledby="game-players"
-            className="flex min-w-0 flex-col gap-2"
-        >
-            <div className="flex items-baseline justify-between gap-2">
-                <h2 id="game-players" className="sr-only">
-                    {t('Players')}
-                </h2>
-                <span className="text-xs text-muted-foreground">
-                    {players.length === 1
-                        ? t(':count player', { count: 1 })
-                        : t(':count players', { count: players.length })}
-                </span>
-            </div>
-            {gifDone !== null && isPicking && (
-                <Progress
-                    data-slot="gif-ready"
-                    label={t('Ready')}
-                    value={gifDone.size}
-                    max={Math.max(expected, 1)}
-                    valueLabel={`${gifDone.size} / ${expected}`}
-                />
+        <>
+            <RoomPlayers
+                title={isGif ? t('Participants') : t('Players')}
+                points={!isGif}
+                highlightPlayerId={highlightPlayerId}
+            />
+            {!isGif && turnOrder}
+            {gifStep !== null && (
+                <div className="border-t pt-5">
+                    <GifSteps step={gifStep} />
+                </div>
             )}
-            <ul className="flex flex-col gap-0.5">
-                {players.map((player) => (
-                    <PlayerRow
-                        key={player.id}
-                        name={player.name}
-                        avatarUrl={player.avatarUrl}
-                        isGuest={player.isGuest}
-                        isMe={player.id === snapshot.me.playerId}
-                        offline={!onlineIds.has(player.presenceId)}
-                        detail={
-                            gifDone === null ? undefined : (
-                                <GifPlayerStatus
-                                    done={gifDone.has(player.id)}
-                                    voting={!isPicking}
-                                />
-                            )
-                        }
-                        trailing={
-                            <>
-                                {player.id === snapshot.room.hostPlayerId && (
-                                    <Crown
-                                        className="size-4 shrink-0 text-skrum-warning-text"
-                                        aria-label={t('Host')}
-                                    />
-                                )}
-                                {player.id === highlightPlayerId && (
-                                    <Check
-                                        className="size-4 shrink-0 text-skrum-success-text"
-                                        aria-label={t('Winner')}
-                                    />
-                                )}
-                            </>
-                        }
-                    />
-                ))}
-            </ul>
-        </section>
+            {settings !== undefined && (
+                <>
+                    <span className="flex-1" />
+                    {settings}
+                </>
+            )}
+        </>
     );
 }
 
 export type RoomSidebarProps = {
     /** The winner of the round that just ended. */
     highlightPlayerId: string | null;
-    /** Place left under the players for the turn order of a game (GM-2). */
+    /** Place left under the scores for the turn order of a game (GM-2). */
     turnOrder?: ReactNode;
     /** Place left for the podium of a Sprint in one GIF round (GM-3). */
     gifPodium?: ReactNode;
 };
 
-/** The side of a game: who plays, the scores, then what the game in play adds. */
+/**
+ * The right column of a game: one "Scores" list, then what the game in play
+ * adds. Draw & Guess has its players on the left, and only the guesses of the
+ * round in play here.
+ */
 export function RoomSidebar({
     highlightPlayerId,
     turnOrder,
@@ -148,42 +77,39 @@ export function RoomSidebar({
 }: RoomSidebarProps) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
-    const [tab, setTab] = useState<SidebarTab>('players');
-    const { round } = snapshot;
+    const { round, room } = snapshot;
     const hasRightColumn = useHasRightColumn();
-    const gifStep = useGifStep();
-    const hasGuesses = round?.game === 'draw' || round?.game === 'decoded';
+
+    if (room.game === 'draw') {
+        if (!hasRightColumn || round?.game !== 'draw') {
+            return null;
+        }
+
+        return (
+            <GuessChat
+                round={round}
+                isLeader={round.leaderPlayerId === snapshot.me.playerId}
+                className="min-h-64 flex-1"
+            />
+        );
+    }
+
+    const isGif = room.game === 'gif';
 
     return (
         <>
-            <Tabs<SidebarTab>
-                value={tab}
-                onValueChange={setTab}
-                fullWidth
-                aria-label={t('Players and scores')}
-                items={[
-                    { value: 'players', label: t('Players') },
-                    { value: 'scores', label: t('Scores') },
-                ]}
-            >
-                <TabsContent value="players">
-                    <PlayersList highlightPlayerId={highlightPlayerId} />
-                </TabsContent>
-                <TabsContent value="scores">
-                    <RoomScores />
-                </TabsContent>
-            </Tabs>
-            {turnOrder}
-            {gifPodium}
-            {gifStep !== null && (
-                <div className="border-t pt-5">
-                    <GifSteps step={gifStep} />
-                </div>
-            )}
+            <RoomPlayers
+                title={t('Scores')}
+                headingId={isGif ? 'game-scores' : 'game-players'}
+                status={!isGif}
+                highlightPlayerId={isGif ? null : highlightPlayerId}
+            />
+            {!isGif && turnOrder}
+            {isGif && gifPodium}
             {round?.game === 'hangman' && hasRightColumn && (
                 <HangmanFeed round={round} className="border-t pt-5" />
             )}
-            {round && hasGuesses && hasRightColumn && (
+            {round?.game === 'decoded' && hasRightColumn && (
                 <GuessChat
                     round={round}
                     isLeader={round.leaderPlayerId === snapshot.me.playerId}

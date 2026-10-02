@@ -260,3 +260,44 @@ Remaining differences:
 | Room header at 390: the title is cut to "Monday w…" | fix later, with the header budget of Task 0 |
 | The aria-labels ":count points" and ":count letters left to find" have no singular (the browser suite binds "1 letters left to find") | fix later, with the test |
 | At 390 the floating reaction bar of the room overlays the end of a long guesses list while it scrolls | not verified in a browser; fix later if confirmed |
+
+## Rework RW-G1 (owner round 4, row D-57): each game on its mockup layout
+
+`GameLayout` takes panels (`left`, `right`, `chooser`: `{ id, label, icon, content }`), a `variant` (`choice`: 21.25rem · stage · 20rem, Hangman and Decoded; `players`: 18.75rem · stage · 21.25rem, Draw & Guess and Sprint in one GIF) and `summaryFor` (the panel the chips stand for while it is in a sheet). `RoomPlayers` (`room-players.tsx`) is the one list of a room: rank, avatar, name, "(guest)", "(you)", "Host", what the player does in the round, the winner check, points, "No points yet.", "Reset scores". The Players / Scores tabs and `room-scores.tsx` are gone.
+
+| Game | Left (from 80rem) | Right (from 64rem) |
+|---|---|---|
+| Hangman | game cards (host), the selected one says "In play" | "Scores" (`#game-players`), turn order (place left), last letters |
+| Decoded | game cards (host) | "Scores" with "giving clues" / "guessing…", guesses |
+| Draw & Guess | "Players" (`#game-players`) with points and "drawing" / "guessing…", drawing order (place left), settings (place left), "Choose a game" (host, opens the cards in a sheet) | guesses, during a round |
+| Sprint in one GIF | "Participants" (`#game-players`) with the "Ready" bar and each status, "How it works", settings (place left), "Choose a game" (host) | "Scores" (`#game-scores`), podium (place left) |
+
+Under 80rem the left panel is a sheet opened from the bar above the stage, under 64rem the right one too; the game choice of Draw & Guess and Sprint in one GIF is then a third button of that bar. The retro icebreaker (`game-panel.tsx`, old frame until G6) stacks the same pieces in its one side column.
+
+Places left: `turnOrder` (under the Scores of Hangman and Decoded, under the Players of Draw & Guess), `settingsCard` (foot of the game cards, or foot of the players column), `gifPodium` (under the Scores of Sprint in one GIF).
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `P13b-01` | after the switch to Draw & Guess: the stage title, no cards in the left column, the cards open from "Choose a game" with the game checked and "In play" | players hold the left column (mockup) |
+| `P13b-09` | no "Scores" tab; points read in `[data-slot="game-left"] section[aria-labelledby="game-players"]` | one list |
+| `P13c-01` | as `P13b-01` | players hold the left column |
+| `P13c-06` | no tab; `[data-slot="game-right"] [data-slot="room-scores"]`, and no points among the participants | one Scores list on the right |
+| `P13d-09a`, `P13d-09b` | no tab; `[data-slot="room-scores"]`; after a reset "No points yet." and every player at "0 points" without a rank | one list of every player |
+| `P18e-06-04` | added: "In play" on the selected card only, no tab, the right heading reads "Scores" | new behaviour |
+
+No test removed. Vitest: `room-sidebar.test.tsx` rewritten for `RoomPlayersSide` / `RoomSidebar`; new `room-players.test.tsx`, `game-layout.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| "Back to the team", no "Atlas · Games" overline, no avatar at the end of the topbar | D-57 (RW-C2) |
+| Decoded: game cards on the left, not the "Rounds" list; "Scores" and guesses on the right, not a round leaderboard and totals | D-57 |
+| Draw & Guess, Sprint in one GIF: "Choose a game" at the foot of the left column (host) | D-57 |
+| "Host" badge in the list; no "found · 0:18"; no guesses column between two rounds of Draw & Guess | D-57 |
+| Sprint in one GIF: "Scores" on the right, "Your pick" still on the stage | D-61 (RW-G2) |
+| Turn order, settings card, podium | D-20 |
+| Left column of the players variant is 18.75rem wide; a long name is cut next to "(you)" and "Host" | fix later if the owner asks: the badge could go to the second line |
+
