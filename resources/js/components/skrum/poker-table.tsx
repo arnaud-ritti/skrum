@@ -7,8 +7,8 @@ import {
     RotateCcw,
     Split,
 } from 'lucide-react';
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { PokerCard } from '@/components/skrum/poker-card';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
@@ -93,6 +93,8 @@ export interface PokerTableProps extends FacilitatorActionProps {
     locale?: string;
     seatMenu?: (seat: PokerSeat) => ReactNode;
     votingTools?: ReactNode;
+    /** Accessible name of the seats region; "Players" by default. */
+    tableLabel?: string;
     onReveal?: () => void;
     className?: string;
 }
@@ -104,6 +106,8 @@ export interface PokerResultPanelProps extends FacilitatorActionProps {
     anonymous?: boolean;
     revealReason?: PokerRevealReason | null;
     locale?: string;
+    /** The section takes focus (tabindex -1) when the votes are revealed. */
+    sectionRef?: Ref<HTMLElement>;
     className?: string;
 }
 
@@ -195,40 +199,28 @@ function Trema() {
     );
 }
 
+/**
+ * The name the game page has always given a seat card: "Bob: Voted",
+ * "Bob: Not voted yet", "Bob: 5". The real name, also on the viewer's seat.
+ */
 function seatLabel(
     t: Translate,
     seat: PokerSeat,
     shownValue: PokerValue | null,
-    revealed: boolean,
-    outlier: boolean,
-    isFacilitator: boolean,
 ): string {
-    const name = seat.user.isMe ? t('You') : seat.user.name;
-    const withDetail = (label: string, detail: string): string =>
-        t(':label, :detail', { label, detail });
-    let label = t(':name, thinking', { name });
-
     if (shownValue !== null) {
-        label = outlier
-            ? t(':name, :value, worth discussing', { name, value: shownValue })
-            : t(':name, :value', { name, value: shownValue });
-    } else if (seat.state === 'voted') {
-        label = t(':name, voted', { name });
-    } else if (seat.state === 'absent') {
-        label = t(':name, absent', { name });
-    } else if (revealed) {
-        label = t(':name, no vote', { name });
+        return `${seat.user.name}: ${shownValue}`;
     }
 
-    if (isFacilitator) {
-        label = withDetail(label, t('Facilitator'));
+    if (seat.state === 'voted') {
+        return `${seat.user.name}: ${t('Voted')}`;
     }
 
-    if (seat.offline) {
-        label = withDetail(label, t('Offline'));
+    if (seat.state === 'absent') {
+        return `${seat.user.name}: ${t('Absent')}`;
     }
 
-    return label;
+    return `${seat.user.name}: ${t('Not voted yet')}`;
 }
 
 function SeatView({
@@ -261,15 +253,6 @@ function SeatView({
 
     return (
         <div
-            role="group"
-            aria-label={seatLabel(
-                t,
-                seat,
-                shownValue,
-                revealed,
-                outlier,
-                isFacilitator,
-            )}
             data-slot="poker-seat"
             data-state={seat.state}
             className={cn(
@@ -279,7 +262,6 @@ function SeatView({
             )}
         >
             <span
-                aria-hidden
                 data-slot="poker-seat-card"
                 data-face={
                     !hasCard ? 'empty' : shownValue !== null ? 'up' : 'down'
@@ -293,8 +275,12 @@ function SeatView({
                     empty={!hasCard}
                     faceDown={hasCard && shownValue === null}
                     delay={Math.min(index * CascadeStepMs, CascadeMaxMs)}
+                    label={seatLabel(t, seat, shownValue)}
                     className={cn(outlier && 'ring-2 ring-skrum-warning')}
                 />
+                {outlier && (
+                    <span className="sr-only">{t('Worth discussing')}</span>
+                )}
             </span>
             <span className="inline-flex max-w-full min-w-0 items-center gap-1 text-xs font-medium whitespace-nowrap text-foreground">
                 <PersonAvatar
@@ -307,7 +293,8 @@ function SeatView({
                 <span className="truncate">{name}</span>
                 {isFacilitator && (
                     <Crown
-                        aria-hidden
+                        role="img"
+                        aria-label={t('Facilitator')}
                         data-slot="poker-seat-facilitator"
                         className="size-3 shrink-0 text-skrum-warning-text"
                     />
@@ -319,10 +306,7 @@ function SeatView({
                 </span>
             )}
             {seat.offline && (
-                <span
-                    aria-hidden
-                    className="max-w-full truncate text-overline text-muted-foreground"
-                >
+                <span className="max-w-full truncate text-overline text-muted-foreground">
                     {t('Offline')}
                 </span>
             )}
@@ -407,6 +391,7 @@ function TableCenter({
     const present = voters.filter((seat) => seat.state !== 'absent');
     const votedCount = voters.filter((seat) => seat.state === 'voted').length;
     const title = storyLabel(story);
+    const canReveal = !busy && votedCount > 0;
 
     return (
         <div
@@ -462,8 +447,6 @@ function TableCenter({
                         />
                     </div>
                     <span
-                        role="status"
-                        aria-live="polite"
                         data-slot="poker-progress"
                         className="max-w-full text-xs text-secondary-foreground"
                     >
@@ -478,9 +461,17 @@ function TableCenter({
                                 <Button
                                     type="button"
                                     size="sm"
-                                    className="max-w-full min-w-0"
-                                    disabled={busy || votedCount === 0}
-                                    onClick={onReveal}
+                                    className={cn(
+                                        'max-w-full min-w-0',
+                                        !canReveal &&
+                                            'cursor-not-allowed opacity-50',
+                                    )}
+                                    aria-disabled={!canReveal || undefined}
+                                    onClick={() => {
+                                        if (canReveal) {
+                                            onReveal();
+                                        }
+                                    }}
                                 >
                                     <Eye aria-hidden />
                                     <span className="truncate">
@@ -715,7 +706,7 @@ function ResultActions({
                     <Select value={value} onValueChange={setChoice}>
                         <SelectTrigger
                             size="sm"
-                            className="w-28 max-w-full"
+                            className="w-36 max-w-full"
                             aria-label={t('Estimate')}
                         >
                             <SelectValue placeholder={t('Estimate')} />
@@ -815,6 +806,7 @@ export function PokerResultPanel({
     revealReason,
     locale,
     isFacilitator,
+    sectionRef,
     className,
     ...actions
 }: PokerResultPanelProps) {
@@ -828,11 +820,13 @@ export function PokerResultPanel({
 
     return (
         <section
+            ref={sectionRef}
+            tabIndex={-1}
             aria-label={t('Result')}
             data-slot="poker-result"
             data-consensus={result.consensus}
             className={cn(
-                'flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-card',
+                'flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 className,
             )}
         >
@@ -1003,6 +997,7 @@ export function PokerTable({
     isNumeric,
     nextDisabled = false,
     shortcuts = true,
+    tableLabel,
     onReveal,
     onRevote,
     onAccept,
@@ -1010,6 +1005,11 @@ export function PokerTable({
     className,
 }: PokerTableProps) {
     const { t } = useTrans();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const seatsRef = useRef<HTMLElement>(null);
+    const resultRef = useRef<HTMLElement>(null);
+    const hadFocusInside = useRef(false);
+    const wasRevealed = useRef(revealed);
     const players = seats.filter((seat) => seat.state !== 'watching');
     const watchers = seats.filter((seat) => seat.state === 'watching');
     const outlierIds = new Set(
@@ -1017,9 +1017,11 @@ export function PokerTable({
     );
     const isOval = players.length <= MaxOvalSeats;
     const hasVotes = players.some((seat) => seat.state === 'voted');
-    const tableLabel = t('Poker table, :story', {
-        story: story.key ?? story.title,
-    });
+    const seatsLabel = tableLabel ?? t('Players');
+    const votedCount = players.filter((seat) => seat.state === 'voted').length;
+    const presentCount = players.filter(
+        (seat) => seat.state !== 'absent',
+    ).length;
     const actions = {
         busy,
         estimate,
@@ -1033,6 +1035,7 @@ export function PokerTable({
     };
 
     useShortcut('r', () => onReveal?.(), {
+        scope: rootRef,
         enabled:
             shortcuts &&
             isFacilitator &&
@@ -1041,6 +1044,57 @@ export function PokerTable({
             hasVotes &&
             !busy,
     });
+
+    // The control that revealed (or reset) the round unmounts with the state
+    // it belonged to: focus follows to the result, or back to the seats.
+    useEffect(() => {
+        const before = wasRevealed.current;
+
+        wasRevealed.current = revealed;
+
+        if (before === revealed || !hadFocusInside.current) {
+            return;
+        }
+
+        const active = document.activeElement;
+
+        if (active !== null && active !== document.body) {
+            return;
+        }
+
+        const target = revealed
+            ? (resultRef.current ?? seatsRef.current)
+            : seatsRef.current;
+
+        target?.focus();
+    }, [revealed]);
+
+    const announcement = (): string => {
+        if (!revealed) {
+            return t(':voted of :total voted', {
+                voted: votedCount,
+                total: presentCount,
+            });
+        }
+
+        if (!result) {
+            return t('Votes revealed');
+        }
+
+        if (!hasCountableVotes(result)) {
+            return `${t('Votes revealed')}. ${t('No countable votes')}`;
+        }
+
+        const headline =
+            showsAverage(result, isNumeric) && result.average !== null
+                ? `${t('Average')}: ${formatNumber(result.average, locale)}`
+                : t('Most played: :cards', { cards: result.mode.join(', ') });
+        const verdict = result.consensus
+            ? t('Consensus')
+            : t('Needs discussion');
+
+        return `${t('Votes revealed')}. ${headline}. ${verdict}`;
+    };
 
     const renderSeat = (index: number, reverse?: boolean) => (
         <SeatView
@@ -1074,24 +1128,45 @@ export function PokerTable({
     const { top, left, right, bottom } = splitSeats(players.length);
     const seatGrid =
         'grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] justify-items-center gap-3';
+    const seatsFocus =
+        'rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring';
     const seatBar =
         'col-span-full flex w-full min-w-0 items-center justify-center rounded-xl bg-secondary px-6 py-4 shadow-card';
 
     return (
         <div
+            ref={rootRef}
             data-slot="poker-table"
+            onFocus={() => {
+                hadFocusInside.current = true;
+            }}
+            onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                    hadFocusInside.current = false;
+                }
+            }}
             className={cn(
                 '@container/poker flex min-w-0 flex-col gap-6',
                 className,
             )}
         >
+            <p
+                role="status"
+                aria-live="polite"
+                data-slot="poker-status"
+                className="sr-only"
+            >
+                {announcement()}
+            </p>
             {isOval ? (
-                <div
-                    role="group"
-                    aria-label={tableLabel}
+                <section
+                    ref={seatsRef}
+                    tabIndex={-1}
+                    aria-label={seatsLabel}
                     data-layout="oval"
                     className={cn(
                         seatGrid,
+                        seatsFocus,
                         '@md/poker:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
                     )}
                 >
@@ -1116,19 +1191,20 @@ export function PokerTable({
                     <div className="contents justify-around gap-2 @md/poker:col-span-3 @md/poker:row-start-3 @md/poker:flex @md/poker:w-full">
                         {bottom.map((index) => renderSeat(index))}
                     </div>
-                </div>
+                </section>
             ) : (
-                <div
-                    role="group"
-                    aria-label={tableLabel}
+                <section
+                    ref={seatsRef}
+                    tabIndex={-1}
+                    aria-label={seatsLabel}
                     data-layout="grid"
-                    className={seatGrid}
+                    className={cn(seatGrid, seatsFocus)}
                 >
                     <div data-slot="poker-bar" className={seatBar}>
                         {center}
                     </div>
                     {players.map((_, index) => renderSeat(index))}
-                </div>
+                </section>
             )}
             {!revealed && isFacilitator && (votingTools || onNext) && (
                 <div
@@ -1155,6 +1231,7 @@ export function PokerTable({
             {revealed && result && (
                 <PokerResultPanel
                     key={story.key ?? story.title}
+                    sectionRef={resultRef}
                     result={result}
                     seats={players}
                     story={story}

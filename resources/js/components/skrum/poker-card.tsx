@@ -33,6 +33,12 @@ export type PokerDeckProps = {
     size?: PokerCardSize;
     disabled?: boolean;
     disabledValues?: string[];
+    /**
+     * `toggle` (default) renders pressed buttons, the contract of the current
+     * game page: pressing the selected card again withdraws the vote.
+     * `radio` renders a radio group.
+     */
+    selection?: 'toggle' | 'radio';
     label?: string;
     className?: string;
 };
@@ -108,11 +114,22 @@ export function PokerCard({
     const isInteractive = onSelect !== undefined && !faceDown && !empty;
     const showsValue = !faceDown && !empty;
     const length = Array.from(value).length;
-    const name = faceDown
-        ? t('Face-down card')
-        : empty
-          ? t('No vote')
-          : (label ?? (unit ? `${cardName(value)} ${unit}` : cardName(value)));
+    const defaultName = (): string => {
+        if (faceDown) {
+            return t('Face-down card');
+        }
+
+        if (empty) {
+            return t('No vote');
+        }
+
+        if (isInteractive) {
+            return t('Play :card', { card: value });
+        }
+
+        return unit ? `${cardName(value)} ${unit}` : cardName(value);
+    };
+    const name = label ?? defaultName();
     const showsCorner =
         showsValue && !isSpecial && size !== 'sm' && length <= 3;
     const showsUnit = showsValue && unit !== undefined && size !== 'sm';
@@ -260,6 +277,7 @@ export function PokerDeck({
     size = 'md',
     disabled = false,
     disabledValues = [],
+    selection = 'toggle',
     label,
     className,
 }: PokerDeckProps) {
@@ -296,11 +314,14 @@ export function PokerDeck({
         }
 
         if (/^[0-9]$/.test(event.key)) {
+            // The deck owns the digits while it has focus: page shortcuts on
+            // the same keys (quick reactions) must not fire as well.
+            event.preventDefault();
+
             if (!enabledValues.includes(event.key)) {
                 return;
             }
 
-            event.preventDefault();
             focusCard(event.key);
             onChange(event.key);
 
@@ -331,7 +352,7 @@ export function PokerDeck({
 
     return (
         <div
-            role="radiogroup"
+            role={selection === 'radio' ? 'radiogroup' : 'group'}
             aria-label={label ?? t('Your cards')}
             data-slot="poker-deck"
             onKeyDown={handleKeyDown}
@@ -346,7 +367,7 @@ export function PokerDeck({
                     value={card}
                     unit={unit}
                     size={size}
-                    radio
+                    radio={selection === 'radio'}
                     selected={value === card}
                     disabled={isDisabled(card)}
                     tabIndex={card === tabStop ? 0 : -1}
@@ -357,6 +378,17 @@ export function PokerDeck({
                     }}
                     onSelect={(selectedCard) => {
                         setFocusedValue(selectedCard);
+
+                        if (
+                            selection === 'toggle' &&
+                            selectedCard === value &&
+                            onRetract !== undefined
+                        ) {
+                            onRetract();
+
+                            return;
+                        }
+
                         onChange(selectedCard);
                     }}
                 />

@@ -73,21 +73,42 @@ function renderTable(props: Partial<PokerTableProps> = {}) {
 }
 
 describe('PokerTable while voting', () => {
-    it('names the table with the story and announces each seat state', () => {
-        renderTable();
+    it('names the seats Players and each seat card as the game page did', () => {
+        const { rerender } = renderTable();
+
+        expect(screen.getByRole('region', { name: 'Players' })).toBeTruthy();
+        expect(
+            screen.getByRole('img', { name: 'Camille: Voted' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('img', { name: 'Theo: Not voted yet' }),
+        ).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Malik: Absent' })).toBeTruthy();
+        expect(
+            document.querySelectorAll('[aria-label="Camille: Voted"]'),
+        ).toHaveLength(1);
+
+        rerender(
+            <PokerTable
+                story={story}
+                seats={[
+                    {
+                        ...seat(0, 'voted', undefined, 'Camille'),
+                        user: { id: 'u0', name: 'Camille', isMe: true },
+                    },
+                ]}
+                revealed={false}
+                tableLabel="Poker table, ATLAS-1290"
+            />,
+        );
 
         expect(
-            screen.getByRole('group', { name: 'Poker table, ATLAS-1290' }),
+            screen.getByRole('region', { name: 'Poker table, ATLAS-1290' }),
         ).toBeTruthy();
         expect(
-            screen.getByRole('group', { name: 'Camille, voted' }),
+            screen.getByRole('img', { name: 'Camille: Voted' }),
         ).toBeTruthy();
-        expect(
-            screen.getByRole('group', { name: 'Theo, thinking' }),
-        ).toBeTruthy();
-        expect(
-            screen.getByRole('group', { name: 'Malik, absent' }),
-        ).toBeTruthy();
+        expect(screen.getByText('You')).toBeTruthy();
     });
 
     it('announces progress excluding absent seats and shows no average', () => {
@@ -141,8 +162,11 @@ describe('PokerTable while voting', () => {
         });
         const button = (): HTMLButtonElement =>
             screen.getByRole('button', { name: 'Show votes' });
+        const isUnavailable = (): boolean =>
+            button().getAttribute('aria-disabled') === 'true';
 
-        expect(button().disabled).toBe(true);
+        expect(isUnavailable()).toBe(true);
+        fireEvent.click(button());
         fireEvent.keyDown(document, { key: 'r' });
         expect(onReveal).not.toHaveBeenCalled();
 
@@ -155,7 +179,7 @@ describe('PokerTable while voting', () => {
                 onReveal={onReveal}
             />,
         );
-        expect(button().disabled).toBe(false);
+        expect(isUnavailable()).toBe(false);
 
         rerender(
             <PokerTable
@@ -167,7 +191,114 @@ describe('PokerTable while voting', () => {
                 onReveal={onReveal}
             />,
         );
-        expect(button().disabled).toBe(true);
+        expect(isUnavailable()).toBe(true);
+        expect(button().disabled).toBe(false);
+        fireEvent.click(button());
+        expect(onReveal).not.toHaveBeenCalled();
+    });
+
+    it('moves focus to the result when the reveal button goes away, and back to the seats on a re-vote', () => {
+        const onReveal = vi.fn();
+        const onRevote = vi.fn();
+        const voting = (
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', undefined, 'Camille')]}
+                revealed={false}
+                isFacilitator
+                onReveal={onReveal}
+                onRevote={onRevote}
+            />
+        );
+        const { rerender } = renderWithProviders(voting);
+        const reveal = screen.getByRole('button', { name: 'Show votes' });
+
+        reveal.focus();
+        fireEvent.click(reveal);
+        rerender(
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', '8', 'Camille')]}
+                revealed
+                result={consensus}
+                isFacilitator
+                onReveal={onReveal}
+                onRevote={onRevote}
+            />,
+        );
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('region', { name: 'Result' }),
+        );
+        expect(screen.getByRole('status').textContent).toBe(
+            'Votes revealed. Average: 7.5. Consensus',
+        );
+
+        const revote = screen.getByRole('button', { name: 'Re-vote' });
+
+        revote.focus();
+        fireEvent.click(revote);
+        rerender(voting);
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('region', { name: 'Players' }),
+        );
+    });
+
+    it('leaves focus alone on a reveal when it was outside the table', () => {
+        const { rerender } = renderWithProviders(
+            <>
+                <button type="button">Elsewhere</button>
+                <PokerTable story={story} seats={[]} revealed={false} />
+            </>,
+        );
+        const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+
+        elsewhere.focus();
+        rerender(
+            <>
+                <button type="button">Elsewhere</button>
+                <PokerTable
+                    story={story}
+                    seats={[]}
+                    revealed
+                    result={consensus}
+                />
+            </>,
+        );
+
+        expect(document.activeElement).toBe(elsewhere);
+    });
+
+    it('does not reveal when R is typed in a dialog that was open before the first vote', async () => {
+        const onReveal = vi.fn();
+        const table = (seats: PokerSeat[]) => (
+            <PokerTable
+                story={story}
+                seats={seats}
+                revealed={false}
+                isFacilitator
+                onReveal={onReveal}
+            />
+        );
+        const { rerender } = renderWithProviders(table([seat(0, 'waiting')]));
+        const dialog = document.createElement('div');
+        const button = document.createElement('button');
+
+        dialog.setAttribute('role', 'dialog');
+        dialog.append(button);
+        document.body.append(dialog);
+
+        rerender(table([seat(0, 'voted')]));
+        await Promise.resolve();
+        fireEvent.keyDown(button, { key: 'r' });
+        dialog.remove();
+
+        expect(onReveal).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.body, { key: 'r' });
+
+        expect(onReveal).toHaveBeenCalledTimes(1);
     });
 
     it('turns the shortcuts off with shortcuts={false}', () => {
@@ -250,12 +381,9 @@ describe('PokerTable while voting', () => {
             ],
         });
 
-        expect(
-            screen.getByRole('group', { name: 'Camille, voted, Facilitator' }),
-        ).toBeTruthy();
-        expect(
-            screen.getByRole('group', { name: 'Theo, voted, Offline' }),
-        ).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Facilitator' })).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Theo: Voted' })).toBeTruthy();
+        expect(screen.getByText('Offline').closest('[aria-hidden]')).toBeNull();
         expect(
             container.querySelectorAll('[data-slot="poker-seat-facilitator"]'),
         ).toHaveLength(1);
@@ -376,10 +504,9 @@ describe('PokerTable revealed', () => {
                 '[data-slot="poker-seat-card"][data-outlier]',
             ),
         ).toHaveLength(2);
-        expect(
-            screen.getByRole('group', { name: 'Yuki, 21, worth discussing' }),
-        ).toBeTruthy();
-        expect(screen.getByRole('group', { name: 'Malik, ☕' })).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Yuki: 21' })).toBeTruthy();
+        expect(screen.getAllByText('Worth discussing')).toHaveLength(2);
+        expect(screen.getByRole('img', { name: 'Malik: ☕' })).toBeTruthy();
     });
 
     it('keeps a non-numeric spread and shows the most played cards without an average', () => {
@@ -436,7 +563,7 @@ describe('PokerTable revealed', () => {
             result: { ...dispersion, outliers: ['u1'] },
         });
 
-        expect(screen.getByRole('group', { name: 'Yuki, voted' })).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Yuki: Voted' })).toBeTruthy();
         expect(
             container.querySelectorAll(
                 '[data-slot="poker-seat-card"][data-face="up"]',
@@ -605,7 +732,7 @@ describe('PokerTable revealed', () => {
         expect(container.querySelector('[data-slot="poker-seat"]')).toBe(
             seatElement,
         );
-        expect(screen.getByRole('group', { name: 'Camille, 8' })).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Camille: 8' })).toBeTruthy();
     });
 });
 
@@ -701,7 +828,7 @@ describe('PokerTable layout and extreme data', () => {
         });
 
         expect(
-            screen.getByRole('group', { name: `${longName}, ABCDEFGH` }),
+            screen.getByRole('img', { name: `${longName}: ABCDEFGH` }),
         ).toBeTruthy();
         expect(
             document.querySelectorAll('[data-slot="poker-dist-bar"]'),

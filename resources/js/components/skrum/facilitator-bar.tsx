@@ -1,5 +1,5 @@
 import { Ellipsis } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +40,8 @@ export type FacilitatorBarProps = {
     primary?: FacilitatorAction;
     end?: ReactNode;
     compact?: boolean;
+    /** Accessible name of the toolbar; "Facilitation tools" by default. */
+    label?: string;
     className?: string;
 };
 
@@ -90,7 +92,7 @@ function ActionButton({
     onRovingFocus,
 }: ActionButtonProps) {
     const Icon = action.icon;
-    const reasonId = `facilitator-action-reason-${action.id}`;
+    const reasonId = useId();
     const hasReason = action.disabled && Boolean(action.disabledReason);
     const showLabel = !iconOnly || isPrimary;
 
@@ -230,7 +232,7 @@ function MoreMenu({
                 </TooltipTrigger>
                 <TooltipContent>{label}</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" side="top">
+            <DropdownMenuContent align="end" side="top" size="wide">
                 {regular.map(renderItem)}
                 {regular.length > 0 && destructive.length > 0 && (
                     <DropdownMenuSeparator />
@@ -247,16 +249,22 @@ export function FacilitatorBar({
     primary,
     end,
     compact = false,
+    label,
     className,
 }: FacilitatorBarProps) {
     const { t } = useTrans();
     const rootRef = useRef<HTMLDivElement>(null);
     const [activeKey, setActiveKey] = useState<string | null>(null);
 
-    const inlineActions = compact
-        ? actions.slice(0, compactInlineCount)
-        : actions;
-    const overflowActions = compact ? actions.slice(compactInlineCount) : [];
+    // Compact buttons are icon-only, and a destructive action always shows
+    // its label: in compact mode it lives in the More menu.
+    const compactInline = actions
+        .filter((action) => action.tone !== 'destructive')
+        .slice(0, compactInlineCount);
+    const inlineActions = compact ? compactInline : actions;
+    const overflowActions = compact
+        ? actions.filter((action) => !compactInline.includes(action))
+        : [];
 
     const keys = [
         ...inlineActions.map((action) => action.id),
@@ -315,7 +323,7 @@ export function FacilitatorBar({
             data-slot="facilitator-bar"
             data-compact={compact || undefined}
             role="toolbar"
-            aria-label={t('Facilitator tools')}
+            aria-label={label ?? t('Facilitation tools')}
             aria-orientation="horizontal"
             onKeyDown={handleKeyDown}
             className={cn(

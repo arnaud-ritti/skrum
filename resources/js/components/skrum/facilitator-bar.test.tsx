@@ -59,7 +59,7 @@ describe('FacilitatorBar', () => {
         renderWithProviders(<FacilitatorBar actions={makeActions()} />);
 
         expect(
-            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
+            screen.getByRole('toolbar', { name: 'Facilitation tools' }),
         ).toBeTruthy();
         expect(
             screen
@@ -180,6 +180,52 @@ describe('FacilitatorBar', () => {
         fireEvent.click(item);
 
         expect(actions[2].onSelect).toHaveBeenCalledTimes(1);
+    });
+
+    it('compact mode sends a destructive action to the More menu wherever it sits', async () => {
+        const [reveal, lock, clear] = makeActions();
+        renderWithProviders(
+            <FacilitatorBar actions={[clear, reveal, lock]} compact />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Clear board' }),
+        ).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Reveal cards' }),
+        ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Lock board' })).toBeTruthy();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'More' }), {
+            key: 'Enter',
+        });
+
+        expect(
+            await screen.findByRole('menuitem', { name: /Clear board/ }),
+        ).toBeTruthy();
+    });
+
+    it('gives two bars with the same disabled action distinct reason ids and takes a custom name', () => {
+        const actions = makeActions([
+            { disabled: true, disabledReason: 'Nobody has written yet' },
+        ]);
+        renderWithProviders(
+            <>
+                <FacilitatorBar actions={actions} />
+                <FacilitatorBar actions={actions} label="Facilitator tools" />
+            </>,
+        );
+
+        const [first, second] = screen.getAllByRole('button', {
+            name: 'Reveal cards',
+        });
+
+        expect(first.getAttribute('aria-describedby')).not.toBe(
+            second.getAttribute('aria-describedby'),
+        );
+        expect(
+            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
+        ).toBeTruthy();
     });
 
     it('updates when props change', () => {

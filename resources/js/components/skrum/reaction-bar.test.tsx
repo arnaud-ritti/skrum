@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { PokerDeck } from '@/components/skrum/poker-card';
 import { ReactionBar } from '@/components/skrum/reaction-bar';
 import type { IncomingReaction } from '@/components/skrum/reaction-bar';
 import { renderWithProviders } from '@/test/render';
@@ -94,6 +95,68 @@ describe('ReactionBar', () => {
 
         expect(onReact).toHaveBeenCalledTimes(1);
         expect(onReact).toHaveBeenCalledWith('🎉');
+    });
+
+    it('sends no reaction for a digit typed inside a dialog', () => {
+        const onReact = vi.fn();
+        const { rerender } = renderWithProviders(
+            <ReactionBar onReact={onReact} shortcuts disabled />,
+        );
+        const dialog = document.createElement('div');
+        const button = document.createElement('button');
+
+        dialog.setAttribute('role', 'dialog');
+        dialog.append(button);
+        document.body.append(dialog);
+
+        rerender(<ReactionBar onReact={onReact} shortcuts />);
+        fireEvent.keyDown(button, { key: '1' });
+        dialog.remove();
+
+        expect(onReact).not.toHaveBeenCalled();
+    });
+
+    it('sends no reaction for a digit pressed on a focused deck card', () => {
+        const onReact = vi.fn();
+        const onChange = vi.fn();
+
+        renderWithProviders(
+            <>
+                <PokerDeck
+                    values={['1', '2', '3']}
+                    value={null}
+                    onChange={onChange}
+                />
+                <ReactionBar onReact={onReact} shortcuts />
+            </>,
+        );
+
+        const card = screen.getByRole('button', { name: 'Play 1' });
+
+        card.focus();
+        fireEvent.keyDown(card, { key: '2' });
+        fireEvent.keyDown(card, { key: '5' });
+
+        expect(onChange).toHaveBeenCalledWith('2');
+        expect(onReact).not.toHaveBeenCalled();
+    });
+
+    it('ignores a digit typed with a modifier or in a role textbox', () => {
+        const onReact = vi.fn();
+
+        renderWithProviders(
+            <>
+                <div role="textbox" aria-label="Editor" tabIndex={0} />
+                <ReactionBar onReact={onReact} shortcuts />
+            </>,
+        );
+
+        fireEvent.keyDown(document.body, { key: '1', ctrlKey: true });
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Editor' }), {
+            key: '1',
+        });
+
+        expect(onReact).not.toHaveBeenCalled();
     });
 
     it('ignores shortcuts typed in a text field', () => {

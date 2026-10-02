@@ -164,6 +164,39 @@ describe('Timer', () => {
         expect(onResume).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps focus on the same button through pause, resume and the end, so T keeps working', () => {
+        const onPause = vi.fn();
+        const onResume = vi.fn();
+        const props = { onPause, onResume };
+        const { rerender } = renderWithProviders(
+            <Timer remainingSeconds={120} {...props} />,
+        );
+        const button = screen.getByRole('button', { name: 'Pause timer' });
+
+        button.focus();
+        rerender(<Timer remainingSeconds={120} paused {...props} />);
+
+        expect(document.activeElement).toBe(button);
+        expect(button.getAttribute('aria-label')).toBe('Resume timer');
+
+        fireEvent.keyDown(document.activeElement as Element, { key: 't' });
+
+        expect(onResume).toHaveBeenCalledTimes(1);
+
+        rerender(<Timer remainingSeconds={120} {...props} />);
+        fireEvent.keyDown(document.activeElement as Element, { key: 't' });
+
+        expect(document.activeElement).toBe(button);
+        expect(onPause).toHaveBeenCalledTimes(1);
+
+        rerender(<Timer remainingSeconds={0} {...props} />);
+        fireEvent.click(button);
+
+        expect(document.activeElement).toBe(button);
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+        expect(onPause).toHaveBeenCalledTimes(1);
+    });
+
     it('toggles with T and adds a minute with +', () => {
         const onPause = vi.fn();
         const onResume = vi.fn();

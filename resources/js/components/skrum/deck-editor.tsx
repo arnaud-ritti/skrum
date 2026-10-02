@@ -1,5 +1,5 @@
 import { CircleAlert, GripVertical, X } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import {
     BreakCard,
@@ -35,6 +35,12 @@ export interface DeckEditorProps {
     saving?: boolean;
     nameRequired?: boolean;
     saveLabel?: string;
+    /**
+     * Prefix of the control ids: `-name`, `-cards`, `-unknown`, `-coffee`.
+     * The default gives the ids the game settings always had
+     * (`deck-new-name`…); pass another prefix when two editors share a page.
+     */
+    idPrefix?: string;
     onSave: () => void;
     onCancel: () => void;
     className?: string;
@@ -81,12 +87,14 @@ export function checkDeckValue(
 }
 
 function SpecialCardRow({
+    id,
     card,
     title,
     description,
     checked,
     onCheckedChange,
 }: {
+    id: string;
     card: string;
     title: string;
     description: string;
@@ -115,6 +123,7 @@ function SpecialCardRow({
                 </span>
             </span>
             <Switch
+                id={id}
                 checked={checked}
                 onCheckedChange={onCheckedChange}
                 aria-labelledby={labelId}
@@ -131,18 +140,20 @@ export function DeckEditor({
     saving = false,
     nameRequired = true,
     saveLabel,
+    idPrefix = 'deck-new',
     onSave,
     onCancel,
     className,
 }: DeckEditorProps) {
     const { t } = useTrans();
-    const nameId = useId();
+    const nameId = `${idPrefix}-name`;
     const nameErrorId = useId();
     const nameHelpId = useId();
     const valuesLabelId = useId();
     const valuesMessageId = useId();
     const valuesHelpId = useId();
     const addInputRef = useRef<HTMLInputElement>(null);
+    const editInputRef = useRef<HTMLInputElement>(null);
     const chipRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
     const isLeavingEditByKey = useRef(false);
     const [draft, setDraft] = useState('');
@@ -152,6 +163,30 @@ export function DeckEditor({
     const [armedLast, setArmedLast] = useState(false);
     const [touched, setTouched] = useState(false);
     const [announcement, setAnnouncement] = useState('');
+
+    /**
+     * A host dialog closes on Escape from a capture listener on the document,
+     * before React sees the key. While a chip is edited, Escape belongs to
+     * the chip: the event is marked handled on its way down, from the window.
+     */
+    useEffect(() => {
+        if (editingIndex === null) {
+            return;
+        }
+
+        const claimEscape = (event: globalThis.KeyboardEvent): void => {
+            if (
+                event.key === 'Escape' &&
+                event.target === editInputRef.current
+            ) {
+                event.preventDefault();
+            }
+        };
+
+        window.addEventListener('keydown', claimEscape, true);
+
+        return () => window.removeEventListener('keydown', claimEscape, true);
+    }, [editingIndex]);
 
     const values = value.values;
     const tooFew = values.length < DeckMinValues;
@@ -217,6 +252,41 @@ export function DeckEditor({
             [...values, candidate],
             t('Added :value', { value: candidate }),
         );
+    }
+
+    /** A pasted or filled list ("1, 2, 3"): every valid part becomes a value. */
+    function addList(text: string) {
+        const next = [...values];
+        const refused: string[] = [];
+        let firstProblem: ValueProblem | null = null;
+
+        for (const part of text.split(',')) {
+            const candidate = normalizeDeckValue(part);
+            const found = checkDeckValue(candidate, next);
+
+            if (found === null) {
+                next.push(candidate);
+
+                continue;
+            }
+
+            if (found.kind !== 'empty') {
+                refused.push(candidate);
+                firstProblem ??= found;
+            }
+        }
+
+        setDraft(refused.join(', '));
+        setProblem(firstProblem);
+
+        if (next.length > values.length) {
+            setValues(
+                next,
+                t('Added :value', {
+                    value: next.slice(values.length).join(', '),
+                }),
+            );
+        }
     }
 
     function removeAt(index: number) {
@@ -502,6 +572,7 @@ export function DeckEditor({
                                     />
                                     {editingIndex === index ? (
                                         <input
+                                            ref={editInputRef}
                                             autoFocus
                                             value={editingText}
                                             aria-label={t('Edit value :value', {
@@ -597,12 +668,20 @@ export function DeckEditor({
                             <li className="flex min-w-24 flex-1 items-center gap-1.5">
                                 <input
                                     ref={addInputRef}
+                                    id={`${idPrefix}-cards`}
                                     data-slot="deck-add-input"
                                     value={draft}
                                     onChange={(event) => {
+                                        setArmedLast(false);
+
+                                        if (event.target.value.includes(',')) {
+                                            addList(event.target.value);
+
+                                            return;
+                                        }
+
                                         setDraft(event.target.value);
                                         setProblem(null);
-                                        setArmedLast(false);
                                     }}
                                     onKeyDown={onAddKeyDown}
                                     onBlur={() => setArmedLast(false)}
@@ -658,6 +737,7 @@ export function DeckEditor({
                             {t('Special cards')}
                         </span>
                         <SpecialCardRow
+                            id={`${idPrefix}-unknown`}
                             card={UnknownCard}
                             title={t("I don't know")}
                             description={t(
@@ -669,6 +749,7 @@ export function DeckEditor({
                             }
                         />
                         <SpecialCardRow
+                            id={`${idPrefix}-coffee`}
                             card={BreakCard}
                             title={t('I need a break')}
                             description={t('Ask the team for a pause.')}

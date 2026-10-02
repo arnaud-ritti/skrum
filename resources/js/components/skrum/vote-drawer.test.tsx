@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ReactionDrawer } from '@/components/skrum/reaction-drawer';
-import { VoteDrawer } from '@/components/skrum/vote-drawer';
+import { VoteDrawer, VoteDrawerPanel } from '@/components/skrum/vote-drawer';
 import { renderWithProviders } from '@/test/render';
 
 const deck = ['1', '2', '3', '5', '8', '13', '21', '?', '☕'];
@@ -165,19 +165,79 @@ describe('VoteDrawer', () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('handles 20 values with long labels', () => {
-        const many = Array.from({ length: 19 }, (_, index) => `${index}`);
+    it('holds a 20-value deck: every card reachable, an 8-character value in full, vote on the last', () => {
+        const onVote = vi.fn();
+        const twenty = [
+            ...Array.from({ length: 17 }, (_, index) => `${index + 1}`),
+            'XXL-size',
+            '?',
+            '☕',
+        ];
         renderWithProviders(
             <VoteDrawer
                 open
                 onOpenChange={vi.fn()}
-                deck={[...many, 'Too big!!']}
-                onVote={vi.fn()}
+                deck={twenty}
+                value="1"
+                disabledValues={['17']}
+                onVote={onVote}
+            />,
+        );
+        const cards = screen.getAllByRole('radio');
+
+        expect(cards).toHaveLength(20);
+        expect(cards.filter((card) => card.tabIndex === 0)).toHaveLength(1);
+        expect(
+            screen.getByRole('radio', { name: 'XXL-size' }).textContent,
+        ).toBe('XXL-size');
+
+        cards[0].focus();
+        fireEvent.keyDown(cards[0], { key: 'ArrowLeft' });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Coffee break' }),
+        );
+
+        fireEvent.keyDown(cards[15], { key: 'ArrowRight' });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'XXL-size' }),
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Validate XXL-size' }),
+        );
+
+        expect(onVote).toHaveBeenCalledWith('XXL-size');
+    });
+
+    it('renders the panel without a drawer and leaves closing to its host', () => {
+        const onVote = vi.fn();
+        const onRetract = vi.fn();
+        renderWithProviders(
+            <VoteDrawerPanel
+                deck={deck}
+                value="5"
+                onVote={onVote}
+                onRetract={onRetract}
             />,
         );
 
-        expect(screen.getAllByRole('radio')).toHaveLength(20);
-        expect(screen.getByRole('radio', { name: 'Too big!!' })).toBeTruthy();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(
+            screen
+                .getByRole('radio', { name: '5 points' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(screen.getByRole('radio', { name: '8 points' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Validate 8 points' }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Remove my vote' }));
+
+        expect(onVote).toHaveBeenCalledWith('8');
+        expect(onRetract).toHaveBeenCalledTimes(1);
     });
 
     it('returns focus to the opener on close', async () => {

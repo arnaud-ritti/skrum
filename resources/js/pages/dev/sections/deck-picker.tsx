@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { DeckEditor } from '@/components/skrum/deck-editor';
@@ -130,14 +130,23 @@ function Picker({
 function PickerWithOpenConfirmation({ decks }: { decks: Deck[] }) {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // The dialog is fixed to the viewport: this state comes first and fills one
-    // viewport, so the dialog covers nothing else in a full-page capture.
+    // The dialog is fixed to the viewport. This state comes last, fills one
+    // viewport and keeps itself in view, so the dialog covers no other state.
     useEffect(() => {
-        containerRef.current
+        const container = containerRef.current;
+        const keepInView = (): void => {
+            container?.scrollIntoView({ block: 'end' });
+        };
+
+        keepInView();
+        container
             ?.querySelector<HTMLButtonElement>(
                 '[data-slot="deck-manage"] button:last-of-type',
             )
             ?.click();
+        window.addEventListener('resize', keepInView);
+
+        return () => window.removeEventListener('resize', keepInView);
     }, []);
 
     return (
@@ -161,10 +170,12 @@ function Editor({
     saveLabel?: string;
 }) {
     const [draft, setDraft] = useState(initial);
+    const idPrefix = useId();
 
     return (
         <Card className="p-0">
             <DeckEditor
+                idPrefix={idPrefix}
                 value={draft}
                 onChange={setDraft}
                 errors={errors}
@@ -183,9 +194,6 @@ export default function DeckPickerSection() {
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
-            <Example label={t('Picker: delete confirmation open')}>
-                <PickerWithOpenConfirmation decks={[savedDeck]} />
-            </Example>
             <Example
                 label={t(
                     'Picker: default card, hover (hover a card), create card',
@@ -307,6 +315,23 @@ export default function DeckPickerSection() {
             </Example>
             <Example label={t('Saving: spinner, save disabled')}>
                 <Editor initial={filledDraft} saving />
+            </Example>
+            <Example
+                label={t(
+                    'Editor: default control ids (deck-new-name, deck-new-cards, deck-new-unknown, deck-new-coffee)',
+                )}
+            >
+                <Card className="p-0">
+                    <DeckEditor
+                        value={filledDraft}
+                        onChange={() => undefined}
+                        onSave={() => undefined}
+                        onCancel={() => undefined}
+                    />
+                </Card>
+            </Example>
+            <Example label={t('Picker: delete confirmation open')}>
+                <PickerWithOpenConfirmation decks={[savedDeck]} />
             </Example>
         </div>
     );

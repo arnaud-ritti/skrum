@@ -177,8 +177,6 @@ export function Timer({
         }
 
         if ((event.key === 't' || event.key === 'T') && hasTimer) {
-            const toggle = paused ? onResume : onPause;
-
             if (toggle) {
                 event.preventDefault();
                 toggle();
@@ -211,6 +209,10 @@ export function Timer({
         return null;
     }
 
+    // One button for pause and resume: it stays mounted, so focus (and the T
+    // key, which needs focus inside the timer) survives every change of state.
+    const hasToggle = onPause !== undefined || onResume !== undefined;
+    const toggle = isDone ? undefined : paused ? onResume : onPause;
     const StateIcon = isDone ? AlarmClock : paused ? Pause : null;
     const iconSize = isBig ? 'size-6' : 'size-4';
     const fraction =
@@ -275,26 +277,21 @@ export function Timer({
             >
                 {announcement}
             </span>
-            {hasTimer && !isDone && paused && onResume && (
+            {hasTimer && hasToggle && (
                 <Button
                     type="button"
                     variant="outline"
                     size={isBig ? 'icon' : 'icon-sm'}
-                    aria-label={t('Resume timer')}
-                    onClick={onResume}
+                    data-slot="timer-toggle"
+                    aria-label={paused ? t('Resume timer') : t('Pause timer')}
+                    aria-disabled={toggle === undefined || undefined}
+                    aria-keyshortcuts="T"
+                    className={cn(
+                        toggle === undefined && 'cursor-not-allowed opacity-50',
+                    )}
+                    onClick={() => toggle?.()}
                 >
-                    <Play aria-hidden />
-                </Button>
-            )}
-            {hasTimer && !isDone && !paused && onPause && (
-                <Button
-                    type="button"
-                    variant="outline"
-                    size={isBig ? 'icon' : 'icon-sm'}
-                    aria-label={t('Pause timer')}
-                    onClick={onPause}
-                >
-                    <Pause aria-hidden />
+                    {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
                 </Button>
             )}
             {hasTimer && onAdd && (
@@ -320,7 +317,7 @@ export function Timer({
                             <AlarmClock aria-hidden />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" size="wide">
                         {onStart &&
                             presets.map((preset) => (
                                 <DropdownMenuItem

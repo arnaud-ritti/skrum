@@ -34,11 +34,14 @@ function Stage({
     );
 }
 
-function burst(count: number): IncomingReaction[] {
+function burst(
+    count: number,
+    guestName: (index: number) => string,
+): IncomingReaction[] {
     return Array.from({ length: count }, (_, index) => ({
         id: `b${count}-${index}`,
         emoji: index % 3 === 0 ? '🎉' : '👏',
-        userName: index === 0 ? 'Malik' : `Guest ${index}`,
+        userName: index === 0 ? 'Malik' : guestName(index),
         presence: (index % 12) + 1,
     }));
 }
@@ -71,6 +74,8 @@ function Interactive() {
 
 export default function ReactionBarSection() {
     const { t } = useTrans();
+    const guestName = (index: number): string =>
+        t('Guest :number', { number: index });
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
@@ -117,7 +122,7 @@ export default function ReactionBarSection() {
                 <Stage height="h-64">
                     <ReactionBar
                         variant="inline"
-                        incoming={burst(5)}
+                        incoming={burst(5, guestName)}
                         onReact={noop}
                     />
                 </Stage>
@@ -126,7 +131,7 @@ export default function ReactionBarSection() {
                 <Stage height="h-80">
                     <ReactionBar
                         variant="inline"
-                        incoming={burst(200)}
+                        incoming={burst(200, guestName)}
                         onReact={noop}
                     />
                 </Stage>

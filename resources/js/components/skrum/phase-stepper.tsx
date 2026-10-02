@@ -6,7 +6,7 @@ import {
     Lock,
     RotateCcw,
 } from 'lucide-react';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -30,28 +30,49 @@ export type PhaseStepperProps = {
     phases: PhaseStep[];
     current: string;
     interactive?: boolean;
+    /**
+     * Without `compact` or `mobile` the stepper follows its container: full
+     * rail from 56rem, markers with the current label from 36rem, "Phase n/m"
+     * with a progress bar below. `compact` never shows the full rail,
+     * `mobile` always shows the narrow form.
+     */
     compact?: boolean;
     mobile?: boolean;
     leaderName?: string;
     disabled?: boolean;
     reopenTo?: string;
+    /** Text of the badge shown once the retro is completed. */
+    endedLabel?: string;
     onPhaseChange?: (phase: string) => void;
     className?: string;
 };
 
 type StepState = 'done' | 'current' | 'upcoming';
 
-function StepMarker({ state, number }: { state: StepState; number: number }) {
+type StepperMode = 'auto' | 'compact' | 'mobile';
+
+type LabelVisibility = 'always' | 'never' | 'full';
+
+function StepMarker({
+    state,
+    number,
+    className,
+}: {
+    state: StepState;
+    number: number;
+    className: string;
+}) {
     return (
         <span
             data-slot="phase-marker"
             aria-hidden
             className={cn(
-                'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
+                'size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
                 state === 'current' && 'bg-primary-foreground/20',
                 state === 'done' &&
                     'bg-skrum-success-soft text-skrum-success-text',
                 state === 'upcoming' && 'bg-muted text-muted-foreground',
+                className,
             )}
         >
             {state === 'done' ? (
@@ -63,41 +84,85 @@ function StepMarker({ state, number }: { state: StepState; number: number }) {
     );
 }
 
+/**
+ * A label that stays in the accessibility tree when it is not shown: read
+ * only by assistive tech until the container is wide enough for the full rail.
+ */
+function StepLabel({
+    visibility,
+    className,
+    children,
+}: {
+    visibility: LabelVisibility;
+    className?: string;
+    children: ReactNode;
+}) {
+    if (visibility === 'always') {
+        return <span className={cn('truncate', className)}>{children}</span>;
+    }
+
+    return (
+        <span
+            className={cn(
+                'sr-only',
+                visibility === 'full' &&
+                    '@4xl/phases:not-sr-only @4xl/phases:flex @4xl/phases:min-w-0',
+            )}
+        >
+            <span
+                className={cn('block max-w-full min-w-0 truncate', className)}
+            >
+                {children}
+            </span>
+        </span>
+    );
+}
+
 function ActionButton({
     label,
     icon,
     iconAfter,
-    compact,
+    labelVisibility,
     variant,
-    disabled,
+    unavailable,
+    slot,
     onClick,
 }: {
     label: string;
     icon: ReactNode;
     iconAfter?: boolean;
-    compact?: boolean;
+    labelVisibility: LabelVisibility;
     variant: 'default' | 'outline';
-    disabled?: boolean;
+    unavailable: boolean;
+    slot: string;
     onClick: () => void;
 }) {
     const button = (
         <Button
             type="button"
-            size={compact ? 'icon-sm' : 'sm'}
+            size={labelVisibility === 'never' ? 'icon-sm' : 'sm'}
             variant={variant}
-            disabled={disabled}
-            onClick={onClick}
-            className="shrink-0"
+            data-slot={slot}
+            aria-disabled={unavailable || undefined}
+            onClick={() => {
+                if (!unavailable) {
+                    onClick();
+                }
+            }}
+            className={cn(
+                'max-w-40 min-w-0 shrink-0',
+                labelVisibility === 'full' &&
+                    'w-8 px-0 has-[>svg]:px-0 @4xl/phases:w-auto @4xl/phases:px-3 @4xl/phases:has-[>svg]:px-2.5',
+                unavailable && 'cursor-not-allowed opacity-50',
+            )}
         >
             {!iconAfter && icon}
-            <span className={cn(compact ? 'sr-only' : 'truncate')}>
-                {label}
-            </span>
+            <StepLabel visibility={labelVisibility}>{label}</StepLabel>
             {iconAfter && icon}
         </Button>
     );
 
-    if (!compact) {
+    if (labelVisibility === 'always') {
         return button;
     }
 
@@ -118,12 +183,24 @@ export function PhaseStepper({
     leaderName,
     disabled = false,
     reopenTo,
+    endedLabel,
     onPhaseChange,
     className,
 }: PhaseStepperProps) {
     const { t } = useTrans();
     const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    const scrollerRef = useRef<HTMLDivElement>(null);
+    const currentRef = useRef<HTMLLIElement>(null);
     const [focusedId, setFocusedId] = useState<string | null>(null);
+
+    const mode: StepperMode = mobile ? 'mobile' : compact ? 'compact' : 'auto';
+    const hasRail = mode !== 'mobile';
+    const otherLabels: LabelVisibility = mode === 'auto' ? 'full' : 'never';
+    const actionLabels: LabelVisibility = compact
+        ? 'never'
+        : mode === 'mobile'
+          ? 'always'
+          : 'full';
 
     const isEnded = current === CompletedPhase;
     const total = phases.length;
@@ -136,6 +213,21 @@ export function PhaseStepper({
     const nextStep = isEnded ? undefined : phases[currentIndex + 1];
     const reopenTarget = reopenTo ?? phases[total - 1]?.id;
     const progressValue = isEnded ? total : Math.max(currentIndex + 1, 0);
+    const ended = endedLabel ?? t('Completed');
+
+    useEffect(() => {
+        const scroller = scrollerRef.current;
+        const step = currentRef.current;
+
+        if (!scroller || !step || typeof scroller.scrollTo !== 'function') {
+            return;
+        }
+
+        scroller.scrollTo({
+            left:
+                step.offsetLeft - (scroller.clientWidth - step.offsetWidth) / 2,
+        });
+    }, [current, total]);
 
     const stateOf = (index: number): StepState => {
         if (index < currentIndex) {
@@ -149,7 +241,7 @@ export function PhaseStepper({
         canChange && !disabled && Math.abs(index - currentIndex) === 1;
 
     const announcement = isEnded
-        ? t('Ended')
+        ? ended
         : t('Phase :label', { label: currentStep?.label ?? '' });
 
     const rovingId = focusedId ?? currentStep?.id ?? phases[0]?.id;
@@ -174,115 +266,285 @@ export function PhaseStepper({
         target.focus();
     }
 
+    // One button per slot, mounted for as long as the stepper is interactive:
+    // the label, icon and handler change, the element (and its focus) stays.
+    const forward = isEnded
+        ? {
+              label: t('Reopen'),
+              icon: <RotateCcw aria-hidden />,
+              iconAfter: false,
+              variant: 'outline' as const,
+              target: reopenTarget,
+          }
+        : nextStep
+          ? {
+                label: t('Next'),
+                icon: <ArrowRight aria-hidden />,
+                iconAfter: true,
+                variant: 'default' as const,
+                target: nextStep.id,
+            }
+          : {
+                label: t('Complete'),
+                icon: <CircleCheck aria-hidden />,
+                iconAfter: false,
+                variant: 'default' as const,
+                target: currentStep ? CompletedPhase : undefined,
+            };
+
     const actions = canChange && (
         <>
-            {previousStep && (
-                <ActionButton
-                    label={t('Previous')}
-                    icon={<ArrowLeft aria-hidden />}
-                    compact={compact}
-                    variant="outline"
-                    disabled={disabled}
-                    onClick={() => onPhaseChange(previousStep.id)}
-                />
-            )}
-            {nextStep && (
-                <ActionButton
-                    label={t('Next')}
-                    icon={<ArrowRight aria-hidden />}
-                    iconAfter
-                    compact={compact}
-                    variant="default"
-                    disabled={disabled}
-                    onClick={() => onPhaseChange(nextStep.id)}
-                />
-            )}
-            {!isEnded && !nextStep && currentStep && (
-                <ActionButton
-                    label={t('Complete')}
-                    icon={<CircleCheck aria-hidden />}
-                    compact={compact}
-                    variant="default"
-                    disabled={disabled}
-                    onClick={() => onPhaseChange(CompletedPhase)}
-                />
-            )}
-            {isEnded && reopenTarget && (
-                <ActionButton
-                    label={t('Reopen')}
-                    icon={<RotateCcw aria-hidden />}
-                    compact={compact}
-                    variant="outline"
-                    disabled={disabled}
-                    onClick={() => onPhaseChange(reopenTarget)}
-                />
-            )}
+            <ActionButton
+                slot="phase-previous"
+                label={t('Previous')}
+                icon={<ArrowLeft aria-hidden />}
+                labelVisibility={actionLabels}
+                variant="outline"
+                unavailable={disabled || previousStep === undefined}
+                onClick={() => {
+                    if (previousStep) {
+                        onPhaseChange(previousStep.id);
+                    }
+                }}
+            />
+            <ActionButton
+                slot="phase-forward"
+                label={forward.label}
+                icon={forward.icon}
+                iconAfter={forward.iconAfter}
+                labelVisibility={actionLabels}
+                variant={forward.variant}
+                unavailable={disabled || forward.target === undefined}
+                onClick={() => {
+                    if (forward.target !== undefined) {
+                        onPhaseChange(forward.target);
+                    }
+                }}
+            />
         </>
     );
 
-    const leaderNote = !interactive && leaderName && (
-        <span
-            data-slot="phase-leader"
-            className="inline-flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground"
+    return (
+        <div
+            data-slot="phase-stepper"
+            data-mode={mode}
+            className={cn(
+                '@container/phases flex min-w-0 flex-col gap-2',
+                className,
+            )}
         >
-            <Lock className="size-3.5 shrink-0" aria-hidden />
-            <span className="truncate">
-                {t(':name leads the phases', { name: leaderName })}
-            </span>
-        </span>
-    );
-
-    const endedBadge = isEnded && (
-        <span
-            data-slot="phase-ended"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-skrum-success-soft px-3 py-1 text-sm font-semibold text-skrum-success-text"
-        >
-            <CircleCheck className="size-4" aria-hidden />
-            <span className="truncate">{t('Ended')}</span>
-        </span>
-    );
-
-    const live = (
-        <p className="sr-only" aria-live="polite" role="status">
-            {announcement}
-        </p>
-    );
-
-    if (mobile) {
-        return (
             <div
-                data-slot="phase-stepper"
-                data-mode="mobile"
-                className={cn('flex min-w-0 flex-col gap-2', className)}
+                className={cn(
+                    'flex min-w-0 flex-wrap items-center gap-2',
+                    hasRail && '@xl/phases:flex-nowrap @xl/phases:gap-3',
+                )}
             >
-                <nav
-                    aria-label={t('Retro phases')}
-                    className="flex min-w-0 items-center gap-2"
-                >
-                    {isEnded ? (
-                        endedBadge
-                    ) : (
-                        <>
-                            <span
-                                data-slot="phase-count"
-                                className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums"
-                            >
-                                {t('Phase :current/:total', {
-                                    current: progressValue,
-                                    total,
-                                })}
-                            </span>
-                            <span
-                                aria-current="step"
-                                className="min-w-0 grow truncate text-sm font-semibold text-foreground"
-                            >
-                                {currentStep?.label}
-                            </span>
-                        </>
+                {!isEnded && (
+                    <span
+                        data-slot="phase-count"
+                        className={cn(
+                            'inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums',
+                            hasRail && '@xl/phases:hidden',
+                        )}
+                    >
+                        {t('Phase :current/:total', {
+                            current: progressValue,
+                            total,
+                        })}
+                    </span>
+                )}
+                {isEnded && (
+                    <span
+                        data-slot="phase-ended"
+                        aria-current="step"
+                        className="inline-flex max-w-full min-w-0 shrink-0 items-center gap-1.5 rounded-full bg-skrum-success-soft px-3 py-1 text-sm font-semibold text-skrum-success-text"
+                    >
+                        <CircleCheck className="size-4 shrink-0" aria-hidden />
+                        <span className="truncate">{ended}</span>
+                    </span>
+                )}
+                <div
+                    ref={scrollerRef}
+                    data-slot="phase-scroller"
+                    className={cn(
+                        'relative min-w-0 grow basis-0',
+                        hasRail &&
+                            '@xl/phases:shrink @xl/phases:grow-0 @xl/phases:basis-auto @xl/phases:overflow-x-auto',
+                        hasRail && isEnded && '@xl/phases:order-first',
                     )}
-                    {isEnded && <span className="grow" />}
-                    {actions}
-                </nav>
+                >
+                    <ol
+                        aria-label={t('Phases')}
+                        data-slot="phase-rail"
+                        className={cn(
+                            'flex min-w-0 items-center',
+                            hasRail &&
+                                '@xl/phases:w-max @xl/phases:gap-1 @xl/phases:rounded-full @xl/phases:border @xl/phases:border-border @xl/phases:bg-card @xl/phases:p-1 @xl/phases:shadow-card',
+                        )}
+                    >
+                        {phases.map((phase, index) => {
+                            const state = stateOf(index);
+                            const isCurrent = state === 'current';
+
+                            if (!hasRail && !isCurrent) {
+                                return null;
+                            }
+
+                            const reachable = isReachable(index);
+                            const suffix = phase.skipped
+                                ? t('skipped')
+                                : state === 'done'
+                                  ? t('done')
+                                  : null;
+                            const content = (
+                                <>
+                                    <StepMarker
+                                        state={state}
+                                        number={index + 1}
+                                        className={cn(
+                                            isCurrent
+                                                ? 'hidden'
+                                                : 'inline-flex',
+                                            isCurrent &&
+                                                hasRail &&
+                                                '@xl/phases:inline-flex',
+                                        )}
+                                    />
+                                    <StepLabel
+                                        visibility={
+                                            isCurrent ? 'always' : otherLabels
+                                        }
+                                        className={cn(
+                                            phase.skipped &&
+                                                !isCurrent &&
+                                                'text-muted-foreground line-through',
+                                        )}
+                                    >
+                                        {phase.label}
+                                    </StepLabel>
+                                    {suffix && (
+                                        <span className="sr-only">{`, ${suffix}`}</span>
+                                    )}
+                                </>
+                            );
+                            const stepClass = cn(
+                                'inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full text-sm transition-colors duration-140 ease-standard motion-reduce:transition-none',
+                                isCurrent
+                                    ? 'max-w-full font-semibold text-foreground'
+                                    : 'max-w-40 shrink-0 px-1.5 font-medium text-foreground',
+                                isCurrent &&
+                                    hasRail &&
+                                    '@xl/phases:max-w-40 @xl/phases:bg-primary @xl/phases:pr-2.5 @xl/phases:pl-1.5 @xl/phases:font-medium @xl/phases:text-primary-foreground',
+                                !isCurrent &&
+                                    otherLabels === 'full' &&
+                                    '@4xl/phases:pr-2.5',
+                            );
+
+                            return (
+                                <Fragment key={phase.id}>
+                                    {index > 0 && hasRail && (
+                                        <li
+                                            aria-hidden
+                                            data-slot="phase-link"
+                                            className={cn(
+                                                'hidden h-px w-3 shrink-0 @xl/phases:block',
+                                                index <= currentIndex
+                                                    ? 'bg-skrum-success'
+                                                    : 'bg-border',
+                                            )}
+                                        />
+                                    )}
+                                    <li
+                                        ref={isCurrent ? currentRef : undefined}
+                                        data-slot="phase-step"
+                                        data-state={state}
+                                        className={cn(
+                                            isCurrent
+                                                ? 'flex min-w-0'
+                                                : 'hidden @xl/phases:flex',
+                                        )}
+                                    >
+                                        {canChange ? (
+                                            <button
+                                                type="button"
+                                                ref={(node) => {
+                                                    buttonRefs.current[index] =
+                                                        node;
+                                                }}
+                                                tabIndex={
+                                                    phase.id === rovingId
+                                                        ? 0
+                                                        : -1
+                                                }
+                                                aria-current={
+                                                    isCurrent
+                                                        ? 'step'
+                                                        : undefined
+                                                }
+                                                aria-disabled={
+                                                    !isCurrent && !reachable
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                onFocus={() =>
+                                                    setFocusedId(phase.id)
+                                                }
+                                                onKeyDown={(event) =>
+                                                    handleKeyDown(event, index)
+                                                }
+                                                onClick={() => {
+                                                    if (reachable) {
+                                                        onPhaseChange(phase.id);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    stepClass,
+                                                    'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                                                    reachable
+                                                        ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
+                                                        : 'cursor-default',
+                                                )}
+                                            >
+                                                {content}
+                                            </button>
+                                        ) : (
+                                            <span
+                                                aria-current={
+                                                    isCurrent
+                                                        ? 'step'
+                                                        : undefined
+                                                }
+                                                className={stepClass}
+                                            >
+                                                {content}
+                                            </span>
+                                        )}
+                                    </li>
+                                </Fragment>
+                            );
+                        })}
+                    </ol>
+                </div>
+                {actions}
+                {!interactive && leaderName && (
+                    <span
+                        data-slot="phase-leader"
+                        className={cn(
+                            'inline-flex min-w-0 basis-full items-center gap-1.5 text-sm text-muted-foreground',
+                            hasRail && '@xl/phases:basis-auto',
+                        )}
+                    >
+                        <Lock className="size-3.5 shrink-0" aria-hidden />
+                        <span className="truncate">
+                            {t(':name leads the phases', { name: leaderName })}
+                        </span>
+                    </span>
+                )}
+            </div>
+            <div
+                data-slot="phase-progress"
+                className={cn(hasRail && '@xl/phases:hidden')}
+            >
                 <Progress
                     value={progressValue}
                     max={Math.max(total, 1)}
@@ -290,136 +552,10 @@ export function PhaseStepper({
                     aria-label={t('Retro phases')}
                     className="h-1.5"
                 />
-                {leaderNote}
-                {live}
             </div>
-        );
-    }
-
-    return (
-        <div
-            data-slot="phase-stepper"
-            data-mode={compact ? 'compact' : 'full'}
-            className={cn('flex min-w-0 items-center gap-3', className)}
-        >
-            <nav
-                aria-label={t('Retro phases')}
-                className="relative min-w-0 overflow-x-auto"
-            >
-                <ol
-                    data-slot="phase-rail"
-                    className="flex w-max items-center gap-1 rounded-full border border-border bg-card p-1 shadow-card"
-                >
-                    {phases.map((phase, index) => {
-                        const state = stateOf(index);
-                        const isCurrent = state === 'current';
-                        const reachable = isReachable(index);
-                        const showLabel = !compact || isCurrent;
-                        const suffix = phase.skipped
-                            ? t('skipped')
-                            : state === 'done'
-                              ? t('done')
-                              : null;
-                        const content = (
-                            <>
-                                <StepMarker state={state} number={index + 1} />
-                                <span
-                                    className={cn(
-                                        showLabel ? 'truncate' : 'sr-only',
-                                        phase.skipped &&
-                                            !isCurrent &&
-                                            'text-muted-foreground line-through',
-                                    )}
-                                >
-                                    {phase.label}
-                                </span>
-                                {suffix && (
-                                    <span className="sr-only">{`, ${suffix}`}</span>
-                                )}
-                            </>
-                        );
-                        const stepClass = cn(
-                            'inline-flex h-7 max-w-40 shrink-0 items-center gap-1.5 rounded-full px-1.5 text-sm font-medium transition-colors duration-140 ease-standard motion-reduce:transition-none',
-                            showLabel && 'pr-2.5',
-                            isCurrent
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-foreground',
-                        );
-
-                        return (
-                            <Fragment key={phase.id}>
-                                {index > 0 && (
-                                    <li
-                                        aria-hidden
-                                        data-slot="phase-link"
-                                        className={cn(
-                                            'h-px w-3 shrink-0',
-                                            index <= currentIndex
-                                                ? 'bg-skrum-success'
-                                                : 'bg-border',
-                                        )}
-                                    />
-                                )}
-                                <li data-slot="phase-step" data-state={state}>
-                                    {canChange ? (
-                                        <button
-                                            type="button"
-                                            ref={(node) => {
-                                                buttonRefs.current[index] =
-                                                    node;
-                                            }}
-                                            tabIndex={
-                                                phase.id === rovingId ? 0 : -1
-                                            }
-                                            aria-current={
-                                                isCurrent ? 'step' : undefined
-                                            }
-                                            aria-disabled={
-                                                !isCurrent && !reachable
-                                                    ? true
-                                                    : undefined
-                                            }
-                                            onFocus={() =>
-                                                setFocusedId(phase.id)
-                                            }
-                                            onKeyDown={(event) =>
-                                                handleKeyDown(event, index)
-                                            }
-                                            onClick={() => {
-                                                if (reachable) {
-                                                    onPhaseChange(phase.id);
-                                                }
-                                            }}
-                                            className={cn(
-                                                stepClass,
-                                                'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                                                reachable
-                                                    ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
-                                                    : 'cursor-default',
-                                            )}
-                                        >
-                                            {content}
-                                        </button>
-                                    ) : (
-                                        <span
-                                            aria-current={
-                                                isCurrent ? 'step' : undefined
-                                            }
-                                            className={stepClass}
-                                        >
-                                            {content}
-                                        </span>
-                                    )}
-                                </li>
-                            </Fragment>
-                        );
-                    })}
-                </ol>
-            </nav>
-            {endedBadge}
-            {actions}
-            {leaderNote}
-            {live}
+            <p className="sr-only" aria-live="polite" role="status">
+                {announcement}
+            </p>
         </div>
     );
 }

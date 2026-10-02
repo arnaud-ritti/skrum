@@ -165,6 +165,43 @@ export default function PhaseStepperSection() {
             </Example>
             <Example
                 label={t(
+                    'Follows its container: 20rem (Phase n/total and progress)',
+                )}
+            >
+                <div className="w-80 max-w-full">
+                    <PhaseStepper
+                        phases={eight}
+                        current="discussing"
+                        interactive
+                        onPhaseChange={noop}
+                    />
+                </div>
+            </Example>
+            <Example
+                label={t(
+                    'Follows its container: 40rem (markers, active label)',
+                )}
+            >
+                <div className="w-160 max-w-full">
+                    <PhaseStepper
+                        phases={eight}
+                        current="discussing"
+                        interactive
+                        onPhaseChange={noop}
+                    />
+                </div>
+            </Example>
+            <Example label={t('Follows its container: 20rem, participant')}>
+                <div className="w-80 max-w-full">
+                    <PhaseStepper
+                        phases={seven}
+                        current="voting"
+                        leaderName={name}
+                    />
+                </div>
+            </Example>
+            <Example
+                label={t(
                     'Live: Previous, Next, neighbour steps, arrow keys move focus',
                 )}
             >

@@ -1,7 +1,16 @@
 import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 
 export type UseShortcutOptions = {
     enabled?: boolean;
+    /**
+     * Element the shortcut belongs to. Overlays that contain it are its own
+     * layer; a key pressed in any other open overlay is ignored, whenever that
+     * overlay opened. Without a scope the layer is guessed from the overlays
+     * open when the shortcut is enabled, which is only right for a shortcut
+     * enabled by its own overlay opening.
+     */
+    scope?: RefObject<Element | null>;
     enableOnFormTags?: boolean;
     enableInOverlays?: boolean;
     preventDefault?: boolean;
@@ -95,19 +104,24 @@ export function matchesShortcut(event: KeyboardEvent, combo: string): boolean {
 }
 
 export function useShortcut(
-    combo: string,
+    combo: string | string[],
     handler: (event: KeyboardEvent) => void,
     {
         enabled = true,
+        scope,
         enableOnFormTags = false,
         enableInOverlays = false,
         preventDefault = true,
     }: UseShortcutOptions = {},
 ): void {
     const handlerRef = useRef(handler);
+    const scopeRef = useRef(scope);
+    const comboKey = Array.isArray(combo) ? combo.join(' ') : combo;
+    const hasScope = scope !== undefined;
 
     useEffect(() => {
         handlerRef.current = handler;
+        scopeRef.current = scope;
     });
 
     useEffect(() => {
@@ -115,22 +129,37 @@ export function useShortcut(
             return;
         }
 
+        const combos = comboKey.split(' ');
+
         /**
-         * A shortcut belongs to the layer it was registered in: overlays
-         * already open when it is enabled (a shortcut of the dialog itself)
-         * keep it, overlays opened later silence it. The snapshot waits for a
-         * microtask because a portal mounts after its owner's effects.
+         * Without a scope, a shortcut belongs to the layer it was enabled in:
+         * overlays already open at that moment (a shortcut of the dialog
+         * itself) keep it, overlays opened later silence it. The snapshot
+         * waits for a microtask because a portal mounts after its owner's
+         * effects.
          */
         let ownOverlays = new Set<Element>();
         let isRegistered = true;
 
-        queueMicrotask(() => {
-            if (isRegistered) {
-                ownOverlays = new Set(
-                    document.querySelectorAll(overlaySelector),
-                );
+        if (!hasScope) {
+            queueMicrotask(() => {
+                if (isRegistered) {
+                    ownOverlays = new Set(
+                        document.querySelectorAll(overlaySelector),
+                    );
+                }
+            });
+        }
+
+        const isOwnOverlay = (overlay: Element): boolean => {
+            if (!hasScope) {
+                return ownOverlays.has(overlay);
             }
-        });
+
+            const scopeElement = scopeRef.current?.current ?? null;
+
+            return scopeElement !== null && overlay.contains(scopeElement);
+        };
 
         const onKeyDown = (event: KeyboardEvent): void => {
             if (event.defaultPrevented || event.isComposing) {
@@ -141,15 +170,13 @@ export function useShortcut(
                 return;
             }
 
-            if (!matchesShortcut(event, combo)) {
+            if (!combos.some((entry) => matchesShortcut(event, entry))) {
                 return;
             }
 
             if (
                 !enableInOverlays &&
-                overlaysOfEvent(event).some(
-                    (overlay) => !ownOverlays.has(overlay),
-                )
+                overlaysOfEvent(event).some((overlay) => !isOwnOverlay(overlay))
             ) {
                 return;
             }
@@ -167,5 +194,12 @@ export function useShortcut(
             isRegistered = false;
             document.removeEventListener('keydown', onKeyDown);
         };
-    }, [combo, enabled, enableOnFormTags, enableInOverlays, preventDefault]);
+    }, [
+        comboKey,
+        enabled,
+        hasScope,
+        enableOnFormTags,
+        enableInOverlays,
+        preventDefault,
+    ]);
 }

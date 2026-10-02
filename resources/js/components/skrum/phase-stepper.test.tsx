@@ -142,10 +142,148 @@ describe('PhaseStepper', () => {
             />,
         );
 
-        expect(screen.getAllByText('Ended').length).toBeGreaterThan(0);
-        expect(screen.queryByRole('button', { name: 'Previous' })).toBeNull();
+        expect(
+            document.querySelector('[aria-current="step"]')?.textContent,
+        ).toBe('Completed');
+        expect(
+            screen
+                .getByRole('button', { name: 'Previous' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
         fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
         expect(onPhaseChange).toHaveBeenLastCalledWith('discussing');
+    });
+
+    it('names the list Phases, as the board header did', () => {
+        renderWithProviders(<PhaseStepper phases={steps()} current="voting" />);
+
+        expect(screen.getByRole('list', { name: 'Phases' }).tagName).toBe('OL');
+    });
+
+    it('keeps focus on the forward button from Next to Complete to Reopen', () => {
+        const onPhaseChange = vi.fn();
+        const stepper = (current: string, disabled = false) => (
+            <PhaseStepper
+                phases={steps(false)}
+                current={current}
+                interactive
+                disabled={disabled}
+                onPhaseChange={onPhaseChange}
+            />
+        );
+        const { rerender } = renderWithProviders(stepper('voting'));
+        const forward = screen.getByRole('button', { name: 'Next' });
+
+        forward.focus();
+        fireEvent.click(forward);
+        rerender(stepper('voting', true));
+
+        expect(document.activeElement).toBe(forward);
+        expect(forward.hasAttribute('disabled')).toBe(false);
+        expect(forward.getAttribute('aria-disabled')).toBe('true');
+
+        fireEvent.click(forward);
+
+        expect(onPhaseChange).toHaveBeenCalledTimes(1);
+
+        rerender(stepper('discussing'));
+
+        expect(document.activeElement).toBe(forward);
+        expect(screen.getByRole('button', { name: 'Complete' })).toBe(forward);
+
+        rerender(stepper('completed'));
+
+        expect(document.activeElement).toBe(forward);
+        expect(screen.getByRole('button', { name: 'Reopen' })).toBe(forward);
+    });
+
+    it('keeps focus on Previous when the first phase is reached', () => {
+        const onPhaseChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <PhaseStepper
+                phases={steps(false)}
+                current="grouping"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+        const previous = screen.getByRole('button', { name: 'Previous' });
+
+        previous.focus();
+        fireEvent.click(previous);
+        rerender(
+            <PhaseStepper
+                phases={steps(false)}
+                current="writing"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+        fireEvent.click(previous);
+
+        expect(document.activeElement).toBe(previous);
+        expect(previous.getAttribute('aria-disabled')).toBe('true');
+        expect(onPhaseChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('scrolls the rail to the active step on mount and when it changes', () => {
+        const scrollTo = vi.fn();
+        const original = Object.getOwnPropertyDescriptor(
+            Element.prototype,
+            'scrollTo',
+        );
+
+        Object.defineProperty(Element.prototype, 'scrollTo', {
+            configurable: true,
+            writable: true,
+            value: scrollTo,
+        });
+
+        try {
+            const { rerender } = renderWithProviders(
+                <PhaseStepper phases={steps()} current="writing" />,
+            );
+
+            expect(scrollTo).toHaveBeenCalledTimes(1);
+
+            rerender(<PhaseStepper phases={steps()} current="discussing" />);
+
+            expect(scrollTo).toHaveBeenCalledTimes(2);
+            expect(scrollTo.mock.instances[1]).toBe(
+                document.querySelector('[data-slot="phase-scroller"]'),
+            );
+        } finally {
+            if (original) {
+                Object.defineProperty(Element.prototype, 'scrollTo', original);
+            } else {
+                Reflect.deleteProperty(Element.prototype, 'scrollTo');
+            }
+        }
+    });
+
+    it('follows its container by default and keeps the forced modes', () => {
+        const { container, rerender } = renderWithProviders(
+            <PhaseStepper phases={steps()} current="voting" />,
+        );
+        const mode = () =>
+            container
+                .querySelector('[data-slot="phase-stepper"]')
+                ?.getAttribute('data-mode');
+
+        expect(mode()).toBe('auto');
+        expect(screen.getByText('Phase 5/6')).toBeTruthy();
+        expect(screen.getByRole('progressbar')).toBeTruthy();
+
+        rerender(<PhaseStepper phases={steps()} current="voting" compact />);
+
+        expect(mode()).toBe('compact');
+
+        rerender(<PhaseStepper phases={steps()} current="voting" mobile />);
+
+        expect(mode()).toBe('mobile');
+        expect(
+            container.querySelectorAll('[data-slot="phase-step"]'),
+        ).toHaveLength(1);
     });
 
     it('reflects a phase change from props and announces it', () => {

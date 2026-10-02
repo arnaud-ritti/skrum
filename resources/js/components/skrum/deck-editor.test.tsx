@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -10,6 +11,12 @@ import type {
     DeckDraft,
     DeckEditorProps,
 } from '@/components/skrum/deck-editor';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { renderWithProviders } from '@/test/render';
 
 const base: DeckDraft = {
@@ -39,6 +46,7 @@ function Harness({
                 saving={props.saving}
                 nameRequired={props.nameRequired}
                 saveLabel={props.saveLabel}
+                idPrefix={props.idPrefix}
             />
             <output data-testid="values">{value.values.join('|')}</output>
         </>
@@ -343,6 +351,72 @@ describe('DeckEditor', () => {
         expect(document.activeElement).toBe(
             screen.getByRole('button', { name: 'Value 2' }),
         );
+    });
+
+    it('keeps the host dialog open when Escape cancels a chip edit', async () => {
+        const user = userEvent.setup();
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <Dialog open onOpenChange={onOpenChange}>
+                <DialogContent>
+                    <DialogTitle>Deck</DialogTitle>
+                    <DialogDescription>Edit the deck</DialogDescription>
+                    <Harness />
+                </DialogContent>
+            </Dialog>,
+        );
+
+        screen.getByRole('button', { name: 'Value 2' }).focus();
+        await user.keyboard('{Enter}');
+        await user.keyboard('9{Escape}');
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(
+            screen.queryByRole('textbox', { name: /Edit value/ }),
+        ).toBeNull();
+        expect(currentValues()).toBe('1|2|3');
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await user.keyboard('{Escape}');
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('uses the ids of the game settings by default and a prefix when asked', () => {
+        const { unmount } = renderWithProviders(<Harness />);
+
+        expect(document.getElementById('deck-new-name')).toBe(
+            screen.getByRole('textbox', { name: 'Name' }),
+        );
+        expect(document.getElementById('deck-new-cards')).toBe(
+            screen.getByRole('textbox', { name: 'Add a value' }),
+        );
+        expect(
+            document.getElementById('deck-new-unknown')?.getAttribute('role'),
+        ).toBe('switch');
+        expect(
+            document
+                .getElementById('deck-new-coffee')
+                ?.getAttribute('aria-checked'),
+        ).toBe('false');
+        unmount();
+
+        renderWithProviders(<Harness idPrefix="deck-edit" />);
+
+        expect(document.getElementById('deck-new-name')).toBeNull();
+        expect(document.getElementById('deck-edit-name')).not.toBeNull();
+    });
+
+    it('takes a filled or pasted comma list and keeps what it refuses', () => {
+        renderWithProviders(<Harness />);
+        const field = screen.getByRole('textbox', { name: 'Add a value' });
+
+        fireEvent.change(field, { target: { value: '5, 8,13 , 2' } });
+
+        expect(currentValues()).toBe('1|2|3|5|8|13');
+        expect((field as HTMLInputElement).value).toBe('2');
+        expect(screen.getByText('Duplicate value: 2')).toBeTruthy();
     });
 
     it('refuses to rename a chip into a duplicate', () => {

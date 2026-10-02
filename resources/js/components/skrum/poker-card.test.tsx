@@ -82,7 +82,7 @@ describe('PokerCard', () => {
         const onSelect = vi.fn();
         renderWithProviders(<PokerCard value="Infinite" onSelect={onSelect} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Infinite' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Play Infinite' }));
 
         expect(screen.getByText('Infinite')).toBeTruthy();
         expect(onSelect).toHaveBeenCalledWith('Infinite');
@@ -94,7 +94,7 @@ describe('PokerCard', () => {
             <PokerCard value="8" disabled onSelect={onSelect} />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: '8' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Play 8' }));
 
         expect(onSelect).not.toHaveBeenCalled();
     });
@@ -119,9 +119,33 @@ function Harness({ values = fibonacci }: { values?: string[] }) {
 }
 
 describe('PokerDeck', () => {
-    it('is a radiogroup of radios with the selected one checked', () => {
+    it('is a group of pressed buttons named "Play :card" by default', () => {
         renderWithProviders(
             <PokerDeck values={fibonacci} value="5" onChange={vi.fn()} />,
+        );
+
+        expect(screen.getByRole('group', { name: 'Your cards' })).toBeTruthy();
+        expect(screen.getAllByRole('button')).toHaveLength(10);
+        expect(
+            screen
+                .getByRole('button', { name: 'Play 5' })
+                .getAttribute('aria-pressed'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('button', { name: 'Play 8' })
+                .getAttribute('aria-pressed'),
+        ).toBe('false');
+    });
+
+    it('is a radiogroup of radios when selection is radio', () => {
+        renderWithProviders(
+            <PokerDeck
+                values={fibonacci}
+                value="5"
+                selection="radio"
+                onChange={vi.fn()}
+            />,
         );
 
         expect(
@@ -130,14 +154,31 @@ describe('PokerDeck', () => {
         expect(screen.getAllByRole('radio')).toHaveLength(10);
         expect(
             screen
-                .getByRole('radio', { name: '5' })
+                .getByRole('radio', { name: 'Play 5' })
                 .getAttribute('aria-checked'),
         ).toBe('true');
-        expect(
-            screen
-                .getByRole('radio', { name: '8' })
-                .getAttribute('aria-checked'),
-        ).toBe('false');
+    });
+
+    it('withdraws the vote when the selected card is pressed again', () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Play 5' }));
+
+        expect(screen.getByTestId('current').textContent).toBe('5');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Play 5' }));
+
+        expect(screen.getByTestId('current').textContent).toBe('none');
+    });
+
+    it('keeps every digit pressed on a focused card away from page shortcuts', () => {
+        renderWithProviders(
+            <PokerDeck values={['XS', '3']} value={null} onChange={vi.fn()} />,
+        );
+        const card = screen.getByRole('button', { name: 'Play XS' });
+
+        expect(fireEvent.keyDown(card, { key: '3' })).toBe(false);
+        expect(fireEvent.keyDown(card, { key: '4' })).toBe(false);
     });
 
     it('keeps one tab stop: the selected card, else the first', () => {
@@ -146,15 +187,15 @@ describe('PokerDeck', () => {
         );
         const tabStops = () =>
             screen
-                .getAllByRole('radio')
+                .getAllByRole('button')
                 .filter((radio) => radio.tabIndex === 0)
                 .map((radio) => radio.getAttribute('aria-label'));
 
-        expect(tabStops()).toEqual(['0']);
+        expect(tabStops()).toEqual(['Play 0']);
 
         rerender(<PokerDeck values={fibonacci} value="8" onChange={vi.fn()} />);
 
-        expect(tabStops()).toEqual(['8']);
+        expect(tabStops()).toEqual(['Play 8']);
     });
 
     it('moves focus with arrows, wraps, and does not select', () => {
@@ -162,13 +203,13 @@ describe('PokerDeck', () => {
         renderWithProviders(
             <PokerDeck values={fibonacci} value={null} onChange={onChange} />,
         );
-        const first = screen.getByRole('radio', { name: '0' });
+        const first = screen.getByRole('button', { name: 'Play 0' });
         first.focus();
 
         fireEvent.keyDown(first, { key: 'ArrowRight' });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('radio', { name: '1' }),
+            screen.getByRole('button', { name: 'Play 1' }),
         );
 
         fireEvent.keyDown(document.activeElement as Element, {
@@ -179,7 +220,7 @@ describe('PokerDeck', () => {
         });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('radio', { name: 'Need a break' }),
+            screen.getByRole('button', { name: 'Play ☕' }),
         );
         expect(onChange).not.toHaveBeenCalled();
     });
@@ -187,7 +228,7 @@ describe('PokerDeck', () => {
     it('selects with a click (Space activates the focused button)', () => {
         renderWithProviders(<Harness />);
 
-        fireEvent.click(screen.getByRole('radio', { name: '13' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Play 13' }));
 
         expect(screen.getByTestId('current').textContent).toBe('13');
     });
@@ -199,13 +240,13 @@ describe('PokerDeck', () => {
 
         expect(screen.getByTestId('current').textContent).toBe('none');
 
-        const first = screen.getByRole('radio', { name: '0' });
+        const first = screen.getByRole('button', { name: 'Play 0' });
         first.focus();
         fireEvent.keyDown(first, { key: '3' });
 
         expect(screen.getByTestId('current').textContent).toBe('3');
         expect(document.activeElement).toBe(
-            screen.getByRole('radio', { name: '3' }),
+            screen.getByRole('button', { name: 'Play 3' }),
         );
     });
 
@@ -218,7 +259,7 @@ describe('PokerDeck', () => {
                 onChange={onChange}
             />,
         );
-        const card = screen.getByRole('radio', { name: 'XS' });
+        const card = screen.getByRole('button', { name: 'Play XS' });
 
         fireEvent.keyDown(card, { key: '4' });
 
@@ -227,7 +268,7 @@ describe('PokerDeck', () => {
 
     it('retracts the vote with Escape', () => {
         renderWithProviders(<Harness />);
-        const card = screen.getByRole('radio', { name: '5' });
+        const card = screen.getByRole('button', { name: 'Play 5' });
 
         fireEvent.click(card);
         fireEvent.keyDown(card, { key: 'Escape' });
@@ -245,14 +286,14 @@ describe('PokerDeck', () => {
                 onChange={onChange}
             />,
         );
-        const first = screen.getByRole('radio', { name: '1' });
+        const first = screen.getByRole('button', { name: 'Play 1' });
         first.focus();
 
         fireEvent.keyDown(first, { key: 'ArrowRight' });
         fireEvent.keyDown(first, { key: '2' });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('radio', { name: '3' }),
+            screen.getByRole('button', { name: 'Play 3' }),
         );
         expect(onChange).not.toHaveBeenCalled();
     });
@@ -268,7 +309,7 @@ describe('PokerDeck', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('radio', { name: '1' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Play 1' }));
 
         expect(onChange).not.toHaveBeenCalled();
     });
@@ -279,16 +320,16 @@ describe('PokerDeck', () => {
             <PokerDeck values={['S', 'L']} value="S" onChange={vi.fn()} />,
         );
 
-        expect(screen.getAllByRole('radio')).toHaveLength(2);
+        expect(screen.getAllByRole('button')).toHaveLength(2);
 
         rerender(<PokerDeck values={twenty} value="95" onChange={vi.fn()} />);
 
-        expect(screen.getAllByRole('radio')).toHaveLength(20);
+        expect(screen.getAllByRole('button')).toHaveLength(20);
         expect(
             screen
-                .getByRole('radio', { name: '95' })
-                .getAttribute('aria-checked'),
+                .getByRole('button', { name: 'Play 95' })
+                .getAttribute('aria-pressed'),
         ).toBe('true');
-        expect(screen.getByRole('radiogroup').className).toContain('flex-wrap');
+        expect(screen.getByRole('group').className).toContain('flex-wrap');
     });
 });

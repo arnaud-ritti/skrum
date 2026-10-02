@@ -68,6 +68,20 @@ function InteractiveDeck({
     );
 }
 
+function RadioDeck() {
+    const [value, setValue] = useState<string | null>('5');
+
+    return (
+        <PokerDeck
+            values={['1', '2', '3', '5', '8', '?']}
+            value={value}
+            selection="radio"
+            onChange={setValue}
+            onRetract={() => setValue(null)}
+        />
+    );
+}
+
 function RevealDemo() {
     const { t } = useTrans();
     const [revealed, setRevealed] = useState(false);
@@ -208,6 +222,11 @@ export default function PokerCardSection() {
                 <div className="max-w-xl">
                     <InteractiveDeck values={twentyValues} />
                 </div>
+            </Example>
+            <Example
+                label={t('Deck as a radio group: Escape withdraws the vote')}
+            >
+                <RadioDeck />
             </Example>
             <Example label={t('Deck closed (round over)')}>
                 <PokerDeck

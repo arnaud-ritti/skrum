@@ -20,6 +20,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -66,17 +67,6 @@ const MaxVisibleIncoming = 12;
 const AnnounceIntervalMs = 5000;
 const PressedMs = 360;
 
-function isTypingTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) {
-        return false;
-    }
-
-    return (
-        target.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
-    );
-}
-
 function countByEmoji(
     reactions: IncomingReaction[],
 ): Map<string, IncomingReaction[]> {
@@ -92,6 +82,21 @@ function countByEmoji(
     return groups;
 }
 
+const PresenceClasses: Record<number, string> = {
+    1: 'bg-skrum-presence-1 text-skrum-presence-1-foreground',
+    2: 'bg-skrum-presence-2 text-skrum-presence-2-foreground',
+    3: 'bg-skrum-presence-3 text-skrum-presence-3-foreground',
+    4: 'bg-skrum-presence-4 text-skrum-presence-4-foreground',
+    5: 'bg-skrum-presence-5 text-skrum-presence-5-foreground',
+    6: 'bg-skrum-presence-6 text-skrum-presence-6-foreground',
+    7: 'bg-skrum-presence-7 text-skrum-presence-7-foreground',
+    8: 'bg-skrum-presence-8 text-skrum-presence-8-foreground',
+    9: 'bg-skrum-presence-9 text-skrum-presence-9-foreground',
+    10: 'bg-skrum-presence-10 text-skrum-presence-10-foreground',
+    11: 'bg-skrum-presence-11 text-skrum-presence-11-foreground',
+    12: 'bg-skrum-presence-12 text-skrum-presence-12-foreground',
+};
+
 function presenceClass(presence?: number): string {
     if (presence === undefined) {
         return 'bg-muted text-muted-foreground';
@@ -99,7 +104,7 @@ function presenceClass(presence?: number): string {
 
     const slot = ((Math.abs(Math.trunc(presence)) - 1 + 12) % 12) + 1;
 
-    return `bg-skrum-presence-${slot} text-skrum-presence-${slot}-foreground`;
+    return PresenceClasses[slot];
 }
 
 function flyOffset(id: string, index: number): string {
@@ -281,37 +286,17 @@ export function ReactionBar({
         onReact(emoji);
     };
 
-    const reactRef = useRef(react);
-
-    reactRef.current = react;
-
-    useEffect(() => {
-        if (!shortcuts || disabled) {
-            return;
-        }
-
-        const handler = (event: globalThis.KeyboardEvent): void => {
-            if (event.ctrlKey || event.metaKey || event.altKey) {
-                return;
-            }
-
-            if (isTypingTarget(event.target)) {
-                return;
-            }
-
+    useShortcut(
+        ['1', '2', '3', '4', '5', '6'],
+        (event) => {
             const emoji = emojis[Number(event.key) - 1];
 
-            if (emoji === undefined || !/^[1-6]$/.test(event.key)) {
-                return;
+            if (emoji !== undefined) {
+                react(emoji);
             }
-
-            reactRef.current(emoji);
-        };
-
-        document.addEventListener('keydown', handler);
-
-        return () => document.removeEventListener('keydown', handler);
-    }, [shortcuts, disabled, emojis]);
+        },
+        { enabled: shortcuts && !disabled, scope: toolbarRef },
+    );
 
     function moveFocus(event: KeyboardEvent<HTMLDivElement>): void {
         onKeyDown?.(event);

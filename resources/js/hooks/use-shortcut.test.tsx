@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react';
+import { useRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { matchesShortcut, useShortcut } from '@/hooks/use-shortcut';
 import type { UseShortcutOptions } from '@/hooks/use-shortcut';
@@ -20,6 +21,36 @@ function Probe({
             <div data-testid="editable" contentEditable="true" />
         </div>
     );
+}
+
+function ScopedProbe({
+    combo,
+    handler,
+    enabled,
+}: {
+    combo: string | string[];
+    handler: (event: KeyboardEvent) => void;
+    enabled: boolean;
+}) {
+    const scope = useRef<HTMLDivElement>(null);
+
+    useShortcut(combo, handler, { enabled, scope });
+
+    return <div ref={scope} data-testid="scope" />;
+}
+
+function appendOverlay(role: string): {
+    overlay: HTMLElement;
+    button: HTMLElement;
+} {
+    const overlay = document.createElement('div');
+    const button = document.createElement('button');
+
+    overlay.setAttribute('role', role);
+    overlay.append(button);
+    document.body.append(overlay);
+
+    return { overlay, button };
 }
 
 describe('useShortcut', () => {
@@ -187,6 +218,68 @@ describe('useShortcut', () => {
         fireEvent.keyDown(overlay, { key: 'r' });
 
         expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a dialog that was open before a scoped shortcut became enabled', async () => {
+        const handler = vi.fn();
+        const { rerender } = render(
+            <ScopedProbe combo="r" handler={handler} enabled={false} />,
+        );
+        const { overlay, button } = appendOverlay('dialog');
+
+        rerender(<ScopedProbe combo="r" handler={handler} enabled />);
+        await Promise.resolve();
+
+        fireEvent.keyDown(button, { key: 'r' });
+
+        expect(handler).not.toHaveBeenCalled();
+
+        overlay.remove();
+        fireEvent.keyDown(document.body, { key: 'r' });
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a scoped shortcut alive inside the overlay that contains its scope', () => {
+        const handler = vi.fn();
+        const overlay = document.createElement('div');
+
+        overlay.setAttribute('role', 'dialog');
+        document.body.append(overlay);
+
+        const { getByTestId } = render(
+            <ScopedProbe combo="/" handler={handler} enabled />,
+            { container: overlay },
+        );
+        const nested = appendOverlay('menu');
+
+        fireEvent.keyDown(getByTestId('scope'), { key: '/' });
+        fireEvent.keyDown(nested.button, { key: '/' });
+        nested.overlay.remove();
+        overlay.remove();
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('accepts several combos and ignores an event already handled', () => {
+        const handler = vi.fn();
+
+        render(<ScopedProbe combo={['1', '2']} handler={handler} enabled />);
+
+        fireEvent.keyDown(document.body, { key: '2' });
+        fireEvent.keyDown(document.body, { key: '3' });
+
+        const handled = new KeyboardEvent('keydown', {
+            key: '1',
+            bubbles: true,
+            cancelable: true,
+        });
+
+        handled.preventDefault();
+        document.body.dispatchEvent(handled);
+
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler.mock.calls[0][0].key).toBe('2');
     });
 
     it('stops listening after unmount', () => {
