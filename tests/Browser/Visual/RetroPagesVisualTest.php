@@ -122,7 +122,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions], true)) {
+    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Completed], true)) {
         $groups = [
             ['Went well', 'Client demo', 'The client signed off the flow without a single change.'],
             ['To improve', null, 'Requirements keep moving while we build.'],
@@ -162,7 +162,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         ]);
     }
 
-    if (in_array($phase, [RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions], true)) {
+    if (in_array($phase, [RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Completed], true)) {
         $votes = [
             ['The client demo%', $people[0][1], 1],
             ['We discover scope changes%', $people[0][1], 2],
@@ -181,7 +181,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if ($phase->showsTopics()) {
+    if ($phase->showsTopics() || $phase === RetroPhase::Completed) {
         $actionItems = [
             ['Share the sprint backlog in #atlas-product every Monday', $people[0], ['assignee_user_id' => $people[1][0]->id, 'due_on' => '2031-10-14']],
             ['Apply a “one in, one out” rule to mid-sprint additions', $people[1], ['priority' => ActionItemPriority::High]],
@@ -214,6 +214,60 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
             'content' => 'Review the definition of ready with the product owner',
             'assignee_user_id' => $people[0][0]->id,
             'due_on' => '2026-09-29',
+        ]);
+    }
+
+    if ($phase === RetroPhase::Completed) {
+        $retro->forceFill(['started_at' => '2026-10-02 09:02:00', 'health_check_enabled' => true])->save();
+        resolve(FreezeHealthStatements::class)->handle($retro);
+
+        $earlier = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
+            'id' => '0199b000-0000-7000-8000-000000000002',
+            'team_id' => $team->id,
+            'title' => 'Sprint 41 retro',
+            'created_at' => '2026-09-18 10:00:00',
+            'completed_at' => '2026-09-18 11:00:00',
+        ]);
+        resolve(FreezeHealthStatements::class)->handle($earlier);
+        $earlierParticipant = Participant::factory()->create(['retro_id' => $earlier->id, 'user_id' => $people[0][0]->id]);
+
+        $answers = [
+            [HealthStatement::Interaction, [8, 9], 8],
+            [HealthStatement::TaskClarity, [7, 7], 8],
+            [HealthStatement::ManagerSupport, [9, 9], 9],
+            [HealthStatement::Vision, [6, 7], 6],
+            [HealthStatement::Processes, [5, 5], 6],
+        ];
+
+        foreach ($answers as [$statement, $scores, $before]) {
+            foreach ($scores as $index => $score) {
+                HealthCheckAnswer::factory()->create([
+                    'retro_id' => $retro->id,
+                    'participant_id' => $people[$index][1]->id,
+                    'statement' => $statement->value,
+                    'score' => $score,
+                ]);
+            }
+
+            HealthCheckAnswer::factory()->create([
+                'retro_id' => $earlier->id,
+                'participant_id' => $earlierParticipant->id,
+                'statement' => $statement->value,
+                'score' => $before,
+            ]);
+        }
+
+        foreach ([4, 5] as $index => $score) {
+            RotiVote::factory()->create([
+                'retro_id' => $retro->id,
+                'participant_id' => $people[$index][1]->id,
+                'score' => $score,
+            ]);
+        }
+
+        ActionItem::query()->where('retro_id', $retro->id)->whereNull('due_on')->update([
+            'assignee_user_id' => $people[0][0]->id,
+            'due_on' => '2031-10-17',
         ]);
     }
 
@@ -268,6 +322,10 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
 
 it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false, bool $hideVoteCounts = false) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    if ($phase === RetroPhase::Completed) {
+        config(['mail.default' => 'smtp']);
+    }
 
     [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase, $icebreakerRound);
     $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous, 'hide_vote_counts' => $hideVoteCounts]);

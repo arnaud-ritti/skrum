@@ -3989,5 +3989,17 @@
     "Who has voted": "Qui a voté",
     "Thinking…": "Réfléchit…",
     "Results appear for everyone when the facilitator ends the session.": "Les résultats s’affichent pour tous quand le facilitateur termine la session.",
-    ":voted of :total have voted": ":voted sur :total ont voté"
+    ":voted of :total have voted": ":voted sur :total ont voté",
+    "Session ended": "Session terminée",
+    ":title, wrapped up": ":title, c’est bouclé",
+    "Meetings end, actions stay.": "Les réunions se terminent, les actions restent.",
+    "Send the recap by e-mail": "Envoyer le récap par e-mail",
+    "Actions created": "Actions créées",
+    ":count of :total": ":count sur :total",
+    ":count linked to a ticket": ":count avec un ticket",
+    ":count linked to :tracker": ":count avec un ticket :tracker",
+    "all have an owner and a due date": "toutes ont un responsable et une échéance",
+    "More actions": "Plus d’actions",
+    "Session ended — 1 action created": "Session terminée — 1 action créée",
+    "Session ended — :count actions created": "Session terminée — :count actions créées"
 }

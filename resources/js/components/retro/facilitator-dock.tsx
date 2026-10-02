@@ -26,6 +26,7 @@ import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { BoardReactions, showsRetroReactions } from './board-reactions';
+import { hasSessionEndActions, SessionEndFooterRem } from './session-end';
 import { useOptionalDiscussion } from './phase-discussing';
 
 type Translate = (key: string) => string;
@@ -303,6 +304,12 @@ export function FacilitatorDock({
     const { board } = ctx;
     const { phase } = board.retro;
     const hasBar = board.viewer.isFacilitator && phase !== 'completed';
+    // On a phone the actions of the session end are a bar stuck to the
+    // bottom of the screen: the reactions sit above it.
+    const endActionsHeight =
+        phase === 'completed' && isMobile && hasSessionEndActions(board)
+            ? SessionEndFooterRem
+            : undefined;
 
     const send = async (request: Promise<unknown>) => {
         setBusy(true);
@@ -363,7 +370,7 @@ export function FacilitatorDock({
                 <BoardReactions
                     compact={isMobile}
                     offsetBottom={
-                        hasBar ? DockBottomRem + barHeight : undefined
+                        hasBar ? DockBottomRem + barHeight : endActionsHeight
                     }
                 />
             )}

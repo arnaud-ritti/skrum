@@ -3765,5 +3765,17 @@
     "Who has voted": "Who has voted",
     "Thinking…": "Thinking…",
     "Results appear for everyone when the facilitator ends the session.": "Results appear for everyone when the facilitator ends the session.",
-    ":voted of :total have voted": ":voted of :total have voted"
+    ":voted of :total have voted": ":voted of :total have voted",
+    "Session ended": "Session ended",
+    ":title, wrapped up": ":title, wrapped up",
+    "Meetings end, actions stay.": "Meetings end, actions stay.",
+    "Send the recap by e-mail": "Send the recap by e-mail",
+    "Actions created": "Actions created",
+    ":count of :total": ":count of :total",
+    ":count linked to a ticket": ":count linked to a ticket",
+    ":count linked to :tracker": ":count linked to :tracker",
+    "all have an owner and a due date": "all have an owner and a due date",
+    "More actions": "More actions",
+    "Session ended — 1 action created": "Session ended — 1 action created",
+    "Session ended — :count actions created": "Session ended — :count actions created"
 }

@@ -329,10 +329,10 @@ it('[P04-06] shows the summary and a read-only board once Completed', function (
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
     $page->assertSeeIn('[aria-current="step"]', 'Completed')
-        ->assertSee('Retrospective completed on')
+        ->assertSee('Session ended')
         ->assertSee('Top topics')
         ->assertSee('Slow CI')
-        ->assertSee('Action items')
+        ->assertSee('Actions created')
         ->assertSee('Buy a faster runner')
         ->assertNotPresent('[aria-label="Add an action item…"]')
         ->click('#completed-tab-board')

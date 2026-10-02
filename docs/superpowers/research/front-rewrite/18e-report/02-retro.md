@@ -774,3 +774,71 @@ New: `[P18e-02-03]`, `[P18e-02-01]` in `Plan18eRetroTest.php`. Captures: two dat
 Feature tests changed outside the plan's list: `tests/Feature/Mcp/McpSweepTest.php` (the board of the sweep is in Discussing, where `GetRoti` now answers "not_started").
 
 No test was removed. The Vitest case of `phase-discussing.test.tsx` that found the rating beside the topic now asserts it is absent.
+
+## Task R12 — Session end (B3)
+
+A completed retro shows `components/retro/session-end.tsx`: the header ("Session ended · duration · date", the title, the participants and the promise), the actions (Back to the team, Share, "Send the recap by e-mail"), the tabs Results / Board, then under Results the five figures and the cards. The old `results/*` (16 files) and `insights/summary-section.tsx` are deleted; `insights/suggestions-list.tsx` moved to `components/retro/suggestions-list.tsx` (the Discussing panel still uses it), its markup unchanged.
+
+### Parity (brief 02 §3.5 rows 86–98)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 86 | Results / Board tabs, back to Results on a phase change | `ui/tabs` with `#completed-tab-results`, `#completed-tab-board`, `[role="tabpanel"]` labelled by its tab; `BoardBody` resets the view | yes |
+| 87 | Completed date, participants | header line with `<time>`; "n participants"; card "Thanks for participating" (name, "Guest") | yes |
+| new | Duration (2-D6, B19) | "58 min", "1 h 12 min" from `results.stats.durationSeconds`; nothing for a retro without a start time | yes |
+| new | Five figures (B3, M9) | `StatCard layout="inline"`: actions created, participation "n of m · p %", cards, groups, votes cast "n of m" (`lib/retro/session-end.ts`) | yes |
+| 88 | Summary: generate, retry, regenerate, remove; themes and suggested actions | `results/summary.tsx`, `[aria-labelledby="results-summary"]`, `Skeleton` while pending; facilitator only | yes |
+| 89 | Health: figures, radar, trend, statements | `HealthCheckResults` with the radar and the trend as children; each statement with its move since the previous retro (`previousAverage`), "compared with :retro" for a member | yes |
+| 90 | Top topics | `results/top-topics.tsx`: five, by votes, group name and grouped count | yes |
+| 91 | Action items, read only, link to the team's | `ActionItem` without handlers (`#action-item-{id}`), count badge, "n linked to Jira · all have an owner and a due date" | yes |
+| 92 | Games played: podium, "Show all", rounds, replay | `results/games-played.tsx` (composed: the podium of `GamesLeaderboard` is not exported and has period tabs) | yes |
+| 93 | ROTI results; vote on a legacy retro | `ROTIWidget mode="result"`; `RotiVote` above it when `roti.canVote` | yes |
+| 94 | Share the results to a channel | "Share" menu in the header → `FormDialog` saying what the recap holds | yes |
+| 95 | E-mail the results | primary button "Send the recap by e-mail" (2-D14) → `FormDialog` with the two audiences; a refusal shows in the dialog | yes |
+| 96 | Delivery lines | `DeliveryLines` under the header | yes |
+| 97 | Survey results | old `SurveyResult` mounted in a "Surveys" card (S2) | yes |
+| 98 | Read-only board | `ColumnsBoard` in the Board tab | yes |
+| 2-D13 | Confetti | `SessionConfetti`: forty pieces, `animate-confetti`, the colours of the columns, once, only for who sees the phase turn to completed; never mounted with `prefers-reduced-motion`, where a toast says "Session ended — n actions created" | yes |
+| mockup | Reaction bar at the session end | `showsRetroReactions` follows the setting alone; on a phone the bar sits above the actions bar | yes |
+
+### Places left
+
+None requested by the plan (Export menu and ROTI trend are backlog, D-15). The header keeps the order ghost / outline / primary of the mockup: an export menu would sit beside "Share".
+
+### Differences with the mockup
+
+Captures `retro-board-completed-*` (facilitator, with health check, ROTI, action items, mail on) against frames c and d of `ScreenRetroROTI`. Compared by the implementer on light 1440 EN and dark 390 FR, and on two tall temporary captures (1440 light, 390 dark) to see below the fold.
+
+| Difference | Covered by |
+|---|---|
+| No Export menu; "Share" (to a chat channel) holds its place when a channel is connected | D-15; brief row 94 |
+| No ROTI delta badge and no sparkline | D-15 |
+| The ROTI card is the `ROTIWidget` result: the five rows under the stacked bar | plan interface (`ROTIWidget mode="result"`) |
+| The health card is `HealthCheckResults` (title "Health check results · :retro", figures, radar, trend, one block per statement, scale of 10, alert under 6) and not the six compact rows of the mockup | plan interface; brief row 89. No row — reported |
+| "Session ended" line: the primary button reads "Send the recap by e-mail" | O: 2-D14 |
+| Subline "n participants." without the team name | the snapshot of this lane holds no team name (RW-C2 is on another branch). Reported |
+| Title ":title, wrapped up" is an `h2` | A: one `h1`, the session title of the header |
+| Tabs Results / Board, cards Summary, Top topics, Surveys, Games, Thanks for participating | no mockup: brief 02 §6 |
+| Confetti is not frozen on screen: it plays 1.4 s and fades; forty pieces (plan) and not 24 | ruling 37; plan |
+| Action rows are the `ActionItem` of 18c (status, "To do" badge, creator line) | 18c component |
+| Phone: "Back to the team" and Share are in a "…" menu beside the e-mail button only when mail is on; without mail they are plain buttons in the bar | mockup README names the case with mail only |
+| Participation can read "3 of 2 · 100%": guests are participants, the team count is members; the percentage is capped at 100 | B3 as specified. For the owner |
+| The reaction bar floats above the cards at the bottom centre | mockup (docked bar) |
+
+### Browser tests changed
+
+Listed by the plan: `Plan12b` (the results share and e-mail tests) — "Send to email" inside the Share menu → the button "Send the recap by e-mail" (2-D14).
+
+Not listed, imposed by the mockup, 2-D14 or the components the plan names:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan04` `P04-06`, `Plan08d` `P08d-04a`, `Plan09a` `P09a-03c` (2), `Plan12b` (3), `Plan14a` (1) | "Retrospective completed on" → "Session ended" | header of the mockup |
+| `Plan04` `P04-06`, `Plan08d` `P08d-04a`, `04d` | section "Action items" → "Actions created" | mockup |
+| `Plan08d` `P08d-04b` | the figures no longer hold "Participation"; "2 answers from 3 participants" is asserted | `HealthCheckResults` |
+| `Plan08d` `P08d-04e`, `05a`; `Plan18e` `P18e-02-01` | "Average: 4.5/5", "n ratings", "No ratings yet.", the rows and bars → `[data-slot="roti-mean"]`, "n votes", "Nobody has voted yet.", `li[data-rating]` (5 first) | `ROTIWidget mode="result"` |
+| `Plan08d` `P08d-06` | the ROTI bars of the widget have no transition in either mode: the test asserts they are still in both, and that no confetti is mounted with reduced motion; the title is found by its section (it is read by screen readers only) | `ROTIWidget` |
+| `Plan09a` `P09a-03c` | priority, overdue, status and guest label are read on the `ActionItem` row (`data-priority`, `data-status`, "(Guest)", disabled status button) | brief row 91; 5-D7 |
+| `Plan13d` `P13d-11a` | order: Actions created, ROTI, Top topics, Games we played | mockup: actions, then ROTI |
+
+New: `[P18e-02-04]`, `[P18e-02-04b]`, `[P18e-02-07]`, `[P18e-02-15]`. No test was removed; the Vitest file `results/roti-section.test.tsx` went with its component and its two cases are in `session-end.test.tsx`.

@@ -338,7 +338,7 @@ it('[P13d-06e] abandons the round and brings the columns back when the facilitat
         ->and(GamePoint::query()->count())->toBe(0);
 });
 
-it('[P13d-11a] shows "Games we played" between the action items and ROTI, with the podium, "Show all" and a drawing replay, to a member and to a guest', function () {
+it('[P13d-11a] shows "Games we played" after the actions, the ROTI and the top topics, with the podium, "Show all" and a drawing replay, to a member and to a guest', function () {
     ['retro' => $retro, 'room' => $room, 'bob' => $bob, 'adaPlayer' => $adaPlayer, 'bobPlayer' => $bobPlayer] = p13dIcebreaker(
         RetroPhase::Completed,
         GameKind::Hangman,
@@ -367,7 +367,7 @@ it('[P13d-11a] shows "Games we played" between the action items and ROTI, with t
     awardGamePoints($room, $bobPlayer, 10, true, ['game_round_id' => $draw->id, 'game' => GameKind::DrawAndGuess]);
     awardGamePoints($room, $adaPlayer, 5, false, ['game_round_id' => $draw->id, 'game' => GameKind::DrawAndGuess]);
     $games = 'section:has(> h2:has-text("Games we played"))';
-    $inOrder = '(() => { const titles = [...document.querySelectorAll("section > h2")].map((title) => title.textContent); return titles.indexOf("Action items") >= 0 && titles.indexOf("Action items") < titles.indexOf("Games we played") && titles.indexOf("Games we played") < titles.indexOf("Return on time invested"); })()';
+    $inOrder = '(() => { const titles = [...document.querySelectorAll("section > h2")].map((title) => title.textContent); return titles.indexOf("Actions created") >= 0 && titles.indexOf("Actions created") < titles.indexOf("Return on time invested") && titles.indexOf("Return on time invested") < titles.indexOf("Top topics") && titles.indexOf("Top topics") < titles.indexOf("Games we played"); })()';
 
     $b = $this->signIn($bob, "/retros/{$retro->id}");
     $carol = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');

@@ -1,8 +1,9 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { BoardParticipant } from '@/lib/retro/types';
-import { ResultsSection } from './results-section';
+import { ResultsCard } from './results-card';
 
-export function ParticipantsSection({
+/** Everyone who joined the retro, guests marked as such. */
+export function Participants({
     participants,
 }: {
     participants: BoardParticipant[];
@@ -10,27 +11,29 @@ export function ParticipantsSection({
     const { t } = useTrans();
 
     return (
-        <ResultsSection title={t('Thanks for participating')}>
-            <ul className="flex flex-wrap gap-3">
+        <ResultsCard title={t('Thanks for participating')}>
+            <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-3">
                 {participants.map((participant) => (
                     <li
                         key={participant.id}
-                        className="flex items-center gap-2 text-sm"
+                        className="flex min-w-0 items-center gap-2 text-sm"
                     >
                         <img
                             src={participant.avatarUrl}
                             alt=""
-                            className="size-8 rounded-full bg-muted"
+                            className="size-8 shrink-0 rounded-full bg-muted"
                         />
-                        <span>{participant.name}</span>
+                        <span className="min-w-0 truncate">
+                            {participant.name}
+                        </span>
                         {participant.isGuest && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="shrink-0 text-xs text-muted-foreground">
                                 {t('Guest')}
                             </span>
                         )}
                     </li>
                 ))}
             </ul>
-        </ResultsSection>
+        </ResultsCard>
     );
 }

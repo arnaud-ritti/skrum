@@ -173,7 +173,7 @@ it('[P12b-01c] offers no share entry on the board, the results or the poker game
     $board->navigate("/retros/{$retro->id}");
 
     $this->awaitRealtime($board)
-        ->assertSee('Retrospective completed on')
+        ->assertSee('Session ended')
         ->assertNotPresent('button:has-text("Share")');
 
     $poker = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -251,11 +251,11 @@ it('[P12b-03a] shares the recap of an anonymous retro with counts, named action 
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSee('Retrospective completed on')
+    $page->assertSee('Session ended')
         ->click('Share')
         ->assertSee('Share to Slack')
         ->assertSee('Share to Telegram')
-        ->assertDontSee('Send to email')
+        ->assertDontSee('Send the recap by e-mail')
         ->click('Share to Slack')
         ->assertSee('Share the results to Slack')
         ->assertSee('The summary is still being generated and will not be included.')
@@ -315,10 +315,9 @@ it('[P12b-04a] emails the results to participants with an account in their own l
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSee('Retrospective completed on')
-        ->click('Share')
-        ->assertSee('Send to email')
-        ->click('Send to email')
+    $page->assertSee('Session ended')
+        ->assertSee('Send the recap by e-mail')
+        ->click('Send the recap by e-mail')
         ->assertSee('Email the results')
         ->assertSee('Participants with an account (3)')
         ->assertSee('All team members (4)')
@@ -335,8 +334,7 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     Notification::assertNotSentTo($bystander, RetroResultsNotification::class);
 
     $page->assertNotPresent('[role="menu"]')
-        ->click('Share')
-        ->click('Send to email')
+        ->click('Send the recap by e-mail')
         ->assertSee('Email the results')
         ->click($send)
         ->assertSee('The results were emailed a few minutes ago.')
@@ -348,8 +346,7 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     $this->travel(11)->minutes();
 
     $page->assertNotPresent('[role="menu"]')
-        ->click('Share')
-        ->click('Send to email')
+        ->click('Send the recap by e-mail')
         ->assertSee('Email the results')
         ->click($send)
         ->assertNotPresent('[role="dialog"]');
