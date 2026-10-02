@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { teamSettingsHref } from '@/components/teams/team-page';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 
 type SharedProps = Record<string, unknown>;
@@ -126,4 +127,33 @@ describe('useSidebarModel', () => {
             '/w/nordlys/teams/t1#settings',
         );
     });
+
+    it.each([
+        { role: 'owner', integrations: true },
+        { role: 'owner', integrations: false },
+        { role: 'admin', integrations: true },
+        { role: 'member', integrations: true },
+        { role: 'member', integrations: false },
+    ])(
+        'leads a $role where the gear of the team page leads (provider configured: $integrations)',
+        ({ role, integrations }) => {
+            const model = modelFor({
+                currentWorkspace: { ...workspace, role },
+                currentTeam: team,
+                teams: [{ id: 't1', name: 'Atlas' }],
+                workspaces: [workspace],
+                features: { mcp: false, integrations },
+            });
+            const manages = role !== 'member';
+
+            expect(hrefOf(model.links.settings)).toBe(
+                teamSettingsHref({
+                    workspace,
+                    team: team as never,
+                    canManage: manages,
+                    canManageIntegrations: manages && integrations,
+                }),
+            );
+        },
+    );
 });

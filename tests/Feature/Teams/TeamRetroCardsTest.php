@@ -83,6 +83,56 @@ it('gives the ROTI average only for a completed retro with votes', function () {
         ->where('retros.0.rotiAverage', null));
 });
 
+it('tells which open retros the viewer has already joined', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $this->travelTo(now()->subDays(2));
+    $closed = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    $this->travelTo(now()->addDay());
+    $joined = Retro::factory()->for($team)->create();
+    $this->travelBack();
+    $notJoined = Retro::factory()->for($team)->create();
+
+    Participant::factory()->create(['retro_id' => $closed->id, 'user_id' => $viewer->id]);
+    Participant::factory()->create(['retro_id' => $joined->id, 'user_id' => $viewer->id]);
+    Participant::factory()->create(['retro_id' => $notJoined->id]);
+    Participant::factory()->guest()->create(['retro_id' => $notJoined->id]);
+
+    $this->actingAs($viewer)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
+        ->where('retros.0.id', $notJoined->id)
+        ->where('retros.0.viewerHasJoined', false)
+        ->where('retros.1.id', $joined->id)
+        ->where('retros.1.viewerHasJoined', true)
+        ->where('retros.2.id', $closed->id)
+        ->where('retros.2.viewerHasJoined', false));
+});
+
+it('reads the participants of the viewer only, and of this team only', function () {
+    $team = Team::factory()->create();
+    $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $viewer = teamMember($team);
+    $colleague = teamMember($team);
+    $otherTeam->members()->attach($viewer);
+    $retro = Retro::factory()->for($team)->create();
+    $elsewhere = Retro::factory()->for($otherTeam)->create();
+
+    Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $colleague->id]);
+    Participant::factory()->create(['retro_id' => $elsewhere->id, 'user_id' => $viewer->id]);
+
+    $this->actingAs($viewer)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
+        ->has('retros', 1)
+        ->where('retros.0.id', $retro->id)
+        ->where('retros.0.viewerHasJoined', false));
+
+    $this->actingAs($colleague)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
+        ->where('retros.0.viewerHasJoined', true));
+
+    $this->actingAs($viewer)->get(route('teams.show', [$otherTeam->workspace, $otherTeam]))->assertInertia(fn (Assert $page) => $page
+        ->has('retros', 1)
+        ->where('retros.0.id', $elsewhere->id)
+        ->where('retros.0.viewerHasJoined', true));
+});
+
 it('defers the number of players online of the games that are not ended', function () {
     $team = Team::factory()->create();
     $active = PokerGame::factory()->create(['team_id' => $team->id]);

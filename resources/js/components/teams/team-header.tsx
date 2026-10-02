@@ -1,7 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Building2, Gamepad2, ListChecks, Settings } from 'lucide-react';
 import type { ReactNode } from 'react';
-import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
@@ -15,7 +14,11 @@ type Props = {
     team: TeamSummary;
     members: TeamMember[];
     openActionItemCount: number;
-    canManageIntegrations: boolean;
+    /**
+     * Where the "Team settings" entry of the sidebar leads; the gear is left
+     * out for who can change nothing of the team.
+     */
+    settingsHref?: string;
     /** The one "New session" trigger of the page, with its dialog. */
     newSession?: ReactNode;
     /** Place left (TM-1): the sprint and the next retro, at the end of the line under the name. */
@@ -41,7 +44,7 @@ export function TeamHeader({
     team,
     members,
     openActionItemCount,
-    canManageIntegrations,
+    settingsHref,
     newSession,
     schedule,
 }: Props) {
@@ -121,13 +124,13 @@ export function TeamHeader({
                         <span className="truncate">{t('Games')}</span>
                     </Link>
                 </Button>
-                {canManageIntegrations && (
-                    <Button variant="outline" asChild>
-                        <Link href={TeamIntegrationsController.index(params)}>
+                {settingsHref !== undefined && (
+                    <Button variant="outline" size="icon" asChild>
+                        <Link
+                            href={settingsHref}
+                            aria-label={t('Team settings')}
+                        >
                             <Settings aria-hidden />
-                            <span className="truncate">
-                                {t('Integrations')}
-                            </span>
                         </Link>
                     </Button>
                 )}

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
+import { TeamHealthCheckPage } from '@/components/teams/team-health-check-page';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
-import { TeamMoodCard } from '@/components/teams/team-mood-card';
 import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
+import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -120,10 +121,10 @@ const moodTrend: TeamMoodPoint[] = [
     [39, null, 0, 3.4, 6],
     [40, 7.1, 8, 3.8, 9],
     [41, 7.8, 9, 4.1, 9],
-].map(([sprint, mood, moodVoters, roti, rotiVoters]) => ({
+].map(([sprint, mood, moodVoters, roti, rotiVoters], index) => ({
     retroId: `retro-sprint-${sprint}`,
     title: `Sprint ${sprint} retrospective`,
-    completedAt: '2026-09-18T08:00:00+00:00',
+    completedAt: new Date(Date.UTC(2026, 6, 24 + index * 14, 8)).toISOString(),
     url: `/retros/retro-sprint-${sprint}`,
     mood,
     moodVoters: moodVoters ?? 0,
@@ -155,6 +156,7 @@ const page: TeamPageProps = {
             templateName: '4L',
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
+            viewerHasJoined: false,
         },
         {
             id: 'retro-2',
@@ -165,6 +167,7 @@ const page: TeamPageProps = {
             templateName: 'Mad / Sad / Glad',
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
+            viewerHasJoined: true,
         },
         {
             id: 'retro-3',
@@ -175,6 +178,7 @@ const page: TeamPageProps = {
             templateName: 'Start / Stop / Continue',
             facilitator: { name: 'Arnaud Ritti', avatarUrl: avatar('0') },
             rotiAverage: 4.1,
+            viewerHasJoined: false,
         },
         {
             id: 'retro-4',
@@ -185,6 +189,7 @@ const page: TeamPageProps = {
             templateName: 'Sailboat',
             facilitator: null,
             rotiAverage: 3.8,
+            viewerHasJoined: false,
         },
     ],
     templateCategories: [],
@@ -306,32 +311,54 @@ export default function TeamSection() {
                 </div>
             </Example>
             <Example
-                name="mood-roti"
-                label={t('Mood card, for a team that only has ROTI votes')}
+                name="roti-single"
+                label={t('ROTI card, for a team with one closed retro')}
             >
-                <div className="max-w-90">
-                    <TeamMoodCard
-                        trend={moodTrend
-                            .slice(-2)
-                            .map((point) => ({ ...point, mood: null }))}
-                    />
-                </div>
+                <TeamRotiCard trend={moodTrend.slice(-1)} />
             </Example>
             <Example
-                name="mood-empty"
-                label={t('Mood card, for a team without results')}
+                name="roti-empty"
+                label={t('ROTI card, for a team without results')}
             >
-                <div className="max-w-90">
-                    <TeamMoodCard trend={[]} />
-                </div>
+                <TeamRotiCard trend={[]} />
             </Example>
             <Example
-                name="mood-loading"
-                label={t('Mood card, while the trend loads')}
+                name="roti-loading"
+                label={t('ROTI card, while the trend loads')}
             >
-                <div className="max-w-90">
-                    <TeamMoodCard />
-                </div>
+                <TeamRotiCard />
+            </Example>
+            <Example
+                name="trend-error"
+                label={t('ROTI card, when the trend could not be loaded')}
+            >
+                <TeamRotiCard failed onRetry={() => {}} />
+            </Example>
+            <Example
+                name="health-check-page"
+                label={t('Health check page, for a manager')}
+            >
+                <TeamHealthCheckPage
+                    workspace={page.workspace}
+                    team={page.team}
+                    healthStatements={healthStatements}
+                    canManageHealthStatements
+                    moodTrend={moodTrend}
+                />
+            </Example>
+            <Example
+                name="health-check-page-member"
+                label={t(
+                    'Health check page, for a member of a team without results',
+                )}
+            >
+                <TeamHealthCheckPage
+                    workspace={page.workspace}
+                    team={page.team}
+                    healthStatements={healthStatements}
+                    canManageHealthStatements={false}
+                    moodTrend={[]}
+                />
             </Example>
             <Example
                 name="presence-loading"

@@ -34,12 +34,28 @@ export function retroTone(phase: string): SessionCardStatusTone {
     return PhaseTones[phase] ?? 'info';
 }
 
+/** "Summary" once closed; "Resume" for who is already in, "Join" otherwise. */
+export function retroAction(
+    retro: Pick<RetroSummary, 'phase' | 'viewerHasJoined'>,
+): 'summary' | 'resume' | 'join' {
+    if (retro.phase === CompletedPhase) {
+        return 'summary';
+    }
+
+    return retro.viewerHasJoined ? 'resume' : 'join';
+}
+
 export function TeamRetrosSection({ retros, statsFor }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const formatDate = new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
     });
+    const actionLabels = {
+        summary: t('Summary'),
+        resume: t('Resume'),
+        join: t('Join'),
+    };
 
     return (
         <TeamSection
@@ -136,9 +152,11 @@ export function TeamRetrosSection({ retros, statsFor }: Props) {
                                                 </span>
                                             )}
                                             <span className="ml-auto inline-flex items-center gap-1 font-semibold whitespace-nowrap text-skrum-primary-text">
-                                                {completed
-                                                    ? t('Summary')
-                                                    : t('Join')}
+                                                {
+                                                    actionLabels[
+                                                        retroAction(retro)
+                                                    ]
+                                                }
                                                 <ArrowRight
                                                     aria-hidden
                                                     className="size-3.5"
