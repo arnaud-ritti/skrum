@@ -238,3 +238,30 @@ Nothing is rendered while the props are undefined.
 | 419 and 429 have no mockup: same frame, the clock illustration of the maintenance view | 11-D7 / 11-D10 |
 | The heading is an `h1` (the mockup's frames use `h2` inside a bench) | A |
 | 390: no mockup frame; one column, 1rem padding, full-width stacked actions | ScreenErrors README, "Mobile" |
+
+## Integration of wave 2a (2026-10-02)
+
+Captures opened on the merged build: light 1440 and dark 390 of every access screen (login, register, forgot, reset, verify, two-factor, recovery, confirm password, the five invitation states, 403, 404, 419, 429, 500, 503), beside a rendering of `ScreenAuth`, `ScreenOnboarding`, `ScreenErrors`, `MobileAccess` and `InputOTP` (`preview.html` with the preview stylesheet injected; fonts and spacing tokens of the preview are approximate).
+
+Fixed at the integration:
+
+| Difference | Fix |
+|---|---|
+| Forgot password, 390, FR / ES / DE: the button label was cut ("Envoyer le lien de réinitialisation du mot d…") | shorter translations of "Email password reset link" |
+| 500 page: the time under the id began with a separator ("· 2026-10-01 …") because a UUID always sends it to a second line | the separator is gone; the gap of the row separates them when they share a line |
+
+Remaining differences:
+
+| Difference | Fix later or deviation row |
+|---|---|
+| Register title, "Confirm password", no "Team name" | D-52 |
+| Passkey button on login and password confirmation | D-53 |
+| Invitation: links to register and login in place of the inline password; variants as states of the card; no "Ask for a new invitation" | D-54 |
+| Error pages: 403 title, no search on 404, 503 wording, 419 and 429 without a mockup | D-55 |
+| No magic link, no method tabs, no instance and version footer, no terms line, "Remember me" without "30 days" | D-28, D-29 |
+| The footer of an error page and the title of the 503 page say "Skrum" (`APP_NAME`) while the logo says "skrüm" on a default install | fix later: one display name for the default brand (`isRebranded` already treats both as the product) |
+| `AuthFrame`: 24rem column (23.75rem), dot grid over the whole right pane, at 390 the logo at the left with the language select instead of a centred mark and a back button | fix later, with a report first (the frame is shared, plan 18c) |
+| Google and GitHub stack in one column at 390 (side by side at 1440, as the mockup) | fix later (no phone mockup shows them) |
+| Aside: whole-degree tilts, the real `ActionItem` in its done state | stays (rule 3: no arbitrary value; real component) |
+| The read-only e-mail of reset password looks editable (`TextField` has no read-only style) | fix later, in `skrum/TextField` |
+| An Inertia request during maintenance shows the 503 page inside Inertia's modal | owner decision: full reload on a 503 |

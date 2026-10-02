@@ -229,3 +229,34 @@ New from the mockup: "Step n of 3 · …" above the name of the game; in the rig
 ### Browser tests
 
 Changed: none. `Plan13cSprintGifTest.php` passes as it is. New captures: `games-room-gif`, `games-room-gif-voting`, `games-room-gif-results` (`GamesPagesVisualTest.php`, a GIF provider faked with flat tiles) and the bench section `games-gif`.
+
+## Integration of wave 2a (2026-10-02)
+
+Captures opened on the merged build: light 1440 and dark 390 of the games page (with rooms, empty), the join page (valid, invalid), and the room in hangman (round, end card), Draw & Guess (drawer, guesser), Decoded (clue giver, guesser) and Sprint in one GIF (pick, vote, results), beside a rendering of `GamesLeaderboard`, `GuestJoin`, `ScreenIcebreaker`, `ScreenIcebreakerDraw`, `ScreenIcebreakerEmoji` and `ScreenIcebreakerGif`.
+
+Fixed at the integration:
+
+| Difference | Fix |
+|---|---|
+| Join page: the logo twice (frame header and card) | `GuestJoin` takes `logo={false}`; `GuestJoinPage` passes it. One logo, the instance's own |
+| Join page: no document title (the old page had one) | `<Head>` in `pages/games/join.tsx` |
+| Games page at 390: the rooms card scrolled inside itself and cut the fourth room | the inner scroll applies from 64rem up; on a phone the list scrolls with the page |
+| "1 players", "1 letters", "1 guesses" | singular keys |
+| `P13a-06a` selector `:has(:text-is("1 min"))` no longer matched after lane W made the preset label the item's own text | the selector of the plan, `[role="menuitem"]:text-is("1 min")`, is back |
+
+Remaining differences:
+
+| Difference | Fix later or deviation row |
+|---|---|
+| Room rows with rounds and access, "n rounds · n wins", streak badges | D-56 |
+| Shell: Players / Scores tabs, columns, "Back to the team", check on the selected card | D-57 |
+| Reaction bar in its own strip | D-58 |
+| Hangman: no whole-word field; keyboard in the flow on a phone | D-59 |
+| Draw: "Fill", pencil tag colour, guesses on the stage on a phone | D-60 |
+| GIF: dialog picker, immediate send, voting on the results gallery, labels | D-61 |
+| GIF: `<img alt="">`, no reduced-motion still (spec §5 rule 8) | D-62, owner decision |
+| No turn banner, turn order, round counter, per-turn timer, settings card, caption, podium of a GIF round | D-20 |
+| Podium streak badge cut at 390 in French ("2 semain…") | fix later: a shorter badge on the podium |
+| Room header at 390: the title is cut to "Monday w…" | fix later, with the header budget of Task 0 |
+| The aria-labels ":count points" and ":count letters left to find" have no singular (the browser suite binds "1 letters left to find") | fix later, with the test |
+| At 390 the floating reaction bar of the room overlays the end of a long guesses list while it scrolls | not verified in a browser; fix later if confirmed |

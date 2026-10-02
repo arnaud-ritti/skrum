@@ -31,9 +31,9 @@ The brief's `components/whiteboard/guest-join-form.tsx` is not written (K2): the
 |---|---|
 | No colour picker, no short code | D-32 |
 | The button reads "Join", the mockup "Rejoindre la session" | browser contract: `joinAsGuest` clicks "Join" (plan, Task 7.1 "Browser tests changed: none") |
-| No suggested random nickname: with an empty field there is no preview (avatar and "Suggested nickname if you leave it empty"); `skrum/GuestJoin` shows it only for a typed or a proposed name (fixed in the review: the sentence was shown with no name) | D-41 |
-| The logo appears twice: in the header of the centred `AuthLayout` and in the card | D-41 (Task 0.7 frame; the mockup shows the card alone) |
-| A language select in the header, "Powered by Skrüm" in the footer | D-41 |
+| No suggested random nickname: with an empty field there is no preview (avatar and "Suggested nickname if you leave it empty"); `skrum/GuestJoin` shows it only for a typed or a proposed name (fixed in the review: the sentence was shown with no name) | D-51 |
+| The logo appears twice: in the header of the centred `AuthLayout` and in the card | D-51 (Task 0.7 frame; the mockup shows the card alone) |
+| A language select in the header, "Powered by Skrüm" in the footer | D-51 |
 | Invalid link: a notice card, not in the GuestJoin mockup | brief 07 "No mockup" list; `AccessNotice` of Task 0.7 |
 
 ### Captures
@@ -89,9 +89,9 @@ Cursor colours come from the presence tokens (7-D6): `presenceCursorColor` reads
 | Difference | Row |
 |---|---|
 | Excalidraw's own tool bar, zoom and history; no selection bar, minimap, dot grid, comments, sticky authors, "is writing" ring | D-21 |
-| The topbar has the application rail and a back arrow, not the logo and the breadcrumb "team › Whiteboards › name": the title alone is shown and renamed in place | D-37 |
-| No "Synced" state while connected: the topbar state appears only while reconnecting | D-38 |
-| The facilitation tools (timer, lock, follow) sit in the header between the presence stack and the separator; a board menu follows "Share"; a reaction bar floats at the bottom | D-40 |
+| The topbar has the application rail and a back arrow, not the logo and the breadcrumb "team › Whiteboards › name": the title alone is shown and renamed in place | D-47 |
+| No "Synced" state while connected: the topbar state appears only while reconnecting | D-48 |
+| The facilitation tools (timer, lock, follow) sit in the header between the presence stack and the separator; a board menu follows "Share"; a reaction bar floats at the bottom | D-50 |
 | Below 1024 px "Export" and "Share" are icon buttons; below 768 px "Export" is not in the header (the canvas menu has it) and the facilitation tools are a strip under the header | header budget of Task 0.14 |
 | Phone: no "Reading" pill, no "Edit" button, no "Follow" pill, no subtitle "Whiteboard · n online" | Task 7.5; WB-3 |
 | Dark theme: sticky colours are the canvas's filtered colours | Task 7.4 (`ExcalidrawTheme`) |
@@ -128,7 +128,7 @@ None: the mockup has no element in the menu or in these dialogs that a later pla
 
 | Difference | Row |
 |---|---|
-| The ScreenWhiteboard mockup has no board menu: its topbar ends with "Share". The menu holds existing features and follows the DropdownMenu mockup (icon on every action, separators edge to edge, destructive entry last) | D-40 |
+| The ScreenWhiteboard mockup has no board menu: its topbar ends with "Share". The menu holds existing features and follows the DropdownMenu mockup (icon on every action, separators edge to edge, destructive entry last) | D-50 |
 | No section labels and no shortcuts in the menu | the DropdownMenu mockup shows them on a card menu; this menu has no shortcut and its groups are short. No row: reported |
 | Hand-over dialog: the select opens empty, without a placeholder | same as before; no mockup of this dialog |
 | At 390 the footer of a dialog stacks its buttons full width, the main action first | the Dialog primitive of plan 18c |
@@ -167,7 +167,7 @@ Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `R
 |---|---|
 | The colour bar is alone under the tool bar: no "n elements" counter, no group / align / lock / convert / delete beside it (the canvas's own panel has them) | D-21 |
 | The colour bar sits under the canvas's hint line, 6rem from the top of the canvas, not right under the tool bar: the library writes its hint there | D-21 (the library's tool bar is kept) |
-| The canvas's property panel keeps its "Stroke" and "Background" rows, each reduced to its picker button at the start of the row (the library's separator is hidden with the quick picks); the picker still offers the library's own colours. The mockup shows the eight swatches inside the panel | D-39 |
+| The canvas's property panel keeps its "Stroke" and "Background" rows, each reduced to its picker button at the start of the row (the library's separator is hidden with the quick picks); the picker still offers the library's own colours. The mockup shows the eight swatches inside the panel | D-49 |
 | The mockup's sub-bar of the sticky tool shows five colours; built: the eight | answer 7-D1 |
 | A new filled shape has the border of its colour and lines, arrows, pencil and text keep the default stroke. The README's snippet sets the Sun border as the current stroke for every tool, which would write text and lines in a pale yellow that cannot be read | A (contrast); the README's own line "free strokes: `--foreground`". Reported |
 | `currentItemFontFamily: 5` is not set: it is the library's default in 0.18.1 | none needed |
@@ -219,3 +219,32 @@ French wording: `"Edit"` becomes "Modifier" (it was "Éditer") and `"Read"` beco
 `tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-*-390-*` is now the board as a phone opens it (read mode: the pill and "Edit"); the test opens the board at 390 and the 1440 capture is unchanged (no toggle). The other 390 captures of the facilitator (`-colors-`, `-sticky-colors-`, `-menu-`, `-save-template-`, `-hand-over-`, `-delete-`) open at the desktop width and are resized, so they show the phone in edit mode, with the "Read" button. `whiteboard-board-locked-guest-*-390-*` is unchanged: no toggle under the lock.
 
 Added in the review: `whiteboard-board-cursor-*` (the facilitator's view with the cursor of another member, light and dark, 390 and 1440, EN and FR). The 1440 captures of the board show the picture of a user created by the test, which differs from run to run: a capture that changes by that picture alone is not committed.
+
+## Integration of wave 2a (2026-10-02)
+
+Deviation rows of this group were renumbered at the merge: D-37 to D-41 of the lane are D-47 to D-51 (Group 1 had taken D-37 to D-46).
+
+Captures opened on the merged build: light 1440 and dark 390 of the join page, the board, the colour bar, the sticky colours, the menu, the save-as-template, hand-over and delete dialogs, the export card, the locked guest and the remote cursor, beside a rendering of `ScreenWhiteboard`, `MobileRituals` and `GuestJoin`.
+
+Fixed at the integration:
+
+| Difference | Fix |
+|---|---|
+| Join page: the logo twice | `GuestJoin` `logo={false}` in `GuestJoinPage` (D-51 updated) |
+| Export card at 390 in French: the button label was cut | the label wraps |
+| Closing guest access in Share ended a present guest's access with no warning, while the game room asks | `BoardShare` asks in a `ConfirmDialog` when a guest is online; `P17a-06a` confirms |
+
+Remaining differences:
+
+| Difference | Fix later or deviation row |
+|---|---|
+| Topbar: rail, back arrow and title, not the breadcrumb | D-47 |
+| No "Synced" state | D-48 |
+| Property panel rows reduced to their picker | D-49 |
+| Facilitation tools, board menu, reactions bar | D-50 |
+| Join frame, no random nickname, "Join" | D-51 |
+| Native toolbar, zoom and history; no minimap, selection bar, dot grid, sticky authors, "Follow" | D-21 |
+| Guest header at 390: title cut to a few letters; French facilitation label cut at 1440 | D-63 |
+| In the dark theme the notes are the light fills seen through the library's filter (dark olive, dark blue) | D-21 (the canvas is the library's) |
+| A closed line or pencil loop takes the Sun fill | fix later (known, written under Task 7.4) |
+| The locked-guest and cursor captures are not stable between runs (pages left open by earlier iterations, random member picture and cursor colour) | fix later: fixed fixtures in `WhiteboardVisualTest` |
