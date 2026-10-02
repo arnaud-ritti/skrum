@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import type { AppSidebarProps } from '@/components/skrum/app-sidebar';
 
 export type BenchGroup = 'foundations' | 'layouts' | 'ui' | 'skrum';
@@ -34,6 +36,36 @@ export function BenchSample({ label }: { label: string }) {
     return (
         <div className="rounded-lg border bg-card p-6 shadow-card">
             <p className="text-sm/snug">{label}</p>
+        </div>
+    );
+}
+
+/**
+ * Room for the one real open overlay of a section. An overlay is fixed to the
+ * viewport, so its state comes last, fills one viewport and keeps itself in
+ * view: the overlay then covers no other state in a full-page capture.
+ */
+export function BenchOverlayStage({ children }: { children: ReactNode }) {
+    const stageRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const keepInView = (): void => {
+            stageRef.current?.scrollIntoView({ block: 'end' });
+        };
+
+        keepInView();
+        window.addEventListener('resize', keepInView);
+
+        return () => window.removeEventListener('resize', keepInView);
+    }, []);
+
+    return (
+        <div
+            ref={stageRef}
+            data-slot="bench-overlay-stage"
+            className="min-h-dvh"
+        >
+            {children}
         </div>
     );
 }

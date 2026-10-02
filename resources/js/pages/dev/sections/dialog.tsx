@@ -18,7 +18,9 @@ type StateKey =
     | 'form'
     | 'formError'
     | 'formPending'
-    | 'unavailable';
+    | 'unavailable'
+    | 'confirmRejected'
+    | 'formDestructive';
 
 const wait = (milliseconds: number) =>
     new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
@@ -115,6 +117,20 @@ export default function DialogSection() {
                 >
                     {opener('unavailable', t('Open removed state'))}
                 </State>
+                <State
+                    label={t('Rejected by the server')}
+                    note={t('The error stays in the dialog, above the footer.')}
+                >
+                    {opener('confirmRejected', t('Open rejected confirmation'))}
+                </State>
+                <State
+                    label={t('Destructive form')}
+                    note={t(
+                        'Destructive tone on the header and the submit button, with a server error.',
+                    )}
+                >
+                    {opener('formDestructive', t('Open destructive form'))}
+                </State>
             </div>
 
             <ConfirmDialog
@@ -166,6 +182,34 @@ export default function DialogSection() {
                 onConfirm={() => wait(300)}
             />
 
+            <ConfirmDialog
+                {...bind('confirmRejected')}
+                tone="destructive"
+                title={title}
+                description={description}
+                error={t(
+                    'The session could not be deleted. Try again in a moment.',
+                )}
+                confirmLabel={t('Delete')}
+                onConfirm={() => wait(300)}
+            />
+
+            <FormDialog
+                {...bind('formDestructive')}
+                tone="destructive"
+                title={t('Delete the workspace')}
+                description={t('Type the workspace name to confirm.')}
+                error={t('The name does not match.')}
+                submitLabel={t('Delete')}
+                onSubmit={() => wait(300)}
+            >
+                <div className="grid gap-2">
+                    <Label htmlFor="bench-dialog-destructive">
+                        {t('Workspace name')}
+                    </Label>
+                    <Input id="bench-dialog-destructive" name="name" />
+                </div>
+            </FormDialog>
             <FormDialog
                 {...bind('form')}
                 title={t('New retro')}

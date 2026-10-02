@@ -205,7 +205,10 @@ function TeamSwitcher({
             <DropdownMenuContent align="start" className="w-64">
                 {teams.length > 0 && (
                     <>
-                        <DropdownMenuLabel className="truncate">
+                        <DropdownMenuLabel
+                            variant="overline"
+                            className="truncate"
+                        >
                             {t('Teams')}
                         </DropdownMenuLabel>
                         {teams.map((entry) => (
@@ -233,7 +236,7 @@ function TeamSwitcher({
                 {(teams.length > 0 || newTeamHref !== undefined) && (
                     <DropdownMenuSeparator />
                 )}
-                <DropdownMenuLabel className="truncate">
+                <DropdownMenuLabel variant="overline" className="truncate">
                     {t('Workspaces')}
                 </DropdownMenuLabel>
                 {workspaces.map((entry) => (

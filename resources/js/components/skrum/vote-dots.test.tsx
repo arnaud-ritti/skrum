@@ -46,7 +46,7 @@ describe('VoteBudget', () => {
 });
 
 describe('CardVotes', () => {
-    it('labels the vote button with the total and presses it when I voted', () => {
+    it('names the vote button "Add a vote", reads the total next to it and presses it when I voted', () => {
         renderWithProviders(
             <CardVotes
                 mine={2}
@@ -57,9 +57,10 @@ describe('CardVotes', () => {
             />,
         );
 
-        const button = screen.getByRole('button', { name: 'Vote, 6 votes' });
+        const button = screen.getByRole('button', { name: 'Add a vote' });
 
         expect(button.getAttribute('aria-pressed')).toBe('true');
+        expect(screen.getByText('6 votes')).toBeTruthy();
     });
 
     it('calls onVote and onUnvote', () => {
@@ -75,14 +76,14 @@ describe('CardVotes', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Vote, 3 votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add a vote' }));
         fireEvent.click(screen.getByRole('button', { name: 'Remove a vote' }));
 
         expect(onVote).toHaveBeenCalledTimes(1);
         expect(onUnvote).toHaveBeenCalledTimes(1);
     });
 
-    it('blocks voting with aria-disabled when no budget is left', () => {
+    it('disables the vote button when no budget is left and keeps the reason reachable', () => {
         const onVote = vi.fn();
         renderWithProviders(
             <CardVotes
@@ -94,11 +95,16 @@ describe('CardVotes', () => {
             />,
         );
 
-        const button = screen.getByRole('button', { name: 'Vote, 2 votes' });
+        const button = screen.getByRole('button', { name: 'Add a vote' });
         fireEvent.click(button);
 
-        expect(button.getAttribute('aria-disabled')).toBe('true');
-        expect(button.hasAttribute('disabled')).toBe(false);
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(screen.getByText('You have used all your votes')).toBeTruthy();
+        expect(
+            button
+                .closest('[data-slot="vote-button-wrapper"]')
+                ?.getAttribute('tabindex'),
+        ).toBe('0');
         expect(onVote).not.toHaveBeenCalled();
     });
 
@@ -115,7 +121,7 @@ describe('CardVotes', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Vote, 5 votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add a vote' }));
 
         expect(onVote).not.toHaveBeenCalled();
     });
@@ -133,7 +139,7 @@ describe('CardVotes', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Vote, 5 votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add a vote' }));
 
         expect(onVote).toHaveBeenCalledTimes(1);
     });
@@ -151,7 +157,7 @@ describe('CardVotes', () => {
 
         expect(screen.getByText('Total hidden')).toBeTruthy();
         expect(container.querySelector('[data-slot="vote-count"]')).toBeNull();
-        expect(screen.getByRole('button', { name: 'Vote' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Add a vote' })).toBeTruthy();
     });
 
     it('hides the remove button and my dots when I have no vote', () => {
@@ -171,7 +177,7 @@ describe('CardVotes', () => {
         expect(filledDots(container)).toBe(0);
         expect(
             screen
-                .getByRole('button', { name: 'Vote, 4 votes' })
+                .getByRole('button', { name: 'Add a vote' })
                 .getAttribute('aria-pressed'),
         ).toBe('false');
     });
@@ -188,7 +194,7 @@ describe('CardVotes', () => {
                 onUnvote={onUnvote}
             />,
         );
-        const button = screen.getByRole('button', { name: 'Vote, 2 votes' });
+        const button = screen.getByRole('button', { name: 'Add a vote' });
 
         fireEvent.keyDown(button, { key: 'v' });
         fireEvent.keyDown(button, { key: 'V', shiftKey: true });
@@ -215,7 +221,7 @@ describe('CardVotes', () => {
 
         expect(container.querySelectorAll('.animate-vote-pop')).toHaveLength(0);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Vote, 1 votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add a vote' }));
 
         expect(
             container.querySelectorAll('[data-slot="vote-dot"]'),

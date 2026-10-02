@@ -25,7 +25,7 @@ function SwitchControl({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="pointer-events-none block size-4 translate-x-0.5 rounded-full bg-card shadow-card transition-transform duration-base ease-spring motion-reduce:transition-none data-[state=checked]:translate-x-4 data-[state=checked]:bg-primary-foreground"
+        className="pointer-events-none block size-4 translate-x-0.5 rounded-full bg-card shadow-card transition-transform duration-220 ease-spring motion-reduce:transition-none data-[state=checked]:translate-x-4 data-[state=checked]:bg-primary-foreground"
       />
     </SwitchPrimitive.Root>
   )

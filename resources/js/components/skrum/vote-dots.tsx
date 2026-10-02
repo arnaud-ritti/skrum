@@ -105,8 +105,6 @@ export function CardVotes({
         : t('You reached the limit of :max votes on this card', {
               max: maxPerCard ?? 0,
           });
-    const voteLabel =
-        total === null ? t('Vote') : t('Vote, :count votes', { count: total });
 
     function vote(): void {
         if (isVoteBlocked) {
@@ -147,9 +145,9 @@ export function CardVotes({
         <button
             type="button"
             data-slot="vote-button"
-            aria-label={voteLabel}
+            aria-label={t('Add a vote')}
             aria-pressed={mine > 0}
-            aria-disabled={isVoteBlocked || undefined}
+            disabled={isVoteBlocked}
             onClick={vote}
             className={cn(
                 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
@@ -217,8 +215,26 @@ export function CardVotes({
                     <span className="truncate">{t('Total hidden')}</span>
                 </span>
             )}
+            {total !== null && (
+                <span data-slot="vote-total" className="sr-only">
+                    {total === 1
+                        ? t(':count vote', { count: total })
+                        : t(':count votes', { count: total })}
+                </span>
+            )}
             <Tooltip>
-                <TooltipTrigger asChild>{voteButton}</TooltipTrigger>
+                <TooltipTrigger asChild>
+                    <span
+                        data-slot="vote-button-wrapper"
+                        tabIndex={isVoteBlocked ? 0 : undefined}
+                        className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        {voteButton}
+                        {isVoteBlocked && (
+                            <span className="sr-only">{blockedReason}</span>
+                        )}
+                    </span>
+                </TooltipTrigger>
                 <TooltipContent>
                     {isVoteBlocked ? blockedReason : `${t('Vote')} (V)`}
                 </TooltipContent>

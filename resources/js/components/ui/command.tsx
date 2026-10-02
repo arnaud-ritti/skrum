@@ -476,9 +476,9 @@ function CommandPalette({
         <span aria-live="polite" className="ml-auto truncate">
           {loading
             ? ""
-            : t(visible.length === 1 ? ":count result" : ":count results", {
-                count: visible.length,
-              })}
+            : visible.length === 1
+              ? t(":count result", { count: visible.length })
+              : t(":count results", { count: visible.length })}
         </span>
       </CommandFooter>
     </CommandDialog>
