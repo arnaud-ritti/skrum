@@ -37,15 +37,15 @@ Captures were not made; the list is read from the code against `ScreenWorkspace/
 |---|---|
 | No description line on a team tile; the mark takes one of the eight column colours from the team id | PB-20, D-24 |
 | No `⌘2`, `⌘3` in the switcher | PB-19 |
-| The first activity line says "Retro in progress", not "Retro live now": the server knows the phase of a retro, not whether people are in it | new row |
-| The second activity line is always the poker games; the mockup shows "1 whiteboard edited today" on one tile | new row |
-| "Open" ends with the lucide arrow, not the character "→" (rule 9) | new row |
-| The first consequence of leaving lists the teams the person belongs to, joined by `Intl.ListFormat` ("Atlas, Borealis, and Comet" in English); above three teams it says "You leave n teams." | new row |
-| "You're the only admin of this workspace." when no other admin exists (the mockup has no such case) | new row |
-| "View templates" for a member, in place of "Manage templates" | new row |
-| The dashed tile says "Teams share the templates of this workspace." (the mockup's "Teams share this workspace templates" is not a sentence) | new row |
+| The first activity line says "Retro in progress", not "Retro live now": the server knows the phase of a retro, not whether people are in it | D-91 |
+| The second activity line is always the poker games; the mockup shows "1 whiteboard edited today" on one tile | D-91 |
+| "Open" ends with the lucide arrow, not the character "→" (rule 9) | D-91 |
+| The first consequence of leaving lists the teams the person belongs to, joined by `Intl.ListFormat` ("Atlas, Borealis, and Comet" in English); above three teams it says "You leave n teams." | D-92 |
+| "You're the only admin of this workspace." when no other admin exists (the mockup has no such case) | D-92 |
+| "View templates" for a member, in place of "Manage templates" | D-91 |
+| The dashed tile says "Teams share the templates of this workspace." (the mockup's "Teams share this workspace templates" is not a sentence) | D-91 |
 | Workspace creation: the name only; no logo, no default language, no "Continue" | PB-23, D-33 |
-| The switcher is the dropdown of the sidebar on a phone too, not a full-screen drawer | not built here (sidebar, Task 0) — new row |
+| The switcher is the dropdown of the sidebar on a phone too, not a full-screen drawer | not built here (sidebar, Task 0) — D-91 |
 
 ## Task 9b — Members, roles and invitations
 
@@ -86,15 +86,15 @@ No mockup of this page exists; the reference is the Members card of `ScreenSetti
 | No "Last activity" column; "Resend" sits in the actions column, beside "Revoke" | PB-22 |
 | Roles are Owner, Admin, Member (no facilitator, no observer); the footer explains these two manager roles | PB-22 |
 | No "Invitation link" button in the header | D-30 (team invite link: backlog) |
-| No "See all 11": every member is listed | new row |
-| "Revoke" is a button with the cross and its label, not a bare cross | new row (rule 6: a destructive action has an icon and a label) |
-| An expired invitation says "Expired" in place of "Invitation pending" | new row (existing feature, parity row 16) |
-| The line under the address of an invitation starts with its role ("Member · Invited on Sep 26") | new row (existing feature: the role of an invitation was a badge) |
-| The viewer's own row has the "…" menu, with "Leave" | new row (existing feature, parity row 6) |
-| An owner seen by an admin has a badge and no select | new row (existing rule of the server) |
-| The link of an invitation just sent, in a band under the header | new row (existing feature, parity row 15) |
-| Under 36rem of card the table is a list of blocks; the role stays a select in the row, not in a drawer | new row |
-| The page has a "Delete workspace" card under the members card | new row (existing feature, parity row 19) |
+| No "See all 11": every member is listed | D-93 |
+| "Revoke" is a button with the cross and its label, not a bare cross | D-93 (rule 6: a destructive action has an icon and a label) |
+| An expired invitation says "Expired" in place of "Invitation pending" | D-93 (existing feature, parity row 16) |
+| The line under the address of an invitation starts with its role ("Member · Invited on Sep 26") | D-93 (existing feature: the role of an invitation was a badge) |
+| The viewer's own row has the "…" menu, with "Leave" | D-93 (existing feature, parity row 6) |
+| An owner seen by an admin has a badge and no select | D-93 (existing rule of the server) |
+| The link of an invitation just sent, in a band under the header | D-93 (existing feature, parity row 15) |
+| Under 36rem of card the table is a list of blocks; the role stays a select in the row, not in a drawer | D-93 |
+| The page has a "Delete workspace" card under the members card | D-93 (existing feature, parity row 19) |
 
 ## Task 9c — Templates page: "All", the full picker, "Use", Poker and Whiteboard tabs
 
@@ -141,13 +141,13 @@ Back end added in this task (PB-15, PB-21): `usageCount` on each entry of `templ
 | A card has a "…" menu for a manager (Edit, Duplicate, Delete) | PB-21 |
 | The line of a deck is its usage ("n games"), the section says "Deck values" | PB-21 |
 | The whiteboard empty state has no button | PB-17 |
-| The whiteboard empty state is the `EmptyState` component (its illustration and its "Whiteboard" overline), not the lagoon tile with the pen | new row |
-| A whiteboard template card (the mockup shows none): outline of the board on white paper, name, description, "Use"; no author (the page is not sent one) | new row |
-| "Create a deck" in the header of the Planning poker section, and a dashed empty block "No workspace decks yet." / "No workspace templates yet." when a kind is empty | new row (B30; parity row 23) |
-| "New template" is shown to a manager only, and creates a retro template on every tab | new row (existing rule; decks have "Create a deck") |
-| The column titles of a card's preview are read by assistive technology (the mockup hides the preview); they are set in the overline size (0.6875rem), the mockup's 0.625rem is outside the scale | new row (accessibility; rule 3) |
-| No author line on a card whose author's account is gone | new row |
-| Without a team "Use" is disabled with "Pick a team first" | new row (plan, 9-D1) |
-| While searching, a section without a match is not shown; with none left, "No template matches “…”" and "Clear search" | new row |
-| The editor opens in a side sheet (no frame in the mockup) without the sheet's close cross ("Cancel", Escape and a click outside close it) | new row |
+| The whiteboard empty state is the `EmptyState` component (its illustration and its "Whiteboard" overline), not the lagoon tile with the pen | D-94 |
+| A whiteboard template card (the mockup shows none): outline of the board on white paper, name, description, "Use"; no author (the page is not sent one) | D-94 |
+| "Create a deck" in the header of the Planning poker section, and a dashed empty block "No workspace decks yet." / "No workspace templates yet." when a kind is empty | D-94 (B30; parity row 23) |
+| "New template" is shown to a manager only, and creates a retro template on every tab | D-94 (existing rule; decks have "Create a deck") |
+| The column titles of a card's preview are read by assistive technology (the mockup hides the preview); they are set in the overline size (0.6875rem), the mockup's 0.625rem is outside the scale | D-94 (accessibility; rule 3) |
+| No author line on a card whose author's account is gone | D-94 |
+| Without a team "Use" is disabled with "Pick a team first" | D-94 (plan, 9-D1) |
+| While searching, a section without a match is not shown; with none left, "No template matches “…”" and "Clear search" | D-94 |
+| The editor opens in a side sheet (no frame in the mockup) without the sheet's close cross ("Cancel", Escape and a click outside close it) | D-94 |
 
