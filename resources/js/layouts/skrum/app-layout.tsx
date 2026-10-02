@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { NotificationsMenu } from '@/components/action-items/notifications-menu';
 import { NavUser } from '@/components/nav-user';
-import { NotificationBell } from '@/components/notification-bell';
 import type { NavKey } from '@/components/skrum/app-sidebar';
 import { AppTopbar } from '@/components/skrum/app-topbar';
 import { AppFrame } from '@/components/skrum/frames';
@@ -33,7 +33,7 @@ export default function AppLayout({
                     actions={
                         <>
                             {actions}
-                            <NotificationBell />
+                            <NotificationsMenu />
                         </>
                     }
                 />

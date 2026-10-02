@@ -22,8 +22,8 @@ vi.mock('@/hooks/use-sidebar-model', () => ({
 
 vi.mock('@/components/nav-user', () => ({ NavUser: () => null }));
 
-vi.mock('@/components/notification-bell', () => ({
-    NotificationBell: () => <button type="button">Notifications</button>,
+vi.mock('@/components/action-items/notifications-menu', () => ({
+    NotificationsMenu: () => <button type="button">Notifications</button>,
 }));
 
 describe('AppLayout', () => {

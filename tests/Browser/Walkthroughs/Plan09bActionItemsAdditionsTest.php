@@ -552,16 +552,16 @@ it('[P09b-06b] shows the reminders in the bell and the overdue count in the side
         ->assertSuccessful();
 
     $page->navigate($path)
-        ->assertSeeIn('[aria-label="2 unread notifications"]', '2')
+        ->assertSeeIn('[aria-label="Notifications, 2 unread"]', '2')
         ->assertSeeIn($badge, '1')
-        ->click('[aria-label="2 unread notifications"]')
-        ->assertSeeIn('[role="menu"]', 'Overdue: Rotate the keys')
-        ->assertSeeIn('[role="menu"]', 'Due today: Book the room')
-        ->click('[role="menuitem"]:has-text("Overdue: Rotate the keys")')
+        ->click('[aria-label="Notifications, 2 unread"]')
+        ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Overdue action: Rotate the keys')
+        ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Due today: Book the room')
+        ->click('[role="dialog"] a:has-text("Overdue action: Rotate the keys")')
         ->assertQueryStringHas('item', $overdue->id)
         ->assertPathIs($path)
         ->assertPresent("#action-item-{$overdue->id} button[aria-expanded=\"true\"]")
-        ->assertPresent('[aria-label="1 unread notification"]');
+        ->assertPresent('[aria-label="Notifications, 1 unread"]');
 
     expect($bob->notifications()->count())->toBe(2)
         ->and($bob->unreadNotifications()->count())->toBe(1);
@@ -572,7 +572,7 @@ it('[P09b-06b] shows the reminders in the bell and the overdue count in the side
 
     $page->navigate($path)
         ->assertSee('Rotate the keys')
-        ->assertPresent('[aria-label="1 unread notification"]');
+        ->assertPresent('[aria-label="Notifications, 1 unread"]');
 
     expect($bob->notifications()->count())->toBe(2);
 });
@@ -635,8 +635,8 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
     );
 
     $page->navigate($path)
-        ->click('[aria-label="1 unread notification"]')
-        ->assertSeeIn('[role="menu"]', 'Due tomorrow: Book the room');
+        ->click('[aria-label="Notifications, 1 unread"]')
+        ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Due tomorrow: Book the room');
 
     expect($bob->notifications()->count())->toBe(1);
 });
@@ -656,13 +656,13 @@ it('[P09b-08] marks the bell entry of a reminded item as read when the item is c
 
     $page = $this->signIn($bob, p09bPagePath($team));
 
-    $page->assertPresent('[aria-label="1 unread notification"]')
+    $page->assertPresent('[aria-label="Notifications, 1 unread"]')
         ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
         ->assertPresent('[aria-label="Notifications"]')
-        ->assertNotPresent('[aria-label="1 unread notification"]')
+        ->assertNotPresent('[aria-label="Notifications, 1 unread"]')
         ->click('[aria-label="Notifications"]')
-        ->assertSeeIn('[role="menu"]', 'Due today: Book the room')
-        ->assertNotPresent('[role="menuitem"] span.font-semibold');
+        ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Due today: Book the room')
+        ->assertNotPresent('[data-slot="notifications-panel"] [data-unread="true"]');
 
     expect($bob->unreadNotifications()->count())->toBe(0)
         ->and($bob->notifications()->count())->toBe(1)
