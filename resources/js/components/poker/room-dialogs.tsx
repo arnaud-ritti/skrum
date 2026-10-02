@@ -1,0 +1,1007 @@
+import { Link, router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import PokerSharesController from '@/actions/App/Http/Controllers/Integrations/PokerSharesController';
+import PokerFacilitatorsController from '@/actions/App/Http/Controllers/Poker/PokerFacilitatorsController';
+import PokerGamesController from '@/actions/App/Http/Controllers/Poker/PokerGamesController';
+import PokerGuestTokensController from '@/actions/App/Http/Controllers/Poker/PokerGuestTokensController';
+import PokerSavedDecksController from '@/actions/App/Http/Controllers/Poker/PokerSavedDecksController';
+import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
+import PokerTasksController from '@/actions/App/Http/Controllers/Poker/PokerTasksController';
+import { DeliveryLines } from '@/components/integrations/share/delivery-lines';
+import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
+import { DeckEditor } from '@/components/skrum/deck-editor';
+import type { DeckDraft } from '@/components/skrum/deck-editor';
+import {
+    DeckPicker,
+    DeckPreviewStrip,
+    deckCards,
+    deckShapeFromCards,
+} from '@/components/skrum/deck-picker';
+import { SessionSettingsContent } from '@/components/skrum/session-settings-popover';
+import type {
+    SessionSettingGroup,
+    SessionSettingsValues,
+} from '@/components/skrum/session-settings-popover';
+import { ShareDialog } from '@/components/skrum/share-dialog';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useTrans } from '@/hooks/use-trans';
+import { ShareChannels } from '@/lib/integrations';
+import {
+    CustomDeckId,
+    customDeckToPayload,
+    deckToPayload,
+    serverErrorsToDeckErrors,
+    toCustomDeck,
+    toDecks,
+} from '@/lib/poker/deck-adapter';
+import type { PokerTask } from '@/lib/poker/types';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
+import { dashboard } from '@/routes';
+import type {
+    IntegrationDelivery,
+    SavedPokerDeck,
+    ShareChannel,
+} from '@/types';
+import { useGame } from './game-context';
+import { MarkdownClasses } from './markdown-classes';
+import { useSetEnded } from './use-round-actions';
+
+/** The dialogs the facilitator menu and the header open. */
+export type RoomDialog = 'settings' | 'share' | 'transfer' | 'end' | 'delete';
+
+type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void };
+
+/** Thrown to keep a dialog open: the reason has already been shown. */
+export class Rejected extends Error {}
+
+/** How many times the dialog was opened: a key that gives each opening fresh fields. */
+function useOpenings(open: boolean): number {
+    const [state, setState] = useState({ open, count: 0 });
+
+    if (state.open !== open) {
+        setState({ open, count: open ? state.count + 1 : state.count });
+    }
+
+    return state.count;
+}
+
+/** A text field of a submitted form; an absent one reads as empty. */
+function textOf(data: FormData, name: string): string {
+    const value = data.get(name);
+
+    return typeof value === 'string' ? value : '';
+}
+
+function FieldError({ message }: { message?: string }) {
+    if (message === undefined) {
+        return null;
+    }
+
+    return (
+        <p role="alert" className="text-xs text-skrum-destructive-text">
+            {message}
+        </p>
+    );
+}
+
+function firstErrors(
+    errors: Record<string, string[]>,
+): Record<string, string | undefined> {
+    return Object.fromEntries(
+        Object.entries(errors).map(([key, messages]) => [key, messages[0]]),
+    );
+}
+
+function emptyDeckDraft(): DeckDraft {
+    return { name: '', values: [], unknownCard: true, breakCard: true };
+}
+
+function sameCards(first: string[], second: string[]): boolean {
+    return (
+        first.length === second.length &&
+        first.every((card, index) => card === second[index])
+    );
+}
+
+const SettingKeys = [
+    'title',
+    'auto_reveal',
+    'anonymous_votes',
+    'cursors_enabled',
+    'reactions_enabled',
+];
+
+/** A message of the server is shown beside its field when the form has one for it. */
+function hasFieldFor(key: string): boolean {
+    return (
+        SettingKeys.includes(key) ||
+        key === 'deck' ||
+        key === 'saved_deck_id' ||
+        key.startsWith('custom_cards')
+    );
+}
+
+function SettingsForm({ onDone }: { onDone: () => void }) {
+    const ctx = useGame();
+    const { t } = useTrans();
+    const { game, me, links } = ctx.snapshot;
+    const deckLocked = game.hasVotes;
+    const canPickDeck = me.isFacilitator && !deckLocked;
+    const [draft, setDraft] = useState<Partial<SessionSettingsValues>>({});
+    const [errors, setErrors] = useState<Record<string, string | undefined>>(
+        {},
+    );
+    const [error, setError] = useState<string | null>(null);
+    const [savedDecks, setSavedDecks] = useState<SavedPokerDeck[]>([]);
+    const [typed, setTyped] = useState<{
+        token: string;
+        deck: DeckDraft;
+    } | null>(null);
+    const [editorDraft, setEditorDraft] = useState<DeckDraft | null>(null);
+    const typedDecks = useRef(new Map<string, DeckDraft>());
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        isMounted.current = true;
+
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!canPickDeck) {
+            return;
+        }
+
+        let cancelled = false;
+
+        retroRequest<SavedPokerDeck[]>(PokerSavedDecksController.index(game.id))
+            .then((decks) => {
+                if (!cancelled) {
+                    setSavedDecks(decks ?? []);
+                }
+            })
+            .catch(() => {
+                // Built-in and typed decks still work without the list.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [canPickDeck, game.id]);
+
+    const gameShape = deckShapeFromCards(game.cards);
+    const isOwnDeck = game.deck === CustomDeckId;
+    const sourceDeck = isOwnDeck
+        ? savedDecks.find(
+              (deck) =>
+                  deck.name === game.deckLabel &&
+                  sameCards(deck.cards, game.cards),
+          )
+        : undefined;
+    const gameCustom: DeckDraft | null =
+        isOwnDeck && sourceDeck === undefined
+            ? { name: '', ...gameShape }
+            : null;
+    const customDeck = typed?.deck ?? gameCustom;
+    const currentToken = isOwnDeck
+        ? (sourceDeck?.id ?? CustomDeckId)
+        : game.deck;
+    const pickedToken =
+        typeof draft.deck === 'string' ? draft.deck : currentToken;
+    const decks = [
+        ...toDecks(ctx.deckOptions, savedDecks).map((deck) => ({
+            ...deck,
+            canManage: false,
+        })),
+        ...(customDeck === null
+            ? []
+            : [toCustomDeck(customDeck, t('Custom deck'))]),
+    ];
+    const deckErrors = serverErrorsToDeckErrors(errors);
+
+    const pickToken = (token: string): void => {
+        const next = { ...draft };
+
+        if (token === currentToken) {
+            delete next.deck;
+        } else {
+            next.deck = token;
+        }
+
+        setDraft(next);
+    };
+
+    const withoutDeckErrors = (
+        current: Record<string, string | undefined>,
+    ): Record<string, string | undefined> =>
+        Object.fromEntries(
+            Object.entries(current).filter(
+                ([key]) => !key.startsWith('custom_cards'),
+            ),
+        );
+
+    const acceptEditorDraft = (): void => {
+        if (editorDraft === null) {
+            return;
+        }
+
+        setEditorDraft(null);
+
+        const isTheGameDeck =
+            gameCustom !== null &&
+            sameCards(deckCards(editorDraft), deckCards(gameCustom));
+
+        if (isTheGameDeck) {
+            setTyped(null);
+            pickToken(CustomDeckId);
+
+            return;
+        }
+
+        const token = `${CustomDeckId}:${typedDecks.current.size + 1}`;
+
+        typedDecks.current.set(token, editorDraft);
+        setTyped({ token, deck: editorDraft });
+        pickToken(token);
+    };
+
+    const deckPayloadOf = (token: string): Record<string, unknown> => {
+        const typedDeck = typedDecks.current.get(token);
+
+        if (typedDeck !== undefined) {
+            return customDeckToPayload(typedDeck);
+        }
+
+        if (token === CustomDeckId) {
+            return gameCustom === null ? {} : customDeckToPayload(gameCustom);
+        }
+
+        const deck = decks.find((candidate) => candidate.id === token);
+
+        return deck === undefined ? {} : deckToPayload(deck, null);
+    };
+
+    /**
+     * Also called by the "Undo" of the confirmation toast, once the dialog is
+     * closed: a refusal is then a toast, and nothing is thrown at nobody.
+     */
+    const apply = async (
+        patch: Partial<SessionSettingsValues>,
+    ): Promise<void> => {
+        const { deck, ...settings } = patch;
+        const changes: Record<string, unknown> = {
+            ...settings,
+            ...(typeof deck === 'string' ? deckPayloadOf(deck) : {}),
+        };
+
+        if (Object.keys(changes).length === 0) {
+            return;
+        }
+
+        if (isMounted.current) {
+            setErrors({});
+            setError(null);
+        }
+
+        try {
+            await retroRequest(
+                PokerSettingsController.update(game.id),
+                changes,
+            );
+        } catch (caught) {
+            const message = ctx.handleError(caught);
+
+            if (!isMounted.current) {
+                if (message !== null) {
+                    toast.error(message);
+                }
+
+                return;
+            }
+
+            if (message === null) {
+                onDone();
+
+                throw caught;
+            }
+
+            const fieldErrors =
+                caught instanceof RetroRequestError
+                    ? firstErrors(caught.errors)
+                    : {};
+
+            setErrors(fieldErrors);
+
+            if (!Object.keys(fieldErrors).some(hasFieldFor)) {
+                setError(message);
+            }
+
+            const refused = typeof deck === 'string' ? deck : '';
+            const refusedDeck = typedDecks.current.get(refused);
+
+            if (
+                refusedDeck !== undefined &&
+                serverErrorsToDeckErrors(fieldErrors).values !== undefined
+            ) {
+                setEditorDraft(refusedDeck);
+            }
+
+            throw caught;
+        }
+
+        await ctx.refetch();
+
+        if (isMounted.current) {
+            onDone();
+        }
+    };
+
+    const anonymous = draft.anonymous_votes ?? game.anonymousVotes;
+    const groups: SessionSettingGroup[] = [
+        {
+            id: 'general',
+            label: t('General'),
+            settings: [
+                {
+                    type: 'text',
+                    key: 'title',
+                    id: 'poker-title',
+                    label: t('Title'),
+                    maxLength: 120,
+                    required: true,
+                },
+            ],
+        },
+        {
+            id: 'votes',
+            label: t('Voting'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'auto_reveal',
+                    id: 'poker-auto-reveal',
+                    label: t(
+                        'Reveal automatically when everyone has voted or the timer ends',
+                    ),
+                },
+                {
+                    type: 'switch',
+                    key: 'anonymous_votes',
+                    id: 'poker-anonymous-votes',
+                    label: t('Anonymous votes'),
+                    help: [
+                        game.anonymousVotes && anonymous === false
+                            ? t('Applies from the next round.')
+                            : null,
+                        t(
+                            "With two voters, each can work out the other's vote from their own.",
+                        ),
+                    ]
+                        .filter((sentence) => sentence !== null)
+                        .join(' '),
+                },
+            ],
+        },
+        {
+            id: 'presence',
+            label: t('Presence'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'cursors_enabled',
+                    id: 'poker-cursors',
+                    label: t('Show live cursors'),
+                },
+                {
+                    type: 'switch',
+                    key: 'reactions_enabled',
+                    id: 'poker-reactions',
+                    label: t('Show flying reactions'),
+                },
+            ],
+        },
+    ];
+
+    const deckSummary = t(':name, :count cards', {
+        name: game.deckLabel,
+        count: game.cards.length,
+    });
+
+    return (
+        <SessionSettingsContent
+            open
+            onOpenChange={(next) => {
+                if (!next) {
+                    onDone();
+                }
+            }}
+            title={t('Game settings')}
+            sessionTitle={game.title}
+            groups={groups}
+            value={{
+                title: game.title,
+                auto_reveal: game.autoReveal,
+                anonymous_votes: game.anonymousVotes,
+                cursors_enabled: game.cursorsEnabled,
+                reactions_enabled: game.reactionsEnabled,
+                deck: currentToken,
+            }}
+            draft={draft}
+            onDraftChange={setDraft}
+            errors={errors}
+            onApply={apply}
+            onReset={() => {
+                setDraft({});
+                setTyped(null);
+                setEditorDraft(null);
+            }}
+        >
+            <div
+                data-slot="poker-settings-deck"
+                className="flex min-w-0 flex-col gap-2"
+            >
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span className="truncate py-1 text-overline text-muted-foreground uppercase">
+                        {t('Deck')}
+                    </span>
+                    {links.decks !== null && (
+                        <Button
+                            asChild
+                            variant="link"
+                            size="sm"
+                            className="h-auto min-w-0 p-0"
+                        >
+                            <Link href={links.decks}>
+                                <span className="truncate">
+                                    {t('Manage decks')}
+                                </span>
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+                {deckLocked && (
+                    <>
+                        <span className="truncate text-xs font-semibold text-muted-foreground">
+                            {deckSummary}
+                        </span>
+                        <DeckPreviewStrip
+                            deck={gameShape}
+                            label={deckSummary}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            {t("The deck can't change once votes exist.")}
+                        </p>
+                    </>
+                )}
+                {!deckLocked && editorDraft === null && (
+                    <DeckPicker
+                        value={
+                            pickedToken.startsWith(CustomDeckId)
+                                ? CustomDeckId
+                                : pickedToken
+                        }
+                        onValueChange={(id) =>
+                            pickToken(
+                                id === CustomDeckId
+                                    ? (typed?.token ?? CustomDeckId)
+                                    : id,
+                            )
+                        }
+                        decks={decks}
+                        onCreate={() =>
+                            setEditorDraft(customDeck ?? emptyDeckDraft())
+                        }
+                        onEdit={() =>
+                            setEditorDraft(customDeck ?? emptyDeckDraft())
+                        }
+                    />
+                )}
+                {!deckLocked && editorDraft !== null && (
+                    <DeckEditor
+                        value={editorDraft}
+                        onChange={(next) => {
+                            setEditorDraft(next);
+                            setErrors(withoutDeckErrors);
+                        }}
+                        errors={deckErrors}
+                        withoutName
+                        saveLabel={t('Use this deck')}
+                        idPrefix="deck-custom"
+                        onSave={acceptEditorDraft}
+                        onCancel={() => {
+                            setEditorDraft(null);
+                            setErrors(withoutDeckErrors);
+                        }}
+                        className="rounded-lg border"
+                    />
+                )}
+                <FieldError message={errors.deck} />
+                <FieldError message={errors.saved_deck_id} />
+                {editorDraft === null && (
+                    <FieldError message={deckErrors.values} />
+                )}
+                <FieldError message={error ?? undefined} />
+            </div>
+        </SessionSettingsContent>
+    );
+}
+
+/** "Settings…": the name, what a round does, presence, and the deck while nobody has voted. */
+function SettingsDialog({ open, onOpenChange }: DialogProps) {
+    const { t } = useTrans();
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent
+                showCloseButton={false}
+                aria-describedby={undefined}
+                data-slot="poker-settings"
+                className="flex flex-col gap-0 overflow-hidden p-0"
+            >
+                <DialogTitle className="sr-only">
+                    {t('Game settings')}
+                </DialogTitle>
+                {open && <SettingsForm onDone={() => onOpenChange(false)} />}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/** "Share": the guest link and its switch, and the channels the team has connected. */
+function ShareGameDialog({ open, onOpenChange }: DialogProps) {
+    const ctx = useGame();
+    const { t } = useTrans();
+    const isMobile = useIsMobile();
+    const { game, me, share, deliveries } = ctx.snapshot;
+
+    const setGuests = async (allowGuests: boolean): Promise<void> => {
+        const result = await ctx.run(
+            retroRequest(PokerSettingsController.update(game.id), {
+                guest_access_enabled: allowGuests,
+            }),
+        );
+
+        if (result !== undefined) {
+            await ctx.refetch();
+        }
+    };
+
+    const regenerate = async (): Promise<void> => {
+        const result = await ctx.run(
+            retroRequest<{ guestUrl: string }>(
+                PokerGuestTokensController.store(game.id),
+            ),
+        );
+
+        if (!result) {
+            throw new Rejected();
+        }
+
+        await ctx.refetch();
+    };
+
+    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
+        if (what !== 'url' || game.guestUrl === null) {
+            return false;
+        }
+
+        try {
+            await navigator.clipboard.writeText(game.guestUrl);
+            toast(t('Link copied'));
+
+            return true;
+        } catch {
+            toast.error(t('Something went wrong. Please try again.'));
+
+            return false;
+        }
+    };
+
+    const post = async (
+        channel: ShareChannel,
+        includeGuestLink: boolean,
+    ): Promise<boolean> => {
+        const delivery = await ctx.run(
+            retroRequest<IntegrationDelivery>(
+                PokerSharesController.store(game.id),
+                { channel, include_guest_link: includeGuestLink },
+            ),
+        );
+
+        if (delivery === undefined) {
+            return false;
+        }
+
+        toast(t('The message is on its way.'));
+        await ctx.refetch();
+
+        return true;
+    };
+
+    return (
+        <ShareDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            session={{
+                id: game.id,
+                kind: 'poker',
+                title: game.title,
+                presentCount: ctx.online.length,
+            }}
+            invite={{
+                url: game.guestUrl,
+                allowGuests: game.guestAccessEnabled,
+            }}
+            canManage={me.isFacilitator && game.endedAt === null}
+            onCopy={copy}
+            onChange={(patch) => {
+                if (patch.allowGuests !== undefined) {
+                    void setGuests(patch.allowGuests);
+                }
+            }}
+            onRegenerate={regenerate}
+            channels={ShareChannels.filter((channel) => share[channel])}
+            onShareToChannel={post}
+            channelsExtra={<DeliveryLines deliveries={deliveries} />}
+            isMobile={isMobile}
+            guestSwitchId="poker-guest-link-access"
+        />
+    );
+}
+
+/** "Hand over facilitation…": to a member of the team who is in the game. */
+function TransferDialog({ open, onOpenChange }: DialogProps) {
+    const ctx = useGame();
+    const { t } = useTrans();
+    const openings = useOpenings(open);
+    const [refusal, setRefusal] = useState<number | null>(null);
+    const candidates = ctx.snapshot.me.transferCandidates;
+    const title = t('Hand over facilitation');
+
+    if (candidates.length === 0) {
+        return (
+            <FormDialog open={open} onOpenChange={onOpenChange} title={title}>
+                <p className="text-sm text-muted-foreground">
+                    {t('No one else can facilitate this game yet.')}
+                </p>
+            </FormDialog>
+        );
+    }
+
+    const handOver = async (data: FormData): Promise<void> => {
+        const userId = textOf(data, 'user_id');
+
+        if (userId === '') {
+            setRefusal(openings);
+
+            throw new Rejected();
+        }
+
+        setRefusal(null);
+
+        const result = await ctx.run(
+            retroRequest(
+                PokerFacilitatorsController.update(ctx.snapshot.game.id),
+                { user_id: userId },
+            ),
+        );
+
+        if (result === undefined) {
+            throw new Rejected();
+        }
+
+        await ctx.refetch();
+    };
+
+    return (
+        <FormDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title={title}
+            submitLabel={t('Hand over')}
+            onSubmit={handOver}
+            error={
+                refusal === openings
+                    ? t('Choose the new facilitator.')
+                    : undefined
+            }
+        >
+            <div className="grid gap-2">
+                <Label htmlFor="poker-new-facilitator">
+                    {t('New facilitator')}
+                </Label>
+                <Select key={openings} name="user_id">
+                    <SelectTrigger id="poker-new-facilitator">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {candidates.map((candidate) => (
+                            <SelectItem
+                                key={candidate.userId}
+                                value={candidate.userId}
+                            >
+                                {candidate.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </FormDialog>
+    );
+}
+
+function EndGameDialog({ open, onOpenChange }: DialogProps) {
+    const { t } = useTrans();
+    const { setEnded } = useSetEnded();
+
+    return (
+        <ConfirmDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title={t('End this game?')}
+            description={t('It becomes read-only until reopened.')}
+            confirmLabel={t('End game')}
+            onConfirm={async () => {
+                if (!(await setEnded(true))) {
+                    throw new Rejected();
+                }
+            }}
+        />
+    );
+}
+
+function DeleteGameDialog({ open, onOpenChange }: DialogProps) {
+    const ctx = useGame();
+    const { t } = useTrans();
+
+    const destroy = async (): Promise<void> => {
+        const result = await ctx.run(
+            retroRequest(PokerGamesController.destroy(ctx.snapshot.game.id)),
+        );
+
+        if (result === undefined) {
+            throw new Rejected();
+        }
+
+        router.visit(ctx.snapshot.links.team ?? dashboard().url);
+    };
+
+    return (
+        <ConfirmDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            tone="destructive"
+            title={t('Delete this game?')}
+            description={t(
+                'Its tasks, rounds and votes are deleted for everyone.',
+            )}
+            confirmLabel={t('Delete')}
+            onConfirm={destroy}
+        />
+    );
+}
+
+/** The dialogs of the facilitator menu and of "Share". None opens once the session has expired. */
+export function RoomDialogs({
+    dialog,
+    onClose,
+}: {
+    dialog: RoomDialog | null;
+    onClose: () => void;
+}) {
+    const { sessionExpired } = useGame();
+    const open = sessionExpired ? null : dialog;
+
+    const change = (isOpen: boolean): void => {
+        if (!isOpen) {
+            onClose();
+        }
+    };
+
+    return (
+        <>
+            <SettingsDialog open={open === 'settings'} onOpenChange={change} />
+            <ShareGameDialog open={open === 'share'} onOpenChange={change} />
+            <TransferDialog open={open === 'transfer'} onOpenChange={change} />
+            <EndGameDialog open={open === 'end'} onOpenChange={change} />
+            <DeleteGameDialog open={open === 'delete'} onOpenChange={change} />
+        </>
+    );
+}
+
+function TaskFields({ task }: { task: PokerTask | null }) {
+    const { t } = useTrans();
+    const [description, setDescription] = useState(task?.description ?? '');
+    const [tab, setTab] = useState<'write' | 'preview'>('write');
+    const savedHtml =
+        task !== null && (task.description ?? '') === description
+            ? task.descriptionHtml
+            : '';
+
+    return (
+        <>
+            <div className="grid gap-2">
+                <Label htmlFor="poker-task-title">{t('Title')}</Label>
+                <Input
+                    id="poker-task-title"
+                    name="title"
+                    required
+                    maxLength={200}
+                    autoFocus
+                    defaultValue={task?.title ?? ''}
+                />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="poker-task-description">
+                    {t('Description')}
+                </Label>
+                <Tabs
+                    value={tab}
+                    onValueChange={setTab}
+                    aria-label={t('Description')}
+                    items={[
+                        { value: 'write', label: t('Write') },
+                        { value: 'preview', label: t('Preview') },
+                    ]}
+                >
+                    <TabsContent
+                        value="write"
+                        forceMount
+                        className="flex flex-col gap-2 data-[state=inactive]:hidden"
+                    >
+                        <Textarea
+                            id="poker-task-description"
+                            name="description"
+                            rows={8}
+                            maxLength={10000}
+                            value={description}
+                            onChange={(event) =>
+                                setDescription(event.target.value)
+                            }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            {t('Markdown is supported.')}
+                        </p>
+                    </TabsContent>
+                    <TabsContent value="preview">
+                        {savedHtml === '' ? (
+                            <p className="min-h-24 rounded-md border p-3 text-sm text-muted-foreground">
+                                {t('Save to preview')}
+                            </p>
+                        ) : (
+                            <div
+                                className={cn(
+                                    MarkdownClasses,
+                                    'min-h-24 rounded-md border p-3',
+                                )}
+                                dangerouslySetInnerHTML={{ __html: savedHtml }}
+                            />
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </div>
+        </>
+    );
+}
+
+/** The full task form: a title and a Markdown description. `task` is null for a new task. */
+export function TaskFormDialog({
+    task,
+    open,
+    onOpenChange,
+}: DialogProps & { task: PokerTask | null }) {
+    const { snapshot, apply, run } = useGame();
+    const { t } = useTrans();
+    const openings = useOpenings(open);
+    const gameId = snapshot.game.id;
+
+    const save = async (data: FormData): Promise<void> => {
+        const description = textOf(data, 'description');
+        const saved = await run(
+            retroRequest<PokerTask>(
+                task
+                    ? PokerTasksController.update({
+                          game: gameId,
+                          task: task.id,
+                      })
+                    : PokerTasksController.store(gameId),
+                {
+                    title: textOf(data, 'title').trim(),
+                    description: description.trim() === '' ? null : description,
+                },
+            ),
+        );
+
+        if (!saved) {
+            throw new Rejected();
+        }
+
+        apply({ type: 'task.upsert', task: saved });
+    };
+
+    return (
+        <FormDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title={task ? t('Edit task') : t('Add task')}
+            submitLabel={t('Save')}
+            onSubmit={save}
+        >
+            <TaskFields key={openings} task={task} />
+        </FormDialog>
+    );
+}
+
+/** "Custom…" of the round timer: a number of minutes, from 1 to 60. */
+export function CustomTimerDialog({
+    open,
+    onOpenChange,
+    onStart,
+}: DialogProps & {
+    /** Resolves to false when the server refused the timer. */
+    onStart: (seconds: number) => Promise<boolean>;
+}) {
+    const { t } = useTrans();
+    const [isOutOfRange, setIsOutOfRange] = useState(false);
+
+    const start = async (data: FormData): Promise<void> => {
+        const minutes = Number(data.get('minutes'));
+        const isInRange =
+            Number.isInteger(minutes) && minutes >= 1 && minutes <= 60;
+
+        setIsOutOfRange(!isInRange);
+
+        if (!isInRange || !(await onStart(minutes * 60))) {
+            throw new Rejected();
+        }
+    };
+
+    const change = (isOpen: boolean): void => {
+        setIsOutOfRange(false);
+        onOpenChange(isOpen);
+    };
+
+    return (
+        <FormDialog
+            open={open}
+            onOpenChange={change}
+            title={t('Custom minutes')}
+            submitLabel={t('Start timer')}
+            error={
+                isOutOfRange ? t('Choose between 1 and 60 minutes.') : undefined
+            }
+            onSubmit={start}
+        >
+            <div className="grid gap-2">
+                <Label htmlFor="poker-timer-minutes">{t('Minutes')}</Label>
+                <Input
+                    id="poker-timer-minutes"
+                    name="minutes"
+                    type="number"
+                    min={1}
+                    max={60}
+                    step={1}
+                    required
+                    defaultValue="5"
+                />
+            </div>
+        </FormDialog>
+    );
+}

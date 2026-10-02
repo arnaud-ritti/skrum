@@ -19,6 +19,8 @@ export const ownLayoutPages: readonly string[] = [
     'poker/decks',
     'games/index',
     'games/join',
+    'poker/estimates',
+    'poker/join',
     'games/show',
     'whiteboards/show',
     'whiteboards/join',

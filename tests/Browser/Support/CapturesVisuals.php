@@ -98,7 +98,7 @@ trait CapturesVisuals
     }
 
     /**
-     * @param  null|callable(string, array<string, string>): mixed  $visit  receives the path and the visit options (colour scheme, locale, reduced motion) and returns the page
+     * @param  null|callable(string, array<string, string>, int): mixed  $visit  receives the path, the visit options (colour scheme, locale, reduced motion) and the width of the capture, and returns the page
      */
     protected function captureVisuals(string $name, string $path, ?callable $visit = null): void
     {
@@ -113,7 +113,7 @@ trait CapturesVisuals
                         'reducedMotion' => 'reduce',
                     ];
 
-                    $page = $visit === null ? visit($path, $options) : $visit($path, $options);
+                    $page = $visit === null ? visit($path, $options) : $visit($path, $options, $width);
 
                     $page->resize($width, $height);
                     $page->script(self::SettleScript);

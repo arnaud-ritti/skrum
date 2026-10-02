@@ -121,6 +121,7 @@ it('gives guests no guest url, team link or transfer candidates', function () {
 
     expect($snapshot['game']['guestUrl'])->toBeNull()
         ->and($snapshot['links']['team'])->toBeNull()
+        ->and($snapshot['links']['decks'])->toBeNull()
         ->and($snapshot['me'])->toMatchArray([
             'playerId' => $guest->id,
             'userId' => null,
@@ -158,6 +159,7 @@ it('describes what members and workspace admins may do', function () {
         'canDelete' => false,
     ])
         ->and($forMember['links']['team'])->toBe(route('teams.show', [$game->team->workspace, $game->team]))
+        ->and($forMember['links']['decks'])->toBe(route('teams.pokerDecks.index', [$game->team->workspace, $game->team]))
         ->and($forMember['game']['guestUrl'])->toBeNull()
         ->and($forMember['serverTime'])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/')
         ->and($forAdmin['me']['canDelete'])->toBeTrue();

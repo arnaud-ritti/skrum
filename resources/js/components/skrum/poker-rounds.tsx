@@ -22,6 +22,8 @@ export type PokerRoundsProps = {
     status?: 'ready' | 'loading' | 'failed';
     isNumeric?: boolean;
     locale?: string;
+    /** Adds the distribution, the median and the agreement of each revealed round. */
+    statistics?: boolean;
     open?: boolean;
     defaultOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -142,11 +144,11 @@ function RoundVotes({
     const { t } = useTrans();
     const mode = round.result?.mode ?? [];
 
-    // An anonymous round lists the values in deck order, never next to a name
-    // and never in the order the votes came in.
+    // An anonymous round lists the values in deck order with their count,
+    // never next to a name and never in the order the votes came in.
     if (round.anonymous) {
-        const values = (round.result?.distribution ?? []).flatMap(
-            ({ value, count }) => Array.from({ length: count }, () => value),
+        const entries = (round.result?.distribution ?? []).filter(
+            (entry) => entry.count > 0,
         );
 
         return (
@@ -158,11 +160,14 @@ function RoundVotes({
                     aria-label={t('Anonymous votes')}
                     className="flex min-w-0 flex-wrap gap-1.5"
                 >
-                    {values.map((value, index) => (
-                        <li key={`${value}-${index}`} className="flex min-w-0">
+                    {entries.map((entry) => (
+                        <li key={entry.value} className="flex min-w-0">
                             <MiniCard
-                                value={value}
-                                highlighted={mode.includes(value)}
+                                value={t(':value × :count', {
+                                    value: entry.value,
+                                    count: entry.count,
+                                })}
+                                highlighted={mode.includes(entry.value)}
                             />
                         </li>
                     ))}
@@ -182,15 +187,83 @@ function RoundVotes({
                     data-slot="poker-round-vote"
                     className="flex max-w-full min-w-0 items-center gap-1.5 text-xs"
                 >
+                    <span className="min-w-0 truncate text-muted-foreground">
+                        {nameOf(vote.playerId)}:{' '}
+                    </span>
                     <MiniCard
                         value={vote.value ?? '—'}
                         highlighted={
                             vote.value !== null && mode.includes(vote.value)
                         }
                     />
-                    <span className="min-w-0 truncate text-muted-foreground">
-                        {nameOf(vote.playerId)}
-                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function RoundFigures({
+    round,
+    locale,
+}: {
+    round: PokerRound;
+    locale?: string;
+}) {
+    const { t } = useTrans();
+    const result = round.result;
+
+    if (result === null) {
+        return null;
+    }
+
+    // An anonymous round already lists its values with their count.
+    const entries = round.anonymous
+        ? []
+        : result.distribution.filter((entry) => entry.count > 0);
+    const figures: string[] = [];
+
+    if (result.median !== undefined && result.median !== null) {
+        figures.push(`${t('Median')}: ${formatAverage(result.median, locale)}`);
+    }
+
+    if (result.agreement !== undefined && result.agreement !== null) {
+        const percent = Math.round(result.agreement * 100);
+
+        figures.push(
+            `${t('Agreement')}: ${
+                result.mode.length > 0
+                    ? t(':percent % on :value', {
+                          percent,
+                          value: result.mode.join(', '),
+                      })
+                    : t(':percent %', { percent })
+            }`,
+        );
+    }
+
+    if (entries.length === 0 && figures.length === 0) {
+        return null;
+    }
+
+    return (
+        <ul
+            data-slot="poker-round-figures"
+            className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground"
+        >
+            {entries.map((entry) => (
+                <li
+                    key={entry.value}
+                    className="whitespace-nowrap tabular-nums"
+                >
+                    {t(':value × :count', {
+                        value: entry.value,
+                        count: entry.count,
+                    })}
+                </li>
+            ))}
+            {figures.map((figure) => (
+                <li key={figure} className="min-w-0 truncate">
+                    {figure}
                 </li>
             ))}
         </ul>
@@ -204,6 +277,7 @@ export function PokerRounds({
     status = 'ready',
     isNumeric,
     locale,
+    statistics = false,
     open,
     defaultOpen,
     onOpenChange,
@@ -297,6 +371,12 @@ export function PokerRounds({
                                 </div>
                                 {round.revealedAt !== null && (
                                     <RoundVotes round={round} nameOf={nameOf} />
+                                )}
+                                {statistics && round.revealedAt !== null && (
+                                    <RoundFigures
+                                        round={round}
+                                        locale={locale}
+                                    />
                                 )}
                             </li>
                         ))}

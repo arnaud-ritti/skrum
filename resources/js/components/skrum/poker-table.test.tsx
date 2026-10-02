@@ -139,7 +139,7 @@ describe('PokerTable while voting', () => {
         const onReveal = vi.fn();
         const { unmount } = renderTable({ isFacilitator: true, onReveal });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Show votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Reveal cards' }));
         fireEvent.keyDown(document, { key: 'r' });
 
         expect(onReveal).toHaveBeenCalledTimes(2);
@@ -149,7 +149,9 @@ describe('PokerTable while voting', () => {
         renderTable({ onReveal: guestReveal });
         fireEvent.keyDown(document, { key: 'r' });
 
-        expect(screen.queryByRole('button', { name: 'Show votes' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Reveal cards' }),
+        ).toBeNull();
         expect(guestReveal).not.toHaveBeenCalled();
     });
 
@@ -161,7 +163,7 @@ describe('PokerTable while voting', () => {
             seats: [seat(0, 'waiting'), seat(1, 'waiting')],
         });
         const button = (): HTMLButtonElement =>
-            screen.getByRole('button', { name: 'Show votes' });
+            screen.getByRole('button', { name: 'Reveal cards' });
         const isUnavailable = (): boolean =>
             button().getAttribute('aria-disabled') === 'true';
 
@@ -211,7 +213,7 @@ describe('PokerTable while voting', () => {
             />
         );
         const { rerender } = renderWithProviders(voting);
-        const reveal = screen.getByRole('button', { name: 'Show votes' });
+        const reveal = screen.getByRole('button', { name: 'Reveal cards' });
 
         reveal.focus();
         fireEvent.click(reveal);
@@ -228,7 +230,7 @@ describe('PokerTable while voting', () => {
         );
 
         expect(document.activeElement).toBe(
-            screen.getByRole('region', { name: 'Result' }),
+            screen.getByRole('region', { name: 'Result · 6 votes' }),
         );
         expect(screen.getByRole('status').textContent).toBe(
             'Votes revealed. Average: 7.5. Consensus',
@@ -372,6 +374,61 @@ describe('PokerTable while voting', () => {
         ).toBeTruthy();
     });
 
+    it('shows the watchers in a box before the seats and crowns a watching facilitator', () => {
+        const { container } = renderTable({
+            facilitatorId: 'u2',
+            seats: [
+                seat(0, 'voted', undefined, 'Camille'),
+                seat(2, 'watching', undefined, 'Olga'),
+            ],
+        });
+        const watching = screen.getByRole('region', { name: 'Watching' });
+        const players = screen.getByRole('region', { name: 'Players' });
+
+        expect(
+            within(watching).getByRole('img', { name: 'Facilitator' }),
+        ).toBeTruthy();
+        expect(
+            watching.compareDocumentPosition(players) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(
+            container.querySelectorAll('[data-slot="poker-seat-facilitator"]'),
+        ).toHaveLength(0);
+    });
+
+    it('leaves the story out of the centre when it is shown beside the table', () => {
+        const { rerender } = renderTable();
+
+        expect(screen.getByText('ATLAS-1290 · Export CSV')).toBeTruthy();
+
+        rerender(
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', undefined, 'Camille')]}
+                revealed={false}
+                showStory={false}
+            />,
+        );
+
+        expect(screen.queryByText('ATLAS-1290 · Export CSV')).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe('1 of 1 voted');
+    });
+
+    it('shows the progress as a sentence and a bar, without a percentage in the Players section', () => {
+        renderTable();
+
+        const players = screen.getByRole('region', { name: 'Players' });
+        const bar = within(players).getByRole('progressbar', {
+            name: 'Voting progress',
+        });
+
+        expect(bar.getAttribute('aria-valuenow')).toBe('2');
+        expect(bar.getAttribute('aria-valuemax')).toBe('3');
+        expect(bar.getAttribute('aria-valuetext')).toBe('2 of 3 voted');
+        expect(players.textContent).not.toContain('%');
+    });
+
     it('marks the facilitator seat and an offline voter', () => {
         const { container } = renderTable({
             facilitatorId: 'u0',
@@ -460,7 +517,7 @@ describe('PokerTable revealed', () => {
 
         expect(screen.getAllByText('4').length).toBeGreaterThan(0);
         expect(screen.getByText('3, 5')).toBeTruthy();
-        expect(screen.getByText('Nearest card')).toBeTruthy();
+        expect(screen.getByText('Nearest card: 5')).toBeTruthy();
         expect(
             screen.getByText('Revealed automatically — everyone voted'),
         ).toBeTruthy();
@@ -480,15 +537,23 @@ describe('PokerTable revealed', () => {
             },
         });
 
+        const center = document.querySelector(
+            '[data-slot="poker-table-center"]',
+        ) as HTMLElement;
+
         expect(screen.getAllByText('7.9').length).toBeGreaterThan(0);
-        expect(screen.getByText('Median')).toBeTruthy();
-        expect(screen.getByText('43%')).toBeTruthy();
-        expect(screen.getByText('Result · 7 votes')).toBeTruthy();
-        expect(screen.getByText('Spread 3 → 21')).toBeTruthy();
+        expect(within(center).getByText('Median')).toBeTruthy();
         expect(
-            screen.getByText(
-                'Yuki (21) and Lucas (3) explain their estimates, then we revote.',
-            ),
+            center.querySelector('[data-slot="poker-center-stat"]')
+                ?.textContent,
+        ).toBe('5');
+        expect(within(center).getByText('Spread 3 → 21')).toBeTruthy();
+        expect(screen.getAllByText('Median')).toHaveLength(2);
+        expect(screen.getByText('43 % on 5')).toBeTruthy();
+        expect(screen.getByText('Result · 7 votes')).toBeTruthy();
+        expect(screen.getAllByText('Spread 3 → 21')).toHaveLength(2);
+        expect(
+            screen.getByText('Yuki (21) and Lucas (3) open the discussion.'),
         ).toBeTruthy();
     });
 
@@ -547,7 +612,7 @@ describe('PokerTable revealed', () => {
             },
         });
 
-        expect(screen.getByText('Spread ½ → L')).toBeTruthy();
+        expect(screen.getAllByText('Spread ½ → L')).toHaveLength(2);
         expect(screen.getAllByText('M, L').length).toBeGreaterThan(0);
         expect(screen.queryByText('Average')).toBeNull();
         expect(
@@ -887,8 +952,109 @@ describe('PokerResultPanel alone', () => {
             <PokerResultPanel result={consensus} story={story} />,
         );
 
-        expect(screen.getByRole('region', { name: 'Result' })).toBeTruthy();
+        expect(
+            screen.getByRole('region', { name: 'Result · 6 votes' }),
+        ).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
+    });
+
+    it('is named by its heading, whose id can be given', () => {
+        const { container } = renderWithProviders(
+            <PokerResultPanel
+                result={consensus}
+                story={story}
+                headingId="poker-result"
+            />,
+        );
+
+        expect(
+            container
+                .querySelector('[aria-labelledby="poker-result"] h3')
+                ?.getAttribute('id'),
+        ).toBe('poker-result');
+    });
+
+    it('lists the distribution as value, bar and count, in that order', () => {
+        const { container } = renderWithProviders(
+            <PokerResultPanel result={dispersion} story={story} />,
+        );
+        const rows = Array.from(
+            container.querySelectorAll('[data-slot="poker-result"] li'),
+        ).map((row) => {
+            const spans = row.querySelectorAll('span');
+
+            return `${spans[0].textContent} x${spans[2].textContent}`;
+        });
+
+        expect(rows).toEqual(['3 x1', '5 x3', '8 x2', '21 x1']);
+    });
+
+    it('shows the spread the server sends and what the share of the agreement is on', () => {
+        renderWithProviders(
+            <PokerResultPanel
+                result={{
+                    average: 5.25,
+                    median: 5,
+                    spread: { min: 3, max: 8 },
+                    agreement: 0.5,
+                    outliers: { low: ['u2'], high: ['u1'] },
+                    mode: ['5'],
+                    consensus: false,
+                    nearestCard: '5',
+                    distribution: [
+                        { value: '3', count: 1 },
+                        { value: '5', count: 2 },
+                        { value: '8', count: 1 },
+                        { value: '13', count: 0 },
+                    ],
+                }}
+                seats={[
+                    seat(0, 'voted', '5', 'Camille'),
+                    seat(1, 'voted', '8', 'Malik'),
+                    seat(2, 'voted', '3', 'Lucas'),
+                    seat(3, 'voted', '5', 'Sofia'),
+                ]}
+                story={story}
+            />,
+        );
+
+        expect(screen.getByText('Spread 3 → 8')).toBeTruthy();
+        expect(screen.getByText('50 % on 5')).toBeTruthy();
+        expect(screen.getByText('Median')).toBeTruthy();
+        expect(
+            screen.getByText('Lucas (3) and Malik (8) open the discussion.'),
+        ).toBeTruthy();
+    });
+
+    it('names one extreme, and nobody on an anonymous round', () => {
+        const result: PokerResult = {
+            ...dispersion,
+            outliers: { low: ['u2'], high: [] },
+        };
+        const seats = [seat(2, 'voted', '3', 'Lucas')];
+        const { rerender } = renderWithProviders(
+            <PokerResultPanel result={result} seats={seats} story={story} />,
+        );
+
+        expect(
+            screen.getByText('Lucas (3) opens the discussion.'),
+        ).toBeTruthy();
+
+        rerender(
+            <PokerResultPanel
+                result={result}
+                seats={seats}
+                story={story}
+                anonymous
+            />,
+        );
+
+        expect(screen.queryByText(/Lucas/)).toBeNull();
+        expect(
+            screen.getByText(
+                'The lowest and the highest estimates open the discussion.',
+            ),
+        ).toBeTruthy();
     });
 });
 

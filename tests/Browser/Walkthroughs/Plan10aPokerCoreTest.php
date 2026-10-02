@@ -232,8 +232,11 @@ it('[P10a-05] lets the facilitator allow guests and gives a working guest link',
 
     $facilitator->assertVisible('[aria-label="Facilitator menu"]')
         ->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+        ->assertSee('Settings…')
+        ->assertDontSee('Guest link…')
+        ->keys('[role="menu"]', 'Escape')
+        ->assertNotPresent('[role="menu"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('#poker-guest-link-access')
         ->click('#poker-guest-link-access')
         ->assertVisible('input[aria-label="Guest link"]')
@@ -258,8 +261,8 @@ it('[P10a-06] lets a guest join through the link with a restricted view', functi
 
     visit($joinUrl)
         ->assertSee('Sprint 12 estimates')
-        ->assertSee('Choose the name other players will see.')
-        ->assertSee('Display name')
+        ->assertSee('Join as a guest')
+        ->assertSee('Your nickname')
         ->assertSee('Join as spectator');
 
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -296,14 +299,14 @@ it('[P10a-07a] shows the task picked by the facilitator as current to everyone',
     $facilitator->click('Login page')
         ->assertCount('[data-test="poker-task-row"][aria-current="true"]', 1)
         ->assertScript(p10aCurrentTaskScript(), 'Login page')
-        ->assertSee('Show votes')
-        ->assertButtonDisabled('Show votes');
+        ->assertSee('Reveal cards')
+        ->assertButtonDisabled('Reveal cards');
 
     $guest->assertCount('[data-test="poker-task-row"][aria-current="true"]', 1)
         ->assertScript(p10aCurrentTaskScript(), 'Login page')
         ->assertVisible('section[aria-labelledby^="poker-task-"]')
         ->assertEnabled('[aria-label="Play 5"]')
-        ->assertDontSee('Show votes');
+        ->assertDontSee('Reveal cards');
 });
 
 it('[P10a-07b] shows a played card face-down and never its value before the reveal', function () {
@@ -323,7 +326,7 @@ it('[P10a-07b] shows a played card face-down and never its value before the reve
         ->assertNotPresent('[aria-label="Visitor: 5"]')
         ->assertDontSeeIn('section[aria-label="Players"]', '5')
         ->assertScript('document.querySelector(\'section[aria-label="Players"]\').innerText.includes("5")', false)
-        ->assertButtonEnabled('Show votes')
+        ->assertButtonEnabled('Reveal cards')
         ->assertEnabled('[aria-label="Play 8"]')
         ->click('[aria-label="Play 8"]');
 
@@ -388,9 +391,9 @@ it('[P10a-08] reveals both votes with the result to everyone', function () {
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    $facilitator->assertSee('Show votes')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes');
+    $facilitator->assertSee('Reveal cards')
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$facilitator, $member] as $page) {
         $page->assertVisible('[aria-label="Ada Facilitator: 8"]')
@@ -420,7 +423,7 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
     $facilitator->assertSee('Re-vote')
         ->click('Re-vote')
         ->assertVisible('[aria-label="Ada Facilitator: Not voted yet"]')
-        ->assertSee('Show votes');
+        ->assertSee('Reveal cards');
 
     $member->assertVisible('[aria-label="Bob Member: Not voted yet"]')
         ->assertEnabled('[aria-label="Play 5"]');
@@ -431,8 +434,8 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
 
     $facilitator->assertVisible('[aria-label="Bob Member: Voted"]')
         ->assertSee('Votes: 2')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes');
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$facilitator, $member] as $page) {
         $page->assertSee('Consensus')
@@ -483,7 +486,7 @@ it('[P10a-10] moves to the next task and drops a deleted current task for everyo
         ->assertVisible('[aria-label="Delete task"]')
         ->click('[aria-label="Delete task"]')
         ->assertSee('Delete this task?')
-        ->click('[role="dialog"] button:has-text("Delete")');
+        ->click('[role="alertdialog"] button:has-text("Delete")');
 
     $facilitator->assertSee('Pick a task to start voting')
         ->assertCount('@poker-task-row', 1);
@@ -512,7 +515,7 @@ it('[P10a-12] makes an ended game read-only for everyone and editable again once
         ->assertSee('End game')
         ->click('End game')
         ->assertSee('End this game?')
-        ->click('[role="dialog"] button:has-text("End game")');
+        ->click('[role="alertdialog"] button:has-text("End game")');
 
     $facilitator->assertSee('Game ended')
         ->assertDontSee('Add task')
@@ -617,15 +620,16 @@ it('[P10a-14] ends the access of guests when the guest link is regenerated', fun
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$oldToken}", 'Visitor'));
 
-    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
-        ->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+    $facilitator->assertVisible('[aria-label="Share"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('input[aria-label="Guest link"]');
 
     $oldUrl = $facilitator->value('input[aria-label="Guest link"]');
 
     $facilitator->click('Create a new link')
+        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertValueIsNot('input[aria-label="Guest link"]', $oldUrl);
 
     $guest->assertSee('Your access to this game has ended.')
@@ -707,7 +711,7 @@ it('[P10a-16] deletes the game, sends the facilitator to the team page and tells
         ->assertSee('Delete game…')
         ->click('Delete game…')
         ->assertSee('Delete this game?')
-        ->click('[role="dialog"] button:has-text("Delete")');
+        ->click('[role="alertdialog"] button:has-text("Delete")');
 
     $facilitator->assertPathIs($teamPath)
         ->assertSee('Planning poker')

@@ -1,11 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
 import PokerJoinsController from '@/actions/App/Http/Controllers/PokerJoinsController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { GuestJoinPage } from '@/components/session/guest-join-page';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import type { JoinSession } from '@/types';
 
@@ -15,70 +10,31 @@ type Props =
           isInvalid: false;
           guestToken: string;
           session: JoinSession;
-          gameTitle: string;
           suggestedName: string | null;
       };
 
 export default function JoinPokerGame(props: Props) {
     const { t } = useTrans();
 
-    if (props.isInvalid) {
-        return (
-            <>
-                <Head title={t('Join a planning poker game')} />
-                <Heading
-                    title={t('Join a planning poker game')}
-                    description={t('This guest link is no longer valid.')}
-                />
-            </>
-        );
-    }
-
     return (
-        <>
-            <Head title={props.gameTitle} />
-            <div className="space-y-6">
-                <Heading
-                    title={props.gameTitle}
-                    description={t('Choose the name other players will see.')}
-                />
-                <Form
-                    {...PokerJoinsController.store.form(props.guestToken)}
-                    className="space-y-4"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">
-                                    {t('Display name')}
-                                </Label>
-                                <Input
-                                    id="name"
-                                    name="name"
-                                    required
-                                    maxLength={50}
-                                    autoFocus
-                                    defaultValue={props.suggestedName ?? ''}
-                                />
-                                <InputError message={errors.name} />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Checkbox
-                                    id="spectator"
-                                    name="spectator"
-                                    value="1"
-                                />
-                                <Label htmlFor="spectator">
-                                    {t('Join as spectator')}
-                                </Label>
-                            </div>
-                            <Button className="w-full" disabled={processing}>
-                                {t('Join')}
-                            </Button>
-                        </>
-                    )}
-                </Form>
-            </div>
-        </>
+        <GuestJoinPage
+            kind="poker"
+            invalidTitle={t('Join a planning poker game')}
+            session={props.isInvalid ? null : props.session}
+            storeUrl={
+                props.isInvalid
+                    ? null
+                    : PokerJoinsController.store.url(props.guestToken)
+            }
+            suggestedName={props.isInvalid ? null : props.suggestedName}
+            extraFields={['spectator']}
+        >
+            <Switch
+                id="spectator"
+                name="spectator"
+                value="1"
+                label={t('Join as spectator')}
+            />
+        </GuestJoinPage>
     );
 }

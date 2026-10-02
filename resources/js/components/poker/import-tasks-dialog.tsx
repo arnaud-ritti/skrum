@@ -6,18 +6,22 @@ import {
     useState,
     type FormEvent,
 } from 'react';
+import { Download, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import PokerImportContainersController from '@/actions/App/Http/Controllers/Integrations/PokerImportContainersController';
 import PokerImportIterationsController from '@/actions/App/Http/Controllers/Integrations/PokerImportIterationsController';
 import PokerImportPreviewsController from '@/actions/App/Http/Controllers/Integrations/PokerImportPreviewsController';
 import PokerImportsController from '@/actions/App/Http/Controllers/Integrations/PokerImportsController';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
+    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -29,8 +33,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useTrans } from '@/hooks/use-trans';
 import {
     TrackerLabels,
@@ -41,7 +47,9 @@ import {
     type TrackerIteration,
 } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
+import { TicketClasses } from './task-source';
 
 type Mode = 'iteration' | 'query';
 
@@ -108,11 +116,13 @@ export function ImportTasksDialog({ open, onOpenChange, sources }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                aria-describedby={undefined}
-                className="sm:max-w-2xl"
-            >
-                <DialogTitle>{t('Import tasks')}</DialogTitle>
+            <DialogContent data-slot="poker-import" className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{t('Import tasks')}</DialogTitle>
+                    <DialogDescription>
+                        {t('Pick the issues to add to the tasks of this game.')}
+                    </DialogDescription>
+                </DialogHeader>
                 {open && sources.length > 0 && (
                     <ImportForm
                         sources={sources}
@@ -358,8 +368,14 @@ function ImportForm({
             ? iteration !== ''
             : query.trim() !== '' && (!isGitHub || container !== '');
 
+    const chooseMode = (next: Mode) => {
+        setMode(next);
+        resetPreview();
+        setError(null);
+    };
+
     const containerPicker = (
-        <div className="space-y-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
             <Label htmlFor="import-container-search">{terms.container}</Label>
             <Input
                 id="import-container-search"
@@ -371,7 +387,10 @@ function ImportForm({
                 value={container}
                 onValueChange={(next) => void chooseContainer(next)}
             >
-                <SelectTrigger aria-label={terms.chooseContainer}>
+                <SelectTrigger
+                    className="w-full"
+                    aria-label={terms.chooseContainer}
+                >
                     <SelectValue placeholder={terms.chooseContainer} />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,133 +405,143 @@ function ImportForm({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="flex min-w-0 flex-col gap-4">
             {sources.length > 1 && (
                 <ToggleGroup
                     type="single"
-                    variant="outline"
+                    variant="segmented"
+                    fullWidth
                     value={source}
                     onValueChange={chooseSource}
                     aria-label={t('Source')}
-                >
-                    {sources.map((item) => (
-                        <ToggleGroupItem key={item} value={item}>
-                            {TrackerLabels[item]}
-                        </ToggleGroupItem>
-                    ))}
-                </ToggleGroup>
+                    options={sources.map((item) => ({
+                        value: item,
+                        label: TrackerLabels[item],
+                    }))}
+                />
             )}
 
-            <ToggleGroup
-                type="single"
-                variant="outline"
+            <Tabs
+                variant="line"
                 value={mode}
-                onValueChange={(next) => {
-                    if (next === 'iteration' || next === 'query') {
-                        setMode(next);
-                        resetPreview();
-                        setError(null);
-                    }
-                }}
+                onValueChange={chooseMode}
                 aria-label={t('Import from :source', {
                     source: TrackerLabels[source],
                 })}
+                items={[
+                    { value: 'iteration', label: terms.iteration },
+                    { value: 'query', label: t('Query') },
+                ]}
+                className="gap-4"
             >
-                <ToggleGroupItem value="iteration">
-                    {terms.iteration}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="query">{t('Query')}</ToggleGroupItem>
-            </ToggleGroup>
-
-            <form
-                className="space-y-3"
-                onSubmit={(event) => void showIssues(event)}
-            >
-                {mode === 'iteration' ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        {containerPicker}
-                        <div className="space-y-1.5">
-                            <Label>{terms.iteration}</Label>
-                            <Select
-                                value={iteration}
-                                onValueChange={(next) => {
-                                    setIteration(next);
-                                    resetPreview();
-                                }}
-                                disabled={iterations === null}
-                            >
-                                <SelectTrigger
-                                    aria-label={terms.chooseIteration}
-                                >
-                                    <SelectValue
-                                        placeholder={terms.chooseIteration}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(iterations ?? []).map((item) => (
-                                        <SelectItem
-                                            key={item.id}
-                                            value={item.id}
+                <TabsContent value={mode} tabIndex={-1}>
+                    <form
+                        className="flex min-w-0 flex-col gap-3"
+                        onSubmit={(event) => void showIssues(event)}
+                    >
+                        {mode === 'iteration' ? (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {containerPicker}
+                                <div className="flex min-w-0 flex-col gap-1.5">
+                                    <Label htmlFor="import-iteration">
+                                        {terms.iteration}
+                                    </Label>
+                                    <Select
+                                        value={iteration}
+                                        onValueChange={(next) => {
+                                            setIteration(next);
+                                            resetPreview();
+                                        }}
+                                        disabled={iterations === null}
+                                    >
+                                        <SelectTrigger
+                                            id="import-iteration"
+                                            className="w-full"
+                                            aria-label={terms.chooseIteration}
                                         >
-                                            {item.name} ·{' '}
-                                            {item.state === 'active'
-                                                ? t('Active')
-                                                : t('Upcoming')}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {iterations !== null && iterations.length === 0 && (
-                                <p className="text-xs text-muted-foreground">
-                                    {terms.noIteration}
-                                </p>
+                                            <SelectValue
+                                                placeholder={
+                                                    terms.chooseIteration
+                                                }
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {(iterations ?? []).map((item) => (
+                                                <SelectItem
+                                                    key={item.id}
+                                                    value={item.id}
+                                                >
+                                                    {item.name} ·{' '}
+                                                    {item.state === 'active'
+                                                        ? t('Active')
+                                                        : t('Upcoming')}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {iterations !== null &&
+                                        iterations.length === 0 && (
+                                            <p className="text-xs text-muted-foreground">
+                                                {terms.noIteration}
+                                            </p>
+                                        )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex min-w-0 flex-col gap-3">
+                                {isGitHub && containerPicker}
+                                <div className="flex min-w-0 flex-col gap-1.5">
+                                    <Label htmlFor="import-query">
+                                        {t('Query')}
+                                    </Label>
+                                    <Textarea
+                                        id="import-query"
+                                        value={query}
+                                        maxLength={1000}
+                                        rows={2}
+                                        placeholder={terms.queryPlaceholder}
+                                        onChange={(event) => {
+                                            setQuery(event.target.value);
+                                            resetPreview();
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            className="max-w-full min-w-0 self-start"
+                            disabled={!canShow || loading}
+                        >
+                            {loading ? (
+                                <Spinner aria-hidden />
+                            ) : (
+                                <Search aria-hidden />
                             )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {isGitHub && containerPicker}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="import-query">{t('Query')}</Label>
-                            <Textarea
-                                id="import-query"
-                                value={query}
-                                maxLength={1000}
-                                rows={2}
-                                placeholder={terms.queryPlaceholder}
-                                onChange={(event) => {
-                                    setQuery(event.target.value);
-                                    resetPreview();
-                                }}
-                            />
-                        </div>
-                    </div>
-                )}
+                            <span className="truncate">
+                                {loading ? t('Loading…') : t('Show issues')}
+                            </span>
+                        </Button>
+                    </form>
+                </TabsContent>
+            </Tabs>
 
-                <Button
-                    type="submit"
-                    variant="secondary"
-                    disabled={!canShow || loading}
-                >
-                    {loading ? t('Loading…') : t('Show issues')}
-                </Button>
-            </form>
-
-            {error && (
-                <p role="alert" className="text-sm text-destructive">
-                    {error}
-                </p>
-            )}
+            {error && <Alert variant="error" title={error} />}
 
             {preview && (
-                <div className="space-y-2">
+                <div
+                    data-slot="import-preview"
+                    className="flex min-w-0 flex-col gap-2"
+                >
                     {preview.issues.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
                             {t('No issues found.')}
                         </p>
                     ) : (
                         <>
-                            <label className="flex items-center gap-2 text-sm font-medium">
+                            <label className="flex items-center gap-2 text-sm font-semibold">
                                 <Checkbox
                                     checked={
                                         importable.length > 0 &&
@@ -525,11 +554,11 @@ function ImportForm({
                                 />
                                 {t('Select all')}
                             </label>
-                            <ul className="max-h-72 divide-y overflow-y-auto rounded-md border">
+                            <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border bg-card">
                                 {preview.issues.map((issue) => (
                                     <li
                                         key={issue.externalId}
-                                        className="flex items-start gap-2 p-2 text-sm"
+                                        className="flex min-w-0 flex-wrap items-start gap-x-2.5 gap-y-1.5 px-3 py-2.5 text-sm"
                                     >
                                         <Checkbox
                                             aria-label={issue.key}
@@ -546,26 +575,40 @@ function ImportForm({
                                                 )
                                             }
                                         />
-                                        <span className="min-w-0 flex-1">
-                                            <span className="font-mono text-xs text-muted-foreground">
-                                                {issue.key}
-                                            </span>{' '}
-                                            <span className="break-words">
+                                        <span className="flex min-w-0 flex-1 basis-40 flex-col items-start gap-1">
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    TicketClasses,
+                                                    'max-w-full',
+                                                )}
+                                            >
+                                                <span className="truncate">
+                                                    {issue.key}
+                                                </span>
+                                            </Badge>
+                                            <span
+                                                className={cn(
+                                                    'max-w-full font-medium break-words',
+                                                    issue.alreadyImported &&
+                                                        'text-muted-foreground',
+                                                )}
+                                            >
                                                 {issue.title}
                                             </span>
                                             {issue.assignee && (
-                                                <span className="block text-xs text-muted-foreground">
+                                                <span className="max-w-full text-xs break-words text-muted-foreground">
                                                     {issue.assignee}
                                                 </span>
                                             )}
                                         </span>
                                         {issue.estimate && (
-                                            <Badge variant="secondary">
+                                            <Badge variant="soft" shape="pill">
                                                 {issue.estimate}
                                             </Badge>
                                         )}
                                         {issue.alreadyImported && (
-                                            <Badge variant="outline">
+                                            <Badge variant="muted">
                                                 {t('Already imported')}
                                             </Badge>
                                         )}
@@ -584,15 +627,29 @@ function ImportForm({
                 </div>
             )}
 
-            <DialogFooter className="gap-2">
-                <Button variant="secondary" onClick={onDone}>
-                    {t('Cancel')}
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="min-w-0"
+                    onClick={onDone}
+                >
+                    <span className="truncate">{t('Cancel')}</span>
                 </Button>
                 <Button
+                    type="button"
+                    className="min-w-0"
                     disabled={selectedCount === 0 || importing}
                     onClick={() => void importSelected()}
                 >
-                    {t('Import :count tasks', { count: selectedCount })}
+                    {importing ? (
+                        <Spinner aria-hidden />
+                    ) : (
+                        <Download aria-hidden />
+                    )}
+                    <span className="truncate">
+                        {t('Import :count tasks', { count: selectedCount })}
+                    </span>
                 </Button>
             </DialogFooter>
         </div>

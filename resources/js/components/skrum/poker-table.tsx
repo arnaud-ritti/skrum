@@ -7,14 +7,13 @@ import {
     RotateCcw,
     Split,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { PokerCard } from '@/components/skrum/poker-card';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -106,6 +105,10 @@ export interface PokerTableProps extends FacilitatorActionProps {
     votingTools?: ReactNode;
     /** Accessible name of the seats region; "Players" by default. */
     tableLabel?: string;
+    /** false when the story is shown beside the table: the centre keeps the progress and the result. */
+    showStory?: boolean;
+    /** Id of the result heading, which names the result section. */
+    resultId?: string;
     onReveal?: () => void;
     className?: string;
 }
@@ -119,6 +122,8 @@ export interface PokerResultPanelProps extends FacilitatorActionProps {
     locale?: string;
     /** The section takes focus (tabindex -1) when the votes are revealed. */
     sectionRef?: Ref<HTMLElement>;
+    /** Id of the heading that names the section; generated when absent. */
+    headingId?: string;
     className?: string;
 }
 
@@ -267,7 +272,7 @@ function SeatView({
             data-slot="poker-seat"
             data-state={seat.state}
             className={cn(
-                'flex w-18 min-w-0 shrink flex-col items-center gap-1.5',
+                'flex w-18 min-w-0 shrink flex-col items-center gap-1.5 @md/poker:w-24',
                 reverse && '@md/poker:flex-col-reverse',
                 (seat.state === 'absent' || seat.offline) && 'opacity-60',
             )}
@@ -379,6 +384,7 @@ function ConsensusBadge({
 
 function TableCenter({
     story,
+    showStory,
     voters,
     revealed,
     result,
@@ -389,6 +395,7 @@ function TableCenter({
     onReveal,
 }: {
     story: PokerStory;
+    showStory: boolean;
     voters: PokerSeat[];
     revealed: boolean;
     result?: PokerResult | null;
@@ -403,26 +410,17 @@ function TableCenter({
     const votedCount = voters.filter((seat) => seat.state === 'voted').length;
     const title = storyLabel(story);
     const canReveal = !busy && votedCount > 0;
+    const progress = t(':voted of :total voted', {
+        voted: votedCount,
+        total: present.length,
+    });
 
     return (
         <div
             data-slot="poker-table-center"
             className="flex w-full min-w-0 flex-col items-center gap-2 text-center"
         >
-            {story.url ? (
-                <a
-                    href={story.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="max-w-full truncate rounded-sm text-body-sm font-semibold text-secondary-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    {title}
-                </a>
-            ) : (
-                <span className="max-w-full truncate text-body-sm font-semibold text-secondary-foreground">
-                    {title}
-                </span>
-            )}
+            {showStory && <CenterStory story={story} title={title} />}
             {revealed && result && !hasCountableVotes(result) && (
                 <span className="max-w-full text-xs text-secondary-foreground">
                     {t('No countable votes')}
@@ -430,41 +428,58 @@ function TableCenter({
             )}
             {revealed && result && hasCountableVotes(result) && (
                 <>
-                    <span className="max-w-full truncate text-xs text-secondary-foreground">
-                        {showsAverage(result, isNumeric)
-                            ? t('Average')
-                            : t('Most played')}
-                    </span>
-                    <span
-                        data-slot="poker-headline"
-                        className="max-w-full truncate font-display text-display-lg font-bold text-secondary-foreground"
-                    >
-                        {showsAverage(result, isNumeric) &&
-                        result.average !== null
-                            ? formatNumber(result.average, locale)
-                            : result.mode.join(', ')}
-                    </span>
-                    <ConsensusBadge consensus={result.consensus} />
+                    <div className="flex max-w-full min-w-0 flex-wrap items-end justify-center gap-x-8 gap-y-1">
+                        <CenterStat
+                            headline
+                            label={
+                                showsAverage(result, isNumeric)
+                                    ? t('Average')
+                                    : t('Most played')
+                            }
+                            value={
+                                showsAverage(result, isNumeric) &&
+                                result.average !== null
+                                    ? formatNumber(result.average, locale)
+                                    : result.mode.join(', ')
+                            }
+                        />
+                        {result.median !== undefined &&
+                            result.median !== null && (
+                                <CenterStat
+                                    label={t('Median')}
+                                    value={formatNumber(result.median, locale)}
+                                />
+                            )}
+                    </div>
+                    <ConsensusBadge consensus={result.consensus}>
+                        {verdictOf(t, result, locale)}
+                    </ConsensusBadge>
                 </>
             )}
             {!revealed && (
                 <>
-                    <div className="w-36 max-w-full">
-                        <Progress
-                            value={votedCount}
-                            max={Math.max(present.length, 1)}
-                            tone="primary"
-                            aria-label={t('Voting progress')}
-                        />
-                    </div>
                     <span
                         data-slot="poker-progress"
-                        className="max-w-full text-xs text-secondary-foreground"
+                        className="max-w-full text-sm font-semibold text-secondary-foreground"
                     >
-                        {t(':voted of :total voted', {
-                            voted: votedCount,
-                            total: present.length,
-                        })}
+                        {progress}
+                    </span>
+                    <span
+                        role="progressbar"
+                        aria-label={t('Voting progress')}
+                        aria-valuemin={0}
+                        aria-valuemax={present.length}
+                        aria-valuenow={votedCount}
+                        aria-valuetext={progress}
+                        data-slot="poker-progress-bar"
+                        className="block h-2 w-44 max-w-full overflow-hidden rounded-full bg-card ring-1 ring-border ring-inset"
+                    >
+                        <span
+                            className="block h-full rounded-full bg-primary transition-[width] duration-220 ease-standard motion-reduce:transition-none"
+                            style={{
+                                width: `${(votedCount / Math.max(present.length, 1)) * 100}%`,
+                            }}
+                        />
                     </span>
                     {isFacilitator && onReveal && (
                         <Tooltip>
@@ -486,18 +501,63 @@ function TableCenter({
                                 >
                                     <Eye aria-hidden />
                                     <span className="truncate">
-                                        {t('Show votes')}
+                                        {t('Reveal cards')}
                                     </span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent shortcut={['R']}>
-                                {t('Show votes')}
+                                {t('Reveal cards')}
                             </TooltipContent>
                         </Tooltip>
                     )}
                 </>
             )}
         </div>
+    );
+}
+
+function CenterStat({
+    label,
+    value,
+    headline = false,
+}: {
+    label: string;
+    value: string;
+    headline?: boolean;
+}) {
+    return (
+        <span className="flex max-w-full min-w-0 flex-col items-center">
+            <span className="max-w-full truncate text-xs text-secondary-foreground">
+                {label}
+            </span>
+            <span
+                data-slot={headline ? 'poker-headline' : 'poker-center-stat'}
+                className="max-w-full truncate font-display text-display-lg font-bold text-secondary-foreground"
+            >
+                {value}
+            </span>
+        </span>
+    );
+}
+
+function CenterStory({ story, title }: { story: PokerStory; title: string }) {
+    if (story.url) {
+        return (
+            <a
+                href={story.url}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full truncate rounded-sm text-body-sm font-semibold text-secondary-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                {title}
+            </a>
+        );
+    }
+
+    return (
+        <span className="max-w-full truncate text-body-sm font-semibold text-secondary-foreground">
+            {title}
+        </span>
     );
 }
 
@@ -541,7 +601,7 @@ function Distribution({ result }: { result: PokerResult }) {
                     </tbody>
                 </table>
             ) : (
-                <div
+                <ul
                     role="img"
                     tabIndex={0}
                     aria-label={t('Distribution: :summary', { summary })}
@@ -556,16 +616,19 @@ function Distribution({ result }: { result: PokerResult }) {
                         );
 
                         return (
-                            <div
+                            <li
                                 key={entry.value}
                                 data-slot="poker-dist-bar"
                                 data-mode={isMode || undefined}
                                 data-count={entry.count}
                                 className="flex min-w-9 shrink-0 flex-col items-center gap-1"
                             >
+                                <span className="order-3 text-overline font-semibold whitespace-nowrap text-muted-foreground">
+                                    {entry.value}
+                                </span>
                                 <span
                                     className={cn(
-                                        'w-full rounded-t-md',
+                                        'order-2 w-full rounded-t-md',
                                         isMode
                                             ? 'bg-primary'
                                             : 'bg-skrum-primary-soft',
@@ -573,13 +636,13 @@ function Distribution({ result }: { result: PokerResult }) {
                                     )}
                                     style={{ height: `${height}rem` }}
                                 />
-                                <span className="text-overline font-semibold whitespace-nowrap text-muted-foreground">
-                                    {entry.value}
+                                <span className="order-1 text-overline whitespace-nowrap text-muted-foreground tabular-nums">
+                                    {entry.count}
                                 </span>
-                            </div>
+                            </li>
                         );
                     })}
-                </div>
+                </ul>
             )}
             <Button
                 type="button"
@@ -597,13 +660,29 @@ function Distribution({ result }: { result: PokerResult }) {
     );
 }
 
+function listOf(names: string[], locale?: string): string {
+    try {
+        return new Intl.ListFormat(locale, {
+            style: 'long',
+            type: 'conjunction',
+        }).format(names);
+    } catch {
+        return names.join(', ');
+    }
+}
+
+/**
+ * What the team does next. The extremes are named from the outliers the
+ * server sends, never on an anonymous round.
+ */
 function helpSentence(
     t: Translate,
     result: PokerResult,
     seats: PokerSeat[],
     story: PokerStory,
     anonymous: boolean,
-): string {
+    locale?: string,
+): string | null {
     if (result.consensus) {
         return t('Estimate kept for :story.', { story: storyLabel(story) });
     }
@@ -613,27 +692,25 @@ function helpSentence(
         : outlierIdsOf(result)
               .map((id) => seats.find((seat) => seat.user.id === id))
               .filter((seat): seat is PokerSeat => seat !== undefined);
+    const named = outliers.map((seat) =>
+        seat.value != null
+            ? `${seat.user.name} (${seat.value})`
+            : seat.user.name,
+    );
 
-    if (outliers.length === 2) {
-        return t(
-            ':first (:firstValue) and :second (:secondValue) explain their estimates, then we revote.',
-            {
-                first: outliers[0].user.name,
-                firstValue: outliers[0].value ?? '–',
-                second: outliers[1].user.name,
-                secondValue: outliers[1].value ?? '–',
-            },
-        );
+    if (named.length === 1) {
+        return t(':name opens the discussion.', { name: named[0] });
     }
 
-    if (outliers.length === 1) {
-        return t(':name (:value) explains their estimate, then we revote.', {
-            name: outliers[0].user.name,
-            value: outliers[0].value ?? '–',
+    if (named.length > 1) {
+        return t(':names open the discussion.', {
+            names: listOf(named, locale),
         });
     }
 
-    return t('The outliers explain their estimates, then we revote.');
+    return spreadOf(result) === null
+        ? null
+        : t('The lowest and the highest estimates open the discussion.');
 }
 
 function estimateOptions(
@@ -823,27 +900,89 @@ function NextTaskButton({
     );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+    label,
+    value,
+    note,
+    compact = false,
+}: {
+    label: string;
+    value: string;
+    note?: string;
+    /** A sentence-like value ("50 % on 5") is set smaller than a figure. */
+    compact?: boolean;
+}) {
     return (
         <div className="flex max-w-full min-w-0 flex-col gap-0.5">
-            <dd className="order-1 truncate font-display text-display-lg font-bold text-foreground">
+            <dd
+                className={cn(
+                    'order-1 truncate font-display font-bold text-foreground',
+                    compact ? 'text-xl/9' : 'text-display-lg',
+                )}
+            >
                 {value}
             </dd>
             <dt className="order-2 text-xs text-muted-foreground">{label}</dt>
+            {note !== undefined && (
+                <dd className="order-3 text-xs text-muted-foreground">
+                    {note}
+                </dd>
+            )}
         </div>
     );
 }
 
 /**
- * Lowest and highest estimate that got a vote. The server sends the
- * distribution in deck order, so no value is parsed as a number here.
+ * Lowest and highest estimate that got a vote: the figures the server sends
+ * when it sends them, otherwise the ends of the distribution, which is in
+ * deck order, so no value is parsed as a number here.
  */
-function spreadOf(result: PokerResult): [PokerValue, PokerValue] | null {
+function spreadOf(
+    result: PokerResult,
+    locale?: string,
+): [PokerValue, PokerValue] | null {
+    if (result.spread) {
+        return result.spread.min === result.spread.max
+            ? null
+            : [
+                  formatNumber(result.spread.min, locale),
+                  formatNumber(result.spread.max, locale),
+              ];
+    }
+
     const played = result.distribution
         .filter((entry) => entry.count > 0 && !isSpecialCard(entry.value))
         .map((entry) => entry.value);
 
     return played.length > 1 ? [played[0], played[played.length - 1]] : null;
+}
+
+/** "Consensus", the spread of a round that needs a discussion, or that it needs one. */
+function verdictOf(t: Translate, result: PokerResult, locale?: string): string {
+    if (result.consensus) {
+        return t('Consensus');
+    }
+
+    const spread = spreadOf(result, locale);
+
+    return spread
+        ? t('Spread :min → :max', { min: spread[0], max: spread[1] })
+        : t('Needs discussion');
+}
+
+function agreementOf(t: Translate, result: PokerResult): string | null {
+    if (result.agreement === undefined || result.agreement === null) {
+        return null;
+    }
+
+    const percent = Math.round(result.agreement * 100);
+
+    return result.mode.length > 0
+        ? t(':percent % on :value', {
+              percent,
+              value: result.mode.join(', '),
+          })
+        : t(':percent %', { percent });
 }
 
 export function PokerResultPanel({
@@ -855,22 +994,28 @@ export function PokerResultPanel({
     locale,
     isFacilitator,
     sectionRef,
+    headingId,
     className,
     ...actions
 }: PokerResultPanelProps) {
     const { t } = useTrans();
+    const generatedId = useId();
+    const titleId = headingId ?? generatedId;
     const voteCount = result.distribution.reduce(
         (sum, entry) => sum + entry.count,
         0,
     );
-    const spread = spreadOf(result);
     const countable = hasCountableVotes(result);
+    const agreement = agreementOf(t, result);
+    const sentence = countable
+        ? helpSentence(t, result, seats, story, anonymous, locale)
+        : null;
 
     return (
         <section
             ref={sectionRef}
             tabIndex={-1}
-            aria-label={t('Result')}
+            aria-labelledby={titleId}
             data-slot="poker-result"
             data-consensus={result.consensus}
             className={cn(
@@ -879,19 +1024,15 @@ export function PokerResultPanel({
             )}
         >
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                <h3 className="min-w-0 text-ui-lg font-semibold text-foreground">
+                <h3
+                    id={titleId}
+                    className="min-w-0 text-ui-lg font-semibold text-foreground"
+                >
                     {t('Result · :count votes', { count: voteCount })}
                 </h3>
                 {countable && (
                     <ConsensusBadge consensus={result.consensus}>
-                        {result.consensus
-                            ? t('Consensus')
-                            : spread
-                              ? t('Spread :min → :max', {
-                                    min: spread[0],
-                                    max: spread[1],
-                                })
-                              : t('Needs discussion')}
+                        {verdictOf(t, result, locale)}
                     </ConsensusBadge>
                 )}
             </div>
@@ -905,51 +1046,57 @@ export function PokerResultPanel({
                     {t("Revealed automatically — time's up")}
                 </p>
             )}
-            {countable ? (
-                <dl className="flex min-w-0 flex-wrap gap-x-8 gap-y-4">
-                    {showsAverage(result, actions.isNumeric) &&
-                        result.average !== null && (
+            <div className="flex min-w-0 flex-col gap-4 @2xl/poker:flex-row @2xl/poker:items-end @2xl/poker:justify-between @2xl/poker:gap-8">
+                {countable ? (
+                    <dl className="flex min-w-0 flex-wrap gap-x-8 gap-y-4">
+                        {showsAverage(result, actions.isNumeric) &&
+                            result.average !== null && (
+                                <Stat
+                                    label={t('Average')}
+                                    value={formatNumber(result.average, locale)}
+                                    note={
+                                        result.nearestCard !== null
+                                            ? t('Nearest card: :card', {
+                                                  card: result.nearestCard,
+                                              })
+                                            : undefined
+                                    }
+                                />
+                            )}
+                        {result.median !== undefined &&
+                            result.median !== null && (
+                                <Stat
+                                    label={t('Median')}
+                                    value={formatNumber(result.median, locale)}
+                                />
+                            )}
+                        {result.mode.length > 0 && (
                             <Stat
-                                label={t('Average')}
-                                value={formatNumber(result.average, locale)}
+                                label={t('Most played')}
+                                value={result.mode.join(', ')}
                             />
                         )}
-                    {showsAverage(result, actions.isNumeric) &&
-                        result.nearestCard !== null && (
+                        {agreement !== null && (
                             <Stat
-                                label={t('Nearest card')}
-                                value={result.nearestCard}
-                            />
-                        )}
-                    {result.median !== undefined && result.median !== null && (
-                        <Stat
-                            label={t('Median')}
-                            value={formatNumber(result.median, locale)}
-                        />
-                    )}
-                    {result.mode.length > 0 && (
-                        <Stat
-                            label={t('Most played')}
-                            value={result.mode.join(', ')}
-                        />
-                    )}
-                    {result.agreement !== undefined &&
-                        result.agreement !== null && (
-                            <Stat
+                                compact
                                 label={t('Agreement')}
-                                value={`${Math.round(result.agreement * 100)}%`}
+                                value={agreement}
                             />
                         )}
-                </dl>
-            ) : (
-                <p className="text-sm text-muted-foreground">
-                    {t('No countable votes')}
-                </p>
-            )}
-            <Distribution result={result} />
-            {countable && (
-                <p className="text-sm text-muted-foreground">
-                    {helpSentence(t, result, seats, story, anonymous)}
+                    </dl>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        {t('No countable votes')}
+                    </p>
+                )}
+                <Distribution result={result} />
+            </div>
+            {sentence !== null && (
+                <p
+                    data-slot="poker-result-next"
+                    className="text-sm text-muted-foreground"
+                >
+                    {sentence}
                 </p>
             )}
             {isFacilitator && <ResultActions result={result} {...actions} />}
@@ -983,11 +1130,14 @@ function AnonymousValues({ result }: { result: PokerResult }) {
     );
 }
 
+/** Who watches without a seat: the dashed box beside the table. */
 function WatchingRow({
     watchers,
+    facilitatorId,
     seatMenu,
 }: {
     watchers: PokerSeat[];
+    facilitatorId?: string | null;
     seatMenu?: (seat: PokerSeat) => ReactNode;
 }) {
     const { t } = useTrans();
@@ -996,12 +1146,13 @@ function WatchingRow({
         <section
             aria-label={t('Watching')}
             data-slot="poker-watching"
-            className="flex min-w-0 flex-col gap-2"
+            className="flex max-w-full min-w-0 flex-col gap-2 self-start rounded-lg border-2 border-dashed border-input bg-card/70 px-3 py-2"
         >
-            <h3 className="text-sm font-medium text-muted-foreground">
-                {t('Watching')}
+            <h3 className="flex items-center gap-1.5 text-overline font-semibold tracking-widest text-muted-foreground uppercase">
+                <Eye aria-hidden className="size-3 shrink-0" />
+                <span className="truncate">{t('Watching')}</span>
             </h3>
-            <ul className="flex min-w-0 flex-wrap gap-3">
+            <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-2">
                 {watchers.map((seat) => (
                     <li
                         key={seat.user.id}
@@ -1017,7 +1168,15 @@ function WatchingRow({
                             decorative
                             presence={toPresence(seat.user.presence)}
                         />
-                        <span className="truncate text-sm">
+                        {facilitatorId != null &&
+                            seat.user.id === facilitatorId && (
+                                <Crown
+                                    role="img"
+                                    aria-label={t('Facilitator')}
+                                    className="size-3 shrink-0 text-skrum-warning-text"
+                                />
+                            )}
+                        <span className="truncate text-sm font-medium">
                             {seat.user.isMe ? t('You') : seat.user.name}
                         </span>
                         {seatMenu?.(seat)}
@@ -1047,6 +1206,8 @@ export function PokerTable({
     nextDisabled = false,
     shortcuts = true,
     tableLabel,
+    showStory = true,
+    resultId,
     onReveal,
     onRevote,
     onAccept,
@@ -1164,6 +1325,7 @@ export function PokerTable({
     const center = (
         <TableCenter
             story={story}
+            showStory={showStory}
             voters={players}
             revealed={revealed}
             result={result}
@@ -1207,6 +1369,13 @@ export function PokerTable({
             >
                 {announcement()}
             </p>
+            {watchers.length > 0 && (
+                <WatchingRow
+                    watchers={watchers}
+                    facilitatorId={facilitatorId}
+                    seatMenu={seatMenu}
+                />
+            )}
             {isOval ? (
                 <section
                     ref={seatsRef}
@@ -1216,7 +1385,7 @@ export function PokerTable({
                     className={cn(
                         seatGrid,
                         seatsFocus,
-                        '@md/poker:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
+                        '@md/poker:grid-cols-[6rem_minmax(0,1fr)_6rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
                     )}
                 >
                     <div className="contents justify-around gap-2 @md/poker:col-span-3 @md/poker:row-start-1 @md/poker:flex @md/poker:w-full">
@@ -1275,13 +1444,11 @@ export function PokerTable({
             {revealed && anonymous && result && (
                 <AnonymousValues result={result} />
             )}
-            {watchers.length > 0 && (
-                <WatchingRow watchers={watchers} seatMenu={seatMenu} />
-            )}
             {revealed && result && (
                 <PokerResultPanel
                     key={story.key ?? story.title}
                     sectionRef={resultRef}
+                    headingId={resultId}
                     result={result}
                     seats={players}
                     story={story}

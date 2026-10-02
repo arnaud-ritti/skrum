@@ -176,7 +176,8 @@ export type PokerSnapshot = {
     players: PokerPlayer[];
     tasks: PokerTask[];
     current: PokerCurrent | null;
-    links: { team: string | null };
+    /** Both are null for a guest. `decks` is the saved decks page of the team. */
+    links: { team: string | null; decks: string | null };
     share: ShareAvailability;
     deliveries: IntegrationDelivery[];
     integrations: PokerIntegrations | null;

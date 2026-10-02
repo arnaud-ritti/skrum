@@ -57,7 +57,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
  *     tasks: array<int, Task>,
  *     current: ?array{taskId: string, round: Round},
- *     links: array{team: ?string},
+ *     links: array{team: ?string, decks: ?string},
  *     integrations: ?array<string, array{connected: bool, canWrite: bool}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
@@ -144,6 +144,7 @@ class BuildPokerSnapshot
             ],
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$team->workspace, $team]),
+                'decks' => $isGuest ? null : route('teams.pokerDecks.index', [$team->workspace, $team]),
             ],
             'integrations' => $sync?->summary(),
             'share' => $this->shareOptions->pokerGame($game, $viewer),
