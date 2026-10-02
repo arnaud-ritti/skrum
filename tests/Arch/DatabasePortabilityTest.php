@@ -14,7 +14,7 @@ function databasePortabilityRules(): array
         'insertOrIgnore' => '/->insertOrIgnore\(/',
         'json contains or length' => '/->(?:or)?where(?:Json(?:Doesnt)?Contain|JsonLength)\w*\(/i',
         'upsert' => '/->upsert\(/',
-        'like comparison' => '/->(?:or)?where(?:Not)?Like\(|[\'"](?:not )?like[\'"]/i',
+        'like comparison' => '/[\'"](?:not )?like[\'"]|->(?:or)?where(?:Not)?Like\((?:(?!caseSensitive:\s*true)[^;])*;/i',
         'driver branch' => '/getDriverName\(|getDriverTitle\(|instanceof\s+\\\\?(?:[\w\\\\]*\\\\)?(?:Postgres|MySql|MariaDb|SQLite|SqlServer)\w*|config\(\s*[\'"]database\.default[\'"]\s*\)\s*[=!]==?/',
         'boolean literal in raw sql' => '/Raw\(\s*[\'"](?:false|true)[\'"]/i',
         'whereRaw' => '/->(?:or)?whereRaw\(/',

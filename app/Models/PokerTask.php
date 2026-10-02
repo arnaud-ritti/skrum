@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Enums\ExternalStatusCategory;
 use Database\Factories\PokerTaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -54,6 +55,7 @@ class PokerTask extends Model
     /** @use HasFactory<PokerTaskFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     /** @return BelongsTo<PokerGame, $this> */
@@ -72,6 +74,12 @@ class PokerTask extends Model
     public function latestRound(): HasOne
     {
         return $this->hasOne(PokerRound::class)->orderByDesc('number');
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['title' => 'title_search'];
     }
 
     protected function casts(): array

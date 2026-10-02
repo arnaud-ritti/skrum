@@ -27,14 +27,12 @@ app/Actions/Surveys/CloseOpenSurveys.php|raw expression|1
 app/Actions/Teams/BuildTeamMoodTrend.php|selectRaw|1
 app/Actions/Whiteboards/WhiteboardTemplateRules.php|whereRaw|1
 app/Actions/Workspaces/CreateWorkspaceInvitation.php|whereRaw|1
-app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|2
+app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|1
 app/Http/Controllers/PokerDecksController.php|selectRaw|1
-app/Http/Controllers/TeamEstimatesController.php|ilike|1
 app/Http/Controllers/WorkspaceInvitationsController.php|whereRaw|2
 app/Http/Controllers/WorkspaceTemplatesController.php|selectRaw|1
 app/Http/Requests/WorkspaceTemplateRequest.php|whereRaw|1
 app/Mcp/Presenters/McpMessage.php|selectRaw|1
-app/Mcp/Tools/Retro/SearchBoards.php|ilike|4
 tests/Feature/Admin/InstanceAdminsTest.php|lock syntax|1
 tests/Feature/Admin/InstanceAdminsTest.php|reads sql text|2
 tests/Feature/Branding/BrandInPageTest.php|ddl in a test|1

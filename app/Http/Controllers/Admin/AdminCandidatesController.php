@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminCandidatesRequest;
 use App\Models\User;
-use Illuminate\Contracts\Database\Query\Builder;
+use App\Support\Database\SearchText;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 
 class AdminCandidatesController extends Controller
@@ -14,17 +15,19 @@ class AdminCandidatesController extends Controller
 
     public function index(AdminCandidatesRequest $request): JsonResponse
     {
-        $pattern = '%'.$this->escapeLike($request->string('query')->toString()).'%';
+        $term = $request->string('query')->toString();
 
         $candidates = User::query()
             ->where('is_instance_admin', false)
             ->where(fn (Builder $query) => $query
-                ->whereLike('name', $pattern)
-                ->orWhereLike('email', $pattern))
+                ->whereContains('name', $term)
+                ->orWhereLike('email', '%'.$this->escapeLike($term).'%'))
             ->orderBy('name')
             ->orderBy('id')
             ->limit(self::MaxResults)
             ->get()
+            ->filter(fn (User $user): bool => SearchText::contains($user->name, $term) || SearchText::contains($user->email, $term))
+            ->values()
             ->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemRecurrence;
 use Carbon\CarbonImmutable;
@@ -55,6 +56,7 @@ class ActionItem extends Model
     /** @use HasFactory<ActionItemFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     public static function today(): CarbonImmutable
@@ -174,6 +176,12 @@ class ActionItem extends Model
         }
 
         return $this->due_on->toDateString() < $today->toDateString();
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['content' => 'content_search'];
     }
 
     protected function casts(): array

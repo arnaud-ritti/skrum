@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Enums\CardSentiment;
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,6 +32,7 @@ class Card extends Model
     /** @use HasFactory<CardFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     /** @return BelongsTo<Retro, $this> */
@@ -99,6 +101,12 @@ class Card extends Model
     public function isTopLevel(): bool
     {
         return $this->parent_card_id === null;
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['content' => 'content_search'];
     }
 
     protected function casts(): array
