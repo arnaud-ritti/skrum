@@ -62,8 +62,60 @@ describe('facilitatorActions', () => {
         expect(reveal(true).pressed).toBeUndefined();
     });
 
-    it('offers the presentation mode while discussing', () => {
-        expect(ids('discussing')).toEqual(['presentation']);
+    it('offers "Everyone follows" while discussing: the presentation mode of the settings', () => {
+        const given = tools();
+        const [follow, ...rest] = facilitatorActions(
+            'discussing',
+            retroSnapshot({ retro: { phase: 'discussing' } }),
+            given,
+        );
+
+        expect(rest).toEqual([]);
+        expect(follow).toMatchObject({
+            id: 'presentation',
+            label: 'Everyone follows',
+            kind: 'toggle',
+            pressed: false,
+        });
+
+        follow.onSelect();
+
+        expect(given.onSetting).toHaveBeenCalledWith({
+            presentation_mode: true,
+        });
+    });
+
+    it('moves between the topics while discussing, and stops at either end', () => {
+        const topics = {
+            canPrevious: false,
+            canNext: true,
+            onStep: vi.fn(),
+            onFollow: vi.fn(),
+        };
+        const [follow, previous, next] = facilitatorActions(
+            'discussing',
+            retroSnapshot({
+                retro: { phase: 'discussing', presentationMode: true },
+            }),
+            { ...tools(), topics },
+        );
+
+        expect(previous).toMatchObject({
+            id: 'previous-topic',
+            label: 'Previous topic',
+            disabled: true,
+        });
+        expect(next).toMatchObject({
+            id: 'next-topic',
+            label: 'Next topic',
+            disabled: false,
+        });
+
+        next.onSelect();
+        follow.onSelect();
+
+        expect(topics.onStep).toHaveBeenCalledWith(1);
+        expect(topics.onFollow).toHaveBeenCalledWith(false);
     });
 
     it('has nothing once the retro is completed', () => {

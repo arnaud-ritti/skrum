@@ -695,6 +695,7 @@ it('[P07-08a] closes the board for editing in every phase while the facilitator 
 
     $bobPage->assertDontSee('Board closed for editing')
         ->assertEnabled('[aria-label="Add an action item…"]')
+        ->click('[data-test="retro-topics"] li:has-text("Slow CI")')
         ->assertEnabled(plan07Chip($slow, '👍', 1));
 
     expect($retro->fresh()->is_locked)->toBeFalse();
@@ -760,7 +761,7 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
 
     foreach ([$alicePage, $bobPage] as $page) {
         $page->assertSeeIn($overlay, 'Slow CI')
-            ->assertSeeIn($overlay, 'Bob Stone')
+            ->assertAttribute("{$overlay} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
             ->assertSeeIn($overlay, '2 votes')
             ->assertPresent($presentedChip)
             ->assertPresent("{$overlay} button[aria-label=\"Comments (1)\"]");
@@ -786,7 +787,7 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
 
     expect($retro->fresh()->highlighted_card_id)->toBeNull();
 
-    $alicePage->click($discuss($flaky));
+    $alicePage->click('[data-test="retro-topics"] li:has-text("Flaky tests")');
 
     $bobPage->assertSeeIn($overlay, 'Flaky tests');
 

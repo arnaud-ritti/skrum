@@ -3957,5 +3957,20 @@
     "Create the ticket in :provider": "Ticket in :provider erstellen",
     "to create": "zum Erstellen",
     "Ticket": "Ticket",
-    "No ticket": "Kein Ticket"
+    "No ticket": "Kein Ticket",
+    "Topics": "Themen",
+    "By votes": "Nach Stimmen",
+    "Topic :current of :total": "Thema :current von :total",
+    "1 action so far": "1 Maßnahme bisher",
+    ":count actions so far": ":count Maßnahmen bisher",
+    "Topic in focus: :title, :cards, :votes": "Thema im Fokus: :title, :cards, :votes",
+    "Group of :count cards · column “:column”": "Gruppe aus :count Karten · Spalte „:column“",
+    "Column “:column”": "Spalte „:column“",
+    "Up next": "Als Nächstes",
+    "Everyone is looking at another topic.": "Alle sehen sich ein anderes Thema an.",
+    ":name put this topic in focus — everyone is looking here": ":name hat dieses Thema in den Fokus gestellt – alle sehen hierher",
+    "The facilitator": "Die Moderation",
+    "Back to the topic": "Zurück zum Thema",
+    "No topics to discuss.": "Keine Themen zu besprechen.",
+    "Nobody wrote a card in this retro.": "Niemand hat in dieser Retro eine Karte geschrieben."
 }

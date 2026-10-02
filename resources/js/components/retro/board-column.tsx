@@ -58,7 +58,9 @@ export function BoardColumn({
     const { hasCards, canManage, ...columnProps } = props;
     const { phase } = ctx.board.retro;
     const retroId = ctx.board.retro.id;
-    const canSortByVotes = phase === 'discussing' || phase === 'completed';
+    // Discussing shows the topics, not the columns: the Board tab of a
+    // completed retro is the only place left for this order.
+    const canSortByVotes = phase === 'completed';
     const orderedCards = topLevelCards(ctx.board.cards, column.id);
     const cards =
         canSortByVotes && isSortedByVotes

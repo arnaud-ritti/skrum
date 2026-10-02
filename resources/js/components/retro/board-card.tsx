@@ -96,32 +96,6 @@ export function CardGifDialog({
     );
 }
 
-/** The GIF of a card outside a `RetroCard`: the presentation overlay, until R9. */
-export function CardGif({ gif }: { gif: CardGifPayload }) {
-    const { t } = useTrans();
-    const [open, setOpen] = useState(false);
-
-    return (
-        <>
-            <button
-                type="button"
-                className="mb-2 block w-full overflow-hidden rounded-md outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-                aria-label={t('GIF')}
-                {...dragIsolation}
-                onClick={() => setOpen(true)}
-            >
-                <img
-                    src={gif.previewUrl}
-                    alt=""
-                    loading="lazy"
-                    className="h-auto w-full"
-                />
-            </button>
-            <CardGifDialog gif={gif} open={open} onOpenChange={setOpen} />
-        </>
-    );
-}
-
 /** "GIF" and "Remove GIF" of a card being written, with the search dialog of the retro. */
 function GifTools({
     gif,

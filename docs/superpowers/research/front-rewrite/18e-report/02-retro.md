@@ -510,3 +510,97 @@ No capture: no screen mounts these files yet, and the task has no bench section.
 ### Browser tests changed
 
 None. No test was removed.
+
+## Task R9 — Discussing phase
+
+The board in Discussing no longer shows the columns (owner's answer 2-D9). `components/retro/phase-discussing.tsx` holds the phase: `DiscussionProvider` (who looks at which topic), `PhaseDiscussing` (the three columns) and `PresentationOverlay` (the presentation mode, on `Dialog`). `topics-list.tsx` is the left list, `topic-focus.tsx` the topic in front of the viewer (`BoardGroup` or `BoardCard`, unchanged, so every control and id of the board is there) and "Up next", `action-items-list.tsx` the action items of the retro on the shared containers of R8b, `suggestions-panel.tsx` the suggestions as a panel. `lib/retro/topics.ts` gives `topicsFrom`, `topicOfCard`, `stepTopic`.
+
+How the focus works: everyone browses the topics for themselves (a press in the list, "Previous topic", "Next topic"). A card the facilitator highlights ("Discuss") becomes the topic of everyone, as the highlight scrolled everyone to the card before. "Everyone follows" is the presentation mode (`presentation_mode`): while it is on, the facilitator's own moves highlight their topic, the highlighted topic is presented over the board of everyone (the overlay of before), and a participant who went elsewhere reads "Everyone is looking at another topic." with "Back to the topic".
+
+### Parity (brief 02 §3.3 rows 58–60, §3.4 rows 73–82)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 2-D9 | Cards sorted by votes | the Topics list (`data-test="retro-topics"`, an `ol`): one row per group and per lone card, the most voted first, ties by column then card position; rank, colour mark of the column, title, votes | yes |
+| 2-D9 | Sort toggle of a column (`retro-sort-by-votes`) | gone in Discussing (the list is the order); it stays on the Board tab of a completed retro | yes |
+| 56 | Vote total of a card | the badge of the card (`[aria-label="3 votes"]`), the row of the list, the pill of the focus header | yes |
+| 58 | Highlight a card ("Discuss", `aria-pressed`) | on the card of the topic in focus, facilitator only; the row of the list is marked "Now", the card has its ring | yes |
+| 59 | Presentation overlay | `PresentationOverlay`: the highlighted topic as its group or card, with reactions and comments; "Stop presenting" for the facilitator, whose close stops it for everyone; a participant closes it for themselves; it opens again on the next highlight | yes |
+| 59 | — | new in the overlay, for the facilitator: "Previous topic", "Next topic" (the bar is behind the dialog) | yes |
+| 60 | Scroll to the highlighted card | the highlighted topic comes in front of every viewer, and its card is scrolled into view | yes |
+| 61–65 | Reactions, emoji picker, comments, replies, edit and delete of a comment, unread dot | unchanged: `BoardCard` | yes |
+| 47, 48 | GIF full size, insight | unchanged: `BoardCard` | yes |
+| 52–54 | Rename a group, suggested names | unchanged: `BoardGroup`; "Suggest group names" stays above the board | yes |
+| 73 | Suggestions panel | `aside[aria-label="Suggestions"]`, a card of the right column; the list inside is the old one (it is shared with the results, R12) | yes |
+| 74 | Create an action item | `ItemCreateForm` under "Create an action" (open by default; "Cancel" closes it): title, assignee, due date, priority, repeat | yes |
+| M6 | "Create the ticket in :provider" | a member whose team has a tracker: the item is created, then `ItemExportDialog` opens on it | yes |
+| 75 | Done, reopen | `ActionItem onStatusChange`; disabled for who may not | yes |
+| 76 | Edit content, priority, due date, recurrence, assignee | "Edit action item" opens the editor of `ActionItem` (before: controls always shown on the card); the assignee options keep their two headings, "In this retro" and "Team" | yes |
+| 77 | Delete | "Delete action item", then the confirmation (5-D3) | yes |
+| 78 | Sub-tasks | `ItemSubtasks` | yes |
+| 79 | Comments of an item | `ItemComments`, `#action-item-{id}-comments` | yes |
+| 80 | Export | `ItemExport` ("Export to :provider", or the "Export" menu) | yes |
+| 81 | Tracker chips, retry of a sync | `ActionItem links`, `onRetrySync` | yes |
+| 82 | Anonymous notice | in the form and above the comment field | yes |
+| 5-D7 | "(Guest)" | the owner name beside the item and in the options | yes |
+| 84, 85 | ROTI in Discussing | `RotiControl`, unchanged, as the last-but-one panel of the right column, until R11 gives it its phase | yes |
+| 72 | Surveys | `SurveysColumn`, unchanged, as the last panel of the right column; "Add survey" stays above the board (S1) | yes |
+| 83 | Previous action items | unchanged, above the board (R10) | yes |
+| — | Live cursors | over the topic stage (the centre column) | yes |
+| — | Lock, anonymity, guest | unchanged rules (`isEditable`, `canManageActionItem`) | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `timer` of `PhaseDiscussing` | between "Previous topic" and "Next topic" | RT-5 |
+| `estimate` of `TopicsList` and of `TopicUpNext` | beside "Topic n of m"; in "Up next" | RT-5 |
+| `notes` of `PhaseDiscussing` | first panel of the right column, above the action items (the column is a list of panels) | RT-6 |
+| `topicMeta` of `PhaseDiscussing` (`rowMeta` of `TopicsList`) | second line of a topic row: "Discussed · n actions" | RT-7, RT-8 |
+| `linkedTo` of `PhaseDiscussing` (`ActionItemsList`, `ItemCreateForm`) | first line of the form: "Linked to #2 · topic" | RT-8 |
+| `following` of `PhaseDiscussing` | in the focus banner: the people who follow, "8/8" | backlog |
+
+### Differences with the mockup
+
+Captures `retro-board-discussing-*` (facilitator) and `retro-board-discussing-locked-*` (participant, closed board) against `ScreenRetroDiscussion`, `CardGroup`, `RetroCard`, `ActionItem` and `FacilitatorBar`. Compared by the implementer on light 1440 EN, dark 1440 FR (participant), light 390 EN and dark 390 FR.
+
+| Difference | Covered by |
+|---|---|
+| No timer of the topic, no "~ 20 min left", no "5 min per topic", no shared notes, no "Discussed · 2 actions", no "8/8" | D-12 |
+| The title of a group is the title of its `CardGroup` (with rename and collapse), larger than on the board; the header above it holds the rank, "Group of n cards · column", and the votes. The mockup has one header with the title in it | plan R9: "rendered as its `CardGroup` or `RetroCard` with all its controls". No row — reported |
+| The cards of the focus sit side by side when there is room (two in the capture); the mockup draws three of 10rem | the group has two cards |
+| Each card keeps "Comments (n)", "Add a reaction", "Discuss", the vote badge | owner 2-D9 (no feature lost) |
+| The right card is "Action items" of the whole retro, not "Topic actions" | F: an item is not linked to a topic (RT-8) |
+| An item shows its status badge, edit, "Delete", the sub-task field and its comments | parity rows 75–79; `ActionItem` mockup |
+| The form has a native date, a "Repeat" select, no "Linked to", and the ticket is a checkbox | reported in R8b |
+| The focus banner shows only while "Everyone follows" is on and a topic is highlighted (not in the captures) | plan R9 |
+| A presentation overlay (dialog) exists while everyone follows | brief 02 row 59; plan R9. No row — reported |
+| FacilitatorBar: "Previous topic" and "Next topic" carry their label; the mockup has icons | `FacilitatorBar` has no icon-only action outside its compact mode. No row — reported |
+| FacilitatorBar primary: "End session", not "Actions" | R10 (B1) |
+| A rating panel and, when there are surveys, a surveys panel under the action items; "Add survey" above the board | transitional (R11, S1) |
+| No live cursor in the captures (one browser); the cursors are the library's | reported in R3 |
+| The header rail shows the current label only | reported in R3 |
+| Phone: the list is above the topic, not a "2/6" selector; no drawer, no swipe | R13 |
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `Plan04` `P04-05a` | rewritten: the order of `[data-test="retro-topics"]`, first the most voted, last the least; no sort toggle, no column | plan R9 (2-D9) |
+| `Plan04` `P04-05b` | the facilitator focuses the topic, then "Discuss"; the other browser had not the card and now has it, highlighted and in view | plan R9 |
+| `Plan04` `P04-05c` | confirms the delete in `[role="alertdialog"]` | plan R9 (5-D3) |
+| `Plan04` `P04-09` (Discussing) | focuses the topic of each card before reading it | plan R9 |
+| `Plan04` `P04-15a` | `[data-slot="retro-columns"]` → `[data-test="retro-topics"]`; the sideways scroll of the columns is no longer asserted | plan R9 |
+| `Plan07` `P07-08a` | focuses "Slow CI" before reading its reaction chip | plan R9 |
+| `Plan07` `P07-09` | the full name of the author is read from the `title` of the card author (the card prints the first name); the second topic is presented by a press in the list | `RetroCard` mockup; not listed |
+| `Plan08d` `P08d-02b` | the group name is read from the group title, not from a `p` | `CardGroup`; not listed |
+| `Plan09a` `P09a-01a` | priority read on `[data-slot="action-item-priority"]`, not on a select | `ActionItem` mockup; not listed |
+| `Plan09a` `P09a-01b` | assigning goes through "Edit action item" and "Save"; the name is read beside the item; "(Guest)" | `ActionItem` mockup; 5-D7 |
+| `Plan09a` `P09a-01c` | the guest has no "Priority" control (was: disabled) | `ActionItem` mockup; not listed |
+| `Plan09a` `P09a-05` | "Delete" pressed inside the alert dialog (an item has a "Delete" button of its own now) | `ActionItem` (rule 6); not listed |
+
+`Plan09a` `P09a-03c` (line 380, "(guest)" in the results of a completed retro) is not changed: the results still use the old card until R12. `Plan09b` :302–306 are on the action items page (5.2).
+
+New: `[P18e-02-12]`, `[P18e-02-13]`, `[P18e-02-14]` in `Plan18eRetroTest.php`; captures `retro-board-discussing` and `retro-board-discussing-locked` in `RetroPagesVisualTest.php`.
+
+Component changes, in their own commits: `ActionItem` (`group` of an owner: the assignee options under headings; the sync state of a tracker chip is in its text again). No test was removed.

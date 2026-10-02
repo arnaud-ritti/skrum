@@ -3733,5 +3733,20 @@
     "Create the ticket in :provider": "Create the ticket in :provider",
     "to create": "to create",
     "Ticket": "Ticket",
-    "No ticket": "No ticket"
+    "No ticket": "No ticket",
+    "Topics": "Topics",
+    "By votes": "By votes",
+    "Topic :current of :total": "Topic :current of :total",
+    "1 action so far": "1 action so far",
+    ":count actions so far": ":count actions so far",
+    "Topic in focus: :title, :cards, :votes": "Topic in focus: :title, :cards, :votes",
+    "Group of :count cards · column “:column”": "Group of :count cards · column “:column”",
+    "Column “:column”": "Column “:column”",
+    "Up next": "Up next",
+    "Everyone is looking at another topic.": "Everyone is looking at another topic.",
+    ":name put this topic in focus — everyone is looking here": ":name put this topic in focus — everyone is looking here",
+    "The facilitator": "The facilitator",
+    "Back to the topic": "Back to the topic",
+    "No topics to discuss.": "No topics to discuss.",
+    "Nobody wrote a card in this retro.": "Nobody wrote a card in this retro."
 }

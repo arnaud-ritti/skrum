@@ -225,27 +225,33 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
     expect($retro->votes()->count())->toBe(1);
 });
 
-it('[P04-05a] shows the vote totals and sorts the cards by votes during Discussing', function () {
+it('[P04-05a] shows the vote totals and lists the topics by votes during Discussing', function () {
     [$retro, $columns, , $bob, $aliceParticipant, $bobParticipant] = plan04Board(RetroPhase::Discussing);
     $flaky = plan04Card($retro, $columns[0], $aliceParticipant, 'Flaky tests', 0);
     $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
+    $quiet = plan04Card($retro, $columns[1], $aliceParticipant, 'Quiet standups', 0);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $flaky->id, 'participant_id' => $aliceParticipant->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
-    $sort = plan04Column($columns[0]).' [data-test="retro-sort-by-votes"]';
+    $topics = '[data-test="retro-topics"]';
+    $topicOrder = "[...document.querySelectorAll('{$topics} > li')].map((topic) => topic.dataset.topicId).join(',')";
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $page->assertPresent("#card-{$slow->id} [aria-label=\"3 votes\"]")
-        ->assertPresent("#card-{$flaky->id} [aria-label=\"1 vote\"]")
+    $page->assertScript($topicOrder, "{$slow->id},{$flaky->id},{$quiet->id}")
+        ->assertSeeIn("{$topics} > li:first-child", 'Slow CI')
+        ->assertSeeIn("{$topics} > li:first-child", '3 votes')
+        ->assertSeeIn("{$topics} > li:last-child", 'Quiet standups')
+        ->assertSeeIn("{$topics} > li:last-child", '0 votes')
+        ->assertNotPresent('[data-test="retro-sort-by-votes"]')
+        ->assertNotPresent('[data-test^="retro-column-"]')
+        ->assertPresent("#card-{$slow->id} [aria-label=\"3 votes\"]")
         ->assertNotPresent('[aria-label="Add a vote"]')
-        ->assertScript(plan04CardOrder($columns[0]), "card-{$slow->id},card-{$flaky->id}")
-        ->assertAriaAttribute($sort, 'pressed', 'true')
-        ->click($sort)
-        ->assertAriaAttribute($sort, 'pressed', 'false')
-        ->assertScript(plan04CardOrder($columns[0]), "card-{$flaky->id},card-{$slow->id}");
+        ->click("{$topics} li:has-text(\"Flaky tests\")")
+        ->assertPresent("#card-{$flaky->id} [aria-label=\"1 vote\"]")
+        ->assertNotPresent("#card-{$slow->id}");
 });
 
-it('[P04-05b] scrolls the highlighted card into view for everyone during Discussing', function () {
+it('[P04-05b] brings the highlighted topic in front of everyone during Discussing', function () {
     [$retro, $columns, $alice, $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     $cards = [];
 
@@ -260,10 +266,11 @@ it('[P04-05b] scrolls the highlighted card into view for everyone during Discuss
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     $bobPage->resize(1280, 600)
-        ->assertPresent("#card-{$target->id}")
-        ->assertScript($inView, false);
+        ->assertPresent("#card-{$cards[0]->id}")
+        ->assertNotPresent("#card-{$target->id}");
 
-    $alicePage->click("#card-{$target->id} button[aria-pressed=\"false\"]")
+    $alicePage->click('[data-test="retro-topics"] li:has-text("Topic 13")')
+        ->click("#card-{$target->id} button[aria-pressed=\"false\"]")
         ->assertPresent("#card-{$target->id} button[aria-pressed=\"true\"]");
 
     $bobPage->assertAttribute("#card-{$target->id}", 'data-focused', 'true')
@@ -296,7 +303,10 @@ it('[P04-05c] lets a guest and a member add, complete and delete action items du
     $bobPage->assertPresent("#action-item-{$guestItem->id} [aria-label=\"Reopen\"]");
     expect($guestItem->fresh()->completed_at)->not->toBeNull();
 
-    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Delete action item\"]");
+    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Delete action item\"]")
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this action item?')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent('[role="alertdialog"]');
     $bobPage->assertNotPresent("#action-item-{$guestItem->id}")
         ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Rotate the on-call');
 
@@ -433,9 +443,20 @@ it('[P04-09] never shows the author of another participant\'s card on an anonymo
         $page->click('#completed-tab-board');
     }
 
+    $focusTopic = function (string $content) use ($page, $phase): void {
+        if ($phase === RetroPhase::Discussing->value) {
+            $page->click("[data-test=\"retro-topics\"] li:has-text(\"{$content}\")");
+        }
+    };
+
+    $focusTopic('Pairing works well');
+
     $page->assertSeeIn("#card-{$mine->id}", 'Pairing works well')
-        ->assertAttribute("#card-{$mine->id} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
-        ->assertDontSeeIn("#card-{$theirs->id}", 'Alice Martin');
+        ->assertAttribute("#card-{$mine->id} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone');
+
+    $focusTopic('Too many meetings');
+
+    $page->assertDontSeeIn("#card-{$theirs->id}", 'Alice Martin');
 
     if ($phase === RetroPhase::Writing->value) {
         $page->assertSeeIn("#card-{$theirs->id}", 'Hidden until the reveal');
@@ -623,32 +644,30 @@ it('[P04-14d] opens every facilitator dialog with the keyboard only', function (
 it('[P04-15a] reflows the board between 375px and 1440px', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
-    $board = '[data-slot="retro-columns"]';
+    $topics = '[data-test="retro-topics"]';
     $panel = '[data-test="retro-action-items-panel"]';
     $stepper = 'ol[aria-label="Phases"]';
-    $columnsScroll = "(() => { const board = document.querySelector('{$board}'); return board.scrollWidth > board.clientWidth; })()";
     $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
     $stepperIsBelowTheHeader = "document.querySelector('header {$stepper}') === null && document.querySelector('{$stepper}').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom";
     $stepperIsInTheHeader = "document.querySelector('header {$stepper}') !== null";
-    $panelIsBelowBoard = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$board}').getBoundingClientRect().bottom";
-    $panelIsBesideBoard = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$board}').getBoundingClientRect().right";
+    $panelIsBelowTopics = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$topics}').getBoundingClientRect().bottom";
+    $panelIsBesideTopics = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$topics}').getBoundingClientRect().right";
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
     $page->resize(375, 812)
         ->assertPresent($panel)
-        ->assertPresent("main {$board}")
-        ->assertScript($columnsScroll, true)
+        ->assertPresent("main {$topics}")
         ->assertScript($pageScrollsSideways, false)
         ->assertScript($stepperIsBelowTheHeader, true)
-        ->assertScript($panelIsBelowBoard, true)
-        ->assertScript($panelIsBesideBoard, false);
+        ->assertScript($panelIsBelowTopics, true)
+        ->assertScript($panelIsBesideTopics, false);
 
     $page->resize(1440, 900)
         ->assertScript($stepperIsInTheHeader, true)
         ->assertScript($pageScrollsSideways, false)
-        ->assertScript($panelIsBesideBoard, true)
-        ->assertScript($panelIsBelowBoard, false);
+        ->assertScript($panelIsBesideTopics, true)
+        ->assertScript($panelIsBelowTopics, false);
 });
 
 it('[P04-16a] keeps the dark appearance on the board', function () {

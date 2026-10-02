@@ -1,10 +1,15 @@
 <?php
 
 use App\Enums\ColumnColor;
+use App\Enums\IntegrationProvider;
 use App\Enums\RetroPhase;
+use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\CardComment;
+use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\Retro;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
@@ -316,4 +321,210 @@ it('[P18e-02-11] reveals the votes from the facilitator bar: the totals show to 
         ->assertAriaAttribute('#retro-hide-vote-counts', 'checked', 'true');
 
     expect($retro->fresh()->hide_vote_counts)->toBeTrue();
+});
+
+/**
+ * A board in Discussing with three topics of 3, 1 and 0 votes, a facilitator and a member.
+ *
+ * @return array{
+ *     0: Retro,
+ *     1: User,
+ *     2: User,
+ *     3: array{slow: Card, flaky: Card, quiet: Card}
+ * }
+ */
+function p18eDiscussion(): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create([
+        'title' => 'Sprint 42',
+        'guest_access_enabled' => true,
+    ]);
+    $start = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Start', 'position' => 0]);
+    $stop = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Stop', 'position' => 1]);
+    [$alice, $aliceParticipant] = retroFacilitator($retro);
+    [$bob, $bobParticipant] = retroMember($retro);
+    $alice->update(['name' => 'Alice Martin', 'locale' => 'en']);
+    $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
+    $cards = [];
+
+    foreach ([['flaky', $start, 'Flaky tests', 0, 1], ['slow', $start, 'Slow CI', 1, 3], ['quiet', $stop, 'Quiet standups', 0, 0]] as [$key, $column, $content, $position, $votes]) {
+        $cards[$key] = Card::factory()->create([
+            'retro_id' => $retro->id,
+            'column_id' => $column->id,
+            'participant_id' => $bobParticipant->id,
+            'content' => $content,
+            'position' => $position,
+        ]);
+
+        Vote::factory()->count($votes)->create([
+            'retro_id' => $retro->id,
+            'card_id' => $cards[$key]->id,
+            'participant_id' => $aliceParticipant->id,
+        ]);
+    }
+
+    return [$retro->fresh(), $alice, $bob, $cards];
+}
+
+it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both with "Next topic" while everyone follows, and leaves the guest on their topic otherwise', function () {
+    [$retro, $alice, , $cards] = p18eDiscussion();
+    $topics = '[data-test="retro-topics"]';
+    $order = "[...document.querySelectorAll('{$topics} > li')].map((topic) => topic.dataset.topicId).join(',')";
+    $current = "{$topics} > li[aria-current=\"true\"]";
+    $bar = '[data-slot="facilitator-bar"]';
+    $follow = "{$bar} button:has-text(\"Everyone follows\")";
+    $overlay = '[data-slot="retro-presentation"]';
+    $nav = '[data-slot="retro-topic-nav"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertScript($order, "{$cards['slow']->id},{$cards['flaky']->id},{$cards['quiet']->id}")
+            ->assertSeeIn($current, 'Slow CI')
+            ->assertPresent("#card-{$cards['slow']->id}")
+            ->assertNotPresent($overlay);
+    }
+
+    $carolPage->assertNotPresent($bar);
+
+    $alicePage->assertAttribute($follow, 'aria-pressed', 'false')
+        ->click($follow);
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($overlay, 'Slow CI');
+    }
+
+    $alicePage->click("{$overlay} button:has-text(\"Next topic\")");
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($overlay, 'Flaky tests')
+            ->assertSeeIn($current, 'Flaky tests');
+    }
+
+    expect($retro->fresh()->presentation_mode)->toBeTrue()
+        ->and($retro->fresh()->highlighted_card_id)->toBe($cards['flaky']->id);
+
+    $carolPage->keys($overlay, 'Escape')
+        ->assertNotPresent($overlay)
+        ->assertSee('Alice Martin put this topic in focus — everyone is looking here')
+        ->click("{$topics} li:has-text(\"Quiet standups\")")
+        ->assertSeeIn($current, 'Quiet standups')
+        ->assertSee('Everyone is looking at another topic.')
+        ->press('Back to the topic')
+        ->assertSeeIn($current, 'Flaky tests')
+        ->assertPresent("#card-{$cards['flaky']->id}");
+
+    $alicePage->press('Stop presenting')
+        ->assertNotPresent($overlay)
+        ->assertAttribute($follow, 'aria-pressed', 'true')
+        ->click($follow)
+        ->assertAttribute($follow, 'aria-pressed', 'false')
+        ->click("{$nav} button:has-text(\"Next topic\")")
+        ->assertSeeIn($current, 'Quiet standups')
+        ->assertPresent("#card-{$cards['quiet']->id}");
+
+    $carolPage->assertDontSee('put this topic in focus')
+        ->assertSeeIn($current, 'Flaky tests')
+        ->assertPresent("#card-{$cards['flaky']->id}")
+        ->assertNotPresent("#card-{$cards['quiet']->id}")
+        ->assertNotPresent($overlay);
+
+    expect($retro->fresh()->presentation_mode)->toBeFalse()
+        ->and($retro->fresh()->highlighted_card_id)->toBeNull();
+});
+
+it('[P18e-02-13] carries a comment, a reaction and a highlight on the topic in focus to the other browser', function () {
+    [$retro, $alice, $bob, $cards] = p18eDiscussion();
+    $slow = "#card-{$cards['slow']->id}";
+    $topics = '[data-test="retro-topics"]';
+    $current = "{$topics} > li[aria-current=\"true\"]";
+    $composer = "{$slow} textarea[aria-label=\"Write a comment…\"]";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $bobPage->click("{$slow} button[aria-label=\"Comments (0)\"]")
+        ->assertVisible($composer)
+        ->fill($composer, 'Which pipeline is slow?')
+        ->keys($composer, 'Enter')
+        ->assertSeeIn($slow, 'Which pipeline is slow?');
+
+    $alicePage->click("{$slow} button[aria-label=\"Comments (1)\"]")
+        ->assertSeeIn($slow, 'Which pipeline is slow?')
+        ->assertSeeIn($slow, 'Bob Stone');
+
+    $bobPage->click("{$slow} [aria-label=\"Add a reaction\"]")
+        ->assertVisible('[role="menuitem"]:has-text("🎉")')
+        ->click('[role="menuitem"]:has-text("🎉")')
+        ->assertPresent("{$slow} button[aria-label=\"🎉, 1 reaction\"]");
+
+    $alicePage->assertPresent("{$slow} button[aria-label=\"🎉, 1 reaction\"]");
+
+    $bobPage->click("{$topics} li:has-text(\"Quiet standups\")")
+        ->assertSeeIn($current, 'Quiet standups')
+        ->assertNotPresent($slow)
+        ->assertNotPresent("#card-{$cards['quiet']->id} button:has-text(\"Discuss\")");
+
+    $alicePage->click("{$slow} button[aria-pressed=\"false\"]:has-text(\"Discuss\")")
+        ->assertPresent("{$slow} button[aria-pressed=\"true\"]:has-text(\"Discuss\")");
+
+    $bobPage->assertSeeIn($current, 'Slow CI')
+        ->assertAttribute($slow, 'data-focused', 'true')
+        ->assertSeeIn("{$topics} > li[data-shared]", 'Slow CI')
+        ->assertNotPresent('[role="dialog"]');
+
+    expect($retro->fresh()->highlighted_card_id)->toBe($cards['slow']->id)
+        ->and($retro->fresh()->presentation_mode)->toBeFalse()
+        ->and(CardComment::query()->where('card_id', $cards['slow']->id)->count())->toBe(1)
+        ->and(CardReaction::query()->where('card_id', $cards['slow']->id)->count())->toBe(1);
+});
+
+it('[P18e-02-14] creates an action item with "Create the ticket in Linear" and opens the export on it', function () {
+    [$retro, , $bob] = p18eDiscussion();
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Linear);
+    TeamIntegration::factory()->linear()->create(['team_id' => $retro->team_id]);
+    fakeLinearGraphql([
+        'issueCreate' => ['issueCreate' => ['success' => true, 'issue' => [
+            'id' => 'lin-issue-7',
+            'identifier' => 'ENG-7',
+            'url' => 'https://linear.app/acme/issue/ENG-7/rotate-the-on-call',
+        ]]],
+        'teams(first' => ['teams' => ['nodes' => [
+            ['id' => '6a1f0c1e-4e8b-4a55-9b53-3c0b5f1f0a01', 'key' => 'ENG', 'name' => 'Engineering'],
+        ]]],
+        'users(first' => ['users' => ['nodes' => [], 'pageInfo' => ['hasNextPage' => false]]],
+    ]);
+    $panel = '[data-test="retro-action-items-panel"]';
+    $input = "{$panel} [aria-label=\"Add an action item…\"]";
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    $carolPage->assertPresent($input)
+        ->assertDontSeeIn($panel, 'Create the ticket in Linear');
+
+    $bobPage->assertAttribute("{$panel} button:has-text(\"Create an action\")", 'aria-expanded', 'true')
+        ->fill($input, 'Rotate the on-call')
+        ->click("{$panel} form button[role=\"checkbox\"]")
+        ->keys($input, 'Enter')
+        ->assertSeeIn('[role="dialog"]', 'Export to Linear')
+        ->assertSeeIn('[role="dialog"] [aria-label="Linear team"]', 'ENG — Engineering')
+        ->assertSeeIn($panel, 'Rotate the on-call');
+
+    $item = ActionItem::query()->where('content', 'Rotate the on-call')->sole();
+    $chip = "#action-item-{$item->id} a[href=\"https://linear.app/acme/issue/ENG-7/rotate-the-on-call\"]";
+
+    $carolPage->assertSeeIn($panel, 'Rotate the on-call')
+        ->assertNotPresent('[role="dialog"]');
+
+    $bobPage->assertEnabled('[role="dialog"] button:has-text("Export")')
+        ->click('[role="dialog"] button:has-text("Export")')
+        ->assertSee('Exported as ENG-7.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($chip, 'ENG-7')
+        ->assertValue($input, '');
+
+    expect($item->externalLinks()->count())->toBe(1);
 });

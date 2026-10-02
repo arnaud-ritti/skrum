@@ -7,6 +7,8 @@ import {
     Lock,
     LockOpen,
     ScanEye,
+    SkipBack,
+    SkipForward,
     VenetianMask,
     Vote,
 } from 'lucide-react';
@@ -24,6 +26,7 @@ import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { BoardReactions, showsRetroReactions } from './board-reactions';
+import { useOptionalDiscussion } from './phase-discussing';
 
 type Translate = (key: string) => string;
 
@@ -33,6 +36,13 @@ export type FacilitatorTools = {
     onSetting: (patch: Record<string, boolean>) => void;
     onPhase: (phase: RetroPhase) => void;
     busy?: boolean;
+    /** The topics of the discussion: moving between them, and bringing everyone along. */
+    topics?: {
+        canPrevious: boolean;
+        canNext: boolean;
+        onStep: (offset: -1 | 1) => void;
+        onFollow: (follows: boolean) => void;
+    };
 };
 
 type DockBoard = Pick<Snapshot, 'retro'>;
@@ -44,7 +54,7 @@ type DockBoard = Pick<Snapshot, 'retro'>;
 export function facilitatorActions(
     phase: RetroPhase,
     board: DockBoard,
-    { t, onSetting }: FacilitatorTools,
+    { t, onSetting, topics }: FacilitatorTools,
 ): FacilitatorAction[] {
     if (phase === 'completed') {
         return [];
@@ -79,15 +89,38 @@ export function facilitatorActions(
     }
 
     if (phase === 'discussing') {
+        // "Everyone follows" is the presentation mode of the settings.
+        const follow: FacilitatorAction = {
+            id: 'presentation',
+            kind: 'toggle',
+            label: t('Everyone follows'),
+            icon: ScanEye,
+            pressed: retro.presentationMode,
+            onSelect: () =>
+                topics
+                    ? topics.onFollow(!retro.presentationMode)
+                    : onSetting({ presentation_mode: !retro.presentationMode }),
+        };
+
+        if (!topics) {
+            return [follow];
+        }
+
         return [
+            follow,
             {
-                id: 'presentation',
-                kind: 'toggle',
-                label: t('Presentation mode'),
-                icon: ScanEye,
-                pressed: retro.presentationMode,
-                onSelect: () =>
-                    onSetting({ presentation_mode: !retro.presentationMode }),
+                id: 'previous-topic',
+                label: t('Previous topic'),
+                icon: SkipBack,
+                disabled: !topics.canPrevious,
+                onSelect: () => topics.onStep(-1),
+            },
+            {
+                id: 'next-topic',
+                label: t('Next topic'),
+                icon: SkipForward,
+                disabled: !topics.canNext,
+                onSelect: () => topics.onStep(1),
             },
         ];
     }
@@ -225,6 +258,7 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
     const isMobile = useIsMobile();
     const [busy, setBusy] = useState(false);
     const [barRef, barHeight] = useHeightInRem();
+    const discussion = useOptionalDiscussion();
     const { board } = ctx;
     const { phase } = board.retro;
     const hasBar = board.viewer.isFacilitator && phase !== 'completed';
@@ -241,9 +275,25 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
         setBusy(false);
     };
 
+    const topicIndex =
+        discussion?.topics.findIndex(
+            (topic) => topic.id === discussion.current?.id,
+        ) ?? -1;
+
     const tools: FacilitatorTools = {
         t,
         busy,
+        topics:
+            discussion && phase === 'discussing'
+                ? {
+                      canPrevious: topicIndex > 0,
+                      canNext:
+                          topicIndex !== -1 &&
+                          topicIndex < discussion.topics.length - 1,
+                      onStep: discussion.step,
+                      onFollow: discussion.setFollows,
+                  }
+                : undefined,
         onSetting: (patch) =>
             void send(
                 retroRequest(

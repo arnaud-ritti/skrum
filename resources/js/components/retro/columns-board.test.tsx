@@ -353,9 +353,9 @@ describe('ColumnsBoard columns', () => {
         expect(screen.getByText('No columns yet.')).toBeTruthy();
     });
 
-    it('sorts by votes in the discussion, and lets a column keep the written order', () => {
+    it('sorts by votes on the board of a completed retro, and lets a column keep the written order', () => {
         const { container } = board({
-            retro: { phase: 'discussing' },
+            retro: { phase: 'completed' },
             cards: [
                 card({ id: 'low', votes: 1 }),
                 card({ id: 'high', votes: 3, position: 1 }),

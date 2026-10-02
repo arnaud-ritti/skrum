@@ -1,11 +1,13 @@
 <?php
 
 use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Enums\ActionItemPriority;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\CardReaction;
@@ -119,7 +121,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting], true)) {
+    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing], true)) {
         $groups = [
             ['Went well', 'Client demo', 'The client signed off the flow without a single change.'],
             ['To improve', null, 'Requirements keep moving while we build.'],
@@ -159,7 +161,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         ]);
     }
 
-    if ($phase === RetroPhase::Voting) {
+    if (in_array($phase, [RetroPhase::Voting, RetroPhase::Discussing], true)) {
         $votes = [
             ['The client demo%', $people[0][1], 1],
             ['We discover scope changes%', $people[0][1], 2],
@@ -174,6 +176,22 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
                 'retro_id' => $retro->id,
                 'card_id' => $card->id,
                 'participant_id' => $participant->id,
+            ]);
+        }
+    }
+
+    if ($phase === RetroPhase::Discussing) {
+        $actionItems = [
+            ['Share the sprint backlog in #atlas-product every Monday', $people[0], ['assignee_user_id' => $people[1][0]->id, 'due_on' => '2031-10-14']],
+            ['Apply a “one in, one out” rule to mid-sprint additions', $people[1], ['priority' => ActionItemPriority::High]],
+        ];
+
+        foreach ($actionItems as [$content, [, $author], $attributes]) {
+            ActionItem::factory()->create([
+                'retro_id' => $retro->id,
+                'created_by_participant_id' => $author->id,
+                'content' => $content,
+                ...$attributes,
             ]);
         }
     }
@@ -272,5 +290,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'participant, grouping, anonymous, locked' => ['retro-board-grouping-locked', RetroPhase::Grouping, false, true, true],
     'facilitator, voting, totals hidden' => ['retro-board-voting', RetroPhase::Voting, true, false, false, false, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],
+    'facilitator, discussing' => ['retro-board-discussing', RetroPhase::Discussing, true, false],
+    'participant, discussing, locked' => ['retro-board-discussing-locked', RetroPhase::Discussing, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);

@@ -154,7 +154,7 @@ export function WritingBanner({ typing }: { typing?: ReactNode }) {
 }
 
 /**
- * The columns, as every phase from Writing to Discussing shows them, and the
+ * The columns, as every phase from Writing to Voting shows them, and the
  * Board tab of a completed retro.
  */
 export function ColumnsBoard({

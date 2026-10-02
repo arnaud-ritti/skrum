@@ -159,7 +159,7 @@ export function ItemCreateForm({
                 aria-label={t('Add an action item…')}
                 onChange={(event) => update({ title: event.target.value })}
             />
-            <div className="grid min-w-0 grid-cols-1 gap-2 @xs/create:grid-cols-2 @2xl/create:grid-cols-4">
+            <div className="grid min-w-0 grid-cols-1 gap-2 @2xs/create:grid-cols-2 @2xl/create:grid-cols-4">
                 <Select
                     value={draft.owner}
                     disabled={locked}
