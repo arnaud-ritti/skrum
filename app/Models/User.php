@@ -31,6 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
+ * @property Carbon|null $two_factor_email_enabled_at
  * @property string|null $remember_token
  * @property string|null $locale
  * @property bool $is_instance_admin
@@ -71,6 +72,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_email_enabled_at' => 'datetime',
             'is_instance_admin' => 'boolean',
             'action_item_reminders_by_email' => 'boolean',
             'action_item_reminders_in_app' => 'boolean',

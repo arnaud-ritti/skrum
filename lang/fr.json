@@ -3904,5 +3904,15 @@
     "This link no longer works": "Ce lien ne fonctionne plus",
     "You are about to sign in as :email.": "Vous allez vous connecter en tant que :email.",
     "It has expired or was already used. Request a new one from the log in page.": "Il a expiré ou a déjà été utilisé. Demandez-en un nouveau depuis la page de connexion.",
-    "Back to log in": "Retour à la connexion"
+    "Back to log in": "Retour à la connexion",
+    ":code is your :app verification code": ":code est votre code de vérification :app",
+    "Your verification code": "Votre code de vérification",
+    "Enter this code to continue.": "Saisissez ce code pour continuer.",
+    "It expires in :minutes minutes.": "Il expire dans :minutes minutes.",
+    "Requested from :device.": "Demandé depuis :device.",
+    "Not you? Someone knows your password.": "Ce n'est pas vous ? Quelqu'un connaît votre mot de passe.",
+    "Change your password": "Changez votre mot de passe",
+    "The code is wrong or has expired.": "Le code est incorrect ou a expiré.",
+    "E-mail code turned on.": "Code par e-mail activé.",
+    "E-mail code turned off.": "Code par e-mail désactivé."
 }

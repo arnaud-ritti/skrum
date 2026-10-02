@@ -7,8 +7,10 @@ use App\Actions\Integrations\BuildRetroRecap;
 use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
 use App\Mail\MagicLinkMail;
+use App\Mail\TwoFactorCodeMail;
 use App\Mail\WorkspaceInvitationMail;
 use App\Models\ActionItem;
+use App\Models\EmailTwoFactorCode;
 use App\Models\MagicLink;
 use App\Models\Retro;
 use App\Models\User;
@@ -63,6 +65,7 @@ class MailPreviewsController extends Controller
                     resolve(SummarizeHealthCheck::class)->handle($retro),
                 ),
             'magic-link' => fn (): Mailable => new MagicLinkMail(url('/magic-link/'.str_repeat('a', 64).'?expires=0&signature=sample'), 'ada@example.com', MagicLink::LifetimeMinutes),
+            'two-factor-code' => fn (): Mailable => new TwoFactorCodeMail('042917', EmailTwoFactorCode::LifetimeMinutes, 'Firefox · macOS'),
         ];
     }
 }

@@ -64,4 +64,11 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    public function withEmailSecondFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_email_enabled_at' => now(),
+        ]);
+    }
 }

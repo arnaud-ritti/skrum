@@ -7,6 +7,8 @@ use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\DesignSystemPagesController;
+use App\Http\Controllers\EmailChallengeCodesController;
+use App\Http\Controllers\EmailCodeChallengesController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameAnswersController;
@@ -222,6 +224,12 @@ Route::middleware('guest')->group(function (): void {
         ->where('token', '[A-Za-z0-9]{64}')
         ->middleware('throttle:20,1,magicLinkOpens')
         ->name('magicLinks.sessions.store');
+    Route::post('two-factor-challenge/email-code', [EmailChallengeCodesController::class, 'store'])
+        ->middleware('throttle:6,1,emailChallengeCodes')
+        ->name('twoFactor.emailCodes.store');
+    Route::post('two-factor-challenge/email', [EmailCodeChallengesController::class, 'store'])
+        ->middleware('throttle:two-factor')
+        ->name('twoFactor.emailChallenges.store');
 });
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');

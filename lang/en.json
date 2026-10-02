@@ -3679,5 +3679,15 @@
     "This link no longer works": "This link no longer works",
     "You are about to sign in as :email.": "You are about to sign in as :email.",
     "It has expired or was already used. Request a new one from the log in page.": "It has expired or was already used. Request a new one from the log in page.",
-    "Back to log in": "Back to log in"
+    "Back to log in": "Back to log in",
+    ":code is your :app verification code": ":code is your :app verification code",
+    "Your verification code": "Your verification code",
+    "Enter this code to continue.": "Enter this code to continue.",
+    "It expires in :minutes minutes.": "It expires in :minutes minutes.",
+    "Requested from :device.": "Requested from :device.",
+    "Not you? Someone knows your password.": "Not you? Someone knows your password.",
+    "Change your password": "Change your password",
+    "The code is wrong or has expired.": "The code is wrong or has expired.",
+    "E-mail code turned on.": "E-mail code turned on.",
+    "E-mail code turned off.": "E-mail code turned off."
 }

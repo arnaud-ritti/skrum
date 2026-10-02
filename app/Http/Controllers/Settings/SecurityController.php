@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Auth\SendEmailTwoFactorCode;
+use App\Enums\EmailCodePurpose;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Support\Auth\SecondFactors;
+use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -16,7 +20,7 @@ class SecurityController extends Controller
     /**
      * Show the user's security settings page.
      */
-    public function edit(TwoFactorAuthenticationRequest $request): Response
+    public function edit(TwoFactorAuthenticationRequest $request, IntegrationAvailability $availability, SecondFactors $secondFactors, SendEmailTwoFactorCode $sendCode): Response
     {
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
@@ -38,6 +42,12 @@ class SecurityController extends Controller
                     ->all()
                 : [],
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'emailSecondFactor' => [
+                'available' => $availability->emailEnabled(),
+                'enabled' => $secondFactors->hasEmailCode($request->user()),
+                'address' => $request->user()->email,
+                'resendIn' => $sendCode->secondsUntilResend($request->user(), EmailCodePurpose::Enable),
+            ],
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {

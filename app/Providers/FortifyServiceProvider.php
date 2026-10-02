@@ -3,12 +3,18 @@
 namespace App\Providers;
 
 use App\Actions\Auth\RedirectIfSecondFactorRequired;
+use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Actions\Auth\SignupGate;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Enums\EmailCodePurpose;
+use App\Enums\SecondFactorMethod;
 use App\Enums\SsoProvider;
+use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
+use App\Support\Auth\SecondFactors;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +26,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -45,6 +52,7 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureSecondFactor(): void
     {
         $this->app->scoped(RedirectsIfTwoFactorAuthenticatable::class, RedirectIfSecondFactorRequired::class);
+        $this->app->bind(TwoFactorLoginRequest::class, TwoFactorChallengeRequest::class);
     }
 
     /**
@@ -95,7 +103,20 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
+        Fortify::twoFactorChallengeView(function (Request $request) {
+            $user = User::query()->find($request->session()->get('login.id'));
+            $methods = $user === null ? [] : resolve(SecondFactors::class)->methodsFor($user);
+
+            return Inertia::render('auth/two-factor-challenge', [
+                'methods' => array_map(fn (SecondFactorMethod $method): string => $method->value, $methods),
+                'emailCode' => $user === null || ! in_array(SecondFactorMethod::EmailCode, $methods, true) ? null : [
+                    'sentTo' => LoginAddress::mask($user->email),
+                    'resendIn' => resolve(SendEmailTwoFactorCode::class)->secondsUntilResend($user, EmailCodePurpose::Login),
+                    'available' => resolve(IntegrationAvailability::class)->emailEnabled(),
+                ],
+                'status' => $request->session()->get('status'),
+            ]);
+        });
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
     }
@@ -110,7 +131,9 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id')));
+        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by(
+            $request->session()->get('login.id') ?: $request->ip(),
+        ));
 
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(
             LoginAddress::throttleKey((string) $request->input(Fortify::username())).'|'.$request->ip(),

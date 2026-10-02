@@ -14,7 +14,13 @@ class SecondFactors
     {
         return array_values(array_filter([
             $this->hasTotp($user) ? SecondFactorMethod::Totp : null,
+            $this->hasEmailCode($user) ? SecondFactorMethod::EmailCode : null,
         ]));
+    }
+
+    public function hasEmailCode(User $user): bool
+    {
+        return $user->two_factor_email_enabled_at !== null;
     }
 
     public function requiredFor(User $user): bool
