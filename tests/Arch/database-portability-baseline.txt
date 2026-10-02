@@ -1,4 +1,3 @@
 app/Actions/Retros/BuildSummaryInput.php|orderByRaw|1
-tests/Feature/Auth/MagicLinkTest.php|reads sql text|3
 tests/Feature/Poker/WorkspacePokerDecksTest.php|driver branch|1
 tests/Feature/Retros/HealthStatementModelsTest.php|driver branch|1

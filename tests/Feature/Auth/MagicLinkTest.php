@@ -7,10 +7,10 @@ use App\Mail\MagicLinkMail;
 use App\Models\MagicLink;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\SqlProbe;
 
 beforeEach(function () {
     config(['mail.default' => 'smtp']);
@@ -50,15 +50,10 @@ it('answers the same way for every address', function (string $email) {
 it('dispatches the same job for every address and never reads the users table', function (string $email) {
     Queue::fake();
     User::factory()->create(['email' => 'known@example.test']);
-    $userQueries = 0;
-    DB::listen(function ($query) use (&$userQueries): void {
-        $userQueries += str_contains($query->sql, '"users"') ? 1 : 0;
-    });
-
-    $this->post(route('magicLinks.store'), ['email' => $email]);
+    $userQueries = SqlProbe::statementsOn('users', fn () => $this->post(route('magicLinks.store'), ['email' => $email]));
 
     Queue::assertPushed(SendMagicLink::class, 1);
-    expect($userQueries)->toBe(0);
+    expect($userQueries)->toBe([]);
 })->with(['known@example.test', 'nobody@example.test']);
 
 it('mails a verified account only', function () {
@@ -172,20 +167,20 @@ it('signs in on POST and works once', function () {
 it('consumes with one conditional update', function () {
     $user = User::factory()->create();
     $token = magicLinkToken(magicLinkFor($user));
-    $updates = [];
-    DB::listen(function ($query) use (&$updates): void {
-        if (str_starts_with($query->sql, 'update "magic_links"')) {
-            $updates[] = $query->sql;
-        }
-    });
+    $first = null;
+    $second = null;
 
-    $first = resolve(ConsumeMagicLink::class)->handle($token);
-    $second = resolve(ConsumeMagicLink::class)->handle($token);
+    $updates = SqlProbe::updateConditions('magic_links', function () use ($token, &$first, &$second): void {
+        $first = resolve(ConsumeMagicLink::class)->handle($token);
+        $second = resolve(ConsumeMagicLink::class)->handle($token);
+    });
 
     expect($first?->id)->toBe($user->id)
         ->and($second)->toBeNull()
-        ->and($updates)->toHaveCount(2)
-        ->and($updates[0])->toContain('"consumed_at" is null')->toContain('"expires_at" >');
+        ->and($updates)->toBe([
+            ['token_hash', 'expires_at', 'consumed_at'],
+            ['token_hash', 'expires_at', 'consumed_at'],
+        ]);
 });
 
 it('expires after 15 minutes', function () {
