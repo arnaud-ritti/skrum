@@ -140,3 +140,24 @@ None in this card.
 | The card is in the side column, above the health check, not in the main column beside the open actions | brief 04 §1 (the page follows ScreenTeam; `#mood` is the aside); spec §6.3 |
 | Under three points: dots without a line and "Not enough data for a trend yet. It appears from 3 retros." | `MoodTrendChart/README.md` (state "little data") |
 
+
+## Integration of wave 2b
+
+Merged at `91251891`, after the lane's fix pass. Captures opened after the merge: `team-page` light 1440 EN and dark 390 FR, compared with a rendering of `ScreenTeam` and `ScreenDashboard` (`preview.html` with `_preview-bundle.css`, in `/tmp` only; structure and content, not colours or spacing). The eight bench captures (`team-*`) were not opened.
+
+No small clear difference was found beyond those the lane listed. Every "to report" line above now has a row in the plan's Deviations table:
+
+| Difference | Row |
+|---|---|
+| "Integrations" link instead of the gear; "Join" for every open phase; badge tones | D-73 |
+| "Open the game"; points twice on a game row; "Ended games" group | D-74 |
+| Two columns from 80rem; whiteboard trash, member controls, "Team settings" card | D-75 |
+| The health check card is the manager, titled "Health check statements", without the count sentence | D-76 |
+| Mood card: two tabs, chart anatomy, side column, 0 to 10 axis, one x label, no `<Deferred>` | D-77 |
+
+Fix later (defects, not deviations):
+
+- A member row reads "Supprimer" in French while its dialog says "Retirer": the key "Remove" is shared with other screens, so a new key is the owner's wording decision.
+- If the deferred fetch of `moodTrend` fails, the skeleton stays ("Loading chart"), with no message.
+- The sidebar entry "Team settings" points to the integrations page, which answers 404 while no provider is configured (`use-sidebar-model.ts`, outside this lane; `P12a-01c` asserts the link only inside `main`). For the settings lane.
+- At 390 the full-page capture shows the fixed tab bar across the page: an artefact of the capture.
