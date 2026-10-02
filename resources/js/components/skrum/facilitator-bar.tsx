@@ -32,6 +32,8 @@ export type FacilitatorAction = {
     shortcut?: string;
     tone?: FacilitatorActionTone;
     kind?: 'button' | 'toggle';
+    /** `end` puts the icon after the label, as the arrow of "next phase". */
+    iconPosition?: 'start' | 'end';
 };
 
 export type FacilitatorBarProps = {
@@ -95,6 +97,7 @@ function ActionButton({
     const reasonId = useId();
     const hasReason = action.disabled && Boolean(action.disabledReason);
     const showLabel = !iconOnly || isPrimary;
+    const iconAfter = showLabel && action.iconPosition === 'end';
 
     const select = (): void => {
         if (action.disabled) {
@@ -133,10 +136,11 @@ function ActionButton({
                         action.disabled && 'cursor-not-allowed opacity-50',
                     )}
                 >
-                    <Icon aria-hidden />
+                    {!iconAfter && <Icon aria-hidden />}
                     {showLabel && (
                         <span className="truncate">{action.label}</span>
                     )}
+                    {iconAfter && <Icon aria-hidden />}
                     {hasReason && (
                         <span id={reasonId} className="sr-only">
                             {action.disabledReason}

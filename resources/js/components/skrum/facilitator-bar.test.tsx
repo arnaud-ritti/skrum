@@ -247,6 +247,20 @@ describe('FacilitatorBar', () => {
         ).toBe('true');
     });
 
+    it('puts the icon of an action after its label when asked', () => {
+        renderWithProviders(
+            <FacilitatorBar
+                actions={[]}
+                primary={{ ...next, iconPosition: 'end' }}
+            />,
+        );
+
+        const button = screen.getByRole('button', { name: 'Grouping' });
+
+        expect(button.firstElementChild?.tagName).toBe('SPAN');
+        expect(button.lastElementChild?.tagName.toLowerCase()).toBe('svg');
+    });
+
     it('handles an empty action list', () => {
         renderWithProviders(<FacilitatorBar actions={[]} />);
 
