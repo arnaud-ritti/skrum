@@ -45,3 +45,32 @@ The expired state of the invitation page shows the workspace name and the invite
 - Recovery codes low-count alert and regenerate button: after the settings lane merges (Security page).
 - D-54 invitation, logged out, inline account creation: plan 18f front, under its security rules.
 - Registration creating a workspace and a team, whole-word guess in hangman: feature roadmap.
+
+---
+
+# Second rework run — owner's fifth round, and rulings made under the autonomy mandate
+
+Source: `owner-answers-2026-10-02.md`, section "Fifth round". Pre-build deviations (PB-01 to PB-51) are in `docs/superpowers/research/front-rewrite/pre-build-deviations.md`: for every remaining screen task (5.2, 5.3, 9a–9c, S1, S2, G6, plan 18f Tasks 17–25) that file is binding — apply each row's recommended option ("decide" rows were ruled to their recommendation by the controller under the owner's mandate; "apply" rows follow earlier answers).
+
+Working rules now in force: no test runs (feature, Vitest, browser) — tests are written or updated with the code and not run; gates are types (after `wayfinder:generate --with-form`), `npm run check`, build, pint. Exception: plan 18f tasks run their auth and security Pest files. New code uses portable queries (no `ILIKE`, no PostgreSQL-only SQL, no new driver branch).
+
+## Lane poker
+
+### RW-P3: Poker room settings in a popover from the header; no `links.decks`
+Row D-70. The room settings open in a popover anchored to a header button (mockup), like the retro settings popover with "Apply"; the facilitator-menu entry "Settings…" goes. Tests binding "Settings…" follow. Remove `links.decks` from `BuildPokerSnapshot` and its test: the front builds the link to the decks page with Wayfinder.
+
+### RW-P4: Estimation history — ticket key and number of games
+Row D-72. Back end: each history row carries the tracker key of an imported task (null otherwise); the summary carries the number of games holding an estimate. Front: the key under the task title, "across :count games" in the summary. Other points of D-72 stay.
+
+## Lane team
+
+### RW-T1: Team header — gear, "Join" / "Resume", "Retirer"
+Row D-73. A gear icon button named "Team settings" in the team header (it leads where the sidebar entry leads); the labelled "Integrations" link goes (P12a `click('Integrations')` follows). Retro cards: "Resume" when the viewer has already joined the retro, "Join" otherwise (back end: a boolean per open retro, from the participants the server already stores; tested for a member who joined, one who did not, and no leak across teams). French: removing a member reads "Retirer" on the row and in the dialog (a new key; "Remove" stays "Supprimer" elsewhere).
+
+### RW-T2: Health check card compact, a management page, ROTI curve in the main column
+Rows D-76, D-77. The card is the mockup's compact list titled "Health check" with a "Manage" link and a sentence using the real values (actual number of statements, scale 1 to 10). "Manage" opens a page of its own (new route under the team, same authorisation as today's statement management) holding the full manager and the Mood trend (health score) with its table view. The team page shows the ROTI curve alone, in the main column, filled, with the bubble on the last point (mockup strict); the Mood / ROTI tabs go. The deferred prop is consumed with `<Deferred>` and has an error state.
+
+## Lane small
+
+### RW-S4: Recovery codes — low-count alert and regenerate
+On the Security page (one two-factor card with two method rows, see PB-34 if the 18f lane has not built it yet: do not restructure the card here), when three or fewer recovery codes remain: an alert with the count and a "Regenerate codes" button (existing Fortify action); at zero the alert is the error tone. Spec B43 reworded: a used code is removed.
