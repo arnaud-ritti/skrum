@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +23,7 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use SensitiveParameter;
 
 /**
  * @property string $id
@@ -91,6 +94,19 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function avatarSeed(): string
     {
         return substr(hash_hmac('sha256', $this->id, (string) config('app.key')), 0, 32);
+    }
+
+    /**
+     * The broker answers "sent" either way: the request says nothing about
+     * the setting, the account or its role.
+     */
+    public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
+    {
+        if (! resolve(SignInPolicy::class)->allowsPasswordReset($this)) {
+            return;
+        }
+
+        $this->notify(new ResetPassword($token));
     }
 
     public function preferredLocale(): ?string

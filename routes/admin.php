@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AvatarPreviewsController;
 use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
+use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Middleware\KeepFlashedSessionData;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,9 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::get('admin/branding', [BrandingController::class, 'edit'])->name('admin.branding.edit');
         Route::put('admin/branding', [BrandingController::class, 'update'])->name('admin.branding.update');
         Route::delete('admin/branding', [BrandingController::class, 'destroy'])->name('admin.branding.destroy');
+
+        Route::get('admin/sign-in', [SignInSettingsController::class, 'edit'])->name('admin.signIn.edit');
+        Route::put('admin/sign-in', [SignInSettingsController::class, 'update'])->name('admin.signIn.update');
 
         Route::post('admin/branding/assets/{asset}', [BrandingAssetsController::class, 'store'])
             ->where('asset', 'logo-light|logo-dark|favicon')

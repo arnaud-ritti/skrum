@@ -8,6 +8,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Support\Auth\SignInPolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +28,12 @@ class CreateNewUser implements CreatesNewUsers
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
         ])->validate();
+
+        if (! resolve(SignInPolicy::class)->allowsLocalCredentials()) {
+            throw ValidationException::withMessages([
+                'email' => __('This instance requires single sign-on.'),
+            ]);
+        }
 
         $invitation = WorkspaceInvitation::findByToken(request()->session()->get('invitation_token'));
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\Auth\SignInPolicy;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
 
 /**
@@ -11,6 +13,23 @@ use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
  */
 class TwoFactorChallengeRequest extends TwoFactorLoginRequest
 {
+    /**
+     * A challenge that a password started ends only for someone who may
+     * still use a password: the role is read again here.
+     */
+    public function challengedUser()
+    {
+        $user = parent::challengedUser();
+
+        if ($this->session()->get('login.local') === true && ! resolve(SignInPolicy::class)->allowsPassword($user)) {
+            $this->session()->forget(['login.id', 'login.remember', 'login.local']);
+
+            throw ValidationException::withMessages(['email' => [trans('auth.failed')]])->redirectTo(route('login'));
+        }
+
+        return $user;
+    }
+
     public function hasValidCode(): bool
     {
         if ($this->challengedUser()->two_factor_secret === null) {

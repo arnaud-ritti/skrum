@@ -19,11 +19,12 @@ class StartSecondFactorChallenge
      * A user whose only factor is the e-mail code gets it at once; with an
      * authenticator app too, the code is sent when they choose it.
      */
-    public function handle(Request $request, User $user, bool $remember): void
+    public function handle(Request $request, User $user, bool $remember, bool $local): void
     {
         $request->session()->put([
             'login.id' => $user->getKey(),
             'login.remember' => $remember,
+            'login.local' => $local,
         ]);
 
         if ($this->secondFactors->methodsFor($user) === [SecondFactorMethod::EmailCode]) {

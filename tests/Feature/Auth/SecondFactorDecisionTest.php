@@ -57,7 +57,8 @@ it('completes a login through the shared action', function () {
     expect($response->getTargetUrl())->toBe(route('two-factor.login'))
         ->and(auth()->check())->toBeFalse()
         ->and(session('login.id'))->toBe($protected->id)
-        ->and(session('login.remember'))->toBeFalse();
+        ->and(session('login.remember'))->toBeFalse()
+        ->and(session('login.local'))->toBeFalse();
 
     $response = resolve(CompleteLogin::class)->handle($request, $plain);
 

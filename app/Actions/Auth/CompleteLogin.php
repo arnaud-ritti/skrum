@@ -22,7 +22,7 @@ class CompleteLogin
     public function handle(Request $request, User $user): RedirectResponse
     {
         if ($this->secondFactors->requiredFor($user)) {
-            $this->startChallenge->handle($request, $user, remember: false);
+            $this->startChallenge->handle($request, $user, remember: false, local: false);
 
             return to_route('two-factor.login');
         }

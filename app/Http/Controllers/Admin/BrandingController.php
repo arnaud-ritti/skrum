@@ -78,7 +78,7 @@ class BrandingController extends Controller
             $assets->remove($asset);
         }
 
-        $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::cases(), 'value'), null));
+        $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::branding(), 'value'), null));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding reset to the Skrüm defaults.')]);
 

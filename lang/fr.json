@@ -3914,5 +3914,14 @@
     "Change your password": "Changez votre mot de passe",
     "The code is wrong or has expired.": "Le code est incorrect ou a expiré.",
     "E-mail code turned on.": "Code par e-mail activé.",
-    "E-mail code turned off.": "Code par e-mail désactivé."
+    "E-mail code turned off.": "Code par e-mail désactivé.",
+    "This instance requires single sign-on.": "Cette instance impose l'authentification unique.",
+    "An account already uses this email address and could not be matched to your single sign-on identity. Ask an administrator of this instance.": "Un compte utilise déjà cette adresse e-mail et n'a pas pu être rattaché à votre identité d'authentification unique. Adressez-vous à un administrateur de cette instance.",
+    "Configure a single sign-on provider before requiring it.": "Configurez un fournisseur d'authentification unique avant de l'imposer.",
+    "Sign in once with single sign-on yourself before requiring it for everyone.": "Connectez-vous d'abord vous-même une fois par authentification unique avant de l'imposer à tout le monde.",
+    "Sign-in settings saved.": "Paramètres de connexion enregistrés.",
+    "Sign-in": "Connexion",
+    "Single sign-on is required.": "L'authentification unique est obligatoire.",
+    "Single sign-on is optional.": "L'authentification unique est facultative.",
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Activez un second facteur sur votre compte avant d'imposer l'authentification unique : c'est ce qui permet à un administrateur de se connecter par mot de passe si l'authentification unique tombe en panne."
 }

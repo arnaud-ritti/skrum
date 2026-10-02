@@ -6,6 +6,7 @@ use App\Http\Requests\Auth\MagicLinkRequest;
 use App\Jobs\Auth\SendMagicLink;
 use App\Models\MagicLink;
 use App\Support\Auth\LoginAddress;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,9 +39,9 @@ class MagicLinksController extends Controller
      * Shows who the link signs in. Nothing is consumed here: mail scanners
      * and link previews open links with GET.
      */
-    public function show(Request $request, string $token): Response
+    public function show(Request $request, string $token, SignInPolicy $policy): Response
     {
-        $link = $request->hasValidSignature() ? MagicLink::findUsable($token) : null;
+        $link = $request->hasValidSignature() && $policy->allowsLocalCredentials() ? MagicLink::findUsable($token) : null;
 
         $response = Inertia::render('auth/magic-link', [
             'email' => $link === null ? null : LoginAddress::mask($link->user->email),

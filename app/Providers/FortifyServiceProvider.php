@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
 use App\Support\Auth\SecondFactors;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
@@ -69,13 +70,19 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
-            'status' => $request->session()->get('status'),
-            'ssoProviders' => SsoProvider::options(),
-            'canUseMagicLink' => resolve(IntegrationAvailability::class)->emailEnabled(),
-        ]));
+        Fortify::loginView(function (Request $request) {
+            $policy = resolve(SignInPolicy::class);
+            $local = $policy->allowsLocalCredentials();
+
+            return Inertia::render('auth/login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => $local && resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
+                'status' => $request->session()->get('status'),
+                'ssoProviders' => SsoProvider::options(),
+                'ssoRequired' => $policy->ssoRequired(),
+                'canUseMagicLink' => $local && resolve(IntegrationAvailability::class)->emailEnabled(),
+            ]);
+        });
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,
@@ -92,6 +99,8 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::registerView(function (Request $request) {
+            abort_unless(resolve(SignInPolicy::class)->allowsLocalCredentials(), 403);
+
             $invitation = $this->followedInvitation($request);
 
             abort_unless(resolve(SignupGate::class)->canShowRegistration($invitation), 403);

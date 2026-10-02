@@ -26,6 +26,8 @@ class InstanceSettings
 
     public const bool DefaultAvatarMemberChoice = false;
 
+    public const bool DefaultSsoRequired = false;
+
     /** Without a provider and a key GIFs stay off whatever this switch says. */
     public const bool DefaultGifEnabled = true;
 
@@ -234,6 +236,11 @@ class InstanceSettings
         $this->invalidateAfterCommit();
     }
 
+    public function ssoRequired(): bool
+    {
+        return $this->storedBool(InstanceSettingKey::SsoRequired) ?? self::DefaultSsoRequired;
+    }
+
     /**
      * @return array{
      *     brand_color: ?string,
@@ -248,7 +255,8 @@ class InstanceSettings
      *     gif_provider: ?string,
      *     gif_enabled: bool,
      *     gif_rating: string,
-     *     has_gif_key: bool
+     *     has_gif_key: bool,
+     *     sso_required: bool
      * }
      */
     public function all(): array
@@ -267,6 +275,7 @@ class InstanceSettings
             InstanceSettingKey::GifEnabled->value => $this->gifEnabled(),
             InstanceSettingKey::GifRating->value => $this->gifRating(),
             'has_gif_key' => $this->hasGifKey(),
+            InstanceSettingKey::SsoRequired->value => $this->ssoRequired(),
         ];
     }
 
@@ -300,7 +309,8 @@ class InstanceSettings
         return match ($key) {
             InstanceSettingKey::PoweredBy,
             InstanceSettingKey::AvatarMemberChoice,
-            InstanceSettingKey::GifEnabled => $this->booleanFrom($key, $value),
+            InstanceSettingKey::GifEnabled,
+            InstanceSettingKey::SsoRequired => $this->booleanFrom($key, $value),
             InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),
             InstanceSettingKey::GifKey => Crypt::encryptString($this->stringFrom($key, $value)),
             default => $value,

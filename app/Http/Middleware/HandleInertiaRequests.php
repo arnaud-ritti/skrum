@@ -6,6 +6,7 @@ use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Branding\BrandAssets;
 use App\Support\CurrentTeamResolver;
 use App\Support\InstanceSettings;
@@ -50,6 +51,9 @@ class HandleInertiaRequests extends Middleware
             'brand' => $this->brand(...),
             'adminUrl' => fn (): ?string => $request->user()?->can('manageInstance')
                 ? route('admin.branding.edit')
+                : null,
+            'signInAlert' => fn (): ?string => $request->user()?->can('manageInstance') && resolve(SignInPolicy::class)->isIgnored()
+                ? 'sso_required_ignored'
                 : null,
             'auth' => [
                 'user' => $this->user($request),

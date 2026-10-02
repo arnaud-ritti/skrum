@@ -17,6 +17,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Policies\PokerDeckPolicy;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
@@ -75,6 +76,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
+        Passkeys::authorizeLoginUsing(
+            fn (Request $request, User $user): bool => resolve(SignInPolicy::class)->allowsLocalCredentials(),
+        );
         Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
         Gate::define('manageInstance', fn (User $user): bool => $user->is_instance_admin === true);
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);

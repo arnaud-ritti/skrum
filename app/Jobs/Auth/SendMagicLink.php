@@ -6,6 +6,7 @@ use App\Actions\Auth\IssueMagicLink;
 use App\Mail\MagicLinkMail;
 use App\Models\MagicLink;
 use App\Models\User;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,8 +24,12 @@ class SendMagicLink implements ShouldBeEncrypted, ShouldQueue
 
     public function __construct(public string $email) {}
 
-    public function handle(IssueMagicLink $issue, IntegrationAvailability $availability): void
+    public function handle(IssueMagicLink $issue, IntegrationAvailability $availability, SignInPolicy $policy): void
     {
+        if (! $policy->allowsLocalCredentials()) {
+            return;
+        }
+
         if (! $availability->emailEnabled()) {
             return;
         }

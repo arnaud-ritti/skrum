@@ -4,6 +4,7 @@ namespace App\Actions\Auth;
 
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
+use App\Support\Auth\SignInPolicy;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
 
@@ -17,6 +18,11 @@ class RedirectIfSecondFactorRequired extends RedirectIfTwoFactorAuthenticatable
             return $next($request);
         }
 
+        if (! resolve(SignInPolicy::class)->allowsPassword($user)) {
+            $this->fireFailedEvent($request, $user);
+            $this->throwFailedAuthenticationException($request);
+        }
+
         if (! resolve(SecondFactors::class)->requiredFor($user)) {
             return $next($request);
         }
@@ -26,7 +32,7 @@ class RedirectIfSecondFactorRequired extends RedirectIfTwoFactorAuthenticatable
 
     protected function twoFactorChallengeResponse($request, $user)
     {
-        resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'));
+        resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'), local: true);
 
         TwoFactorAuthenticationChallenged::dispatch($user);
 

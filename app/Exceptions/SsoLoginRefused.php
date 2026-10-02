@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use App\Enums\SsoProvider;
+use App\Support\Auth\SignInPolicy;
 use Exception;
 
 class SsoLoginRefused extends Exception
@@ -19,6 +20,10 @@ class SsoLoginRefused extends Exception
 
     public static function emailAlreadyUsed(): self
     {
+        if (resolve(SignInPolicy::class)->ssoRequired()) {
+            return new self(__('An account already uses this email address and could not be matched to your single sign-on identity. Ask an administrator of this instance.'));
+        }
+
         return new self(__('An account already uses this email address. Log in with your password instead.'));
     }
 

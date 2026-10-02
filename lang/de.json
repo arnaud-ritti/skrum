@@ -3914,5 +3914,14 @@
     "Change your password": "Ändern Sie Ihr Passwort",
     "The code is wrong or has expired.": "Der Code ist falsch oder abgelaufen.",
     "E-mail code turned on.": "E-Mail-Code eingeschaltet.",
-    "E-mail code turned off.": "E-Mail-Code ausgeschaltet."
+    "E-mail code turned off.": "E-Mail-Code ausgeschaltet.",
+    "This instance requires single sign-on.": "Diese Instanz verlangt Single Sign-on.",
+    "An account already uses this email address and could not be matched to your single sign-on identity. Ask an administrator of this instance.": "Ein Konto verwendet diese E-Mail-Adresse bereits und konnte Ihrer Single-Sign-on-Identität nicht zugeordnet werden. Wenden Sie sich an einen Administrator dieser Instanz.",
+    "Configure a single sign-on provider before requiring it.": "Richten Sie einen Single-Sign-on-Anbieter ein, bevor Sie ihn vorschreiben.",
+    "Sign in once with single sign-on yourself before requiring it for everyone.": "Melden Sie sich zuerst selbst einmal per Single Sign-on an, bevor Sie es für alle vorschreiben.",
+    "Sign-in settings saved.": "Anmeldeeinstellungen gespeichert.",
+    "Sign-in": "Anmeldung",
+    "Single sign-on is required.": "Single Sign-on ist vorgeschrieben.",
+    "Single sign-on is optional.": "Single Sign-on ist freiwillig.",
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Schalten Sie einen zweiten Faktor für Ihr Konto ein, bevor Sie Single Sign-on vorschreiben: Damit kann sich ein Administrator mit Passwort anmelden, wenn Single Sign-on ausfällt."
 }
