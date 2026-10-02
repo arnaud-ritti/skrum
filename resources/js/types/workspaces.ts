@@ -90,3 +90,14 @@ export type TeamHealthStatement = {
     isBuiltin: boolean;
     isArchived: boolean;
 };
+
+export type TeamMoodPoint = {
+    retroId: string;
+    title: string;
+    completedAt: string;
+    url: string;
+    mood: number | null;
+    moodVoters: number;
+    roti: number | null;
+    rotiVoters: number;
+};

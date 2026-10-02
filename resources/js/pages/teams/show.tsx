@@ -33,6 +33,7 @@ import type {
     PokerGameSummary,
     RetroSummary,
     TeamHealthStatement,
+    TeamMoodPoint,
     TeamSummary,
     WhiteboardGalleryItem,
     WhiteboardSummary,
@@ -65,6 +66,7 @@ type Props = {
     canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
+    moodTrend?: TeamMoodPoint[];
 };
 
 export default function ShowTeam({

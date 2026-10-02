@@ -7,6 +7,7 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
@@ -58,6 +59,7 @@ class TeamsController extends Controller
         BuildTemplateCatalogue $buildTemplateCatalogue,
         IcebreakerGameOptions $icebreakerGameOptions,
         BuildWhiteboardGallery $buildWhiteboardGallery,
+        BuildTeamMoodTrend $buildTeamMoodTrend,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -119,6 +121,7 @@ class TeamsController extends Controller
                     'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
                 ]),
             'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
+            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend'),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }
