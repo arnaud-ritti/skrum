@@ -70,6 +70,8 @@ export type GamesRoom = {
     status?: GameRoomStatus;
     minPlayers?: number;
     players?: GameRoomPlayer[];
+    /** Replaces the rounds count beside the game, e.g. "started 4 min ago". */
+    context?: string;
 };
 
 export type GameOption = { value: GameKind; label: string; available: boolean };
@@ -161,10 +163,6 @@ function useCounts() {
             count === 1
                 ? t(':count win', { count })
                 : t(':count wins', { count }),
-        points: (count: number) =>
-            count === 1
-                ? t(':count point', { count: formatNumber(count) })
-                : t(':count points', { count: formatNumber(count) }),
     };
 }
 
@@ -451,12 +449,13 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
     const AccessIcon = room.access === 'link' ? Globe : Users;
     const accessLabel =
         room.access === 'link' ? t('Open by link') : t('Team only');
+    const rounds = counts.rounds(room.roundsCount);
     const context =
         missing > 0
             ? missing === 1
                 ? t('needs 1 more player')
                 : t('needs :count more players', { count: missing })
-            : counts.rounds(room.roundsCount);
+            : (room.context ?? rounds);
     const label = [
         title,
         gameLabel,
@@ -496,6 +495,7 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                             <AvatarStack
                                 size="xs"
                                 max={3}
+                                total={room.playersCount}
                                 people={room.players.map((player) => ({
                                     name: player.name,
                                     src: player.avatarUrl,
@@ -506,6 +506,14 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                         <span className="text-xs text-muted-foreground">
                             {counts.players(room.playersCount)}
                         </span>
+                        {context !== rounds && (
+                            <span
+                                data-slot="game-room-rounds"
+                                className="text-xs text-muted-foreground"
+                            >
+                                {rounds}
+                            </span>
+                        )}
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <AccessIcon className="size-3.5" aria-hidden />
                             <span className="truncate">{accessLabel}</span>
@@ -628,7 +636,6 @@ function PodiumPlace({
     isMe: boolean;
 }) {
     const { t } = useTrans();
-    const counts = useCounts();
 
     if (!entry) {
         return (
@@ -674,8 +681,16 @@ function PodiumPlace({
                     {entry.name}
                     {isMe && <span className="sr-only"> ({t('you')})</span>}
                 </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                    {counts.points(entry.points)}
+                <span
+                    data-slot="podium-points"
+                    className={cn(
+                        'text-xs font-semibold whitespace-nowrap tabular-nums',
+                        place === 1
+                            ? 'text-skrum-primary-text'
+                            : 'text-muted-foreground',
+                    )}
+                >
+                    {formatNumber(entry.points)} {t('pts')}
                 </span>
                 {(entry.streak ?? 0) >= StreakBadgeFrom && (
                     <Badge

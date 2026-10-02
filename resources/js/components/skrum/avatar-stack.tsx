@@ -12,6 +12,8 @@ type AvatarStackPerson = Pick<
 export interface AvatarStackProps {
     people: AvatarStackPerson[];
     max?: number;
+    /** People in all, when `people` holds only the first of them. */
+    total?: number;
     size?: PersonAvatarProps['size'];
     className?: string;
 }
@@ -27,6 +29,7 @@ const overflowSizeClasses = {
 export function AvatarStack({
     people,
     max = 5,
+    total,
     size = 'md',
     className,
 }: AvatarStackProps) {
@@ -34,7 +37,8 @@ export function AvatarStack({
     const [initialCount] = useState(people.length);
     const visibleCount = Math.max(0, max);
     const visible = people.slice(0, visibleCount);
-    const hiddenCount = people.length - visible.length;
+    const hiddenCount =
+        Math.max(total ?? people.length, people.length) - visible.length;
 
     return (
         <div
