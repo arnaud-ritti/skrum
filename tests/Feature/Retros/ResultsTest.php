@@ -137,6 +137,7 @@ it('summarises real health answers into statement averages and a score', functio
 });
 
 it('keeps the query count constant as ratings, participants, surveys and health answers grow', function () {
+    warmInstanceSettings();
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
     resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);

@@ -178,6 +178,7 @@ it('hides comment authors on anonymous retros', function () {
 });
 
 it('adds surveys to the snapshot in order with a constant number of queries', function () {
+    warmInstanceSettings();
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
     [, $viewer] = retroMember($retro);
 

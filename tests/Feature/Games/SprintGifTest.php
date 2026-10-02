@@ -297,6 +297,7 @@ it('closes the voting round when the timer runs out during voting', function () 
 });
 
 it('presents a GIF round with a constant number of queries', function () {
+    warmInstanceSettings();
     $count = function (int $players): int {
         [$room, , $host] = sprintGifRoom();
         $round = activeGifRound($room, ['revealed_at' => now()]);

@@ -194,6 +194,7 @@ it('times out when the host timer runs out', function (GameKind $game) {
 })->with([GameKind::DrawAndGuess, GameKind::Decoded]);
 
 it('builds the snapshot of a word-guess round with a constant number of queries', function () {
+    warmInstanceSettings();
     $count = function (int $guesses): int {
         $table = wordGuessTable();
 

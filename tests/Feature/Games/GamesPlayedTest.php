@@ -193,6 +193,7 @@ it('shows the games to guests and after the icebreaker was turned off', function
 });
 
 it('builds the games with a constant number of queries', function () {
+    warmInstanceSettings();
     $count = function (int $rounds, int $extraPlayers): int {
         [$retro, , $room, $host, , $memberPlayer] = playedIcebreaker();
 

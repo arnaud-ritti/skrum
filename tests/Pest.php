@@ -42,6 +42,7 @@ use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\InstanceSettings;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
@@ -117,6 +118,15 @@ function retroMember(Retro $retro): array
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
 
     return [$user, $participant];
+}
+
+/**
+ * The first read of the instance settings is one query, then they come from the cache;
+ * tests that compare query counts take that read out of the comparison.
+ */
+function warmInstanceSettings(): void
+{
+    resolve(InstanceSettings::class)->all();
 }
 
 /**

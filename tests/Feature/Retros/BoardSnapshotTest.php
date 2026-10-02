@@ -256,6 +256,7 @@ it('hides gifs, reactions and comments of others when the facilitator steps back
 });
 
 it('loads reactions and comments with a constant number of queries', function () {
+    warmInstanceSettings();
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Discussing)->create();
     resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);

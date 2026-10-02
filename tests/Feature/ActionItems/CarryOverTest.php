@@ -133,6 +133,7 @@ it('never gives carried items to guests', function () {
 });
 
 it('builds the action item parts of the snapshot with a constant number of queries', function () {
+    warmInstanceSettings();
     $team = Team::factory()->create();
     $current = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['team_id' => $team->id]);
     [, $viewer] = retroMember($current);

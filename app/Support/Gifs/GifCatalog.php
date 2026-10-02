@@ -18,15 +18,21 @@ class GifCatalog
 
     private const int ResultLimit = 24;
 
+    public function __construct(private InstanceSettings $settings) {}
+
     public function provider(): ?GifProvider
     {
-        $key = config('services.gifs.key');
-
-        if (! is_string($key) || $key === '') {
+        if (! $this->settings->gifEnabled()) {
             return null;
         }
 
-        return match (config('services.gifs.provider')) {
+        $key = $this->settings->gifKey();
+
+        if ($key === null) {
+            return null;
+        }
+
+        return match ($this->settings->gifProvider()) {
             'giphy' => new GiphyProvider($key),
             'tenor' => new TenorProvider($key),
             default => null,
@@ -35,11 +41,11 @@ class GifCatalog
 
     public function providerName(): ?string
     {
-        if ($this->provider() === null) {
+        if (! $this->settings->gifEnabled()) {
             return null;
         }
 
-        return (string) config('services.gifs.provider');
+        return $this->settings->gifProvider();
     }
 
     public function isAvailable(): bool
@@ -59,7 +65,7 @@ class GifCatalog
         }
 
         $query = trim($query);
-        $rating = (string) config('services.gifs.rating', InstanceSettings::DefaultGifRating);
+        $rating = $this->settings->gifRating();
         $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".hash('xxh128', mb_strtolower($query));
 
         /** @var array<int, array{id: string, previewUrl: string, fullUrl: string, width: int, height: int}> $items */

@@ -190,6 +190,7 @@ it('leaves rounds without an outcome out of the history', function () {
 });
 
 it('builds the snapshot with a constant number of queries', function () {
+    warmInstanceSettings();
     $count = function (int $players, int $rounds): int {
         $room = GameRoom::factory()->create();
         [, $host] = gameRoomHost($room);

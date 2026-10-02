@@ -204,6 +204,7 @@ it('computes counts and total points', function () {
 });
 
 it('builds the snapshot with a constant number of queries', function () {
+    warmInstanceSettings();
     $game = PokerGame::factory()->create();
     [, $facilitator] = pokerFacilitator($game);
     $seed = function (int $tasks, int $rounds, int $players) use ($game): void {
