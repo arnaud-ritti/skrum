@@ -287,6 +287,41 @@ describe('ShareDialog', () => {
         );
     });
 
+    it('lets someone who may post but not manage the link post to a channel, and tells them nothing false about the guest link', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    canManage: false,
+                    invite: { url: null, allowGuests: true },
+                    channels: ['slack'],
+                    onShareToChannel: vi.fn().mockResolvedValue(true),
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Post link to Slack' }),
+        ).toBeTruthy();
+        expect(screen.queryByText('Guest link is off')).toBeNull();
+        expect(screen.queryByLabelText('Include the guest link')).toBeNull();
+        expect(screen.queryByRole('switch')).toBeNull();
+    });
+
+    it('keeps the delivery lines when no channel is left to post to', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    channels: [],
+                    onShareToChannel: vi.fn().mockResolvedValue(true),
+                    channelsExtra: <p>Slack: failed</p>,
+                })}
+            />,
+        );
+
+        expect(screen.getByText('Post a link')).toBeTruthy();
+        expect(screen.getByText('Slack: failed')).toBeTruthy();
+    });
+
     it('renders the mobile drawer with share action', () => {
         const onShare = vi.fn();
 

@@ -778,7 +778,7 @@ function ChannelsSection({
             className="flex min-w-0 flex-col gap-3"
         >
             <h3 className="text-sm font-semibold">{t('Post a link')}</h3>
-            {allowsGuestLink && (
+            {allowsGuestLink && channels.length > 0 && (
                 <div className="flex items-center gap-2">
                     <Checkbox
                         id={checkboxId}
@@ -792,7 +792,7 @@ function ChannelsSection({
                     </Label>
                 </div>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 empty:hidden">
                 {channels.map((channel) => (
                     <Button
                         key={channel}
@@ -847,8 +847,15 @@ function ShareBody({
     const hasLink = invite.allowGuests && invite.url !== null;
     const url = invite.url ?? '';
     const canChange = canManage && onChange !== undefined;
+    // Whoever may post gets the handler: a workspace manager can post the
+    // link of a session they do not facilitate.
+    const hasChannelsExtra =
+        channelsExtra !== undefined &&
+        channelsExtra !== null &&
+        channelsExtra !== false;
     const showChannels =
-        canManage && onShareToChannel !== undefined && channels.length > 0;
+        onShareToChannel !== undefined &&
+        (channels.length > 0 || hasChannelsExtra);
     const expiresText =
         invite.expiresAt !== undefined && invite.expiresAt !== null
             ? formatDate(invite.expiresAt)
@@ -958,7 +965,7 @@ function ShareBody({
         </div>
     );
 
-    const noLinkNotice = !hasLink && (
+    const noLinkNotice = !invite.allowGuests && (
         <Alert
             variant="info"
             title={t('Guest link is off')}
