@@ -18,8 +18,6 @@ class PokerDeckDuplicatesController extends Controller
     {
         Gate::authorize('create', [SavedPokerDeck::class, $team]);
 
-        abort_unless($pokerDeck->team_id === $team->id, 404);
-
         DB::transaction(function () use ($request, $team, $pokerDeck): void {
             $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
 

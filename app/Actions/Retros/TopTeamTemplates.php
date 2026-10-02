@@ -46,7 +46,7 @@ class TopTeamTemplates
                         null;
                 }
 
-                return $row->template === TemplateCatalogue::Workspace ? null : $row->template;
+                return TemplateCatalogue::find($row->template)?->key;
             })
             ->filter();
 

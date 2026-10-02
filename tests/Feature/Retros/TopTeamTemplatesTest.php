@@ -70,6 +70,13 @@ it('ignores a workspace template of another workspace', function () {
     expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
+it('ignores a built-in key that left the catalogue', function () {
+    $team = Team::factory()->create();
+    retrosOn($team, 'retired_template', 3);
+
+    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+});
+
 it('does not count the retros of another team', function () {
     $team = Team::factory()->create();
     retrosOn(Team::factory()->create(), 'swot', 5);
