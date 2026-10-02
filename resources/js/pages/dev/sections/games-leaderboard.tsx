@@ -93,6 +93,7 @@ function makeRooms(t: Translate): GamesRoom[] {
             roundsCount: 3,
             href: '#',
             status: 'live',
+            context: t('started :count min ago', { count: 4 }),
             players,
         },
         {
@@ -106,6 +107,7 @@ function makeRooms(t: Translate): GamesRoom[] {
             roundsCount: 1,
             href: '#',
             status: 'live',
+            context: t('started :count min ago', { count: 12 }),
             players: players.slice(0, 4),
         },
     ];

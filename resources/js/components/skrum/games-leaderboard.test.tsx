@@ -94,6 +94,33 @@ describe('GameRoomList', () => {
         expect(document.querySelector('[data-status]')).toBeNull();
     });
 
+    it('shows the context of a live room beside the game, the rounds after the players, and counts the players who are not sent', () => {
+        renderWithProviders(
+            <GameRoomList
+                rooms={[
+                    room({
+                        status: 'live',
+                        context: 'started 4 min ago',
+                        playersCount: 7,
+                        players: ['A', 'B', 'C', 'D', 'E'].map((name) => ({
+                            name,
+                        })),
+                    }),
+                ]}
+            />,
+        );
+
+        const row = screen.getByRole('link');
+
+        expect(within(row).getByText('started 4 min ago')).toBeTruthy();
+        expect(
+            row.querySelector('[data-slot="game-room-rounds"]')?.textContent,
+        ).toBe('2 rounds');
+        expect(
+            row.querySelector('[data-slot="avatar-stack-more"]')?.textContent,
+        ).toBe('+4');
+    });
+
     it('renders a slot action beside the link, outside it', () => {
         renderWithProviders(
             <GameRoomList

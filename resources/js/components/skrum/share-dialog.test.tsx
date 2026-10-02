@@ -287,6 +287,36 @@ describe('ShareDialog', () => {
         );
     });
 
+    it('keeps the extra block of the channels when no channel is left to post to', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    channels: [],
+                    onShareToChannel: vi.fn(),
+                    channelsExtra: <p>Slack: failed</p>,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { name: 'Post a link' }),
+        ).toBeTruthy();
+        expect(screen.getByText('Slack: failed')).toBeTruthy();
+        expect(screen.queryByLabelText('Include the guest link')).toBeNull();
+    });
+
+    it('shows no channels block without a channel and without an extra block', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({ channels: [], onShareToChannel: vi.fn() })}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('heading', { name: 'Post a link' }),
+        ).toBeNull();
+    });
+
     it('renders the mobile drawer with share action', () => {
         const onShare = vi.fn();
 

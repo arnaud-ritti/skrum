@@ -50,8 +50,10 @@ export function PassRoundButton({ round }: { round: GameRound }) {
             disabled={busy}
             onClick={() => void pass()}
         >
-            <Flag className="size-4" />
-            {round.game === 'hangman' ? t('Give up') : t('Pass')}
+            <Flag aria-hidden />
+            <span className="truncate">
+                {round.game === 'hangman' ? t('Give up') : t('Pass')}
+            </span>
         </Button>
     );
 }

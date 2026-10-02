@@ -1,15 +1,58 @@
 import { useEffect, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
-import type { GameGifRevealed, GameRoundDetail } from '@/lib/games/types';
+import type {
+    GameGifRevealed,
+    GamePointsAward,
+    GameRoundDetail,
+} from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
-import { RoundPoints } from './round-points';
 import { StartRoundControls } from './start-round-controls';
 
+function RoundPoints({ points }: { points: GamePointsAward[] }) {
+    const { snapshot } = useRoom();
+    const { t } = useTrans();
+    const names = new Map(
+        snapshot.players.map((player) => [player.id, player.name]),
+    );
+    const scored = points.filter((award) => award.points > 0);
+
+    if (scored.length === 0) {
+        return null;
+    }
+
+    return (
+        <ul
+            className="flex flex-wrap justify-center gap-2"
+            aria-label={t('Points of this round')}
+        >
+            {scored.map((award) => (
+                <li key={award.playerId} className="max-w-full">
+                    <Badge
+                        variant={award.isWin ? 'success' : 'secondary'}
+                        shape="pill"
+                        className="max-w-full"
+                    >
+                        <span className="truncate">
+                            {t('+:points :name', {
+                                points: award.points,
+                                name: names.get(award.playerId) ?? t('Someone'),
+                            })}
+                        </span>
+                    </Badge>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+/** Between two rounds: what the last one gave, and the controls of the next. */
 export function RoundEndCard() {
     const { snapshot, lastEnded } = useRoom();
     const { t } = useTrans();
@@ -61,30 +104,48 @@ export function RoundEndCard() {
         fetched !== null && fetched.roundId === gifRoundId
             ? fetched.answers
             : null;
+    const gifAnswers = lastEnded?.answers ?? fetchedAnswers;
 
     if (outcome === null) {
         return (
-            <div className="flex flex-col items-center gap-4 py-12 text-center">
-                <h2 className="text-xl font-semibold">{t('Ready to play?')}</h2>
+            <Card
+                data-slot="round-start-card"
+                className="w-full max-w-2xl items-center gap-4 px-6 py-10 text-center"
+            >
+                <h3 className="font-display text-xl font-title">
+                    {t('Ready to play?')}
+                </h3>
                 <StartRoundControls label={t('Start')} />
-            </div>
+            </Card>
         );
     }
 
     return (
-        <div className="flex w-full max-w-2xl flex-col items-center gap-3 rounded-lg border p-6 text-center">
-            <Badge variant="secondary">{outcomeLabel(outcome, t)}</Badge>
-            {word && (
-                <p className="text-2xl font-semibold tracking-wide">{word}</p>
+        <Card
+            data-slot="round-end-card"
+            className={cn(
+                'w-full max-w-2xl items-center gap-3 p-6 text-center',
+                gifAnswers && 'max-w-4xl',
             )}
-            {question && <p className="text-lg font-medium">{question}</p>}
-            {lastEnded?.answers ? (
+        >
+            <Badge variant="secondary" shape="pill">
+                {outcomeLabel(outcome, t)}
+            </Badge>
+            {word && (
+                <p className="max-w-full font-display text-3xl font-bold tracking-wide break-words">
+                    {word}
+                </p>
+            )}
+            {question && (
+                <p className="max-w-full text-lg font-medium break-words">
+                    {question}
+                </p>
+            )}
+            {gifAnswers && (
                 <GifRoundResults
-                    answers={lastEnded.answers}
-                    points={lastEnded.points}
+                    answers={gifAnswers}
+                    points={lastEnded?.answers ? lastEnded.points : []}
                 />
-            ) : (
-                fetchedAnswers && <GifRoundResults answers={fetchedAnswers} />
             )}
             {winner && (
                 <p className="text-muted-foreground">
@@ -95,6 +156,6 @@ export function RoundEndCard() {
                 <RoundPoints points={lastEnded.points} />
             )}
             <StartRoundControls label={t('Next round')} />
-        </div>
+        </Card>
     );
 }

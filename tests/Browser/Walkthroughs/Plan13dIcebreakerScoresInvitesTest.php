@@ -122,9 +122,9 @@ function p13dTeamGamesPath(GameRoom $room): string
 
 function p13dOpenInvite(mixed $page): mixed
 {
-    return $page->assertSee('Invite')
-        ->click('Invite')
-        ->assertSee('Invite to the room')
+    return $page->assertVisible('[aria-label="Invite"]')
+        ->click('[aria-label="Invite"]')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Invite to Friday fun')
         ->assertSee('Post a link');
 }
 
@@ -440,7 +440,7 @@ it('[P13d-07] lets a visitor open the guest link of a link room, type a name and
 
     $c = visit(route('games.join.show', $room->guest_token, false));
     $c->assertSee('Friday fun')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->fill('#name', 'Casey')
         ->click('Join')
         ->assertPathIs("/games/{$room->id}");
@@ -479,7 +479,7 @@ it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both brow
         'picked_by' => array_fill(0, 5, $adaPlayer->id),
         'revealed_positions' => [0, 1, 2, 3, 4],
     ]);
-    $board = 'section[aria-labelledby="team-leaderboard"]';
+    $board = '[data-slot="leaderboard"]';
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
     $c = $this->awaitRealtime($this->joinAsGuest(route('games.join.show', $room->guest_token, false), 'Casey'));
@@ -507,8 +507,8 @@ it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both brow
         ->and(GamePoint::query()->where('player_id', $adaPlayer->id)->sole()->points)->toBe(5);
 
     $a->navigate(p13dTeamGamesPath($room))
-        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '5')
-        ->assertCount("{$board} ol > li", 1)
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Ada\") [data-slot=\"podium-points\"]", '5')
+        ->assertCount("{$board} [data-slot=\"podium-place\"]", 1)
         ->assertDontSeeIn($board, 'Casey');
 
     $c->navigate(p13dTeamGamesPath($room))
@@ -520,7 +520,7 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
     [$bob, $bobPlayer] = p13dMember($room, 'Bob');
     awardGamePoints($room, $adaPlayer, 7, true, ['created_at' => now()->subHour()]);
     awardGamePoints($room, $bobPlayer, 4, false, ['created_at' => now()->subHour()]);
-    $board = 'section[aria-labelledby="team-leaderboard"]';
+    $board = '[data-slot="leaderboard"]';
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
@@ -536,7 +536,7 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
 
     $a->click('Reset scores')
         ->assertSee('Scores in this room start again from zero. The team leaderboard keeps them.')
-        ->click('[role="dialog"] button:has-text("Reset scores")')
+        ->click('[role="alertdialog"] button:has-text("Reset scores")')
         ->assertNotPresent('[role="dialog"]');
 
     foreach ([$a, $b] as $page) {
@@ -548,9 +548,9 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
         ->and(GamePoint::query()->where('game_room_id', $room->id)->count())->toBe(2);
 
     $a->navigate(p13dTeamGamesPath($room))
-        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '7')
-        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '4')
-        ->assertCount("{$board} ol > li", 2);
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Ada\") [data-slot=\"podium-points\"]", '7')
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Bob\") [data-slot=\"podium-points\"]", '4')
+        ->assertCount("{$board} [data-slot=\"podium-place\"]", 2);
 });
 
 it('[P13d-10a] shows a "2-week streak" badge to a member who scored in two consecutive weeks', function () {
@@ -559,15 +559,15 @@ it('[P13d-10a] shows a "2-week streak" badge to a member who scored in two conse
     awardGamePoints($room, $adaPlayer, 5, true, ['created_at' => now()->subWeek()]);
     awardGamePoints($room, $adaPlayer, 3, false, ['created_at' => now()]);
     awardGamePoints($room, $bobPlayer, 2, false, ['created_at' => now()]);
-    $board = 'section[aria-labelledby="team-leaderboard"]';
+    $board = '[data-slot="leaderboard"]';
 
     $page = $this->signIn($ada, p13dTeamGamesPath($room));
 
     $page->assertSee('Leaderboard')
-        ->assertSeeIn("{$board} li:has-text(\"Ada\")", '2-week streak')
-        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '8')
-        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '2')
-        ->assertDontSeeIn("{$board} li:has-text(\"Bob\")", 'streak');
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Ada\")", '2-week streak')
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Ada\") [data-slot=\"podium-points\"]", '8')
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Bob\") [data-slot=\"podium-points\"]", '2')
+        ->assertDontSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Bob\")", 'streak');
 });
 
 it('[P13d-10b] switches the team leaderboard between "Last 30 days" and "All time"', function () {
@@ -575,21 +575,21 @@ it('[P13d-10b] switches the team leaderboard between "Last 30 days" and "All tim
     [, $bobPlayer] = p13dMember($room, 'Bob');
     awardGamePoints($room, $adaPlayer, 4, false, ['created_at' => now()]);
     awardGamePoints($room, $bobPlayer, 9, true, ['created_at' => now()->subDays(40)]);
-    $board = 'section[aria-labelledby="team-leaderboard"]';
-    $names = "[...document.querySelectorAll('section[aria-labelledby=\"team-leaderboard\"] ol > li span.font-medium')].map((name) => name.textContent).join(',')";
+    $board = '[data-slot="leaderboard"]';
+    $names = "[...document.querySelectorAll('[data-slot=\"leaderboard\"] [data-slot=\"podium-place\"]')].map((place) => place.querySelector('span.truncate').firstChild.textContent).join(',')";
 
     $page = $this->signIn($ada, p13dTeamGamesPath($room));
 
-    $page->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'Last 30 days')
-        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '4')
+    $page->assertSeeIn('[aria-label="Period"] [data-state="active"]', 'Last 30 days')
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Ada\") [data-slot=\"podium-points\"]", '4')
         ->assertScript($names, 'Ada')
         ->assertDontSeeIn($board, 'Bob')
         ->click('All time')
-        ->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'All time')
+        ->assertSeeIn('[aria-label="Period"] [data-state="active"]', 'All time')
         ->assertScript($names, 'Bob,Ada')
-        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '9')
+        ->assertSeeIn("{$board} [data-slot=\"podium-place\"]:has-text(\"Bob\") [data-slot=\"podium-points\"]", '9')
         ->click('Last 30 days')
-        ->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'Last 30 days')
+        ->assertSeeIn('[aria-label="Period"] [data-state="active"]', 'Last 30 days')
         ->assertScript($names, 'Ada');
 });
 
@@ -637,7 +637,7 @@ it('[P13d-12a] posts the room invite to Slack and to Telegram with a link that o
     $b = $this->signIn($bob, "/games/{$room->id}");
 
     $b->assertPathIs("/games/{$room->id}")
-        ->assertSeeIn('header > h1', 'Friday fun');
+        ->assertSeeIn('header:has(h1) h1', 'Friday fun');
 });
 
 it('[P13d-12b] posts the guest join link of a link room when "Include the guest link" is ticked', function () {
@@ -668,7 +668,7 @@ it('[P13d-12b] posts the guest join link of a link room when "Include the guest 
 
     $visitor->assertPathIs("/play/{$room->guest_token}")
         ->assertSee('Friday fun')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->assertVisible('#name');
 });
 
@@ -683,7 +683,7 @@ it('[P13d-12c] offers no guest link on a team room, says who can join, and shows
 
     $b->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertDontSee('Invite')
-        ->assertNotPresent('[aria-label="Copy guest link"]');
+        ->assertNotPresent('[aria-label="Invite"]');
 
     p13dOpenInvite($a)
         ->assertSee('Only members of Platform can join.')
@@ -736,7 +736,7 @@ it('[P13d-12f] keeps "Invite" and the failed delivery line, without a guest-link
     $this->workQueue();
 
     $a->assertSee('Slack: failed — Reconnect Slack in the team settings.')
-        ->assertSee('Invite to the room')
+        ->assertSee('Invite to Friday fun')
         ->assertNotPresent('[role="dialog"] button:has-text("Post link to Slack")')
         ->assertNotPresent('[role="dialog"] button[role="checkbox"]');
 

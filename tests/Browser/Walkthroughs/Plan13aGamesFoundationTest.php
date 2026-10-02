@@ -106,10 +106,11 @@ it('[P13a-01] creates a Hangman room open by link from the team games page', fun
     $room = GameRoom::query()->sole();
 
     $page->assertPathIs(p13aRoomPath($room))
-        ->assertSeeIn('header > h1', 'Lunch')
+        ->assertSeeIn('header:has(h1) h1', 'Lunch')
         ->assertSee('Ready to play?')
         ->assertButtonEnabled('Start')
-        ->assertVisible('[aria-label="Copy guest link"]');
+        ->click('[aria-label="Invite"]')
+        ->assertVisible('[data-slot="share-dialog"] button:has-text("Copy link")');
 
     expect($room->name)->toBe('Lunch')
         ->and($room->game)->toBe(GameKind::Hangman)
@@ -128,10 +129,13 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
 
     $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
 
-    $host->assertVisible('[aria-label="Copy guest link"]');
+    $host->click('[aria-label="Invite"]')
+        ->assertVisible('[data-slot="share-dialog"] button:has-text("Copy link")');
     $host->script('() => { navigator.clipboard.writeText = (text) => { window.copiedGuestLink = text; return Promise.resolve(); }; return true; }');
-    $host->click('[aria-label="Copy guest link"]')
-        ->assertSee('Link copied');
+    $host->click('[data-slot="share-dialog"] button:has-text("Copy link")')
+        ->assertSee('Link copied')
+        ->click('[data-slot="share-dialog"] button:has-text("Done")')
+        ->assertNotPresent('[data-slot="share-dialog"]');
 
     $joinUrl = (string) $host->script('() => window.copiedGuestLink');
 
@@ -140,8 +144,8 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
     $guest = visit($joinUrl);
 
     $guest->assertSee('Lunch')
-        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
-        ->assertSee('Display name')
+        ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
+        ->assertSee('Your nickname')
         ->assertVisible('#name');
 
     [$adjective, $animal] = explode(' ', $guest->value('#name'));
@@ -155,14 +159,14 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
         ->assertPathIs(p13aRoomPath($room));
     $this->awaitRealtime($guest);
 
-    $guest->assertSeeIn('header > h1', 'Lunch')
+    $guest->assertSeeIn('header:has(h1) h1', 'Lunch')
         ->assertSee('Waiting for the host to start.')
         ->assertSeeIn('section[aria-labelledby="game-players"]', 'Visitor')
         ->assertSeeIn('section[aria-labelledby="game-players"]', '(guest)')
         ->assertVisible('[aria-label="Language"]')
         ->assertNotPresent('[aria-label="Back to the team"]')
         ->assertNotPresent('[aria-label="Room menu"]')
-        ->assertNotPresent('[aria-label="Copy guest link"]');
+        ->assertNotPresent('[aria-label="Invite"]');
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertPresent('img[data-presence-id][alt="Visitor"]')
@@ -332,8 +336,8 @@ it('[P13a-06a] ends a round as "Time\'s up" when the one-minute timer of the hos
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->click('[aria-label="Timer"]')
-        ->assertVisible('[role="menuitem"]:text-is("1 min")')
-        ->click('[role="menuitem"]:text-is("1 min")');
+        ->assertVisible('[role="menuitem"]:has(:text-is("1 min"))')
+        ->click('[role="menuitem"]:has(:text-is("1 min"))');
 
     foreach ([$host, $guest] as $page) {
         $page->assertSeeIn('header:has(h1)', '0:');
@@ -414,12 +418,14 @@ it('[P13a-07] renames the room and ends the access of guests when it becomes tea
         ->assertSee('Guests in this room lose access.')
         ->click('Save')
         ->assertNotPresent('[role="dialog"]')
-        ->assertSeeIn('header > h1', 'Lunch break')
-        ->assertNotPresent('[aria-label="Copy guest link"]');
+        ->assertSeeIn('header:has(h1) h1', 'Lunch break')
+        ->click('[aria-label="Invite"]')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Guest link is off')
+        ->assertNotPresent('[data-slot="share-dialog"] button:has-text("Copy link")');
 
     $guest->assertSee('Your access to this room has ended.')
         ->assertDontSee('Back to the team')
-        ->assertNotPresent('header > h1');
+        ->assertNotPresent('header:has(h1) h1');
 
     $host->assertPresent('[role="group"][aria-label="1 online"]');
 
@@ -445,7 +451,7 @@ it('[P13a-09] deletes the room, sends its creator to the team page and tells the
         ->click('[role="menuitem"]:has-text("Delete room")')
         ->assertSee('Delete this room?')
         ->assertSee('Its rounds and scores are deleted for everyone.')
-        ->click('[role="dialog"] button:has-text("Delete")');
+        ->click('[role="alertdialog"] button:has-text("Delete")');
 
     $host->assertPathIs($teamPath);
 

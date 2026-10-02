@@ -48,12 +48,15 @@ export function HintButton({ round }: { round: GameRound }) {
         <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="ghost"
+            className="min-w-0"
             disabled={busy || left === 0}
             onClick={() => void reveal()}
         >
-            <Lightbulb className="size-4" />
-            {t('Reveal a letter (:count left)', { count: left })}
+            <Lightbulb aria-hidden />
+            <span className="truncate">
+                {t('Reveal a letter (:count left)', { count: left })}
+            </span>
         </Button>
     );
 }

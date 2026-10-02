@@ -1,11 +1,18 @@
+import { Pencil } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import GameDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameDrawingOpsController';
 import GameDrawingsController from '@/actions/App/Http/Controllers/Games/GameDrawingsController';
 import GameLastDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameLastDrawingOpsController';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useSecretWord } from '@/hooks/use-secret-word';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useStrokeWhispers } from '@/hooks/use-stroke-whispers';
 import { useTrans } from '@/hooks/use-trans';
-import { MaxStrokePoints } from '@/lib/games/drawing';
+import {
+    DrawingHeight,
+    DrawingWidth,
+    MaxStrokePoints,
+} from '@/lib/games/drawing';
 import type { StrokeMessage } from '@/lib/games/stroke-whisper';
 import type {
     DrawingColor,
@@ -16,17 +23,18 @@ import type {
     GameRound,
 } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import {
     DrawingCanvas,
     type CanvasTool,
     type PreviewStroke,
 } from './drawing-canvas';
 import { DrawingToolbar } from './drawing-toolbar';
+import { useHasRightColumn } from './game-layout';
 import { GuessChat } from './guess-chat';
 import { HintButton } from './hint-button';
-import { LeaderWord } from './leader-word';
+import { LeaderWord, MaskedWord } from './leader-word';
 import { useRoom } from './room-context';
-import { WordMask } from './word-mask';
 
 /** A live stroke nobody committed within this delay was abandoned (drawer offline). */
 const StalePreviewMs = 3000;
@@ -51,6 +59,9 @@ export function DrawBoard({ round }: { round: GameRound }) {
     const queue = useRef<Promise<void>>(Promise.resolve());
     const committed = round.committedOpIds ?? [];
     const ops = round.drawing ?? [];
+    const mask = round.mask ?? [];
+    const isMobile = useIsMobile();
+    const hasRightColumn = useHasRightColumn();
 
     const receive = useCallback((message: StrokeMessage) => {
         setRemote((current) => {
@@ -193,64 +204,102 @@ export function DrawBoard({ round }: { round: GameRound }) {
     const previews = isDrawer
         ? pending
         : remote.filter((stroke) => !committed.includes(stroke.id));
+    const canUndo = ops.length > 0;
+
+    /**
+     * The keys of the drawer, on the stage only: `useShortcut` leaves a field
+     * being edited and an open dialog or menu alone. Single keys obey the
+     * `single_key_shortcuts` preference once plan 18f brings it (B35).
+     */
+    useShortcut('p', () => setTool('pen'), { enabled: isDrawer });
+    useShortcut('e', () => setTool('eraser'), { enabled: isDrawer });
+    useShortcut('mod+z', undo, { enabled: isDrawer && canUndo });
+
+    /** Where the drawer's pencil is: the end of the stroke still being drawn. */
+    const livePoint = isDrawer
+        ? null
+        : (previews[previews.length - 1]?.points.at(-1) ?? null);
 
     return (
-        <div className="grid w-full max-w-5xl gap-4 lg:grid-cols-[1fr_18rem]">
-            <div className="flex min-w-0 flex-col gap-3">
-                <div className="flex min-h-14 flex-col items-center justify-center gap-1">
-                    {isDrawer ? (
-                        <LeaderWord
-                            word={word}
-                            label={t('Your word to draw')}
-                        />
-                    ) : (
-                        <>
-                            <WordMask mask={round.mask ?? []} />
-                            {drawer && (
-                                <p className="text-sm text-muted-foreground">
-                                    {t(':name is drawing', {
-                                        name: drawer.name,
-                                    })}
-                                </p>
-                            )}
-                        </>
+        <div
+            data-slot="draw-board"
+            className="flex min-h-0 w-full flex-1 flex-col items-center gap-4"
+        >
+            {isDrawer ? (
+                <LeaderWord
+                    word={word}
+                    label={t('Your word to draw')}
+                    action={<HintButton round={round} />}
+                />
+            ) : (
+                <MaskedWord mask={mask} maxHints={round.maxHints ?? 0} />
+            )}
+            <div
+                className={cn(
+                    'draw-area grid aspect-4/3 min-h-48 w-full max-w-4xl place-items-center',
+                    /** Beside the guesses the sheet gives way to the toolbar; above them the stage scrolls. */
+                    hasRightColumn ? 'shrink' : 'shrink-0',
+                )}
+            >
+                <div data-slot="draw-sheet" className="draw-sheet relative">
+                    <DrawingCanvas
+                        ops={ops}
+                        previews={previews}
+                        input={
+                            isDrawer
+                                ? {
+                                      tool,
+                                      color,
+                                      size,
+                                      roundId: round.id,
+                                      onCommit: commit,
+                                      onLive: sendStroke,
+                                  }
+                                : null
+                        }
+                        label={isDrawer ? t('Your drawing') : t('The drawing')}
+                        className="aspect-auto size-full rounded-xl shadow-raised"
+                    />
+                    {livePoint !== null && drawer && (
+                        <span
+                            aria-hidden
+                            data-slot="draw-pen"
+                            className="pointer-events-none absolute flex items-start gap-0.5 text-foreground"
+                            style={{
+                                left: `${(livePoint[0] / DrawingWidth) * 100}%`,
+                                top: `${(livePoint[1] / DrawingHeight) * 100}%`,
+                            }}
+                        >
+                            <Pencil className="size-5 -translate-x-0.5 -translate-y-4.5 text-primary" />
+                            <span className="max-w-32 truncate rounded-full border border-card bg-primary px-2 py-0.5 text-xs leading-4 font-medium whitespace-nowrap text-primary-foreground shadow-sm">
+                                {drawer.name}
+                            </span>
+                        </span>
                     )}
                 </div>
-                <DrawingCanvas
-                    ops={ops}
-                    previews={previews}
-                    input={
-                        isDrawer
-                            ? {
-                                  tool,
-                                  color,
-                                  size,
-                                  roundId: round.id,
-                                  onCommit: commit,
-                                  onLive: sendStroke,
-                              }
-                            : null
-                    }
-                    label={isDrawer ? t('Your drawing') : t('The drawing')}
-                />
-                {isDrawer && (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <DrawingToolbar
-                            tool={tool}
-                            color={color}
-                            size={size}
-                            canUndo={ops.length > 0}
-                            onTool={setTool}
-                            onColor={setColor}
-                            onSize={setSize}
-                            onUndo={undo}
-                            onClear={clear}
-                        />
-                        <HintButton round={round} />
-                    </div>
-                )}
             </div>
-            <GuessChat round={round} isLeader={isDrawer} />
+            {isDrawer && (
+                <DrawingToolbar
+                    tool={tool}
+                    color={color}
+                    size={size}
+                    canUndo={canUndo}
+                    compact={isMobile}
+                    onTool={setTool}
+                    onColor={setColor}
+                    onSize={setSize}
+                    onUndo={undo}
+                    onClear={clear}
+                />
+            )}
+            {!hasRightColumn && (
+                <GuessChat
+                    fieldFirst
+                    round={round}
+                    isLeader={isDrawer}
+                    className="max-h-72 w-full max-w-4xl shrink-0"
+                />
+            )}
         </div>
     );
 }

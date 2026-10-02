@@ -1,3 +1,4 @@
+import { CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +46,15 @@ export function RoundDetail({ roundId }: { roundId: string }) {
     }, [roomId, roundId, handleError, t]);
 
     if (error !== null) {
-        return <p className="text-sm text-destructive">{error}</p>;
+        return (
+            <p
+                role="alert"
+                className="flex items-start gap-1.5 text-sm text-skrum-destructive-text"
+            >
+                <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+                <span className="min-w-0">{error}</span>
+            </p>
+        );
     }
 
     if (detail === null) {
@@ -53,9 +62,9 @@ export function RoundDetail({ roundId }: { roundId: string }) {
     }
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2">
-                <Badge variant="secondary">
+        <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" shape="pill">
                     {outcomeLabel(detail.outcome, t)}
                 </Badge>
                 {detail.winnerName && (
@@ -82,7 +91,7 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
             return (
                 <div className="space-y-2">
                     <WordMask mask={detail.mask ?? []} />
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-center text-sm break-words text-muted-foreground">
                         {t('Letters tried: :letters', {
                             letters: (detail.pickedLetters ?? [])
                                 .join(' ')
@@ -101,7 +110,7 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                         })}
                     />
                     {detail.word && (
-                        <p className="text-center text-xl font-semibold">
+                        <p className="text-center font-display text-xl font-bold break-words">
                             {detail.word}
                         </p>
                     )}
@@ -112,7 +121,7 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 <div className="space-y-2">
                     <ClueRow clue={detail.clue ?? []} />
                     {detail.word && (
-                        <p className="text-center text-xl font-semibold">
+                        <p className="text-center font-display text-xl font-bold break-words">
                             {detail.word}
                         </p>
                     )}
@@ -127,7 +136,9 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
             );
         default:
             return detail.word ? (
-                <p className="text-xl font-semibold">{detail.word}</p>
+                <p className="font-display text-xl font-bold break-words">
+                    {detail.word}
+                </p>
             ) : null;
     }
 }

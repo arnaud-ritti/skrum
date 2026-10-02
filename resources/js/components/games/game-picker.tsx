@@ -1,0 +1,82 @@
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import GameSwitchesController from '@/actions/App/Http/Controllers/Games/GameSwitchesController';
+import {
+    IcebreakerGameCard,
+    IcebreakerGameGrid,
+} from '@/components/skrum/icebreaker-game-card';
+import { useTrans } from '@/hooks/use-trans';
+import type { GameKind } from '@/lib/games/types';
+import { retroRequest } from '@/lib/retro/api';
+import { useRoom } from './room-context';
+
+export type GamePickerProps = {
+    /** Place left under the game cards for the settings card of a game (GM-1). */
+    settings?: ReactNode;
+};
+
+/**
+ * The host's choice of game, one card per game the server lists. Switching
+ * mid-round abandons the round for everyone (spec §4).
+ */
+export function GamePicker({ settings }: GamePickerProps) {
+    const ctx = useRoom();
+    const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
+    const { room, games } = ctx.snapshot;
+
+    const change = async (game: GameKind) => {
+        if (busy || game === room.game) {
+            return;
+        }
+
+        setBusy(true);
+
+        let result: unknown;
+
+        try {
+            result = await ctx.run(
+                retroRequest(GameSwitchesController.update(room.id), { game }),
+            );
+        } finally {
+            setBusy(false);
+        }
+
+        if (result !== undefined) {
+            await ctx.refetch();
+        }
+    };
+
+    return (
+        <div
+            data-slot="game-picker"
+            className="flex min-h-0 flex-1 flex-col gap-4"
+        >
+            <div className="flex flex-col gap-1">
+                <h2 className="text-base font-title">{t('Choose a game')}</h2>
+                <p className="text-sm text-muted-foreground">
+                    {t('The host starts, everyone plays.')}
+                </p>
+            </div>
+            <IcebreakerGameGrid className="grid-cols-2 gap-3 sm:grid-cols-2">
+                {games.map((option) => (
+                    <IcebreakerGameCard
+                        key={option.value}
+                        game={option.value}
+                        title={option.label}
+                        compact
+                        available={option.available}
+                        selected={option.value === room.game}
+                        onSelect={(game) => void change(game)}
+                    />
+                ))}
+            </IcebreakerGameGrid>
+            {settings !== undefined && (
+                <>
+                    <span className="flex-1" />
+                    {settings}
+                </>
+            )}
+        </div>
+    );
+}

@@ -1,39 +1,158 @@
 import { Eraser, PaintBucket, Pencil, Trash2, Undo2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
-import { colorCss, DrawingColors, DrawingSizes } from '@/lib/games/drawing';
+import { DrawingColors, DrawingSizes } from '@/lib/games/drawing';
 import type { DrawingColor, DrawingSize } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import type { CanvasTool } from './drawing-canvas';
 
 const ConfirmClearMs = 3000;
 
-type Props = {
+export type DrawingToolbarProps = {
     tool: CanvasTool;
     color: DrawingColor;
     size: DrawingSize;
     canUndo: boolean;
+    /** On a phone: larger keys, and the colours in a popover. */
+    compact?: boolean;
     onTool: (tool: CanvasTool) => void;
     onColor: (color: DrawingColor) => void;
     onSize: (size: DrawingSize) => void;
     onUndo: () => void;
     onClear: () => void;
+    className?: string;
 };
+
+/**
+ * The stroke is the canvas literal of `lib/games/drawing.ts`, on a sheet that
+ * is white in both themes. The swatches stand in a `.light` scope, on a chip
+ * in the colour of the sheet, so each shows the ink it draws in a dark theme too.
+ */
+const swatchClasses: Partial<Record<DrawingColor, string>> = {
+    black: 'bg-foreground',
+    sun: 'bg-skrum-col-sun-text',
+    apricot: 'bg-skrum-col-apricot-text',
+    coral: 'bg-skrum-col-coral-text',
+    plum: 'bg-skrum-col-plum-text',
+    iris: 'bg-skrum-col-iris-text',
+    sky: 'bg-skrum-col-sky-text',
+    lagoon: 'bg-skrum-col-lagoon-text',
+    moss: 'bg-skrum-col-moss-text',
+};
+
+const dotClasses: Record<DrawingSize, string> = {
+    4: 'size-1',
+    10: 'size-2',
+    24: 'size-3',
+};
+
+const focusClass =
+    'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+const activeClass =
+    'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset';
+
+function modifierKey(): string {
+    if (typeof navigator === 'undefined') {
+        return 'Ctrl';
+    }
+
+    return /mac|iphone|ipad/i.test(navigator.userAgent) ? '⌘' : 'Ctrl';
+}
+
+function Separator() {
+    return <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-border" />;
+}
+
+type ToolKeyProps = {
+    label: string;
+    pressed?: boolean;
+    disabled?: boolean;
+    compact: boolean;
+    /** Shown in the tooltip, and in the corner of the key when it is one letter. */
+    shortcut?: string[];
+    keyShortcuts?: string;
+    onClick: () => void;
+    children: ReactNode;
+};
+
+function ToolKey({
+    label,
+    pressed,
+    disabled = false,
+    compact,
+    shortcut,
+    keyShortcuts,
+    onClick,
+    children,
+}: ToolKeyProps) {
+    const corner = shortcut?.length === 1 ? shortcut[0] : null;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={label}
+                    aria-pressed={pressed}
+                    aria-keyshortcuts={keyShortcuts}
+                    disabled={disabled}
+                    onClick={onClick}
+                    className={cn(
+                        'relative grid shrink-0 place-items-center rounded-md text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+                        compact ? 'size-11' : 'size-9',
+                        focusClass,
+                        pressed && activeClass,
+                        pressed && 'hover:bg-skrum-primary-soft',
+                    )}
+                >
+                    {children}
+                    {corner !== null && (
+                        <span
+                            aria-hidden
+                            className="absolute right-0.5 bottom-px font-mono text-overline leading-none tracking-normal text-muted-foreground"
+                        >
+                            {corner}
+                        </span>
+                    )}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent shortcut={shortcut}>{label}</TooltipContent>
+        </Tooltip>
+    );
+}
 
 export function DrawingToolbar({
     tool,
     color,
     size,
     canUndo,
+    compact = false,
     onTool,
     onColor,
     onSize,
     onUndo,
     onClear,
-}: Props) {
+    className,
+}: DrawingToolbarProps) {
     const { t } = useTrans();
     const [confirmingClear, setConfirmingClear] = useState(false);
+    const [colorsOpen, setColorsOpen] = useState(false);
+    const sizeRefs = useRef<
+        Partial<Record<DrawingSize, HTMLButtonElement | null>>
+    >({});
 
     useEffect(() => {
         if (!confirmingClear) {
@@ -49,7 +168,7 @@ export function DrawingToolbar({
     }, [confirmingClear]);
 
     const colorNames: Record<DrawingColor, string> = {
-        black: t('Black'),
+        black: t('Ink'),
         red: t('Red'),
         orange: t('Orange'),
         green: t('Green'),
@@ -66,107 +185,223 @@ export function DrawingToolbar({
         white: t('White'),
     };
 
-    const tools: { value: CanvasTool; label: string; Icon: typeof Pencil }[] = [
-        { value: 'pen', label: t('Pen'), Icon: Pencil },
-        { value: 'eraser', label: t('Eraser'), Icon: Eraser },
-        { value: 'fill', label: t('Fill'), Icon: PaintBucket },
-    ];
+    const sizeNames: Record<DrawingSize, string> = {
+        4: t('Stroke: Thin'),
+        10: t('Stroke: Medium'),
+        24: t('Stroke: Thick'),
+    };
+
+    const pickColor = (next: DrawingColor) => {
+        onColor(next);
+        setColorsOpen(false);
+
+        if (tool === 'eraser') {
+            onTool('pen');
+        }
+    };
+
+    const moveSize = (event: KeyboardEvent<HTMLButtonElement>) => {
+        const index = DrawingSizes.indexOf(size);
+        const last = DrawingSizes.length - 1;
+        let next: number | null = null;
+
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            next = index >= last ? 0 : index + 1;
+        }
+
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+            next = index <= 0 ? last : index - 1;
+        }
+
+        if (next === null) {
+            return;
+        }
+
+        event.preventDefault();
+        onSize(DrawingSizes[next]);
+        sizeRefs.current[DrawingSizes[next]]?.focus();
+    };
+
+    const swatches = DrawingColors.map((option) => (
+        <button
+            key={option}
+            type="button"
+            data-color={option}
+            aria-label={colorNames[option]}
+            aria-pressed={color === option}
+            title={colorNames[option]}
+            onClick={() => pickColor(option)}
+            className={cn(
+                'grid shrink-0 place-items-center rounded-full',
+                compact ? 'size-11' : 'size-7',
+                focusClass,
+            )}
+        >
+            <span
+                aria-hidden
+                className={cn(
+                    'size-5 rounded-full ring-1 ring-foreground/15 ring-inset',
+                    swatchClasses[option],
+                    color === option &&
+                        'outline-2 outline-offset-2 outline-ring',
+                )}
+            />
+        </button>
+    ));
 
     return (
         <div
             role="toolbar"
             aria-label={t('Drawing tools')}
-            className="flex flex-wrap items-center gap-3"
+            data-slot="drawing-toolbar"
+            className={cn(
+                'inline-flex max-w-full shrink-0 flex-wrap items-center justify-center gap-0.5 rounded-xl border bg-popover p-1 shadow-raised',
+                className,
+            )}
         >
-            <div className="flex items-center gap-1.5">
-                {DrawingColors.map((option) => (
-                    <button
-                        key={option}
-                        type="button"
-                        aria-label={colorNames[option]}
-                        aria-pressed={color === option}
-                        className={cn(
-                            'size-7 rounded-full border-2 border-transparent ring-offset-2 ring-offset-background',
-                            color === option && 'ring-2 ring-ring',
-                        )}
-                        style={{ backgroundColor: colorCss(option) }}
-                        onClick={() => {
-                            onColor(option);
-
-                            if (tool === 'eraser') {
-                                onTool('pen');
-                            }
-                        }}
-                    />
-                ))}
-            </div>
-            <div className="flex items-center gap-1">
+            <ToolKey
+                label={t('Pencil')}
+                pressed={tool === 'pen'}
+                compact={compact}
+                shortcut={['P']}
+                keyShortcuts="P"
+                onClick={() => onTool('pen')}
+            >
+                <Pencil aria-hidden />
+            </ToolKey>
+            <ToolKey
+                label={t('Eraser')}
+                pressed={tool === 'eraser'}
+                compact={compact}
+                shortcut={['E']}
+                keyShortcuts="E"
+                onClick={() => onTool('eraser')}
+            >
+                <Eraser aria-hidden />
+            </ToolKey>
+            <ToolKey
+                label={t('Fill')}
+                pressed={tool === 'fill'}
+                compact={compact}
+                onClick={() => onTool('fill')}
+            >
+                <PaintBucket aria-hidden />
+            </ToolKey>
+            <Separator />
+            <div
+                role="radiogroup"
+                aria-label={t('Stroke')}
+                className="flex items-center gap-0.5"
+            >
                 {DrawingSizes.map((option) => (
                     <button
                         key={option}
+                        ref={(node) => {
+                            sizeRefs.current[option] = node;
+                        }}
                         type="button"
-                        aria-label={t('Size :size', { size: option })}
-                        aria-pressed={size === option}
-                        className={cn(
-                            'flex size-8 items-center justify-center rounded-md hover:bg-muted',
-                            size === option && 'bg-muted',
-                        )}
+                        role="radio"
+                        aria-checked={size === option}
+                        aria-label={sizeNames[option]}
+                        title={sizeNames[option]}
+                        tabIndex={size === option ? 0 : -1}
                         onClick={() => onSize(option)}
+                        onKeyDown={moveSize}
+                        className={cn(
+                            'grid shrink-0 place-items-center rounded-md hover:bg-muted',
+                            compact ? 'size-11' : 'h-9 w-8',
+                            focusClass,
+                            size === option && activeClass,
+                            size === option && 'hover:bg-skrum-primary-soft',
+                        )}
                     >
                         <span
-                            className="rounded-full bg-foreground"
-                            style={{
-                                width: Math.max(4, option * 0.8),
-                                height: Math.max(4, option * 0.8),
-                            }}
+                            aria-hidden
+                            className={cn(
+                                'rounded-full bg-foreground',
+                                dotClasses[option],
+                            )}
                         />
                     </button>
                 ))}
             </div>
-            <div className="flex items-center gap-1">
-                {tools.map(({ value, label, Icon }) => (
-                    <Button
-                        key={value}
-                        type="button"
-                        size="icon"
-                        variant={tool === value ? 'secondary' : 'ghost'}
-                        aria-label={label}
-                        aria-pressed={tool === value}
-                        onClick={() => onTool(value)}
+            <Separator />
+            {compact ? (
+                <Popover open={colorsOpen} onOpenChange={setColorsOpen}>
+                    <PopoverTrigger asChild>
+                        <button
+                            type="button"
+                            data-color={color}
+                            aria-label={t('Ink colour: :color', {
+                                color: colorNames[color],
+                            })}
+                            className={cn(
+                                'light grid size-11 shrink-0 place-items-center rounded-full',
+                                focusClass,
+                            )}
+                        >
+                            <span
+                                aria-hidden
+                                className="grid size-9 place-items-center rounded-full bg-card"
+                            >
+                                <span
+                                    className={cn(
+                                        'size-6 rounded-full ring-1 ring-foreground/15 ring-inset',
+                                        swatchClasses[color],
+                                    )}
+                                />
+                            </span>
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                        side="top"
+                        aria-label={t('Ink colour')}
+                        className="light grid grid-cols-[repeat(3,auto)] gap-1 bg-card p-2"
                     >
-                        <Icon className="size-4" />
-                    </Button>
-                ))}
-                <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    aria-label={t('Undo')}
-                    disabled={!canUndo}
-                    onClick={onUndo}
+                        {swatches}
+                    </PopoverContent>
+                </Popover>
+            ) : (
+                <div
+                    data-slot="drawing-swatches"
+                    className="light flex items-center rounded-full bg-card px-0.5"
                 >
-                    <Undo2 className="size-4" />
-                </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant={confirmingClear ? 'destructive' : 'ghost'}
-                    disabled={!canUndo}
-                    onClick={() => {
-                        if (!confirmingClear) {
-                            setConfirmingClear(true);
+                    {swatches}
+                </div>
+            )}
+            <Separator />
+            <ToolKey
+                label={t('Undo')}
+                disabled={!canUndo}
+                compact={compact}
+                shortcut={[modifierKey(), 'Z']}
+                keyShortcuts="Meta+Z Control+Z"
+                onClick={onUndo}
+            >
+                <Undo2 aria-hidden />
+            </ToolKey>
+            <Button
+                type="button"
+                size="sm"
+                variant={confirmingClear ? 'destructive' : 'ghost'}
+                disabled={!canUndo}
+                className={cn('min-w-0', compact && 'h-11')}
+                onClick={() => {
+                    if (!confirmingClear) {
+                        setConfirmingClear(true);
 
-                            return;
-                        }
+                        return;
+                    }
 
-                        setConfirmingClear(false);
-                        onClear();
-                    }}
-                >
-                    <Trash2 className="size-4" />
+                    setConfirmingClear(false);
+                    onClear();
+                }}
+            >
+                <Trash2 aria-hidden />
+                <span className="truncate">
                     {confirmingClear ? t('Click again to clear') : t('Clear')}
-                </Button>
-            </div>
+                </span>
+            </Button>
         </div>
     );
 }

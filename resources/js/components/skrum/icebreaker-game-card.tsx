@@ -46,6 +46,8 @@ export type IcebreakerGameCardProps = {
     players?: { min: number; max: number };
     participants?: number;
     selected?: boolean;
+    /** For a narrow two-column picker: the game's icon alone stands for the illustration. */
+    compact?: boolean;
     onSelect?: (game: IcebreakerGame) => void;
     className?: string;
 };
@@ -256,6 +258,7 @@ export function IcebreakerGameCard({
     players,
     participants,
     selected = false,
+    compact = false,
     onSelect,
     className,
 }: IcebreakerGameCardProps) {
@@ -287,6 +290,7 @@ export function IcebreakerGameCard({
             data-game={game}
             data-selected={selected}
             data-unavailable={unavailable}
+            data-compact={compact || undefined}
             aria-checked={selected}
             aria-disabled={unavailable || undefined}
             aria-labelledby={titleId}
@@ -321,17 +325,24 @@ export function IcebreakerGameCard({
             <div
                 aria-hidden
                 className={cn(
-                    'relative flex h-20 items-center justify-center overflow-hidden sm:h-24',
+                    'relative flex items-center justify-center overflow-hidden',
+                    compact ? 'h-16' : 'h-20 sm:h-24',
                     classes.art,
                 )}
             >
-                <Art game={game} color={color} />
-                <CornerIcon
-                    className={cn(
-                        'absolute bottom-2 left-3 size-5 opacity-80',
-                        classes.text,
-                    )}
-                />
+                {compact ? (
+                    <CornerIcon className={cn('size-7', classes.text)} />
+                ) : (
+                    <>
+                        <Art game={game} color={color} />
+                        <CornerIcon
+                            className={cn(
+                                'absolute bottom-2 left-3 size-5 opacity-80',
+                                classes.text,
+                            )}
+                        />
+                    </>
+                )}
             </div>
             <div className="flex min-w-0 flex-col gap-1 p-3">
                 {unavailable && (

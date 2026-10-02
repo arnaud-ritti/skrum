@@ -175,10 +175,8 @@ it('[P13b-01] waits for another player when the host switches to Draw & Guess al
 
     $host->assertSee('Ready to play?')
         ->assertButtonEnabled('Start')
-        ->click('button[aria-label="Game"]')
-        ->assertVisible('[role="option"]:has-text("Draw & Guess")')
-        ->click('[role="option"]:has-text("Draw & Guess")')
-        ->assertSeeIn('button[aria-label="Game"]', 'Draw & Guess')
+        ->click('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")')
+        ->assertAriaAttribute('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'checked', 'true')
         ->assertSee('Waiting for another player')
         ->assertButtonDisabled('Start')
         ->assertNotPresent('button[aria-label="Who draws?"]');
@@ -423,7 +421,7 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
     app()->instance('request', Request::create(url('/')));
     broadcast(new GameRoomChanged($room));
 
-    $viewer->assertSeeIn('header > h1', 'Renamed room');
+    $viewer->assertSeeIn('header:has(h1) h1', 'Renamed room');
 
     $drawer->click('button:has-text("Clear")')
         ->assertSee('Click again to clear')
