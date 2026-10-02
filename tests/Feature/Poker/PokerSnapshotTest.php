@@ -2,6 +2,7 @@
 
 use App\Actions\Poker\BuildPokerSnapshot;
 use App\Actions\Poker\PresentPokerRound;
+use App\Actions\Poker\PresentPokerTask;
 use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Models\PokerGame;
@@ -102,6 +103,19 @@ it('counts the votes of the last round of every task, without a value before the
         ->and(array_keys($tasks[$current->id]))->toBe([
             'id', 'title', 'description', 'descriptionHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'votesCount', 'external',
         ]);
+});
+
+it('counts the votes of a task that was just created without a query', function () {
+    $task = PokerTask::factory()->create();
+    $task->setAttribute('rounds_count', 0);
+
+    DB::enableQueryLog();
+    $presented = resolve(PresentPokerTask::class)->handle($task);
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($presented['votesCount'])->toBe(0)
+        ->and($queries)->toBeEmpty();
 });
 
 it('lists no voters in the history mode of an unrevealed round', function () {

@@ -45,7 +45,8 @@ class PresentPokerTask
      * Without a PokerTaskSync (broadcasts, guests) an imported task only
      * shows its source, key and link: assignee names and sync errors stay
      * with the team (spec 6 §6.6). `votesCount` is the number of votes of
-     * the task's last round, never their values.
+     * the task's last round, never their values; a task created in this
+     * request has no round yet and costs no query.
      *
      * @return Task
      */
@@ -69,6 +70,10 @@ class PresentPokerTask
 
     private function votesCount(PokerTask $task): int
     {
+        if ($task->wasRecentlyCreated && ! $task->relationLoaded('latestRound')) {
+            return 0;
+        }
+
         $latestRound = $task->latestRound;
 
         if ($latestRound === null) {
