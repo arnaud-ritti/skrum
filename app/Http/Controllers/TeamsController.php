@@ -7,6 +7,7 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
@@ -58,6 +59,7 @@ class TeamsController extends Controller
         BuildTemplateCatalogue $buildTemplateCatalogue,
         IcebreakerGameOptions $icebreakerGameOptions,
         BuildWhiteboardGallery $buildWhiteboardGallery,
+        TopTeamTemplates $topTeamTemplates,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -83,6 +85,7 @@ class TeamsController extends Controller
                 'createdAt' => $retro->created_at?->toIso8601String(),
             ]),
             'templateCategories' => TemplateCategory::options(),
+            'topTemplates' => $topTeamTemplates->handle($team),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
             'llm' => [
                 'enabled' => $llm->isConfigured(),

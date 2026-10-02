@@ -50,6 +50,7 @@ type Props = {
     openActionItemCount: number;
     retros: RetroSummary[];
     templateCategories: CategoryOption[];
+    topTemplates: string[];
     catalogue?: CatalogueTemplate[];
     canCreateRetro: boolean;
     healthStatements: TeamHealthStatement[];
