@@ -112,6 +112,14 @@ const skeletonColumns = [
 
 const loadMoreThreshold = 48;
 
+/**
+ * The children of a tile never take the pointer. Under reduced motion a press
+ * swaps the still for the picture, and the browser fires no click when the
+ * pressed element has left the page.
+ */
+const tileClass =
+    'group relative w-full cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-popover *:pointer-events-none outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring aria-selected:ring-2 aria-selected:ring-ring aria-selected:ring-offset-2';
+
 export function formatGifDuration(durationMs: number, lang: string): string {
     const seconds = new Intl.NumberFormat(lang, {
         minimumFractionDigits: 1,
@@ -758,7 +766,7 @@ function GifPickerPanel({
                 aria-busy={status === 'loading' ? true : undefined}
                 className={cn(
                     'min-w-0 overflow-y-auto p-2',
-                    inline ? 'h-86' : 'h-64',
+                    inline ? 'h-64 sm:h-86' : 'h-64',
                 )}
                 onScroll={onBodyScroll}
             >
@@ -956,7 +964,10 @@ function GifPickerPanel({
                                                 style={{
                                                     aspectRatio: `${gif.width} / ${gif.height}`,
                                                 }}
-                                                className="group relative w-full cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-popover outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring aria-selected:ring-2 aria-selected:ring-ring aria-selected:ring-offset-2"
+                                                className={cn(
+                                                    tileClass,
+                                                    inline && 'max-h-40',
+                                                )}
                                                 onClick={() => choose(gif)}
                                                 onKeyDown={(event) =>
                                                     onTileKeyDown(
