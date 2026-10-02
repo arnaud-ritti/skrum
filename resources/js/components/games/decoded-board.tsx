@@ -55,7 +55,9 @@ export function DecodedBoard({ round }: { round: GameRound }) {
                 )}
                 <Badge variant="outline" shape="pill">
                     <WholeWord aria-hidden />
-                    {t(':count letters', { count: letters })}
+                    {letters === 1
+                        ? t(':count letter', { count: 1 })
+                        : t(':count letters', { count: letters })}
                 </Badge>
             </CluePuzzle>
             <MaskedWord mask={mask} maxHints={round.maxHints ?? 0} />

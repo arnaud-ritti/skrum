@@ -108,7 +108,9 @@ export function GuessChat({
                 </h2>
                 {guesses.length > 0 && (
                     <span className="shrink-0 text-xs text-muted-foreground">
-                        {t(':count guesses', { count: guesses.length })}
+                        {guesses.length === 1
+                            ? t(':count guess', { count: 1 })
+                            : t(':count guesses', { count: guesses.length })}
                     </span>
                 )}
             </div>

@@ -77,7 +77,9 @@ function PlayersList({
                     {t('Players')}
                 </h2>
                 <span className="text-xs text-muted-foreground">
-                    {t(':count players', { count: players.length })}
+                    {players.length === 1
+                        ? t(':count player', { count: 1 })
+                        : t(':count players', { count: players.length })}
                 </span>
             </div>
             {gifDone !== null && isPicking && (

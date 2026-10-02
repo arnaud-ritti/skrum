@@ -6,11 +6,17 @@ import { renderWithProviders } from '@/test/render';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const post = vi.hoisted(() => vi.fn());
+const headTitles = vi.hoisted(() => [] as string[]);
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
     usePage: () => page,
     router: { post },
+    Head: ({ title }: { title: string }) => {
+        headTitles.push(title);
+
+        return null;
+    },
 }));
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -27,6 +33,7 @@ const session = {
 
 beforeEach(() => {
     post.mockClear();
+    headTitles.length = 0;
     page.props = {
         translations: {},
         locale: 'en',
@@ -63,6 +70,7 @@ describe('games/join', () => {
         expect(card?.textContent).toContain('Hangman');
         expect(card?.textContent).toContain('3 participants');
         expect(card?.textContent).toContain('Ada Lovelace facilitates');
+        expect(headTitles).toEqual(['Friday fun']);
     });
 
     it('prefills the suggested nickname and posts it to the join route of the room', () => {
@@ -98,5 +106,6 @@ describe('games/join', () => {
             screen.getByText('This guest link is no longer valid.'),
         ).toBeTruthy();
         expect(document.querySelector('#name')).toBeNull();
+        expect(headTitles).toEqual(['Join a game']);
     });
 });

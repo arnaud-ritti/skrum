@@ -49,4 +49,28 @@ describe('RoomSidebar', () => {
         ).toBe('2');
         expect(screen.getByText('3 players')).toBeTruthy();
     });
+
+    it('counts a lone player in the singular', () => {
+        const ctx = {
+            snapshot: {
+                room: { id: 'r1', game: 'hangman', hostPlayerId: 'ada' },
+                me: { playerId: 'ada' },
+                players: [player('ada')],
+                scores: [],
+                history: [],
+                round: null,
+            },
+            lastEnded: null,
+            online: [{ id: 'presence-ada' }],
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomSidebar highlightPlayerId={null} />
+            </RoomProvider>,
+        );
+
+        expect(screen.getByText('1 player')).toBeTruthy();
+        expect(screen.queryByText('1 players')).toBeNull();
+    });
 });
