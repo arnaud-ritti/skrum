@@ -144,12 +144,13 @@ class TeamsController extends Controller
     {
         $isManager = $user->canManage($workspace);
 
-        return $team->pokerDecks()->orderBy('name')->get()
+        return $team->availablePokerDecks()->orderBy('name')->get()
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,
                 'cards' => $deck->cards,
-                'canManage' => $isManager || $deck->created_by_user_id === $user->id,
+                'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
+                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id),
             ])
             ->values()
             ->all();

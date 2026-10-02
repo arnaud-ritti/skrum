@@ -19,11 +19,12 @@ class PokerSavedDecksController extends Controller
     {
         PokerGuard::facilitator($game, PokerPlayer::current($request));
 
-        return response()->json($game->team->pokerDecks()->orderBy('name')->get()
+        return response()->json($game->team->availablePokerDecks()->orderBy('name')->get()
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,
                 'cards' => $deck->cards,
+                'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
             ])
             ->values());
     }

@@ -69,5 +69,6 @@ export type SavedPokerDeck = {
     id: string;
     name: string;
     cards: string[];
+    scope: 'team' | 'workspace';
     canManage?: boolean;
 };

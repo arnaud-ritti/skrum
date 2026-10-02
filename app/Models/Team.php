@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\IntegrationProvider;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -73,6 +74,18 @@ class Team extends Model
     public function pokerDecks(): HasMany
     {
         return $this->hasMany(SavedPokerDeck::class);
+    }
+
+    /**
+     * The decks of the team plus the decks of its workspace.
+     *
+     * @return Builder<SavedPokerDeck>
+     */
+    public function availablePokerDecks(): Builder
+    {
+        return SavedPokerDeck::query()->where(function (Builder $query): void {
+            $query->where('team_id', $this->id)->orWhere('workspace_id', $this->workspace_id);
+        });
     }
 
     /** @return BelongsTo<SavedPokerDeck, $this> */

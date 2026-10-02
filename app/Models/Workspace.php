@@ -60,6 +60,12 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceTemplate::class);
     }
 
+    /** @return HasMany<SavedPokerDeck, $this> */
+    public function pokerDecks(): HasMany
+    {
+        return $this->hasMany(SavedPokerDeck::class);
+    }
+
     /** @return HasMany<WhiteboardTemplate, $this> */
     public function whiteboardTemplates(): HasMany
     {

@@ -157,6 +157,7 @@ use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
+use App\Http\Controllers\WorkspacePokerDecksController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Controllers\WorkspaceWhiteboardTemplatesController;
@@ -355,6 +356,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
             Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
             Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
+            Route::post('poker-decks', [WorkspacePokerDecksController::class, 'store'])->name('workspaces.pokerDecks.store');
+            Route::patch('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'update'])->name('workspaces.pokerDecks.update')->whereUuid('pokerDeck');
+            Route::delete('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'destroy'])->name('workspaces.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::patch('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'update'])->name('workspaces.whiteboardTemplates.update')->whereUuid('whiteboardTemplate');
             Route::delete('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'destroy'])->name('workspaces.whiteboardTemplates.destroy')->whereUuid('whiteboardTemplate');
 

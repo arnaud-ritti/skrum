@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Auth\Access\Response;
 
 class PokerDeckPolicy
@@ -19,6 +20,11 @@ class PokerDeckPolicy
         return $user->can('view', $team);
     }
 
+    public function createForWorkspace(User $user, Workspace $workspace): bool
+    {
+        return $user->canManage($workspace);
+    }
+
     public function update(User $user, SavedPokerDeck $deck): Response
     {
         return $this->manage($user, $deck);
@@ -31,6 +37,12 @@ class PokerDeckPolicy
 
     private function manage(User $user, SavedPokerDeck $deck): Response
     {
+        if ($deck->isWorkspaceDeck()) {
+            return $user->canManage($deck->workspace)
+                ? Response::allow()
+                : Response::deny(__('Only a workspace admin can change a workspace deck.'));
+        }
+
         if ($user->canManage($deck->team->workspace)) {
             return Response::allow();
         }

@@ -240,8 +240,8 @@ it('lists the team decks on the team page', function () {
         ->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->has('pokerDecks', 2)
-            ->where('pokerDecks.0', ['id' => $others->id, 'name' => 'A theirs', 'cards' => $others->cards, 'canManage' => false])
-            ->where('pokerDecks.1', ['id' => $own->id, 'name' => 'B mine', 'cards' => ['1', '2'], 'canManage' => true]));
+            ->where('pokerDecks.0', ['id' => $others->id, 'name' => 'A theirs', 'cards' => $others->cards, 'scope' => 'team', 'canManage' => false])
+            ->where('pokerDecks.1', ['id' => $own->id, 'name' => 'B mine', 'cards' => ['1', '2'], 'scope' => 'team', 'canManage' => true]));
 
     $this->actingAs(workspaceManager($team->workspace))
         ->get(route('teams.show', [$team->workspace, $team]))

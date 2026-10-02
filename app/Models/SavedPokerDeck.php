@@ -12,15 +12,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A team's saved custom deck. Games copy its cards and name, so editing or
+ * A saved custom deck, owned by a team or by a whole workspace. Games copy its cards and name, so editing or
  * deleting it never changes a game.
  *
  * @property string $id
- * @property string $team_id
+ * @property string|null $team_id
+ * @property string|null $workspace_id
  * @property string $name
  * @property array<int, string> $cards
  * @property string|null $created_by_user_id
- * @property-read Team $team
+ * @property-read Team|null $team
+ * @property-read Workspace|null $workspace
  * @property-read User|null $creator
  */
 #[Fillable(['name', 'cards', 'created_by_user_id'])]
@@ -36,6 +38,17 @@ class SavedPokerDeck extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /** @return BelongsTo<Workspace, $this> */
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+
+    public function isWorkspaceDeck(): bool
+    {
+        return $this->workspace_id !== null;
     }
 
     /** @return HasMany<PokerGame, $this> */
