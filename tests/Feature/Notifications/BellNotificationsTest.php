@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ActionItems\SendActionItemReminders;
 use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
@@ -18,10 +19,15 @@ use App\Notifications\RetroResultsNotification;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
 use App\Support\Mail\MailBrand;
 use Carbon\CarbonImmutable;
+use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -265,6 +271,64 @@ it('tells the open page that a notification arrived, with a count only', functio
             && $event->broadcastAs() === 'notification.received'
             && $event->broadcastWith() === ['unreadCount' => $count]);
     }
+});
+
+function breakBroadcasting(): void
+{
+    Broadcast::extend('unreachable', fn (): NullBroadcaster => new class extends NullBroadcaster
+    {
+        public function broadcast(array $channels, $event, array $payload = []): void
+        {
+            throw new RuntimeException('Reverb is unreachable.');
+        }
+    });
+
+    config(['broadcasting.default' => 'unreachable', 'broadcasting.connections.unreachable' => ['driver' => 'unreachable']]);
+}
+
+it('broadcasts the arrival as a job of its own', function () {
+    expect(new NotificationReceived('user-id', 1))->not->toBeInstanceOf(ShouldBroadcastNow::class);
+});
+
+it('stores every reminder of a user when the broadcast fails', function () {
+    Exceptions::fake();
+    breakBroadcasting();
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->count(3)->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-08']);
+
+    expect(resolve(SendActionItemReminders::class)->handle())->toBe(['reminders' => 3, 'users' => 1])
+        ->and($user->notifications()->count())->toBe(3)
+        ->and(bellOf($user))->toHaveCount(3);
+
+    Exceptions::assertReported(fn (RuntimeException $e): bool => $e->getMessage() === 'Reverb is unreachable.');
+});
+
+it('answers the inviter the same way when the broadcast fails', function () {
+    Exceptions::fake();
+    breakBroadcasting();
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+    $known = User::factory()->create(['email' => 'known@example.test']);
+
+    $answers = collect(['known@example.test', 'unknown@example.test'])
+        ->map(function (string $email) use ($admin, $workspace): array {
+            $response = inviteByForm($admin, $workspace, $email)->assertSessionHasNoErrors();
+
+            return [$response->status(), $response->headers->get('Location'), array_keys((array) session()->get('_flash.new'))];
+        });
+
+    expect($answers->unique()->count())->toBe(1)
+        ->and($answers[0][0])->toBe(302)
+        ->and($known->notifications()->count())->toBe(1);
+});
+
+it('leaves a notification of an unknown kind stored and unlisted', function () {
+    [$user] = remindedThroughTheBell();
+    $user->notifications()->create(['id' => (string) Str::uuid(), 'type' => 'another-lane', 'data' => ['kind' => 'added_later']]);
+
+    expect(bellOf($user))->toHaveCount(1)
+        ->and($user->notifications()->count())->toBe(2);
 });
 
 it('authorises the user channel for its owner only', function () {

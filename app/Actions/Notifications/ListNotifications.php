@@ -2,9 +2,12 @@
 
 namespace App\Actions\Notifications;
 
+use App\Enums\ActionItemReminderKind;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\RetroResultsNotification;
+use App\Notifications\WorkspaceInvitationReceivedNotification;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -21,6 +24,7 @@ class ListNotifications
     /**
      * Notifications store ids only: each subject is read live, and a
      * notification whose subject the user may no longer see is deleted.
+     * One of a kind no presenter knows is kept, and not listed.
      *
      * @param  ?string  $before  id of one of the user's notifications; the page starts after it
      * @return array{
@@ -56,7 +60,9 @@ class ListNotifications
 
         $visible = $notifications->filter(fn (DatabaseNotification $notification): bool => isset($presented[$notification->id]));
 
-        DatabaseNotification::query()->whereKey($notifications->diff($visible)->modelKeys())->delete();
+        $outOfReach = $notifications->diff($visible)->filter(fn (DatabaseNotification $notification): bool => $this->hasPresenter($notification));
+
+        DatabaseNotification::query()->whereKey($outOfReach->modelKeys())->delete();
 
         return [
             'notifications' => $visible
@@ -72,6 +78,17 @@ class ListNotifications
             'unreadCount' => $user->unreadNotifications()->count(),
             'hasMore' => $fetched->count() > self::PerPage,
         ];
+    }
+
+    private function hasPresenter(DatabaseNotification $notification): bool
+    {
+        $kind = (string) ($notification->data['kind'] ?? '');
+
+        if (ActionItemReminderKind::tryFrom($kind) !== null) {
+            return true;
+        }
+
+        return in_array($kind, [RetroResultsNotification::Kind, WorkspaceInvitationReceivedNotification::Kind], true);
     }
 
     /**

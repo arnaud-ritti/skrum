@@ -8,6 +8,10 @@ use Illuminate\Notifications\Events\NotificationSent;
 
 class BroadcastNotificationReceivedListener
 {
+    /**
+     * The live arrival is a courtesy: the notification is stored already,
+     * and a broadcaster or a queue that is down must not fail its sender.
+     */
     public function handle(NotificationSent $event): void
     {
         if ($event->channel !== 'database') {
@@ -18,6 +22,8 @@ class BroadcastNotificationReceivedListener
             return;
         }
 
-        NotificationReceived::dispatch($event->notifiable->id, $event->notifiable->unreadNotifications()->count());
+        $user = $event->notifiable;
+
+        rescue(fn () => NotificationReceived::dispatch($user->id, $user->unreadNotifications()->count()), report: true);
     }
 }
