@@ -1,17 +1,16 @@
-import * as RadioGroup from '@radix-ui/react-radio-group';
-import { Bookmark, CircleCheck, Pencil, Plus } from 'lucide-react';
+import { Bookmark, CircleCheck, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupCardItem } from '@/components/ui/radio-group';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
 export const DeckMinValues = 2;
 export const DeckMaxValues = 20;
-export const DeckMaxValueLength = 4;
+export const DeckMaxValueLength = 8;
+export const DeckMaxNameLength = 40;
 export const UnknownCard = '?';
 export const BreakCard = '☕';
 
@@ -22,6 +21,7 @@ export interface Deck {
     unknownCard: boolean;
     breakCard: boolean;
     source: 'builtin' | 'saved';
+    canManage?: boolean;
     createdBy?: { name: string };
 }
 
@@ -31,6 +31,7 @@ export interface DeckPickerProps {
     decks: Deck[];
     onCreate: () => void;
     onEdit?: (id: string) => void;
+    onDelete?: (id: string) => void | Promise<void>;
     className?: string;
 }
 
@@ -50,6 +51,15 @@ export function isSpecialCard(value: string): boolean {
     return value === UnknownCard || value === BreakCard;
 }
 
+/** Splits the flat card list the server stores into values and switches. */
+export function deckShapeFromCards(cards: string[]): DeckShape {
+    return {
+        values: cards.filter((card) => !isSpecialCard(card)),
+        unknownCard: cards.includes(UnknownCard),
+        breakCard: cards.includes(BreakCard),
+    };
+}
+
 export function DeckPreviewCard({ value }: { value: string }) {
     const { t } = useTrans();
     const special = isSpecialCard(value);
@@ -61,7 +71,7 @@ export function DeckPreviewCard({ value }: { value: string }) {
             data-slot="deck-preview-card"
             data-special={special || undefined}
             className={cn(
-                'grid h-14 min-w-10 shrink-0 place-items-center rounded-lg border px-1.5 font-display text-lg font-bold shadow-card',
+                'grid h-14 max-w-full min-w-10 shrink-0 place-items-center rounded-lg border px-1.5 font-display text-lg font-bold whitespace-nowrap shadow-card',
                 special
                     ? 'bg-muted text-muted-foreground'
                     : 'bg-card text-foreground',
@@ -134,10 +144,30 @@ export function DeckPicker({
     decks,
     onCreate,
     onEdit,
+    onDelete,
     className,
 }: DeckPickerProps) {
     const { t } = useTrans();
+    const createRef = useRef<HTMLButtonElement>(null);
+    const deletedIdRef = useRef<string | null>(null);
+    const [deleting, setDeleting] = useState<Deck | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const selected = decks.find((deck) => deck.id === value);
+
+    useEffect(() => {
+        const deletedId = deletedIdRef.current;
+
+        if (deletedId === null || confirmOpen) {
+            return;
+        }
+
+        if (decks.some((deck) => deck.id === deletedId)) {
+            return;
+        }
+
+        deletedIdRef.current = null;
+        createRef.current?.focus();
+    }, [decks, confirmOpen]);
 
     return (
         <div
@@ -148,7 +178,7 @@ export function DeckPicker({
             )}
         >
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(48)),1fr))] gap-2">
-                <RadioGroup.Root
+                <RadioGroup
                     value={value}
                     onValueChange={onValueChange}
                     aria-label={t('Deck')}
@@ -160,21 +190,22 @@ export function DeckPicker({
                             name: deck.name,
                             count: cards.length,
                         });
-                        const canEdit =
-                            deck.source === 'saved' && onEdit !== undefined;
+                        const canManage =
+                            deck.source === 'saved' && deck.canManage === true;
+                        const canEdit = canManage && onEdit !== undefined;
+                        const canDelete = canManage && onDelete !== undefined;
 
                         return (
-                            <div key={deck.id} className="relative flex">
-                                <RadioGroup.Item
+                            <div
+                                key={deck.id}
+                                data-slot="deck-option-wrapper"
+                                className="flex min-w-0 flex-col gap-1"
+                            >
+                                <RadioGroupCardItem
                                     value={deck.id}
                                     aria-label={accessibleName}
                                     data-slot="deck-option"
-                                    className={cn(
-                                        'group/deck-option flex w-full min-w-0 cursor-pointer flex-col gap-2 rounded-lg border bg-card p-3 text-left shadow-card transition-[background-color,border-color,box-shadow] duration-140 ease-standard outline-none',
-                                        'hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
-                                        'data-[state=checked]:border-primary data-[state=checked]:bg-skrum-primary-soft data-[state=checked]:ring-2 data-[state=checked]:ring-primary',
-                                        canEdit && 'pr-10',
-                                    )}
+                                    className="flex-1"
                                 >
                                     <span className="flex min-w-0 items-start justify-between gap-2">
                                         <span className="min-w-0">
@@ -187,12 +218,10 @@ export function DeckPicker({
                                                 })}
                                             </span>
                                         </span>
-                                        <RadioGroup.Indicator forceMount>
-                                            <CircleCheck
-                                                aria-hidden="true"
-                                                className="size-4 shrink-0 text-primary opacity-0 group-data-[state=checked]/deck-option:opacity-100"
-                                            />
-                                        </RadioGroup.Indicator>
+                                        <CircleCheck
+                                            aria-hidden="true"
+                                            className="size-4 shrink-0 text-primary opacity-0 group-data-[state=checked]/radio-card:opacity-100"
+                                        />
                                     </span>
                                     <PreviewValues cards={cards} />
                                     <span className="flex min-w-0 items-center gap-1.5">
@@ -212,35 +241,58 @@ export function DeckPicker({
                                             </span>
                                         ) : null}
                                     </span>
-                                </RadioGroup.Item>
-                                {canEdit ? (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
+                                </RadioGroupCardItem>
+                                {canEdit || canDelete ? (
+                                    <div
+                                        data-slot="deck-manage"
+                                        className="flex min-w-0 flex-wrap gap-1"
+                                    >
+                                        {canEdit ? (
+                                            <Button
                                                 type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="max-w-full min-w-0"
                                                 aria-label={t('Edit :name', {
                                                     name: deck.name,
                                                 })}
                                                 onClick={() => onEdit(deck.id)}
-                                                className="absolute top-2 right-2 grid size-7 place-items-center rounded-sm text-muted-foreground transition-colors duration-140 outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                             >
-                                                <Pencil
-                                                    aria-hidden="true"
-                                                    className="size-3.5"
-                                                />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {t('Edit')}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                                <Pencil aria-hidden="true" />
+                                                <span className="truncate">
+                                                    {t('Edit')}
+                                                </span>
+                                            </Button>
+                                        ) : null}
+                                        {canDelete ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="max-w-full min-w-0 text-skrum-destructive-text hover:text-skrum-destructive-text"
+                                                aria-label={t('Delete :name', {
+                                                    name: deck.name,
+                                                })}
+                                                onClick={() => {
+                                                    setDeleting(deck);
+                                                    setConfirmOpen(true);
+                                                }}
+                                            >
+                                                <Trash2 aria-hidden="true" />
+                                                <span className="truncate">
+                                                    {t('Delete')}
+                                                </span>
+                                            </Button>
+                                        ) : null}
+                                    </div>
                                 ) : null}
                             </div>
                         );
                     })}
-                </RadioGroup.Root>
+                </RadioGroup>
                 <button
                     type="button"
+                    ref={createRef}
                     onClick={onCreate}
                     data-slot="deck-create"
                     className="flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input p-3 text-sm font-semibold text-muted-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
@@ -252,9 +304,9 @@ export function DeckPicker({
             {selected ? (
                 <div
                     data-slot="deck-selected"
-                    className="flex flex-col gap-2 rounded-lg border bg-skrum-canvas p-3"
+                    className="flex min-w-0 flex-col gap-2 rounded-lg border bg-skrum-canvas p-3"
                 >
-                    <span className="text-xs font-semibold text-muted-foreground">
+                    <span className="truncate text-xs font-semibold text-muted-foreground">
                         {t(':name, :count cards', {
                             name: selected.name,
                             count: deckCards(selected).length,
@@ -269,6 +321,30 @@ export function DeckPicker({
                         })}
                     />
                 </div>
+            ) : null}
+            {deleting !== null && onDelete !== undefined ? (
+                <ConfirmDialog
+                    open={confirmOpen}
+                    onOpenChange={setConfirmOpen}
+                    title={t('Delete this deck?')}
+                    description={t(
+                        'The saved deck “:name” is removed for the whole team.',
+                        { name: deleting.name },
+                    )}
+                    confirmLabel={t('Delete deck')}
+                    tone="destructive"
+                    onConfirm={async () => {
+                        deletedIdRef.current = deleting.id;
+
+                        try {
+                            await onDelete(deleting.id);
+                        } catch (error) {
+                            deletedIdRef.current = null;
+
+                            throw error;
+                        }
+                    }}
+                />
             ) : null}
         </div>
     );

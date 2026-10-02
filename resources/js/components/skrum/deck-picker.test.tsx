@@ -1,6 +1,10 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DeckPicker, deckCards } from '@/components/skrum/deck-picker';
+import {
+    DeckPicker,
+    deckCards,
+    deckShapeFromCards,
+} from '@/components/skrum/deck-picker';
 import type { Deck } from '@/components/skrum/deck-picker';
 import { renderWithProviders } from '@/test/render';
 
@@ -28,6 +32,7 @@ const decks: Deck[] = [
         unknownCard: false,
         breakCard: false,
         source: 'saved',
+        canManage: true,
         createdBy: { name: 'Ada' },
     },
 ];
@@ -118,11 +123,11 @@ describe('DeckPicker', () => {
         expect(onCreate).toHaveBeenCalledTimes(1);
     });
 
-    it('offers edit on saved decks only and only when onEdit is given', () => {
-        const { onValueChange } = renderPicker();
+    it('offers no edit or delete without the callbacks', () => {
+        renderPicker();
 
         expect(screen.queryByRole('button', { name: /^Edit/ })).toBeNull();
-        expect(onValueChange).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: /^Delete/ })).toBeNull();
     });
 
     it('calls onEdit with the saved deck id without selecting it', () => {
@@ -139,5 +144,150 @@ describe('DeckPicker', () => {
 
         expect(onEdit).toHaveBeenCalledWith('mine');
         expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('hides edit and delete on a saved deck the user cannot manage', () => {
+        renderPicker({
+            onEdit: vi.fn(),
+            onDelete: vi.fn(),
+            decks: [
+                ...decks.slice(0, 2),
+                { ...decks[2], canManage: false },
+                {
+                    ...decks[2],
+                    id: 'legacy',
+                    name: 'Legacy',
+                    canManage: undefined,
+                },
+            ],
+        });
+
+        expect(screen.queryByRole('button', { name: /^Edit/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Delete/ })).toBeNull();
+    });
+
+    it('deletes a saved deck only after confirmation, then moves focus to the create card', async () => {
+        const onDelete = vi.fn();
+        const onValueChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <DeckPicker
+                value="tshirt"
+                onValueChange={onValueChange}
+                decks={decks}
+                onCreate={vi.fn()}
+                onDelete={onDelete}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Delete Team sizes' }),
+        );
+
+        const dialog = screen.getByRole('alertdialog');
+
+        expect(onDelete).not.toHaveBeenCalled();
+        expect(within(dialog).getByText('Delete this deck?')).toBeTruthy();
+
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Delete deck' }),
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+        expect(onDelete).toHaveBeenCalledWith('mine');
+        expect(onValueChange).not.toHaveBeenCalled();
+
+        rerender(
+            <DeckPicker
+                value="tshirt"
+                onValueChange={onValueChange}
+                decks={decks.slice(0, 2)}
+                onCreate={vi.fn()}
+                onDelete={onDelete}
+            />,
+        );
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Create a deck' }),
+        );
+    });
+
+    it('keeps the deck when the confirmation is cancelled', () => {
+        const onDelete = vi.fn();
+        renderPicker({ onDelete });
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Delete Team sizes' }),
+        );
+        fireEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        expect(onDelete).not.toHaveBeenCalled();
+    });
+
+    it('splits the server card list into values and special cards', () => {
+        expect(deckShapeFromCards(['1', '2', '?', '☕'])).toEqual({
+            values: ['1', '2'],
+            unknownCard: true,
+            breakCard: true,
+        });
+        expect(deckShapeFromCards(['S', 'M'])).toEqual({
+            values: ['S', 'M'],
+            unknownCard: false,
+            breakCard: false,
+        });
+    });
+
+    it('renders no deck, and a deck of 20 values of 8 characters with a 40-character name', () => {
+        const { unmount } = renderWithProviders(
+            <DeckPicker
+                value=""
+                onValueChange={vi.fn()}
+                decks={[]}
+                onCreate={vi.fn()}
+            />,
+        );
+
+        expect(screen.queryByRole('radio')).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Create a deck' }),
+        ).toBeTruthy();
+        unmount();
+
+        const name = 'D'.repeat(40);
+        const values = Array.from({ length: 20 }, (_, i) =>
+            `${i}-abcdefg`.slice(0, 8),
+        );
+
+        renderPicker({
+            value: 'big',
+            decks: [
+                {
+                    id: 'big',
+                    name,
+                    values,
+                    unknownCard: true,
+                    breakCard: true,
+                    source: 'saved',
+                },
+            ],
+        });
+
+        const option = screen.getByRole('radio', {
+            name: `${name}, 22 cards`,
+        });
+
+        expect(
+            option.querySelector('[data-slot="deck-values"]')?.textContent,
+        ).toContain('+15');
+        expect(
+            screen
+                .getByRole('group', { name: new RegExp(`^${name}, 22 cards:`) })
+                .querySelectorAll('[data-slot="deck-preview-card"]'),
+        ).toHaveLength(22);
     });
 });

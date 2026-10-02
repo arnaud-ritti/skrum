@@ -37,6 +37,8 @@ function Harness({
                 onCancel={props.onCancel ?? vi.fn()}
                 errors={props.errors}
                 saving={props.saving}
+                nameRequired={props.nameRequired}
+                saveLabel={props.saveLabel}
             />
             <output data-testid="values">{value.values.join('|')}</output>
         </>
@@ -66,8 +68,8 @@ describe('deck value rules', () => {
 
     it('rejects empty, long, special, duplicate and overflowing values', () => {
         expect(checkDeckValue('', [])?.kind).toBe('empty');
-        expect(checkDeckValue('12345', [])?.kind).toBe('tooLong');
-        expect(checkDeckValue('1234', [])).toBeNull();
+        expect(checkDeckValue('123456789', [])?.kind).toBe('tooLong');
+        expect(checkDeckValue('12345678', [])).toBeNull();
         expect(checkDeckValue('☕', [])?.kind).toBe('special');
         expect(checkDeckValue('8', ['8'])).toEqual({
             kind: 'duplicate',
@@ -113,15 +115,73 @@ describe('DeckEditor', () => {
         );
     });
 
-    it('refuses a value longer than 4 characters', () => {
+    it('follows the server limit: 8 characters pass, 9 are refused', () => {
         renderWithProviders(<Harness />);
 
-        type('12345');
+        type('12345678');
+        type('123456789');
 
-        expect(currentValues()).toBe('1|2|3');
+        expect(currentValues()).toBe('1|2|3|12345678');
         expect(
-            screen.getByText('Values are 4 characters at most.'),
+            screen.getByText('Values are 8 characters at most.'),
         ).toBeTruthy();
+    });
+
+    it('holds 20 values and refuses the 21st', () => {
+        const twenty = Array.from({ length: 20 }, (_, i) => `v${i}`);
+
+        renderWithProviders(<Harness initial={{ ...base, values: twenty }} />);
+
+        type('extra');
+
+        expect(currentValues()).toBe(twenty.join('|'));
+        expect(screen.getByText('A deck has 20 values at most.')).toBeTruthy();
+        expect(screen.getAllByRole('button', { name: /^Value / })).toHaveLength(
+            20,
+        );
+    });
+
+    it('requires a name unless nameRequired is false', () => {
+        const onSave = vi.fn();
+        const { unmount } = renderWithProviders(
+            <Harness initial={{ ...base, name: '' }} />,
+        );
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Save deck',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+        unmount();
+
+        renderWithProviders(
+            <Harness
+                initial={{ ...base, name: '' }}
+                nameRequired={false}
+                saveLabel="Use these cards"
+                onSave={onSave}
+            />,
+        );
+
+        expect(
+            screen.getByRole('textbox', { name: 'Name (optional)' }),
+        ).toBeTruthy();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Use these cards' }),
+        );
+        expect(onSave).toHaveBeenCalledTimes(1);
+    });
+
+    it('caps the name at the 40 characters the server accepts', () => {
+        renderWithProviders(<Harness />);
+
+        expect(
+            screen
+                .getByRole('textbox', { name: 'Name' })
+                .getAttribute('maxlength'),
+        ).toBe('40');
     });
 
     it('disables save and says why with fewer than 2 values', () => {
@@ -223,6 +283,66 @@ describe('DeckEditor', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(currentValues()).toBe('1|5|3');
+    });
+
+    it('saves a valid chip edit when focus moves to another field and leaves focus there', async () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Value 2' }), {
+            key: 'Enter',
+        });
+        const input = screen.getByRole('textbox', { name: 'Edit value 2' });
+        const name = screen.getByRole('textbox', { name: 'Name' });
+
+        input.focus();
+        fireEvent.change(input, { target: { value: '5' } });
+        name.focus();
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        expect(currentValues()).toBe('1|5|3');
+        expect(document.activeElement).toBe(name);
+        expect(
+            screen.queryByRole('textbox', { name: /^Edit value/ }),
+        ).toBeNull();
+    });
+
+    it('restores the chip and says why when an invalid edit loses focus', async () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.doubleClick(screen.getByRole('button', { name: 'Value 2' }));
+        const input = screen.getByRole('textbox', { name: 'Edit value 2' });
+
+        input.focus();
+        fireEvent.change(input, { target: { value: '3' } });
+        addField().focus();
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        expect(currentValues()).toBe('1|2|3');
+        expect(screen.getByRole('button', { name: 'Value 2' })).toBeTruthy();
+        expect(screen.getByText('Duplicate value: 3')).toBeTruthy();
+        expect(screen.getByText('Kept 2')).toBeTruthy();
+        expect(document.activeElement).toBe(addField());
+    });
+
+    it('returns focus to the chip on Escape and drops the edit', async () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Value 2' }), {
+            key: 'Enter',
+        });
+        const input = screen.getByRole('textbox', { name: 'Edit value 2' });
+
+        fireEvent.change(input, { target: { value: '9' } });
+        fireEvent.keyDown(input, { key: 'Escape' });
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        expect(currentValues()).toBe('1|2|3');
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Value 2' }),
+        );
     });
 
     it('refuses to rename a chip into a duplicate', () => {

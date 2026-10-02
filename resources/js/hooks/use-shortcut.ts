@@ -3,11 +3,15 @@ import { useEffect, useRef } from 'react';
 export type UseShortcutOptions = {
     enabled?: boolean;
     enableOnFormTags?: boolean;
+    enableInOverlays?: boolean;
     preventDefault?: boolean;
 };
 
 const editableSelector =
-    'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
+    'input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"], [role="textbox"]';
+
+const overlaySelector =
+    '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [aria-modal="true"]';
 
 export function isEditableTarget(target: EventTarget | null): boolean {
     if (!(target instanceof Element)) {
@@ -15,6 +19,26 @@ export function isEditableTarget(target: EventTarget | null): boolean {
     }
 
     return target.closest(editableSelector) !== null;
+}
+
+/**
+ * Open dialogs, menus and other overlays a key press belongs to: those in the
+ * event path, and the one that holds focus.
+ */
+export function overlaysOfEvent(event: KeyboardEvent): Element[] {
+    const overlays = event
+        .composedPath()
+        .filter(
+            (node): node is Element =>
+                node instanceof Element && node.matches(overlaySelector),
+        );
+    const focused = document.activeElement?.closest(overlaySelector) ?? null;
+
+    if (focused !== null && !overlays.includes(focused)) {
+        overlays.push(focused);
+    }
+
+    return overlays;
 }
 
 function parseCombo(combo: string): { key: string; modifiers: Set<string> } {
@@ -76,6 +100,7 @@ export function useShortcut(
     {
         enabled = true,
         enableOnFormTags = false,
+        enableInOverlays = false,
         preventDefault = true,
     }: UseShortcutOptions = {},
 ): void {
@@ -90,6 +115,23 @@ export function useShortcut(
             return;
         }
 
+        /**
+         * A shortcut belongs to the layer it was registered in: overlays
+         * already open when it is enabled (a shortcut of the dialog itself)
+         * keep it, overlays opened later silence it. The snapshot waits for a
+         * microtask because a portal mounts after its owner's effects.
+         */
+        let ownOverlays = new Set<Element>();
+        let isRegistered = true;
+
+        queueMicrotask(() => {
+            if (isRegistered) {
+                ownOverlays = new Set(
+                    document.querySelectorAll(overlaySelector),
+                );
+            }
+        });
+
         const onKeyDown = (event: KeyboardEvent): void => {
             if (event.defaultPrevented || event.isComposing) {
                 return;
@@ -103,6 +145,15 @@ export function useShortcut(
                 return;
             }
 
+            if (
+                !enableInOverlays &&
+                overlaysOfEvent(event).some(
+                    (overlay) => !ownOverlays.has(overlay),
+                )
+            ) {
+                return;
+            }
+
             if (preventDefault) {
                 event.preventDefault();
             }
@@ -112,6 +163,9 @@ export function useShortcut(
 
         document.addEventListener('keydown', onKeyDown);
 
-        return () => document.removeEventListener('keydown', onKeyDown);
-    }, [combo, enabled, enableOnFormTags, preventDefault]);
+        return () => {
+            isRegistered = false;
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [combo, enabled, enableOnFormTags, enableInOverlays, preventDefault]);
 }

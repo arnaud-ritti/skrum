@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { DeckEditor } from '@/components/skrum/deck-editor';
@@ -52,7 +52,32 @@ const savedDeck: Deck = {
     unknownCard: false,
     breakCard: false,
     source: 'saved',
+    canManage: true,
     createdBy: { name: 'Ada Lovelace' },
+};
+
+const readOnlyDeck: Deck = {
+    id: 'saved-2',
+    name: 'Bug sizes',
+    values: ['S', 'M', 'L'],
+    unknownCard: true,
+    breakCard: false,
+    source: 'saved',
+    canManage: false,
+};
+
+const extremeValues = Array.from({ length: 20 }, (_, index) =>
+    `${index + 1} points`.slice(0, 8),
+);
+
+const extremeDeck: Deck = {
+    id: 'saved-3',
+    name: 'Estimates of the platform team 2026 (v2)',
+    values: extremeValues,
+    unknownCard: true,
+    breakCard: true,
+    source: 'saved',
+    canManage: true,
 };
 
 const filledDraft: DeckDraft = {
@@ -74,22 +99,51 @@ function Example({ label, children }: { label: string; children: ReactNode }) {
 function Picker({
     initial,
     decks,
-    withEdit = false,
+    withManage = false,
 }: {
     initial: string;
     decks: Deck[];
-    withEdit?: boolean;
+    withManage?: boolean;
 }) {
     const [value, setValue] = useState(initial);
+    const [current, setCurrent] = useState(decks);
 
     return (
         <DeckPicker
             value={value}
             onValueChange={setValue}
-            decks={decks}
+            decks={current}
             onCreate={() => undefined}
-            onEdit={withEdit ? () => undefined : undefined}
+            onEdit={withManage ? () => undefined : undefined}
+            onDelete={
+                withManage
+                    ? (id) =>
+                          setCurrent((list) =>
+                              list.filter((deck) => deck.id !== id),
+                          )
+                    : undefined
+            }
         />
+    );
+}
+
+function PickerWithOpenConfirmation({ decks }: { decks: Deck[] }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // The dialog is fixed to the viewport: this state comes first and fills one
+    // viewport, so the dialog covers nothing else in a full-page capture.
+    useEffect(() => {
+        containerRef.current
+            ?.querySelector<HTMLButtonElement>(
+                '[data-slot="deck-manage"] button:last-of-type',
+            )
+            ?.click();
+    }, []);
+
+    return (
+        <div ref={containerRef} className="min-h-dvh">
+            <Picker initial="saved-1" decks={decks} withManage />
+        </div>
     );
 }
 
@@ -97,10 +151,14 @@ function Editor({
     initial,
     errors,
     saving,
+    nameRequired,
+    saveLabel,
 }: {
     initial: DeckDraft;
     errors?: { name?: string; values?: string };
     saving?: boolean;
+    nameRequired?: boolean;
+    saveLabel?: string;
 }) {
     const [draft, setDraft] = useState(initial);
 
@@ -111,6 +169,8 @@ function Editor({
                 onChange={setDraft}
                 errors={errors}
                 saving={saving}
+                nameRequired={nameRequired}
+                saveLabel={saveLabel}
                 onSave={() => undefined}
                 onCancel={() => undefined}
             />
@@ -123,6 +183,9 @@ export default function DeckPickerSection() {
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
+            <Example label={t('Picker: delete confirmation open')}>
+                <PickerWithOpenConfirmation decks={[savedDeck]} />
+            </Example>
             <Example
                 label={t(
                     'Picker: default card, hover (hover a card), create card',
@@ -132,14 +195,30 @@ export default function DeckPickerSection() {
             </Example>
             <Example
                 label={t(
-                    'Picker: selected card, saved deck with author and edit button',
+                    'Picker: selected card, saved deck with author, edit and delete (delete asks for confirmation); a saved deck the user cannot manage has neither',
                 )}
             >
                 <Picker
                     initial="saved-1"
-                    decks={[...builtinDecks, savedDeck]}
-                    withEdit
+                    decks={[...builtinDecks, savedDeck, readOnlyDeck]}
+                    withManage
                 />
+            </Example>
+            <Example label={t('Picker: no deck at all')}>
+                <Picker initial="" decks={[]} />
+            </Example>
+            <Example
+                label={t(
+                    'Picker: 20 values of 8 characters and a 40-character name, narrow container (20rem)',
+                )}
+            >
+                <div className="w-80 max-w-full">
+                    <Picker
+                        initial="saved-3"
+                        decks={[extremeDeck]}
+                        withManage
+                    />
+                </div>
             </Example>
             <Example label={t('Picker: narrow container (20rem)')}>
                 <div className="w-80 max-w-full">
@@ -152,6 +231,33 @@ export default function DeckPickerSection() {
                 )}
             >
                 <Editor initial={filledDraft} />
+            </Example>
+            <Example
+                label={t(
+                    'Editor: one-off custom deck, name optional, in a 20rem container',
+                )}
+            >
+                <div className="w-80 max-w-full">
+                    <Editor
+                        initial={{ ...filledDraft, name: '' }}
+                        nameRequired={false}
+                        saveLabel={t('Use these cards')}
+                    />
+                </div>
+            </Example>
+            <Example
+                label={t(
+                    'Editor: 20 values of 8 characters (the field refuses a 21st)',
+                )}
+            >
+                <Editor
+                    initial={{
+                        name: extremeDeck.name,
+                        values: extremeValues,
+                        unknownCard: true,
+                        breakCard: true,
+                    }}
+                />
             </Example>
             <Example label={t('Editor: empty (create mode), save disabled')}>
                 <Editor
@@ -181,14 +287,14 @@ export default function DeckPickerSection() {
             </Example>
             <Example
                 label={t(
-                    'Validation: value longer than 4 characters (type 12345 in the field)',
+                    'Validation: value longer than 8 characters (type 123456789 in the field)',
                 )}
             >
                 <Editor
                     initial={filledDraft}
                     errors={{
                         values: t('Values are :count characters at most.', {
-                            count: 4,
+                            count: 8,
                         }),
                     }}
                 />

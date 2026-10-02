@@ -89,6 +89,106 @@ describe('useShortcut', () => {
         expect(handler).not.toHaveBeenCalled();
     });
 
+    it('ignores events coming from role textbox and plaintext-only editors', () => {
+        const handler = vi.fn();
+        const { container } = render(<Probe combo="n" handler={handler} />);
+        const textbox = document.createElement('div');
+        const plain = document.createElement('div');
+
+        textbox.setAttribute('role', 'textbox');
+        plain.setAttribute('contenteditable', 'plaintext-only');
+        container.append(textbox, plain);
+
+        fireEvent.keyDown(textbox, { key: 'n' });
+        fireEvent.keyDown(plain, { key: 'n' });
+
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it.each(['dialog', 'alertdialog', 'menu', 'listbox'])(
+        'ignores a key pressed inside a %s opened after the shortcut',
+        async (role) => {
+            const handler = vi.fn();
+            const { container } = render(<Probe combo="r" handler={handler} />);
+
+            await Promise.resolve();
+
+            const overlay = document.createElement('div');
+            const button = document.createElement('button');
+
+            overlay.setAttribute('role', role);
+            overlay.append(button);
+            container.append(overlay);
+
+            fireEvent.keyDown(button, { key: 'r' });
+
+            expect(handler).not.toHaveBeenCalled();
+
+            overlay.remove();
+            fireEvent.keyDown(document.body, { key: 'r' });
+
+            expect(handler).toHaveBeenCalledTimes(1);
+        },
+    );
+
+    it('ignores a key pressed on the page while focus is inside a modal overlay', async () => {
+        const handler = vi.fn();
+        const { container } = render(<Probe combo="r" handler={handler} />);
+
+        await Promise.resolve();
+
+        const overlay = document.createElement('div');
+        const button = document.createElement('button');
+
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.append(button);
+        container.append(overlay);
+        button.focus();
+
+        fireEvent.keyDown(document.body, { key: 'r' });
+
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('keeps a shortcut registered by an overlay that was already open', async () => {
+        const overlay = document.createElement('div');
+        const button = document.createElement('button');
+
+        overlay.setAttribute('role', 'dialog');
+        overlay.append(button);
+        document.body.append(overlay);
+
+        const handler = vi.fn();
+        render(<Probe combo="/" handler={handler} />);
+
+        await Promise.resolve();
+        fireEvent.keyDown(button, { key: '/' });
+        overlay.remove();
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires inside overlays when enableInOverlays is set', async () => {
+        const handler = vi.fn();
+        const { container } = render(
+            <Probe
+                combo="r"
+                handler={handler}
+                options={{ enableInOverlays: true }}
+            />,
+        );
+
+        await Promise.resolve();
+
+        const overlay = document.createElement('div');
+
+        overlay.setAttribute('role', 'dialog');
+        container.append(overlay);
+        fireEvent.keyDown(overlay, { key: 'r' });
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
     it('stops listening after unmount', () => {
         const handler = vi.fn();
         const { unmount } = render(<Probe combo="n" handler={handler} />);

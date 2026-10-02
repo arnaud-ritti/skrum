@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import {
     BreakCard,
+    DeckMaxNameLength,
     DeckMaxValueLength,
     DeckMaxValues,
     DeckMinValues,
@@ -32,6 +33,8 @@ export interface DeckEditorProps {
     onChange: (deck: DeckDraft) => void;
     errors?: { name?: string; values?: string };
     saving?: boolean;
+    nameRequired?: boolean;
+    saveLabel?: string;
     onSave: () => void;
     onCancel: () => void;
     className?: string;
@@ -126,6 +129,8 @@ export function DeckEditor({
     onChange,
     errors,
     saving = false,
+    nameRequired = true,
+    saveLabel,
     onSave,
     onCancel,
     className,
@@ -133,11 +138,13 @@ export function DeckEditor({
     const { t } = useTrans();
     const nameId = useId();
     const nameErrorId = useId();
+    const nameHelpId = useId();
     const valuesLabelId = useId();
     const valuesMessageId = useId();
     const valuesHelpId = useId();
     const addInputRef = useRef<HTMLInputElement>(null);
     const chipRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+    const isLeavingEditByKey = useRef(false);
     const [draft, setDraft] = useState('');
     const [problem, setProblem] = useState<ValueProblem | null>(null);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -178,7 +185,7 @@ export function DeckEditor({
             : undefined);
 
     const saveDisabled =
-        saving || tooFew || value.name.trim() === '' || editingIndex !== null;
+        saving || tooFew || (nameRequired && value.name.trim() === '');
 
     function setValues(next: string[], message: string) {
         onChange({ ...value, values: next });
@@ -250,22 +257,28 @@ export function DeckEditor({
     }
 
     function startEditing(index: number) {
+        isLeavingEditByKey.current = false;
         setEditingIndex(index);
         setEditingText(values[index]);
         setProblem(null);
     }
 
-    function commitEditing() {
+    /**
+     * Enter keeps focus on the chip. Leaving the field (Tab, click elsewhere)
+     * saves a valid edit and restores the chip otherwise, and never pulls
+     * focus back.
+     */
+    function commitEditing(trigger: 'key' | 'blur') {
         if (editingIndex === null) {
             return;
         }
 
         const index = editingIndex;
         const candidate = normalizeDeckValue(editingText);
+        const refocus = trigger === 'key';
 
         if (candidate === values[index]) {
-            setEditingIndex(null);
-            focusChip(index);
+            leaveEditing(index, refocus);
 
             return;
         }
@@ -275,31 +288,42 @@ export function DeckEditor({
             values.filter((_, position) => position !== index),
         );
 
-        if (found) {
+        if (found && trigger === 'key') {
             setProblem(found);
 
             return;
         }
 
-        setProblem(null);
-        setEditingIndex(null);
+        if (found) {
+            leaveEditing(index, false);
+            setProblem(found.kind === 'empty' ? null : found);
+            setAnnouncement(t('Kept :value', { value: values[index] }));
+
+            return;
+        }
+
+        leaveEditing(index, refocus);
         setValues(
             values.map((existing, position) =>
                 position === index ? candidate : existing,
             ),
             t('Changed :from to :to', { from: values[index], to: candidate }),
         );
-        focusChip(index);
     }
 
-    function cancelEditing() {
-        const index = editingIndex;
-
+    function leaveEditing(index: number, refocus: boolean) {
+        isLeavingEditByKey.current = refocus;
         setEditingIndex(null);
         setProblem(null);
 
-        if (index !== null) {
+        if (refocus) {
             focusChip(index);
+        }
+    }
+
+    function cancelEditing() {
+        if (editingIndex !== null) {
+            leaveEditing(editingIndex, true);
         }
     }
 
@@ -395,19 +419,34 @@ export function DeckEditor({
                             htmlFor={nameId}
                             className="text-sm font-semibold"
                         >
-                            {t('Name')}
+                            {nameRequired ? t('Name') : t('Name (optional)')}
                         </label>
                         <Input
                             id={nameId}
+                            maxLength={DeckMaxNameLength}
                             value={value.name}
                             onChange={(event) =>
                                 onChange({ ...value, name: event.target.value })
                             }
                             aria-invalid={errors?.name ? true : undefined}
                             aria-describedby={
-                                errors?.name ? nameErrorId : undefined
+                                errors?.name
+                                    ? nameErrorId
+                                    : nameRequired
+                                      ? undefined
+                                      : nameHelpId
                             }
                         />
+                        {!nameRequired && !errors?.name ? (
+                            <p
+                                id={nameHelpId}
+                                className="text-xs text-muted-foreground"
+                            >
+                                {t(
+                                    'Give it a name to save this deck for the team.',
+                                )}
+                            </p>
+                        ) : null}
                         {errors?.name ? (
                             <p
                                 id={nameErrorId}
@@ -442,7 +481,7 @@ export function DeckEditor({
                                     addInputRef.current?.focus();
                                 }
                             }}
-                            className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-card p-1.5 aria-invalid:border-destructive"
+                            className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-card p-1.5 has-[[data-slot=deck-add-input]:focus-visible]:border-ring has-[[data-slot=deck-add-input]:focus-visible]:ring-2 has-[[data-slot=deck-add-input]:focus-visible]:ring-ring aria-invalid:border-destructive"
                         >
                             {values.map((chip, index) => (
                                 <li
@@ -452,7 +491,7 @@ export function DeckEditor({
                                         editingIndex === index || undefined
                                     }
                                     className={cn(
-                                        'inline-flex h-7.5 items-center gap-0.5 rounded-sm border bg-muted pr-0.5 pl-1.5 font-display text-sm font-bold',
+                                        'inline-flex h-7.5 max-w-full min-w-0 items-center gap-0.5 rounded-sm border bg-muted pr-0.5 pl-1.5 font-display text-sm font-bold whitespace-nowrap',
                                         editingIndex === index &&
                                             'bg-card ring-2 ring-ring ring-offset-1 ring-offset-background',
                                     )}
@@ -474,11 +513,17 @@ export function DeckEditor({
                                                 );
                                                 setProblem(null);
                                             }}
-                                            onBlur={cancelEditing}
+                                            onBlur={() => {
+                                                if (
+                                                    !isLeavingEditByKey.current
+                                                ) {
+                                                    commitEditing('blur');
+                                                }
+                                            }}
                                             onKeyDown={(event) => {
                                                 if (event.key === 'Enter') {
                                                     event.preventDefault();
-                                                    commitEditing();
+                                                    commitEditing('key');
                                                 }
 
                                                 if (event.key === 'Escape') {
@@ -486,7 +531,7 @@ export function DeckEditor({
                                                     cancelEditing();
                                                 }
                                             }}
-                                            className="h-6 w-14 min-w-0 bg-transparent px-1 text-sm font-bold outline-none"
+                                            className="h-6 w-24 max-w-full min-w-0 bg-transparent px-1 text-sm font-bold outline-none"
                                         />
                                     ) : (
                                         <button
@@ -552,6 +597,7 @@ export function DeckEditor({
                             <li className="flex min-w-24 flex-1 items-center gap-1.5">
                                 <input
                                     ref={addInputRef}
+                                    data-slot="deck-add-input"
                                     value={draft}
                                     onChange={(event) => {
                                         setDraft(event.target.value);
@@ -661,22 +707,30 @@ export function DeckEditor({
 
             <div className="flex flex-wrap items-center justify-end gap-3 border-t px-5 py-3">
                 {saveDisabled && !saving && tooFew ? (
-                    <span className="mr-auto text-xs text-muted-foreground">
+                    <span className="mr-auto min-w-0 text-xs text-muted-foreground">
                         {t('Add at least :count values.', {
                             count: DeckMinValues,
                         })}
                     </span>
                 ) : null}
-                <Button type="button" variant="outline" onClick={onCancel}>
-                    {t('Cancel')}
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="max-w-full min-w-0"
+                    onClick={onCancel}
+                >
+                    <span className="truncate">{t('Cancel')}</span>
                 </Button>
                 <LoadingButton
                     type="button"
                     loading={saving}
                     disabled={saveDisabled}
+                    className="max-w-full min-w-0"
                     onClick={onSave}
                 >
-                    {t('Save deck')}
+                    <span className="truncate">
+                        {saveLabel ?? t('Save deck')}
+                    </span>
                 </LoadingButton>
             </div>
         </div>

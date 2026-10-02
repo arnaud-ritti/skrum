@@ -2,44 +2,66 @@ import {
     ArrowRight,
     Check,
     CircleCheck,
+    Crown,
     Eye,
     RotateCcw,
     Split,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { useShortcut } from '@/hooks/use-shortcut';
-import type { Participant } from '@/components/skrum/presence-stack';
+import { PokerCard } from '@/components/skrum/poker-card';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
+import { isSpecialCard } from '@/lib/poker/types';
+import type {
+    PokerRevealReason,
+    PokerResult as ServerPokerResult,
+} from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
 
 export type PokerValue = string;
 
-export interface PokerSeat {
-    user: Participant;
-    state: 'waiting' | 'voted' | 'absent';
-    value?: PokerValue;
+export interface PokerSeatUser {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    presence?: number;
+    isMe?: boolean;
 }
 
-export interface PokerResult {
-    mean: number | null;
-    median: number | null;
-    mode: PokerValue;
-    agreement: number;
-    consensus: boolean;
-    distribution: { value: PokerValue; count: number }[];
-    outliers: string[];
+export interface PokerSeat {
+    user: PokerSeatUser;
+    state: 'waiting' | 'voted' | 'absent' | 'watching';
+    value?: PokerValue | null;
+    offline?: boolean;
 }
+
+/**
+ * The server result as it is, plus the statistics of the design system the
+ * server does not compute yet: each one is shown only when it is given.
+ */
+export type PokerResult = ServerPokerResult & {
+    median?: number | null;
+    agreement?: number;
+    outliers?: string[];
+};
 
 export interface PokerStory {
     key?: string;
@@ -47,16 +69,41 @@ export interface PokerStory {
     url?: string;
 }
 
-export interface PokerTableProps {
-    story: PokerStory;
-    seats: PokerSeat[];
-    revealed: boolean;
-    result?: PokerResult;
+type FacilitatorActionProps = {
     isFacilitator?: boolean;
-    onReveal?: () => void;
+    busy?: boolean;
+    estimate?: PokerValue | null;
+    estimateValues?: PokerValue[];
+    isNumeric?: boolean;
+    nextDisabled?: boolean;
+    shortcuts?: boolean;
     onRevote?: () => void;
     onAccept?: (value: PokerValue) => void;
     onNext?: () => void;
+};
+
+export interface PokerTableProps extends FacilitatorActionProps {
+    story: PokerStory;
+    seats: PokerSeat[];
+    revealed: boolean;
+    result?: PokerResult | null;
+    anonymous?: boolean;
+    revealReason?: PokerRevealReason | null;
+    facilitatorId?: string | null;
+    locale?: string;
+    seatMenu?: (seat: PokerSeat) => ReactNode;
+    votingTools?: ReactNode;
+    onReveal?: () => void;
+    className?: string;
+}
+
+export interface PokerResultPanelProps extends FacilitatorActionProps {
+    result: PokerResult;
+    seats?: PokerSeat[];
+    story: PokerStory;
+    anonymous?: boolean;
+    revealReason?: PokerRevealReason | null;
+    locale?: string;
     className?: string;
 }
 
@@ -66,16 +113,55 @@ const CascadeMaxMs = 400;
 const DistributionMaxRem = 4.5;
 const DistributionMinRem = 0.25;
 
-function formatNumber(value: number | null): string {
-    if (value === null) {
-        return '–';
-    }
+type Translate = (
+    key: string,
+    replacements?: Record<string, string | number>,
+) => string;
 
-    return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+function formatNumber(value: number, locale?: string): string {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
+        value,
+    );
 }
 
 function storyLabel(story: PokerStory): string {
     return story.key ? `${story.key} · ${story.title}` : story.title;
+}
+
+function toPresence(value: number | undefined): AvatarPresence | undefined {
+    if (value === undefined || !Number.isInteger(value)) {
+        return undefined;
+    }
+
+    return value >= 1 && value <= 12 ? (value as AvatarPresence) : undefined;
+}
+
+function hasCountableVotes(result: PokerResult): boolean {
+    return result.average !== null || result.mode.length > 0;
+}
+
+function showsAverage(result: PokerResult, isNumeric?: boolean): boolean {
+    return isNumeric !== false && result.average !== null;
+}
+
+/** Nearest card for numeric decks, the single mode otherwise. */
+export function suggestedEstimate(
+    result: PokerResult | null | undefined,
+    isNumeric?: boolean,
+): PokerValue | null {
+    if (!result) {
+        return null;
+    }
+
+    if (isNumeric !== false && result.nearestCard !== null) {
+        return result.nearestCard;
+    }
+
+    if (isNumeric === true) {
+        return null;
+    }
+
+    return result.mode.length === 1 ? result.mode[0] : null;
 }
 
 function splitSeats(count: number): {
@@ -97,69 +183,6 @@ function splitSeats(count: number): {
     };
 }
 
-function PokerCardSlot({
-    seat,
-    revealed,
-    outlier,
-    index,
-}: {
-    seat: PokerSeat;
-    revealed: boolean;
-    outlier: boolean;
-    index: number;
-}) {
-    const hasCard = seat.state === 'voted';
-    const isSpecial = seat.value === '☕' || seat.value === '?';
-
-    if (!hasCard) {
-        return (
-            <span
-                aria-hidden
-                data-slot="poker-card"
-                data-face="empty"
-                className="block h-14 w-10 rounded-md border-2 border-dashed border-input"
-            />
-        );
-    }
-
-    return (
-        <span
-            aria-hidden
-            data-slot="poker-card"
-            data-face={revealed ? 'up' : 'down'}
-            data-outlier={outlier || undefined}
-            className="block h-14 w-10"
-            style={{ perspective: '37.5rem' }}
-        >
-            <span
-                className="flip-3d relative block size-full"
-                style={{
-                    transform: revealed ? 'rotateY(0deg)' : 'rotateY(180deg)',
-                    transitionDelay: revealed
-                        ? `${Math.min(index * CascadeStepMs, CascadeMaxMs)}ms`
-                        : '0ms',
-                }}
-            >
-                <span
-                    className={cn(
-                        'absolute inset-0 flex items-center justify-center rounded-md border border-border bg-card font-display text-lg font-bold shadow-card backface-hidden',
-                        isSpecial
-                            ? 'text-muted-foreground'
-                            : 'text-secondary-foreground',
-                        outlier && 'ring-2 ring-skrum-warning',
-                    )}
-                >
-                    {revealed ? seat.value : null}
-                </span>
-                <span
-                    className="absolute inset-0 rounded-md border border-primary bg-primary shadow-card backface-hidden"
-                    style={{ transform: 'rotateY(180deg)' }}
-                />
-            </span>
-        </span>
-    );
-}
-
 function Trema() {
     return (
         <span aria-hidden className="inline-flex items-center gap-0.5">
@@ -172,69 +195,142 @@ function Trema() {
     );
 }
 
+function seatLabel(
+    t: Translate,
+    seat: PokerSeat,
+    shownValue: PokerValue | null,
+    revealed: boolean,
+    outlier: boolean,
+    isFacilitator: boolean,
+): string {
+    const name = seat.user.isMe ? t('You') : seat.user.name;
+    const withDetail = (label: string, detail: string): string =>
+        t(':label, :detail', { label, detail });
+    let label = t(':name, thinking', { name });
+
+    if (shownValue !== null) {
+        label = outlier
+            ? t(':name, :value, worth discussing', { name, value: shownValue })
+            : t(':name, :value', { name, value: shownValue });
+    } else if (seat.state === 'voted') {
+        label = t(':name, voted', { name });
+    } else if (seat.state === 'absent') {
+        label = t(':name, absent', { name });
+    } else if (revealed) {
+        label = t(':name, no vote', { name });
+    }
+
+    if (isFacilitator) {
+        label = withDetail(label, t('Facilitator'));
+    }
+
+    if (seat.offline) {
+        label = withDetail(label, t('Offline'));
+    }
+
+    return label;
+}
+
 function SeatView({
     seat,
     index,
     revealed,
+    anonymous,
     outlier,
+    isFacilitator,
+    menu,
     reverse,
 }: {
     seat: PokerSeat;
     index: number;
     revealed: boolean;
+    anonymous: boolean;
     outlier: boolean;
+    isFacilitator: boolean;
+    menu?: ReactNode;
     reverse?: boolean;
 }) {
     const { t } = useTrans();
     const name = seat.user.isMe ? t('You') : seat.user.name;
-    const hasShownValue = revealed && seat.state === 'voted';
-    const value = seat.value ?? '–';
-    const label = hasShownValue
-        ? outlier
-            ? t(':name, :value, worth discussing', { name, value })
-            : t(':name, :value', { name, value })
-        : seat.state === 'voted'
-          ? t(':name, voted', { name })
-          : seat.state === 'absent'
-            ? t(':name, absent', { name })
-            : t(':name, thinking', { name });
+    const hasCard = seat.state === 'voted';
+    const shownValue =
+        revealed && !anonymous && hasCard && seat.value != null
+            ? seat.value
+            : null;
+    const hasMenu = menu !== null && menu !== undefined && menu !== false;
 
     return (
         <div
             role="group"
-            aria-label={label}
+            aria-label={seatLabel(
+                t,
+                seat,
+                shownValue,
+                revealed,
+                outlier,
+                isFacilitator,
+            )}
             data-slot="poker-seat"
             data-state={seat.state}
             className={cn(
-                'flex w-16 min-w-0 flex-col items-center gap-1.5',
-                reverse && 'flex-col-reverse',
-                seat.state === 'absent' && 'opacity-60',
+                'flex w-18 min-w-0 shrink flex-col items-center gap-1.5',
+                reverse && '@md/poker:flex-col-reverse',
+                (seat.state === 'absent' || seat.offline) && 'opacity-60',
             )}
         >
-            <PokerCardSlot
-                seat={seat}
-                revealed={revealed}
-                outlier={outlier}
-                index={index}
-            />
-            <span className="inline-flex max-w-full items-center gap-1 text-xs font-medium whitespace-nowrap text-foreground">
+            <span
+                aria-hidden
+                data-slot="poker-seat-card"
+                data-face={
+                    !hasCard ? 'empty' : shownValue !== null ? 'up' : 'down'
+                }
+                data-outlier={outlier || undefined}
+                className="flex"
+            >
+                <PokerCard
+                    value={shownValue ?? ''}
+                    size="sm"
+                    empty={!hasCard}
+                    faceDown={hasCard && shownValue === null}
+                    delay={Math.min(index * CascadeStepMs, CascadeMaxMs)}
+                    className={cn(outlier && 'ring-2 ring-skrum-warning')}
+                />
+            </span>
+            <span className="inline-flex max-w-full min-w-0 items-center gap-1 text-xs font-medium whitespace-nowrap text-foreground">
                 <PersonAvatar
                     name={seat.user.name}
+                    src={seat.user.avatarUrl}
                     size="xs"
                     decorative
-                    presence={
-                        seat.user.presence >= 1 && seat.user.presence <= 12
-                            ? (seat.user.presence as AvatarPresence)
-                            : undefined
-                    }
+                    presence={toPresence(seat.user.presence)}
                 />
                 <span className="truncate">{name}</span>
+                {isFacilitator && (
+                    <Crown
+                        aria-hidden
+                        data-slot="poker-seat-facilitator"
+                        className="size-3 shrink-0 text-skrum-warning-text"
+                    />
+                )}
             </span>
-            {!revealed && (
+            {hasMenu && (
+                <span data-slot="poker-seat-menu" className="flex max-w-full">
+                    {menu}
+                </span>
+            )}
+            {seat.offline && (
+                <span
+                    aria-hidden
+                    className="max-w-full truncate text-overline text-muted-foreground"
+                >
+                    {t('Offline')}
+                </span>
+            )}
+            {!revealed && !seat.offline && (
                 <span
                     aria-hidden
                     className={cn(
-                        'inline-flex items-center gap-1 text-overline whitespace-nowrap',
+                        'inline-flex max-w-full items-center gap-1 text-overline whitespace-nowrap',
                         seat.state === 'voted'
                             ? 'text-skrum-success-text'
                             : 'text-muted-foreground',
@@ -242,120 +338,20 @@ function SeatView({
                 >
                     {seat.state === 'voted' && (
                         <>
-                            <Check className="size-3" />
-                            {t('voted')}
+                            <Check className="size-3 shrink-0" />
+                            <span className="truncate">{t('voted')}</span>
                         </>
                     )}
                     {seat.state === 'waiting' && (
                         <>
                             <Trema />
-                            {t('thinking')}
+                            <span className="truncate">{t('thinking')}</span>
                         </>
                     )}
-                    {seat.state === 'absent' && t('absent')}
-                </span>
-            )}
-        </div>
-    );
-}
-
-function ShortcutTooltip({
-    shortcut,
-    label,
-    children,
-}: {
-    shortcut: string;
-    label: string;
-    children: ReactNode;
-}) {
-    return (
-        <Tooltip>
-            <TooltipTrigger asChild>{children}</TooltipTrigger>
-            <TooltipContent>{`${label} (${shortcut})`}</TooltipContent>
-        </Tooltip>
-    );
-}
-
-function TableCenter({
-    story,
-    seats,
-    revealed,
-    result,
-    isFacilitator,
-    onReveal,
-}: Pick<
-    PokerTableProps,
-    'story' | 'seats' | 'revealed' | 'result' | 'isFacilitator' | 'onReveal'
->) {
-    const { t } = useTrans();
-    const voters = seats.filter((seat) => seat.state !== 'absent');
-    const votedCount = voters.filter((seat) => seat.state === 'voted').length;
-    const title = storyLabel(story);
-
-    return (
-        <div
-            data-slot="poker-table-center"
-            className="flex min-w-0 flex-col items-center gap-2 text-center"
-        >
-            {story.url ? (
-                <a
-                    href={story.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="max-w-full truncate rounded-sm text-body-sm font-semibold text-secondary-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    {title}
-                </a>
-            ) : (
-                <span className="max-w-full truncate text-body-sm font-semibold text-secondary-foreground">
-                    {title}
-                </span>
-            )}
-            {revealed ? (
-                result && (
-                    <>
-                        <span className="text-xs text-secondary-foreground">
-                            {t('Mean')}
-                        </span>
-                        <span
-                            data-slot="poker-mean"
-                            className="font-display text-display-lg font-bold text-secondary-foreground"
-                        >
-                            {formatNumber(result.mean)}
-                        </span>
-                        <ConsensusBadge consensus={result.consensus} />
-                    </>
-                )
-            ) : (
-                <>
-                    <div className="w-36">
-                        <Progress
-                            value={votedCount}
-                            max={Math.max(voters.length, 1)}
-                            tone="primary"
-                            aria-label={t('Voting progress')}
-                        />
-                    </div>
-                    <span
-                        role="status"
-                        aria-live="polite"
-                        data-slot="poker-progress"
-                        className="text-xs text-secondary-foreground"
-                    >
-                        {t(':voted of :total voted', {
-                            voted: votedCount,
-                            total: voters.length,
-                        })}
-                    </span>
-                    {isFacilitator && onReveal && (
-                        <ShortcutTooltip shortcut="R" label={t('Reveal')}>
-                            <Button type="button" size="sm" onClick={onReveal}>
-                                <Eye aria-hidden />
-                                {t('Reveal')}
-                            </Button>
-                        </ShortcutTooltip>
+                    {seat.state === 'absent' && (
+                        <span className="truncate">{t('absent')}</span>
                     )}
-                </>
+                </span>
             )}
         </div>
     );
@@ -376,9 +372,130 @@ function ConsensusBadge({
             shape="pill"
             icon={consensus ? CircleCheck : Split}
             data-slot="poker-verdict"
+            className="max-w-full"
         >
-            {children ?? (consensus ? t('Consensus') : t('Needs discussion'))}
+            <span className="truncate">
+                {children ??
+                    (consensus ? t('Consensus') : t('Needs discussion'))}
+            </span>
         </Badge>
+    );
+}
+
+function TableCenter({
+    story,
+    voters,
+    revealed,
+    result,
+    isNumeric,
+    locale,
+    isFacilitator,
+    busy,
+    onReveal,
+}: {
+    story: PokerStory;
+    voters: PokerSeat[];
+    revealed: boolean;
+    result?: PokerResult | null;
+    isNumeric?: boolean;
+    locale?: string;
+    isFacilitator: boolean;
+    busy: boolean;
+    onReveal?: () => void;
+}) {
+    const { t } = useTrans();
+    const present = voters.filter((seat) => seat.state !== 'absent');
+    const votedCount = voters.filter((seat) => seat.state === 'voted').length;
+    const title = storyLabel(story);
+
+    return (
+        <div
+            data-slot="poker-table-center"
+            className="flex w-full min-w-0 flex-col items-center gap-2 text-center"
+        >
+            {story.url ? (
+                <a
+                    href={story.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="max-w-full truncate rounded-sm text-body-sm font-semibold text-secondary-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    {title}
+                </a>
+            ) : (
+                <span className="max-w-full truncate text-body-sm font-semibold text-secondary-foreground">
+                    {title}
+                </span>
+            )}
+            {revealed && result && !hasCountableVotes(result) && (
+                <span className="max-w-full text-xs text-secondary-foreground">
+                    {t('No countable votes')}
+                </span>
+            )}
+            {revealed && result && hasCountableVotes(result) && (
+                <>
+                    <span className="max-w-full truncate text-xs text-secondary-foreground">
+                        {showsAverage(result, isNumeric)
+                            ? t('Average')
+                            : t('Most played')}
+                    </span>
+                    <span
+                        data-slot="poker-headline"
+                        className="max-w-full truncate font-display text-display-lg font-bold text-secondary-foreground"
+                    >
+                        {showsAverage(result, isNumeric) &&
+                        result.average !== null
+                            ? formatNumber(result.average, locale)
+                            : result.mode.join(', ')}
+                    </span>
+                    <ConsensusBadge consensus={result.consensus} />
+                </>
+            )}
+            {!revealed && (
+                <>
+                    <div className="w-36 max-w-full">
+                        <Progress
+                            value={votedCount}
+                            max={Math.max(present.length, 1)}
+                            tone="primary"
+                            aria-label={t('Voting progress')}
+                        />
+                    </div>
+                    <span
+                        role="status"
+                        aria-live="polite"
+                        data-slot="poker-progress"
+                        className="max-w-full text-xs text-secondary-foreground"
+                    >
+                        {t(':voted of :total voted', {
+                            voted: votedCount,
+                            total: present.length,
+                        })}
+                    </span>
+                    {isFacilitator && onReveal && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="max-w-full min-w-0"
+                                    disabled={busy || votedCount === 0}
+                                    onClick={onReveal}
+                                >
+                                    <Eye aria-hidden />
+                                    <span className="truncate">
+                                        {t('Show votes')}
+                                    </span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent shortcut={['R']}>
+                                {t('Show votes')}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </>
+            )}
+        </div>
     );
 }
 
@@ -394,7 +511,7 @@ function Distribution({ result }: { result: PokerResult }) {
         .join(', ');
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
             {asTable ? (
                 <table
                     data-slot="poker-distribution-table"
@@ -424,12 +541,13 @@ function Distribution({ result }: { result: PokerResult }) {
             ) : (
                 <div
                     role="img"
+                    tabIndex={0}
                     aria-label={t('Distribution: :summary', { summary })}
                     data-slot="poker-distribution"
-                    className="flex items-end gap-2 pb-6"
+                    className="flex max-w-full items-end gap-2 overflow-x-auto rounded-sm p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     {result.distribution.map((entry) => {
-                        const isMode = entry.value === result.mode;
+                        const isMode = result.mode.includes(entry.value);
                         const height = Math.max(
                             (entry.count / maxCount) * DistributionMaxRem,
                             DistributionMinRem,
@@ -441,16 +559,19 @@ function Distribution({ result }: { result: PokerResult }) {
                                 data-slot="poker-dist-bar"
                                 data-mode={isMode || undefined}
                                 data-count={entry.count}
-                                className={cn(
-                                    'relative w-9 rounded-t-md',
-                                    isMode
-                                        ? 'bg-primary'
-                                        : 'bg-skrum-primary-soft',
-                                    entry.count === 0 && 'opacity-50',
-                                )}
-                                style={{ height: `${height}rem` }}
+                                className="flex min-w-9 shrink-0 flex-col items-center gap-1"
                             >
-                                <span className="absolute inset-x-0 top-full pt-1 text-center text-overline font-semibold text-muted-foreground">
+                                <span
+                                    className={cn(
+                                        'w-full rounded-t-md',
+                                        isMode
+                                            ? 'bg-primary'
+                                            : 'bg-skrum-primary-soft',
+                                        entry.count === 0 && 'opacity-50',
+                                    )}
+                                    style={{ height: `${height}rem` }}
+                                />
+                                <span className="text-overline font-semibold whitespace-nowrap text-muted-foreground">
                                     {entry.value}
                                 </span>
                             </div>
@@ -462,29 +583,34 @@ function Distribution({ result }: { result: PokerResult }) {
                 type="button"
                 variant="link"
                 size="sm"
-                className="self-start px-0"
+                className="max-w-full min-w-0 self-start px-0"
                 aria-pressed={asTable}
                 onClick={() => setAsTable((current) => !current)}
             >
-                {asTable ? t('View as chart') : t('View as table')}
+                <span className="truncate">
+                    {asTable ? t('View as chart') : t('View as table')}
+                </span>
             </Button>
         </div>
     );
 }
 
 function helpSentence(
-    t: (key: string, replacements?: Record<string, string | number>) => string,
+    t: Translate,
     result: PokerResult,
     seats: PokerSeat[],
     story: PokerStory,
+    anonymous: boolean,
 ): string {
     if (result.consensus) {
         return t('Estimate kept for :story.', { story: storyLabel(story) });
     }
 
-    const outliers = result.outliers
-        .map((id) => seats.find((seat) => seat.user.id === id))
-        .filter((seat): seat is PokerSeat => seat !== undefined);
+    const outliers = anonymous
+        ? []
+        : (result.outliers ?? [])
+              .map((id) => seats.find((seat) => seat.user.id === id))
+              .filter((seat): seat is PokerSeat => seat !== undefined);
 
     if (outliers.length === 2) {
         return t(
@@ -508,41 +634,197 @@ function helpSentence(
     return t('The outliers explain their estimates, then we revote.');
 }
 
-export function PokerResultPanel({
+function estimateOptions(
+    result: PokerResult | null | undefined,
+    estimateValues: PokerValue[] | undefined,
+    extras: (PokerValue | null | undefined)[],
+): PokerValue[] {
+    const base =
+        estimateValues ??
+        (result?.distribution ?? [])
+            .map((entry) => entry.value)
+            .filter((value) => !isSpecialCard(value));
+    const options = [...base];
+
+    for (const extra of extras) {
+        if (extra && !options.includes(extra)) {
+            options.push(extra);
+        }
+    }
+
+    return options;
+}
+
+function ResultActions({
     result,
-    seats,
-    story,
-    isFacilitator,
+    busy = false,
+    estimate,
+    estimateValues,
+    isNumeric,
+    nextDisabled = false,
+    shortcuts = true,
     onRevote,
     onAccept,
     onNext,
-    className,
-}: {
-    result: PokerResult;
-    seats: PokerSeat[];
-    story: PokerStory;
-    isFacilitator?: boolean;
-    onRevote?: () => void;
-    onAccept?: (value: PokerValue) => void;
-    onNext?: () => void;
-    className?: string;
+}: Omit<FacilitatorActionProps, 'isFacilitator'> & {
+    result?: PokerResult | null;
 }) {
+    const { t } = useTrans();
+    const [choice, setChoice] = useState<PokerValue | null>(null);
+    const suggestion = suggestedEstimate(result, isNumeric);
+    const value = choice ?? estimate ?? suggestion ?? '';
+    const options = estimateOptions(result, estimateValues, [
+        estimate,
+        suggestion,
+    ]);
+    const consensus = result?.consensus === true;
+    const canAccept = !!onAccept && value !== '' && !busy;
+    const canNext = !!onNext && !nextDisabled && !busy;
+
+    useShortcut('mod+enter', () => onAccept?.(value), {
+        enabled: shortcuts && canAccept,
+    });
+    useShortcut('n', () => onNext?.(), { enabled: shortcuts && canNext });
+
+    if (!onRevote && !onAccept && !onNext) {
+        return null;
+    }
+
+    return (
+        <div
+            role="group"
+            aria-label={t('Facilitator tools')}
+            data-slot="poker-actions"
+            className="flex min-w-0 flex-wrap items-center gap-2"
+        >
+            {onRevote && (
+                <Button
+                    type="button"
+                    size="sm"
+                    variant={consensus ? 'outline' : 'default'}
+                    className="max-w-full min-w-0"
+                    disabled={busy}
+                    onClick={onRevote}
+                >
+                    <RotateCcw aria-hidden />
+                    <span className="truncate">{t('Re-vote')}</span>
+                </Button>
+            )}
+            {onAccept && (
+                <>
+                    <Select value={value} onValueChange={setChoice}>
+                        <SelectTrigger
+                            size="sm"
+                            className="w-28 max-w-full"
+                            aria-label={t('Estimate')}
+                        >
+                            <SelectValue placeholder={t('Estimate')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {options.map((card) => (
+                                <SelectItem key={card} value={card}>
+                                    {card}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={consensus ? 'default' : 'outline'}
+                                className="max-w-full min-w-0"
+                                disabled={!canAccept}
+                                onClick={() => onAccept(value)}
+                            >
+                                <Check aria-hidden />
+                                <span className="truncate">
+                                    {t('Save estimate')}
+                                </span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent shortcut={['⌘/Ctrl', '↵']}>
+                            {t('Save estimate')}
+                        </TooltipContent>
+                    </Tooltip>
+                </>
+            )}
+            {onNext && <NextTaskButton disabled={!canNext} onNext={onNext} />}
+        </div>
+    );
+}
+
+function NextTaskButton({
+    disabled,
+    onNext,
+}: {
+    disabled: boolean;
+    onNext: () => void;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="max-w-full min-w-0"
+                    disabled={disabled}
+                    onClick={onNext}
+                >
+                    <span className="truncate">{t('Next task')}</span>
+                    <ArrowRight aria-hidden />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent shortcut={['N']}>{t('Next task')}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex max-w-full min-w-0 flex-col gap-0.5">
+            <dd className="order-1 truncate font-display text-display-lg font-bold text-foreground">
+                {value}
+            </dd>
+            <dt className="order-2 text-xs text-muted-foreground">{label}</dt>
+        </div>
+    );
+}
+
+/**
+ * Lowest and highest estimate that got a vote. The server sends the
+ * distribution in deck order, so no value is parsed as a number here.
+ */
+function spreadOf(result: PokerResult): [PokerValue, PokerValue] | null {
+    const played = result.distribution
+        .filter((entry) => entry.count > 0 && !isSpecialCard(entry.value))
+        .map((entry) => entry.value);
+
+    return played.length > 1 ? [played[0], played[played.length - 1]] : null;
+}
+
+export function PokerResultPanel({
+    result,
+    seats = [],
+    story,
+    anonymous = false,
+    revealReason,
+    locale,
+    isFacilitator,
+    className,
+    ...actions
+}: PokerResultPanelProps) {
     const { t } = useTrans();
     const voteCount = result.distribution.reduce(
         (sum, entry) => sum + entry.count,
         0,
     );
-    const numericValues = result.distribution
-        .filter((entry) => entry.count > 0)
-        .map((entry) => Number(entry.value))
-        .filter((value) => Number.isFinite(value));
-    const spread =
-        numericValues.length > 1
-            ? t('Spread :min → :max', {
-                  min: Math.min(...numericValues),
-                  max: Math.max(...numericValues),
-              })
-            : null;
+    const spread = spreadOf(result);
+    const countable = hasCountableVotes(result);
 
     return (
         <section
@@ -554,126 +836,152 @@ export function PokerResultPanel({
                 className,
             )}
         >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-ui-lg font-semibold text-foreground">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <h3 className="min-w-0 text-ui-lg font-semibold text-foreground">
                     {t('Result · :count votes', { count: voteCount })}
                 </h3>
-                <ConsensusBadge consensus={result.consensus}>
-                    {result.consensus
-                        ? t('Consensus')
-                        : (spread ?? t('Needs discussion'))}
-                </ConsensusBadge>
+                {countable && (
+                    <ConsensusBadge consensus={result.consensus}>
+                        {result.consensus
+                            ? t('Consensus')
+                            : spread
+                              ? t('Spread :min → :max', {
+                                    min: spread[0],
+                                    max: spread[1],
+                                })
+                              : t('Needs discussion')}
+                    </ConsensusBadge>
+                )}
             </div>
-            <dl className="flex flex-wrap gap-8">
-                <Stat label={t('Mean')} value={formatNumber(result.mean)} />
-                <Stat label={t('Median')} value={formatNumber(result.median)} />
-                <Stat
-                    label={t('Agreement (mode :mode)', { mode: result.mode })}
-                    value={`${Math.round(result.agreement * 100)}%`}
-                />
-            </dl>
-            <Distribution result={result} />
-            <p className="text-sm text-muted-foreground">
-                {helpSentence(t, result, seats, story)}
-            </p>
-            {isFacilitator && (
-                <div className="flex flex-wrap items-center gap-2">
-                    {result.consensus ? (
-                        <>
-                            <span
-                                aria-hidden
-                                className="flex h-10 w-7 items-center justify-center rounded-md border border-primary bg-card font-display text-base font-bold text-secondary-foreground shadow-card ring-2 ring-primary"
-                            >
-                                {result.mode}
-                            </span>
-                            {onAccept && (
-                                <ShortcutTooltip
-                                    shortcut="⌘/Ctrl+↵"
-                                    label={t('Accept')}
-                                >
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => onAccept(result.mode)}
-                                    >
-                                        <Check aria-hidden />
-                                        {t('Accept :value points', {
-                                            value: result.mode,
-                                        })}
-                                    </Button>
-                                </ShortcutTooltip>
-                            )}
-                            {onNext && (
-                                <ShortcutTooltip
-                                    shortcut="N"
-                                    label={t('Next story')}
-                                >
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={onNext}
-                                    >
-                                        {t('Next story')}
-                                        <ArrowRight aria-hidden />
-                                    </Button>
-                                </ShortcutTooltip>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {onRevote && (
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={onRevote}
-                                >
-                                    <RotateCcw aria-hidden />
-                                    {t('Revote')}
-                                </Button>
-                            )}
-                            {onAccept && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onAccept(result.mode)}
-                                >
-                                    {t('Keep :value', { value: result.mode })}
-                                </Button>
-                            )}
-                            {onNext && (
-                                <ShortcutTooltip
-                                    shortcut="N"
-                                    label={t('Next story')}
-                                >
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={onNext}
-                                    >
-                                        {t('Next story')}
-                                        <ArrowRight aria-hidden />
-                                    </Button>
-                                </ShortcutTooltip>
-                            )}
-                        </>
-                    )}
-                </div>
+            {revealReason === 'everyone_voted' && (
+                <p className="text-sm text-muted-foreground">
+                    {t('Revealed automatically — everyone voted')}
+                </p>
             )}
+            {revealReason === 'timer' && (
+                <p className="text-sm text-muted-foreground">
+                    {t("Revealed automatically — time's up")}
+                </p>
+            )}
+            {countable ? (
+                <dl className="flex min-w-0 flex-wrap gap-x-8 gap-y-4">
+                    {showsAverage(result, actions.isNumeric) &&
+                        result.average !== null && (
+                            <Stat
+                                label={t('Average')}
+                                value={formatNumber(result.average, locale)}
+                            />
+                        )}
+                    {showsAverage(result, actions.isNumeric) &&
+                        result.nearestCard !== null && (
+                            <Stat
+                                label={t('Nearest card')}
+                                value={result.nearestCard}
+                            />
+                        )}
+                    {result.median !== undefined && result.median !== null && (
+                        <Stat
+                            label={t('Median')}
+                            value={formatNumber(result.median, locale)}
+                        />
+                    )}
+                    {result.mode.length > 0 && (
+                        <Stat
+                            label={t('Most played')}
+                            value={result.mode.join(', ')}
+                        />
+                    )}
+                    {result.agreement !== undefined && (
+                        <Stat
+                            label={t('Agreement')}
+                            value={`${Math.round(result.agreement * 100)}%`}
+                        />
+                    )}
+                </dl>
+            ) : (
+                <p className="text-sm text-muted-foreground">
+                    {t('No countable votes')}
+                </p>
+            )}
+            <Distribution result={result} />
+            {countable && (
+                <p className="text-sm text-muted-foreground">
+                    {helpSentence(t, result, seats, story, anonymous)}
+                </p>
+            )}
+            {isFacilitator && <ResultActions result={result} {...actions} />}
         </section>
     );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function AnonymousValues({ result }: { result: PokerResult }) {
+    const { t } = useTrans();
+    const values = result.distribution.flatMap(({ value, count }) =>
+        Array.from({ length: count }, () => value),
+    );
+
     return (
-        <div className="flex flex-col gap-0.5">
-            <dd className="order-1 font-display text-display-lg font-bold text-foreground">
-                {value}
-            </dd>
-            <dt className="order-2 text-xs text-muted-foreground">{label}</dt>
-        </div>
+        <section
+            aria-label={t('Anonymous votes')}
+            data-slot="poker-anonymous-votes"
+            className="flex min-w-0 flex-col gap-2"
+        >
+            <h3 className="text-sm font-medium text-muted-foreground">
+                {t('Anonymous votes')}
+            </h3>
+            <ul className="flex flex-wrap gap-2">
+                {values.map((value, index) => (
+                    <li key={`${value}-${index}`} className="flex">
+                        <PokerCard value={value} size="sm" />
+                    </li>
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+function WatchingRow({
+    watchers,
+    seatMenu,
+}: {
+    watchers: PokerSeat[];
+    seatMenu?: (seat: PokerSeat) => ReactNode;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <section
+            aria-label={t('Watching')}
+            data-slot="poker-watching"
+            className="flex min-w-0 flex-col gap-2"
+        >
+            <h3 className="text-sm font-medium text-muted-foreground">
+                {t('Watching')}
+            </h3>
+            <ul className="flex min-w-0 flex-wrap gap-3">
+                {watchers.map((seat) => (
+                    <li
+                        key={seat.user.id}
+                        className={cn(
+                            'flex max-w-full min-w-0 items-center gap-2',
+                            seat.offline && 'opacity-60',
+                        )}
+                    >
+                        <PersonAvatar
+                            name={seat.user.name}
+                            src={seat.user.avatarUrl}
+                            size="xs"
+                            decorative
+                            presence={toPresence(seat.user.presence)}
+                        />
+                        <span className="truncate text-sm">
+                            {seat.user.isMe ? t('You') : seat.user.name}
+                        </span>
+                        {seatMenu?.(seat)}
+                    </li>
+                ))}
+            </ul>
+        </section>
     );
 }
 
@@ -682,7 +990,19 @@ export function PokerTable({
     seats,
     revealed,
     result,
+    anonymous = false,
+    revealReason,
+    facilitatorId,
+    locale,
+    seatMenu,
+    votingTools,
     isFacilitator = false,
+    busy = false,
+    estimate,
+    estimateValues,
+    isNumeric,
+    nextDisabled = false,
+    shortcuts = true,
     onReveal,
     onRevote,
     onAccept,
@@ -690,112 +1010,163 @@ export function PokerTable({
     className,
 }: PokerTableProps) {
     const { t } = useTrans();
-    const outlierIds = new Set(revealed ? (result?.outliers ?? []) : []);
-    const isOval = seats.length <= MaxOvalSeats;
-    const canAccept =
-        isFacilitator && revealed && result !== undefined && !!onAccept;
+    const players = seats.filter((seat) => seat.state !== 'watching');
+    const watchers = seats.filter((seat) => seat.state === 'watching');
+    const outlierIds = new Set(
+        revealed && !anonymous ? (result?.outliers ?? []) : [],
+    );
+    const isOval = players.length <= MaxOvalSeats;
+    const hasVotes = players.some((seat) => seat.state === 'voted');
+    const tableLabel = t('Poker table, :story', {
+        story: story.key ?? story.title,
+    });
+    const actions = {
+        busy,
+        estimate,
+        estimateValues,
+        isNumeric,
+        nextDisabled,
+        shortcuts,
+        onRevote,
+        onAccept,
+        onNext,
+    };
 
     useShortcut('r', () => onReveal?.(), {
-        enabled: isFacilitator && !revealed && !!onReveal,
+        enabled:
+            shortcuts &&
+            isFacilitator &&
+            !revealed &&
+            !!onReveal &&
+            hasVotes &&
+            !busy,
     });
-    useShortcut('n', () => onNext?.(), {
-        enabled: isFacilitator && revealed && !!onNext,
-    });
-    useShortcut(
-        'mod+enter',
-        () => {
-            if (result) {
-                onAccept?.(result.mode);
-            }
-        },
-        { enabled: canAccept },
-    );
 
     const renderSeat = (index: number, reverse?: boolean) => (
         <SeatView
-            key={seats[index].user.id}
-            seat={seats[index]}
+            key={players[index].user.id}
+            seat={players[index]}
             index={index}
             revealed={revealed}
-            outlier={outlierIds.has(seats[index].user.id)}
+            anonymous={anonymous}
+            outlier={outlierIds.has(players[index].user.id)}
+            isFacilitator={
+                facilitatorId != null &&
+                players[index].user.id === facilitatorId
+            }
+            menu={seatMenu?.(players[index])}
             reverse={reverse}
         />
     );
     const center = (
         <TableCenter
             story={story}
-            seats={seats}
+            voters={players}
             revealed={revealed}
             result={result}
+            isNumeric={isNumeric}
+            locale={locale}
             isFacilitator={isFacilitator}
+            busy={busy}
             onReveal={onReveal}
         />
     );
-    const { top, left, right, bottom } = splitSeats(seats.length);
+    const { top, left, right, bottom } = splitSeats(players.length);
+    const seatGrid =
+        'grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] justify-items-center gap-3';
+    const seatBar =
+        'col-span-full flex w-full min-w-0 items-center justify-center rounded-xl bg-secondary px-6 py-4 shadow-card';
 
     return (
         <div
             data-slot="poker-table"
-            className={cn('flex min-w-0 flex-col gap-6', className)}
+            className={cn(
+                '@container/poker flex min-w-0 flex-col gap-6',
+                className,
+            )}
         >
             {isOval ? (
                 <div
                     role="group"
-                    aria-label={t('Poker table, :story', {
-                        story: story.key ?? story.title,
-                    })}
+                    aria-label={tableLabel}
                     data-layout="oval"
-                    className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] grid-rows-[auto_8.25rem_auto] items-center gap-3"
+                    className={cn(
+                        seatGrid,
+                        '@md/poker:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
+                    )}
                 >
-                    <div className="col-span-3 row-start-1 flex justify-around gap-2">
+                    <div className="contents justify-around gap-2 @md/poker:col-span-3 @md/poker:row-start-1 @md/poker:flex @md/poker:w-full">
                         {top.map((index) => renderSeat(index, true))}
                     </div>
-                    <div className="col-start-1 row-start-2 flex flex-col items-center gap-3">
+                    <div className="contents flex-col items-center gap-3 @md/poker:col-start-1 @md/poker:row-start-2 @md/poker:flex">
                         {left.map((index) => renderSeat(index))}
                     </div>
                     <div
                         data-slot="poker-oval"
-                        className="col-start-2 row-start-2 flex h-full min-w-0 items-center justify-center rounded-full bg-secondary px-6 shadow-card"
+                        className={cn(
+                            seatBar,
+                            '-order-1 @md/poker:order-none @md/poker:col-span-1 @md/poker:col-start-2 @md/poker:row-start-2 @md/poker:h-full @md/poker:rounded-full',
+                        )}
                     >
                         {center}
                     </div>
-                    <div className="col-start-3 row-start-2 flex flex-col items-center gap-3">
+                    <div className="contents flex-col items-center gap-3 @md/poker:col-start-3 @md/poker:row-start-2 @md/poker:flex">
                         {right.map((index) => renderSeat(index))}
                     </div>
-                    <div className="col-span-3 row-start-3 flex justify-around gap-2">
+                    <div className="contents justify-around gap-2 @md/poker:col-span-3 @md/poker:row-start-3 @md/poker:flex @md/poker:w-full">
                         {bottom.map((index) => renderSeat(index))}
                     </div>
                 </div>
             ) : (
                 <div
                     role="group"
-                    aria-label={t('Poker table, :story', {
-                        story: story.key ?? story.title,
-                    })}
+                    aria-label={tableLabel}
                     data-layout="grid"
-                    className="flex flex-col gap-4"
+                    className={seatGrid}
                 >
-                    <div
-                        data-slot="poker-bar"
-                        className="rounded-xl bg-secondary px-6 py-4 shadow-card"
-                    >
+                    <div data-slot="poker-bar" className={seatBar}>
                         {center}
                     </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] justify-items-center gap-3">
-                        {seats.map((_, index) => renderSeat(index))}
-                    </div>
+                    {players.map((_, index) => renderSeat(index))}
                 </div>
+            )}
+            {!revealed && isFacilitator && (votingTools || onNext) && (
+                <div
+                    role="group"
+                    aria-label={t('Facilitator tools')}
+                    data-slot="poker-actions"
+                    className="flex min-w-0 flex-wrap items-center justify-center gap-2"
+                >
+                    {votingTools}
+                    {onNext && (
+                        <NextTaskButton
+                            disabled={nextDisabled || busy}
+                            onNext={onNext}
+                        />
+                    )}
+                </div>
+            )}
+            {revealed && anonymous && result && (
+                <AnonymousValues result={result} />
+            )}
+            {watchers.length > 0 && (
+                <WatchingRow watchers={watchers} seatMenu={seatMenu} />
             )}
             {revealed && result && (
                 <PokerResultPanel
+                    key={story.key ?? story.title}
                     result={result}
-                    seats={seats}
+                    seats={players}
                     story={story}
+                    anonymous={anonymous}
+                    revealReason={revealReason}
+                    locale={locale}
                     isFacilitator={isFacilitator}
-                    onRevote={onRevote}
-                    onAccept={onAccept}
-                    onNext={onNext}
+                    {...actions}
                 />
+            )}
+            {revealed && !result && isFacilitator && (
+                <ResultActions key={story.key ?? story.title} {...actions} />
             )}
         </div>
     );
