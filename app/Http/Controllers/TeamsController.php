@@ -13,6 +13,7 @@ use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
+use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
@@ -22,6 +23,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,6 +62,7 @@ class TeamsController extends Controller
         IcebreakerGameOptions $icebreakerGameOptions,
         BuildWhiteboardGallery $buildWhiteboardGallery,
         TopTeamTemplates $topTeamTemplates,
+        GameRulesRegistry $gameRulesRegistry,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -93,6 +96,10 @@ class TeamsController extends Controller
             ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
             'icebreakerGames' => $icebreakerGameOptions->options(),
+            'gameOptions' => $gameRulesRegistry->options(new GameRoom(['team_id' => $team->id])),
+            'canCreateGameRoom' => $request->user()->can('createGameRoom', $team)
+                && $team->gameRooms()->whereNull('retro_id')->count() < GameRoom::MaxRoomsPerTeam,
+            'roomLimit' => GameRoom::MaxRoomsPerTeam,
             'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement): array => [
                 'id' => $statement->id ?? $statement->key(),
                 ...$this->presentHealthStatement->handle($statement),

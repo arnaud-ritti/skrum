@@ -57,6 +57,9 @@ type Props = {
     canManageHealthStatements: boolean;
     llm: LlmAvailability;
     icebreakerGames: GameOption[];
+    gameOptions: GameOption[];
+    canCreateGameRoom: boolean;
+    roomLimit: number;
     pokerGames: PokerGameSummary[];
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
