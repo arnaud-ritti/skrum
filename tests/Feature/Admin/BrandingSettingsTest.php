@@ -687,6 +687,7 @@ it('keeps the toast of a save for the page when a helper request of that page re
         ->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('toast.message', 'Branding saved.'));
 })->with([
     'colour preview' => [fn (User $admin): string => route('admin.brandingPreview.show', ['color' => 'ffd600'])],
+    'avatar preview' => [fn (User $admin): string => route('admin.avatarPreviews.show', ['style' => 'thumbs', 'seed' => $admin->avatarSeed()])],
     'candidate search' => [fn (User $admin): string => route('admin.adminCandidates.index', ['query' => 'ada'])],
 ]);
 
