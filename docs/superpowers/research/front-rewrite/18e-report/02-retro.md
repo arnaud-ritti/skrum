@@ -694,3 +694,83 @@ Listed by the plan (B1, spec §6.4):
 New: `[P18e-02-02]` in `Plan18eRetroTest.php`. Captures: two datasets added to `RetroPagesVisualTest.php`; the captures of every other phase changed with the two new steps of the rail.
 
 Feature tests changed outside the plan's list: `tests/Feature/Integrations/WebhookEventsTest.php` (the retro completes from ROTI and reopens on it), `RetroStartTest.php`, `RetroSummaryJobTest.php`, `SurveyAnswersTest.php`, `BoardLockTest.php` (same cause).
+
+## Task R11 — ROTI phase (B2)
+
+The rating is collected in the phase `roti` and nowhere else on an open retro. `components/retro/phase-roti.tsx` is the screen: the vote on the left (`ROTIWidget` in its new `row` layout, with the hidden distribution under it), "Who has voted" on the right. `roti-control.tsx` is deleted; the rating panel of Discussing is gone. A retro that was already completed when B2 is deployed keeps its vote control beside its results (`roti.canVote`).
+
+### Back end (spec §9 B2, §9.1)
+
+| Change | Where | Done |
+|---|---|---|
+| Column `retros.roti_votable_when_completed` (boolean, default false) | `2026_10_15_100400_add_roti_votable_when_completed_to_retros_table` (up only) | yes |
+| The retros completed at deployment are marked | `2026_10_15_100500_mark_completed_retros_as_roti_votable` (up only; a second migration so that the marking can be run on its own by its test) | yes |
+| Vote and retract: `roti`, and `completed` only when marked | `Retro::takesRotiVotes()`, `RetroGuard::takesRotiVotes()`, `RetroRotiController` | yes |
+| `roti.canVote` in the board snapshot | `BuildBoardSnapshot::roti()` | yes |
+| MCP `GetRoti`: "not_started" until `roti`, "collecting" in `roti`, results once completed | `GetRoti` | yes |
+| A reopened legacy retro keeps its mark | nothing writes the column after the migration; feature test | yes |
+| Factory state | `RetroFactory::legacyRoti()` | yes |
+
+### Parity (brief 02 §3.4 rows 84–85, row 93)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 84 | Rate 1 to 5; a press on the given score takes it back | `ROTIWidget mode="vote" layout="row"`; `useRotiVote()` sends `PUT` or `DELETE retros/{retro}/roti`; `[role="group"][aria-label="How was this retro?"]`, `button[aria-pressed]`; keys 1 to 5 and the arrows inside the group | yes |
+| 84 | Confirmation | "Vote saved · you can change it until the session ends" (`role="status"`) | yes |
+| 85 | Respondent count, live | "Who has voted": the badge "n/m" and its progress bar, from `roti.voterIds` and the people present; `roti.changed` moves it for everyone | yes |
+| M8 | "Who has voted" list | everyone present, the viewer first with "(you)", each "Voted" or "Thinking…"; never a score. On a phone, the stack of those who have voted | yes |
+| D-14 | Distribution hidden until the end | "Votes hidden until the end", "Anonymous · nobody sees who voted what", the striped bar and five "?" counters; the distribution shows in the results once the session ends | yes |
+| 93 | Results; still votable on a legacy retro | `results/roti-section.tsx`: the results and the count ":count ratings"; the vote (`RotiVote`, the widget's list layout) only when `roti.canVote` | yes |
+| 4 | Facilitator bar | "Lock board", then "End session" | yes |
+| — | Rating on a locked board | accepted, as before | yes |
+| — | Live cursors | off in ROTI (a pointer on a score would show a vote) | yes |
+| — | Flying reactions | on | yes |
+| 83 | Previous action items | the button above the board, as in every phase | yes |
+| — | Action items of the retro in ROTI | the server accepts them (matrix §9.1); the ROTI mockup shows none and the screen lists none. They are reachable with "Previous" (Actions) | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `roti.nudge` of `FacilitatorDock` (`RotiTools`) | facilitator bar of ROTI, after "Lock board": "Nudge the last n" | RT-9 |
+| `roti.reveal` of `FacilitatorDock` (`RotiTools`) | facilitator bar of ROTI, before "End session": "Reveal ROTI" | RT-9 |
+
+### Differences with the mockup
+
+Captures `retro-board-roti-*` (facilitator, has voted) and `retro-board-roti-participant-*` (participant, has not voted, closed board) against frames a and b of `ScreenRetroROTI` and `ROTIWidget`. Compared by the implementer on light 1440 EN, dark 1440 FR (participant), light 390 EN (participant) and dark 390 FR.
+
+| Difference | Covered by |
+|---|---|
+| No "Nudge the last 2", no "Reveal ROTI" in the facilitator bar | D-14; places left |
+| The question reads "How was this retro?"; the mockup says "Was this time together worth it?" | no row — the plan gives `[aria-label="How was this retro?"]` verbatim and three browser tests bind it. Reported |
+| The five labels are "Time wasted", "Not really worth it", "Break-even", "Good use of time", "Excellent use of time"; the mockup says "Waste of time", "Not very useful", "OK", "Useful", "Excellent" | no row — the labels of the 18c `ROTIWidget`, bound by `Plan08d` (`P08d-03`, `04e`, `05a`) and by the results. Reported |
+| The options are toggle buttons in a group (`aria-pressed`); the mockup marks them `role="radio"` in a `radiogroup` | the plan's interface (`[role="group"]`, `button[aria-pressed]`); a radio cannot be unchecked, and a second press takes the vote back |
+| The question is an `h2`; the mockup has an `h1` | A: the page has one `h1`, the title of the session |
+| "Thinking…" with the two dots and an ellipsis; the mockup writes "Thinking" | the plan's label, verbatim |
+| The list holds who is connected, and the count is "voted among those connected"; a voter who left the room is not in it | M8 as the plan words it ("every participant present") |
+| "Lock board" in the bar | ruling 28 |
+| No countdown in the capture | no timer is running in the fixture; the timer is the shell's |
+| The captures show one person: one browser is connected | — |
+| The header rail shows the current label only for the facilitator | reported in R3 |
+| Phone: the stepper row under the header, the facilitator's timer in the bar | R13 |
+
+### Browser tests changed
+
+Listed by the plan (B2, ScreenRetroROTI):
+
+| Test | Change |
+|---|---|
+| `Plan08d` `P08d-03` | the board is created in `Roti` |
+
+Not listed, imposed by B2 and by the mockup:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan08d` `P08d-03` | "0 ratings", "1 rating", "2 ratings" → the badge `[data-slot="retro-roti-count"]` "0/2", "1/2", "2/2"; `assertDontSee('Return on time invested')` → no results section, and the hidden distribution is present | M8: the count is "n/m"; the eyebrow of the mockup says "ROTI (return on time invested)" |
+| `Plan08d` `P08d-04e`, `P08d-05a` | the completed board is created with `roti_votable_when_completed` | B2: these two tests rate on a completed retro, which only a legacy retro still allows |
+
+New: `[P18e-02-03]`, `[P18e-02-01]` in `Plan18eRetroTest.php`. Captures: two datasets added to `RetroPagesVisualTest.php`.
+
+Feature tests changed outside the plan's list: `tests/Feature/Mcp/McpSweepTest.php` (the board of the sweep is in Discussing, where `GetRoti` now answers "not_started").
+
+No test was removed. The Vitest case of `phase-discussing.test.tsx` that found the rating beside the topic now asserts it is absent.

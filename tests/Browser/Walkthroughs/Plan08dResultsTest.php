@@ -254,36 +254,38 @@ it('[P08d-02b] shows the group name above the card in presentation mode', functi
     expect($retro->fresh()->highlighted_card_id)->toBe($lead->id);
 });
 
-it('[P08d-03] counts the ratings live during Discussing, shows no distribution and still takes a rating on a locked board', function () {
-    [$retro, , $alice] = p08dBoard();
+it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribution and still takes a rating on a locked board', function () {
+    [$retro, , $alice] = p08dBoard(RetroPhase::Roti);
     $control = '[role="group"][aria-label="How was this retro?"]';
     $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $count = '[data-slot="retro-roti-count"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertPresent($control)
-            ->assertSee('0 ratings');
+            ->assertSeeIn($count, '0/2');
     }
 
     $carolPage->click($rate('Good use of time'))
         ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
-        ->assertSee('1 rating');
+        ->assertSeeIn($count, '1/2');
 
-    $alicePage->assertSee('1 rating')
+    $alicePage->assertSeeIn($count, '1/2')
         ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
 
     $alicePage->click($rate('Excellent use of time'))
         ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'true')
-        ->assertSee('2 ratings');
+        ->assertSeeIn($count, '2/2');
 
-    $carolPage->assertSee('2 ratings')
+    $carolPage->assertSeeIn($count, '2/2')
         ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'false');
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertDontSee('Average:')
-            ->assertDontSee('Return on time invested')
+            ->assertNotPresent(p08dSection('Return on time invested'))
+            ->assertPresent('[role="img"][aria-label="Distribution hidden"]')
             ->assertNotPresent('svg[aria-label="Team health radar"]');
     }
 
@@ -303,15 +305,15 @@ it('[P08d-03] counts the ratings live during Discussing, shows no distribution a
         ->click($rate('Break-even'))
         ->assertAriaAttribute($rate('Break-even'), 'pressed', 'true')
         ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'false')
-        ->assertSee('2 ratings');
+        ->assertSeeIn($count, '2/2');
 
     expect(RotiVote::query()->where('retro_id', $retro->id)->orderBy('score')->pluck('score')->all())->toBe([3, 5]);
 
     $carolPage->click($rate('Break-even'))
         ->assertAriaAttribute($rate('Break-even'), 'pressed', 'false')
-        ->assertSee('1 rating');
+        ->assertSeeIn($count, '1/2');
 
-    $alicePage->assertSee('1 rating');
+    $alicePage->assertSeeIn($count, '1/2');
 
     expect($retro->fresh()->is_locked)->toBeTrue()
         ->and(RotiVote::query()->where('retro_id', $retro->id)->pluck('score')->all())->toBe([5]);
@@ -477,7 +479,7 @@ it('[P08d-04d] lists the top topics with their group name and grouped count, and
 });
 
 it('[P08d-04e] shows the ROTI average, distribution and respondent count in the Results view', function () {
-    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed);
+    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 5]);
     $roti = p08dSection('Return on time invested');
@@ -500,7 +502,7 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
 });
 
 it('[P08d-05a] refreshes the Results view of the other browser when a rating is given or changed', function () {
-    [$retro, , $alice] = p08dBoard(RetroPhase::Completed);
+    [$retro, , $alice] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     $roti = p08dSection('Return on time invested');
     $control = '[role="group"][aria-label="How was this retro?"]';
     $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";

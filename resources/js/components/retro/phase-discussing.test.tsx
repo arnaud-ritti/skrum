@@ -242,7 +242,7 @@ describe('PhaseDiscussing', () => {
         expect(highlightCalls()).toHaveLength(0);
     });
 
-    it('keeps the action items, the rating and the suggestions beside the topic', () => {
+    it('keeps the action items and the suggestions beside the topic, and leaves the rating to the ROTI phase', () => {
         const { container } = discussion({
             actionItems: [actionItemFixture()],
             insights: {
@@ -265,8 +265,8 @@ describe('PhaseDiscussing', () => {
             within(panels).getByRole('complementary', { name: 'Suggestions' }),
         ).toBeTruthy();
         expect(
-            within(panels).getByRole('group', { name: 'How was this retro?' }),
-        ).toBeTruthy();
+            screen.queryByRole('group', { name: 'How was this retro?' }),
+        ).toBeNull();
         expect(screen.getByText('1 action so far')).toBeTruthy();
     });
 

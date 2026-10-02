@@ -3761,5 +3761,9 @@
     "Last step · ROTI (return on time invested)": "Last step · ROTI (return on time invested)",
     "Vote saved · you can change it until the session ends": "Vote saved · you can change it until the session ends",
     "Votes hidden until the end": "Votes hidden until the end",
-    "Anonymous · nobody sees who voted what": "Anonymous · nobody sees who voted what"
+    "Anonymous · nobody sees who voted what": "Anonymous · nobody sees who voted what",
+    "Who has voted": "Who has voted",
+    "Thinking…": "Thinking…",
+    "Results appear for everyone when the facilitator ends the session.": "Results appear for everyone when the facilitator ends the session.",
+    ":voted of :total have voted": ":voted of :total have voted"
 }

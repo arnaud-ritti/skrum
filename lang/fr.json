@@ -3985,5 +3985,9 @@
     "Last step · ROTI (return on time invested)": "Dernière étape · ROTI (retour sur temps investi)",
     "Vote saved · you can change it until the session ends": "Vote enregistré · modifiable jusqu’à la fin de la session",
     "Votes hidden until the end": "Votes masqués jusqu’à la fin",
-    "Anonymous · nobody sees who voted what": "Anonyme · personne ne voit qui a voté quoi"
+    "Anonymous · nobody sees who voted what": "Anonyme · personne ne voit qui a voté quoi",
+    "Who has voted": "Qui a voté",
+    "Thinking…": "Réfléchit…",
+    "Results appear for everyone when the facilitator ends the session.": "Les résultats s’affichent pour tous quand le facilitateur termine la session.",
+    ":voted of :total have voted": ":voted sur :total ont voté"
 }

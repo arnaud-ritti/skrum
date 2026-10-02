@@ -13,7 +13,6 @@ import type { Topic } from '@/lib/retro/topics';
 import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
-import { RotiControl } from './roti-control';
 import { SuggestionsPanel } from './suggestions-panel';
 import { SurveysColumn } from './surveys-column';
 import { TopicFocus, TopicUpNext } from './topic-focus';
@@ -275,21 +274,6 @@ function FollowBanner({ following }: { following?: ReactNode }) {
     );
 }
 
-/**
- * The rating of the retro, where the discussing board had it. It leaves for
- * its own phase with R11.
- */
-function RotiPanel() {
-    return (
-        <section
-            data-slot="retro-roti-panel"
-            className="min-w-0 rounded-xl border bg-card p-4 shadow-card"
-        >
-            <RotiControl />
-        </section>
-    );
-}
-
 type Props = {
     hideMyCursor: boolean;
     /** Place of the timer of the topic, between the two navigation buttons (RT-5). */
@@ -328,7 +312,6 @@ export function PhaseDiscussing({
         { id: 'notes', node: notes },
         { id: 'actions', node: <ActionItemsList linkedTo={linkedTo} /> },
         { id: 'suggestions', node: <SuggestionsPanel /> },
-        { id: 'roti', node: <RotiPanel /> },
         { id: 'surveys', node: <SurveysColumn /> },
     ];
 

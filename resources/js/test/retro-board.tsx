@@ -87,7 +87,7 @@ export function retroSnapshot({
         teamMembers: [],
         surveys: [],
         writersCount: 0,
-        roti: { myScore: null, respondents: 0, voterIds: [] },
+        roti: { myScore: null, respondents: 0, voterIds: [], canVote: false },
         results: null,
         insights: null,
         features: { llm: false, llmProvider: null },

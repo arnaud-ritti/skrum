@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
  * @property bool $icebreaker_enabled
  * @property GameKind $icebreaker_game
  * @property bool $ai_summary_enabled
+ * @property bool $roti_votable_when_completed
  * @property string|null $workspace_template_id
  * @property string|null $summary
  * @property Carbon|null $summary_generated_at
@@ -98,6 +99,19 @@ class Retro extends Model implements DeliverySubject
         }
 
         return $this->phase === RetroPhase::Voting && ! $this->hide_vote_counts;
+    }
+
+    /**
+     * The ROTI is collected in its own phase. A retro completed before that
+     * phase existed still takes ratings once completed.
+     */
+    public function takesRotiVotes(): bool
+    {
+        if ($this->phase === RetroPhase::Roti) {
+            return true;
+        }
+
+        return $this->phase === RetroPhase::Completed && $this->roti_votable_when_completed;
     }
 
     /** @return BelongsTo<WorkspaceTemplate, $this> */
@@ -304,6 +318,7 @@ class Retro extends Model implements DeliverySubject
             'ai_summary_enabled' => 'boolean',
             'health_check_enabled' => 'boolean',
             'icebreaker_enabled' => 'boolean',
+            'roti_votable_when_completed' => 'boolean',
             'icebreaker_game' => GameKind::class,
             'votes_per_participant' => 'integer',
             'votes_version' => 'integer',

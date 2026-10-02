@@ -144,6 +144,26 @@ describe('facilitatorActions', () => {
         expect(ids('roti')).toEqual(['lock']);
     });
 
+    it('leaves the places of "Nudge" and "Reveal ROTI" after the lock', () => {
+        const place = (id: string) => ({
+            id,
+            label: id,
+            icon: (() => null) as never,
+            onSelect: vi.fn(),
+        });
+
+        expect(
+            facilitatorActions(
+                'roti',
+                retroSnapshot({ retro: { phase: 'roti' } }),
+                {
+                    ...tools(),
+                    roti: { nudge: place('nudge'), reveal: place('reveal') },
+                },
+            ).map((action) => action.id),
+        ).toEqual(['lock', 'nudge', 'reveal']);
+    });
+
     it('has nothing once the retro is completed', () => {
         expect(ids('completed')).toEqual([]);
     });

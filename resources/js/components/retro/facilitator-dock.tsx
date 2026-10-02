@@ -43,6 +43,17 @@ export type FacilitatorTools = {
         onStep: (offset: -1 | 1) => void;
         onFollow: (follows: boolean) => void;
     };
+    /** The places of the ROTI phase a later plan fills (RT-9). */
+    roti?: RotiTools;
+};
+
+/**
+ * "Nudge the last voters" and "Reveal ROTI" of the ROTI mockup: nothing
+ * today, the distribution shows when the session ends.
+ */
+export type RotiTools = {
+    nudge?: FacilitatorAction;
+    reveal?: FacilitatorAction;
 };
 
 type DockBoard = Pick<Snapshot, 'retro'>;
@@ -54,7 +65,7 @@ type DockBoard = Pick<Snapshot, 'retro'>;
 export function facilitatorActions(
     phase: RetroPhase,
     board: DockBoard,
-    { t, onSetting, topics }: FacilitatorTools,
+    { t, onSetting, topics, roti }: FacilitatorTools,
 ): FacilitatorAction[] {
     if (phase === 'completed') {
         return [];
@@ -138,6 +149,12 @@ export function facilitatorActions(
                   },
               ]
             : [];
+    }
+
+    if (phase === 'roti') {
+        return [lock, roti?.nudge, roti?.reveal].filter(
+            (action): action is FacilitatorAction => action !== undefined,
+        );
     }
 
     return [lock];
@@ -269,7 +286,14 @@ const DockBottomRem = 1.5;
  * Bottom of the board: the reaction bar, and for the facilitator the bar of
  * the phase under it. The two never overlap (spec §6.4).
  */
-export function FacilitatorDock({ start }: { start?: ReactNode }) {
+export function FacilitatorDock({
+    start,
+    roti,
+}: {
+    start?: ReactNode;
+    /** Places of "Nudge" and "Reveal ROTI" in the bar of the ROTI phase (RT-9). */
+    roti?: RotiTools;
+}) {
     const ctx = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
@@ -301,6 +325,7 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
     const tools: FacilitatorTools = {
         t,
         busy,
+        roti,
         topics:
             discussion && (phase === 'discussing' || phase === 'actions')
                 ? {

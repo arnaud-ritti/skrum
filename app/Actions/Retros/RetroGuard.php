@@ -32,6 +32,15 @@ class RetroGuard
         throw new AuthorizationException(__('This action is not available in the current phase.'));
     }
 
+    public static function takesRotiVotes(Retro $retro): void
+    {
+        if ($retro->takesRotiVotes()) {
+            return;
+        }
+
+        throw new AuthorizationException(__('This action is not available in the current phase.'));
+    }
+
     public static function open(Retro $retro): void
     {
         if ($retro->phase->isOpen()) {

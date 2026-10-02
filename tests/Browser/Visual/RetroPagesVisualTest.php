@@ -17,6 +17,7 @@ use App\Models\GameRoom;
 use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Vote;
@@ -216,6 +217,14 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         ]);
     }
 
+    if ($phase === RetroPhase::Roti) {
+        RotiVote::factory()->create([
+            'retro_id' => $retro->id,
+            'participant_id' => $people[0][1]->id,
+            'score' => 4,
+        ]);
+    }
+
     if ($phase === RetroPhase::HealthCheck) {
         $retro->update(['health_check_enabled' => true]);
         resolve(FreezeHealthStatements::class)->handle($retro);
@@ -314,5 +323,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'participant, discussing, locked' => ['retro-board-discussing-locked', RetroPhase::Discussing, false, true],
     'facilitator, actions' => ['retro-board-actions', RetroPhase::Actions, true, false],
     'participant, actions, locked' => ['retro-board-actions-locked', RetroPhase::Actions, false, true],
+    'facilitator, roti, has voted' => ['retro-board-roti', RetroPhase::Roti, true, false],
+    'participant, roti, thinking, locked' => ['retro-board-roti-participant', RetroPhase::Roti, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);

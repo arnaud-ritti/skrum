@@ -1,16 +1,33 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { RotiResults } from '@/lib/retro/types';
-import { RotiControl, RotiLabels } from '../roti-control';
+import { useBoard } from '../board-context';
+import { RotiVote } from '../phase-roti';
 import { ResultsSection } from './results-section';
+
+const RotiLabels = [
+    'Time wasted',
+    'Not really worth it',
+    'Break-even',
+    'Good use of time',
+    'Excellent use of time',
+] as const;
 
 export function RotiSection({ roti }: { roti: RotiResults }) {
     const { t } = useTrans();
+    const { board } = useBoard();
+    const { canVote, respondents } = board.roti;
     const highest = Math.max(1, ...roti.distribution.map((row) => row.count));
 
     return (
         <ResultsSection title={t('Return on time invested')}>
-            <div className="grid gap-6 md:grid-cols-2">
-                <RotiControl />
+            <div
+                className={
+                    canVote
+                        ? 'grid items-start gap-6 md:grid-cols-2'
+                        : undefined
+                }
+            >
+                {canVote && <RotiVote />}
                 {roti.respondents === 0 || roti.average === null ? (
                     <p className="text-sm text-muted-foreground">
                         {t('No ratings yet.')}
@@ -48,6 +65,11 @@ export function RotiSection({ roti }: { roti: RotiResults }) {
                     </div>
                 )}
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+                {t(respondents === 1 ? ':count rating' : ':count ratings', {
+                    count: respondents,
+                })}
+            </p>
         </ResultsSection>
     );
 }

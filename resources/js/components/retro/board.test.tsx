@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Board } from '@/components/retro/board';
 import { renderWithProviders } from '@/test/render';
@@ -228,6 +228,42 @@ describe('Board', () => {
             expect(
                 screen.queryByRole('region', { name: 'Icebreaker game' }),
             ).toBeNull();
+        });
+    });
+
+    describe('in the ROTI phase', () => {
+        const rotiSnapshot = () =>
+            retroSnapshot({
+                retro: { phase: 'roti' },
+                roti: {
+                    myScore: null,
+                    respondents: 0,
+                    voterIds: [],
+                    canVote: true,
+                },
+            });
+
+        it('shows the rating and who has voted in place of the columns, and ends the session from the bar', () => {
+            const { container } = given({}, rotiSnapshot());
+
+            expect(
+                container.querySelector('[data-slot="retro-roti"]'),
+            ).not.toBeNull();
+            expect(
+                screen.getByRole('group', { name: 'How was this retro?' }),
+            ).toBeTruthy();
+            expect(
+                screen.getByRole('heading', { name: 'Who has voted' }),
+            ).toBeTruthy();
+            expect(
+                container.querySelector('[data-slot="retro-columns"]'),
+            ).toBeNull();
+            expect(
+                within(
+                    screen.getByRole('toolbar', { name: 'Facilitation tools' }),
+                ).getByRole('button', { name: 'End session' }),
+            ).toBeTruthy();
+            expect(screen.queryByText('Suggest group names')).toBeNull();
         });
     });
 });

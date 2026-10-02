@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Retros;
 
 use App\Actions\Retros\RetroGuard;
-use App\Enums\RetroPhase;
 use App\Events\Retros\RotiChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
@@ -60,7 +59,7 @@ class RetroRotiController extends Controller
 
     private function guard(Retro $retro): void
     {
-        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
+        RetroGuard::takesRotiVotes($retro);
     }
 
     /** @return array<int, string> */

@@ -32,6 +32,7 @@ import {
 } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
 import { PhaseHealth } from './phase-health';
+import { PhaseRoti } from './phase-roti';
 import {
     CompletedPanelId,
     CompletedTabId,
@@ -42,10 +43,10 @@ import { ResultsView } from './results/results-view';
 import { AddSurveyButton } from './surveys-column';
 
 /**
- * Grouping has its own banner for the suggestions; in Actions the groups are
- * no longer on screen.
+ * Grouping has its own banner for the suggestions; in Actions and ROTI the
+ * groups are no longer on screen.
  */
-const WithoutGroupNameTool: RetroPhase[] = ['grouping', 'actions'];
+const WithoutGroupNameTool: RetroPhase[] = ['grouping', 'actions', 'roti'];
 
 /**
  * What the old board header held beside the chrome, until the task of each
@@ -112,6 +113,10 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
 
     if (phase === 'actions') {
         return <PhaseActions hideMyCursor={hideMyCursor} />;
+    }
+
+    if (phase === 'roti') {
+        return <PhaseRoti />;
     }
 
     return (

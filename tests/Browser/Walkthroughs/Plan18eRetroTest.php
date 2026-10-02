@@ -9,6 +9,7 @@ use App\Models\CardComment;
 use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\Retro;
+use App\Models\RotiVote;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
@@ -85,6 +86,11 @@ function p18eShellBoard(bool $acceptsGuests = false): array
     $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
 
     return [$retro->fresh(), $alice, $bob];
+}
+
+function p18eSection(string $title): string
+{
+    return "section:has(h2:has-text(\"{$title}\"))";
 }
 
 function p18eTimerSeconds(): string
@@ -610,4 +616,178 @@ it('[P18e-02-02] creates, assigns and completes an action item in the Actions ph
 
     expect(ActionItem::query()->where('content', 'Buy a faster runner')->exists())->toBeFalse()
         ->and(ActionItem::query()->where('retro_id', $retro->id)->count())->toBe(1);
+});
+
+it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a retract move the "Who has voted" list of the other browser, which never shows a score', function () {
+    [$retro, $alice] = p18eDiscussion();
+    $control = '[role="group"][aria-label="How was this retro?"]';
+    $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $count = '[data-slot="retro-roti-count"]';
+    $voters = '[data-test="retro-roti-voters"]';
+    $states = "[...document.querySelectorAll('{$voters} > li')].map((row) => [...row.children].slice(1).map((part) => part.textContent).join(' · ')).join(' | ')";
+    $putScore = <<<'JS'
+        () => {
+            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
+
+            return fetch(`/retros/${location.pathname.split('/').pop()}/roti`, {
+                method: 'PUT',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
+                body: JSON.stringify({ score: 4 }),
+            }).then((response) => response.status);
+        }
+        JS;
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn('[aria-current="step"]', 'Discussing')
+            ->assertNotPresent($control);
+    }
+
+    expect($alicePage->script($putScore))->toBe(403)
+        ->and(RotiVote::query()->count())->toBe(0);
+
+    $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'Actions')->assertNotPresent($control);
+    $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'ROTI');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn('[aria-current="step"]', 'ROTI')
+            ->assertPresent($control)
+            ->assertSee('Who has voted')
+            ->assertSeeIn($count, '0/2')
+            ->assertSee('Votes hidden until the end')
+            ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
+    }
+
+    $alicePage->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Thinking…')
+        ->assertSeeIn('[data-slot="facilitator-bar"]', 'End session');
+    $carolPage->assertScript($states, 'Carol Guest (you) · Thinking… | Alice Martin · Thinking…')
+        ->assertNotPresent('[data-slot="facilitator-bar"]');
+
+    $carolPage->click($rate('Good use of time'))
+        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
+        ->assertSee('Vote saved · you can change it until the session ends')
+        ->assertSeeIn($count, '1/2')
+        ->assertScript($states, 'Carol Guest (you) · Voted | Alice Martin · Thinking…');
+
+    $alicePage->assertSeeIn($count, '1/2')
+        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Voted')
+        ->assertNotPresent("{$control} button[aria-pressed=\"true\"]")
+        ->assertScript("/\\d/.test(document.querySelector('{$voters}').textContent)", false)
+        ->assertDontSee('Average:');
+
+    $carolPage->click($rate('Not really worth it'))
+        ->assertAriaAttribute($rate('Not really worth it'), 'pressed', 'true')
+        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'false')
+        ->assertSeeIn($count, '1/2');
+
+    expect(RotiVote::query()->where('retro_id', $retro->id)->sole()->score)->toBe(2);
+
+    $alicePage->assertSeeIn($count, '1/2')
+        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Voted');
+
+    $carolPage->click($rate('Not really worth it'))
+        ->assertAriaAttribute($rate('Not really worth it'), 'pressed', 'false')
+        ->assertDontSee('Vote saved')
+        ->assertSeeIn($count, '0/2');
+
+    $alicePage->assertSeeIn($count, '0/2')
+        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Thinking…');
+
+    expect(RotiVote::query()->where('retro_id', $retro->id)->count())->toBe(0);
+});
+
+it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Discussing, Actions, ROTI and the completed retro without a reload', function () {
+    [$retro, $alice] = p18eShellBoard(acceptsGuests: true);
+    $start = $retro->columns()->orderBy('position')->firstOrFail();
+    $composer = "[data-test=\"retro-column-{$start->id}\"] textarea";
+    $current = '[aria-current="step"]';
+    $control = '[role="group"][aria-label="How was this retro?"]';
+    $panel = '[data-test="retro-action-items-panel"]';
+    $input = "{$panel} [aria-label=\"Add an action item…\"]";
+    $bar = '[data-slot="facilitator-bar"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->script('() => { window.__p18eSamePage = true; }');
+        $page->assertSeeIn($current, 'Writing');
+    }
+
+    $carolPage->type($composer, 'Slow CI')
+        ->keys($composer, 'Enter')
+        ->assertSeeIn('article[id^="card-"]', 'Slow CI');
+
+    $card = Card::query()->where('retro_id', $retro->id)->where('content', 'Slow CI')->sole();
+
+    $alicePage->assertPresent("#card-{$card->id}")
+        ->press('Next');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Grouping')
+            ->assertSeeIn("#card-{$card->id}", 'Slow CI');
+    }
+
+    $alicePage->press('Next');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Voting')
+            ->assertPresent("#card-{$card->id} [aria-label=\"Add a vote\"]");
+    }
+
+    $carolPage->click("#card-{$card->id} [aria-label=\"Add a vote\"]")
+        ->assertPresent("#card-{$card->id} [aria-label=\"Your votes: 1\"]");
+
+    $alicePage->press('Next');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Discussing')
+            ->assertSeeIn('[data-test="retro-topics"]', 'Slow CI')
+            ->assertPresent("#card-{$card->id} [aria-label=\"1 vote\"]")
+            ->assertNotPresent($control);
+    }
+
+    $alicePage->press('Next');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Actions')
+            ->assertSee('Most voted topics')
+            ->assertPresent($input);
+    }
+
+    $carolPage->fill($input, 'Buy a faster runner')
+        ->keys($input, 'Enter')
+        ->assertSeeIn($panel, 'Buy a faster runner');
+
+    $alicePage->assertSeeIn($panel, 'Buy a faster runner')
+        ->click("{$bar} button:has-text(\"Next phase\")");
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'ROTI')
+            ->assertPresent($control)
+            ->assertSee('Who has voted')
+            ->assertNotPresent($panel);
+    }
+
+    $carolPage->click("{$control} button:has-text(\"Excellent use of time\")")
+        ->assertSeeIn('[data-slot="retro-roti-count"]', '1/2');
+
+    $alicePage->assertSeeIn('[data-slot="retro-roti-count"]', '1/2')
+        ->assertDontSee('Average:')
+        ->click("{$bar} button:has-text(\"End session\")");
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Completed')
+            ->assertSee('Top topics')
+            ->assertSeeIn(p18eSection('Return on time invested'), 'Average: 5.0/5')
+            ->assertSeeIn(p18eSection('Return on time invested'), '1 rating')
+            ->assertNotPresent($control)
+            ->assertSee('Buy a faster runner')
+            ->assertScript('window.__p18eSamePage === true', true);
+    }
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Completed)
+        ->and($retro->fresh()->roti_votable_when_completed)->toBeFalse();
 });
