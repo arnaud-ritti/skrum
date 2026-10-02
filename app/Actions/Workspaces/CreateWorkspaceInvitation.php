@@ -6,6 +6,7 @@ use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Support\Auth\LoginAddress;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,7 @@ class CreateWorkspaceInvitation
 
         $invitation = DB::transaction(function () use ($workspace, $inviter, $email, $role, $token): WorkspaceInvitation {
             $workspace->invitations()
-                ->whereRaw('lower(email) = ?', [Str::lower($email)])
+                ->whereRaw('lower(email) = ?', [LoginAddress::normalise($email)])
                 ->whereNull('accepted_at')
                 ->delete();
 

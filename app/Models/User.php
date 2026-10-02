@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Enums\WorkspaceRole;
 use App\Jobs\Auth\SendPasswordResetLink;
+use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -85,6 +88,30 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'recap_emails' => 'boolean',
             'single_key_shortcuts' => 'boolean',
         ];
+    }
+
+    /**
+     * Every writer goes through here, so an address is only ever stored in
+     * the form it is looked up by.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $email): string => LoginAddress::normalise($email),
+        );
+    }
+
+    /**
+     * Compares normalised to normalised: rows stored before addresses were
+     * normalised may still hold capitals.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWhereAddress(Builder $query, string $email): void
+    {
+        $query->whereRaw("lower({$query->qualifyColumn('email')}) = ?", [LoginAddress::normalise($email)]);
     }
 
     public function avatarUrl(): string

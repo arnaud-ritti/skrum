@@ -9,12 +9,10 @@ use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
-use App\Support\Auth\LoginAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -32,7 +30,7 @@ class WorkspaceInvitationsController extends Controller
         ]);
 
         $isAlreadyMember = $workspace->members()
-            ->whereRaw('lower(users.email) = ?', [Str::lower($validated['email'])])
+            ->whereAddress($validated['email'])
             ->exists();
 
         if ($isAlreadyMember) {
@@ -44,7 +42,7 @@ class WorkspaceInvitationsController extends Controller
         $url = route('invitations.show', $issued->token);
 
         $recipientLocale = User::query()
-            ->whereRaw('lower(email) = ?', [Str::lower($validated['email'])])
+            ->whereAddress($validated['email'])
             ->value('locale');
 
         Notification::route('mail', $validated['email'])->notify(
@@ -69,7 +67,7 @@ class WorkspaceInvitationsController extends Controller
     private function notifyExistingAccount(string $email, WorkspaceInvitation $invitation, #[SensitiveParameter] string $url): void
     {
         $accounts = User::query()
-            ->whereRaw('lower(email) = ?', [LoginAddress::normalise($email)])
+            ->whereAddress($email)
             ->whereNotNull('email_verified_at')
             ->limit(2)
             ->get();

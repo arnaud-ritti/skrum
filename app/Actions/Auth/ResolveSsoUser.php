@@ -43,7 +43,7 @@ class ResolveSsoUser
         }
 
         $verifiedEmail = $provider->verifiedEmail($ssoUser);
-        $matchingUsers = User::query()->whereRaw('lower(email) = ?', [Str::lower($email)])->limit(2)->get();
+        $matchingUsers = User::query()->whereAddress($email)->limit(2)->get();
 
         if ($matchingUsers->count() > 1) {
             throw SsoLoginRefused::emailAlreadyUsed();

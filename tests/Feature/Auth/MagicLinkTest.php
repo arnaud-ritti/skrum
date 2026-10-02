@@ -78,7 +78,7 @@ it('mails a verified account only', function () {
 
 it('sends nothing when the address is ambiguous', function () {
     User::factory()->create(['email' => 'twin@example.test']);
-    User::factory()->create(['email' => 'Twin@example.test']);
+    User::factory()->storedWithAddress('Twin@example.test')->create();
 
     $this->post(route('magicLinks.store'), ['email' => 'twin@example.test'])->assertSessionHas('status', 'magic-link-sent');
 

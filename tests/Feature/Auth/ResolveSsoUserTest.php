@@ -46,7 +46,7 @@ it('links an existing account through a verified email, case-insensitively', fun
 
 it('refuses to link when two accounts share the address in different cases', function () {
     User::factory()->create(['email' => 'bob@example.test']);
-    User::factory()->create(['email' => 'Bob@example.test']);
+    User::factory()->storedWithAddress('Bob@example.test')->create();
 
     expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
         ->toThrow(SsoLoginRefused::class);

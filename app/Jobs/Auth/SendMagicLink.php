@@ -34,7 +34,7 @@ class SendMagicLink implements ShouldBeEncrypted, ShouldQueue
             return;
         }
 
-        $users = User::query()->whereRaw('lower(email) = ?', [$this->email])->limit(2)->get();
+        $users = User::query()->whereAddress($this->email)->limit(2)->get();
 
         if ($users->count() !== 1) {
             return;

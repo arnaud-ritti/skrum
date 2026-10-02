@@ -8,12 +8,14 @@ use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\InstanceSettings;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -46,8 +48,10 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request, RevokeLoginSecrets $revoke): RedirectResponse
     {
         $user = $request->user();
-        $user->fill($request->validated());
-        $emailChanged = $user->isDirty('email');
+        $validated = $request->validated();
+        $emailChanged = LoginAddress::normalise($validated['email']) !== LoginAddress::normalise($user->email);
+
+        $user->fill($emailChanged ? $validated : Arr::except($validated, 'email'));
 
         if ($emailChanged) {
             $user->email_verified_at = null;

@@ -134,7 +134,7 @@ it('notifies the one verified account that owns the invited address', function (
     $known = User::factory()->create(['email' => 'known@example.test']);
     $unverified = User::factory()->unverified()->create(['email' => 'unverified@example.test']);
     $twins = [
-        User::factory()->create(['email' => 'twin@example.test']),
+        User::factory()->storedWithAddress('Twin@example.test')->create(),
         User::factory()->create(['email' => 'Twin@example.test']),
     ];
 

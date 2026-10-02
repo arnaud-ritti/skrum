@@ -20,7 +20,7 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = $this->profileRules($this->user()->id);
+        $rules = $this->profileRules($this->user());
 
         if (! resolve(InstanceSettings::class)->avatarMemberChoice()) {
             return $rules;

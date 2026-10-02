@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -44,6 +45,19 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * A row written before addresses were normalised: the spelling is
+     * stored as given, past the model.
+     */
+    public function storedWithAddress(string $email): static
+    {
+        return $this->afterCreating(function (User $user) use ($email): void {
+            DB::table('users')->where('id', $user->id)->update(['email' => $email]);
+
+            $user->setRawAttributes([...$user->getAttributes(), 'email' => $email], true);
+        });
     }
 
     public function instanceAdmin(): static
