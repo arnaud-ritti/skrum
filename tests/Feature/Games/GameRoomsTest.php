@@ -291,6 +291,24 @@ it('hands hosting to another member', function () {
     Event::assertDispatched(GameRoomChanged::class);
 });
 
+it('refuses to hand hosting to an id that is not a UUID', function () {
+    $room = GameRoom::factory()->create();
+    [$hostUser] = gameRoomHost($room);
+
+    $this->actingAs($hostUser)->putJson(route('games.host.update', $room), ['player_id' => 'not-a-uuid'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('player_id');
+});
+
+it('refuses a round leader whose id is not a UUID', function () {
+    $room = GameRoom::factory()->create();
+    [$hostUser] = gameRoomHost($room);
+
+    $this->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['leader_player_id' => 'not-a-uuid'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('leader_player_id');
+});
+
 it('never hands hosting to a guest or a player of another room', function () {
     $room = GameRoom::factory()->linkAccess()->create();
     [$hostUser] = gameRoomHost($room);

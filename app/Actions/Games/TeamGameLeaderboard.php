@@ -2,9 +2,9 @@
 
 namespace App\Actions\Games;
 
-use App\Models\GamePoint;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Members only (spec §4.7): guests have no identity across rooms, removed
@@ -39,36 +39,33 @@ class TeamGameLeaderboard
      */
     public function handle(Team $team, string $period): array
     {
-        $rows = GamePoint::query()
-            ->join('users', 'users.id', '=', 'game_points.user_id')
-            ->where('game_points.team_id', $team->id)
-            ->whereIn('game_points.user_id', $team->members()->select('users.id'))
-            ->when($period === '30d', fn ($query) => $query->where('game_points.created_at', '>=', now()->subDays(30)))
-            ->groupBy('game_points.user_id', 'users.name')
-            ->selectRaw('game_points.user_id, users.name, sum(game_points.points) as total_points, sum(case when game_points.is_win then 1 else 0 end) as wins, count(*) as rounds_played')
-            ->orderByDesc('total_points')
-            ->orderByDesc('wins')
-            ->orderByRaw('lower(users.name)')
-            ->orderBy('users.name')
-            ->limit(self::Size)
-            ->toBase()
-            ->get();
+        $since = $period === '30d' ? now()->subDays(30) : null;
+        $inScope = fn (Builder $points): Builder => $points
+            ->where('team_id', $team->id)
+            ->when($since !== null, fn (Builder $recent) => $recent->where('created_at', '>=', $since));
 
-        $userIds = $rows->map(fn (object $row): string => (string) $row->user_id)->all();
-        $users = User::query()->whereKey($userIds)->get()->keyBy('id');
-        $streaks = $this->gameStreaks->forUsers($team, $userIds);
+        $members = $team->members()
+            ->whereHas('gamePoints', $inScope)
+            ->withSum(['gamePoints as total_points' => $inScope], 'points')
+            ->withCount(['gamePoints as wins' => fn (Builder $points) => $inScope($points)->where('is_win', true), 'gamePoints as rounds_played' => $inScope])
+            ->get()
+            ->sort(fn (User $first, User $second): int => [(int) $second->total_points, (int) $second->wins, mb_strtolower($first->name), $first->name, $first->id]
+                <=> [(int) $first->total_points, (int) $first->wins, mb_strtolower($second->name), $second->name, $second->id])
+            ->take(self::Size)
+            ->values();
 
-        return $rows
-            ->map(fn (object $row): array => [
-                'userId' => (string) $row->user_id,
-                'name' => (string) $row->name,
-                'avatarUrl' => $users->get((string) $row->user_id)?->avatarUrl() ?? '',
-                'points' => (int) $row->total_points,
-                'wins' => (int) $row->wins,
-                'roundsPlayed' => (int) $row->rounds_played,
-                'streak' => $streaks[(string) $row->user_id] ?? 0,
+        $streaks = $this->gameStreaks->forUsers($team, $members->modelKeys());
+
+        return $members
+            ->map(fn (User $member): array => [
+                'userId' => $member->id,
+                'name' => $member->name,
+                'avatarUrl' => $member->avatarUrl(),
+                'points' => (int) $member->total_points,
+                'wins' => (int) $member->wins,
+                'roundsPlayed' => (int) $member->rounds_played,
+                'streak' => $streaks[$member->id] ?? 0,
             ])
-            ->values()
             ->all();
     }
 }

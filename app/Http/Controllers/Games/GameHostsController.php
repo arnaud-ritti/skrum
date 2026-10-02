@@ -28,7 +28,7 @@ class GameHostsController extends Controller
         GameGuard::standalone($room);
 
         $validated = $request->validate([
-            'player_id' => ['required', 'string', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
+            'player_id' => ['required', 'string', 'uuid', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
         ]);
 
         DB::transaction(function () use ($room, $player, $validated, $announceTeamGameRoom): void {

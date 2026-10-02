@@ -51,19 +51,12 @@ class PokerDecksController extends Controller
             ? ($team->default_poker_deck ?? $decks[0]->value)
             : null;
 
-        $gamesPerDeck = $team->pokerGames()
-            ->toBase()
-            ->where('deck', '!=', PokerDeck::Custom->value)
-            ->selectRaw('deck, count(*) as games_count')
-            ->groupBy('deck')
-            ->pluck('games_count', 'deck');
-
         return array_map(fn (PokerDeck $deck): array => [
             'key' => $deck->value,
             'name' => $deck->label(),
             'cards' => $deck->cards(),
             'isDefault' => $deck->value === $defaultDeck,
-            'usageCount' => (int) ($gamesPerDeck[$deck->value] ?? 0),
+            'usageCount' => $team->pokerGames()->where('deck', $deck->value)->count(),
         ], $decks);
     }
 

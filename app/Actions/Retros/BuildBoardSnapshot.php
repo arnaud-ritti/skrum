@@ -247,15 +247,8 @@ class BuildBoardSnapshot
     {
         return DB::transaction(fn (): array => [
             Retro::query()->whereKey($retro->id)->sharedLock()->firstOrFail(['id', 'votes_version'])->votes_version,
-            $retro->votes()
-                ->selectRaw('card_id, count(*) as total')
-                ->groupBy('card_id')
-                ->pluck('total', 'card_id'),
-            $retro->votes()
-                ->where('participant_id', $viewer->id)
-                ->selectRaw('card_id, count(*) as total')
-                ->groupBy('card_id')
-                ->pluck('total', 'card_id'),
+            $retro->voteCountsByCard(),
+            $retro->voteCountsByCard($viewer),
         ]);
     }
 

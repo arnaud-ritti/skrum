@@ -15,11 +15,9 @@ class SummarizeRoti
      */
     public function handle(Retro $retro): array
     {
-        $totals = $retro->rotiVotes()
-            ->selectRaw('score, count(*) as total')
-            ->groupBy('score')
-            ->pluck('total', 'score')
-            ->mapWithKeys(fn (mixed $total, int|string $score): array => [(int) $score => (int) $total]);
+        $totals = $retro->rotiVotes()->pluck('score')
+            ->countBy()
+            ->mapWithKeys(fn (int $total, int|string $score): array => [(int) $score => $total]);
 
         $respondents = (int) $totals->sum();
         $weighted = $totals->map(fn (int $total, int $score): int => $score * $total)->sum();

@@ -7,6 +7,7 @@ use App\Models\PokerTask;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Trackers\IssueStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 /**
  * Spec 8 §5.4: a connection follows the links of its team's items that are
@@ -31,7 +32,7 @@ class TrackedIssues
         $site = $integration->site();
 
         return ActionItemExternalLink::query()
-            ->when($site === null, fn (Builder $none) => $none->whereRaw('false'))
+            ->when($site === null, fn (Builder $none) => $none->whereKey([]))
             ->where('source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->where('external_id', '!=', '')
@@ -50,7 +51,7 @@ class TrackedIssues
         $site = $integration->site();
 
         return PokerTask::query()
-            ->when($site === null, fn (Builder $none) => $none->whereRaw('false'))
+            ->when($site === null, fn (Builder $none) => $none->whereKey([]))
             ->where('external_source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->whereNotNull('external_id')
@@ -123,24 +124,23 @@ class TrackedIssues
     private function externalIds(TeamIntegration $integration, ?array $ids = null, array $repositoryIds = []): array
     {
         $found = [];
+        $prefixes = array_map(fn (string $repositoryId): string => "{$repositoryId}/", $repositoryIds);
 
         foreach ([$this->links($integration), $this->tasks($integration)] as $query) {
             if ($ids !== null) {
                 $query->whereIn('external_id', $ids);
             }
 
-            if ($repositoryIds !== []) {
-                $query->where(function (\Illuminate\Contracts\Database\Query\Builder $any) use ($repositoryIds): void {
-                    foreach ($repositoryIds as $repositoryId) {
-                        $any->orWhere('external_id', 'like', "{$repositoryId}/%");
-                    }
-                });
-            }
-
             foreach ($query->pluck('external_id') as $id) {
-                if (is_string($id) && $id !== '') {
-                    $found[$id] = true;
+                if (! is_string($id) || $id === '') {
+                    continue;
                 }
+
+                if ($prefixes !== [] && ! Str::startsWith($id, $prefixes)) {
+                    continue;
+                }
+
+                $found[$id] = true;
             }
         }
 

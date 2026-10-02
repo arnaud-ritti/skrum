@@ -133,6 +133,21 @@ it('respects the email and in-app preferences', function (bool $byEmail, bool $i
     'neither' => [false, false],
 ]);
 
+it('reminds of a new item on a second run the same day, without repeating the one already sent', function () {
+    [, $assignee, $team] = assignedReminderItem();
+    sendDueReminders();
+    $added = ActionItem::factory()->withoutRetro($team, $assignee)->assignedTo($assignee)->create(['due_on' => '2026-10-10']);
+
+    expect(sendDueReminders())->toBe(['reminders' => 1, 'users' => 1]);
+
+    Notification::assertSentTo(
+        $assignee,
+        ActionItemReminderDigestNotification::class,
+        fn (ActionItemReminderDigestNotification $notification) => $notification->reminders === [['actionItemId' => $added->id, 'kind' => 'due_soon']],
+    );
+    expect(ActionItemReminder::count())->toBe(2);
+});
+
 it('sends one digest per user with all their items', function () {
     [$first, $assignee, $team] = assignedReminderItem(['due_on' => '2026-10-08']);
     ActionItem::factory()->count(2)->withoutRetro($team, $assignee)->assignedTo($assignee)->create(['due_on' => '2026-10-11']);

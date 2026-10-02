@@ -72,6 +72,18 @@ it('gives one point per completed retro with a mood or a ROTI, in date order, wi
         ->and($points[2])->toMatchArray(['mood' => 7.5, 'moodVoters' => 2, 'roti' => null, 'rotiVoters' => 0]);
 });
 
+it('counts as mood voters only the participants who answered in that retro', function () {
+    $team = Team::factory()->create();
+    $retro = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 6]]);
+    $other = completedRetro($team, '2026-02-01 10:00:00');
+    $silentHere = Participant::factory()->create(['retro_id' => $retro->id]);
+    HealthCheckAnswer::factory()->create(['retro_id' => $other->id, 'participant_id' => $silentHere->id, 'statement' => 'vision', 'score' => 4]);
+
+    $points = collect(resolve(BuildTeamMoodTrend::class)->handle($team))->keyBy('retroId');
+
+    expect($points->get($retro->id)['moodVoters'])->toBe(1);
+});
+
 it('skips a completed retro with neither a mood nor a ROTI vote', function () {
     $team = Team::factory()->create();
     completedRetro($team, '2026-01-01 10:00:00');

@@ -52,6 +52,18 @@ it('puts the most recently used template first on equal counts', function () {
         ->and($keys[1])->toBe('swot');
 });
 
+it('counts the latest hundred retros of the team only', function () {
+    $team = Team::factory()->create();
+    $this->travelTo('2026-01-01 10:00:00');
+    retrosOn($team, 'sailboat', 3);
+    $this->travelTo('2026-02-01 10:00:00');
+    retrosOn($team, 'four_ls', 99);
+    $this->travelTo('2026-03-01 10:00:00');
+    retrosOn($team, 'start_stop_continue', 1);
+
+    expect(array_slice(resolve(TopTeamTemplates::class)->handle($team), 0, 2))->toBe(['four_ls', 'start_stop_continue']);
+});
+
 it('ignores blank retros and retros whose workspace template is gone', function () {
     $team = Team::factory()->create();
     $workspaceTemplate = WorkspaceTemplate::factory()->create(['workspace_id' => $team->workspace_id]);
