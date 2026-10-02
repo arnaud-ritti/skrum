@@ -368,6 +368,52 @@ describe('FormDialog', () => {
         ).toBe('confirm-delete-user-button');
     });
 
+    it('keeps its submit button disabled while the form is not ready', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const user = userEvent.setup();
+
+        const { rerender } = render(
+            <FormDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Personal access token"
+                submitLabel="Save token"
+                submitDisabled
+                onSubmit={onSubmit}
+            >
+                <input name="token" aria-label="Token" />
+            </FormDialog>,
+        );
+
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', {
+                name: 'Save token',
+            }).disabled,
+        ).toBe(true);
+
+        await user.type(screen.getByLabelText('Token'), 'abc{Enter}');
+
+        expect(onSubmit).not.toHaveBeenCalled();
+
+        rerender(
+            <FormDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Personal access token"
+                submitLabel="Save token"
+                onSubmit={onSubmit}
+            >
+                <input name="token" aria-label="Token" />
+            </FormDialog>,
+        );
+
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', {
+                name: 'Save token',
+            }).disabled,
+        ).toBe(false);
+    });
+
     it('has no submit button and closes on Cancel when it cannot be submitted', async () => {
         const onOpenChange = vi.fn();
 

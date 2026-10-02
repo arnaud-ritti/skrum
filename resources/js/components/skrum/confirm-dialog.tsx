@@ -47,9 +47,16 @@ type FormDialogSubmit =
           onSubmit: (data: FormData) => Promise<void>;
           /** `data-test` of the submit button. */
           submitTest?: string;
+          /** The form is not ready: the submit button is disabled and Enter sends nothing. */
+          submitDisabled?: boolean;
       }
     /** No submit button: the body explains why, the only action is Cancel. */
-    | { submitLabel?: undefined; onSubmit?: undefined; submitTest?: undefined };
+    | {
+          submitLabel?: undefined;
+          onSubmit?: undefined;
+          submitTest?: undefined;
+          submitDisabled?: undefined;
+      };
 
 export type FormDialogProps = DialogShellProps & {
     description?: string;
@@ -263,6 +270,7 @@ export function FormDialog({
     submitLabel,
     onSubmit,
     submitTest,
+    submitDisabled = false,
     tone = 'default',
     children,
     unavailableMessage,
@@ -292,7 +300,7 @@ export function FormDialog({
             return;
         }
 
-        if (pending) {
+        if (pending || submitDisabled) {
             return;
         }
 
@@ -354,7 +362,7 @@ export function FormDialog({
                                 variant={
                                     destructive ? 'destructive' : 'default'
                                 }
-                                disabled={pending}
+                                disabled={pending || submitDisabled}
                                 data-test={submitTest}
                             >
                                 {pending ? (
