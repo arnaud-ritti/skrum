@@ -50,6 +50,8 @@ export type IcebreakerGameCardProps = {
     inPlay?: boolean;
     /** For a narrow two-column picker: the game's icon alone stands for the illustration. */
     compact?: boolean;
+    /** For who watches the choice of someone else: the card tells the choice and takes no click. */
+    readOnly?: boolean;
     onSelect?: (game: IcebreakerGame) => void;
     className?: string;
 };
@@ -262,6 +264,7 @@ export function IcebreakerGameCard({
     selected = false,
     inPlay = false,
     compact = false,
+    readOnly = false,
     onSelect,
     className,
 }: IcebreakerGameCardProps) {
@@ -296,12 +299,13 @@ export function IcebreakerGameCard({
             data-selected={selected}
             data-unavailable={unavailable}
             data-compact={compact || undefined}
+            data-readonly={readOnly || undefined}
             aria-checked={selected}
-            aria-disabled={unavailable || undefined}
+            aria-disabled={unavailable || readOnly || undefined}
             aria-labelledby={titleId}
             aria-describedby={describedByAttribute}
             onClick={() => {
-                if (unavailable) {
+                if (unavailable || readOnly) {
                     return;
                 }
 
@@ -311,9 +315,11 @@ export function IcebreakerGameCard({
                 '@container/card relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card p-0 text-left text-card-foreground shadow-card',
                 'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 'motion-safe:transition-[box-shadow,transform] motion-safe:duration-140 motion-safe:ease-standard',
-                unavailable
-                    ? 'cursor-not-allowed opacity-55'
-                    : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-raised',
+                unavailable && 'cursor-not-allowed opacity-55',
+                !unavailable && readOnly && 'cursor-default',
+                !unavailable &&
+                    !readOnly &&
+                    'cursor-pointer hover:-translate-y-0.5 hover:shadow-raised',
                 selected && 'border-primary shadow-raised ring-2 ring-primary',
                 className,
             )}
