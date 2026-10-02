@@ -160,6 +160,68 @@ describe('RetroCard', () => {
         expect(onVote).not.toHaveBeenCalled();
     });
 
+    it('takes a vote back when the budget is spent, by the button and by Shift+V', () => {
+        const onVote = vi.fn();
+        renderWithProviders(
+            card({
+                votes: { total: 1, mine: 1 },
+                canVote: false,
+                canUnvote: true,
+                onVote,
+            }),
+        );
+
+        fireEvent.keyDown(screen.getByRole('article'), { key: 'v' });
+        expect(onVote).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove a vote' }));
+        fireEvent.keyDown(screen.getByRole('article'), {
+            key: 'V',
+            shiftKey: true,
+        });
+
+        expect(onVote.mock.calls).toEqual([[-1], [-1]]);
+    });
+
+    it('has no "Remove a vote" where no vote can be taken back', () => {
+        const { rerender } = renderWithProviders(
+            card({ votes: { total: 1, mine: 1 }, canVote: false }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Remove a vote' }),
+        ).toBeNull();
+
+        rerender(
+            card({
+                votes: { total: 1, mine: 0 },
+                canVote: true,
+                canUnvote: true,
+            }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Remove a vote' }),
+        ).toBeNull();
+    });
+
+    it('keeps the focus on the card when the last vote is taken back from a spent budget', () => {
+        const spent = (mine: number) =>
+            card({
+                votes: { total: mine, mine },
+                canVote: false,
+                canUnvote: true,
+            });
+        const { rerender } = renderWithProviders(spent(1));
+        const remove = screen.getByRole('button', { name: 'Remove a vote' });
+
+        remove.focus();
+        fireEvent.click(remove);
+        rerender(spent(0));
+
+        expect(document.activeElement).toBe(screen.getByRole('article'));
+    });
+
     it('keeps the reason of a closed vote reachable next to the disabled button', () => {
         renderWithProviders(
             card({

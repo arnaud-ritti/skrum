@@ -79,6 +79,11 @@ export type RetroCardProps = Omit<
     dragging?: boolean;
     ghost?: boolean;
     canVote?: boolean;
+    /**
+     * A vote can be taken back. Defaults to `canVote`; a host sets it apart
+     * when the budget is spent: no vote can be added, one can still be removed.
+     */
+    canUnvote?: boolean;
     canEdit?: boolean;
     maxLength?: number;
     quickReactions?: string[];
@@ -192,6 +197,7 @@ export function RetroCard({
     dragging = false,
     ghost = false,
     canVote = false,
+    canUnvote,
     canEdit = false,
     maxLength = 1000,
     quickReactions = defaultQuickReactions,
@@ -275,6 +281,7 @@ export function RetroCard({
     const isLocked = lockedBy !== null;
     const isEditing = editing;
     const mineVotes = votes?.mine ?? 0;
+    const mayUnvote = (canUnvote ?? canVote) && mineVotes > 0;
     const isAnonymous = author === null;
     const hasGif = gif !== null && !masked;
     const hasText = text !== null && text !== '';
@@ -326,15 +333,33 @@ export function RetroCard({
     }
 
     function vote(delta: 1 | -1): void {
-        if (!canVote) {
+        if (delta === 1 && !canVote) {
             return;
         }
 
-        if (delta === -1 && mineVotes <= 0) {
+        if (delta === -1 && !mayUnvote) {
             return;
         }
 
         onVote?.(delta);
+    }
+
+    /**
+     * Taking the last vote back removes the button that was pressed. Focus
+     * goes to the vote button, or to the card while that button is disabled.
+     */
+    function unvoteFromButton(): void {
+        vote(-1);
+
+        if (mineVotes > 1) {
+            return;
+        }
+
+        const target = voteButtonRef.current?.disabled
+            ? articleRef.current
+            : voteButtonRef.current;
+
+        target?.focus();
     }
 
     function handleArticleKeyDown(event: KeyboardEvent<HTMLElement>): void {
@@ -988,13 +1013,13 @@ export function RetroCard({
                                 ))}
                             </span>
                         )}
-                        {mineVotes > 0 && canVote && (
+                        {mayUnvote && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
                                         type="button"
                                         aria-label={t('Remove a vote')}
-                                        onClick={() => vote(-1)}
+                                        onClick={unvoteFromButton}
                                         className={iconButtonClass}
                                     >
                                         <Minus className="size-4" aria-hidden />
