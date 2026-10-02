@@ -291,7 +291,7 @@ function NewGameRoomForm({
 
     return (
         <form onSubmit={submit} className="flex flex-col gap-4">
-            <DialogHeader>
+            <DialogHeader className="pr-8">
                 <DialogTitle>{t('New room')}</DialogTitle>
             </DialogHeader>
 

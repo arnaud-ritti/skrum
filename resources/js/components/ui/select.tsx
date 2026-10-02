@@ -102,6 +102,40 @@ function SelectLabel({
   )
 }
 
+/**
+ * Consecutive text children share one truncating span: the item is a flex row
+ * with a gap, so a span per piece would space out the parts of one sentence.
+ */
+function groupTextChildren(children: React.ReactNode): React.ReactNode[] {
+  const grouped: React.ReactNode[] = []
+  let text: (string | number)[] = []
+
+  const flushText = () => {
+    if (text.length > 0) {
+      grouped.push(
+        <span key={`text-${grouped.length}`} className="truncate">
+          {text.join("")}
+        </span>
+      )
+      text = []
+    }
+  }
+
+  for (const child of React.Children.toArray(children)) {
+    if (typeof child === "string" || typeof child === "number") {
+      text.push(child)
+      continue
+    }
+
+    flushText()
+    grouped.push(child)
+  }
+
+  flushText()
+
+  return grouped
+}
+
 function SelectItem({
   className,
   children,
@@ -125,13 +159,7 @@ function SelectItem({
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>
-        {React.Children.map(children, (child) =>
-          typeof child === "string" || typeof child === "number" ? (
-            <span className="truncate">{child}</span>
-          ) : (
-            child
-          )
-        )}
+        {groupTextChildren(children)}
       </SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   )

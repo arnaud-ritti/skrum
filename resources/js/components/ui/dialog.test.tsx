@@ -50,15 +50,18 @@ describe('Dialog', () => {
         );
     });
 
-    it('keeps the header clear of the close button', async () => {
+    it('adds no padding of its own to the header, so old centred titles stay centred', async () => {
         const user = userEvent.setup();
         render(<Example />);
 
         await user.click(screen.getByRole('button', { name: 'Open' }));
 
-        expect(screen.getByTestId('header').className.split(/\s+/)).toContain(
-            'pr-8',
-        );
+        expect(
+            screen
+                .getByTestId('header')
+                .className.split(/\s+/)
+                .filter((name) => /^(sm:)?p[rxe]?-/.test(name)),
+        ).toEqual([]);
         expect(screen.getByRole('button', { name: 'Close' })).not.toBeNull();
     });
 

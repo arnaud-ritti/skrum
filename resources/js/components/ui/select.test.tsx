@@ -37,6 +37,11 @@ function Example({ onValueChange }: { onValueChange?: (value: string) => void })
             <SelectContent>
                 <SelectItem value="long">{LongLabel}</SelectItem>
                 <SelectItem value="short">Short</SelectItem>
+                <SelectItem value="parts">
+                    {'Atlas'} ·{' '}
+                    {'Scrum board'}
+                    {3}
+                </SelectItem>
                 <SelectItem value="icon">
                     <Flag />
                     High
@@ -85,6 +90,22 @@ describe('SelectItem', () => {
             within(withIcon).getByText('High').className.split(/\s+/),
         ).toContain('truncate');
         expect(withIcon.querySelector('svg')?.closest('.truncate')).toBeNull();
+    });
+});
+
+describe('SelectItem with several text children', () => {
+    it('keeps the pieces of one label in a single truncating span', async () => {
+        const user = userEvent.setup();
+        render(<Example />);
+
+        await user.click(screen.getByRole('combobox', { name: 'Estimate' }));
+        const option = within(screen.getByRole('listbox')).getByRole('option', {
+            name: 'Atlas · Scrum board3',
+        });
+        const pieces = option.querySelectorAll('.truncate');
+
+        expect(pieces).toHaveLength(1);
+        expect(pieces[0].textContent).toBe('Atlas · Scrum board3');
     });
 });
 
