@@ -448,7 +448,7 @@ export function RetroCard({
                         disabled={!canVote}
                         onClick={() => vote(1)}
                         className={cn(
-                            'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                            'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none max-md:h-11 max-md:min-w-11',
                             mineVotes > 0
                                 ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
                                 : 'border-input bg-card text-foreground hover:bg-accent',
@@ -1020,7 +1020,10 @@ export function RetroCard({
                                         type="button"
                                         aria-label={t('Remove a vote')}
                                         onClick={unvoteFromButton}
-                                        className={iconButtonClass}
+                                        className={cn(
+                                            iconButtonClass,
+                                            'max-md:size-11',
+                                        )}
                                     >
                                         <Minus className="size-4" aria-hidden />
                                     </button>

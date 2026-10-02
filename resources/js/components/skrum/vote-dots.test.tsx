@@ -385,3 +385,26 @@ describe('CardVotes', () => {
         expect(container.querySelectorAll('.animate-vote-pop')).toHaveLength(0);
     });
 });
+
+describe('CardVotes on a phone', () => {
+    it('gives the vote and its take-back a 44px target below md', () => {
+        const { container } = renderWithProviders(
+            <CardVotes
+                mine={1}
+                total={3}
+                budgetLeft={2}
+                onVote={() => {}}
+                onUnvote={() => {}}
+            />,
+        );
+        const vote = container.querySelector(
+            '[data-slot="vote-button"]',
+        ) as HTMLElement;
+
+        expect(vote.className).toContain('max-md:h-11');
+        expect(vote.className).toContain('max-md:min-w-11');
+        expect(
+            screen.getByRole('button', { name: 'Remove a vote' }).className,
+        ).toContain('max-md:size-11');
+    });
+});
