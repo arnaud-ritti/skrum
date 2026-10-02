@@ -242,4 +242,20 @@ describe('GuestJoinPage', () => {
                 ?.classList.contains('sticky'),
         ).toBe(true);
     });
+
+    it('shows one logo, the one of the frame, so a rebranded instance never shows the Skrüm mark in the card', () => {
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+            />,
+        );
+
+        expect(screen.getAllByRole('img', { name: 'Skrüm' })).toHaveLength(1);
+        expect(
+            document.querySelector('[data-slot="guest-join"] [role="img"]'),
+        ).toBeNull();
+    });
 });

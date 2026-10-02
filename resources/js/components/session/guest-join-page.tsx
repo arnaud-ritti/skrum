@@ -116,6 +116,7 @@ export function GuestJoinPage({
                 stickyAction={isMobile}
                 onSubmit={join}
                 loginUrl={login.url()}
+                logo={false}
             >
                 {children}
             </GuestJoin>

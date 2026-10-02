@@ -65,6 +65,11 @@ export type GuestJoinProps = {
     /** Pins the join button to the bottom of the viewport (phone). */
     stickyAction?: boolean;
     loginUrl: string;
+    /**
+     * The Skrüm logo at the top of the card. Off inside a page frame that
+     * already shows the instance's own logo.
+     */
+    logo?: boolean;
     className?: string;
 };
 
@@ -140,6 +145,7 @@ export function GuestJoin({
     onRandomName,
     stickyAction = false,
     loginUrl,
+    logo = true,
     className,
 }: GuestJoinProps) {
     const { t } = useTrans();
@@ -290,10 +296,12 @@ export function GuestJoin({
             )}
         >
             <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-                <SkrumLogo
-                    variant="horizontal"
-                    className="h-6 w-auto self-start"
-                />
+                {logo && (
+                    <SkrumLogo
+                        variant="horizontal"
+                        className="h-6 w-auto self-start"
+                    />
+                )}
 
                 <div className="flex flex-col gap-1">
                     <h2 className="text-xl font-title tracking-subheading">
