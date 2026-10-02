@@ -60,3 +60,22 @@ it('treats a deck of a team and a deck of its workspace with the same name as no
     expect($teamDeck->fresh()->name_key)->toBe('scale')
         ->and($workspaceDeck->fresh()->name_key)->toBe('scale');
 });
+
+it('keeps the distinct key of a long colliding name within the column', function () {
+    Log::spy();
+    $workspace = Workspace::factory()->create();
+    $name = str_repeat('İ', 80);
+    $older = WorkspaceTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Older']);
+    $newer = WorkspaceTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Newer']);
+    DB::table('workspace_templates')->whereIn('id', [$older->id, $newer->id])->update(['name' => $name]);
+
+    nameKeysMigration()->backfill('workspace_templates', ['workspace_id']);
+
+    $olderKey = $older->fresh()->name_key;
+    $newerKey = $newer->fresh()->name_key;
+
+    expect(mb_strlen($olderKey))->toBe(160)
+        ->and(mb_strlen($newerKey))->toBe(160)
+        ->and($newerKey)->toEndWith(' ~'.substr($newer->id, -8))
+        ->and($newerKey)->not->toBe($olderKey);
+});

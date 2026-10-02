@@ -77,13 +77,24 @@ it('accepts the same name under two owners, and for a team and its workspace', f
     expect(SavedPokerDeck::query()->where('name_key', 'scale')->count())->toBe(4);
 });
 
-it('refuses a row written without its key', function () {
-    $template = WorkspaceTemplate::factory()->create();
+it('refuses a row written without its key', function (string $model) {
+    $named = $model::factory()->create();
+    $row = (array) DB::table($named->getTable())->where('id', $named->id)->first();
+    unset($row['name_key']);
 
-    expect(fn () => DB::transaction(fn () => DB::table('workspace_templates')->insert([
-        'id' => (string) Str::uuid7(),
-        'workspace_id' => $template->workspace_id,
-        'name' => 'Written beside the model',
-        'category' => $template->category->value,
-    ])))->toThrow(QueryException::class);
+    expect(fn () => DB::transaction(fn () => DB::table($named->getTable())->insert([...$row, 'id' => (string) Str::uuid7(), 'name' => 'Written beside the model'])))
+        ->toThrow(QueryException::class);
+})->with([
+    'workspace template' => WorkspaceTemplate::class,
+    'whiteboard template' => WhiteboardTemplate::class,
+    'saved deck' => SavedPokerDeck::class,
+]);
+
+it('accepts two names of one owner that differ only by an accent', function () {
+    $workspace = Workspace::factory()->create();
+
+    WorkspaceTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'peche']);
+    WorkspaceTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'pêche']);
+
+    expect(WorkspaceTemplate::query()->where('workspace_id', $workspace->id)->pluck('name_key')->sort()->values()->all())->toBe(['peche', 'pêche']);
 });
