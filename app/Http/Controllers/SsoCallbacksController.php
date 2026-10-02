@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Auth\CompleteLogin;
 use App\Actions\Auth\ResolveSsoUser;
+use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
 use App\Exceptions\SsoLoginRefused;
-use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Fortify\Fortify;
 use Laravel\Socialite\AbstractUser;
 use Throwable;
 
 class SsoCallbacksController extends Controller
 {
-    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser): RedirectResponse
+    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin): RedirectResponse
     {
         abort_unless($provider->isEnabled(), 404);
 
@@ -44,33 +43,7 @@ class SsoCallbacksController extends Controller
             $request->session()->forget(['invitation_token', 'url.intended']);
         }
 
-        if ($this->hasConfirmedTwoFactor($user)) {
-            $request->session()->put([
-                'login.id' => $user->getKey(),
-                'login.remember' => false,
-            ]);
-
-            return to_route('two-factor.login');
-        }
-
-        Auth::login($user);
-
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'));
-    }
-
-    private function hasConfirmedTwoFactor(User $user): bool
-    {
-        if ($user->two_factor_secret === null) {
-            return false;
-        }
-
-        if (! Fortify::confirmsTwoFactorAuthentication()) {
-            return true;
-        }
-
-        return $user->two_factor_confirmed_at !== null;
+        return $completeLogin->handle($request, $user, SignInEntry::Sso);
     }
 
     private function backToLogin(string $message): RedirectResponse

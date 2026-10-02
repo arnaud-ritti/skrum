@@ -120,6 +120,7 @@ export function BrandingForm({
         'logo-light': props.assets.logoLightUrl,
         'logo-dark': props.assets.logoDarkUrl,
         favicon: props.assets.faviconUrl,
+        'logo-mail': props.assets.logoMailUrl,
     };
 
     /** What Save would leave: a staged file, nothing after a staged removal, else the stored image. */
@@ -259,7 +260,12 @@ export function BrandingForm({
 
     const uploaders: Record<
         BrandAssetName,
-        { label: string; description: string; surface: ThemeName }
+        {
+            label: string;
+            description?: string;
+            hint?: string;
+            surface: ThemeName;
+        }
     > = {
         'logo-light': {
             label: t('Light logo'),
@@ -276,7 +282,17 @@ export function BrandingForm({
             description: t('The icon of the browser tab.'),
             surface: 'light',
         },
+        'logo-mail': {
+            label: t('Logo for e-mails'),
+            hint: t(
+                'PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.',
+            ),
+            surface: 'light',
+        },
     };
+    const mailWarning = props.assets.mailShowsName
+        ? t('E-mails show the name as text until a PNG or JPEG logo is added.')
+        : undefined;
     const uploader = uploaders[variant];
     const stagedVariant = assets.staged[variant];
 
@@ -362,6 +378,8 @@ export function BrandingForm({
                                         key={variant}
                                         label={uploader.label}
                                         description={uploader.description}
+                                        hint={uploader.hint}
+                                        warning={mailWarning}
                                         url={shownUrl(variant)}
                                         fileName={
                                             stagedVariant?.type === 'file'

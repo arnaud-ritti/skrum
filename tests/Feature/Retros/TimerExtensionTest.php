@@ -26,7 +26,7 @@ it('moves the end of a running timer by two minutes', function () {
         ->assertOk()
         ->assertJsonPath('timerEndsAt', $expectedEnd->toIso8601String());
 
-    expect($retro->fresh()->timer_ends_at->timestamp === $expectedEnd->timestamp)->toBeTrue();
+    expect($retro->fresh()->timer_ends_at->timestamp)->toBe($expectedEnd->timestamp);
     Event::assertDispatched(fn (TimerChanged $event) => $event->timerEndsAt === $expectedEnd->toIso8601String());
 });
 
@@ -62,7 +62,7 @@ it('refuses an extension that would leave more than two hours', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors('timer');
 
-    expect($retro->fresh()->timer_ends_at->timestamp === now()->addSeconds(7081)->timestamp)->toBeTrue();
+    expect($retro->fresh()->timer_ends_at->timestamp)->toBe(now()->addSeconds(7081)->timestamp);
 });
 
 it('accepts an extension that leaves exactly two hours', function () {

@@ -446,6 +446,7 @@ export type GamesPlayed = {
 export type ResultsStats = {
     votesCast: number;
     votesAvailable: number;
+    /** Team members who took part, of the team: guests are not counted. */
     participation: { participants: number; teamMembers: number };
     durationSeconds: number | null;
 };

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameProvider } from '@/components/poker/game-context';
 import { RoomDock } from '@/components/poker/room-dock';
 import type { RoundActions } from '@/components/poker/use-round-actions';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import {
     pokerRound,
     pokerSnapshot,
@@ -686,5 +687,113 @@ describe('RoomDock, the shortcuts of the result', () => {
         fireEvent.keyDown(document.body, { key: 'Enter', ctrlKey: true });
 
         expect(actions.validate).toHaveBeenCalledWith('5');
+    });
+});
+
+describe('RoomDock, Re-vote and the coffee card from the keyboard', () => {
+    it('asks for a re-vote with Shift+R once the cards are revealed, for the facilitator only', () => {
+        const actions = roundActions();
+        const open = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+        );
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(actions.revote).not.toHaveBeenCalled();
+        open.unmount();
+
+        const participant = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({
+                me: { isFacilitator: false },
+                current: { taskId: 't1', round: revealed },
+            }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(actions.revote).not.toHaveBeenCalled();
+        participant.unmount();
+
+        renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'r' });
+
+        expect(actions.revote).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(actions.revote).toHaveBeenCalledTimes(1);
+    });
+
+    it('plays the coffee card with C, not from a field, not for a watcher, not once revealed', async () => {
+        mocks.request.mockResolvedValue({
+            roundId: 'round-1',
+            myVote: '☕',
+            votesCount: 1,
+            version: 2,
+            revealed: false,
+        });
+        const open = renderInRoom(
+            <>
+                <input aria-label="field" />
+                <RoomDock actions={roundActions()} compact={false} />
+            </>,
+        );
+
+        fireEvent.keyDown(screen.getByLabelText('field'), { key: 'c' });
+
+        expect(mocks.request).not.toHaveBeenCalled();
+
+        await act(async () => {
+            fireEvent.keyDown(document.body, { key: 'c' });
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+        expect(mocks.request.mock.calls[0][1]).toEqual({ value: '☕' });
+        open.unmount();
+        mocks.request.mockClear();
+
+        const watching = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            pokerSnapshot({ me: { isSpectator: true, canVote: false } }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'c' });
+        watching.unmount();
+
+        renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'c' });
+
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
+    it('leaves C and Shift+R alone while single-key shortcuts are off', () => {
+        const actions = roundActions();
+        const open = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+        );
+
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(document.body, { key: 'c' });
+        open.unmount();
+
+        renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+        setSingleKeyShortcuts(true);
+
+        expect(mocks.request).not.toHaveBeenCalled();
+        expect(actions.revote).not.toHaveBeenCalled();
     });
 });

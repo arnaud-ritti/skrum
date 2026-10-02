@@ -3,10 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
+use App\Actions\Notifications\BellNotifications;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Branding\BrandAssets;
 use App\Support\CurrentTeamResolver;
 use App\Support\InstanceSettings;
@@ -53,6 +55,10 @@ class HandleInertiaRequests extends Middleware
             'adminUrl' => fn (): ?string => $request->user()?->can('manageInstance')
                 ? route('admin.branding.edit')
                 : null,
+            'signInAlert' => fn (): ?string => $request->user()?->can('manageInstance') && resolve(SignInPolicy::class)->isIgnored()
+                ? 'sso_required_ignored'
+                : null,
+            'ssoInForce' => fn (): bool => $request->user()?->can('manageInstance') === true && resolve(SignInPolicy::class)->ssoRequired(),
             'auth' => [
                 'user' => $this->user($request),
             ],
@@ -72,7 +78,7 @@ class HandleInertiaRequests extends Middleware
             'currentTeam' => fn (): ?array => $this->currentTeam($teamResolver),
             'notifications' => fn (): ?array => $request->user() === null
                 ? null
-                : ['unreadCount' => $request->user()->unreadNotifications()->count()],
+                : ['unreadCount' => resolve(BellNotifications::class)->unreadCount($request->user())],
             'actionItems' => fn (): ?array => $this->actionItemCounts($request),
         ];
     }

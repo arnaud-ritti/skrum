@@ -24,9 +24,16 @@ export type GuestJoinPageProps = {
         facilitatorName?: string | null;
         participantsCount?: number;
         isLive?: boolean;
+        /** Retro only (`PresentJoinSession::retro`). */
+        hasAnonymousCards?: boolean;
     } | null;
     /** URL of the join POST (`RetroJoinsController.store.url(token)`, …). */
     storeUrl: string | null;
+    /**
+     * Nickname the field opens with: the name of a signed-in visitor, a random
+     * one otherwise (`PresentJoinSession::nickname`). Read once: the server
+     * draws another one on every visit, including the one after a refused join.
+     */
     suggestedName?: string | null;
     /** Extra named controls, e.g. the poker `#spectator` switch. */
     children?: ReactNode;
@@ -51,6 +58,7 @@ function toCardSession(
             ? { participants: session.participantsCount }
             : {}),
         ...(session.isLive ? { status: 'live' as const } : {}),
+        ...(session.hasAnonymousCards ? { anonymousCards: true } : {}),
     };
 }
 
@@ -67,6 +75,8 @@ export function GuestJoinPage({
     const { errors } = usePage().props;
     const isMobile = useIsMobile();
     const [processing, setProcessing] = useState(false);
+    const [nickname, setNickname] = useState(suggestedName ?? undefined);
+    const [drawingName, setDrawingName] = useState(false);
     const nameMessage = errors?.name;
     const nameError = useMemo<GuestJoinProps['error']>(
         () => (nameMessage ? { field: 'name', message: nameMessage } : null),
@@ -106,11 +116,28 @@ export function GuestJoinPage({
         );
     };
 
+    const drawName = () => {
+        router.reload({
+            only: ['randomName'],
+            onStart: () => setDrawingName(true),
+            onFinish: () => setDrawingName(false),
+            onSuccess: (page) => {
+                const { randomName } = page.props;
+
+                if (typeof randomName === 'string' && randomName !== '') {
+                    setNickname(randomName);
+                }
+            },
+        });
+    };
+
     return (
         <AuthLayout variant="centered" title={session.title} literalTitle>
             <GuestJoin
                 session={toCardSession(kind, session)}
-                initialName={suggestedName ?? undefined}
+                initialName={nickname}
+                onRandomName={drawName}
+                drawingName={drawingName}
                 error={nameError}
                 processing={processing}
                 stickyAction={isMobile}

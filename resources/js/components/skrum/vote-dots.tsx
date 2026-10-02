@@ -8,6 +8,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export type VoteBudgetProps = {
@@ -186,6 +187,10 @@ export function CardVotes({
         }
 
         if (event.key !== 'v' && event.key !== 'V') {
+            return;
+        }
+
+        if (!singleKeyShortcutsEnabled()) {
             return;
         }
 

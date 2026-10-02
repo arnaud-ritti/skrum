@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useSwipe } from '@/hooks/use-swipe';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
@@ -18,7 +19,7 @@ import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { SuggestionsPanel } from './suggestions-panel';
-import { SurveysColumn } from './surveys-column';
+import { SurveysColumn } from './surveys/surveys-column';
 import { TopicFocus, TopicUpNext } from './topic-focus';
 import { TopicsList } from './topics-list';
 
@@ -43,6 +44,29 @@ export type DiscussionValue = {
 };
 
 const DiscussionContext = createContext<DiscussionValue | null>(null);
+
+/** The topic of the card, or of the row of the topics list, a key was pressed on. */
+export function topicOfFocus(
+    topics: Topic[],
+    target: EventTarget | null,
+): Topic | null {
+    if (!(target instanceof Element)) {
+        return null;
+    }
+
+    const row = target.closest('[data-topic-id]');
+
+    if (row !== null) {
+        const id = row.getAttribute('data-topic-id');
+
+        return topics.find((topic) => topic.id === id) ?? null;
+    }
+
+    return topicOfCard(
+        topics,
+        target.closest('[data-card-id]')?.getAttribute('data-card-id') ?? null,
+    );
+}
 
 /** The discussion, for what sits outside the phase body: the facilitator bar. */
 export function useOptionalDiscussion(): DiscussionValue | null {
@@ -133,6 +157,30 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
             });
         }
     };
+
+    // F on the card or the topic that has the focus: the "focus" button of
+    // the card, from the keyboard. It also answers inside the presentation
+    // overlay, whose card is the one in focus.
+    useShortcut(
+        'f',
+        (event) => {
+            if (event.repeat) {
+                return;
+            }
+
+            const topic = topicOfFocus(topics, event.target);
+
+            if (topic !== null) {
+                void highlight(
+                    shared?.id === topic.id ? null : topic.leadCardId,
+                );
+            }
+        },
+        {
+            enabled: viewer.isFacilitator && (isDiscussing || isActions),
+            enableInOverlays: true,
+        },
+    );
 
     const goTo = (topic: Topic): void => {
         setOwnId(topic.id);

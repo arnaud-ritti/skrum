@@ -7,6 +7,7 @@ use App\Enums\RetroPhase;
 use App\Models\HealthCheckAnswer;
 use App\Models\Retro;
 use App\Models\Team;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class BuildTeamMoodTrend
 {
@@ -32,7 +33,7 @@ class BuildTeamMoodTrend
             ->where('team_id', $team->id)
             ->where('phase', RetroPhase::Completed)
             ->whereNotNull('completed_at')
-            ->where(fn ($query) => $query->whereHas('healthCheckAnswers')->orHas('rotiVotes'))
+            ->where(fn (Builder $query) => $query->whereHas('healthCheckAnswers')->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
             ->orderByDesc('completed_at')

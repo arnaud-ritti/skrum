@@ -79,6 +79,9 @@ class BuildResults
     }
 
     /**
+     * The participation is the share of the team that took part: a guest or a person
+     * outside the team votes, but is not counted against the size of the team.
+     *
      * @return array{
      *     votesCast: int,
      *     votesAvailable: int,
@@ -89,13 +92,14 @@ class BuildResults
     private function stats(Retro $retro): array
     {
         $participantCount = $retro->participants->count();
+        $teamMemberIds = $retro->team->members()->pluck('users.id');
 
         return [
             'votesCast' => $retro->votes()->count(),
             'votesAvailable' => $participantCount * $retro->voteLimit(),
             'participation' => [
-                'participants' => $participantCount,
-                'teamMembers' => $retro->team->members()->count(),
+                'participants' => $retro->participants->whereIn('user_id', $teamMemberIds)->count(),
+                'teamMembers' => $teamMemberIds->count(),
             ],
             'durationSeconds' => $this->durationSeconds($retro),
         ];

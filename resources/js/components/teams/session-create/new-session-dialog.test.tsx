@@ -302,6 +302,32 @@ describe('NewSessionDialog', () => {
         ]);
     });
 
+    it('opens again on a later intent of the page, after it was closed', () => {
+        const dialog = (intent: { type: 'retro'; request?: number } | null) => (
+            <NewSessionDialog
+                trigger={<Button>New session</Button>}
+                team={team}
+                retro={retroSessionForm(retroProps)}
+                intent={intent}
+            />
+        );
+        const { rerender } = renderWithProviders(dialog(null));
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        rerender(dialog({ type: 'retro', request: 1 }));
+        expect(screen.getByRole('dialog')).toBeTruthy();
+
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        rerender(dialog({ type: 'retro', request: 1 }));
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        rerender(dialog({ type: 'retro', request: 2 }));
+        expect(screen.getByRole('dialog')).toBeTruthy();
+    });
+
     it('stays closed when the intent names a type that is not offered', () => {
         renderWithProviders(
             <NewSessionDialog

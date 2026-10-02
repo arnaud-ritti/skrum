@@ -7,6 +7,7 @@ import {
 } from '@/components/retro/facilitator-dock';
 import type { FacilitatorTools } from '@/components/retro/facilitator-dock';
 import type { RetroPhase } from '@/lib/retro/types';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -236,6 +237,29 @@ describe('facilitatorPrimary', () => {
         expect(given.onPhase).toHaveBeenCalledWith('roti');
     });
 
+    it('says "Go to the retro" during the icebreaker, and leads to the first phase of the retro', () => {
+        const given = tools();
+        const primary = facilitatorPrimary(
+            'icebreaker',
+            retroSnapshot({
+                retro: {
+                    phase: 'icebreaker',
+                    phases: ['icebreaker', 'writing', 'completed'],
+                },
+            }),
+            given,
+        );
+
+        expect(primary).toMatchObject({
+            id: 'next-phase',
+            label: 'Go to the retro',
+        });
+
+        primary?.onSelect();
+
+        expect(given.onPhase).toHaveBeenCalledWith('writing');
+    });
+
     it('names Actions as the phase after Discussing', () => {
         expect(
             facilitatorPrimary(
@@ -442,5 +466,102 @@ describe('FacilitatorDock', () => {
         expect(
             document.querySelector('[data-slot="facilitator-dock"]'),
         ).toBeNull();
+    });
+});
+
+describe('FacilitatorDock, the next phase from the keyboard', () => {
+    const phaseCalls = () =>
+        retroRequest.mock.calls.filter(([route]) =>
+            String(route.url).endsWith('/phase'),
+        );
+
+    it('moves to the next phase with Ctrl or Cmd and the right arrow, as the main button', async () => {
+        const { ctx } = renderInBoard(<FacilitatorDock />, boardContext());
+
+        fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+
+        expect(phaseCalls()).toHaveLength(0);
+
+        fireEvent.keyDown(document.body, { key: 'ArrowRight', metaKey: true });
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(phaseCalls()).toHaveLength(1);
+        expect(phaseCalls()[0][1]).toEqual({ phase: 'grouping' });
+    });
+
+    it('answers while the focus is on the main button, where a plain arrow moves inside the toolbar', async () => {
+        const { ctx } = renderInBoard(<FacilitatorDock />, boardContext());
+        const primary = screen.getByRole('button', { name: 'Grouping' });
+
+        primary.focus();
+        fireEvent.keyDown(primary, { key: 'ArrowRight', metaKey: true });
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(phaseCalls()).toHaveLength(1);
+        expect(phaseCalls()[0][1]).toEqual({ phase: 'grouping' });
+    });
+
+    it('moves one phase only while the key is held', () => {
+        renderInBoard(<FacilitatorDock />, boardContext());
+
+        fireEvent.keyDown(document.body, {
+            key: 'ArrowRight',
+            metaKey: true,
+            repeat: true,
+        });
+
+        expect(phaseCalls()).toHaveLength(0);
+    });
+
+    it('still answers while single-key shortcuts are off, and shows its key on the button', async () => {
+        renderInBoard(<FacilitatorDock />, boardContext());
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Grouping' })
+                .getAttribute('aria-keyshortcuts'),
+        ).toMatch(/^(Meta|Control)\+ArrowRight$/);
+        expect(
+            screen.getByRole('button', { name: 'Grouping' }).textContent,
+        ).not.toContain('ArrowRight');
+
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(document.body, { key: 'ArrowRight', ctrlKey: true });
+        setSingleKeyShortcuts(true);
+
+        await waitFor(() => expect(phaseCalls()).toHaveLength(1));
+    });
+
+    it('does nothing in a field, for a participant, or on a completed retro', () => {
+        const facilitator = renderInBoard(
+            <>
+                <input aria-label="field" />
+                <FacilitatorDock />
+            </>,
+            boardContext(),
+        );
+
+        fireEvent.keyDown(screen.getByLabelText('field'), {
+            key: 'ArrowRight',
+            metaKey: true,
+        });
+        facilitator.unmount();
+
+        const participant = renderInBoard(
+            <FacilitatorDock />,
+            boardContext(retroSnapshot({ viewer: { isFacilitator: false } })),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'ArrowRight', metaKey: true });
+        participant.unmount();
+
+        renderInBoard(
+            <FacilitatorDock />,
+            boardContext(retroSnapshot({ retro: { phase: 'completed' } })),
+        );
+
+        fireEvent.keyDown(document.body, { key: 'ArrowRight', metaKey: true });
+
+        expect(phaseCalls()).toHaveLength(0);
     });
 });

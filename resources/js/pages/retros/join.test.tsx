@@ -25,6 +25,7 @@ const session = {
     facilitatorName: 'Fran Facilitator',
     participantsCount: 3,
     isLive: true,
+    hasAnonymousCards: false,
 };
 
 beforeEach(() => {
@@ -69,7 +70,9 @@ describe('retros/join page', () => {
             'Guest Gia',
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/join/tok-123',
@@ -90,7 +93,7 @@ describe('retros/join page', () => {
                 guestToken="tok-123"
                 retroTitle="Sprint 42 retro"
                 session={session}
-                suggestedName={null}
+                suggestedName="Guest Gia"
             />,
         );
 

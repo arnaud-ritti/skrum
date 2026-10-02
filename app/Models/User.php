@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
+use App\Jobs\Auth\SendPasswordResetLink;
+use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +27,7 @@ use Laravel\Fortify\Fortify;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use SensitiveParameter;
 
 /**
  * @property string $id
@@ -33,17 +38,21 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
+ * @property Carbon|null $two_factor_email_enabled_at
  * @property string|null $remember_token
  * @property string|null $locale
  * @property bool $is_instance_admin
  * @property string|null $avatar_style
  * @property bool $action_item_reminders_by_email
  * @property bool $action_item_reminders_in_app
+ * @property bool $recap_emails
+ * @property bool $recap_in_app
+ * @property bool $single_key_shortcuts
  * @property string|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
@@ -60,6 +69,9 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     protected $attributes = [
         'action_item_reminders_by_email' => true,
         'action_item_reminders_in_app' => true,
+        'recap_emails' => true,
+        'recap_in_app' => true,
+        'single_key_shortcuts' => true,
     ];
 
     /**
@@ -73,10 +85,38 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_email_enabled_at' => 'datetime',
             'is_instance_admin' => 'boolean',
             'action_item_reminders_by_email' => 'boolean',
             'action_item_reminders_in_app' => 'boolean',
+            'recap_emails' => 'boolean',
+            'recap_in_app' => 'boolean',
+            'single_key_shortcuts' => 'boolean',
         ];
+    }
+
+    /**
+     * Every writer goes through here, so an address is only ever stored in
+     * the form it is looked up by.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $email): string => LoginAddress::normalise($email),
+        );
+    }
+
+    /**
+     * Compares normalised to normalised: rows stored before addresses were
+     * normalised may still hold capitals.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWhereAddress(Builder $query, string $email): void
+    {
+        $query->whereRaw("lower({$query->qualifyColumn('email')}) = ?", [LoginAddress::normalise($email)]);
     }
 
     public function avatarUrl(): string
@@ -91,6 +131,16 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function avatarSeed(): string
     {
         return substr(hash_hmac('sha256', $this->id, (string) config('app.key')), 0, 32);
+    }
+
+    /**
+     * The request queues the same job for every account and the job decides
+     * who is mailed: the request says nothing about the setting, the account
+     * or its role.
+     */
+    public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
+    {
+        SendPasswordResetLink::dispatch($this->getKey(), $token);
     }
 
     public function preferredLocale(): ?string
@@ -162,6 +212,6 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode($remainingCodes)),
         ])->save();
 
-        RecoveryCodeReplaced::dispatch($this, $code);
+        event(new RecoveryCodeReplaced($this, $code));
     }
 }

@@ -1,4 +1,11 @@
-import { CircleAlert, ImageOff, Trash2, Undo2, Upload } from 'lucide-react';
+import {
+    CircleAlert,
+    ImageOff,
+    Trash2,
+    TriangleAlert,
+    Undo2,
+    Upload,
+} from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -13,6 +20,10 @@ import type { AssetRejection, ThemeName } from './branding';
 export type AssetUploaderProps = {
     label: string;
     description?: string;
+    /** Replaces the line about the accepted formats. */
+    hint?: string;
+    /** What the missing image costs, shown until one is stored. */
+    warning?: string;
     /** Image to show, always through `<img>`: the stored one or a staged file. */
     url: string | null;
     /** Name of the staged file; absent for the stored image. */
@@ -35,6 +46,8 @@ export type AssetUploaderProps = {
 export function AssetUploader({
     label,
     description,
+    hint,
+    warning,
     url,
     fileName,
     staged = false,
@@ -161,7 +174,7 @@ export function AssetUploader({
                         id={`${id}-hint`}
                         className="text-xs text-muted-foreground"
                     >
-                        {t('PNG, JPEG, WebP or SVG, 512 KB at most.')}
+                        {hint ?? t('PNG, JPEG, WebP or SVG, 512 KB at most.')}
                     </span>
                 </div>
                 <input
@@ -218,6 +231,18 @@ export function AssetUploader({
                     )}
                 </div>
             </div>
+            {warning && (
+                <p
+                    data-slot="asset-warning"
+                    className="flex items-start gap-1.5 text-body-sm text-skrum-warning-text"
+                >
+                    <TriangleAlert
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0"
+                    />
+                    <span className="min-w-0">{warning}</span>
+                </p>
+            )}
             {message && (
                 <p
                     role="alert"

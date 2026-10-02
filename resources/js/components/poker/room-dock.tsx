@@ -26,6 +26,9 @@ type Props = {
     compact: boolean;
 };
 
+/** The break card of a deck (`SpecialCards`): the one the C key plays. */
+const CoffeeCard = '☕';
+
 /** Before the reveal the facilitator can only skip to the next task. */
 function SkipAction({
     actions,
@@ -123,6 +126,27 @@ export function RoomDock({ reactions, actions, compact }: Props) {
             actions.next !== null &&
             !actions.busy,
     });
+
+    useShortcut('shift+r', () => void actions.revote(), {
+        scope: dockRef,
+        enabled: canFacilitate && showsResult && !actions.busy,
+    });
+    // The coffee card from anywhere on the page, as a click on it: a second
+    // press takes it back.
+    useShortcut(
+        'c',
+        () =>
+            void (round?.myVote === CoffeeCard ? withdraw() : play(CoffeeCard)),
+        {
+            scope: dockRef,
+            enabled:
+                me.canVote &&
+                hasDeck &&
+                !isClosed &&
+                !busy &&
+                game.cards.includes(CoffeeCard),
+        },
+    );
 
     // The deck leaves on a reveal and the result on a re-vote, with the
     // control that held focus: focus goes to the result, or back to the deck.

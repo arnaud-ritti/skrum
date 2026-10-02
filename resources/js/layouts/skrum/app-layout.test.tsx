@@ -22,8 +22,8 @@ vi.mock('@/hooks/use-sidebar-model', () => ({
 
 vi.mock('@/components/nav-user', () => ({ NavUser: () => null }));
 
-vi.mock('@/components/notification-bell', () => ({
-    NotificationBell: () => <button type="button">Notifications</button>,
+vi.mock('@/components/action-items/notifications-menu', () => ({
+    NotificationsMenu: () => <button type="button">Notifications</button>,
 }));
 
 describe('AppLayout', () => {
@@ -45,15 +45,21 @@ describe('AppLayout', () => {
         expect(screen.getByRole('main').textContent).toBe('content');
     });
 
-    it('shows the bell alone without actions', () => {
+    it('shows the search and the bell alone without actions', () => {
         renderWithProviders(
             <AppLayout>
                 <p>content</p>
             </AppLayout>,
         );
 
+        const banner = screen.getByRole('banner');
+
         expect(
-            screen.getByRole('banner').querySelectorAll('button'),
+            banner.querySelectorAll('[data-test^="command-menu-button"]'),
         ).toHaveLength(2);
+        expect(banner.querySelectorAll('button')).toHaveLength(4);
+        expect(
+            Array.from(banner.querySelectorAll('button')).at(-1)?.textContent,
+        ).toBe('Notifications');
     });
 });

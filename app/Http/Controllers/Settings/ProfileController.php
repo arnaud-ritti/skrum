@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Auth\RevokeLoginSecrets;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\InstanceSettings;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -42,15 +45,23 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, RevokeLoginSecrets $revoke): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = $request->validated();
+        $emailChanged = LoginAddress::normalise($validated['email']) !== LoginAddress::normalise($user->email);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($emailChanged ? $validated : Arr::except($validated, 'email'));
+
+        if ($emailChanged) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        if ($emailChanged) {
+            $revoke->handle($user, turnEmailFactorOff: true);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 

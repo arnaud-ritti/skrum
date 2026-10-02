@@ -53,7 +53,7 @@ describe('whiteboards/join', () => {
                 guestToken="token-abc"
                 boardTitle="Sprint board"
                 session={session}
-                suggestedName={null}
+                suggestedName="Thoughtful otter"
             />,
         );
 
@@ -67,23 +67,27 @@ describe('whiteboards/join', () => {
         expect(headTitles).toContain('Sprint board');
     });
 
-    it('promises no suggested nickname to a visitor with an empty name: the board has none', () => {
+    it('opens with the random nickname the server proposes and offers to draw another one', () => {
         renderWithProviders(
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
                 boardTitle="Sprint board"
                 session={session}
-                suggestedName={null}
+                suggestedName="Thoughtful otter"
             />,
         );
 
+        expect(document.querySelector<HTMLInputElement>('#name')?.value).toBe(
+            'Thoughtful otter',
+        );
         expect(
-            screen.queryByText('Suggested nickname if you leave it empty'),
-        ).toBeNull();
+            document.querySelector('[data-slot="guest-join-preview"]')
+                ?.textContent,
+        ).toContain('Thoughtful otter');
         expect(
-            document.querySelector('[data-slot="guest-join-preview"]'),
-        ).toBeNull();
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        ).toBeTruthy();
     });
 
     it('prefills the name of a signed-in visitor and posts it to the join route of the board', () => {
@@ -101,7 +105,9 @@ describe('whiteboards/join', () => {
             'Oscar Outsider',
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/whiteboards/join/token-abc',
@@ -122,7 +128,7 @@ describe('whiteboards/join', () => {
                 guestToken="token-abc"
                 boardTitle="Sprint board"
                 session={session}
-                suggestedName={null}
+                suggestedName="Thoughtful otter"
             />,
         );
 
@@ -141,7 +147,9 @@ describe('whiteboards/join', () => {
             0,
         );
         expect(document.querySelector('#name')).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Join the session' }),
+        ).toBeNull();
         expect(headTitles).toContain('Join a whiteboard');
         expect(post).not.toHaveBeenCalled();
     });

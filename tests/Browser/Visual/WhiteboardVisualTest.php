@@ -87,7 +87,7 @@ it('[P18e-07-02] renders the guest-join page of a whiteboard without overflow', 
         $this->whiteboardJoinPath($board),
         fn (string $path, array $options) => visit($path, $options)
             ->assertPresent('[data-slot="guest-join-session"][data-kind="whiteboard"]')
-            ->assertPresent('#name'),
+            ->fill('#name', 'Nadia'),
     );
 });
 

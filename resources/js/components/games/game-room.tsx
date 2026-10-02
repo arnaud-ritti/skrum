@@ -1,4 +1,3 @@
-import { MessagesSquare, Shapes, Trophy, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionReactions } from '@/components/session/session-reactions';
@@ -6,23 +5,16 @@ import { SessionShell } from '@/components/session/session-shell';
 import { avatarOrigin } from '@/components/session/use-flying-reactions';
 import { useGameRoom } from '@/hooks/use-game-room';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useTrans } from '@/hooks/use-trans';
 import type { GameSnapshot } from '@/lib/games/types';
 import { realtimeState } from '@/lib/realtime/realtime-state';
-import {
-    GameLayout,
-    useHasRightColumn,
-    type GameLayoutPanel,
-    type GameLayoutProps,
-} from './game-layout';
-import { GamePicker } from './game-picker';
+import { GameLayout } from './game-layout';
 import { GameStage } from './game-stage';
 import { PlayerChips } from './player-chips';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { RoomFull } from './room-full';
 import { RoomGone } from './room-gone';
 import { RoomActions, RoomTimer, RoomTitle } from './room-header';
-import { hasPlayersOnLeft, RoomPlayersSide, RoomSidebar } from './room-sidebar';
+import { useRoomPanels } from './room-panels';
 
 export type GameRoomProps = {
     snapshot: GameSnapshot;
@@ -47,8 +39,14 @@ export function GameRoom({
 }: GameRoomProps) {
     const room = useGameRoom(initial, { subscribe: true });
     const isMobile = useIsMobile();
-    const hasRightColumn = useHasRightColumn();
-    const { t } = useTrans();
+    const panels = useRoomPanels({
+        snapshot: room.state.snapshot,
+        lastEnded: room.state.lastEnded,
+        settingsCard,
+        turnOrder,
+        gifCaption,
+        gifPodium,
+    });
 
     if (room.full) {
         return <RoomFull />;
@@ -86,76 +84,6 @@ export function GameRoom({
         sessionExpired: room.sessionExpired,
     };
 
-    const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
-    const playersOnLeft = hasPlayersOnLeft(snapshot.room.game);
-    const isDraw = snapshot.room.game === 'draw';
-    const choice: GameLayoutPanel | undefined = snapshot.room.isHost
-        ? {
-              id: 'choice',
-              label: t('Choose a game'),
-              icon: Shapes,
-              content: (
-                  <GamePicker
-                      settings={playersOnLeft ? undefined : settingsCard}
-                  />
-              ),
-          }
-        : undefined;
-    const side = (
-        <RoomSidebar
-            highlightPlayerId={winnerPlayerId}
-            turnOrder={turnOrder}
-            gifPodium={gifPodium}
-            gifCaption={gifCaption}
-        />
-    );
-    /**
-     * Each game follows its own mockup: players on the left for Draw & Guess
-     * and Sprint in one GIF. The guesses of a drawing have their column only
-     * during a round; under it they stand on the stage.
-     */
-    const panels: Pick<GameLayoutProps, 'left' | 'right' | 'chooser'> =
-        playersOnLeft
-            ? {
-                  left: {
-                      id: 'players',
-                      label: isDraw ? t('Players') : t('Participants'),
-                      icon: Users,
-                      content: (
-                          <RoomPlayersSide
-                              highlightPlayerId={winnerPlayerId}
-                              turnOrder={turnOrder}
-                              settings={settingsCard}
-                          />
-                      ),
-                  },
-                  right: isDraw
-                      ? hasRightColumn && round?.game === 'draw'
-                          ? {
-                                id: 'guesses',
-                                label: t('Guesses'),
-                                icon: MessagesSquare,
-                                content: side,
-                            }
-                          : undefined
-                      : {
-                            id: 'scores',
-                            label: t('Scores'),
-                            icon: Trophy,
-                            content: side,
-                        },
-                  chooser: choice,
-              }
-            : {
-                  left: choice,
-                  right: {
-                      id: 'players',
-                      label: t('Players and scores'),
-                      icon: Users,
-                      content: side,
-                  },
-              };
-
     const canReact =
         snapshot.room.reactionsEnabled &&
         room.presence !== null &&
@@ -192,7 +120,6 @@ export function GameRoom({
                 }}
             >
                 <GameLayout
-                    variant={playersOnLeft ? 'players' : 'choice'}
                     {...panels}
                     stage={
                         <GameStage

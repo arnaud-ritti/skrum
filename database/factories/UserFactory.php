@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -46,6 +47,19 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * A row written before addresses were normalised: the spelling is
+     * stored as given, past the model.
+     */
+    public function storedWithAddress(string $email): static
+    {
+        return $this->afterCreating(function (User $user) use ($email): void {
+            DB::table('users')->where('id', $user->id)->update(['email' => $email]);
+
+            $user->setRawAttributes([...$user->getAttributes(), 'email' => $email], true);
+        });
+    }
+
     public function instanceAdmin(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -62,6 +76,13 @@ class UserFactory extends Factory
             'two_factor_secret' => encrypt('secret'),
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
+        ]);
+    }
+
+    public function withEmailSecondFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_email_enabled_at' => now(),
         ]);
     }
 }

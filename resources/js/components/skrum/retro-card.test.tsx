@@ -3,6 +3,7 @@ import { createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RetroCard } from '@/components/skrum/retro-card';
 import type { RetroCardProps } from '@/components/skrum/retro-card';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import { renderWithProviders } from '@/test/render';
 
 const author = {
@@ -143,6 +144,29 @@ describe('RetroCard', () => {
 
         expect(onVote).toHaveBeenNthCalledWith(1, 1);
         expect(onVote).toHaveBeenNthCalledWith(2, -1);
+    });
+
+    it('leaves V alone while single-key shortcuts are off, and keeps Enter', () => {
+        const onVote = vi.fn();
+        const onEditStart = vi.fn();
+        renderWithProviders(
+            card({
+                votes: { total: 1, mine: 1 },
+                canVote: true,
+                canEdit: true,
+                onVote,
+                onEditStart,
+            }),
+        );
+        const article = screen.getByRole('article');
+
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(article, { key: 'v' });
+        fireEvent.keyDown(article, { key: 'Enter' });
+        setSingleKeyShortcuts(true);
+
+        expect(onVote).not.toHaveBeenCalled();
+        expect(onEditStart).toHaveBeenCalledTimes(1);
     });
 
     it('does not vote when voting is closed', () => {

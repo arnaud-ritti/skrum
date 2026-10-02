@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatSeconds } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export const TimerPresetMinutes = [1, 3, 5, 10];
@@ -175,6 +176,11 @@ export function Timer({
         const target = event.target as HTMLElement;
 
         if (target.closest('input, textarea, [contenteditable="true"]')) {
+            return;
+        }
+
+        // T and + are the only keys of the timer: both are single keys.
+        if (!singleKeyShortcutsEnabled()) {
             return;
         }
 

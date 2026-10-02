@@ -3,15 +3,18 @@
 namespace App\Notifications;
 
 use App\Enums\ActionItemReminderKind;
+use App\Mail\ActionItemReminderMail;
 use App\Models\ActionItem;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 class ActionItemReminderDigestNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
@@ -33,11 +36,11 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): ActionItemReminderMail
     {
         /** @var Collection<string, ActionItem> $items */
         $items = ActionItem::query()
-            ->with(['team.workspace', 'retro'])
+            ->with(['team.workspace', 'externalLinks'])
             ->whereKey(array_column($this->reminders, 'actionItemId'))
             ->get()
             ->keyBy('id');
@@ -45,33 +48,46 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         $dueSoon = $this->itemsOfKind($items, ActionItemReminderKind::DueSoon);
         $shownOverdue = $overdue->take(self::Limit);
         $shownDueSoon = $dueSoon->take(self::Limit - $shownOverdue->count());
-        $hidden = $overdue->count() + $dueSoon->count() - $shownOverdue->count() - $shownDueSoon->count();
-
-        $mail = (new MailMessage)->subject($this->subject($overdue->count(), $dueSoon->count()));
-
-        $this->section($mail, __('Overdue'), $shownOverdue);
-        $this->section($mail, __('Due soon'), $shownDueSoon);
-
-        if ($hidden > 0) {
-            $mail->line(__('And :count more.', ['count' => $hidden]));
-        }
-
         $first = $overdue->concat($dueSoon)->first();
 
-        if ($first !== null) {
-            $mail->action(__('View my open action items'), route('workspaces.actionItems.index', [
+        return (new ActionItemReminderMail(
+            $shownOverdue->map($this->present(...))->all(),
+            $shownDueSoon->map($this->present(...))->all(),
+            $overdue->count() + $dueSoon->count() - $shownOverdue->count() - $shownDueSoon->count(),
+            $first === null ? null : route('workspaces.actionItems.index', [
                 'workspace' => $first->team->workspace,
                 'assignee' => 'me',
                 'status' => 'open',
-            ]));
-        }
+            ]),
+            URL::signedRoute('reminderUnsubscribes.show', ['user' => $notifiable->id]),
+            route('notificationPreferences.edit'),
+        ))
+            ->subject($this->subject($overdue->count(), $dueSoon->count()))
+            ->forNotifiable($notifiable);
+    }
 
-        $settingsLabel = $this->escape(__('Notification settings'));
-        $settingsUrl = route('notificationPreferences.edit');
+    /**
+     * @return array{content: string, url: string, team: string, due: string, daysLate: int, ticket: ?string}
+     */
+    private function present(ActionItem $item): array
+    {
+        $dueOn = CarbonImmutable::parse((string) $item->due_on?->toDateString(), (string) config('app.timezone'));
 
-        return $mail
-            ->line(__('You can turn off these reminders in your notification settings.'))
-            ->line("[{$settingsLabel}]({$settingsUrl})");
+        return [
+            'content' => Str::squish($item->content),
+            'url' => route('workspaces.actionItems.index', ['workspace' => $item->team->workspace, 'item' => $item->id]),
+            'team' => Str::squish($item->team->name),
+            'due' => $dueOn->locale(app()->getLocale())->isoFormat('D MMM'),
+            'daysLate' => max(0, (int) $dueOn->diffInDays(ActionItem::today()->startOfDay())),
+            'ticket' => $this->ticket($item),
+        ];
+    }
+
+    private function ticket(ActionItem $item): ?string
+    {
+        $key = $item->externalLinks->first()?->external_key;
+
+        return blank($key) ? null : Str::squish($key);
     }
 
     /**
@@ -86,49 +102,6 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
             ->values();
     }
 
-    /**
-     * @param  SupportCollection<int, ActionItem>  $items
-     */
-    private function section(MailMessage $mail, string $title, SupportCollection $items): void
-    {
-        if ($items->isEmpty()) {
-            return;
-        }
-
-        $mail->line("**{$this->escape($title)}**");
-
-        foreach ($items as $item) {
-            $mail->line($this->describe($item));
-        }
-    }
-
-    private function describe(ActionItem $item): string
-    {
-        $url = route('workspaces.actionItems.index', ['workspace' => $item->team->workspace, 'item' => $item->id]);
-        $content = $this->escape($item->content);
-        $team = $this->escape($item->team->name);
-        $source = $this->escape($item->retro === null ? __('Added outside a retro') : $item->retro->title);
-        $due = $this->dueWording($item);
-
-        return "[{$content}]({$url}) · {$team} · {$source} · {$due}";
-    }
-
-    private function dueWording(ActionItem $item): string
-    {
-        $dueOn = (string) $item->due_on?->toDateString();
-        $today = ActionItem::today();
-
-        if ($dueOn === $today->toDateString()) {
-            return __('Due today');
-        }
-
-        if ($dueOn === $today->addDay()->toDateString()) {
-            return __('Due tomorrow');
-        }
-
-        return __('Due :date', ['date' => CarbonImmutable::parse($dueOn)->settings(['locale' => app()->getLocale()])->isoFormat('LL')]);
-    }
-
     private function subject(int $overdue, int $dueSoon): string
     {
         if ($overdue > 0 && $dueSoon > 0) {
@@ -140,16 +113,5 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         }
 
         return trans_choice(':count action item is due soon|:count action items are due soon', $dueSoon);
-    }
-
-    /**
-     * Item text is user input: escaping Markdown keeps it from becoming a
-     * link or formatting in the e-mail.
-     */
-    private function escape(string $text): string
-    {
-        $singleLine = preg_replace('/\s+/u', ' ', $text) ?? $text;
-
-        return addcslashes($singleLine, '\\`*_{}[]()#+-.!|');
     }
 }

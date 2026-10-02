@@ -1,7 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
-import { authLinkClass } from '@/components/auth/login-form';
+import { authLinkClass } from '@/components/auth/auth-link';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { TextField } from '@/components/skrum/text-field';
 import {
@@ -28,18 +28,25 @@ const slotGroups = [0, groupSize].map((start) =>
     Array.from({ length: groupSize }, (_, offset) => start + offset),
 );
 
-function CodeField({
+/**
+ * Six digits in two groups of three, sent by themselves at the sixth: the
+ * field of the authenticator code and of the code received by e-mail.
+ */
+export function CodeField({
+    label,
     value,
     onChange,
     error,
     processing,
+    autoFocus = true,
 }: {
+    label: string;
     value: string;
     onChange: (value: string) => void;
     error?: string;
     processing: boolean;
+    autoFocus?: boolean;
 }) {
-    const { t } = useTrans();
     const id = useId();
     const input = useRef<HTMLInputElement>(null);
 
@@ -57,7 +64,7 @@ function CodeField({
             className="flex min-w-0 flex-col gap-1.5"
         >
             <Label htmlFor={id} className={cn(processing && 'opacity-55')}>
-                {t('Authentication code')}
+                {label}
             </Label>
             <InputOTP
                 ref={input}
@@ -70,7 +77,7 @@ function CodeField({
                 pattern={REGEXP_ONLY_DIGITS}
                 disabled={processing}
                 error={error}
-                autoFocus
+                autoFocus={autoFocus}
             >
                 {slotGroups.map((slots, group) => (
                     <Fragment key={slots[0]}>
@@ -117,6 +124,7 @@ export function TwoFactorForm({ mode, onModeChange }: TwoFactorFormProps) {
                         />
                     ) : (
                         <CodeField
+                            label={t('Authentication code')}
                             value={code}
                             onChange={setCode}
                             error={errors.code}

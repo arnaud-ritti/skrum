@@ -30,7 +30,7 @@ class PokerJoinsController extends Controller
             'guestToken' => $guestToken,
             'gameTitle' => $game->title,
             'session' => $presentJoinSession->poker($game),
-            'suggestedName' => $request->user()?->name,
+            ...$presentJoinSession->nickname($request->user()),
         ])->toResponse($request);
     }
 

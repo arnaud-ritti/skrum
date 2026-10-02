@@ -87,25 +87,22 @@ describe('InvitationCard', () => {
         );
     });
 
-    it('names the workspace, the inviter and the last day of an expired invitation', () => {
+    it('names the workspace and the inviter of an expired invitation, from a name alone', () => {
         renderWithProviders(
             <InvitationCard
                 isInvalid={false}
                 isExpired
                 workspaceName="Nordlys"
-                inviter={{ name: 'Ada Lovelace', avatarUrl: '' }}
-                expiresAt="2026-09-24T12:00:00+00:00"
+                inviter={{ name: 'Ada Lovelace' }}
             />,
         );
 
         expect(
-            screen.getByRole('heading', {
-                name: 'This invitation has expired',
-            }),
+            screen.getByRole('heading', { name: 'Invitation' }),
         ).toBeTruthy();
         expect(
             screen.getByText(
-                'Your invitation to join Nordlys was valid until September 24.',
+                'Your invitation to join Nordlys has expired or was already used.',
             ),
         ).toBeTruthy();
         expect(
@@ -118,11 +115,12 @@ describe('InvitationCard', () => {
                 .querySelector('[data-slot="access-notice-mark"]')
                 ?.classList.contains('bg-skrum-warning-soft'),
         ).toBe(true);
+        expect(document.querySelector('img')).toBeNull();
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.queryByRole('button')).toBeNull();
     });
 
-    it('gives the year of an invitation that expired another year', () => {
+    it('gives no date of an expired invitation, even when one is passed', () => {
         renderWithProviders(
             <InvitationCard
                 {...pending}
@@ -131,11 +129,8 @@ describe('InvitationCard', () => {
             />,
         );
 
-        expect(
-            screen.getByText(
-                'Your invitation to join Nordlys was valid until September 24, 2025.',
-            ),
-        ).toBeTruthy();
+        expect(screen.queryByText(/was valid until/)).toBeNull();
+        expect(screen.queryByText(/2025/)).toBeNull();
     });
 
     it('does not call a used invitation expired, and asks an administrator when the inviter is gone', () => {
@@ -220,10 +215,11 @@ describe('InvitationCard', () => {
         ).toBe('You are invited to join Nordlys');
     });
 
-    it('offers the providers, then an account and the login to a logged out visitor', () => {
-        renderWithProviders(
+    it('offers the providers, then the account form and the sign-in link to a logged out visitor', () => {
+        const { container } = renderWithProviders(
             <InvitationCard
                 {...pending}
+                passwordRules="minlength: 12; required: lower;"
                 ssoProviders={[
                     { key: 'google', label: 'Google' },
                     { key: 'github', label: 'GitHub' },
@@ -231,22 +227,79 @@ describe('InvitationCard', () => {
             />,
         );
 
-        const links = screen.getAllByRole('link');
+        expect(
+            screen
+                .getAllByRole('link')
+                .map((link) => link.getAttribute('href')),
+        ).toEqual(['/auth/google/redirect', '/auth/github/redirect', '/login']);
+        expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+        expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
 
-        expect(links.map((link) => link.getAttribute('href'))).toEqual([
-            '/auth/google/redirect',
-            '/auth/github/redirect',
-            '/register',
-            '/login',
-        ]);
+        const accountForm = container.querySelector(
+            '[data-slot="invitation-card"] form',
+        );
+
+        expect(accountForm?.getAttribute('action')).toBe(
+            '/invitations/secret-token/account',
+        );
+        expect(accountForm?.getAttribute('method')).toBe('post');
         expect(
-            screen.getByRole('link', { name: 'Continue with Google' }),
+            screen.getByRole('button', {
+                name: 'Create my account and join Nordlys',
+            }),
         ).toBeTruthy();
+
+        const name = screen.getByLabelText(/^First and last name/);
+        const password = screen.getByLabelText(/^Create a password/);
+
+        expect(name.getAttribute('name')).toBe('name');
+        expect(password.getAttribute('name')).toBe('password');
+        expect(password.getAttribute('type')).toBe('password');
+        expect(password.getAttribute('placeholder')).toBe(
+            '12 characters minimum',
+        );
         expect(
-            screen.getByRole('link', { name: 'Create an account' }),
-        ).toBeTruthy();
-        expect(screen.getByRole('link', { name: 'Log in' })).toBeTruthy();
-        expect(screen.queryByRole('button')).toBeNull();
+            container.querySelector('[name="password_confirmation"]'),
+        ).toBeNull();
+    });
+
+    it('never sends the address: the locked field has no name', () => {
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        const email = screen.getByLabelText('Email') as HTMLInputElement;
+
+        expect(email.readOnly).toBe(true);
+        expect(email.hasAttribute('name')).toBe(false);
+    });
+
+    it('shows what the server refused under the fields', () => {
+        form.errors = {
+            email: 'The email has already been taken.',
+            name: 'The name field is required.',
+            password: 'The password field must be at least 12 characters.',
+        };
+
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        for (const message of Object.values(form.errors)) {
+            expect(screen.getByText(message)).toBeTruthy();
+        }
+
+        expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+    });
+
+    it('disables the account button while the account is created', () => {
+        form.processing = true;
+
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Create my account and join Nordlys',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
     });
 
     it('offers only the login when registration is closed', () => {
@@ -258,6 +311,8 @@ describe('InvitationCard', () => {
             screen.getAllByRole('link').map((link) => link.textContent),
         ).toEqual(['Log in']);
         expect(screen.queryByText('Already have an account?')).toBeNull();
+        expect(document.querySelector('form')).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('lets the invited account join, without a provider or a login link', () => {
@@ -370,5 +425,90 @@ describe('InvitationCard', () => {
         expect(
             screen.getByRole('button', { name: 'Decline invitation' }),
         ).toBeTruthy();
+    });
+
+    it('offers only the providers, and names the invited address, when single sign-on is required', () => {
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                canRegister={false}
+                ssoRequired
+                ssoProviders={[{ key: 'oidc', label: 'Nordlys SSO' }]}
+            />,
+        );
+
+        expect(state()).toBe('logged-out');
+        expect(
+            screen.getAllByRole('link').map((link) => link.textContent),
+        ).toEqual(['Continue with Nordlys SSO']);
+        expect(
+            screen.getByText(
+                'Use the account whose address is mona@example.com.',
+            ),
+        ).toBeTruthy();
+        expect(document.getElementById('email')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('starts single sign-on with a link that carries neither a query nor the invitation token', () => {
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                ssoProviders={[{ key: 'google', label: 'Google' }]}
+            />,
+        );
+
+        const href = screen
+            .getByRole('link', { name: 'Continue with Google' })
+            .getAttribute('href');
+
+        expect(href).toBe('/auth/google/redirect');
+        expect(href).not.toContain('?');
+        expect(href).not.toContain('secret-token');
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).not.toBeNull();
+        expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe(
+            'mona@example.com',
+        );
+    });
+
+    it('draws no provider and no separator when none is enabled', () => {
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        expect(document.querySelector('[data-slot="sso-buttons"]')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(document.querySelector('a[href^="/auth/"]')).toBeNull();
+    });
+
+    it.each([
+        ['an invalid link', { isInvalid: true }],
+        ['an expired invitation', { isExpired: true }],
+        ['the invited account', { isLoggedIn: true, emailMatches: true }],
+        ['another account', { isLoggedIn: true, emailMatches: false }],
+    ])('offers no provider to %s, whatever the list holds', (_, props) => {
+        page.props = { ...page.props, auth: { user: mona } };
+
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                {...props}
+                ssoProviders={[
+                    { key: 'google', label: 'Google' },
+                    { key: 'github', label: 'GitHub' },
+                ]}
+            />,
+        );
+
+        expect(document.querySelector('[data-slot="sso-buttons"]')).toBeNull();
+        expect(document.querySelector('a[href^="/auth/"]')).toBeNull();
+        expect(
+            screen.queryByRole('link', { name: /Continue with/ }),
+        ).toBeNull();
     });
 });

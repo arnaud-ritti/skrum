@@ -58,17 +58,16 @@ it('writes the request id on log entries made during the request', function () {
 
     $record = collect($handler->getRecords())->first(fn ($record) => $record->message === 'inside the request');
 
-    expect($record)->not->toBeNull();
-    expect($record->extra['request_id'] ?? $record->context['request_id'] ?? null)
-        ->toBe($response->headers->get('X-Request-Id'));
+    expect($record)->not->toBeNull()
+        ->and($record->extra['request_id'] ?? $record->context['request_id'] ?? null)->toBe($response->headers->get('X-Request-Id'));
 });
 
 it('keeps the body of a json error response and adds the header', function () {
     $response = $this->getJson('/api/does-not-exist');
 
     $response->assertNotFound();
-    expect($response->json('message'))->toBeString();
-    expect($response->headers->get('X-Request-Id'))->toBeUuid();
+    expect($response->json('message'))->toBeString()
+        ->and($response->headers->get('X-Request-Id'))->toBeUuid();
 });
 
 it('does not leak the id of one request into the next', function () {

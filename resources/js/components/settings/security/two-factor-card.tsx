@@ -12,7 +12,12 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import { EmailCodeRow } from '@/components/settings/security/email-code-row';
 import { RecoveryCodes } from '@/components/settings/security/recovery-codes';
+import {
+    turnOffButtonClass,
+    TwoFactorRow as Row,
+} from '@/components/settings/security/two-factor-row';
 import {
     StepNumber,
     TwoFactorSetup,
@@ -34,13 +39,17 @@ import {
     enable,
     regenerateRecoveryCodes,
 } from '@/routes/two-factor';
-import type { TwoFactorSummary } from '@/types/auth';
+import type { EmailSecondFactor, TwoFactorSummary } from '@/types/auth';
 
 type TwoFactorCardProps = {
     enabled: boolean;
     /** The server asks for a code before it turns the second factor on. */
     requiresConfirmation: boolean;
     summary: TwoFactorSummary;
+    /** The server offers the authenticator app; without it only the e-mail code is listed. */
+    appAvailable?: boolean;
+    /** The e-mail code, a second method of the same card. */
+    emailCode?: EmailSecondFactor;
 };
 
 /** At this many recovery codes or fewer, the card asks for new ones. */
@@ -70,55 +79,12 @@ function IconTile({
     );
 }
 
-function Row({
-    icon: Icon,
-    destructive = false,
-    title,
-    description,
-    action,
-    children,
-}: {
-    icon: LucideIcon;
-    destructive?: boolean;
-    title: string;
-    description?: string;
-    action?: ReactNode;
-    children?: ReactNode;
-}): ReactElement {
-    return (
-        <div
-            data-slot="two-factor-row"
-            className="flex min-w-0 flex-col gap-4 border-b px-5 py-4 last:border-b-0"
-        >
-            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
-                <Icon
-                    aria-hidden="true"
-                    className={cn(
-                        'size-5 shrink-0',
-                        destructive
-                            ? 'text-skrum-destructive-text'
-                            : 'text-muted-foreground',
-                    )}
-                />
-                <div className="flex min-w-0 flex-1 basis-56 flex-col">
-                    <span className="text-sm font-semibold">{title}</span>
-                    {description !== undefined && (
-                        <span className="text-sm text-muted-foreground">
-                            {description}
-                        </span>
-                    )}
-                </div>
-                {action}
-            </div>
-            {children}
-        </div>
-    );
-}
-
 export function TwoFactorCard({
     enabled,
     requiresConfirmation,
     summary,
+    appAvailable = true,
+    emailCode,
 }: TwoFactorCardProps): ReactElement {
     const { t } = useTrans();
     const { locale } = usePage<{ locale?: string }>().props;
@@ -154,10 +120,23 @@ export function TwoFactorCard({
         wasEnabled.current = enabled;
     }, [enabled, clearTwoFactorAuthData]);
 
+    /* A method the instance cannot deliver is listed only while it is on, to be turned off. */
+    const listedEmailCode =
+        emailCode !== undefined && (emailCode.available || emailCode.enabled)
+            ? emailCode
+            : undefined;
+    const listsEmailCode = listedEmailCode !== undefined;
+    const emailCodeOn = listedEmailCode?.enabled === true;
+    const anyMethodOn = enabled || emailCodeOn;
+
     const title = t('Two-factor authentication');
-    const description = t(
-        'A 6-digit code from an authenticator app, on top of your password.',
-    );
+    const description = listsEmailCode
+        ? t(
+              'A 6-digit code on top of your password, from an authenticator app or by e-mail.',
+          )
+        : t(
+              'A 6-digit code from an authenticator app, on top of your password.',
+          );
 
     const loadCodes = async (): Promise<void> => {
         setCodesLoading(true);
@@ -369,7 +348,7 @@ export function TwoFactorCard({
                 <span className="min-w-0 flex-1 text-sm font-semibold">
                     {title}
                 </span>
-                {enabled ? (
+                {anyMethodOn ? (
                     <Badge variant="success" shape="pill" icon={Check}>
                         {t('On')}
                     </Badge>
@@ -496,7 +475,7 @@ export function TwoFactorCard({
         );
     }
 
-    if (!enabled) {
+    if (!enabled && !listsEmailCode) {
         return (
             <SettingsCard
                 title={title}
@@ -547,6 +526,155 @@ export function TwoFactorCard({
                   }).format(new Date(summary.confirmedAt)),
               });
 
+    const recoveryCodesRow = (
+        <Row
+            icon={Key}
+            title={t('Recovery codes')}
+            description={
+                summary.recoveryCodesRemaining === null
+                    ? undefined
+                    : t(':left of :total recovery codes left', {
+                          left: summary.recoveryCodesRemaining,
+                          total: summary.recoveryCodesTotal,
+                      })
+            }
+            action={
+                <div className="flex max-w-full min-w-0 flex-wrap gap-2">
+                    {hasCodesToView && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-expanded={codesVisible}
+                            aria-controls={codesVisible ? codesId : undefined}
+                            className="max-w-full"
+                            onClick={toggleCodes}
+                        >
+                            {codesVisible ? (
+                                <EyeOff aria-hidden="true" />
+                            ) : (
+                                <Eye aria-hidden="true" />
+                            )}
+                            <span className="truncate">
+                                {codesVisible
+                                    ? t('Hide recovery codes')
+                                    : t('View recovery codes')}
+                            </span>
+                        </Button>
+                    )}
+                    <Form
+                        {...regenerateRecoveryCodes.form()}
+                        options={{ preserveScroll: true }}
+                        onSuccess={showRegeneratedCodes}
+                        className="max-w-full min-w-0"
+                    >
+                        {({ processing }) => (
+                            <LoadingButton
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                loading={processing}
+                                className="max-w-full"
+                            >
+                                <RotateCcw aria-hidden="true" />
+                                <span className="truncate">
+                                    {t('Regenerate codes')}
+                                </span>
+                            </LoadingButton>
+                        )}
+                    </Form>
+                </div>
+            }
+        >
+            {codesLeft !== null && codesLeft <= LowRecoveryCodes && (
+                <Alert
+                    data-slot="recovery-codes-alert"
+                    variant={codesLeft === 0 ? 'destructive' : 'warning'}
+                    title={lowCodesTitle(codesLeft)}
+                    description={
+                        codesLeft === 0
+                            ? t(
+                                  'If you lose your phone, you may not be able to sign in. Regenerate your codes now.',
+                              )
+                            : t(
+                                  'Regenerate your codes to get :total new ones. The old ones stop working.',
+                                  { total: summary.recoveryCodesTotal },
+                              )
+                    }
+                />
+            )}
+            <p
+                role="status"
+                data-slot="recovery-codes-status"
+                className="sr-only"
+            >
+                {codesRegenerated && hasCodesToView
+                    ? t('New recovery codes generated.')
+                    : ''}
+            </p>
+            {codesVisible && hasCodesToView && (
+                <div id={codesId} className="flex min-w-0 flex-col gap-3">
+                    {codesFailures || (
+                        <>
+                            <RecoveryCodes
+                                codes={recoveryCodesList}
+                                loading={codesLoading}
+                                placeholders={
+                                    summary.recoveryCodesRemaining ??
+                                    summary.recoveryCodesTotal
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {t(
+                                    'Each recovery code can be used once. Regenerating them makes the old codes invalid.',
+                                )}
+                            </p>
+                        </>
+                    )}
+                </div>
+            )}
+        </Row>
+    );
+
+    /** With the e-mail code listed, each method is turned off on its own row. */
+    const appAction = (): ReactNode => {
+        if (!enabled) {
+            return (
+                <LoadingButton
+                    type="button"
+                    size="sm"
+                    loading={starting}
+                    className="max-w-full"
+                    onClick={start}
+                >
+                    <ShieldCheck aria-hidden="true" />
+                    <span className="truncate">
+                        {hasSetupData ? t('Continue setup') : t('Enable 2FA')}
+                    </span>
+                </LoadingButton>
+            );
+        }
+
+        if (!listsEmailCode) {
+            return undefined;
+        }
+
+        return (
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={turnOffButtonClass}
+                onClick={() => setTurnOffOpen(true)}
+            >
+                <ShieldOff aria-hidden="true" />
+                <span className="truncate">
+                    {emailCodeOn ? t('Turn off the app') : t('Turn off 2FA')}
+                </span>
+            </Button>
+        );
+    };
+
     return (
         <SettingsCard
             title={title}
@@ -554,162 +682,92 @@ export function TwoFactorCard({
             flush
             header={
                 <>
-                    <IconTile icon={ShieldCheck} tone="success" />
+                    {anyMethodOn ? (
+                        <IconTile icon={ShieldCheck} tone="success" />
+                    ) : (
+                        <IconTile icon={Smartphone} />
+                    )}
                     <span className="min-w-0 flex-1 text-sm font-semibold">
                         {title}
                     </span>
-                    <Badge variant="success" shape="pill" icon={Check}>
-                        {t('On')}
-                    </Badge>
+                    {anyMethodOn ? (
+                        <Badge variant="success" shape="pill" icon={Check}>
+                            {t('On')}
+                        </Badge>
+                    ) : (
+                        <Badge variant="muted" shape="pill">
+                            {t('Off')}
+                        </Badge>
+                    )}
                 </>
             }
         >
-            <Row
-                icon={Smartphone}
-                title={t('Authenticator app')}
-                description={addedOn}
-            />
-            <Row
-                icon={Key}
-                title={t('Recovery codes')}
-                description={
-                    summary.recoveryCodesRemaining === null
-                        ? undefined
-                        : t(':left of :total recovery codes left', {
-                              left: summary.recoveryCodesRemaining,
-                              total: summary.recoveryCodesTotal,
-                          })
-                }
-                action={
-                    <div className="flex max-w-full min-w-0 flex-wrap gap-2">
-                        {hasCodesToView && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                aria-expanded={codesVisible}
-                                aria-controls={
-                                    codesVisible ? codesId : undefined
-                                }
-                                className="max-w-full"
-                                onClick={toggleCodes}
-                            >
-                                {codesVisible ? (
-                                    <EyeOff aria-hidden="true" />
-                                ) : (
-                                    <Eye aria-hidden="true" />
-                                )}
-                                <span className="truncate">
-                                    {codesVisible
-                                        ? t('Hide recovery codes')
-                                        : t('View recovery codes')}
-                                </span>
-                            </Button>
-                        )}
-                        <Form
-                            {...regenerateRecoveryCodes.form()}
-                            options={{ preserveScroll: true }}
-                            onSuccess={showRegeneratedCodes}
-                            className="max-w-full min-w-0"
+            {appAvailable && (
+                <Row
+                    icon={Smartphone}
+                    title={t('Authenticator app')}
+                    description={
+                        enabled
+                            ? addedOn
+                            : t('A 6-digit code from an app on your phone.')
+                    }
+                    action={appAction()}
+                />
+            )}
+            {enabled && recoveryCodesRow}
+            {listedEmailCode !== undefined && (
+                <EmailCodeRow {...listedEmailCode} appEnabled={enabled} />
+            )}
+            {enabled && !listsEmailCode && (
+                <Row
+                    icon={ShieldOff}
+                    destructive
+                    title={t('Turn off two-factor authentication')}
+                    description={t(
+                        'Your account will be protected by your password only.',
+                    )}
+                    action={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={turnOffButtonClass}
+                            onClick={() => setTurnOffOpen(true)}
                         >
-                            {({ processing }) => (
-                                <LoadingButton
-                                    type="submit"
-                                    variant="outline"
-                                    size="sm"
-                                    loading={processing}
-                                    className="max-w-full"
-                                >
-                                    <RotateCcw aria-hidden="true" />
-                                    <span className="truncate">
-                                        {t('Regenerate codes')}
-                                    </span>
-                                </LoadingButton>
-                            )}
-                        </Form>
-                    </div>
-                }
-            >
-                {codesLeft !== null && codesLeft <= LowRecoveryCodes && (
-                    <Alert
-                        data-slot="recovery-codes-alert"
-                        variant={codesLeft === 0 ? 'destructive' : 'warning'}
-                        title={lowCodesTitle(codesLeft)}
-                        description={
-                            codesLeft === 0
-                                ? t(
-                                      'If you lose your phone, you may not be able to sign in. Regenerate your codes now.',
-                                  )
-                                : t(
-                                      'Regenerate your codes to get :total new ones. The old ones stop working.',
-                                      { total: summary.recoveryCodesTotal },
-                                  )
-                        }
-                    />
-                )}
-                <p
-                    role="status"
-                    data-slot="recovery-codes-status"
-                    className="sr-only"
-                >
-                    {codesRegenerated && hasCodesToView
-                        ? t('New recovery codes generated.')
-                        : ''}
-                </p>
-                {codesVisible && hasCodesToView && (
-                    <div id={codesId} className="flex min-w-0 flex-col gap-3">
-                        {codesFailures || (
-                            <>
-                                <RecoveryCodes
-                                    codes={recoveryCodesList}
-                                    loading={codesLoading}
-                                    placeholders={
-                                        summary.recoveryCodesRemaining ??
-                                        summary.recoveryCodesTotal
-                                    }
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    {t(
-                                        'Each recovery code can be used once. Regenerating them makes the old codes invalid.',
-                                    )}
-                                </p>
-                            </>
-                        )}
-                    </div>
-                )}
-            </Row>
-            <Row
-                icon={ShieldOff}
-                destructive
-                title={t('Turn off two-factor authentication')}
-                description={t(
-                    'Your account will be protected by your password only.',
-                )}
-                action={
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="max-w-full border-[color-mix(in_oklch,var(--destructive)_45%,var(--input))] text-skrum-destructive-text hover:text-skrum-destructive-text"
-                        onClick={() => setTurnOffOpen(true)}
-                    >
-                        <ShieldOff aria-hidden="true" />
-                        <span className="truncate">{t('Turn off 2FA')}</span>
-                    </Button>
-                }
-            />
-            <ConfirmDialog
-                open={turnOffOpen}
-                onOpenChange={changeTurnOffOpen}
-                error={turnOffError}
-                tone="destructive"
-                title={t('Turn off two-factor authentication?')}
-                description={t(
-                    'Your account will be protected by your password only.',
-                )}
-                confirmLabel={t('Turn off 2FA')}
-                onConfirm={turnOff}
-            />
+                            <ShieldOff aria-hidden="true" />
+                            <span className="truncate">
+                                {t('Turn off 2FA')}
+                            </span>
+                        </Button>
+                    }
+                />
+            )}
+            {enabled && (
+                <ConfirmDialog
+                    open={turnOffOpen}
+                    onOpenChange={changeTurnOffOpen}
+                    error={turnOffError}
+                    tone="destructive"
+                    title={
+                        emailCodeOn
+                            ? t('Turn off the authenticator app?')
+                            : t('Turn off two-factor authentication?')
+                    }
+                    description={
+                        emailCodeOn
+                            ? t(
+                                  'Your recovery codes stop working. The e-mail code keeps protecting your account.',
+                              )
+                            : t(
+                                  'Your account will be protected by your password only.',
+                              )
+                    }
+                    confirmLabel={
+                        emailCodeOn ? t('Turn off the app') : t('Turn off 2FA')
+                    }
+                    onConfirm={turnOff}
+                />
+            )}
         </SettingsCard>
     );
 }

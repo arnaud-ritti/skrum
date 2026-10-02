@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Actions\Search;
+
+use App\Enums\RetroPhase;
+use App\Models\ActionItem;
+use App\Models\Card;
+use App\Models\GameRoom;
+use App\Models\Participant;
+use App\Models\PokerGame;
+use App\Models\Retro;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\Whiteboard;
+use App\Support\LikePattern;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+
+/**
+ * @phpstan-type SearchResult array{
+ *     kind: string,
+ *     id: string,
+ *     title: string,
+ *     team: array{id: string, name: string},
+ *     url: string,
+ *     context: ?string
+ * }
+ */
+class SearchWorkspaceContent
+{
+    public const int PerKind = 5;
+
+    /**
+     * Every query starts from the ids of the given teams: what the caller
+     * may not view cannot match. A card of a retro that still hides the
+     * others' cards matches only for its author. Whiteboard elements are
+     * not searched.
+     *
+     * @param  Collection<int, Team>  $teams  teams of one workspace
+     * @return array<int, SearchResult>
+     */
+    public function handle(Collection $teams, string $term, User $user): array
+    {
+        if ($teams->isEmpty()) {
+            return [];
+        }
+
+        $teamIds = $teams->modelKeys();
+        $teamsById = $teams->keyBy('id');
+        $workspace = $teams->first()->workspace;
+        $pattern = LikePattern::contains($term);
+
+        $retros = Retro::query()->whereIn('team_id', $teamIds)->where('title', 'ilike', $pattern)
+            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+            ->map(fn (Retro $retro): array => $this->result('retro', $retro->id, $retro->title, $teamsById[$retro->team_id], route('retros.show', $retro)));
+
+        $games = PokerGame::query()->whereIn('team_id', $teamIds)
+            ->where(fn (Builder $query) => $query
+                ->where('title', 'ilike', $pattern)
+                ->orWhereHas('tasks', fn (Builder $tasks) => $tasks->where('title', 'ilike', $pattern)))
+            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+            ->map(fn (PokerGame $game): array => $this->result('poker', $game->id, $game->title, $teamsById[$game->team_id], route('poker.show', $game)));
+
+        $boards = Whiteboard::query()->whereIn('team_id', $teamIds)->where('title', 'ilike', $pattern)
+            ->latest('updated_at')->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+            ->map(fn (Whiteboard $board): array => $this->result('whiteboard', $board->id, $board->title, $teamsById[$board->team_id], route('whiteboards.show', $board)));
+
+        $rooms = GameRoom::query()->whereIn('team_id', $teamIds)->where('name', 'ilike', $pattern)
+            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'name'])
+            ->map(fn (GameRoom $room): array => $this->result('game', $room->id, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room)));
+
+        $items = ActionItem::query()->whereIn('team_id', $teamIds)->where('content', 'ilike', $pattern)
+            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'content'])
+            ->map(fn (ActionItem $item): array => $this->result('action', $item->id, $item->content, $teamsById[$item->team_id], route('workspaces.actionItems.index', ['workspace' => $workspace, 'item' => $item->id])));
+
+        $ownParticipantIds = Participant::query()->where('user_id', $user->id)->select('id');
+        $hidingRetroIds = Retro::query()->whereIn('phase', RetroPhase::hidingOthersCards())->select('id');
+
+        $cards = Card::query()
+            ->with('retro:id,team_id,title')
+            ->whereIn('retro_id', Retro::query()->whereIn('team_id', $teamIds)->select('id'))
+            ->where('content', 'ilike', $pattern)
+            ->where(fn (Builder $query) => $query
+                ->whereNotIn('retro_id', $hidingRetroIds)
+                ->orWhereIn('participant_id', $ownParticipantIds))
+            ->latest()->orderByDesc('id')->limit(self::PerKind)->get(['id', 'retro_id', 'content'])
+            ->map(fn (Card $card): array => $this->result(
+                'card',
+                $card->id,
+                Str::limit(Str::squish($card->content), 120),
+                $teamsById[$card->retro->team_id],
+                route('retros.show', $card->retro),
+                $card->retro->title,
+            ));
+
+        return collect([$retros, $games, $boards, $rooms, $items, $cards])->flatten(1)->values()->all();
+    }
+
+    /**
+     * @return SearchResult
+     */
+    private function result(string $kind, string $id, string $title, Team $team, string $url, ?string $context = null): array
+    {
+        return [
+            'kind' => $kind,
+            'id' => $id,
+            'title' => $title,
+            'team' => ['id' => $team->id, 'name' => $team->name],
+            'url' => $url,
+            'context' => $context,
+        ];
+    }
+}

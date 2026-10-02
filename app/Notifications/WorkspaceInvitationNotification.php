@@ -2,22 +2,36 @@
 
 namespace App\Notifications;
 
+use App\Actions\Auth\SignupGate;
+use App\Enums\SsoProvider;
+use App\Mail\WorkspaceInvitationMail;
+use App\Models\User;
+use App\Models\WorkspaceInvitation;
+use App\Support\Auth\SignInPolicy;
+use App\Support\Avatars\AvatarUrl;
+use App\Support\Mail\MailBrand;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 class WorkspaceInvitationNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 
+    /**
+     * The invitation is carried by its id: the counts of its workspace and
+     * the inviter are read when the queued mail is written.
+     */
     public function __construct(
         public string $workspaceName,
         public string $inviterName,
         public string $url,
         public CarbonInterface $expiresAt,
+        public ?string $invitationId = null,
     ) {}
 
     /** @return array<int, string> */
@@ -26,15 +40,27 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(AnonymousNotifiable|User $notifiable): WorkspaceInvitationMail
     {
-        return (new MailMessage)
-            ->subject(__('You are invited to join :workspace', ['workspace' => $this->workspaceName]))
-            ->line(__(':inviter invited you to join the :workspace workspace.', [
-                'inviter' => $this->inviterName,
-                'workspace' => $this->workspaceName,
-            ]))
-            ->action(__('Accept invitation'), $this->url)
-            ->line(__('This invitation expires on :date.', ['date' => $this->expiresAt->isoFormat('LL')]));
+        $invitation = $this->invitationId === null
+            ? null
+            : WorkspaceInvitation::query()->with(['workspace', 'invitedBy'])->find($this->invitationId);
+        $workspaceName = Str::squish($this->workspaceName);
+        $inviterName = Str::squish($this->inviterName);
+
+        return (new WorkspaceInvitationMail(
+            $workspaceName,
+            $inviterName,
+            $this->url,
+            resolve(AvatarUrl::class)->initials($inviterName),
+            MailBrand::presence($invitation?->invitedBy?->avatarSeed() ?? $inviterName),
+            $invitation?->workspace->teams()->count(),
+            $invitation?->workspace->members()->count(),
+            SsoProvider::enabled() !== [],
+            resolve(SignInPolicy::class)->allowsLocalCredentials() && resolve(SignupGate::class)->canShowRegistration($invitation),
+            max(1, (int) ceil(now()->diffInDays($this->expiresAt, absolute: false))),
+        ))
+            ->subject(__(':inviter invited you to join :workspace', ['inviter' => $inviterName, 'workspace' => $workspaceName]))
+            ->forNotifiable($notifiable);
     }
 }

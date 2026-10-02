@@ -10,9 +10,11 @@ class RetroRecap
 {
     /**
      * @param  array<int, string>|null  $participantNames  null on anonymous retros
-     * @param  array<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>  $actionItems
+     * @param  array<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool, assigneeInitials?: ?string, assigneePresence?: ?int, dueDay?: ?string}>  $actionItems
      * @param  array<int, string>  $suggestedActions
      * @param  array<int, array{column: string, content: string, votes: int, groupedCount: int}>  $topCards
+     * @param  array{1: int, 2: int, 3: int, 4: int, 5: int}|null  $rotiCounts  null under three votes
+     * @param  ?string  $facilitatorName  null on anonymous retros
      */
     public function __construct(
         public string $title,
@@ -30,5 +32,8 @@ class RetroRecap
         public array $suggestedActions,
         public int $hiddenSuggestedActions,
         public array $topCards,
+        public ?string $facilitatorName = null,
+        public ?array $rotiCounts = null,
+        public ?string $completedDay = null,
     ) {}
 }

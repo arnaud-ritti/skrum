@@ -1,10 +1,13 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import { Clock, Link2Off, Lock, LogOut } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import InvitationAcceptancesController from '@/actions/App/Http/Controllers/InvitationAcceptancesController';
+import InvitationAccountsController from '@/actions/App/Http/Controllers/InvitationAccountsController';
 import { AccessNotice } from '@/components/auth/access-notice';
-import { authLinkClass } from '@/components/auth/login-form';
+import { authLinkClass } from '@/components/auth/auth-link';
+import { PasswordField } from '@/components/auth/password-field';
+import { minimumLength } from '@/components/auth/register-form';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -15,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
-import { login, logout, register } from '@/routes';
+import { login, logout } from '@/routes';
 import type { SsoProviderOption } from '@/types';
 
 export type InvitationPerson = {
@@ -27,7 +30,7 @@ export type InvitationRole = 'owner' | 'admin' | 'member';
 
 /**
  * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired or
- * used invitation sends `isExpired`, `workspaceName`, `inviter` and `expiresAt`, nothing else.
+ * used invitation sends `isExpired`, `workspaceName` and the name of the `inviter`, nothing else.
  */
 export type InvitationProps = {
     isInvalid: boolean;
@@ -38,8 +41,12 @@ export type InvitationProps = {
     isLoggedIn?: boolean;
     emailMatches?: boolean;
     canRegister?: boolean;
+    /** The server's password rule, sent to a visitor who may create the account on the card. */
+    passwordRules?: string | null;
+    /** Only single sign-on signs in: no account form, no link to the password page. */
+    ssoRequired?: boolean;
     ssoProviders?: SsoProviderOption[];
-    inviter?: InvitationPerson | null;
+    inviter?: (Pick<InvitationPerson, 'name'> & { avatarUrl?: string }) | null;
     role?: InvitationRole;
     expiresAt?: string;
     membersCount?: number;
@@ -61,19 +68,6 @@ const ShownMembers = 3;
 
 const Marker = /(\{\{(?:inviter|workspace)\}\})/;
 
-function lastDay(expiresAt: string, locale: string, now: number): string {
-    const date = new Date(expiresAt);
-
-    return new Intl.DateTimeFormat(locale, {
-        day: 'numeric',
-        month: 'long',
-        year:
-            date.getFullYear() === new Date(now).getFullYear()
-                ? undefined
-                : 'numeric',
-    }).format(date);
-}
-
 function stateOf(isLoggedIn: boolean, emailMatches: boolean): InvitationState {
     if (!isLoggedIn) {
         return 'logged-out';
@@ -91,10 +85,11 @@ export function InvitationCard({
     isLoggedIn = false,
     emailMatches = false,
     canRegister = false,
+    passwordRules = null,
+    ssoRequired = false,
     ssoProviders = [],
     inviter = null,
     role,
-    expiresAt,
     membersCount,
     members = [],
     team,
@@ -102,9 +97,9 @@ export function InvitationCard({
     decline,
 }: InvitationCardProps) {
     const { t } = useTrans();
-    const { auth, locale } = usePage().props;
-    const [now] = useState(() => Date.now());
+    const { auth } = usePage().props;
     const user = auth?.user ?? null;
+    const minimum = minimumLength(passwordRules ?? '');
 
     if (isInvalid) {
         return (
@@ -117,32 +112,15 @@ export function InvitationCard({
     }
 
     if (isExpired) {
-        const isPastLastDay =
-            expiresAt !== undefined && new Date(expiresAt).getTime() <= now;
-
         return (
             <AccessNotice
                 icon={Clock}
                 tone="warning"
-                title={
-                    isPastLastDay
-                        ? t('This invitation has expired')
-                        : t('Invitation')
-                }
-                description={
-                    isPastLastDay
-                        ? t(
-                              'Your invitation to join :workspace was valid until :date.',
-                              {
-                                  workspace: workspaceName,
-                                  date: lastDay(expiresAt, locale, now),
-                              },
-                          )
-                        : t(
-                              'Your invitation to join :workspace has expired or was already used.',
-                              { workspace: workspaceName },
-                          )
-                }
+                title={t('Invitation')}
+                description={t(
+                    'Your invitation to join :workspace has expired or was already used.',
+                    { workspace: workspaceName },
+                )}
                 hint={
                     inviter === null
                         ? t(
@@ -265,7 +243,110 @@ export function InvitationCard({
 
             <Separator />
 
-            {state === 'logged-out' && (
+            {state === 'logged-out' && ssoRequired && (
+                <>
+                    <SsoButtons providers={ssoProviders} separator={false} />
+                    <p
+                        data-slot="invitation-sso-account"
+                        className="text-center text-sm break-words text-muted-foreground"
+                    >
+                        {t('Use the account whose address is :email.', {
+                            email,
+                        })}
+                    </p>
+                </>
+            )}
+
+            {state === 'logged-out' && !ssoRequired && canRegister && (
+                <>
+                    <SsoButtons providers={ssoProviders} />
+
+                    <Form
+                        {...InvitationAccountsController.store.form(token)}
+                        resetOnSuccess={['password']}
+                        disableWhileProcessing
+                        data-slot="invitation-account-form"
+                        className="flex min-w-0 flex-col gap-4"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <TextField
+                                    id="email"
+                                    type="email"
+                                    label={t('Email')}
+                                    value={email}
+                                    readOnly
+                                    autoComplete="username"
+                                    description={t(
+                                        'The invitation was sent to this address.',
+                                    )}
+                                    error={errors.email}
+                                    suffix={
+                                        <Lock
+                                            aria-hidden
+                                            className="mr-1.5 size-4 text-muted-foreground"
+                                        />
+                                    }
+                                    className="bg-muted max-md:h-12"
+                                />
+
+                                <TextField
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    label={t('First and last name')}
+                                    required
+                                    autoComplete="name"
+                                    error={errors.name}
+                                    className="max-md:h-12"
+                                />
+
+                                <PasswordField
+                                    id="password"
+                                    name="password"
+                                    label={t('Create a password')}
+                                    required
+                                    autoComplete="new-password"
+                                    passwordrules={passwordRules ?? undefined}
+                                    placeholder={
+                                        minimum === null
+                                            ? undefined
+                                            : t(':count characters minimum', {
+                                                  count: minimum,
+                                              })
+                                    }
+                                    error={errors.password}
+                                    className="max-md:h-12"
+                                />
+
+                                <LoadingButton
+                                    type="submit"
+                                    size="lg"
+                                    className="w-full min-w-0"
+                                    loading={processing}
+                                    data-test="create-invitation-account-button"
+                                >
+                                    <span className="truncate">
+                                        {t(
+                                            'Create my account and join :workspace',
+                                            { workspace: workspaceName },
+                                        )}
+                                    </span>
+                                </LoadingButton>
+                            </>
+                        )}
+                    </Form>
+
+                    <p className="text-center text-sm text-muted-foreground">
+                        {t('Already have an account?')}{' '}
+                        <Link href={login()} className={authLinkClass}>
+                            {t('Sign in')}
+                        </Link>
+                    </p>
+                </>
+            )}
+
+            {state === 'logged-out' && !ssoRequired && !canRegister && (
                 <>
                     <SsoButtons providers={ssoProviders} />
 
@@ -287,29 +368,11 @@ export function InvitationCard({
                         className="bg-muted max-md:h-12"
                     />
 
-                    {canRegister ? (
-                        <>
-                            <Button asChild size="lg" className="w-full">
-                                <Link href={register()}>
-                                    <span className="truncate">
-                                        {t('Create an account')}
-                                    </span>
-                                </Link>
-                            </Button>
-                            <p className="text-center text-sm text-muted-foreground">
-                                {t('Already have an account?')}{' '}
-                                <Link href={login()} className={authLinkClass}>
-                                    {t('Log in')}
-                                </Link>
-                            </p>
-                        </>
-                    ) : (
-                        <Button asChild size="lg" className="w-full">
-                            <Link href={login()}>
-                                <span className="truncate">{t('Log in')}</span>
-                            </Link>
-                        </Button>
-                    )}
+                    <Button asChild size="lg" className="w-full">
+                        <Link href={login()}>
+                            <span className="truncate">{t('Log in')}</span>
+                        </Link>
+                    </Button>
                 </>
             )}
 

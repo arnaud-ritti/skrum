@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export type Roti = 1 | 2 | 3 | 4 | 5;
@@ -140,7 +141,7 @@ function VotePanel({
             return;
         }
 
-        if (/^[1-5]$/.test(event.key)) {
+        if (/^[1-5]$/.test(event.key) && singleKeyShortcutsEnabled()) {
             event.preventDefault();
             choose(Number(event.key) as Roti);
 

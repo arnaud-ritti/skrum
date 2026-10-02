@@ -10,6 +10,7 @@ import {
     PresentationOverlay,
 } from '@/components/retro/phase-discussing';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -647,5 +648,72 @@ describe('PhaseDiscussing on a phone', () => {
 
         expect(screen.queryByRole('button', { name: /^Topic/ })).toBeNull();
         expect(screen.getByText('No topics to discuss.')).toBeTruthy();
+    });
+});
+
+describe('F, the focus of a topic from the keyboard', () => {
+    it('highlights the topic of the focused row, and takes the highlight back on the one in focus', async () => {
+        retroRequest.mockResolvedValue({ highlightedCardId: 'scope' });
+
+        const free = discussion();
+
+        fireEvent.keyDown(row(free.container, 'scope'), { key: 'f' });
+
+        await waitFor(() => expect(highlightCalls()).toHaveLength(1));
+        expect(highlightCalls()[0][1]).toEqual({ card_id: 'scope' });
+        free.unmount();
+        retroRequest.mockClear();
+        retroRequest.mockResolvedValue({ highlightedCardId: null });
+
+        const shared = discussion({ retro: { highlightedCardId: 'scope' } });
+
+        fireEvent.keyDown(row(shared.container, 'scope'), { key: 'f' });
+
+        await waitFor(() => expect(highlightCalls()).toHaveLength(1));
+        expect(highlightCalls()[0][1]).toEqual({ card_id: null });
+    });
+
+    it('answers on the card of the topic in front, a card of its group included', async () => {
+        retroRequest.mockResolvedValue({ highlightedCardId: 'scope' });
+
+        const { container } = discussion();
+
+        fireEvent.click(row(container, 'scope'));
+        fireEvent.keyDown(
+            container.querySelector('[data-card-id="scope-2"]') as HTMLElement,
+            { key: 'f' },
+        );
+
+        await waitFor(() => expect(highlightCalls()).toHaveLength(1));
+        expect(highlightCalls()[0][1]).toEqual({ card_id: 'scope' });
+    });
+
+    it('does nothing away from a card or a topic, for a participant, in another phase, or while single-key shortcuts are off', () => {
+        const facilitator = discussion();
+
+        fireEvent.keyDown(document.body, { key: 'f' });
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(row(facilitator.container, 'scope'), { key: 'f' });
+        setSingleKeyShortcuts(true);
+        facilitator.unmount();
+
+        const participant = discussion({ viewer: { isFacilitator: false } });
+
+        fireEvent.keyDown(row(participant.container, 'scope'), { key: 'f' });
+        participant.unmount();
+
+        const voting = renderInBoard(
+            <DiscussionProvider>
+                <div data-card-id="scope" tabIndex={0} />
+            </DiscussionProvider>,
+            boardContext(snapshot({ retro: { phase: 'voting' } })),
+        );
+
+        fireEvent.keyDown(
+            voting.container.querySelector('[data-card-id]') as HTMLElement,
+            { key: 'f' },
+        );
+
+        expect(highlightCalls()).toHaveLength(0);
     });
 });

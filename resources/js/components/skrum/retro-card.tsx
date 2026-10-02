@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export type { ColumnColor };
@@ -388,6 +389,10 @@ export function RetroCard({
             event.preventDefault();
             onDelete?.();
 
+            return;
+        }
+
+        if (!singleKeyShortcutsEnabled()) {
             return;
         }
 

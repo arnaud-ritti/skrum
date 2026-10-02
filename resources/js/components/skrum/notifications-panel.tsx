@@ -19,7 +19,7 @@ import type {
     ReactNode,
 } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useTrans } from '@/hooks/use-trans';
@@ -32,14 +32,12 @@ export type ActionItemNotificationKind = 'due_soon' | 'overdue';
  * Backlog: no in-app notification of these kinds exists on the server. They
  * render when given; their buttons need the matching optional callback.
  */
-export type BacklogNotificationKind =
-    | 'team_invite'
-    | 'session_starting'
-    | 'mention'
-    | 'recap_ready';
+export type BacklogNotificationKind = 'session_starting' | 'mention';
 
 export type NotificationKind =
     | ActionItemNotificationKind
+    | 'team_invite'
+    | 'recap_ready'
     | BacklogNotificationKind;
 
 export type NotificationWording = 'overdue' | 'due_today' | 'due_tomorrow';
@@ -77,20 +75,43 @@ export type ActionItemNotification = NotificationBase & {
         dueOn: string | null;
         isOverdue: boolean;
         url: string;
-        /** Backlog: key of the linked ticket. */
-        ticket?: string;
+        /** Key of the linked ticket. */
+        ticket?: string | null;
     };
+};
+
+export type NotificationActor = {
+    name: string;
+    presence: NotificationPresence;
+    avatarUrl?: string;
+    others?: number;
+};
+
+/**
+ * An invitation to a workspace: `team` is the name of what is joined, and
+ * `href` the invitation page, where the invitation is accepted.
+ */
+export type InvitationNotification = NotificationBase & {
+    kind: 'team_invite';
+    actor?: NotificationActor | null;
+    team: string;
+    answer?: 'accepted' | 'declined';
+    href: string;
+};
+
+export type RecapNotification = NotificationBase & {
+    kind: 'recap_ready';
+    team?: string;
+    session: { id: string; title: string };
+    actionsCount?: number;
+    /** null when too few people voted for an average to be shown. */
+    roti?: number | null;
+    href: string;
 };
 
 export type BacklogNotification = NotificationBase & {
     kind: BacklogNotificationKind;
-    actor?: {
-        name: string;
-        presence: NotificationPresence;
-        avatarUrl?: string;
-        others?: number;
-    };
-    team?: string;
+    actor?: NotificationActor;
     session?: {
         id: string;
         title: string;
@@ -99,11 +120,14 @@ export type BacklogNotification = NotificationBase & {
         ended?: boolean;
     };
     excerpt?: string;
-    answer?: 'accepted' | 'declined';
     href: string;
 };
 
-export type AppNotification = ActionItemNotification | BacklogNotification;
+export type AppNotification =
+    | ActionItemNotification
+    | InvitationNotification
+    | RecapNotification
+    | BacklogNotification;
 
 function isActionItemNotification(
     notification: AppNotification,
@@ -118,7 +142,10 @@ export type NotificationsPanelProps = {
     onTabChange: (tab: NotificationsTab) => void;
     onMarkAllRead: () => void;
     onOpen: (notification: AppNotification) => void;
-    /** Backlog: Accept / Decline are rendered only when given. */
+    /**
+     * Accept / Decline are rendered only when given; without it an
+     * invitation has one action, "View invitation", to its `href`.
+     */
     onInvite?: (id: string, answer: 'accept' | 'decline') => void;
     /** Backlog: Join is rendered only when given. */
     onJoin?: (sessionId: string) => void;
@@ -192,6 +219,13 @@ function shortDate(iso: string, locale?: string): string {
     }).format(new Date(iso));
 }
 
+function oneDecimal(value: number, locale?: string): string {
+    return new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    }).format(value);
+}
+
 function shortTime(iso: string, locale?: string): string {
     return new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(
         new Date(iso),
@@ -249,12 +283,13 @@ function NotificationItem({
     const actionNotification = isActionItemNotification(notification)
         ? notification
         : null;
-    const backlog = isActionItemNotification(notification)
-        ? null
-        : notification;
-    const actor = backlog?.actor;
-    const session = backlog?.session;
-    const href = actionNotification?.actionItem.url ?? backlog?.href ?? '#';
+    const actor =
+        notification.kind === 'team_invite' || notification.kind === 'mention'
+            ? (notification.actor ?? undefined)
+            : undefined;
+    const href = isActionItemNotification(notification)
+        ? notification.actionItem.url
+        : notification.href;
     const isUnread = notification.readAt === null;
     const relative = relativeTime(notification.createdAt, now, locale);
     const actorName = actor?.name ?? t('Someone');
@@ -284,6 +319,7 @@ function NotificationItem({
     let quote: ReactNode = null;
     let actions: ReactNode = null;
     let linkLabel: string | null = null;
+    let linkIsButton = false;
 
     if (actor) {
         leading = (
@@ -296,26 +332,23 @@ function NotificationItem({
         );
     }
 
-    if (kind === 'team_invite') {
+    if (notification.kind === 'team_invite') {
         text = (
             <Rich
-                template={t(':actor invited you to join team :team')}
-                values={{
-                    actor: actorName,
-                    team: backlog?.team ?? '',
-                }}
+                template={t(':name invited you to join :workspace')}
+                values={{ name: actorName, workspace: notification.team }}
             />
         );
 
-        if (backlog?.answer === 'accepted') {
+        if (notification.answer === 'accepted') {
             meta = (
                 <>
                     {t('Accepted · welcome to :team', {
-                        team: backlog.team ?? '',
+                        team: notification.team,
                     })}
                 </>
             );
-        } else if (backlog?.answer === 'declined') {
+        } else if (notification.answer === 'declined') {
             meta = <>{t('Declined')}</>;
         } else if (onInvite) {
             actions = (
@@ -337,10 +370,14 @@ function NotificationItem({
                     </Button>
                 </>
             );
+        } else {
+            linkLabel = t('View invitation');
+            linkIsButton = true;
         }
     }
 
-    if (kind === 'session_starting' && session) {
+    if (notification.kind === 'session_starting' && notification.session) {
+        const { session } = notification;
         const minutes = Math.ceil(
             (new Date(session.startsAt).getTime() - now) / 60_000,
         );
@@ -382,21 +419,7 @@ function NotificationItem({
 
     if (actionNotification) {
         const { actionItem, wording } = actionNotification;
-        const templates: Record<NotificationWording, string> = {
-            overdue: t('Overdue: :content'),
-            due_today: t('Due today: :content'),
-            due_tomorrow: t('Due tomorrow: :content'),
-        };
-        const parts: { key: string; node: ReactNode }[] = [
-            {
-                key: 'team',
-                node: (
-                    <span className="min-w-0 break-words">
-                        {actionItem.teamName}
-                    </span>
-                ),
-            },
-        ];
+        const parts: { key: string; node: ReactNode }[] = [];
 
         if (actionItem.dueOn !== null) {
             parts.push({
@@ -427,6 +450,14 @@ function NotificationItem({
             });
         }
 
+        parts.push({
+            key: 'team',
+            node: (
+                <span className="min-w-0 break-words">
+                    {actionItem.teamName}
+                </span>
+            ),
+        });
         parts.push({ key: 'time', node: <span>{relative}</span> });
 
         leading = (
@@ -434,12 +465,22 @@ function NotificationItem({
                 <CalendarClock />
             </Tile>
         );
-        text = (
-            <Rich
-                template={templates[wording]}
-                values={{ content: actionItem.content }}
-            />
-        );
+        text =
+            wording === 'overdue' ? (
+                <Rich
+                    template={t('Overdue action: :title')}
+                    values={{ title: actionItem.content }}
+                />
+            ) : (
+                <Rich
+                    template={
+                        wording === 'due_today'
+                            ? t('Due today: :content')
+                            : t('Due tomorrow: :content')
+                    }
+                    values={{ content: actionItem.content }}
+                />
+            );
         meta = parts.map((part, index) => (
             <Fragment key={part.key}>
                 {index > 0 && <span aria-hidden="true">·</span>}
@@ -448,7 +489,7 @@ function NotificationItem({
         ));
     }
 
-    if (kind === 'mention') {
+    if (notification.kind === 'mention') {
         const others = actor?.others ?? 0;
 
         text =
@@ -466,27 +507,50 @@ function NotificationItem({
                 />
             );
 
-        if (backlog?.excerpt) {
+        if (notification.excerpt) {
             quote = (
                 <blockquote className="my-1 rounded-sm border bg-background px-2 py-1.5 text-body-sm break-words text-foreground">
-                    {backlog.excerpt}
+                    {notification.excerpt}
                 </blockquote>
             );
         }
 
-        if (session) {
-            meta = `${relative} · ${session.title}`;
+        if (notification.session) {
+            meta = `${relative} · ${notification.session.title}`;
         }
     }
 
-    if (kind === 'recap_ready' && session) {
+    if (notification.kind === 'recap_ready') {
+        const { actionsCount, roti } = notification;
+
         text = (
             <Rich
-                template={t('The recap of :session is ready')}
-                values={{ session: session.title }}
+                template={t('The recap of :title is ready')}
+                values={{ title: notification.session.title }}
             />
         );
         linkLabel = t('View recap');
+
+        if (actionsCount !== undefined) {
+            const values = {
+                count: actionsCount,
+                roti:
+                    roti === null || roti === undefined
+                        ? ''
+                        : oneDecimal(roti, locale),
+                when: relative,
+            };
+            const withRoti =
+                actionsCount === 1
+                    ? t(':count action item · ROTI :roti · :when', values)
+                    : t(':count action items · ROTI :roti · :when', values);
+            const withoutRoti =
+                actionsCount === 1
+                    ? t(':count action item · :when', values)
+                    : t(':count action items · :when', values);
+
+            meta = values.roti === '' ? withoutRoti : withRoti;
+        }
     }
 
     const textClasses = cn(
@@ -533,10 +597,15 @@ function NotificationItem({
                         onClick={open}
                         className={cn(
                             stretchedLink,
-                            'mt-1 self-start text-body-sm font-semibold text-skrum-primary-text underline-offset-4 hover:underline',
+                            linkIsButton
+                                ? buttonVariants({
+                                      size: 'sm',
+                                      className: 'mt-2 max-w-full self-start',
+                                  })
+                                : 'mt-1 self-start text-body-sm font-semibold text-skrum-primary-text underline-offset-4 hover:underline',
                         )}
                     >
-                        {linkLabel}
+                        <span className="truncate">{linkLabel}</span>
                     </a>
                 ) : null}
             </div>
@@ -642,9 +711,9 @@ export function NotificationsPanel({
     const emptyDescription =
         tab === 'unread'
             ? t(
-                  'No unread notifications. Invitations, reminders and mentions will show up here.',
+                  'No unread notifications. Invitations, reminders and recaps will show up here.',
               )
-            : t('Invitations, reminders and mentions will show up here.');
+            : t('Invitations, reminders and recaps will show up here.');
 
     return (
         <div
@@ -802,6 +871,7 @@ export type NotificationsBellProps = Omit<
 > & {
     unreadCount: number;
     open?: boolean;
+    /** A notification just arrived: ringing bell, halo, and a badge that pops unless motion is reduced. */
     arriving?: boolean;
     announcement?: string;
 };
@@ -844,7 +914,10 @@ export function NotificationsBell({
                     <span
                         aria-hidden="true"
                         data-slot="notifications-badge"
-                        className="absolute top-0.5 right-0.5 h-4.5 min-w-4.5 rounded-full bg-destructive px-1 text-center text-overline leading-4.5 text-destructive-foreground tabular-nums ring-2 ring-background"
+                        className={cn(
+                            'absolute top-0.5 right-0.5 h-4.5 min-w-4.5 rounded-full bg-destructive px-1 text-center text-overline leading-4.5 text-destructive-foreground tabular-nums ring-2 ring-background',
+                            arriving && 'motion-safe:animate-vote-pop',
+                        )}
                     >
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>

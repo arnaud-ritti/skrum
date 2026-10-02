@@ -211,7 +211,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
     /**
      * The keys of the drawer, on the stage only: `useShortcut` leaves a field
      * being edited and an open dialog or menu alone. Single keys obey the
-     * `single_key_shortcuts` preference once plan 18f brings it (B35).
+     * `single_key_shortcuts` preference through `useShortcut` (B35).
      */
     useShortcut('p', () => setTool('pen'), { enabled: isDrawer });
     useShortcut('e', () => setTool('eraser'), { enabled: isDrawer });

@@ -44,6 +44,17 @@ it('links an existing account through a verified email, case-insensitively', fun
         ->and($user->socialAccounts()->where('provider', 'google')->value('provider_user_id'))->toBe('g-1');
 });
 
+it('refuses to link when two accounts share the address in different cases', function () {
+    User::factory()->create(['email' => 'bob@example.test']);
+    User::factory()->storedWithAddress('Bob@example.test')->create();
+
+    expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
+        ->toThrow(SsoLoginRefused::class);
+
+    expect(SocialAccount::count())->toBe(0)
+        ->and(User::count())->toBe(2);
+});
+
 it('refuses to link into an account whose email was never verified', function () {
     $user = User::factory()->unverified()->create(['email' => 'bob@example.test']);
 
@@ -124,16 +135,15 @@ it('applies the signup gate', function () {
         ->toThrow(SsoLoginRefused::class, 'Signups are restricted on this instance.');
 });
 
-it('creates and joins through a matching invitation even without a verified email', function () {
+it('refuses a matching invitation when the provider did not verify the address', function () {
     User::factory()->create();
     config(['skrum.signup_mode' => 'invite']);
     $invitation = WorkspaceInvitation::factory()->create(['email' => 'Guest@Example.test', 'role' => WorkspaceRole::Admin]);
 
-    $user = resolveSso(SsoProvider::Entra, ['id' => 'e-2', 'email' => 'guest@example.test'], $invitation);
-
-    expect($user->roleIn($invitation->workspace))->toBe(WorkspaceRole::Admin)
-        ->and($user->email_verified_at)->not->toBeNull()
-        ->and($invitation->fresh()->accepted_at)->not->toBeNull();
+    expect(fn () => resolveSso(SsoProvider::Entra, ['id' => 'e-2', 'email' => 'guest@example.test'], $invitation))
+        ->toThrow(SsoLoginRefused::class, SsoLoginRefused::emailNotVerified(SsoProvider::Entra)->getMessage())
+        ->and(User::count())->toBe(1)
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
 });
 
 it('ignores an invitation addressed to someone else', function () {

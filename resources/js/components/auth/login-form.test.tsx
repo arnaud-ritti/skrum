@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginForm } from '@/components/auth/login-form';
 import { renderWithProviders } from '@/test/render';
@@ -10,6 +10,8 @@ const form = vi.hoisted(() => ({
     props: {} as Record<string, unknown>,
 }));
 const passkey = vi.hoisted(() => ({ isSupported: false }));
+const viewport = vi.hoisted(() => ({ isPhone: false }));
+const post = vi.hoisted(() => vi.fn());
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
     const { formMock } = await import('@/test/inertia-form');
@@ -17,9 +19,14 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
     return {
         ...(await importOriginal<typeof import('@inertiajs/react')>()),
         usePage: () => page,
+        router: { post },
         Form: formMock(form),
     };
 });
+
+vi.mock('@/hooks/use-mobile', () => ({
+    useIsMobile: () => viewport.isPhone,
+}));
 
 vi.mock('@laravel/passkeys/react', () => ({
     usePasskeyVerify: () => ({
@@ -36,6 +43,8 @@ beforeEach(() => {
     form.errors = {};
     form.props = {};
     passkey.isSupported = false;
+    viewport.isPhone = false;
+    post.mockReset();
 });
 
 function renderForm(props: Partial<Parameters<typeof LoginForm>[0]> = {}) {
@@ -197,7 +206,8 @@ describe('LoginForm', () => {
         ).toBeTruthy();
     });
 
-    it('renders nothing in the places left for the magic link', () => {
+    it('offers no magic link when the instance cannot send one', () => {
+        viewport.isPhone = true;
         const { container } = renderForm();
 
         expect(
@@ -208,27 +218,174 @@ describe('LoginForm', () => {
         ).toBeNull();
     });
 
-    it('fills the two places when a later feature gives them', () => {
-        const { container } = renderForm({
-            methodTabs: <div role="tablist" />,
-            magicLink: <button type="button">Magic</button>,
+    it('does not print the raw status of a requested magic link', () => {
+        renderForm({ status: 'magic-link-sent', canUseMagicLink: true });
+
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.queryByText('magic-link-sent')).toBeNull();
+    });
+
+    it('puts the magic link button after the log in button and before the register link', () => {
+        const { container } = renderForm({ canUseMagicLink: true });
+
+        const submit = screen.getByRole('button', { name: 'Log in' });
+        const magic = screen.getByRole('button', {
+            name: 'E-mail me a magic link instead',
+        });
+        const registerLink = screen.getByRole('link', {
+            name: 'Create an account',
         });
 
-        const formElement = container.querySelector('form')!;
-        const tabs = container.querySelector(
-            '[data-slot="login-method-tabs"]',
-        )!;
-        const magic = container.querySelector(
-            '[data-slot="login-magic-link"]',
-        )!;
-
         expect(
-            tabs.compareDocumentPosition(formElement) &
+            container.querySelector('[data-slot="login-method-tabs"]'),
+        ).toBeNull();
+        expect(
+            submit.compareDocumentPosition(magic) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
         expect(
-            formElement.compareDocumentPosition(magic) &
+            magic.compareDocumentPosition(registerLink) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
     });
+
+    it('sends the link to the address typed in the e-mail field and reports it', () => {
+        const onMagicLinkSent = vi.fn();
+
+        renderForm({ canUseMagicLink: true, onMagicLinkSent });
+        fireEvent.change(screen.getByLabelText('Work email'), {
+            target: { value: 'ada@example.test' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'E-mail me a magic link instead',
+            }),
+        );
+
+        expect(post.mock.calls[0][1]).toEqual({ email: 'ada@example.test' });
+
+        post.mock.calls[0][2].onSuccess();
+
+        expect(onMagicLinkSent).toHaveBeenCalledWith('ada@example.test');
+    });
+
+    it('asks for the address under the field when none was typed', () => {
+        renderForm({ canUseMagicLink: true });
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'E-mail me a magic link instead',
+            }),
+        );
+
+        const email = screen.getByLabelText('Work email');
+
+        expect(post).not.toHaveBeenCalled();
+        expect(document.getElementById('email-error')?.textContent).toBe(
+            'Enter your e-mail address first.',
+        );
+        expect(document.activeElement).toBe(email);
+
+        fireEvent.change(email, { target: { value: 'a' } });
+
+        expect(document.getElementById('email-error')).toBeNull();
+    });
+
+    it('opens a phone on the password form, with the two methods as tabs and no ghost button', () => {
+        viewport.isPhone = true;
+        renderForm({ canUseMagicLink: true });
+
+        const tabs = within(
+            screen.getByRole('tablist', { name: 'Sign-in method' }),
+        ).getAllByRole('tab');
+
+        expect(tabs.map((tab) => tab.textContent)).toEqual([
+            'Magic link',
+            'Password',
+        ]);
+        expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+        expect(screen.getByLabelText('Password').id).toBe('password');
+        expect(screen.getByRole('button', { name: 'Log in' })).toBeTruthy();
+        expect(
+            screen.queryByRole('button', {
+                name: 'E-mail me a magic link instead',
+            }),
+        ).toBeNull();
+    });
+
+    it('folds the password form under "Administrator sign-in" when single sign-on is required', () => {
+        passkey.isSupported = true;
+        const { container } = renderForm({
+            ssoRequired: true,
+            canUseMagicLink: true,
+            ssoProviders: [{ key: 'oidc', label: 'Nordlys SSO' }],
+        });
+
+        const sso = container.querySelector('[data-slot="sso-buttons"]')!;
+        const sentence = screen.getByText(
+            'This instance signs in with single sign-on only.',
+        );
+        const disclosure = screen.getByRole('button', {
+            name: 'Administrator sign-in',
+        });
+
+        expect(sso.nextElementSibling).toBe(sentence);
+        expect(
+            sentence.compareDocumentPosition(disclosure) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(disclosure.getAttribute('aria-expanded')).toBe('false');
+        expect(document.getElementById('email')).toBeNull();
+        expect(document.getElementById('password')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Log in' })).toBeNull();
+        expect(
+            container.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="passkey-sign-in"]'),
+        ).toBeNull();
+
+        fireEvent.click(disclosure);
+
+        expect(document.activeElement).toBe(document.getElementById('email'));
+        expect(screen.getByLabelText('Password').id).toBe('password');
+        expect(
+            screen.getByRole('link', { name: 'Forgot your password?' }),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('button', { name: 'Log in' })
+                .getAttribute('data-test'),
+        ).toBe('login-button');
+        expect(container.querySelector('form')?.getAttribute('action')).toBe(
+            '/login',
+        );
+        expect(screen.queryByLabelText('Remember me')).toBeNull();
+    });
+
+    it.each([false, true])(
+        'never offers a magic link nor a registration when single sign-on is required (phone: %s)',
+        (isPhone) => {
+            viewport.isPhone = isPhone;
+            const { container } = renderForm({
+                ssoRequired: true,
+                canUseMagicLink: true,
+                canRegister: true,
+                ssoProviders: [{ key: 'oidc', label: 'Nordlys SSO' }],
+            });
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Administrator sign-in' }),
+            );
+
+            expect(
+                container.querySelector('[data-test="magic-link-button"]'),
+            ).toBeNull();
+            expect(
+                container.querySelector('[data-slot="login-method-tabs"]'),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('link', { name: 'Create an account' }),
+            ).toBeNull();
+        },
+    );
 });

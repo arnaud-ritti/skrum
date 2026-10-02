@@ -41,15 +41,13 @@ it('lists overdue items before items due soon, each with its context and link', 
     expect($mail->subject)->toBe('Action items need your attention')
         ->and(strpos($html, 'Rotate the keys'))->toBeLessThan(strpos($html, 'Book the room'))
         ->and($html)->toContain('Platform')
-        ->toContain('Sprint 42')
-        ->toContain('Added outside a retro')
-        ->toContain('Due today')
-        ->toContain('Due tomorrow')
-        ->toContain('October 7, 2026')
+        ->toContain('Platform · due 7 Oct · 3 days late')
+        ->toContain('Platform · due 10 Oct')
+        ->toContain('Platform · due 11 Oct')
         ->toContain(e(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'item' => $overdue->id])))
-        ->toContain('View my open action items')
+        ->toContain('Open my action items')
         ->toContain(e(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'assignee' => 'me', 'status' => 'open'])))
-        ->toContain('You can turn off these reminders in your notification settings.')
+        ->toContain('You get this reminder because action items are assigned to you.')
         ->toContain(route('notificationPreferences.edit'));
 });
 
@@ -134,5 +132,5 @@ it('writes the digest in the recipient language', function () {
     $mail = reminderDigest([[$item, ActionItemReminderKind::Overdue]])->toMail($user);
 
     expect($mail->subject)->toBe('1 action est en retard')
-        ->and((string) $mail->render())->toContain('7 octobre 2026');
+        ->and((string) $mail->render())->toContain('échéance 7 oct. · 3 jours de retard');
 });

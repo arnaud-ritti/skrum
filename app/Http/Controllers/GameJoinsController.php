@@ -8,7 +8,6 @@ use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
-use App\Support\Games\GuestNames;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -34,7 +33,7 @@ class GameJoinsController extends Controller
             'roomName' => $room->name,
             'gameLabel' => $room->game->label(),
             'session' => $presentJoinSession->game($room),
-            'suggestedName' => GuestNames::random(app()->getLocale()),
+            ...$presentJoinSession->nickname($request->user()),
         ])->toResponse($request);
     }
 

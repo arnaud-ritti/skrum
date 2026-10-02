@@ -1,5 +1,5 @@
 import { Form, Link } from '@inertiajs/react';
-import { authLinkClass } from '@/components/auth/login-form';
+import { authLinkClass } from '@/components/auth/auth-link';
 import { PasswordField } from '@/components/auth/password-field';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import { LoadingButton } from '@/components/skrum/loading-button';

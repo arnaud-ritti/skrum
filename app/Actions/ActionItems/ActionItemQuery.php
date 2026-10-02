@@ -50,22 +50,15 @@ class ActionItemQuery
     public function counts(User $user, Workspace $workspace, ActionItemFilters $filters): array
     {
         $today = ActionItem::today()->toDateString();
-
-        $totals = $this->filterByScope($this->visibleTo($user, $workspace), $user, $filters)
-            ->toBase()
-            ->selectRaw('count(*) filter (where completed_at is null) as open')
-            ->selectRaw('count(*) filter (where completed_at is null and due_on is not null and due_on < ?) as overdue', [$today])
-            ->selectRaw('count(*) filter (where completed_at is not null) as completed')
-            ->selectRaw('count(*) filter (where completed_at is null and assignee_user_id = ?) as mine', [$user->id])
-            ->selectRaw('count(distinct retro_id) as rituals')
-            ->first();
+        $scoped = $this->filterByScope($this->visibleTo($user, $workspace), $user, $filters)->toBase();
+        $open = (clone $scoped)->whereNull('completed_at');
 
         return [
-            'open' => (int) $totals->open,
-            'overdue' => (int) $totals->overdue,
-            'completed' => (int) $totals->completed,
-            'mine' => (int) $totals->mine,
-            'rituals' => (int) $totals->rituals,
+            'open' => (clone $open)->count(),
+            'overdue' => (clone $open)->whereNotNull('due_on')->where('due_on', '<', $today)->count(),
+            'completed' => (clone $scoped)->whereNotNull('completed_at')->count(),
+            'mine' => (clone $open)->where('assignee_user_id', $user->id)->count(),
+            'rituals' => (clone $scoped)->distinct()->count('retro_id'),
         ];
     }
 

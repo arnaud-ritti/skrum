@@ -1,452 +1,490 @@
-# Skrüm — Database portability — Design
+# Skrüm — Database portability — Design (revision 2)
 
-Date: 2026-10-19 (drafted 2026-10-02)
-Status: Draft, awaiting the owner's review. Four working assumptions (§0) and seven decisions (§16) are open.
+Date: 2026-10-19 (drafted 2026-10-02, revised 2026-10-02 evening)
+Status: Revision 2, awaiting the owner's review. It replaces `docs/superpowers/specs/2026-10-19-database-portability-design.md`. Seven decisions are open (§16); the rest is ruled in the ledger (`.superpowers/sdd/plan-db/progress.md`).
 Owner requirement (2026-10-02): "the application must run on SQLite, MariaDB and any other database handled by Eloquent".
-Basis: `docs/superpowers/research/database-portability-audit.md` (read-only audit of 2026-10-02: findings with file and line, work packages, helpers, test matrix). Where this spec departs from the audit, §17 says so and why.
-Trees read for this spec: main tree on `plan-18e-screens` at `4568a764`; worktree `.claude/worktrees/laneAuth` on `plan-18f-auth` at `d9180f10` (marked **[18f]**); `vendor/laravel/framework` v13.34.0.
-Nothing was run to write this spec. Every "fails on" and "works on" is read from the code and from the framework's grammars. §15 lists what only a first run on each driver can tell.
-Plan: `.superpowers/sdd/plan-db/2026-10-19-plan-database-portability.md`.
+**Owner rule (2026-10-02, evening): "for the databases use Eloquent simply, without raw queries, and respect Laravel conventions."** This revision exists to apply it.
+Basis: `docs/superpowers/research/database-portability-audit.md`; the report of Tasks 1 and 2, which ran (`.superpowers/sdd/plan-db/task-1-2-report.md`); the worktree `.claude/worktrees/laneDb` at `985bf55c` (branch `plan-db-portability`); the worktree `.claude/worktrees/laneAuth` at `3f4e5475` (branch `plan-18f-auth`, marked **[18f]**, not merged into `plan-18e-screens`); `vendor/laravel/framework` v13.34.0.
+What was run: Tasks 1 and 2 only. Their facts are used here as facts (§15). Everything else is read from the code and from the framework's grammars.
+Plan: `.superpowers/sdd/plan-db/2026-10-19-plan-database-portability.v2.md`.
 
 Drivers: PG = PostgreSQL, MY = MySQL, MA = MariaDB, SL = SQLite, MS = SQL Server.
 
-## 0. Working assumptions, to confirm by the owner
+## 0. What the owner rule changes
 
-These four were taken as given to write the spec. Each changes the plan if the owner says otherwise.
+Target state: **zero raw SQL in `app/` and `database/`**. No `whereRaw`, `orWhereRaw`, `selectRaw`, `orderByRaw`, `havingRaw`, `groupByRaw`, `fromRaw`; no `DB::raw`, `DB::statement`, `DB::unprepared`; no `DB::select`, `DB::insert`, `DB::update`, `DB::delete` with an SQL string; no `Expression` object; no raw index or constraint SQL in a migration; no `getDriverName()` and no other branch on the driver; **no helper class that wraps raw SQL**. Only Eloquent models, relationships, scopes, the standard methods of the query builder, and the Schema builder.
 
-| # | Assumption | If the owner says otherwise |
-|---|---|---|
-| A1 | Supported and tested targets are SQLite, MariaDB, MySQL and PostgreSQL. | A dropped target removes its CI job and its Sail service; nothing else changes. |
-| A2 | SQL Server is best effort, not guaranteed. The shipped schema does not migrate on it (a unique index allows a single NULL, so a second guest could not join a retro; cascade paths are refused at `create table`). The query layer is kept free of constructs SQL Server rejects, at no extra cost. | Supporting it is a second schema (filtered indexes, `NO ACTION` plus deletes in the application): a separate spec. |
-| A3 | This plan runs its tests. It exists to prove behaviour on each driver, so every task ends with a suite run, unlike the front rewrite. | Without runs, the plan can only claim what the audit already claims. |
-| A4 | This plan comes before the feature roadmap. | Every feature written before it adds raw SQL and migrations to port later. |
+| Revision 1 | Revision 2 |
+|---|---|
+| `Sql::countWhen`, `Sql::nullsLast`, `Sql::never` | gone. Plain `count()` queries; a stored sort column; `whereKey([])` |
+| `TextSearch` (`lower(col) like ? escape '!'`) and `SqliteFunctions` (a replaced `lower()` on SQLite) | gone. Stored folded search columns, `whereLike(..., caseSensitive: true)` (§6.4.3). Task 1 showed the `lower()` replacement is impossible on the PDO object Laravel opens |
+| `CheckConstraint::add()` and database check constraints on three engines | gone. The five rules live in the model on every engine (§6.5) |
+| `InsertOnce` | gone. `firstOrCreate` / `createOrFirst` on a model |
+| An "allowed list" of raw calls with a ratchet | gone. One baseline, which ends empty; no allowed list exists |
+| A driver test allowed inside `App\Support\Database` | not allowed anywhere in `app/` or `database/` |
+| `DatabaseRequirements` sending `select @@…` and `pragma …` | reads configuration, `getServerVersion()` and `Schema::getTables()` only (§10) |
+| Grouped aggregates through `selectRaw` (allowed as "plain aggregates") | relationship aggregates (`withCount`, `withSum`), plain `count()` / `avg()`, or PHP over a bounded set (§6.4.1) |
+
+What stays: stored normalised keys (`name_key`, `email_key`), the binary no-pad collations, READ COMMITTED, SQLite's immediate transactions, the model guards, `DateOnly`, the PHP sort of lists, the retry policy, the concurrency suite, the upgrade proof, CI, the documentation.
+
+Working assumptions A1 to A4 of revision 1 are unchanged and ruled (targets: SQLite, MariaDB, MySQL, PostgreSQL; SQL Server best effort; this plan runs its tests; it comes before the feature roadmap).
 
 ## 1. Problem statement
 
-The application migrates on PostgreSQL only. On SQLite `php artisan migrate` stops at `2026_10_06_100000_create_game_tables.php:54` (a `'[]'::jsonb` default); on MySQL and MariaDB it stops at `2026_10_01_100300_create_workspace_templates_table.php:21` (an expression index). Past the migrations, about 25 raw SQL sites use PostgreSQL syntax. The larger problem is what would not fail but would behave differently: collation of equality and unique indexes, isolation level, row locks that SQLite ignores, and five invariants that exist only as PostgreSQL constraints.
+The application migrates on PostgreSQL only. Task 1 measured it: on SQLite every database test stops at `2026_10_06_100000_create_game_tables.php:48` (the five `'[]'::jsonb` defaults); on MySQL and MariaDB at `2026_10_01_100300_create_workspace_templates_table.php:21` (an expression index). The architecture test of Task 2 lists 116 occurrences in 72 lines of raw SQL, driver branches and engine-specific constructs: 39 raw calls and 19 engine-specific matches in `app/`, 9 raw statements, 9 raw expressions, 5 driver branches and 7 non-null timestamps in the migrations, 18 sites in the tests. The larger problem is what would not fail but would behave differently: collation, isolation level, row locks SQLite ignores, and five invariants that exist only as PostgreSQL constraints.
 
 Every instance in production runs PostgreSQL. Nothing in this spec may lose their data or change their behaviour.
 
 ## 2. Goals
 
-1. `php artisan migrate` and the application run on SQLite, MariaDB, MySQL and PostgreSQL from the same code, with no driver branch outside `App\Support\Database`.
-2. Every invariant of the product holds on each of the four drivers, and a test proves it on each driver. Where a lock matters, the proof is a test with two real connections.
-3. An existing PostgreSQL instance upgrades with `php artisan migrate`, without data loss, and ends with the same schema as a fresh PostgreSQL install (proved by a schema diff, §6.3).
-4. New code stays portable: an architecture test fails on driver-specific constructs, and a rule for agents says how to write database code.
-5. An operator can choose a database knowing its limits: documentation says which to pick, the required settings, and what differs.
+1. `php artisan migrate` and the application run on SQLite, MariaDB, MySQL and PostgreSQL from the same code, **with no raw SQL and no driver branch in `app/` and `database/`**.
+2. Every invariant of the product holds on each of the four drivers, and a test proves it on each. Where a lock matters, the proof is a test with two real connections.
+3. An existing PostgreSQL instance upgrades with `php artisan migrate`, without data loss, and ends with the schema of a fresh install, except five legacy check constraints that the Schema builder cannot drop (decision D8, §6.2).
+4. New code stays that way: the architecture test fails on any raw construct, its baseline is empty at the end, and no allowed list exists.
+5. An operator can choose a database knowing its limits.
 
 ## 3. Non-goals
 
-- SQL Server support (A2).
-- Moving data from one database engine to another (PostgreSQL to SQLite, and so on). An instance keeps the engine it was installed with.
-- Accent-insensitive search. Search is case-insensitive and accent-sensitive everywhere (§9).
+- SQL Server support.
+- Moving data from one engine to another.
+- Accent-insensitive search. Search ignores case and respects accents, on every engine (§9).
 - Full-text or trigram indexes.
-- Running the browser suite on a second driver, or making `bin/test-browser` driver-neutral. The browser suite tests the front end and stays on PostgreSQL (§13).
-- Redis, or any change to the cache, session and queue stores beyond their lock connection and the documented SQLite settings.
-- Converting every `timestamp` column to `dateTime`. Only the non-null ones change (§6.3); the year-2038 limit of nullable `TIMESTAMP` columns on MySQL and MariaDB is documented.
+- The browser suite on a second driver.
+- Redis, or any change to cache, session and queue stores beyond their lock connection and the SQLite settings.
+- Converting nullable `timestamp` columns to `dateTime`.
+- Database-level check constraints (the rule excludes them: the Schema builder has none).
 
 ## 4. Supported matrix
 
-| Engine | Minimum | Tested on every push | Tested nightly | Why this minimum |
-|---|---|---|---|---|
-| PostgreSQL | 14 | 18 | 14 | No feature used needs more than 12. 14 is the oldest version still maintained upstream on the spec date (end of life November 2026); the floor moves with upstream. |
-| MariaDB | 10.11 | 10.11 | 11.8 | Native `uuid` type (10.7; before it, 57 primary keys are `char(36)`). `explicit_defaults_for_timestamp` is on by default from 10.10, so a non-null `TIMESTAMP` is not silently given `ON UPDATE CURRENT_TIMESTAMP`. `CHECK` constraints are enforced from 10.2.1. JSON path functions exist from 10.2. 10.6, the audit's floor, reached end of life in July 2026. |
-| MySQL | 8.4 | — | 8.4 | `CHECK` constraints are enforced from 8.0.16; the `utf8mb4_0900_bin` collation exists from 8.0.17. 8.0 reached end of life in April 2026, so the floor is the current LTS. 8.0.17 and later are expected to work and are not tested. |
-| SQLite | 3.35, with PHP 8.4 | version bundled with PHP 8.4 | — | Native `drop column` (3.35), used by `2026_10_02_100000` and `2026_10_06_100200`. JSON functions are compiled in by default from 3.38 and in every PHP build that bundles SQLite. `BEGIN IMMEDIATE` is applied by Laravel only on PHP 8.4 and later (`SQLiteConnection.php:30`): on PHP 8.3 the setting is ignored and every concurrent write can fail (§6.6, decision D3). |
+Unchanged from revision 1 and ruled (D4): PostgreSQL 14 (tested on 18, nightly on 14), MariaDB 10.11 (nightly 11.8), MySQL 8.4 (nightly), SQLite 3.35 with PHP 8.4 (ruled D3: `composer.json` goes to `^8.4`, a constraint change to show the owner).
 
-Not needed anywhere: `RETURNING`, window functions (none in `app/`), `DISTINCT ON`, hand-written `ON CONFLICT`, recursive queries, generated columns.
+The reason "`CHECK` constraints are enforced from …" no longer matters. Still not needed anywhere: `RETURNING`, window functions, `DISTINCT ON`, hand-written `ON CONFLICT`, recursive queries, generated columns.
 
 ## 5. Principles
 
-Portable by construction: the code does not test the driver, it avoids what differs.
-
-- **P1 — Query builder first.** Raw SQL is limited to plain aggregates (`count(*)`, `sum(col)`, `avg(col)`, `max(col)`, `count(distinct col)`), `case when`, and the four helpers of §7. No raw SQL names a function or operator that one of the four engines lacks.
-- **P2 — Normalise in PHP.** A value compared without regard to case is folded in PHP, once, by one function, and stored. The database compares stored values with plain equality.
-- **P3 — Explicit case-insensitive keys.** A case-insensitive uniqueness rule is a stored normalised column (`name_key`, `email_key`) under a plain index. No expression index, no partial index, no reliance on a collation.
-- **P4 — Binary, case-sensitive comparison everywhere.** MySQL and MariaDB use a binary, no-pad collation, so `=`, `unique`, `group by` and `distinct` mean on them what they mean on PostgreSQL and SQLite. A case-insensitive comparison is always written out (P2, P3, or the search helper).
-- **P5 — READ COMMITTED on MySQL and MariaDB.** Every statement sees the latest committed rows, as on PostgreSQL, and searches take no gap locks. The lock patterns written for PostgreSQL keep their meaning.
-- **P6 — SQLite: WAL, a busy timeout, immediate transactions.** One writer at a time. Every `DB::transaction` takes the write lock at `BEGIN`, so read-check-write transactions are serialised and the row locks SQLite ignores are not needed.
-- **P7 — Lock the aggregate root first.** The first statement of a transaction that enforces an invariant is the locking read of its root. This is what makes P5 and P6 sufficient.
-- **P8 — Retry only what is safe to repeat.** A transaction is retried on a deadlock or a busy database only when its closure has no effect outside the database. Otherwise the error is answered as "busy, try again", never as a 500 (§6.6).
-- **P9 — Code for the strictest engine.** PostgreSQL aborts a transaction on any failed statement, rejects a malformed UUID, and enforces column lengths. Code is written for it: a statement allowed to fail runs in its own nested transaction; ids from requests are validated as UUIDs; lengths are validated.
-- **P10 — An invariant the schema builder cannot express on every driver is enforced in the model**, and additionally by the database where the engine can.
-- **P11 — SQL order is stable, not alphabetical.** A sort has an explicit tie-breaker and never depends on where NULL sorts. A list read by people in alphabetical order is sorted in PHP.
-- **P12 — Results are cast in PHP.** Aggregates and booleans read through the base query builder differ in type per driver.
+- **P1 — Eloquent, and nothing raw.** A query is written with models, relationships, scopes and the standard builder methods. What the builder cannot say is not said in SQL: it is stored (P2, P3), or computed in PHP on a set whose size has a stated bound (P13).
+- **P2 — Normalise in PHP.** A value compared without regard to case is folded in PHP, once, by one function, and stored.
+- **P3 — Derived columns are maintained by the model.** `name_key`, `email_key`, the `*_search` columns, `action_items.sort_rank`, `game_points.week_start` are written by a mutator or a `saving` / `creating` hook, never by a caller. A write that bypasses the model must set them itself; the plan greps for such writes and found none today.
+- **P4 — Binary, case-sensitive comparison everywhere.** MySQL and MariaDB use a binary, no-pad collation (set by the connection, exists on both: Task 1), so `=`, `unique`, `group by` and `distinct` mean what they mean on PostgreSQL and SQLite. Confirmed for revision 2: nothing in the new design needs a `_ci` collation or a column-level `->collation()` (§6.4.3).
+- **P5 — READ COMMITTED on MySQL and MariaDB**, set by the connection option `isolation_level`.
+- **P6 — SQLite: WAL, a busy timeout, immediate transactions**, all four set by connection options.
+- **P7 — Lock the aggregate root first** (`lockForUpdate()`).
+- **P8 — Retry only what is safe to repeat**, through `DB::transaction($callback, $attempts)`.
+- **P9 — Code for the strictest engine.**
+- **P10 — An invariant the Schema builder cannot express is enforced in the model**, on every engine alike. The database holds foreign keys, `NOT NULL` and unique indexes only.
+- **P11 — SQL order is stable, not alphabetical.** A sort has a tie-breaker and never depends on where NULL sorts. A list read by people in alphabetical order is sorted in PHP.
+- **P12 — Results are cast in PHP.** Aggregates read through `withSum`, `withAvg`, `sum()`, `avg()` differ in type per driver.
+- **P13 — PHP processes bounded sets only.** Each place that loads rows to count, group or sort them states its bound (§6.4.1). Where the set grows without bound, the aggregate stays in SQL through a builder method, or a derived column is stored.
 
 ## 6. Design by work package
 
-The packages follow the audit's order. Each gives its design, the invariants it protects, and the test that proves them on each driver.
+### 6.0 WP0 — Guard rail (done, Task 2)
 
-### 6.0 WP0 — Guard rail
+`tests/Arch/DatabasePortabilityTest.php` scans `app/`, `database/` and `tests/` and fails on any construct of §11 that is not on `tests/Arch/database-portability-baseline.txt` (72 lines, `path|rule|count`). The file only shrinks and ends empty. There is no allowed list. The rule for agents is in `docs/database.md` and in the test's failure message; `CLAUDE.md` is the owner's file and is not edited (the rule text is proposed to the owner in the final report).
 
-The rule for agents (§12.3) goes into `CLAUDE.md`, which the project owns (`AGENTS.md` is generated by Laravel Boost and would be overwritten). `tests/Arch/DatabasePortabilityTest.php` scans source text (§11). It starts with a baseline file listing the existing violations, one per line; each later package deletes the lines it fixes; the last task asserts the baseline is empty. Driver-independent: it runs in the Arch suite.
+### 6.1 WP1 — The suite runs on each driver (done, Task 1)
 
-### 6.1 WP1 — The suite runs on each driver
+Built and run: `bin/test-db`, the Compose services `mariadb` (10.11) and `mysql` (8.4), the connection settings (collations `utf8mb4_nopad_bin` and `utf8mb4_0900_bin`, both exist; READ COMMITTED; `+00:00`; SQLite `busy_timeout` 5000, WAL, `synchronous` normal, `transaction_mode` IMMEDIATE), the lock connections `<driver>_locks` and `null` on SQLite. Learnt by running: under `--parallel` Laravel renames the database of the default connection only, so `tests/TestCase.php` copies `url` and `database` to `<default>_locks`.
 
-- `config/database.php`:
-  - `sqlite`: `busy_timeout` 5000, `journal_mode` `wal`, `synchronous` `normal`, `transaction_mode` `IMMEDIATE`. On `:memory:` the journal pragma is a no-op.
-  - `mysql`: `collation` `utf8mb4_0900_bin`, `timezone` `+00:00`, `isolation_level` `READ COMMITTED`.
-  - `mariadb`: `collation` `utf8mb4_nopad_bin`, `timezone` `+00:00`, `isolation_level` `READ COMMITTED`.
-  - `pgsql`: unchanged.
-  - `mysql_locks` and `mariadb_locks`: twins of their connection, as `pgsql_locks` already is. `config/cache.php` picks `<driver>_locks` for the three server engines and `null` for SQLite, where a second connection could never write while the first holds the write lock.
-  - The collation is a connection setting, not `->collation()` on columns: the PostgreSQL grammar would emit `collate "utf8mb4_bin"` and fail. Laravel applies the connection collation to every `create table` (`MySqlGrammar.php:278-281`) and to `create database`.
-- `compose.yaml`: services `mariadb` (`mariadb:10.11`) and `mysql` (`mysql:8.4`) under Compose profiles of the same names, each with Sail's `create-testing-database.sh`. `sail up` starts PostgreSQL only, as today.
-- `bin/test-db <sqlite|sqlite-file|pgsql|mariadb|mysql> [--concurrency] [-- pest arguments]` sets the connection variables and runs the suite, inside Sail by default and on the host with `TEST_DB_ON_HOST=1` (CI). Environment variables win over `phpunit.xml`, which sets no `force`.
-- Parallel testing: Laravel names each process's database `<DB_DATABASE>_test_<token>` and creates it through the schema builder. PostgreSQL: the Sail user may create databases. MySQL and MariaDB: Sail's `create-testing-database.sh` grants the application user every database named `testing%`, which covers them; CI connects as `root`. SQLite in memory: one database per process, nothing to create. SQLite file: `database/testing.sqlite_test_<token>`, created as an empty file.
-- A baseline of failures per driver is recorded in `docs/superpowers/research/database-portability-baseline.md` and updated by each task. Before WP2 it can only say where the migrations stop.
-
-`phpunit.xml` does not change in this package. The default driver of the suite moves to SQLite in memory in WP8, once the suite is green there (§17, point 8).
+Added by this revision (plan Task 3): **`bin/test-db` stops before the suite when the schema does not migrate.** It runs `migrate:fresh` once; on failure it prints the migration that stopped and exits 3. Reason: every database test re-runs `migrate:fresh` when the schema is broken; a whole-suite run on MariaDB then takes about four hours for one line of information (Task 1).
 
 ### 6.2 What "run on PostgreSQL unchanged" means
 
-Historic migrations have already run on production instances. They may be edited only where PostgreSQL would produce the same schema (decision 7.1.4 of the audit, kept). Anything that changes the PostgreSQL schema is a new migration. Two commands prove it:
+Historic migrations have already run on production instances. Editing one changes fresh installs only; anything an existing install needs is a new migration. `bin/check-pg-upgrade` loads a dump of the PostgreSQL schema as it was before this plan (with sample rows), runs `php artisan migrate`, and compares the result with a fresh install: same rows, same schema, except what D8 decides for the five check constraints. With D8 (a), the script asserts exactly that difference: five check constraints on the upgraded database, none on the fresh one, nothing else.
 
-- `bin/check-pg-upgrade` loads a dump of the PostgreSQL schema as it was before this plan (with sample rows), runs `php artisan migrate`, dumps the schema, and compares it with the dump of a fresh install. The difference must be empty, and the sample rows must all be there with their names unchanged.
-- The four-driver `migrate:fresh` job of CI.
+### 6.3 WP2 — Migrations: the Schema builder only
 
-### 6.3 WP2 — Migrations
+**Edited in place** (fresh installs; all four engines get the same schema):
 
-**Edited in place (PostgreSQL result unchanged):**
+| Migration | Change |
+|---|---|
+| `2026_10_06_100000_create_game_tables.php:54-60` | The five `->default(new Expression("'[]'::jsonb"))` are removed. `GameRound::$attributes` (`app/Models/GameRound.php:55`) already gives the five values |
+| `2026_10_01_100300:21`, `2026_10_03_100100:23-27`, `2026_10_10_100000:25-29`, `2026_10_15_100000:22` | The four `create unique index … lower(name)` statements and their driver branches are removed (replaced by `name_key`, below) |
+| `2026_10_01_110000:25-34`, `2026_10_02_100000:68-77`, `2026_10_15_100000:17-21` | The five `alter table … add constraint … check` statements and their driver branches are removed. Nothing replaces them in the database (§6.5) |
+| `2026_10_02_100000:46-66`, `backfill()` | The four `DB::raw` correlated subqueries become query-builder loops (below) |
+| The seven non-null `timestamp()` columns (five migrations) and three in [18f] | `dateTime()`. Identical DDL on PostgreSQL (`typeDateTime` calls `typeTimestamp`); `DATETIME` on MySQL and MariaDB |
+| `2026_10_08_100000:14-18` | `longText()` for the four payload columns |
 
-| Migration | Change | Why PostgreSQL is unchanged |
-|---|---|---|
-| `2026_10_06_100000_create_game_tables.php:54-60` | The five `->default(new Expression("'[]'::jsonb"))` are removed. `GameRound::$attributes` already sets the five values. | It is not: fresh installs lose the database default. A new migration drops it on existing installs too (below), so both end equal. |
-| The seven non-null `timestamp()` columns of audit §1.16, and three in [18f] | `dateTime()` | `PostgresGrammar::typeDateTime` calls `typeTimestamp`: identical DDL. MySQL and MariaDB get `DATETIME`: no auto-update, no session time zone, no 2038 limit. |
-| `2026_10_08_100000:14-18` (four payload columns) | `longText()` | `text` on PostgreSQL and SQLite either way; `longtext` on MySQL and MariaDB, where `text` stops at 64 KB and the content reaches 512 KB. |
-| The five `if (DB::getDriverName() !== 'pgsql') return;` blocks | The check constraints go through `CheckConstraint::add()` (§7), unconditionally. The four `create unique index … lower(name)` statements are removed. | Same constraint names and expressions. The removed indexes are dropped on existing installs by the new migration, after their replacement exists. |
+The backfill of `2026_10_02_100000`, with the builder only:
 
-**New migrations:**
+```php
+public function backfill(): void
+{
+    DB::table('retros')->select(['id', 'team_id'])->orderBy('id')->lazyById(500)->each(
+        fn (object $retro) => DB::table('action_items')->where('retro_id', $retro->id)->update(['team_id' => $retro->team_id]),
+    );
 
-1. `add_name_keys_to_named_tables` — for `workspace_templates`, `whiteboard_templates` and `poker_decks`:
-   1. add `name_key` `string(160)`, nullable;
-   2. fill it in PHP with `NameKey::of($name)`, by id order. Two rows of one owner with the same key (possible on PostgreSQL where the old index folded with the database locale and did not trim): the oldest keeps the key, each later one gets the key followed by ` ~` and the last eight characters of its id. Names are never changed. Each such row is written to the log;
-   3. make the column non-null and create the plain unique indexes: `(workspace_id, name_key)` on the two template tables; `(team_id, name_key)` and `(workspace_id, name_key)` on `poker_decks`. A NULL owner never collides on the four engines, so no partial index is needed;
-   4. only then, drop the old expression indexes where `Schema::hasIndex()` finds them (`workspace_templates_workspace_name_unique`, `poker_decks_team_name_unique`, `poker_decks_workspace_name_unique`, `whiteboard_templates_workspace_name_unique`). On a fresh install they never existed and the step does nothing. No driver test is needed.
-   
-   On PostgreSQL the migration runs in one transaction: either the instance has the new keys and indexes, or nothing changed. The three tables are small (saved decks are capped at 30 per owner, whiteboard templates at 50 per workspace), so the locks are short.
-2. `drop_json_defaults_from_game_rounds` — the five columns through `->change()` without a default. Brings existing PostgreSQL installs to the fresh schema.
-3. **[18f]** `add_email_key_to_users_table` and `normalise_workspace_invitation_emails` (§6.5).
+    DB::table('action_items')->where('is_done', true)->select(['id', 'updated_at'])->orderBy('id')->lazyById(500)->each(
+        fn (object $item) => DB::table('action_items')->where('id', $item->id)->update(['completed_at' => $item->updated_at]),
+    );
 
-The model fills `name_key` whenever `name` is set (an attribute mutator on `name`), so no caller can forget it; the column being non-null makes a write that bypasses the model fail loudly.
+    DB::table('participants')->whereNotNull('user_id')->select(['id', 'user_id'])->orderBy('id')->lazyById(500)->each(function (object $participant): void {
+        DB::table('action_items')->where('created_by_participant_id', $participant->id)->whereNull('created_by_user_id')
+            ->update(['created_by_user_id' => $participant->user_id]);
 
-**Rule kept from the audit:** on SQLite a `change()` rebuilds the table from introspection. Raw DDL on a table must come after its last `change()`. After this package no raw DDL is left except the check constraints, which SQLite does not get.
+        DB::table('action_items')->where('assignee_participant_id', $participant->id)
+            ->update(['assignee_user_id' => $participant->user_id, 'assignee_participant_id' => null]);
+    });
+}
+```
+
+`DB::table()` is the query builder, not a raw statement. This migration has run on every existing install; on a fresh install the table is empty. Its test stops adding a column inside a test (§6.7).
+
+**New migrations** (all four engines run them; each is Schema builder plus query-builder loops):
+
+1. `drop_json_defaults_from_game_rounds` — the five columns through `->change()` with no default, so that existing installs equal fresh ones.
+2. `add_name_keys_to_named_tables` — for `workspace_templates`, `whiteboard_templates`, `poker_decks`: add `name_key` `string(160)` nullable; fill it in PHP with `NameKey::of($name)` in id order (a later row of the same owner with the same key gets the key followed by ` ~` and the last eight characters of its id; names never change; each such row is logged); make it non-null and add the plain unique indexes `(workspace_id, name_key)`, `(team_id, name_key)`; then drop the old expression indexes **where `Schema::hasIndex($table, $name)` finds them**, with `$table->dropIndex($name)`. No driver test: on an engine or an install that never had them the step does nothing.
+3. `add_week_start_to_game_points` (§6.4.1), `add_sort_rank_to_action_items` (§6.4.2), `add_search_columns` (§6.4.3): add the column, fill it by chunks, add its index.
+4. **[18f]** `add_email_key_to_users_table`, `normalise_workspace_invitation_emails`, `add_search_columns_for_workspace_search` (§6.5, §6.4.3).
+
+**The check constraints of existing PostgreSQL installs.** The Schema builder has no method that names a check constraint: no `check()`, no `dropCheck()`, and `Schema::hasIndex()` does not see one. So a migration cannot remove them and stay within the rule. Decision D8; recommended: they stay on those installs. They are strictly redundant with the model guards (same five rules), they only ever refuse a write that bypasses the model, and a fresh install does not have them. `docs/database.md` says so, and says that a later change to one of the five rules must come with the removal of the matching constraint on old installs (options in D8).
 
 **Invariants and proof:**
 
 | Invariant | Mechanism | Test, run on each driver |
 |---|---|---|
-| A template or deck name is unique per owner, whatever its case and surrounding spaces | unique index on `name_key` | `tests/Feature/Database/NameKeysTest.php`: a second row with `'sprint map'` after `'Sprint Map'` raises `UniqueConstraintViolationException`; two decks named alike under two owners are accepted; a team deck and a workspace deck named alike are accepted |
-| The four key indexes exist | schema builder | same file, `Schema::hasIndex` |
-| An existing PostgreSQL install ends like a fresh one, with its rows | new migrations | `bin/check-pg-upgrade` (PostgreSQL job of CI) |
-| The schema migrates from nothing | — | `migrate:fresh --seed` on the four drivers in CI |
+| A template or deck name is unique per owner, whatever its case and surrounding spaces | unique index on `name_key` | `NameKeysTest` |
+| The four key indexes exist | Schema builder | same file, `Schema::hasIndex` |
+| No JSON column of a round has a database default; a new round gets its empty lists | `GameRound::$attributes` | `PortableSchemaTest` |
+| The legacy backfill gives the same rows as before | query-builder loops | `tests/Upgrade/LegacyActionItemsBackfillTest.php`: migrates up to the migration before, inserts legacy rows, runs the real migration (§6.7) |
+| An existing PostgreSQL install keeps its rows and ends like a fresh one, the five constraints aside | new migrations | `bin/check-pg-upgrade` |
+| The schema migrates from nothing | — | the preflight of `bin/test-db`; `migrate:fresh --seed` on the four drivers in CI |
 
-### 6.4 WP3 — Raw SQL
+### 6.4 WP3 — Queries: every raw call becomes Eloquent
 
-| Site | Today | Design |
+#### 6.4.1 Aggregates, conditional counts, leaderboards, weeks
+
+The builder has `count()`, `sum()`, `avg()`, `max()`, `distinct()->count($column)` and, from a parent model, `withCount`, `withSum`, `withAvg`, `withMax` with constrained closures and aliases. It has no grouped aggregate with an alias. Each `selectRaw` therefore becomes one of three things. "Bound" is the number of rows PHP receives.
+
+| Site (laneDb `985bf55c`) | Today | Replacement | Bound |
+|---|---|---|---|
+| `Mcp/Presenters/McpMessage.php:48`, `Actions/Retros/BuildBoardSnapshot.php:250,255`, `Actions/Retros/BuildSummaryInput.php:153` | `card_id, count(*)` over a retro's votes | `Retro::voteCountsByCard(?Participant $voter = null)`: `$this->cards()->select('id')->whereHas('votes', $by)->withCount(['votes' => $by])->get()` mapped to `id => (int) votes_count` | cards of one retro that have a vote; counted in SQL |
+| `Http/Controllers/WorkspaceTemplatesController.php:131` | `saved_deck_id, count(*)` | `$workspace->pokerDecks()->withCount(['games as usage_count' => fn ($games) => $games->whereIn('team_id', $visibleTeamIds)])` (`SavedPokerDeck::games()` exists) | decks of one workspace (at most 30); counted in SQL |
+| `Http/Controllers/PokerDecksController.php:57` | `deck, count(*)` over a team's games | one `$team->pokerGames()->where('deck', $deck->value)->count()` per built-in deck | 4 queries (the enum has four built-in decks), no row loaded |
+| `Actions/HealthCheck/SummarizeHealthCheck.php:38` | `statement, count(*), sum(score), sum(score * score)` | `$retro->healthCheckAnswers()->get(['statement', 'score'])`, grouped in PHP (the sum of squares has no builder form) | participants × statements of one retro |
+| `SummarizeHealthCheck.php:111` | `statement, avg(score)` of the previous retro | the same read on the previous retro, `->groupBy('statement')->map->avg('score')` | participants × statements of one retro |
+| `Actions/HealthCheck/BuildHealthTrend.php:112` | `retro_id, statement, sum(score), count(*)` | new relation `RetroHealthStatement::answers()` (`hasMany(HealthCheckAnswer::class, 'statement', 'key')`), read with `withCount(['answers' => $sameRetro])->withSum(['answers' => $sameRetro], 'score')`, `$sameRetro` being a `whereColumn` on the two `retro_id` columns | statements of the retros asked for (the same rows `statementKeysByRetro()` loads today); summed in SQL |
+| `Actions/Teams/BuildTeamMoodTrend.php:46` | `retro_id, count(distinct participant_id)` | on the retro query already there: `->withCount(['participants as mood_voters_count' => fn ($participants) => $participants->whereHas('healthCheckAnswers')])` (new relation `Participant::healthCheckAnswers()`) | none; counted in SQL |
+| `Actions/Retros/SummarizeRoti.php:20` | `score, count(*)` | `$retro->rotiVotes()->pluck('score')->countBy()` | one integer per participant of one retro |
+| `Actions/Retros/BuildSummaryInput.php:262` | `count(*), avg(score)` | `$scores = $retro->rotiVotes()->pluck('score')`, then `count()` and `avg()` | one integer per participant of one retro |
+| `Actions/Retros/TopTeamTemplates.php:37` | `template, workspace_template_id, count(*), max(created_at)` over every retro of the team | the **100 latest** retros of the team, three columns, grouped and sorted in PHP | 100 rows. A team's retros grow without bound, so the whole set is not loaded: decision D11 (a window instead of all time) |
+| `Actions/ActionItems/ActionItemQuery.php:56-60` | four `count(*) filter (where …)` and `count(distinct retro_id)` | five `count()` on clones of the scope; `->distinct()->count('retro_id')` for the last | none: five count queries (the prop is deferred) |
+| `Actions/Games/RoomLeaderboard.php:35` | `player_id, sum(points), sum(case when is_win …), count(*)` | new relation `GamePlayer::points()`; `$room->players()->whereHas('points', $since)->withSum(['points as total_points' => $since], 'points')->withCount(['points as wins' => $won, 'points as rounds_played' => $since])`; the PHP sort that exists stays | players of one room; summed in SQL |
+| `Actions/Games/TeamGameLeaderboard.php:48-51` | join, grouped sums, `order by total desc, wins desc, lower(name)`, `limit 20` | new relation `User::gamePoints()`; `$team->members()->whereHas('gamePoints', $inScope)->withSum(…)->withCount(…)->get()`, sorted in PHP by points, wins, alphabetical name, id, then `take(20)` | members of one team who scored in the period; summed in SQL. Sorting in PHP makes the top twenty the same on every engine |
+| `Actions/Games/GameStreaks.php:30-31` | `date_trunc('week', created_at)` grouped | stored column `game_points.week_start` (`date`, the Monday in UTC, set by `GamePoint::creating`, index `(team_id, user_id, week_start)`); read with `->select(['user_id', 'week_start'])->distinct()` | users asked for × distinct weeks played. Without the column the read would be every points row of the team, which grows with every round: rejected |
+
+Other raw calls of `app/`:
+
+| Site | Today | Replacement |
 |---|---|---|
-| `ActionItemQuery.php:56-59` | `count(*) filter (where …)` | `Sql::countWhen('…')`: `sum(case when … then 1 else 0 end)`. The existing `(int)` casts turn the NULL of an empty set into 0. The aliases become `open_total`, `overdue_total`, `completed_total`, `mine_total`, `rituals_total`: `open` is a keyword on MySQL and MariaDB. |
-| `ActionItemQuery.php:124` | `(completed_at is not null)` as a sort key | `case when action_items.completed_at is null then 0 else 1 end` |
-| `ActionItemQuery.php:126` | `… asc nulls last` | `Sql::nullsLast($expression)` as its own sort key before the expression: `case when <expr> is null then 1 else 0 end` |
-| `TrackedIssues.php:34`, `:53` | `whereRaw('false')` | `Sql::never()`: `1 = 0` |
-| `RoomLeaderboard.php:35`, `TeamGameLeaderboard.php:48` | `case when is_win then …` | `Sql::countWhen('is_win = ?')` with a bound `true` |
-| `GameStreaks.php:30-31` | `date_trunc('week', created_at)` | select `user_id, created_at` and compute the Monday in PHP; the method already converts to Carbon. The read is bounded: rows of the team and the given users only. |
-| `DrawGameWord.php:31`, `SendActionItemReminders.php:104` | `insertOrIgnore` | `InsertOnce::into($table, $values): bool` (§7): the insert in a nested transaction, `UniqueConstraintViolationException` caught. Unlike `insert ignore` on MySQL it hides no other error. |
-| `SearchBoards.php:121,146,161,185`, `TeamEstimatesController.php:39`, `AdminCandidatesController.php:22-23`, **[18f]** `SearchWorkspaceContent.php` (7 sites) | `ilike`, `whereLike`, three private escapers, `LikePattern::contains` | `TextSearch::contains()` (§7). `LikePattern::snippet` stays; `LikePattern::contains` and the two `escapeLike` methods are deleted. |
-| `BuildSummaryInput.php:228`, `TeamGameLeaderboard.php:51` | `orderByRaw('lower(…)')` | stable SQL order with a tie-breaker, then `Alphabetical::sort()` in PHP (P11) |
-| The seven `lower(name)` and `lower(email)` lookups | `whereRaw('lower(…) = ?')` | `name_key` (§6.3) and `email_key` (§6.5) |
-| `GameHostsController.php:31`, `GameRoundsController.php:33` | an id validated as `'string'` reaches an `exists` query | add the `uuid` rule (a malformed id is a 500 on PostgreSQL only) |
+| `Actions/Integrations/TrackedIssues.php:34,53` | `whereRaw('false')` | `->when($site === null, fn (Builder $none) => $none->whereKey([]))` (an empty `whereIn` compiles to `0 = 1` on every grammar) |
+| `TrackedIssues.php:135` | `orWhere('external_id', 'like', "{$repositoryId}/%")` | no `like`: the method already plucks every tracked id; the repository filter becomes `Str::startsWith($id, $prefixes)` in the loop. Bound: the tracked links and tasks of one integration |
+| `Actions/ActionItems/SendActionItemReminders.php:80` | `->select(DB::raw(1))` inside `whereExists` | delete the line; `whereExists` needs no select |
+| `SendActionItemReminders.php:104` | `DB::table('action_item_reminders')->insertOrIgnore(...) === 1` | `ActionItemReminder::query()->createOrFirst([unique key], ['sent_at' => now()])->wasRecentlyCreated`. `createOrFirst` runs the insert in a savepoint and catches the unique violation only |
+| `Actions/Games/DrawGameWord.php:31` | `DB::table('game_used_words')->insertOrIgnore(...)` | new model `GameUsedWord`; `firstOrCreate([team_id, locale, word])` |
+| `Actions/Surveys/CloseOpenSurveys.php:14` | `'version' => DB::raw('version + 1')` in a mass update | `->increment('version', 1, ['is_closed' => true])` |
+| `Actions/Retros/BuildSummaryInput.php:228`, `TeamGameLeaderboard.php:51` | `orderByRaw('lower(…)')` | stable SQL order, then `Alphabetical::sort()` in PHP (P11) |
+| `Http/Controllers/Games/GameHostsController.php:31`, `GameRoundsController.php:33` | an id validated as `'string'` | add the `uuid` rule (a malformed id is a 500 on PostgreSQL only) |
 
-**Search semantics, identical on the four drivers:** a term matches when the lower-cased column contains the lower-cased term; `%`, `_` and `!` in the term are literal. The SQL is `lower(<column>) like ? escape '!'`, the term lowered and escaped in PHP. SQLite's built-in `lower()` folds ASCII only, so the application registers its own `lower()` on every SQLite connection, backed by `mb_strtolower` (`SqliteFunctions::register`, on the `ConnectionEstablished` event): `ÉTÉ` then matches `été` on SQLite as elsewhere. PostgreSQL folds by the database locale: a database created with the `C` locale folds ASCII only; the operator documentation and `skrum:check-database` say so.
+#### 6.4.2 The action-item list: computed order before pagination
 
-**Proof, on each driver:** `tests/Feature/Database/TextSearchTest.php` (a term with `%`, with `_`, with `!`, with a backslash; `Été` found by `ÉTÉ` and by `été`; `e` does not find `é`), the existing feature tests of each site, and `tests/Unit/Support/Database/SqlTest.php` for the three fragments.
+`ActionItemQuery::order()` (`:117-133`) sorts open items before completed ones; open items overdue first, then by due date with undated last, then by priority; completed items by completion, newest first; then newest, then id. It uses four `orderByRaw`, one with `nulls last`, and the list is paginated 50 per page and unbounded (completed items accumulate). It is also used by `CarriedActionItems` (a limit) and the MCP tool `ListActionItems`.
+
+Options considered:
+
+- *Sort in PHP.* Rejected: the set is unbounded, and pagination must cut after the sort.
+- *Two or three ordered queries merged* (open dated, open undated, completed), paging across them by counts. Builder-only and correct, but each page costs three counts and up to three reads, the paginator is hand-built at three call sites, and the priority key still has no builder form (`high`, `medium`, `low` do not sort alphabetically).
+- *A stored sort column maintained on save.* **Chosen.** One integer, `action_items.sort_rank`, written by the model's `saving` hook from `completed_at`, `due_on` and `priority`:
+
+| State | `sort_rank` |
+|---|---|
+| open, due on `Y-m-d` | `Ymd × 10 + weight` (for example 2026-10-05, medium: `202610051`) |
+| open, no due date | `1 000 000 000 + weight` |
+| completed | `2 000 000 000` |
+
+`weight` is `ActionItemPriority::sortWeight()` (0 high, 1 medium, 2 low), which exists. The query becomes `->orderBy('sort_rank')->latest('completed_at')->latest('created_at')->orderBy('id')`: plain columns, one query, ordinary `paginate()`.
+
+Why it is the same order: "overdue first, then by due date" is the due date ascending (an overdue date is an earlier date), so the order does not depend on today and can be stored. Within one `sort_rank` all rows are open (their `completed_at` is NULL for all) or all completed (never NULL), so the position of NULL never decides anything. The largest value is below 2³¹. An index `(team_id, sort_rank)` serves the list, which today sorts without one.
+
+Invariant: `sort_rank` equals the function of the three columns for every row. Enforced by `ActionItem::saving`; rows are only written through the model (checked by grep in the plan); the migration fills existing rows by chunks with the same function. Test on each driver: the order of a list holding every state, the second page of 51 items, and the rank following an update of each of the three columns.
+
+#### 6.4.3 Case-insensitive search
+
+Sites: the five `ilike` (`Mcp/Tools/Retro/SearchBoards.php:121,146,161,185` on `retros.title`, `retros.summary`, `action_items.content`, `cards.content`; `Http/Controllers/TeamEstimatesController.php:39` on `poker_tasks.title`), the two `whereLike` of `Admin/AdminCandidatesController.php:22-23` (`users.name`, `users.email`), and **[18f]** the seven `ilike` of `Actions/Search/SearchWorkspaceContent.php:54-83` (`retros.title`, `poker_games.title`, `poker_tasks.title`, `whiteboards.title`, `game_rooms.name`, `action_items.content`, `cards.content`).
+
+What the builder compiles (`Query/Grammars/*`, v13.34.0):
+
+| Call | PostgreSQL | MySQL, MariaDB | SQLite | SQL Server |
+|---|---|---|---|---|
+| `whereLike($c, $p)` (case-insensitive, the default) | `ilike` | `like`: follows the collation | `like`: folds ASCII letters only | `like`: follows the collation |
+| `whereLike($c, $p, caseSensitive: true)` | `like` | `like binary` | `glob`, the pattern rewritten (`%` → `*`, `_` → `?`, `*` → `[*]`, `?` → `[?]`) | throws |
+
+No grammar emits an `escape` clause. The default escape character is the backslash on PostgreSQL, MySQL and MariaDB; SQLite's `LIKE` has none, and its `GLOB` has no escape for what Laravel turned into `*` and `?`.
+
+**Option (a), `whereLike` case-insensitive, is wrong on three engines.** Under the binary collations of P4 it is case-sensitive on MySQL and MariaDB. With a `_ci` collation instead, it would work there, but then every `=` and every unique index ignores case too: two whiteboard element ids that differ by case collide, `Ada` and `ada` are one token name; and with the older `utf8mb4_unicode_ci` every emoji is the same reaction (`utf8mb4_0900_ai_ci` and MariaDB's `uca1400` collations do tell emoji apart, but still fold case and accents in keys). A column-level `->collation()` on the searched columns only is a Schema builder method, but it is not portable: `PostgresGrammar::modifyCollate` and `SQLiteGrammar` emit `collate "utf8mb4_…"` and the `create table` fails there. And on SQLite `like` folds ASCII only whatever is done: `ÉTÉ` does not find `été`. No collation satisfies search and keys together.
+
+**Option (b), a stored folded column and a case-sensitive `whereLike`, is correct on the four engines and is chosen.** The collation choice of P4 stands; reaction emoji stay distinct; no `->collation()` call is needed.
+
+- Each searched column `x` gets a sibling `x_search` (`text`, nullable), holding `Str::lower($x)` (PHP, UTF-8). The trait `App\Concerns\HasSearchColumns` fills it in a `saving` hook and hides it from serialisation; the model lists its columns.
+- The term is folded by the same function and matched with `whereLike('x_search', $pattern, caseSensitive: true)`: `like` on PostgreSQL, `like binary` on MySQL and MariaDB (bytes, whatever the collation), `glob` on SQLite (bytes). Both sides are already lower-case, so a case-sensitive match is the case-insensitive search wanted, identical everywhere: `ÉTÉ` finds `été`, `e` does not find `é`.
+- `users.email` is searched through `email_key` ([18f]), which is the same fold; no `email_search`.
+- Columns: `retros.title_search`, `retros.summary_search`, `cards.content_search`, `action_items.content_search`, `poker_tasks.title_search`, `users.name_search`; [18f] `poker_games.title_search`, `whiteboards.title_search`, `game_rooms.name_search`. They are `text` because lower-casing can lengthen a string (`İ`) and no index can serve `%term%` anyway.
+- **Wildcard characters in the term.** Without an escape clause that works on SQLite, `%`, `_`, `\`, `*`, `?`, `[`, `]` cannot be made literal through the builder. `SearchText::pattern()` replaces each of them by `_`, which matches any one character on every engine (one byte under `like binary`; the seven characters are one byte each). The SQL result is then a superset of the true matches, and the rows are filtered in PHP with `SearchText::contains()` (`str_contains` on the folded text). For a term without those characters, which is nearly every term, the SQL result is exact and the filter removes nothing. The estimates page is paginated in SQL, so for such a term a page can hold fewer than 50 rows and its total can count a near-miss: decision D10.
+- Existing rows are filled by a migration, table by table, in chunks. On a large instance it rewrites every card once; `docs/database.md` says so.
+
+Proof, on each driver, `tests/Feature/Database/SearchColumnsTest.php`: the column follows the source on create and update; `ÉTÉ` and `été` find `Été`; `ete` does not; a term `100%` finds `100%` and not `1000`; `a_b` finds `a_b` and not `axb`; a term with `*`, `?`, `[`, `\`; plus the existing feature tests of each site.
 
 ### 6.5 WP4 and WP5 — Invariants in the model, dates, collation, e-mail
 
-**Check constraints.** Five rules exist only as PostgreSQL constraints. Each becomes a `saving` guard on its model that throws `App\Exceptions\ModelInvariantViolation`, and stays a database constraint on PostgreSQL, MySQL and MariaDB through `CheckConstraint::add()`. SQLite cannot add a constraint to an existing table; there the model is the only guard, and rows written outside Eloquent are unchecked (§9).
+**The five rules.** They existed only as PostgreSQL constraints. Each becomes a `saving` guard on its model that throws `App\Exceptions\ModelInvariantViolation`, on every engine, and is the only enforcement on a fresh install.
 
-| Model | Rule |
-|---|---|
-| `ActionItem` | not both `assignee_user_id` and `assignee_participant_id` |
-| `ActionItem` | `assignee_participant_id` needs `retro_id` |
-| `ActionItem` | `recurrence` needs `due_on` |
-| `TeamHealthStatement` | built-in without text and label, or custom with both |
-| `SavedPokerDeck` | exactly one of `team_id`, `workspace_id` |
+| Model | Invariant | Where a user reaches it (validation) | Test |
+|---|---|---|---|
+| `ActionItem` | never both `assignee_user_id` and `assignee_participant_id` | `ActionItemRules` | `ModelInvariantsTest`, on each driver |
+| `ActionItem` | `assignee_participant_id` needs `retro_id` | `ActionItemRules` (`allowsGuests`) | same |
+| `ActionItem` | `recurrence` needs `due_on` | `ActionItemRules` | same, on create and on update |
+| `TeamHealthStatement` | built-in without text and label, or custom with both | `ManageTeamHealthStatements` | same |
+| `SavedPokerDeck` | exactly one of `team_id`, `workspace_id` | the two deck controllers (the owner comes from the route) | same |
 
-Proof on each driver: the existing tests (`ActionItemModelTest:108-126`, `HealthStatementModelsTest:62`, `WorkspacePokerDecksTest:261`) lose their skips and expect `ModelInvariantViolation`. A second test per rule writes through the query builder and expects a `QueryException`; it is skipped where `CheckConstraint::isEnforced()` is false, a capability, not a driver name.
+The model guard is the backstop; the form validation is what answers a user with a 422. Rows written outside Eloquent are unchecked on every engine (§9); the plan found no such write.
 
-**Dates.** `action_items.due_on` and `action_item_reminders.due_on` use the cast `App\Casts\DateOnly`, which stores and reads `Y-m-d` on every driver. Eloquent's `date` cast writes `Y-m-d H:i:s`, which SQLite keeps as text: `whereBetween` then skips items due on the upper bound and the reminder's unique key no longer matches between its two writers. Proof on each driver: an item due tomorrow is in the reminder run; a second run the same day sends nothing; the raw stored value is ten characters long.
+**Dates.** `action_items.due_on` and `action_item_reminders.due_on` use the cast `App\Casts\DateOnly` (`Y-m-d` on every driver). Eloquent's `date` cast writes `Y-m-d H:i:s`, which SQLite keeps as text: ranges then miss their upper bound, and `createOrFirst` on a reminder would not find the row it collided with. A custom cast is a Laravel convention, not raw SQL.
 
-**Collation (P4).** With the binary, no-pad collations of §6.1, two different emoji are two values, `pêche` and `péché` are two words, and `Ada` and `ada` are two token names, on the four engines. Proof on each driver, in `tests/Feature/Database/CollationTest.php`: one participant adds two different emoji to a card and both are stored; removing one keeps the other; two personal access tokens whose names differ by case are both accepted; two whiteboard elements whose ids differ by case are two rows; `'a'` and `'a '` are two values in a unique column.
+**Collation (P4).** Unchanged: `CollationTest` proves on each driver that two emoji are two reactions, `pêche` and `péché` two words, `Ada` and `ada` two token names, `'a'` and `'a '` two values.
 
-**E-mail [18f].** Plan 18f stores addresses normalised (`LoginAddress::normalise`, a mutator on `User::email`) and looks them up with `lower(email) = ?`, because rows from before may hold capitals and two legacy accounts may share an address once normalised. `ResolveSsoUser` and `SendMagicLink` read up to two matches and refuse when there are two: that refusal is a security rule and is kept.
-
-- `users.email_key` `string(255)`, filled by the same mutator and by a migration for every existing row, under a plain, non-unique index (legacy duplicates share a key). `User::scopeWhereAddress()` becomes `where('email_key', LoginAddress::normalise($email))`: indexed, and the same comparison on every driver. No SQL `lower()` is left.
-- Uniqueness of new addresses stays where it is: the plain unique index on `users.email`, which holds normalised values for every row written since 18f, plus the `UniqueEmailAddress` rule, which now reads `email_key` and so still refuses an address a legacy row uses.
-- `workspace_invitations.email` is normalised on write by the same function, and a migration normalises existing rows (no unique index is involved, so no collision can stop it). `CreateWorkspaceInvitation` then deletes pending invitations with a plain equality.
-- Vendor lookups (Fortify, the password broker) compare `email` with what the request holds. They behave alike on the four drivers once the collation is binary; what they do with a mixed-case input is 18f's concern, and a test per driver pins that the outcome is the same everywhere.
-
-This package waits for `plan-18f-auth` to be merged. Before the merge, the three main-tree lookups (`WorkspaceInvitationsController:32,44`, `ResolveSsoUser:46`, `CreateWorkspaceInvitation:22`) stay on the baseline of the architecture test.
+**E-mail [18f].** Unchanged from revision 1 (D5, ruled): `users.email_key` filled by the `email` mutator and by a migration, under a plain non-unique index; `User::scopeWhereAddress()` becomes `where('email_key', LoginAddress::normalise($email))`; `workspace_invitations.email` is normalised on write and by a migration; `CreateWorkspaceInvitation` deletes pending invitations with a plain equality. Before 18f is merged, `WorkspaceInvitationsController:32,44`, `ResolveSsoUser:46` and `CreateWorkspaceInvitation:22` stay on the baseline.
 
 ### 6.6 WP6 — Concurrency
 
-**Settings** (§6.1) give the three server engines the same model: row locks under READ COMMITTED. SQLite serialises write transactions.
+**What configuration alone expresses** (`config/database.php` options are conventions, read by the framework's connectors):
 
-**Retry policy (P8).**
+| Engine | Option | Effect (connector) |
+|---|---|---|
+| MySQL, MariaDB | `isolation_level` | `SET SESSION TRANSACTION ISOLATION LEVEL …` at connect (`MySqlConnector.php:96`) |
+| PostgreSQL | `isolation_level` | `set session characteristics as transaction isolation level …` (`PostgresConnector.php:168`). Not set: READ COMMITTED is the server default |
+| SQLite | `busy_timeout`, `journal_mode`, `synchronous` | pragmas at connect (`SQLiteConnector.php:112-148`) |
+| SQLite | `transaction_mode` | `BEGIN IMMEDIATE` (`SQLiteConnection.php:31`), on PHP 8.4 and later only |
+| all | `DB::transaction($callback, $attempts)` | retries on a deadlock or a busy database (`ConcurrencyErrorDetector`) |
 
-- `App\Support\Database\Transactions::Attempts = 3`. A call site passes it to `DB::transaction($callback, Transactions::Attempts)` only if its closure touches nothing but the database (no HTTP call, no mail, no file; broadcasts and jobs are dispatched after commit and are safe). Initial list: `RevokeInstanceAdmin`, `CreateWorkspaceInvitation`, `IssueMcpToken`, the card vote, reaction, deck and retro template transactions. Not retried: `SaveWhiteboardTemplate` (it copies files), `SaveTeamIntegration` (it fires an event whose listener was not read), anything that calls a provider. Laravel retries only an outermost transaction; inside another one a deadlock is rethrown as `DeadlockException`, which is correct (MySQL has rolled the whole transaction back).
-- SQLite waits up to five seconds for the write lock (`busy_timeout`); after that the statement fails with "database is locked", which Laravel classifies as a concurrency error like a deadlock.
-- A concurrency error that survives its retries is answered **503 with `Retry-After: 1`**, not 500: `bootstrap/app.php` maps it to `ServiceUnavailableHttpException`. JSON clients get the JSON 503; pages get the existing static 503 view.
-- Transactions that call a provider while holding a lock (`IntegrationTokens.php:85`) are never retried.
+Not expressible by an option, and therefore not set: a lock wait timeout on MySQL, MariaDB (50 s by default) and PostgreSQL (none). The alternative is a PDO init command, which is an SQL string in a config file; the 503 mapping below covers the MySQL timeout when it happens.
 
-**Invariants and their proof with two real connections.** `tests/Concurrency` is a suite of its own. Each test starts several PHP processes through Laravel's process concurrency driver, each with its own connection; all wait for the same instant, and every contender pauses 200 ms after its first statement, so that without protection they all read the same state. It uses `DatabaseTruncation`, not a wrapping transaction: rows must be committed to be seen by the other processes. It runs on PostgreSQL, MariaDB, MySQL and SQLite in a file, never on SQLite in memory and never in parallel.
+**Retry policy (P8)**, **503 with `Retry-After: 1`** for a concurrency error that survives its retries, and the **concurrency suite C0 to C8** with two real connections are unchanged from revision 1 §6.6, including the two fixes it found on PostgreSQL too (C5: the name is checked again once the owner is locked; C8: the team row is locked first). `App\Support\Database\Transactions` holds the retry count and delegates the error test to Laravel's detector; it wraps no SQL. Row locks are `lockForUpdate()` and `sharedLock()`, builder methods on the four engines (SQLite compiles nothing and serialises instead).
 
-| # | Invariant | Scenario | Expected on each driver |
-|---|---|---|---|
-| C1 | An instance keeps at least one admin | two admins, each revoked by one process at the same time | exactly one admin left; one call returns `false` |
-| C2 | **[18f]** A magic link signs in once | six processes consume one token | exactly one gets the user, five get `null` |
-| C3 | A participant never exceeds the vote limit | limit 3, eight processes vote for the same participant | exactly 3 votes; five answers 422 |
-| C4 | A team has at most 30 saved decks | 29 decks, six processes create one each, distinct names | exactly 30 |
-| C5 | A deck name is unique per team | six processes create the same name | exactly one row; the others answer 422, none 500 |
-| C6 | A workspace has at most 50 whiteboard templates | 49 templates, saves from two boards of the workspace | exactly 50 |
-| C7 | A reaction is unique per card, participant and emoji | one participant, six processes: three add 👍, three add 🎉 | exactly two rows, one per emoji; no 500 |
-| C8 | One integration per team and provider | six first connections of one provider | exactly one row; no 500 |
-| C0 | The harness really overlaps | each contender records when it starts and ends | the latest start is before the earliest end |
+### 6.7 WP7 — The 18 test sites that read SQL or branch on the driver
 
-Two of these scenarios do not hold today, on PostgreSQL either, and are fixed by this plan (§17, point 13):
-
-- **C5.** A deck name and a retro template name are validated before the owner's row is locked (`PokerDecksController.php:108-118`, `WorkspacePokerDecksController::store`, `WorkspaceTemplatesController::store`). Two identical submissions both pass validation; the unique index stops the second, as a 500. The name is checked again once the owner is locked (`SavedPokerDeckRules::ensureNameIsFree`, as whiteboard templates already do). A rename raced with another stays protected by the index alone.
-- **C8.** `SaveTeamIntegration` locks a row that may not exist yet, which locks nothing: on PostgreSQL the losers fail on the unique index, on MySQL at REPEATABLE READ they deadlock. The team row is locked first (P7).
-
-Each scenario is first run against a build where its protection is removed (the lock line commented out, or the isolation level left at the engine's default) to see it fail; the plan says how, test by test. A concurrency test that cannot be made to fail proves nothing.
-
-### 6.7 WP7 — Tests that assert PostgreSQL
-
-| Site | Design |
-|---|---|
-| Lock order read from SQL text (`IcebreakerRoomTest:200`, `ActionItemExportTest:265`, `InstanceAdminsTest:165`) | `Tests\Support\SqlProbe::lockedTables()` strips identifier quoting and recognises each engine's lock clause. Skipped where `SqlProbe::rowLocksExist()` is false (SQLite compiles no lock clause; there the order of row locks has no meaning). |
-| A table named in SQL text (`GameAccessTest:186`, `WebhookRedeliveryTest:530`) | `SqlProbe::reads($sql, 'table')` |
-| `select 1 / 0` (`WebhookSharesTest:465`, `WebhookEventsTest:464`) | `DatabaseFailure::provoke()`: an insert that violates a NOT NULL constraint. A real error on the four engines, which also aborts the PostgreSQL transaction as the test needs. |
-| Unreachable database (`ErrorPagesTest:32-47`) | `UnreachableDatabase::config()`: port 1 for a server engine, a directory path for SQLite. Both raise a `PDOException` on connect. |
-| `Schema::drop` in a test (`InstanceSettingsTest:173`, `BrandInPageTest:183`) | `MissingTables::during()`: the connection looks for its tables under the prefix `missing_` while the closure runs; they are absent on every engine and no DDL runs |
-| `Schema::table` in a test (`ActionItemModelTest:17`, the legacy backfill) | skipped where the schema grammar reports no transactional DDL (`supportsSchemaTransactions()`). The backfill it tests only ever runs on PostgreSQL installs. |
-| Constraint and index tests skipped off PostgreSQL | §6.5 and §6.3 |
+| Site | Today | Design |
+|---|---|---|
+| `Poker/WorkspacePokerDecksTest.php:261`, `Retros/HealthStatementModelsTest.php:62` | skipped unless `pgsql`, expect a `QueryException` | no skip; expect `ModelInvariantViolation` (§6.5). Also `ActionItems/ActionItemModelTest.php:104-127` |
+| `Integrations/WebhookSharesTest.php:465`, `WebhookEventsTest.php:464` | `DB::statement('select 1 / 0')` | `Tests\Support\DatabaseFailure::provoke()`: a query-builder insert of a user without its required columns, a real error on the four engines |
+| `Games/GameAccessTest.php:186` (2 reads) | injects a rival insert when it sees a `select` on `"game_players"` | a `GamePlayer::creating` listener inserts the rival row just before the model's own insert: same race, no SQL read |
+| `Integrations/WebhookRedeliveryTest.php:530` (2 reads) | counts `select` on `"integration_delivery_payloads"` | counts the Eloquent `retrieved` event of `IntegrationDeliveryPayload` |
+| `Games/IcebreakerRoomTest.php:200`, `Integrations/ActionItemExportTest.php:265`, `Admin/InstanceAdminsTest.php:165` (lock syntax 3, reads 4) | match `for update` and a quoted table in SQL | `Tests\Support\SqlProbe::locks()`: it takes the lock clause and the quoted table name **from the connection's grammar** (`lockForUpdate()->toSql()` minus the plain query; `wrapTable()`), so it holds no SQL of its own and no driver name. Where the grammar compiles no lock clause (SQLite) the three tests are skipped by `SqlProbe::rowLocksExist()`; the invariants themselves are proved on every engine by the concurrency suite. Decision D12 |
+| `InstanceSettingsTest.php:173`, `Branding/BrandInPageTest.php:183` | `Schema::drop` in a test | `Tests\Support\MissingTables::during()`: the connection looks for its tables under a prefix that does not exist (`setTablePrefix`), no DDL |
+| `ActionItems/ActionItemModelTest.php:17` | `Schema::table` adds the legacy column, then calls `backfill()` | moved to `tests/Upgrade/LegacyActionItemsBackfillTest.php`: `migrate:fresh` with the paths of the migrations before `2026_10_02_100000`, legacy rows inserted, then `migrate` with that file: the real migration on real legacy rows, on every engine, no DDL written in the test, no skip. The suite `Upgrade` does not use `RefreshDatabase`; it migrates fully again afterwards |
+| `ErrorPagesTest.php:32-47` (not on the baseline; PostgreSQL port) | a connection to a closed PostgreSQL port | `Tests\Support\UnreachableDatabase::config()`: one configuration for every engine (port 1, and a database path in a directory that does not exist), no driver test |
 
 ### 6.8 Triage of what only shows on another driver
 
-After WP2 the suite runs on SQLite and MariaDB for the first time. Failures not predicted by the audit are sorted into six causes, each with its fix: result type (cast in PHP), order (tie-breaker or `Alphabetical`), NULL position (`Sql::nullsLast`), collation (expected by P4: fix the test, or normalise in PHP), date or time format (`DateOnly`, or compare as Carbon), test that asserts an engine (WP7). A failure that fits none stops the task and is reported with its SQL and both engines' results.
+Unchanged in method. The causes and their fixes, without raw SQL: result type (cast in PHP); order (tie-breaker, or `Alphabetical`); NULL position (filter the NULLs out, order by a column that is never NULL, or a stored rank as in §6.4.2 — never `nulls last`); collation (fix the test, or a stored key); date or time format (`DateOnly`, or compare Carbon values); a test that asserts an engine (§6.7); JSON path lookups; length or strictness. A failure that fits none stops and is reported.
 
 ### 6.9 WP8 — CI, operations, documentation
 
 §10, §12, §13.
 
-## 7. Helpers
+## 7. Helpers that remain
 
-One of each. All live under `app/Support/Database` unless said otherwise; that folder is the only place where a driver may be tested.
+None of them holds SQL or tests the driver.
 
 | Helper | Signature | Role |
 |---|---|---|
-| `Sql` | `countWhen(string $condition): string`; `nullsLast(string $expression): string`; `never(): string` | The three conditional fragments. `countWhen('completed_at is null')` gives `sum(case when completed_at is null then 1 else 0 end)`. |
-| `TextSearch` | `contains(Builder $query, string\|array $columns, string $term): void`; `pattern(string $term): string` | Case-insensitive substring search with literal `%`, `_`, `!`. Several columns are OR-ed inside one group. `Builder` is the query contract, so Eloquent and base builders both pass. |
-| `NameKey` | `of(string $name): string` | `Str::lower(trim($name))`. The one fold for `name_key`. |
-| `App\Support\Auth\LoginAddress` **[18f]** | `normalise(string $email): string` | The one fold for `email_key` and for invitations. Exists in 18f; reused. |
-| `App\Casts\DateOnly` | `CastsAttributes` | Stores and reads `Y-m-d`. |
-| `CheckConstraint` | `add(string $table, string $name, string $expression): void`; `isEnforced(): bool` | Emits `alter table … add constraint … check (…)` where the engine can add one; does nothing on SQLite. |
-| `InsertOnce` | `into(string $table, array $values): bool` | Insert, or `false` when a unique key already holds the row. |
-| `Transactions` | `Attempts = 3`; `isConcurrencyError(Throwable $e): bool` | The retry count, and the test used by the 503 mapping (delegates to Laravel's detector). |
-| `SqliteFunctions` | `register(Connection $connection): void` | Unicode `lower()` on SQLite connections. |
-| `DatabaseRequirements` | `problems(Connection $connection): array<int, string>`; `warnings(Connection $connection): array<int, string>`; `MinimumVersions` | What `skrum:check-database` reports (§10). |
-| `App\Support\Alphabetical` | `key(string $value): string`; `sort(Collection $items, callable $by): Collection` | The PHP alphabetical order: lower-cased, transliterated, ties by the raw value. |
-| `Tests\Support\SqlProbe` | `lockingQueries(Closure $during): array`; `lockedTables(Closure $during): array`; `onRead(string $table, Closure $callback, Closure $during): void`; `reads(string $sql, string $table): bool`; `rowLocksExist(): bool` | The one reader of SQL text in the tests. |
-| `Tests\Support\DatabaseFailure` | `provoke(): void` | A statement that fails on every engine. |
-| `Tests\Support\UnreachableDatabase` | `config(): array` | A connection that cannot be opened. |
-| `Tests\Support\MissingTables` | `during(Closure $callback): mixed` | Runs a closure while no table can be found, without DDL (a table prefix that does not exist). |
-| `Tests\Concurrency\Support\Race` | `run(array $contenders, string $pauseAfter = Race::FirstQueryInTransaction): array`; `request(?string $userId, string $method, string $uri, array $payload = []): int` | Starts the contenders together and returns each outcome. |
+| `App\Support\Database\NameKey` | `of(string $name): string` | `Str::lower(trim($name))`: the fold behind `name_key` |
+| `App\Support\Auth\LoginAddress` **[18f]** | `normalise(string $email): string` | the fold behind `email_key` |
+| `App\Support\Database\SearchText` | `fold(?string $text): ?string`; `pattern(string $term): string`; `contains(?string $text, string $term): bool` | the fold behind `*_search`, the pattern, and the exact check in PHP |
+| `App\Concerns\HasSearchColumns` | trait: `searchColumns(): array<string, string>` (abstract), `scopeWhereContains`, `scopeOrWhereContains` | fills and hides the search columns; the one place that calls `whereLike` |
+| `App\Casts\DateOnly` | `CastsAttributes` | `Y-m-d` on every engine |
+| `App\Exceptions\ModelInvariantViolation` | `because(Model $model, string $rule): self` | a model rule was broken |
+| `App\Support\Database\Transactions` | `Attempts = 3`; `isConcurrencyError(Throwable $e): bool`; `busyMessage(): string` | retry count; delegates to Laravel's detector |
+| `App\Support\Database\DatabaseRequirements` | `problems(Connection $connection): array<int, string>` | reads configuration, `getServerVersion()`, `Schema::getTables()` (§10) |
+| `App\Support\Alphabetical` | `key(string $value): string`; `sort(Collection $items, callable $by): Collection` | alphabetical order in PHP |
+| Model methods | `Retro::voteCountsByCard()`, `ActionItem::sortRankFor()`, relations `GamePlayer::points()`, `User::gamePoints()`, `RetroHealthStatement::answers()`, `Participant::healthCheckAnswers()`, model `GameUsedWord` | §6.4 |
+| `Tests\Support\SqlProbe` | `locks(Closure $during): array<int, array{table: string, level: int}>`; `lockedTables(Closure $during): array<int, string>`; `rowLocksExist(): bool` | lock order, derived from the grammar |
+| `Tests\Support\DatabaseFailure`, `UnreachableDatabase`, `MissingTables` | as §6.7 | |
+| `Tests\Concurrency\Support\Race` | `run(array $contenders, …): array`; `request(…): int` | two-connection proofs |
 
-The audit named seven helpers. Added here: `InsertOnce` (the audit described it without naming it), `Transactions`, `SqliteFunctions`, `DatabaseRequirements`, `Alphabetical`, and four test helpers beside `SqlProbe`.
+Removed since revision 1: `Sql`, `TextSearch`, `CheckConstraint`, `InsertOnce`, `SqliteFunctions`.
 
 ## 8. Invariants per driver
 
-| Invariant | PostgreSQL | MySQL, MariaDB | SQLite | Proof |
-|---|---|---|---|---|
-| Name unique per owner, ignoring case | unique index on `name_key` | same | same | `NameKeysTest`, C5 |
-| Address lookup ignores case; a legacy duplicate is seen as two | index on `email_key` | same | same | `EmailAddressNormalisationTest` [18f], run per driver |
-| Emoji, accents and case are distinct in keys | native | binary no-pad collation | native | `CollationTest`, C7 |
-| Five model rules | model guard and check constraint | model guard and check constraint | model guard | §6.5 tests |
-| Caps and "last one" rules (C1, C3, C4, C6) | row lock on the root, READ COMMITTED | row lock on the root, READ COMMITTED set by the connection | `BEGIN IMMEDIATE` | concurrency suite |
-| Single use (C2) | one conditional `update`, atomic | same | same | C2 |
-| At most one row for a key that may not exist yet (C7, C8) | unique index; the loser's insert fails in a savepoint | unique index; no gap lock under READ COMMITTED | unique index; serialised | C7, C8 |
-| A cache lock is visible to others at once and never joins the caller's transaction | `pgsql_locks` | `mysql_locks`, `mariadb_locks` | same connection (one writer) | `tests/Feature/Database/CacheLockConnectionTest.php` |
-| A date-only value compares as a date | native `date` | native `date` | `DateOnly` stores ten characters | reminder tests |
-| A failed optional statement does not break the caller | nested transaction (savepoint) | same, harmless | same, harmless | existing `WebhookSharesTest`, with `DatabaseFailure` |
+One column now: the mechanism is the same on the four engines unless said.
+
+| Invariant | Mechanism | Proof |
+|---|---|---|
+| Name unique per owner, ignoring case | unique index on `name_key` | `NameKeysTest`, C5 |
+| Address lookup ignores case; a legacy duplicate is seen as two | index on `email_key` | `EmailKeyTest` [18f] |
+| Emoji, accents and case are distinct in keys | native on PG and SL; binary no-pad collation on MY and MA | `CollationTest`, C7 |
+| Search ignores case, respects accents, treats wildcards as text | folded column, case-sensitive `whereLike`, exact check in PHP | `SearchColumnsTest` |
+| Five model rules | model guard (old PostgreSQL installs also keep their constraint, D8) | `ModelInvariantsTest` |
+| The action-item list is in its order, on every page | stored `sort_rank` | `ActionItemOrderTest` |
+| A streak counts consecutive weeks | stored `week_start` | `GameStreaksTest` (existing), `WeekStartTest` |
+| Caps and "last one" rules (C1, C3, C4, C6) | row lock on the root under READ COMMITTED; `BEGIN IMMEDIATE` on SL | concurrency suite |
+| Single use (C2) | one conditional `update` | C2 |
+| At most one row for a key that may not exist yet (C7, C8) | unique index; the loser's insert fails in a savepoint (`createOrFirst`) | C7, C8 |
+| A cache lock never joins the caller's transaction | `<driver>_locks`; same connection on SL | `CacheLockConnectionTest` |
+| A date-only value compares as a date | `DateOnly` | reminder tests, `DateOnlyStorageTest` |
 
 ## 9. What cannot be identical, and the rule
 
 | Difference | Rule |
 |---|---|
-| Alphabetical order from SQL (linguistic on PostgreSQL, by code point elsewhere) | SQL order is only stable. Lists read by people are sorted by `Alphabetical` in PHP. Where a query is limited or paginated before the sort, the page content follows the engine's order; documented. |
-| Accent-insensitive search | Not offered. `e` does not find `é` on any engine. |
-| Case folding of special letters (`İ`, `ß`) | Uniqueness uses PHP's fold everywhere and is identical. Search uses each engine's `lower()`: ordinary letters fold alike; special ones may differ. PostgreSQL with the `C` locale folds ASCII only. |
-| Concurrency model | Server engines: row locks, many writers. SQLite: one writer, others wait up to five seconds. Same invariants, different throughput. |
-| Database-level check constraints | Enforced by the model everywhere, and by the database except on SQLite. |
-| A malformed UUID in a query | An error on PostgreSQL, no row elsewhere. Every id from a request passes a `uuid` rule or a route pattern. |
-| A failed statement inside a transaction | Aborts the transaction on PostgreSQL only. Code is written for PostgreSQL (P9). |
-| Aggregate and boolean result types | Cast in PHP (P12). |
-| DDL inside a transaction | Commits implicitly on MySQL and MariaDB. Never in application code; never in a test. |
-| `TIMESTAMP` range on MySQL and MariaDB | Nullable `timestamp()` columns and `timestamps()` end in 2038 there. New columns use `dateTime()`. |
-| Trailing spaces | Significant everywhere with the no-pad collations. With an operator-chosen pad collation they are not; `skrum:check-database` reports it. |
-| SQL Server | Does not migrate (A2). |
+| Alphabetical order from SQL | SQL order is only stable. Lists read by people are sorted by `Alphabetical` in PHP. A limited or paginated query follows the engine's order for which rows make the page; documented |
+| Accent-insensitive search | Not offered on any engine |
+| Case folding of special letters (`İ`, `ß`) | PHP's fold everywhere, for keys and for search: identical on the four engines (in revision 1 search used each engine's `lower()`) |
+| Wildcard characters in a search term | They match any one character in SQL and are checked exactly in PHP (§6.4.3, D10) |
+| Concurrency model | Server engines: row locks, many writers. SQLite: one writer, others wait up to five seconds |
+| Database-level check constraints | None on a fresh install, on any engine. Old PostgreSQL installs keep five (D8). The model enforces the rules; a write outside Eloquent is unchecked |
+| Derived columns | Written by the model. A write outside Eloquent must set `name_key`, `email_key`, `*_search`, `sort_rank`, `week_start` itself |
+| A malformed UUID in a query | An error on PostgreSQL, no row elsewhere. Every id from a request passes a `uuid` rule or a route pattern |
+| A failed statement inside a transaction | Aborts the transaction on PostgreSQL only. Code is written for PostgreSQL (P9) |
+| Aggregate and boolean result types | Cast in PHP (P12) |
+| DDL inside a transaction | Commits implicitly on MySQL and MariaDB. Never in application code; never in a test of the Feature suite |
+| `TIMESTAMP` range on MySQL and MariaDB | Nullable `timestamp()` columns end in 2038 there. New columns use `dateTime()` |
+| SQL Server | Does not migrate; `whereLike(..., caseSensitive: true)` throws there |
 
 ## 10. Operations
 
-- **`.env.example`** keeps PostgreSQL as the active block (decision D2) and gains commented blocks for MariaDB, MySQL and SQLite with the values that matter (`DB_CONNECTION`, host, port; for SQLite `DB_DATABASE` as an absolute path and `SESSION_DRIVER=file`, `CACHE_STORE=file`, which keep session and cache writes off the single writer).
-- **Sail**: `vendor/bin/sail --profile mariadb up -d`, `--profile mysql`.
-- **Image**: the `Dockerfile` installs `pdo_mysql` and `pdo_sqlite` beside `pdo_pgsql`. `docker/scripts/prepare` requires `DB_PASSWORD` only when the connection is not SQLite, creates the SQLite file when absent, and runs `php artisan skrum:check-database` before migrating.
-- **Production Compose**: `compose.production.yaml` stays PostgreSQL. `compose.production.mariadb.yaml` and `compose.production.sqlite.yaml` are complete alternatives (a Compose override cannot remove the `pgsql` dependency). The SQLite one mounts a named volume for the database file.
-- **`php artisan skrum:check-database`** (`CheckDatabaseCommand`) prints the engine and version and fails on: a version under the minimum; MySQL or MariaDB with a collation that is not binary or an isolation level that is not READ COMMITTED; SQLite without WAL on a file database, with foreign keys off, or on PHP under 8.4. It warns on PostgreSQL with the `C` locale and on a pad collation. Its queries are the only raw engine-specific SQL of the application and live in `DatabaseRequirements`.
-- **Deploying this change on an existing PostgreSQL instance**: one `php artisan migrate`. The migrations add three columns, fill them, add indexes, drop four indexes and five column defaults, inside one transaction per migration. No table is rewritten except by the nullable-to-non-null changes on tables of at most a few hundred rows. A failure leaves the instance as it was.
+- `.env.example`, Sail profiles, the image (`pdo_mysql`, `pdo_sqlite`), `docker/scripts/prepare`, the two alternative production Compose files: unchanged from revision 1 §10.
+- **`php artisan skrum:check-database`** no longer sends any engine-specific SQL. `DatabaseRequirements::problems()` reads:
+  - `getServerVersion()` against the connection's own `minimum_version` option (a new key in each connection of `config/database.php`: `14.0`, `10.11.0`, `8.4.0`, `3.35.0`), so no driver name is looked at;
+  - the connection options: `collation`, when the connection has one, ends with `_bin`; `isolation_level`, when the connection has the key, is `READ COMMITTED`; `transaction_mode`, when the connection has the key, is `IMMEDIATE`; `journal_mode` is `wal`; `foreign_key_constraints` is on. The connectors apply these options at every connect, so the configuration is what the session runs with;
+  - `Schema::getTables()`: a table whose `collation` is not null and does not end with `_bin` was created before the setting and is reported.
+  - The warning about a PostgreSQL database in the `C` locale is gone: search folds in PHP.
+- **Deploying on an existing PostgreSQL instance**: one `php artisan migrate`. It adds eleven columns, fills them (every card, action item, retro, saved template and deck, user and points row is rewritten once, in chunks, inside the migration's transaction), adds indexes, drops four indexes and five column defaults. The five check constraints stay (D8). `docs/database.md` gives the order of magnitude of the fill (one update per row) so that an operator of a large instance plans the window.
 
 ## 11. Architecture test
 
-`tests/Arch/DatabasePortabilityTest.php` reads the text of every PHP file under `app/`, `database/` and `tests/` and fails on a match that is not on the baseline. The baseline is empty at the end of the plan; a later exception needs a line in an allow-list in the test file, with its reason, reviewed like any code.
+`tests/Arch/DatabasePortabilityTest.php` (Task 2) reads every PHP file under `app/`, `database/` and `tests/`. No folder of `app/` or `database/` is exempt. Its baseline ends empty; no allowed list exists.
 
-Under `app/` and `database/`, outside `app/Support/Database`:
+Under `app/` and `database/` (as built; the three changes of this revision are marked):
 
-| Pattern (regular expression, case-insensitive unless said) | Construct |
+| Rule | Construct |
 |---|---|
-| `['"](not )?ilike['"]` and `\bilike\b` inside a string | `ILIKE` |
-| `['")\s]::[a-z]` (case-sensitive) | a `::` cast (a PHP static call always has an identifier before `::`) |
-| `filter\s*\(\s*where` | aggregate filter |
-| `nulls\s+(first\|last)` | NULL placement |
-| `date_trunc`, `\binterval\s+'`, `distinct\s+on`, `\breturning\b` inside a string, `on\s+conflict`, `string_agg`, `~\*`, `\bextract\s*\(` | PostgreSQL functions and clauses |
-| `->insertOrIgnore\(`, `->whereJsonContains\(`, `->whereJsonLength\(`, `->upsert\(` | builder methods that differ or throw per engine |
-| `->(or)?where(Not)?Like\(`, `['"](not )?like['"]` | a `LIKE` outside `TextSearch` |
-| `getDriverName\(` | a driver branch |
-| `whereRaw\(['"](false\|true)['"]\)` | boolean literal |
-| `->(whereRaw\|orWhereRaw\|selectRaw\|orderByRaw\|havingRaw\|groupByRaw\|fromRaw\|joinRaw)\(`, `DB::(raw\|statement\|unprepared\|select\|selectOne)\(`, `new Expression\(` | raw SQL, allowed only in the files of the allow-list, each with the number of calls it has today (a ratchet: the count may fall, not rise) |
+| `whereRaw`, `selectRaw`, `orderByRaw`, `havingRaw`, `groupByRaw`, `fromRaw` | raw clauses (also `orWhereRaw`, `orHavingRaw`) |
+| `raw expression` | `DB::raw(`, `->raw(`, `new Expression(` |
+| `raw statement` | `DB::statement`, `unprepared`, `affectingStatement`, `DB::select`, `selectOne`, `selectResultSets`, `scalar`, `cursor`, `DB::insert`, `DB::update`, `DB::delete` |
+| `driver branch` | `getDriverName(`, `getDriverTitle(`, `instanceof` a connection or grammar class, `config('database.default') ===` |
+| `ilike`, `cast with ::`, `filter (where`, `nulls first or last`, `postgres function or clause`, `boolean literal in raw sql` | PostgreSQL syntax inside a string |
+| `insertOrIgnore`, `json contains or length` | builder methods whose meaning differs per engine (`insert ignore` hides every error on MySQL; JSON containment is absent from SQLite) |
+| `like comparison` (**changed**, plan Task 7) | the operator strings `'like'`, `'not like'`; a `whereLike` family call whose statement does not say `caseSensitive: true` |
+| `upsert` (**removed**, plan Task 15) | `upsert()` is a standard method supported by the four grammars and the owner rule names it; nothing uses it today |
+| `sql string on a connection` (**added**, plan Task 15) | `->scalar('select …')`, `->select('…')`, `->statement('…')` and the like with a string of SQL on a connection object, the form revision 1's `DatabaseRequirements` used and the facade rules do not see |
 
-Under `database/migrations` in addition:
+Under `database/migrations` in addition: `non-null timestamp`, `expression default`, `column collation` (`->collation(`, `->charset(`), `raw index or column` (`rawIndex`, `rawColumn`), `type that differs per engine`.
 
-| Pattern | Construct |
-|---|---|
-| `->timestamp\(` on a statement with neither `->nullable()` nor `->useCurrent()` | a non-null `TIMESTAMP` |
-| `->default\(new Expression` | a function default |
-| `->collation\(`, `->charset\(` | a per-column collation |
-| `->(enum\|set\|timestampTz\|timestampsTz\|dateTimeTz\|softDeletesTz\|ulid\|geometry\|geography\|vector)\(` | types that differ or are missing per engine |
-| `function down\(` in a migration of this project | the project writes `up` only |
+Under `tests/`, outside `tests/Support` and `tests/Concurrency/Support`: `driver branch`, `lock syntax`, `sql error as a failure`, `ddl in a test`, `reads sql text`.
 
-Under `tests/`, outside `tests/Support` and `tests/Concurrency/Support`:
-
-| Pattern | Construct |
-|---|---|
-| `getDriverName\(` | a driver branch |
-| `for update`, `for share`, `lock in share mode` | lock syntax in an assertion |
-| `select 1 / 0` | an SQL error used as a failure |
-| `Schema::(drop\|dropIfExists\|create\|table\|rename)\(` | DDL in a test (allow-list: the legacy backfill test) |
-| `\$\w+->sql\b` | a test that reads the text of a query (quoting and lock syntax differ); `SqlProbe` is the one reader |
+A rule `function down(` in migrations (revision 1) is not added: three stock Laravel migrations have a `down` (decision D13).
 
 ## 12. Documentation
 
-### 12.1 For operators — `docs/database.md`, linked from `README.md`
-
-- **Which database to choose.** PostgreSQL: the default and the reference; choose it unless there is a reason not to. MariaDB or MySQL: when that is what the organisation already runs and backs up. SQLite: one container and no database server, for a small instance (D1 sets the wording): one team or a few, sessions with up to a few dozen people. It has one writer: every vote, card, reaction and whiteboard stroke of every live session queues behind the others, and when the queue exceeds five seconds the action fails with "busy, try again". The file must be on a local disk (not a network share), and is backed up with SQLite's backup command, not by copying a file in use.
-- **Required settings per engine**, as `skrum:check-database` checks them, and what happens if they are changed.
-- **Minimum versions** (§4) and what is tested.
-- **What differs between engines** (§9), in the operator's words.
-- **Changing engine** is not supported (§3).
-- **Upgrading an existing PostgreSQL instance** (§10, last point).
-
-### 12.2 For developers — `docs/database.md`, second half
-
-How to run the suite on a driver (`bin/test-db`), the concurrency suite, the PostgreSQL upgrade check, how to add a migration, and the helpers of §7.
-
-### 12.3 Rule for agents — `CLAUDE.md`
-
-The audit's eight points (§9 of the audit), with three changes: the search helper and the stored-key rule name `TextSearch`, `NameKey` and `LoginAddress`; point 3 allows a driver test inside `App\Support\Database`, `tests/Support` and `tests/Concurrency/Support` only; a ninth point says that a change to database code is run on PostgreSQL and on one other driver (`bin/test-db pgsql`, `bin/test-db mariadb`) before it is committed.
+`docs/database.md` exists since Task 2 with the developer rules. The last documentation task adds the operator's half (which engine to choose, required settings, minimum versions, what differs, upgrading an existing PostgreSQL instance including the five constraints and the one-off fill) and rewrites rule 4 (search through `whereContains`; `whereLike` only with `caseSensitive: true` on a folded column) and rule 2 (PHP only on bounded sets; otherwise a derived column). `README.md` links to it. The rule text for `CLAUDE.md` is proposed to the owner, not written by agents.
 
 ## 13. Test matrix and CI
+
+Unchanged from revision 1 §13, plus the suite `Upgrade` (one test today) in every Feature column, and the preflight of `bin/test-db` in every job that uses it.
 
 | Suite | SQLite memory | PostgreSQL 18 | MariaDB 10.11 | SQLite file | Nightly |
 |---|---|---|---|---|---|
 | Lint, types, Unit, Arch | every push | — | — | — | — |
-| Feature | every push (the default of `phpunit.xml`) | every push | every push | — | MySQL 8.4, PostgreSQL 14, MariaDB 11.8 |
+| Feature, Upgrade | every push (default of `phpunit.xml`, set last) | every push | every push | — | MySQL 8.4, PostgreSQL 14, MariaDB 11.8 |
 | Concurrency | — | every push | every push | every push | MySQL 8.4 |
-| `migrate:fresh --seed` and `skrum:check-database` | every push | every push | every push | every push | MySQL 8.4, PostgreSQL 14, MariaDB 11.8 |
+| `migrate:fresh --seed`, `skrum:check-database` | every push | every push | every push | every push | MySQL 8.4, PostgreSQL 14, MariaDB 11.8 |
 | `bin/check-pg-upgrade` | — | every push | — | — | — |
 | Browser | — | every push | — | — | — |
 
-This is the matrix the owner proposed, with three additions and the reasons:
-
-- SQLite in memory is the fastest and the most permissive engine (no column length, no type strictness, no transaction abort, no row lock). It is the default because it needs no service, and it can never be the only gate. PostgreSQL is required because it is the strictest and what production runs; MariaDB because it differs most (collation, isolation, DDL).
-- The concurrency suite also runs on SQLite in a file on every push: it is the only proof of P6, and it is quick.
-- The nightly run also covers the other end of each version range (PostgreSQL 14, MariaDB 11.8). A minimum version nobody tests is a guess.
-- MySQL shares MariaDB's grammar and connector in Laravel; nightly is enough. The browser suite exercises the front end and stays on PostgreSQL: `bin/test-browser`, the `test:browser` Composer script and the `browser` job name the engine themselves, since `phpunit.xml` no longer leaves it to `.env`.
-
-Because the local default becomes SQLite, a developer or agent who runs `php artisan test` no longer exercises PostgreSQL. Rule 9 of §12.3 covers it, and CI is the gate.
+Rule learnt in Task 1, part of the plan's constraints: **until the migrations pass on an engine, run one test file on it, never the suite.**
 
 ## 14. Acceptance criteria
 
 1. `php artisan migrate:fresh --seed` succeeds on PostgreSQL 18, MariaDB 10.11, MySQL 8.4, and SQLite in memory and in a file.
-2. The Feature, Unit and Arch suites pass on SQLite in memory, PostgreSQL 18 and MariaDB 10.11 with the same number of tests run. A test skipped on one driver is skipped by a capability (`CheckConstraint::isEnforced()`, `SqlProbe::rowLocksExist()`, `supportsSchemaTransactions()`), and the final report lists every such skip per driver.
+2. The Feature, Upgrade, Unit and Arch suites pass on SQLite in memory, PostgreSQL 18 and MariaDB 10.11 with the same number of tests run. The only skips that differ per engine are by capability: `SqlProbe::rowLocksExist()` (three lock-order tests) and the cache lock connection test. The final report lists them.
 3. The Feature suite passes on MySQL 8.4.
-4. The concurrency suite (C0 to C8) passes on PostgreSQL, MariaDB, MySQL and SQLite in a file. For each of C1 to C8 the report shows the run where the test failed with its protection removed.
-5. `bin/check-pg-upgrade` reports an empty schema difference between an upgraded pre-plan PostgreSQL database and a fresh one, and the same rows before and after, with unchanged names.
-6. No `getDriverName()` exists outside `app/Support/Database`, `tests/Support` and `tests/Concurrency/Support`. The baseline of `DatabasePortabilityTest` is empty.
-7. `grep -rn "ilike\|insertOrIgnore\|date_trunc\|nulls last\|filter (where" app database` returns nothing.
+4. The concurrency suite (C0 to C8) passes on PostgreSQL, MariaDB, MySQL and SQLite in a file; for each of C1 to C8 the report shows the run where it failed with its protection removed.
+5. `bin/check-pg-upgrade` reports the same rows before and after, unchanged names, and a schema equal to a fresh one except the five legacy check constraints (D8 (a)).
+6. **`tests/Arch/database-portability-baseline.txt` is empty and no allowed list exists.**
+7. `grep -rnE "Raw\(|DB::raw|DB::statement|DB::unprepared|new Expression|getDriverName|ilike|insertOrIgnore|date_trunc|nulls last|filter \(where" app database` returns nothing.
 8. On each driver: a template, a whiteboard template and a saved deck cannot be created twice under names that differ only by case or surrounding spaces, through the form (422) and through the model (`UniqueConstraintViolationException`).
 9. On each driver: one participant can add two different emoji to one card, and removing one leaves the other.
-10. On each driver: a search for `100%` finds only text containing `100%`; a search for `ÉTÉ` finds `été`; a search for `ete` does not.
+10. On each driver: a search for `100%` finds text containing `100%` and not `1000`; a search for `ÉTÉ` finds `été`; a search for `ete` does not.
 11. On each driver: an action item due tomorrow is reminded once, and a second run the same day reminds nobody.
-12. On each driver: the five model rules of §6.5 refuse the row with `ModelInvariantViolation`; on PostgreSQL, MariaDB and MySQL a write through the query builder is refused by the database too.
+12. On each driver: the five model rules refuse the row with `ModelInvariantViolation`.
 13. **[18f]** On each driver: an account is found by its address in any case; two legacy accounts that share an address once normalised are refused by SSO sign-in and by the magic link; a new account cannot take an address a legacy row uses.
 14. A deadlock or a busy database that survives its retries is answered 503 with `Retry-After`, in JSON for a JSON request.
-15. `php artisan skrum:check-database` exits 0 on the four configurations of Sail and CI, and non-zero, with a sentence naming the setting, on MariaDB with `utf8mb4_unicode_ci`, on MariaDB at REPEATABLE READ, and on a SQLite file with `journal_mode` `delete`.
+15. `php artisan skrum:check-database` exits 0 on the four configurations, and non-zero, with a sentence naming the setting, when the MariaDB connection is configured with `utf8mb4_unicode_ci`, without READ COMMITTED, and when the SQLite connection has `journal_mode` `delete`.
 16. The CI workflow has the jobs of §13; the required ones pass on the plan's branch.
-17. `docs/database.md` exists with the sections of §12; `README.md` links to it; `.env.example` has the four blocks; `CLAUDE.md` has the rule.
-18. The production image starts on PostgreSQL, on MariaDB and on SQLite with the three Compose files, migrates, and serves `/up`.
+17. `docs/database.md` has the sections of §12; `README.md` links to it; `.env.example` has the four blocks.
+18. The production image starts on PostgreSQL, on MariaDB and on SQLite, migrates, and serves `/up`.
 19. The browser suite passes on PostgreSQL after the last task.
+20. On each driver: the action-item list is in the order of §6.4.2 on its first and second page; the team leaderboard shows the same twenty people; a streak counts the same weeks.
+21. `bin/test-db <driver>` on a schema that does not migrate exits 3 in under a minute and names the migration.
 
-## 15. Risks, and what cannot be known before the first run
+## 15. Risks, and what is known since Tasks 1 and 2 ran
 
-- **Unknown failures.** 3 212 feature tests have never run on another engine. The audit predicts the causes, not the count. §6.8 has a stop rule; the plan has a triage task with no fixed size. This is the main uncertainty of the estimate.
-- **Collation names.** `utf8mb4_nopad_bin` (MariaDB) and `utf8mb4_0900_bin` (MySQL) are read from the engines' documentation, not tried. Task 1 of the plan creates a table with each; the fallback is `utf8mb4_bin` on both, with the pad rule of §9 documented.
-- **`pg_dump` text.** The upgrade check compares dumps. If PostgreSQL prints an equal schema in two ways (constraint order, for instance), the script sorts or normalises; it never ignores a real difference.
-- **SQLite `lower()` override.** Registering a function named like a built-in is allowed by SQLite; whether the PDO driver of PHP 8.4 and 8.5 accepts it for `lower` is checked by the first search test on SQLite. The fallback is a function named `skrum_lower` emitted by `TextSearch` on SQLite only.
-- **`DateOnly` and serialisation.** A custom cast may serialise differently from Eloquent's `date` in `toArray()`. Every presenter read uses `toDateString()`; the action item and reminder tests are the check.
-- **Model guards meet existing code.** A code path that saves a transient invalid state would already fail on PostgreSQL, so none should exist; the suite on PostgreSQL is the check.
-- **Open branches.** The lanes of plan 18e and `plan-18f-auth` add PHP. The audit did not read the lanes. The architecture test, merged into `plan-18e-screens` first, makes every later merge show its own violations.
-- **SQLite on PHP 8.3.** `composer.json` allows PHP 8.3, where immediate transactions are not applied (D3).
-- **Process-based concurrency tests** depend on timing (a start instant and a pause). C0 detects a machine too slow to overlap; the pause is a constant of `Race`.
-- **Not determined by reading, carried from the audit §8:** whether the `ci` job passes today without a database service (it is rewritten); queries issued by Fortify, Sanctum, Socialite and the password broker under each collation (pinned by tests in WP5); `whereIn` list sizes against SQLite's bound-parameter limit (32 766 from SQLite 3.32; no list in the application approaches it by design, unverified); how many of the 23 query-count tests depend on an engine.
-- **Resolved by reading for this spec** (audit §8.4 and §8.5): `chatId` is cast to a string before it is stored (`HandleTelegramUpdate.php:55`), so the JSON lookup matches on SQLite; `SummarizeHealthCheck.php:106` sorts rows already filtered by `completed_at < ?` (`:103`), which excludes NULL.
+Known (no longer risks): both collation names exist (MariaDB 10.11.19, MySQL 8.4.11); the server defaults are `_ci` collations and REPEATABLE READ, so the connection settings are what makes the difference; replacing SQLite's `lower()` is impossible on the PDO object Laravel opens on PHP 8.5 (moot: no SQL `lower()` is left); `migrate:fresh` costs 4 to 5 seconds on MariaDB and MySQL in these containers; a worktree needs `npm run build` for one Inertia test; PHPStan reports 15 errors on the branch in files this work did not touch.
+
+Open:
+
+- **Unknown failures.** The feature tests have never run on another engine; the triage task has no fixed size. The main uncertainty of the estimate.
+- **`whereLike(..., caseSensitive: true)` on SQLite is `GLOB`.** Read from the grammar, not run. The first run of `SearchColumnsTest` on SQLite is the check; if `GLOB` misbehaves on a multi-byte character, the fallback keeps the stored column and filters in PHP over `lazy()` reads (D9 (b)).
+- **`like binary` and `_` on MySQL and MariaDB** matches one byte: the pattern only uses `_` for one-byte characters, by construction.
+- **Relationship aggregates change the SQL.** `withCount` / `withSum` are correlated subqueries where there was one grouped query. On the board snapshot (every board load) the plan measures the query count and time on PostgreSQL before and after; the tests that count queries (23) may need their numbers updated, each named in the report.
+- **`RetroHealthStatement::answers()`** joins on `statement = key` and needs the `whereColumn` on `retro_id`; the plan's test compares its result with the old query's on PostgreSQL before the old query is removed.
+- **`BuildTeamMoodTrend`**: counting participants who answered equals `count(distinct participant_id)` only if an answer's participant belongs to the answer's retro. The plan checks the foreign keys and stops if not.
+- **Backfill time** on a large instance (one update per row for cards). Chunked; measured on the fixture; documented.
+- **Model guards meet existing code**, **`DateOnly` and serialisation**, **open branches**, **process-based concurrency tests**, **`pg_dump` text**: as revision 1 §15.
+- **Old PostgreSQL installs keep five check constraints** (D8 (a)): a future change of one of those rules must deal with them.
 
 ## 16. Decisions for the owner
 
-Each is built as recommended unless the owner says otherwise.
+Ruled in the ledger on 2026-10-02 (the owner may overturn): D1 SQLite documented for small instances; D2 PostgreSQL stays the default; **D3 `composer.json` raised to `^8.4`, a constraint change the owner must see**; D4 minimum versions; D5 `users.email_key`; D6 lists sorted in PHP; D7 SQL Server best effort.
+
+Settled by the owner rule, no longer decisions: raw aggregates and `case when` (out); a driver test inside `App\Support\Database` (out); database check constraints through a helper (out); option (c) of D5, keeping `lower(email)` (out); the allowed list (out); `upsert()` (a standard method: allowed).
+
+Created by the rule, open, each built as recommended unless the owner says otherwise:
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
-| D1 | What the documentation says about SQLite | (a) supported for production without qualification; (b) supported for small instances, with the limit stated; (c) development and evaluation only | **(b)**. It is tested as thoroughly as the others, but it has one writer and live sessions are write-heavy. Saying "small instance: a few teams, a few dozen people at once" is honest; (a) invites a 200-person retro on a file. |
-| D2 | Default engine of a fresh install (`.env.example`, production Compose) | (a) PostgreSQL, as today; (b) SQLite, zero configuration | **(a)**. Existing instances and the browser suite are on it, and it has no single-writer limit. SQLite is one documented file away. |
-| D3 | PHP 8.3 and SQLite | (a) raise `composer.json` to `^8.4` (the image, CI and Sail already run 8.4 or 8.5); (b) keep `^8.3` and let `skrum:check-database` refuse SQLite on 8.3 | **(a)**. One floor to explain. It is a dependency change, so it needs the owner's word; until then the plan builds (b). |
-| D4 | Minimum versions | (a) the oldest version maintained upstream: PostgreSQL 14, MariaDB 10.11, MySQL 8.4; (b) the audit's feature floors: PostgreSQL 14, MariaDB 10.6, MySQL 8.0.16 | **(a)**. The audit's floors are past end of life on the spec date and would be claimed untested. |
-| D5 | **[18f]** How an address is looked up | (a) a stored `email_key` under an index (this spec); (b) plain equality on `email`, no new column: simpler, but two legacy accounts sharing an address are no longer detected, which silently drops a refusal 18f made on purpose; (c) keep `lower(email)`: no schema change, but a full scan of `users` at every sign-in and one raw SQL site left | **(a)**. |
-| D6 | Alphabetical lists (33 `orderBy('name')` sites) | (a) sort in PHP now, at every site that returns a whole list (about 28), and keep SQL order with a tie-breaker where the query is limited; (b) only fix the two raw `lower()` sorts and what the triage finds; the rest sorts by code point on three engines (`Zoe` before `adam`, accents after `z`) | **(a)**. It is mechanical with one helper, and it is the kind of silent difference this plan exists to remove. It adds one task. |
-| D7 | SQL Server | (a) best effort as in A2; (b) a second spec for a forked schema | **(a)**. No user has asked for it; the cost is a second schema to maintain for ever. |
+| D8 | The five check constraints that existing PostgreSQL installs have. The Schema builder cannot drop a check constraint | (a) leave them: old installs keep five constraints a fresh install lacks, redundant with the model guards; documented; the upgrade check asserts exactly this difference. (b) drop them with `$table->dropUnique('<constraint name>')`, which on PostgreSQL compiles to `alter table … drop constraint`, guarded by `Schema::hasIndex()` on the old expression index as the mark of an old PostgreSQL install: builder-only, but it uses a method for what it is not meant for and leans on a detail of the grammar. (c) no code: `docs/database.md` gives operators the five `alter table … drop constraint` statements to run by hand if they want identical schemas. (d) one migration with five raw statements, as the single exception to the rule | **(a)**, with (c)'s paragraph in the documentation. (b) is the fallback if identical schemas matter more than the oddity; (d) only on the owner's explicit word |
+| D9 | How search ignores case without raw SQL | (a) stored folded columns (nine columns; the text of cards, action items and summaries is stored twice). (b) no column: read candidates with `lazy()` and match in PHP: no storage, but every search reads every row of its scope. (c) the builder's case-insensitive `whereLike`: no column, but case-sensitive on MySQL and MariaDB, ASCII-only on SQLite | **(a)**. (c) is not correct on three engines |
+| D10 | Wildcard characters typed in a search (`%`, `_`, `\`, `*`, `?`, `[`, `]`) | (a) they match any one character in SQL and the rows are checked exactly in PHP; on the paginated estimates page such a term can give a short page and a total that counts a near-miss. (b) remove those characters from the term before searching (`100%` searches `100`) | **(a)** |
+| D11 | "Top templates of a team" counted over every retro of the team | (a) over the 100 latest retros (bounded, read in PHP). (b) over all of them, loaded in PHP (unbounded). (c) a stored usage counter per team and template | **(a)**: a suggestion list is better served by recent use anyway. It is a small behaviour change |
+| D12 | Three tests assert the order of row locks from the SQL text | (a) keep them through `Tests\Support\SqlProbe`, which derives the lock clause and the quoting from the grammar and is skipped where the grammar has no lock clause. (b) delete the three assertions and rely on the concurrency suite | **(a)**: the suite proves the invariant, these tests pin the lock order that prevents a deadlock |
+| D13 | A rule against `function down(` in migrations | (a) not added: three stock Laravel migrations have one. (b) added, with those three rewritten | **(a)** |
+| D14 | The rule for agents in `CLAUDE.md` | (a) the owner pastes the nine lines of `docs/database.md` ("Rules for database code") or a pointer to them. (b) it stays in `docs/database.md` and the test message only | **(a)**, a pointer: one line |
 
-## 17. Where this spec departs from the audit
+## 17. Where this spec departs from the audit and from revision 1
 
-1. **A fifth `ilike` site and a third escaper were missed.** `app/Http/Controllers/TeamEstimatesController.php:39` uses `ilike` with its own `escapeLike` (`:138`), in both trees. It joins `TextSearch` in WP3.
-2. **Name-ordered queries are 33, not 20** (`grep -rnE "orderBy\('(\w+\.)?name'\)|sortBy\('name'\)" app`). See D6.
-3. **Minimum versions** (D4): MariaDB 10.6 and MySQL 8.0 are past end of life.
-4. **`BEGIN IMMEDIATE` needs PHP 8.4.** `SQLiteConnection::executeBeginTransactionStatement()` reads `transaction_mode` only on PHP 8.4 and later. The audit's SQLite fix does nothing on PHP 8.3, which `composer.json` allows (D3).
-5. **`utf8mb4_bin` pads.** The audit says it makes MySQL and MariaDB "compare like" PostgreSQL. It ignores trailing spaces, which PostgreSQL and SQLite do not. This spec uses the no-pad binary collations and keeps `utf8mb4_bin` as the fallback.
-6. **The e-mail advice would drop a security refusal of 18f.** The audit proposes `where('email', normalise($email))`. At its current head 18f reads two matches on purpose and refuses when two legacy accounts share an address (`ResolveSsoUser.php:46`, `SendMagicLink.php:37`). Hence `email_key` (D5). The audit read 18f at `320e0893`; the head is `d9180f10`.
-7. **No new driver branch in migrations.** The audit proposes making the unguarded index of `2026_10_01_100300:21` PostgreSQL-only in the historic file, a sixth driver branch against its own rule 3. Here the raw index statements are removed from the historic files and the new migration drops the old indexes where `Schema::hasIndex()` finds them.
-8. **`phpunit.xml` moves to SQLite last, not first.** In the audit's WP1 it would turn the default suite red until WP7.
-9. **`bin/test-browser` is left alone.** The audit rewrites its database creation to be driver-neutral; the browser suite stays on PostgreSQL, so that is work without a user.
-10. **Constraint tests cannot simply be "un-skipped".** Once the model guards the rule, the refusal is a `ModelInvariantViolation`, not the `QueryException` the tests expect. The tests change, and a second test reaches the database constraint directly.
-11. **The upgrade of existing installs is proved, not argued.** The audit states which edits leave PostgreSQL unchanged. Dropping the five JSON defaults does not; this spec adds the migration that makes existing installs equal, and the schema diff that checks it.
-12. **Two "not determined" points are determined** (§15, last point).
-13. **The owner's row is not locked around every name check.** Audit §3.1 says the name rules are safe from a race because the caller holds the owner's row lock, and cites four sites. That is true of `SaveWhiteboardTemplate` only. In `PokerDecksController::store`, `WorkspacePokerDecksController::store` and `WorkspaceTemplatesController::store` the name is validated first and the lock taken after, so the race exists, on PostgreSQL too, where the unique index turns it into a 500. And `SaveTeamIntegration.php:47`, which the audit lists as protecting "a row that may not exist", protects nothing on PostgreSQL in that case. Both are fixed in §6.6.
+Points 1 to 13 of revision 1 §17 stand, except: point 1 (the fifth `ilike` site joins the stored-column search, not `TextSearch`); point 10 (the constraint tests expect `ModelInvariantViolation` and have no database twin). New in this revision:
 
-Confirmed against the code while writing: the 39 raw SQL lines of `app/` (same count), the five guarded migrations and the unguarded index, the five `::jsonb` defaults and the matching `$attributes`, `SQLiteGrammar::compileLock` returning an empty string, `MySqlConnector` applying `isolation_level` and `timezone`, `PostgresGrammar::typeDateTime` and `typeLongText`, the base grammar throwing on `insertOrIgnore`, `Schema::hasIndex` matching an index by name, the lock sites of `RevokeInstanceAdmin`, `CardVotesController`, `PokerDecksController`, `SaveWhiteboardTemplate` and `SaveTeamIntegration`, the single conditional `update` of `ConsumeMagicLink` [18f], and the tests of audit §6 at the lines given.
+14. **A sixth `like` site**: `TrackedIssues.php:135`, a case-sensitive prefix match, not in the audit. Removed, not ported (§6.4.1).
+15. **No database check constraint anywhere on a fresh install.** The audit and revision 1 kept them on three engines.
+16. **Search no longer depends on any engine's `lower()`**, so its fold is identical on the four engines, special letters included, and the PostgreSQL `C` locale no longer matters.
+17. **"Overdue first" is not a separate sort key**: it is the due date ascending. That is what makes the action-item order storable.
+18. **Leaderboard and streak** are restated as relationship aggregates and a stored week; revision 1 kept `sum(case when …)` and loaded every points row of the team for streaks.
+19. **`skrum:check-database` reads configuration**, not server variables.
+20. **The legacy backfill test runs the real migration** on every engine instead of being skipped off PostgreSQL.
+
+## 18. Where "no raw SQL at all" cannot be met by Laravel's builder alone
+
+| # | What | Why the builder cannot | What is done |
+|---|---|---|---|
+| 1 | Dropping the five check constraints of existing PostgreSQL installs | the Schema builder has no check-constraint method | D8: left in place (recommended) |
+| 2 | Literal `%` and `_` in a search term on SQLite | no grammar emits `escape`; SQLite has no default escape; `GLOB` has none for the rewritten wildcards | superset in SQL, exact check in PHP (D10) |
+| 3 | Case-insensitive `like` on the four engines | `whereLike` follows the collation on MySQL and MariaDB and folds ASCII only on SQLite | stored folded columns, case-sensitive `whereLike` (D9) |
+| 4 | Grouped aggregates with an alias; a sum of squares; `count(distinct)` per group | no builder method | relationship aggregates, plain `count()`, or PHP on a bounded set (§6.4.1) |
+| 5 | `nulls last` and computed sort keys before pagination | no builder method | stored `sort_rank` (§6.4.2) |
+| 6 | Truncating a date to its week | no builder method | stored `week_start` |
+| 7 | Reading the server's collation, isolation level and pragmas | they are engine-specific statements | configuration is checked instead, plus `Schema::getTables()` (§10) |
+| 8 | A lock wait timeout on MySQL, MariaDB, PostgreSQL | no connection option | not set; a timeout is answered 503 |
+| 9 | Tooling outside `app/` and `database/` | `bin/check-pg-upgrade` and CI call `psql` and `pg_dump`; `tests/Support/SqlProbe` reads the text of queries the framework wrote | kept: the rule covers application and migration code; the scripts and the probe hold no query of the application (D12 for the probe) |
+
+Nothing else in the 116 baseline occurrences needs anything but Eloquent, the query builder and the Schema builder.

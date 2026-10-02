@@ -55,6 +55,7 @@ it('lists the latest notifications with live item details', function () {
             'dueOn' => '2026-10-08',
             'isOverdue' => true,
             'url' => route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'item' => $item->id]),
+            'ticket' => null,
         ]);
 });
 
@@ -92,7 +93,7 @@ it('drops notifications of deleted or hidden items', function () {
     expect($user->notifications()->count())->toBe(1);
 });
 
-it('lists only the own notifications, thirty at most', function () {
+it('lists only the own notifications, twenty a page', function () {
     [$user, $item] = notifiedAssignee();
     [$other, $otherItem] = notifiedAssignee();
     remindAbout($other, $otherItem);
@@ -104,7 +105,8 @@ it('lists only the own notifications, thirty at most', function () {
 
     $this->actingAs($user)
         ->getJson(route('notifications.index'))
-        ->assertJsonCount(30, 'notifications')
+        ->assertJsonCount(20, 'notifications')
+        ->assertJsonPath('hasMore', true)
         ->assertJsonPath('unreadCount', 31);
 });
 

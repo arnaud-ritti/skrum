@@ -18,6 +18,7 @@ function usedTranslationKeys(): array
         ...File::allFiles(resource_path('js/hooks')),
         ...File::allFiles(resource_path('js/lib')),
         ...File::allFiles(app_path()),
+        ...File::allFiles(resource_path('views')),
     ])->filter(fn (SplFileInfo $file) => in_array($file->getExtension(), ['ts', 'tsx', 'php'], true));
 
     return $files

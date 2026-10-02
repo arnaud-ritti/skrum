@@ -46,14 +46,14 @@ import type {
     ColumnColor,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import { CardComposer, CardPreview } from './board-card';
+import { CardComposer, CardPreview, useGroupShortcut } from './board-card';
 import { BoardColumn } from './board-column';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { PhaseVotingBar } from './phase-voting-bar';
-import { SurveysColumn } from './surveys-column';
+import { SurveysColumn } from './surveys/surveys-column';
 
 const DefaultColor: ColumnColor = 'moss';
 
@@ -425,6 +425,9 @@ export function ColumnsBoard({
         }),
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+    useGroupShortcut();
+
     const [activeCardWidth, setActiveCardWidth] = useState<number>();
     const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
     const dragAccessibility = useDragAccessibility(board);
@@ -564,7 +567,7 @@ export function ColumnsBoard({
                         data-slot="retro-columns"
                         className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4 md:px-6 md:py-5"
                     >
-                        <SurveysColumn />
+                        <SurveysColumn className="w-column shrink-0" />
                         {board.columns.length === 0 && (
                             <EmptyState
                                 module="retro"

@@ -31,7 +31,7 @@ class SecurityPagePropsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        app(GenerateNewRecoveryCodes::class)($user);
+        resolve(GenerateNewRecoveryCodes::class)($user);
 
         $user->forceFill([
             'two_factor_secret' => encrypt('SECRETKEYSECRETKEY'),
@@ -80,7 +80,7 @@ class SecurityPagePropsTest extends TestCase
             ->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
-        $this->assertNotContains($usedCode, $user->refresh()->recoveryCodes());
+        expect($user->refresh()->recoveryCodes())->not->toContain($usedCode);
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
             ->where('twoFactor.recoveryCodesRemaining', 7)
@@ -119,9 +119,9 @@ class SecurityPagePropsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        app(GenerateNewRecoveryCodes::class)($user);
+        resolve(GenerateNewRecoveryCodes::class)($user);
 
-        $this->assertCount(SecurityController::RecoveryCodesTotal, $user->refresh()->recoveryCodes());
+        expect($user->refresh()->recoveryCodes())->toHaveCount(SecurityController::RecoveryCodesTotal);
     }
 
     public function test_props_never_contain_a_recovery_code_or_the_secret(): void
@@ -131,10 +131,10 @@ class SecurityPagePropsTest extends TestCase
         $content = $this->getSecurityPage($user)->getContent();
 
         foreach ($user->recoveryCodes() as $code) {
-            $this->assertStringNotContainsString($code, $content);
+            expect($content)->not->toContain($code);
         }
 
-        $this->assertStringNotContainsString('SECRETKEYSECRETKEY', $content);
+        expect($content)->not->toContain('SECRETKEYSECRETKEY');
     }
 
     public function test_page_says_when_the_password_rule_checks_known_data_breaches(): void
