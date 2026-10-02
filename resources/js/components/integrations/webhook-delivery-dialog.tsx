@@ -1,5 +1,7 @@
+import { Check, CircleAlert, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -8,7 +10,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 import type { WebhookDeliveryDetails } from '@/types';
@@ -22,6 +25,8 @@ type Props = {
 
 type Tab = 'request' | 'response';
 
+const PanelId = 'delivery-tabpanel';
+
 function prettyBody(body: string): string {
     try {
         return JSON.stringify(JSON.parse(body), null, 2);
@@ -30,6 +35,10 @@ function prettyBody(body: string): string {
     }
 }
 
+/**
+ * What was sent and what came back. The ids of the two tabs and of their one
+ * panel are fixed: the browser suite finds them by id.
+ */
 export function WebhookDeliveryDialog({
     label,
     details,
@@ -37,41 +46,19 @@ export function WebhookDeliveryDialog({
     onClose,
 }: Props) {
     const { t } = useTrans();
-    const [, copy] = useClipboard();
+    const [copied, copy] = useClipboard();
     const [tab, setTab] = useState<Tab>('request');
 
     const copyBody = async (body: string) => {
-        if (await copy(body)) {
-            toast(t('Body copied.'));
-
-            return;
+        if (!(await copy(body))) {
+            toast.error(t('Something went wrong. Please try again.'));
         }
-
-        toast.error(t('Something went wrong. Please try again.'));
-    };
-
-    const moveBetweenTabs = (key: string, current: Tab) => {
-        const other = current === 'request' ? 'response' : 'request';
-        const targets: Record<string, Tab> = {
-            ArrowRight: other,
-            ArrowLeft: other,
-            Home: 'request',
-            End: 'response',
-        };
-        const next = targets[key];
-
-        if (next === undefined) {
-            return;
-        }
-
-        setTab(next);
-        document.getElementById(`delivery-tab-${next}`)?.focus();
     };
 
     const headers =
         details === null ? [] : Object.entries(details.request.headers);
-    const nothingSent =
-        headers.length === 0 && (details?.request.body ?? null) === null;
+    const body = details?.request.body ?? null;
+    const nothingSent = headers.length === 0 && body === null;
     const tabs: { id: Tab; label: string }[] = [
         { id: 'request', label: t('Request') },
         { id: 'response', label: t('Response') },
@@ -87,52 +74,60 @@ export function WebhookDeliveryDialog({
             }}
         >
             <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
+                <DialogHeader className="pr-8">
                     <DialogTitle>{t('Delivery details')}</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="font-mono text-xs break-all">
                         {details?.event ?? label}
                     </DialogDescription>
                 </DialogHeader>
                 {details === null && !failed && (
-                    <Spinner aria-label={t('Loading…')} />
+                    <div
+                        role="status"
+                        data-slot="delivery-loading"
+                        className="flex flex-col gap-2"
+                    >
+                        <span className="sr-only">{t('Loading…')}</span>
+                        <Skeleton className="h-9 w-48" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
                 )}
                 {failed && (
-                    <p className="text-sm text-destructive" role="alert">
-                        {t('Could not load this delivery.')}
+                    <p
+                        role="alert"
+                        className="flex items-start gap-1.5 text-body-sm text-skrum-destructive-text"
+                    >
+                        <CircleAlert
+                            aria-hidden="true"
+                            className="mt-0.5 size-4 shrink-0"
+                        />
+                        <span className="min-w-0">
+                            {t('Could not load this delivery.')}
+                        </span>
                     </p>
                 )}
                 {details !== null && (
-                    <div className="space-y-3">
-                        <div
-                            className="flex gap-2"
-                            role="tablist"
-                            aria-label={t('Delivery details')}
-                        >
+                    <Tabs
+                        value={tab}
+                        onValueChange={setTab}
+                        className="min-w-0 gap-3"
+                    >
+                        <TabsList aria-label={t('Delivery details')}>
                             {tabs.map((item) => (
-                                <Button
+                                <TabsTrigger
                                     key={item.id}
+                                    value={item.id}
                                     id={`delivery-tab-${item.id}`}
-                                    role="tab"
-                                    size="sm"
-                                    variant={
-                                        tab === item.id ? 'default' : 'outline'
-                                    }
-                                    aria-selected={tab === item.id}
-                                    aria-controls="delivery-tabpanel"
-                                    tabIndex={tab === item.id ? 0 : -1}
-                                    onClick={() => setTab(item.id)}
-                                    onKeyDown={(event) =>
-                                        moveBetweenTabs(event.key, item.id)
-                                    }
+                                    aria-controls={PanelId}
                                 >
                                     {item.label}
-                                </Button>
+                                </TabsTrigger>
                             ))}
-                        </div>
-                        <div
-                            id="delivery-tabpanel"
-                            role="tabpanel"
+                        </TabsList>
+                        <TabsContent
+                            value={tab}
+                            id={PanelId}
                             aria-labelledby={`delivery-tab-${tab}`}
+                            className="min-w-0"
                         >
                             {tab === 'request' && nothingSent && (
                                 <p className="text-sm text-muted-foreground">
@@ -140,85 +135,104 @@ export function WebhookDeliveryDialog({
                                 </p>
                             )}
                             {tab === 'request' && !nothingSent && (
-                                <div className="space-y-3">
+                                <div className="flex min-w-0 flex-col gap-4">
                                     {headers.length > 0 && (
-                                        <table
-                                            className="w-full text-left text-xs"
-                                            aria-label={t('Headers')}
-                                        >
-                                            <tbody>
-                                                {headers.map(
-                                                    ([name, value]) => (
-                                                        <tr
-                                                            key={name}
-                                                            className="border-t"
-                                                        >
-                                                            <th
-                                                                scope="row"
-                                                                className="py-1 pr-3 font-medium whitespace-nowrap"
-                                                            >
-                                                                {name}
-                                                            </th>
-                                                            <td className="py-1 break-all">
-                                                                <code>
-                                                                    {value}
-                                                                </code>
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )}
-                                            </tbody>
-                                        </table>
+                                        <div className="overflow-hidden rounded-lg border">
+                                            <table
+                                                aria-label={t('Headers')}
+                                                className="w-full text-left text-xs"
+                                            >
+                                                <tbody className="divide-y">
+                                                    {headers.map(
+                                                        ([name, value]) => (
+                                                            <tr key={name}>
+                                                                <th
+                                                                    scope="row"
+                                                                    className="w-px px-3 py-2 align-top font-semibold whitespace-nowrap text-muted-foreground"
+                                                                >
+                                                                    {name}
+                                                                </th>
+                                                                <td className="px-3 py-2 align-top break-all">
+                                                                    <code className="font-mono">
+                                                                        {value}
+                                                                    </code>
+                                                                </td>
+                                                            </tr>
+                                                        ),
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     )}
-                                    {details.request.body !== null && (
-                                        <div className="space-y-1">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <h4 className="text-xs font-medium">
+                                    {body !== null && (
+                                        <div className="flex min-w-0 flex-col gap-2">
+                                            <div className="flex min-w-0 items-center justify-between gap-2">
+                                                <h3 className="text-sm font-semibold">
                                                     {t('Body')}
-                                                </h4>
+                                                </h3>
                                                 <Button
+                                                    type="button"
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() =>
-                                                        void copyBody(
-                                                            details.request
-                                                                .body ?? '',
-                                                        )
+                                                        void copyBody(body)
                                                     }
                                                 >
-                                                    {t('Copy')}
+                                                    {copied === body ? (
+                                                        <Check aria-hidden="true" />
+                                                    ) : (
+                                                        <Copy aria-hidden="true" />
+                                                    )}
+                                                    <span>
+                                                        {copied === body
+                                                            ? t('Copied')
+                                                            : t('Copy')}
+                                                    </span>
                                                 </Button>
                                             </div>
-                                            <pre className="max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                {prettyBody(
-                                                    details.request.body,
-                                                )}
+                                            <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs">
+                                                {prettyBody(body)}
                                             </pre>
                                         </div>
                                     )}
                                 </div>
                             )}
                             {tab === 'response' && (
-                                <div className="space-y-1 text-sm">
-                                    <p>
-                                        {t('Status: :status', {
-                                            status:
-                                                details.response.status ?? '—',
-                                        })}
+                                <div className="flex min-w-0 flex-col gap-3">
+                                    <p className="text-sm">
+                                        <Badge
+                                            asChild
+                                            variant={
+                                                details.response.status === null
+                                                    ? 'muted'
+                                                    : details.response.status <
+                                                        400
+                                                      ? 'success'
+                                                      : 'destructive'
+                                            }
+                                        >
+                                            <span className="tabular-nums">
+                                                {t('Status: :status', {
+                                                    status:
+                                                        details.response
+                                                            .status ?? '—',
+                                                })}
+                                            </span>
+                                        </Badge>
                                     </p>
                                     {details.response.excerpt === null ? (
-                                        <p className="text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground">
                                             {t('No response body.')}
                                         </p>
                                     ) : (
-                                        <pre className="max-h-80 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap">
+                                        <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs whitespace-pre-wrap">
                                             {details.response.excerpt}
                                         </pre>
                                     )}
                                 </div>
                             )}
-                        </div>
-                    </div>
+                        </TabsContent>
+                    </Tabs>
                 )}
             </DialogContent>
         </Dialog>

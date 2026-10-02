@@ -242,3 +242,42 @@ Page `teams/integrations` renders `TeamSettingsShell` itself and is in `ownLayou
 | "Disconnect" has an icon and the destructive colour | A: rule 6 |
 | The disconnect confirmation is a `dialog`, not an `alertdialog` (so not `ConfirmDialog`): `P12a-07a` clicks `[role="dialog"] button:has-text("Disconnect")` and waits for no `[role="dialog"]`, and the task lists no test change | plan, Task 10.5 ("Browser tests changed: none") |
 | Telegram and Mattermost cards, the Telegram command box, the URL dialog: no mockup | brief 10 §6 |
+
+## Task 10.6 — outgoing webhook and deliveries
+
+Rewritten in place, same exports: `webhook-integration.tsx` (`WebhookIntegration`), `webhook-secret.tsx` (`WebhookSecretDialog`, `RotateWebhookSecretButton`), `webhook-events-panel.tsx` (`WebhookEventsPanel`), `webhook-deliveries-panel.tsx` (`WebhookDeliveriesPanel`), `webhook-delivery-dialog.tsx` (`WebhookDeliveryDialog`). Vitest: `webhook.test.tsx`. Captures: `team-integrations-webhook-*`, `team-integrations-webhook-delivery-*`, `team-integrations-webhook-secret-*`. No mockup shows a webhook: the card is composed from `ProviderCard` (10.5) and the `Table`, `Tabs`, `Dialog`, `Badge` and `Collapsible` of the design system.
+
+### Parity (brief 10 §3.5, rows 65–76)
+
+| # | Action | Control | Done |
+|---|---|---|---|
+| 65 | Connect, replace the URL | `FormDialog` with `TextField` "Endpoint URL" (`type="url"`, never prefilled, required only to connect) and "Label (optional)" (80 characters); a refusal shows under its field, which takes the focus, and is forgotten when the dialog opens again | yes |
+| 66 | Signing secret, shown once | `Dialog` that neither Escape nor a click outside closes, and without a close cross; `input[aria-label="Signing secret"]` (focused and selected), "Copy" / "Copied" with a check, the verification snippet in a `pre`, "I've saved the secret" | yes |
+| 67 | Rotate the secret | "Rotate secret" in the footer, then a dialog with the warning icon, focus on "Cancel", destructive "Rotate secret" with an icon; the secret dialog opens with the new secret | yes |
+| 68 | Re-enable | primary "Re-enable" in the footer while the status is `reconnect_required`; no confirmation | yes |
+| 69 | Events | section "Send automatically": bordered list of `Checkbox` `#webhook-event-{name}` with the name in mono and its description; "Save events" enabled only when the ticks differ from the saved ones; the panel is still keyed on the saved events | yes |
+| 70 | Payload reference | `CollapsibleBlock` "Payload reference" with the untranslated example | yes |
+| 71 | Show / hide the deliveries | section "Deliveries": ghost button with `aria-expanded` "Show deliveries" / "Hide deliveries"; `table[aria-label="Deliveries"]`; skeleton while the first page loads; the two request counters still discard a late answer | yes |
+| 72 | Paginate, retry, empty | "Previous", "Page :page of :pages", "Next"; "Could not load the deliveries." with "Retry"; "No deliveries yet." | yes |
+| 73 | Row tags | status as a `Badge` (Sent success, Failed destructive, Queued muted); outline badge "Redelivery"; "Content not kept" / "Content no longer kept"; kind labels | yes |
+| 74 | View a delivery | `Dialog` with the `Tabs` of the design system: `#delivery-tab-request`, `#delivery-tab-response`, one `#delivery-tabpanel`; arrows, Home and End move and select; `table[aria-label="Headers"]` | yes |
+| 75 | Copy the request body | "Copy" / "Copied" with a check | yes |
+| 76 | Redeliver | "Redeliver" on a row that can be sent again by an active webhook; dialog "Send this delivery again to :host?", the refusal as `[role="alert"]` in the dialog; toast "Delivery queued again." and the first page is loaded again | yes |
+
+### Places left
+
+None: the task has no "Places left" line.
+
+### Differences with the mockup
+
+No mockup of this card exists (brief 10 §6). What was decided without one:
+
+| Decision | Reason |
+|---|---|
+| The rotation and redelivery confirmations are a `dialog`, not the `alertdialog` of `ConfirmDialog` that the plan names | `Plan14b` and `Plan15` click `[role="dialog"] button:has-text(…)`, read `[role="dialog"] [role="alert"]` and wait for no `[role="dialog"]`; the task lists no test change. Reported |
+| "Re-enable" has no confirmation, although the plan names `ConfirmDialog` for it | `P14b-13` and `P15-04` click "Re-enable" and read the toast at once; nothing is lost by re-enabling. Reported |
+| The deliveries are a table from 36rem of card width, and one block per delivery below (the table stays in the page, not displayed) | `Table/README.md` ("Mobile : une ligne = une carte"); the pattern of the API tokens (10.4) |
+| At 1440 the date of a row takes two lines and a long error wraps, so that the seven columns fit the 47.5rem of the card; at a 1280 viewport the table scrolls inside its frame | seven columns in the order `Plan14b` and `Plan15` read by position |
+| Copying the secret or a body no longer shows a toast: the button says "Copied" | the pattern of 10.2, 10.4 and 10.5 |
+| The signing secret dialog has no close cross | parity row 66: it is the one chance to copy the secret |
+| Status of the response as a badge ("Status: 200", success below 400, destructive from 400) | none needed |

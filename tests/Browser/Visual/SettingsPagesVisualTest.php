@@ -1,10 +1,13 @@
 <?php
 
 use App\Actions\Mcp\IssueMcpToken;
+use App\Enums\IntegrationDeliveryChannel;
+use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\McpScope;
 use App\Enums\WorkspaceRole;
+use App\Models\IntegrationDelivery;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\TeamIntegration;
@@ -624,6 +627,190 @@ it('renders the Telegram command of a pending connection without overflow', func
                     document.querySelector('[data-slot="telegram-pending-code"] code').textContent = '/connect@skrum_bot K7M2QX9D';
                     document.querySelector('[data-slot="telegram-pending-state"]').textContent =
                         document.querySelector('[data-slot="telegram-pending-state"]').textContent.replace(/\d+:\d+/, '9:58');
+
+                    return true;
+                }
+                JS);
+
+            return $page;
+        },
+    );
+});
+
+/**
+ * A workspace admin of a team of eleven whose webhook is connected, with four
+ * deliveries: a redelivery still queued, a failure that can be sent again, a
+ * success, and a shared link whose content is not kept.
+ */
+function p18eWebhookAdmin(): User
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Webhook);
+    outgoingWebhookResolves();
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $admin = User::factory()->create([
+        'id' => '0199a000-0000-7000-8000-000000000030',
+        'name' => 'Ada Admin',
+        'email' => 'ada.admin@example.com',
+    ]);
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
+    $team->members()->attach($admin);
+
+    foreach (User::factory()->count(10)->create() as $member) {
+        $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
+        $team->members()->attach($member);
+    }
+
+    $integration = TeamIntegration::factory()->webhook(['action_item.completed', 'retro.completed'])->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-28 16:20:00',
+        'last_delivery_succeeded_at' => '2026-09-30 09:12:04',
+    ]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'channelLabel' => 'Ops receiver']])->save();
+
+    $event = [
+        'team_id' => $team->id,
+        'channel' => IntegrationDeliveryChannel::Webhook,
+        'kind' => IntegrationDeliveryKind::Event,
+        'event' => 'action_item.completed',
+        'team_integration_id' => $integration->id,
+        'requested_by_user_id' => null,
+    ];
+
+    $failed = IntegrationDelivery::factory()->failed('Webhook did not respond. Try again later.')->create([
+        ...$event,
+        'id' => '0199b000-0000-7000-8000-000000000002',
+        'attempts' => 7,
+        'response_status' => 503,
+        'created_at' => '2026-09-30 06:00:00',
+        'last_attempt_at' => '2026-09-30 09:42:30',
+    ]);
+    $failed->payload()->create([
+        'message' => ['id' => $failed->id, 'event' => 'action_item.completed'],
+        'request_headers' => [
+            'Content-Type' => 'application/json',
+            'User-Agent' => 'skrum-webhook/1',
+            'X-Skrum-Event' => 'action_item.completed',
+            'X-Skrum-Delivery' => $failed->id,
+            'X-Skrum-Timestamp' => '1790761350',
+            'X-Skrum-Signature' => 'sha256=3f9a…',
+        ],
+        'request_body' => json_encode([
+            'version' => 1,
+            'id' => $failed->id,
+            'event' => 'action_item.completed',
+            'occurredAt' => '2026-09-30T06:00:00Z',
+            'team' => ['id' => $team->id, 'name' => 'Atlas'],
+            'data' => ['actionItem' => ['content' => 'Fix the deploy', 'status' => 'completed', 'assignee' => ['name' => 'Ada Admin']]],
+        ]),
+        'response_status' => 503,
+        'response_excerpt' => 'upstream down',
+    ]);
+
+    $queued = IntegrationDelivery::factory()->create([
+        ...$event,
+        'id' => '0199b000-0000-7000-8000-000000000001',
+        'attempts' => 0,
+        'redelivery_of_id' => $failed->id,
+        'requested_by_user_id' => $admin->id,
+        'created_at' => '2026-09-30 09:45:00',
+    ]);
+    $queued->payload()->create(['message' => ['id' => $failed->id, 'event' => 'action_item.completed']]);
+
+    $sent = IntegrationDelivery::factory()->sent()->create([
+        ...$event,
+        'id' => '0199b000-0000-7000-8000-000000000003',
+        'event' => 'retro.completed',
+        'attempts' => 1,
+        'response_status' => 200,
+        'created_at' => '2026-09-29 15:30:00',
+        'last_attempt_at' => '2026-09-29 15:30:02',
+    ]);
+    $sent->payload()->create(['message' => ['id' => $sent->id, 'event' => 'retro.completed']]);
+
+    IntegrationDelivery::factory()->sent()->create([
+        ...$event,
+        'id' => '0199b000-0000-7000-8000-000000000004',
+        'kind' => IntegrationDeliveryKind::RetroLink,
+        'event' => null,
+        'requested_by_user_id' => $admin->id,
+        'attempts' => 1,
+        'response_status' => 204,
+        'created_at' => '2026-09-29 14:02:00',
+        'last_attempt_at' => '2026-09-29 14:02:01',
+    ]);
+
+    return $admin;
+}
+
+/**
+ * @param  array<string, string>  $options
+ */
+function p18eWebhookDeliveries(User $admin, string $path, array $options): mixed
+{
+    return p18eSettingsVisit(
+        $admin,
+        $path,
+        $options,
+        '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"] [data-slot="webhook-events"]',
+    )->click('[data-slot="webhook-deliveries"] button[aria-expanded="false"]')
+        ->assertCount('table[aria-label] tbody tr', 4);
+}
+
+it('renders a connected webhook, its events and its deliveries, without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eWebhookAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-webhook',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eWebhookDeliveries($admin, $path, $options),
+    );
+});
+
+it('renders the request of a delivery without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eWebhookAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-webhook-delivery',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eWebhookDeliveries($admin, $path, $options)
+            ->click('table[aria-label] tbody tr:nth-child(2) button:first-child')
+            ->assertPresent('#delivery-tabpanel pre'),
+    );
+});
+
+it('renders the signing secret of a webhook, shown once, without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eWebhookAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-webhook-secret',
+        p18eIntegrationsPath(),
+        function (string $path, array $options) use ($admin) {
+            $page = p18eSettingsVisit(
+                $admin,
+                $path,
+                $options,
+                '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"] [data-slot="webhook-events"]',
+            )->click('@rotate-webhook-secret')
+                ->click('[role="dialog"] button:last-child')
+                ->assertPresent('[role="dialog"] input[readonly]');
+
+            $page->script(<<<'JS'
+                () => {
+                    document.querySelector('[role="dialog"] input[readonly]').value = 'whsec_4f1c2e9a8d3b4b8e9f512a7c0d6e5b13a7c0d6e5';
 
                     return true;
                 }
