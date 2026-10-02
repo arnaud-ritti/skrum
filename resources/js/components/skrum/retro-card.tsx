@@ -694,7 +694,7 @@ export function RetroCard({
                                             </span>
                                         )}
                                     </TooltipTrigger>
-                                    <TooltipContent data-slot="retro-card-reaction-names">
+                                    <TooltipContent>
                                         {names.join(', ')}
                                     </TooltipContent>
                                 </Tooltip>
