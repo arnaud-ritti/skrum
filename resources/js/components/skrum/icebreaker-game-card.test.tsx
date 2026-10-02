@@ -124,6 +124,23 @@ describe('IcebreakerGameCard', () => {
         ).not.toBeNull();
     });
 
+    it('says "In play" on the selected card of a room, in place of the check', () => {
+        const { rerender } = render(<IcebreakerGameCard {...base} inPlay />);
+
+        expect(screen.queryByText('In play')).toBeNull();
+
+        rerender(<IcebreakerGameCard {...base} selected inPlay />);
+
+        const radio = screen.getByRole('radio');
+
+        expect(
+            document.querySelector('[data-slot="icebreaker-game-check"]'),
+        ).toBeNull();
+        expect(radio.getAttribute('aria-describedby')).toContain(
+            screen.getByText('In play').id,
+        );
+    });
+
     it('calls onSelect with the game on click', () => {
         const onSelect = vi.fn();
         render(<IcebreakerGameCard {...base} onSelect={onSelect} />);
