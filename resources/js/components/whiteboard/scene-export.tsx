@@ -74,7 +74,7 @@ export function SceneExport({
             </p>
             <Button
                 type="button"
-                className="block max-w-full truncate"
+                className="block h-auto min-h-9 max-w-full py-2 whitespace-normal"
                 onClick={download}
             >
                 {t('Download board data')}

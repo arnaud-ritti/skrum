@@ -230,7 +230,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
                         const id = document.querySelector('[data-slot="error-id"] code');
 
                         id.textContent = '0198c0de-0000-4000-8000-000000000001';
-                        id.nextElementSibling.textContent = '· 2026-10-01 12:02:37 UTC';
+                        id.nextElementSibling.textContent = '2026-10-01 12:02:37 UTC';
 
                         return true;
                     }

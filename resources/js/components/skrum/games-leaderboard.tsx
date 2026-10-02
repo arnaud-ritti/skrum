@@ -557,7 +557,7 @@ export function GameRoomList({
         <ul
             data-slot="game-room-list"
             className={cn(
-                'relative flex max-h-120 flex-col gap-2 overflow-y-auto p-1',
+                'relative flex flex-col gap-2 p-1 lg:max-h-120 lg:overflow-y-auto',
                 className,
             )}
         >

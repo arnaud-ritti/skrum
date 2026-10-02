@@ -170,7 +170,7 @@ describe('ErrorPage', () => {
         const id = screen.getByText('0198c0de-0000-4000-8000-000000000001');
 
         expect(id.tagName).toBe('CODE');
-        expect(screen.getByText('· 2026-10-01 12:02:37 UTC')).toBeTruthy();
+        expect(screen.getByText('2026-10-01 12:02:37 UTC')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
         expect(
             screen.getByRole('link', { name: 'Back to my teams' }),

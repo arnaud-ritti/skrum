@@ -98,7 +98,7 @@ function ErrorId({
                     </code>
                     {occurredAt && (
                         <span className="text-xs text-muted-foreground">
-                            · {occurredAt} UTC
+                            {occurredAt} UTC
                         </span>
                     )}
                 </span>
