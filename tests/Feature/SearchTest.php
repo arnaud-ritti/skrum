@@ -14,6 +14,8 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\DB;
+use Tests\Support\SqlProbe;
 
 /**
  * @return array{0: User, 1: Team}
@@ -234,4 +236,24 @@ it('finds a match that is older than more near misses than a kind shows', functi
     Retro::factory()->for($team)->count(SearchWorkspaceContent::PerKind + 1)->sequence(fn ($sequence): array => ['title' => "Budget 100{$sequence->index}"])->create();
 
     expect(searchTitles($user, '100%'))->toBe(['Budget 100% spent']);
+});
+
+it('reads the tasks of the games on a page at once when the term holds a pattern character', function () {
+    [$user, $team] = searcher();
+    PokerGame::factory()->for($team)->count(4)->create(['title' => 'Near miss'])
+        ->each(fn (PokerGame $game) => PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Ticket 1000']));
+    $matchedByTask = PokerGame::factory()->for($team)->create(['title' => 'Estimates', 'created_at' => now()->subDay()]);
+    PokerTask::factory()->create(['poker_game_id' => $matchedByTask->id, 'title' => 'Reach 100% coverage']);
+    $games = DB::connection()->getQueryGrammar()->wrapTable('poker_games');
+    $titles = [];
+
+    $taskReads = array_filter(
+        SqlProbe::statementsOn('poker_tasks', function () use ($user, &$titles): void {
+            $titles = searchTitles($user, '100%');
+        }),
+        fn (string $sql): bool => ! str_contains($sql, $games),
+    );
+
+    expect($titles)->toBe(['Estimates'])
+        ->and($taskReads)->toHaveCount(1);
 });

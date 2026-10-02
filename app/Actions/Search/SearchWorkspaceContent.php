@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Support\Database\SearchText;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -70,11 +71,13 @@ class SearchWorkspaceContent
             ->where(fn (Builder $query) => $query
                 ->whereContains('title', $term)
                 ->orWhereHas('tasks', fn (Builder $tasks) => $tasks->whereContains('title', $term)))
+            ->when($termHasWildcard, fn (Builder $query) => $query->with([
+                'tasks' => fn (HasMany $tasks) => $tasks->whereContains('title', $term)->select(['id', 'poker_game_id', 'title']),
+            ]))
             ->latest()->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
             ->filter(fn (PokerGame $game): bool => ! $termHasWildcard
                 || SearchText::contains($game->title, $term)
-                || $game->tasks()->whereContains('title', $term)->get(['id', 'title'])
-                    ->contains(fn (PokerTask $task): bool => SearchText::contains($task->title, $term)))
+                || $game->tasks->contains(fn (PokerTask $task): bool => SearchText::contains($task->title, $term)))
             ->take(self::PerKind)->collect()
             ->map(fn (PokerGame $game): array => $this->result('poker', $game->id, $game->title, $teamsById[$game->team_id], route('poker.show', $game)));
 
