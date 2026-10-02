@@ -129,6 +129,7 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
         'invited_by_id' => $inviter->id,
     ]);
     WorkspaceInvitation::factory()->expired()->withToken('expired-token')->create([
+        'workspace_id' => Workspace::factory()->create(['name' => 'Aurora'])->id,
         'email' => $mona->email,
         'invited_by_id' => $inviter->id,
     ]);
@@ -172,6 +173,7 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
 
     $page->navigate('/invitations/expired-token')
         ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
+        ->assertSeeIn('[data-slot="access-notice"]', 'Your invitation to join Aurora was valid until')
         ->assertSeeIn('[data-slot="access-notice"]', "Ask {$inviter->name} for a new link; nothing else to do.")
         ->assertNotPresent('[data-slot="invitation-card"]')
         ->assertNotPresent('@accept-invitation-button');

@@ -25,7 +25,10 @@ export type InvitationPerson = {
 
 export type InvitationRole = 'owner' | 'admin' | 'member';
 
-/** Props of the page `invitations/show`; an invalid token sends `isInvalid` alone. */
+/**
+ * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired or
+ * used invitation sends `isExpired`, `workspaceName`, `inviter` and `expiresAt`, nothing else.
+ */
 export type InvitationProps = {
     isInvalid: boolean;
     token?: string;
@@ -128,10 +131,17 @@ export function InvitationCard({
                 }
                 description={
                     isPastLastDay
-                        ? t('It was valid until :date.', {
-                              date: lastDay(expiresAt, locale, now),
-                          })
-                        : t('This invitation has expired or was already used.')
+                        ? t(
+                              'Your invitation to join :workspace was valid until :date.',
+                              {
+                                  workspace: workspaceName,
+                                  date: lastDay(expiresAt, locale, now),
+                              },
+                          )
+                        : t(
+                              'Your invitation to join :workspace has expired or was already used.',
+                              { workspace: workspaceName },
+                          )
                 }
                 hint={
                     inviter === null

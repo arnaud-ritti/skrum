@@ -35,21 +35,29 @@ class InvitationLinksController extends Controller
             redirect()->setIntendedUrl($request->fullUrl());
         }
 
-        $isPending = $invitation->isPending();
+        if (! $invitation->isPending()) {
+            return Inertia::render('invitations/show', [
+                'isInvalid' => false,
+                'isExpired' => true,
+                'workspaceName' => $invitation->workspace->name,
+                'inviter' => $this->person($invitation->invitedBy),
+                'expiresAt' => $invitation->expires_at->toIso8601String(),
+            ]);
+        }
 
         return Inertia::render('invitations/show', [
             'token' => $token,
             'isInvalid' => false,
             'workspaceName' => $invitation->workspace->name,
             'email' => $invitation->email,
-            'isExpired' => ! $isPending,
+            'isExpired' => false,
             'isLoggedIn' => $user !== null,
             'emailMatches' => $user !== null && $invitation->matchesEmail($user->email),
             'canRegister' => $signupGate->canShowRegistration($invitation),
-            'ssoProviders' => $user === null && $isPending ? SsoProvider::options() : [],
+            'ssoProviders' => $user === null ? SsoProvider::options() : [],
             'inviter' => $this->person($invitation->invitedBy),
             'expiresAt' => $invitation->expires_at->toIso8601String(),
-            ...($isPending ? $this->pendingDetails($invitation) : []),
+            ...$this->pendingDetails($invitation),
         ]);
     }
 
