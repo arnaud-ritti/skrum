@@ -298,3 +298,32 @@ The owner approved the amended spec and the three plans ("Go"), with the recomme
 | D-55 | 403 "this page" stays. REWORK: the static 503 reloads by itself every 30 s (small inline script) and shows the mockup's sentence. 404 search: never. |
 | French "Modifier" / "Lire" | agreed, everywhere. |
 | D-63 | fixed with the session header rework. |
+
+## Fifth round (same day, after integration 2b) — D-70 to D-77, roadmap changes, working rules
+
+| Row | Answer |
+|---|---|
+| D-70 | REWORK. Poker room settings: a popover anchored to a header button (mockup), like the retro settings popover; tests follow. |
+| D-71 | stays as proposed (import and source: search field + select, done check, tracker block). |
+| D-72 | REWORK + back end: the ticket key under the task title and "across n games" in the summary (two props; the server holds both). Other points of the row stay. |
+| D-73 | REWORK + back end: gear icon button "Team settings" in the team header; "Join" / "Resume" on an open retro ("Resume" when the viewer has already joined: new prop). Tests follow (P12a `click('Integrations')`). |
+| D-74 | stays ("Open the game", points under the name, "Ended games"). |
+| D-75 | stays (two columns from 80rem of viewport; existing controls kept). |
+| D-76 | REWORK. Health check card: compact list with a "Manage" link (mockup); the sentence uses the real values (actual count, scale 1–10). "Manage" opens a page of its own with the full manager. |
+| D-77 | REWORK. Trend on the team page: mockup strict — the ROTI curve alone, in the main column, filled, with the bubble on the last point. The Mood trend (health score) moves to the health-check management page. Fix the deferred-fetch failure state (use `<Deferred>` or an error state). |
+| "Supprimer" / "Retirer" (member row) | "Retirer" everywhere: a new key for removing a member. |
+| `links.decks` in the poker snapshot | Remove it: the front builds the link itself (Wayfinder). |
+| Translations (es, de, part of fr) | Reviewed by an agent at the end of 18e: one pass per language (term consistency, lengths, register), with a report of doubtful cases. |
+
+Second rework run (after the first one merges): RW-P3 (D-70, links.decks removal), RW-P4 (D-72), RW-T1 (D-73, "Retirer"), RW-T2 (D-76, D-77, health-check management page with the Mood trend), plus the deferred items of the first addendum (D-51 guest join after retro; recovery-code alert after settings).
+
+## Roadmap change (same day)
+Plan 30 (mentions and their notifications, feature MN-1) is removed from the feature roadmap by the owner: move it to the backlog (spec §10) and drop plan 30 from feature-roadmap.md. To apply in docs when the main tree is free.
+Plan 28 (whiteboard collaboration: comments, "follow", sticky authors, convert to actions) is removed from the feature roadmap too: move to the backlog (spec §10). Places left for these elements in the whiteboard screen (task 7.x "Places left" lines) become plain backlog notes. Roadmap = plans 19–27 and 29.
+Plan 22: scheduling is removed ("Schedule…", session start time, "starts in 5 min" notification): move to the backlog (spec §10). Plan 22 keeps the Sessions index page, the advanced creation options and the poker Jira ticket details. The four extra games (GM-4) stay in plan 27 (owner confirmed).
+
+### Working rules decided the same day
+
+- No test runs during the work (feature, Vitest, browser), per task or per merge: types, lint and build only; one full run at the end of each phase. Risk accepted by the owner. Exceptions kept by the controller unless the owner says otherwise: the 18f security tests, and the database-portability plan (its purpose is to prove behaviour per driver).
+- Deviations between mockup and plan are put to the owner before a screen is built.
+- New requirement: the application must run on SQLite, MariaDB/MySQL and any database Eloquent supports. Audit: docs/superpowers/research/database-portability-audit.md.
