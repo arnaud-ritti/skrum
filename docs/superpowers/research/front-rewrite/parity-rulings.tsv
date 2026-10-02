@@ -3,4 +3,294 @@
 #   kind    route, page, action, feature or file
 #   key     the text the script prints after the kind and before the last ": " (node bin/front-parity.mjs <routes.json> --check)
 #   ruling  starts with "kept: ", "changed: ", "moved: " or "gap: "; anything but a gap names a file that exists
-# No verdict is written yet: the screens of 18e are still being merged.
+# Written in the final pass of plan 18g (2026-10-02). Rows without a line here are open: see final-report.md.
+route	GET|HEAD /	changed: routes/web.php (`/` is a redirect since the landing page went: owner BLOCK-3, D-34; tests/Feature/HomeRedirectTest.php)
+page	welcome.tsx	gap: the landing page was deleted on the owner's decision (BLOCK-3, D-34); `/` redirects
+feature	Workspaces: switcher	changed: resources/js/components/skrum/app-sidebar.tsx (the switcher of the sidebar, fed by resources/js/hooks/use-sidebar-model.ts)
+feature	Workspaces: teams	changed: resources/js/components/workspaces/workspace-overview.tsx, resources/js/components/workspaces/team-tile.tsx, resources/js/components/workspaces/new-team-dialog.tsx
+feature	Workspaces: "Leave workspace"	changed: resources/js/components/workspaces/leave-workspace-dialog.tsx
+feature	Workspaces: templates	changed: resources/js/components/workspaces/templates-page.tsx and its three tabs (resources/js/components/workspaces/retro-templates-tab.tsx)
+feature	Workspaces: members	changed: resources/js/components/workspaces/members-table.tsx, resources/js/components/workspaces/invitations-table.tsx, resources/js/components/workspaces/invite-form.tsx
+feature	Workspaces: creation	changed: resources/js/components/workspaces/create-workspace-form.tsx
+feature	Team page: retros	changed: resources/js/components/teams/team-retros-section.tsx
+feature	Team page: poker (active games, Estimation history, Saved decks)	changed: resources/js/components/teams/team-poker-section.tsx; the history is resources/js/components/poker/estimation-history.tsx, the decks resources/js/components/poker/saved-decks-page.tsx
+feature	Team page: whiteboards and their templates	changed: resources/js/components/teams/team-whiteboards-section.tsx, resources/js/components/teams/whiteboard-templates-dialog.tsx
+feature	Team page: health check statements (built-in and custom, reorder, archive, restore)	moved: resources/js/components/teams/team-health-manager.tsx on the page resources/js/pages/teams/health-check.tsx; the team page keeps the list resources/js/components/teams/team-health-card.tsx (D-76, D-96)
+feature	Team page: members	changed: resources/js/components/teams/team-members-card.tsx
+feature	Retro: phases	changed: resources/js/components/retro/board-topbar.tsx and resources/js/components/retro/facilitator-dock.tsx (Actions and ROTI are phases now: B1)
+feature	Retro: coloured columns and add column	changed: resources/js/components/retro/board-column.tsx, resources/js/components/retro/columns-board.tsx (eight colours: B10)
+feature	Retro: "Add survey"	moved: resources/js/components/retro/board-settings.tsx (owner 8-D2, D-23); the editor is resources/js/components/retro/surveys/survey-editor-dialog.tsx
+feature	Retro: timer	changed: resources/js/components/session/session-timer.tsx, mounted by resources/js/components/retro/board-topbar.tsx
+feature	Retro: settings	changed: resources/js/components/retro/board-settings.tsx
+feature	Retro: groups	changed: resources/js/components/retro/board-group.tsx, resources/js/components/retro/group-target-drawer.tsx
+feature	Retro: votes	changed: resources/js/components/retro/phase-voting-bar.tsx, resources/js/components/retro/board-card.tsx
+feature	Retro: comments	kept: resources/js/components/retro/comment-thread.tsx, mounted by resources/js/components/retro/board-card.tsx
+feature	Retro: card reactions	kept: resources/js/components/retro/reaction-chips.tsx, resources/js/components/retro/emoji-picker.tsx
+feature	Retro: GIFs	changed: resources/js/components/skrum/gif-picker.tsx through resources/js/components/gifs/gif-search-dialog.tsx
+feature	Retro: highlight	changed: resources/js/components/retro/board-card.tsx, resources/js/components/retro/phase-discussing.tsx
+feature	Retro: lock	changed: resources/js/components/retro/facilitator-dock.tsx and resources/js/components/retro/board-settings.tsx (D-108)
+feature	Retro: presentation mode	changed: resources/js/components/retro/phase-discussing.tsx, resources/js/components/retro/topic-focus.tsx
+feature	Retro: live cursors	changed: resources/js/components/retro/board-cursors.tsx on resources/js/components/session/live-cursors.tsx
+feature	Retro: flying reactions	changed: resources/js/components/retro/board-reactions.tsx on resources/js/components/session/session-reactions.tsx
+feature	Retro: action items with comments	changed: resources/js/components/retro/phase-actions.tsx, resources/js/components/retro/action-item-rows.tsx, resources/js/components/action-items/item-comments.tsx
+feature	Retro: subtasks	changed: resources/js/components/action-items/item-subtasks.tsx
+feature	Retro: exports and external links	changed: resources/js/components/action-items/item-export.tsx
+feature	Retro: insights	changed: resources/js/components/retro/suggestions-panel.tsx, resources/js/components/retro/suggestions-list.tsx, resources/js/components/retro/results/summary.tsx
+feature	Retro: results	changed: resources/js/components/retro/session-end.tsx and resources/js/components/retro/results/results-card.tsx
+feature	Retro: shares	changed: resources/js/components/retro/board-share.tsx, resources/js/components/retro/results/recap-share.tsx
+feature	Retro: results e-mail	changed: resources/js/components/retro/results/recap-email.tsx
+feature	Retro: guest join	changed: resources/js/pages/retros/join.tsx on resources/js/components/session/guest-join-page.tsx
+feature	Retro: session ended	changed: resources/js/pages/retros/session-ended.tsx
+feature	Poker: draggable task queue	changed: resources/js/components/poker/task-queue.tsx, resources/js/components/poker/task-row.tsx
+feature	Poker: Watch only	changed: resources/js/components/poker/room-topbar.tsx
+feature	Poker: Hide tasks	changed: resources/js/components/poker/room-topbar.tsx, resources/js/components/poker/poker-room.tsx
+feature	Poker: rounds	changed: resources/js/components/poker/story-card.tsx
+feature	Poker: Re-vote	changed: resources/js/components/poker/room-dock.tsx, resources/js/components/poker/use-round-actions.ts
+feature	Poker: Estimate	changed: resources/js/components/poker/room-dock.tsx
+feature	Poker: Save estimate	changed: resources/js/components/poker/room-dock.tsx, resources/js/components/poker/estimate-conflict.tsx
+feature	Poker: Next task	changed: resources/js/components/poker/room-dock.tsx
+feature	Poker: timer	changed: resources/js/components/poker/room-topbar.tsx on resources/js/components/session/session-timer.tsx
+feature	Poker: shares	changed: resources/js/components/poker/room-dialogs.tsx
+feature	Poker: guest join	changed: resources/js/pages/poker/join.tsx on resources/js/components/session/guest-join-page.tsx
+feature	Whiteboard: Excalidraw scene sync	kept: resources/js/hooks/use-whiteboard.ts, mounted by resources/js/components/whiteboard/board.tsx
+feature	Whiteboard: files	kept: resources/js/lib/whiteboard/files.ts
+feature	Whiteboard: timer	changed: resources/js/components/whiteboard/board-timer.tsx
+feature	Whiteboard: locks	changed: resources/js/components/whiteboard/board-facilitation.tsx
+feature	Whiteboard: viewport follow	kept: resources/js/hooks/use-whiteboard-follow.ts, from resources/js/components/whiteboard/board-facilitation.tsx
+feature	Whiteboard: guest join	changed: resources/js/pages/whiteboards/join.tsx on resources/js/components/session/guest-join-page.tsx
+feature	Games: rooms	changed: resources/js/components/games/team-games.tsx on resources/js/components/skrum/games-leaderboard.tsx
+feature	Games: leaderboard	changed: resources/js/components/skrum/games-leaderboard.tsx
+feature	Games: the existing game engines	changed: resources/js/components/games/draw-board.tsx, resources/js/components/games/hangman-board.tsx, resources/js/components/games/decoded-board.tsx, resources/js/components/games/sprint-gif-board.tsx
+feature	Games: guest join	changed: resources/js/pages/games/join.tsx on resources/js/components/session/guest-join-page.tsx
+feature	Reaction bar	changed: resources/js/components/skrum/reaction-bar.tsx through resources/js/components/session/session-reactions.tsx
+feature	Action items index with filters	changed: resources/js/components/action-items/action-items-page.tsx, resources/js/components/action-items/action-item-filters.tsx
+feature	realtime updates and all item actions	changed: resources/js/components/action-items/use-action-items-realtime.ts, resources/js/components/action-items/use-action-item-mutations.ts, resources/js/components/action-items/action-item-sheet.tsx
+feature	User settings: Profile	changed: resources/js/components/settings/profile-card.tsx, resources/js/components/settings/delete-account-card.tsx
+feature	User settings: Security (password, 2FA, passkeys)	changed: resources/js/components/settings/security/security-stack.tsx
+feature	User settings: Appearance	changed: resources/js/components/settings/appearance/appearance-card.tsx
+feature	User settings: Notifications	changed: resources/js/components/settings/notifications-card.tsx
+feature	User settings: API tokens	changed: resources/js/pages/settings/api-tokens.tsx
+feature	Team integrations	changed: resources/js/pages/teams/integrations.tsx on resources/js/components/integrations/provider-card.tsx
+feature	Auth: login	changed: resources/js/components/auth/login-form.tsx
+feature	Auth: register	changed: resources/js/components/auth/register-form.tsx
+feature	Auth: forgot and reset password	changed: resources/js/components/auth/forgot-password-form.tsx, resources/js/components/auth/reset-password-form.tsx
+feature	Auth: e-mail verification	changed: resources/js/components/auth/verify-email-form.tsx
+feature	Auth: 2FA challenge	changed: resources/js/components/auth/two-factor-form.tsx, resources/js/components/auth/email-code-challenge.tsx
+feature	Auth: password confirmation	changed: resources/js/components/auth/confirm-password-form.tsx
+feature	Auth: SSO	changed: resources/js/components/auth/sso-buttons.tsx
+feature	Auth: invitation acceptance	changed: resources/js/components/auth/invitation-card.tsx
+feature	DiceBear avatars	kept: resources/js/components/ui/avatar.tsx
+feature	locale switch	kept: resources/js/components/language-switcher.tsx, and resources/js/components/settings/appearance/language-field.tsx
+feature	dark mode without flash	kept: resources/views/app.blade.php (inline script) and resources/js/hooks/use-appearance.tsx
+feature	The three creation triggers of the team page become one "New session" trigger	changed: resources/js/components/teams/session-create/new-session-dialog.tsx, opened from resources/js/components/teams/team-header.tsx (D-09)
+feature	Poker's 30-second and 2-minute timer presets and the games' 2-minute preset go (ruling 19)	changed: resources/js/components/skrum/timer.tsx (1, 3, 5, 10 minutes and Custom: D-02)
+feature	The Saved decks dialog of the team page becomes the page `poker/decks`	moved: resources/js/pages/poker/decks.tsx
+feature	The guest-link entries of the board	moved: resources/js/components/skrum/share-dialog.tsx
+feature	game and room menus move into the Share dialog	moved: resources/js/components/skrum/share-dialog.tsx, opened by resources/js/components/games/room-share-dialog.tsx
+feature	The columns view of the Discussing phase is replaced by the topics list (§6.4)	changed: resources/js/components/retro/topics-list.tsx
+feature	The "Add survey" button of the board moves into the settings popover	moved: resources/js/components/retro/board-settings.tsx
+feature	The `welcome` page is replaced by a redirect	changed: routes/web.php (`/` redirects to login or the dashboard; tests/Feature/HomeRedirectTest.php)
+action	welcome.tsx :: "Dashboard" (signed in)	gap: the landing page was deleted on the owner's decision (BLOCK-3, D-34)
+action	welcome.tsx :: "Log in" (guest)	gap: the landing page was deleted on the owner's decision (BLOCK-3, D-34)
+action	welcome.tsx :: "Register" (guest, only if `canRegister`)	gap: the landing page was deleted on the owner's decision (BLOCK-3, D-34)
+action	welcome.tsx :: External links "Documentation", "Laracasts", "Deploy now"	gap: the landing page was deleted on the owner's decision (BLOCK-3, D-34)
+file	resources/js/app.tsx	kept: resources/js/app.tsx
+file	resources/js/components/breadcrumbs.tsx	kept: resources/js/components/breadcrumbs.tsx
+file	resources/js/components/input-error.tsx	kept: resources/js/components/input-error.tsx
+file	resources/js/components/language-switcher.tsx	kept: resources/js/components/language-switcher.tsx
+file	resources/js/components/nav-user.tsx	kept: resources/js/components/nav-user.tsx
+file	resources/js/components/user-info.tsx	kept: resources/js/components/user-info.tsx
+file	resources/js/components/user-menu-content.tsx	kept: resources/js/components/user-menu-content.tsx
+file	resources/js/components/ui/alert.tsx	kept: resources/js/components/ui/alert.tsx
+file	resources/js/components/ui/avatar.tsx	kept: resources/js/components/ui/avatar.tsx
+file	resources/js/components/ui/badge.tsx	kept: resources/js/components/ui/badge.tsx
+file	resources/js/components/ui/breadcrumb.tsx	kept: resources/js/components/ui/breadcrumb.tsx
+file	resources/js/components/ui/button.tsx	kept: resources/js/components/ui/button.tsx
+file	resources/js/components/ui/card.tsx	kept: resources/js/components/ui/card.tsx
+file	resources/js/components/ui/checkbox.tsx	kept: resources/js/components/ui/checkbox.tsx
+file	resources/js/components/ui/collapsible.tsx	kept: resources/js/components/ui/collapsible.tsx
+file	resources/js/components/ui/dialog.tsx	kept: resources/js/components/ui/dialog.tsx
+file	resources/js/components/ui/dropdown-menu.tsx	kept: resources/js/components/ui/dropdown-menu.tsx
+file	resources/js/components/ui/input-otp.tsx	kept: resources/js/components/ui/input-otp.tsx
+file	resources/js/components/ui/input.tsx	kept: resources/js/components/ui/input.tsx
+file	resources/js/components/ui/label.tsx	kept: resources/js/components/ui/label.tsx
+file	resources/js/components/ui/select.tsx	kept: resources/js/components/ui/select.tsx
+file	resources/js/components/ui/separator.tsx	kept: resources/js/components/ui/separator.tsx
+file	resources/js/components/ui/sheet.tsx	kept: resources/js/components/ui/sheet.tsx
+file	resources/js/components/ui/sidebar.tsx	kept: resources/js/components/ui/sidebar.tsx
+file	resources/js/components/ui/skeleton.tsx	kept: resources/js/components/ui/skeleton.tsx
+file	resources/js/components/ui/sonner.tsx	kept: resources/js/components/ui/sonner.tsx
+file	resources/js/components/ui/spinner.tsx	kept: resources/js/components/ui/spinner.tsx
+file	resources/js/components/ui/textarea.tsx	kept: resources/js/components/ui/textarea.tsx
+file	resources/js/components/ui/toggle-group.tsx	kept: resources/js/components/ui/toggle-group.tsx
+file	resources/js/components/ui/toggle.tsx	kept: resources/js/components/ui/toggle.tsx
+file	resources/js/components/ui/tooltip.tsx	kept: resources/js/components/ui/tooltip.tsx
+file	resources/js/components/gifs/gif-search-dialog.tsx	kept: resources/js/components/gifs/gif-search-dialog.tsx
+file	resources/js/components/realtime/live-cursors.tsx	moved: resources/js/components/session/live-cursors.tsx (rename seen by git)
+file	resources/js/components/teams/whiteboard-template-preview.tsx	kept: resources/js/components/teams/whiteboard-template-preview.tsx
+file	resources/js/components/teams/whiteboard-templates-dialog.tsx	kept: resources/js/components/teams/whiteboard-templates-dialog.tsx
+file	resources/js/components/action-items/export-action-item-dialog.tsx	moved: resources/js/components/action-items/item-export.tsx (rename seen by git)
+file	resources/js/components/integrations/integration-actions.tsx	kept: resources/js/components/integrations/integration-actions.tsx
+file	resources/js/components/integrations/disconnect-integration-dialog.tsx	kept: resources/js/components/integrations/disconnect-integration-dialog.tsx
+file	resources/js/components/integrations/slack-integration.tsx	kept: resources/js/components/integrations/slack-integration.tsx
+file	resources/js/components/integrations/telegram-integration.tsx	kept: resources/js/components/integrations/telegram-integration.tsx
+file	resources/js/components/integrations/url-channel-integration.tsx	kept: resources/js/components/integrations/url-channel-integration.tsx
+file	resources/js/components/integrations/webhook-integration.tsx	kept: resources/js/components/integrations/webhook-integration.tsx
+file	resources/js/components/integrations/webhook-secret.tsx	kept: resources/js/components/integrations/webhook-secret.tsx
+file	resources/js/components/integrations/webhook-events-panel.tsx	kept: resources/js/components/integrations/webhook-events-panel.tsx
+file	resources/js/components/integrations/webhook-deliveries-panel.tsx	kept: resources/js/components/integrations/webhook-deliveries-panel.tsx
+file	resources/js/components/integrations/webhook-delivery-dialog.tsx	kept: resources/js/components/integrations/webhook-delivery-dialog.tsx
+file	resources/js/components/integrations/jira-integration.tsx	kept: resources/js/components/integrations/jira-integration.tsx
+file	resources/js/components/integrations/jira-data-center-integration.tsx	kept: resources/js/components/integrations/jira-data-center-integration.tsx
+file	resources/js/components/integrations/jira-token-dialog.tsx	kept: resources/js/components/integrations/jira-token-dialog.tsx
+file	resources/js/components/integrations/linear-integration.tsx	kept: resources/js/components/integrations/linear-integration.tsx
+file	resources/js/components/integrations/github-integration.tsx	kept: resources/js/components/integrations/github-integration.tsx
+file	resources/js/components/integrations/github-priority-labels.tsx	kept: resources/js/components/integrations/github-priority-labels.tsx
+file	resources/js/components/integrations/story-points-field.tsx	kept: resources/js/components/integrations/story-points-field.tsx
+file	resources/js/components/integrations/people-panel.tsx	kept: resources/js/components/integrations/people-panel.tsx
+file	resources/js/components/integrations/account-picker-dialog.tsx	kept: resources/js/components/integrations/account-picker-dialog.tsx
+file	resources/js/components/integrations/priorities-panel.tsx	kept: resources/js/components/integrations/priorities-panel.tsx
+file	resources/js/components/integrations/status-sync-section.tsx	kept: resources/js/components/integrations/status-sync-section.tsx
+file	resources/js/components/integrations/status-mapping-panel.tsx	kept: resources/js/components/integrations/status-mapping-panel.tsx
+file	resources/js/components/integrations/jira-data-center-webhook-panel.tsx	kept: resources/js/components/integrations/jira-data-center-webhook-panel.tsx
+file	resources/js/components/integrations/share/delivery-lines.tsx	kept: resources/js/components/integrations/share/delivery-lines.tsx
+file	resources/js/lib/action-items/assignees.ts	kept: resources/js/lib/action-items/assignees.ts
+file	resources/js/lib/action-items/endpoints.ts	kept: resources/js/lib/action-items/endpoints.ts
+file	resources/js/lib/action-items/format.ts	kept: resources/js/lib/action-items/format.ts
+file	resources/js/lib/action-items/order.ts	kept: resources/js/lib/action-items/order.ts
+file	resources/js/lib/action-items/permissions.ts	kept: resources/js/lib/action-items/permissions.ts
+file	resources/js/lib/integrations.ts	kept: resources/js/lib/integrations.ts
+file	resources/js/types/index.ts	kept: resources/js/types/index.ts
+file	resources/js/types/global.d.ts	kept: resources/js/types/global.d.ts
+file	resources/js/types/vite-env.d.ts	kept: resources/js/types/vite-env.d.ts
+file	resources/js/types/auth.ts	kept: resources/js/types/auth.ts
+file	resources/js/types/navigation.ts	kept: resources/js/types/navigation.ts
+file	resources/js/types/ui.ts	kept: resources/js/types/ui.ts
+file	resources/js/types/workspaces.ts	kept: resources/js/types/workspaces.ts
+file	resources/js/types/poker.ts	kept: resources/js/types/poker.ts
+file	resources/js/types/games.ts	kept: resources/js/types/games.ts
+file	resources/js/types/api-tokens.ts	kept: resources/js/types/api-tokens.ts
+file	resources/js/types/integrations.ts	kept: resources/js/types/integrations.ts
+file	resources/js/components/games/game-room.tsx	kept: resources/js/components/games/game-room.tsx
+file	resources/js/components/games/room-context.tsx	kept: resources/js/components/games/room-context.tsx
+file	resources/js/components/games/room-header.tsx	kept: resources/js/components/games/room-header.tsx
+file	resources/js/components/games/room-sidebar.tsx	kept: resources/js/components/games/room-sidebar.tsx
+file	resources/js/components/games/reset-scores-dialog.tsx	kept: resources/js/components/games/reset-scores-dialog.tsx
+file	resources/js/components/games/room-menu.tsx	kept: resources/js/components/games/room-menu.tsx
+file	resources/js/components/games/room-settings-dialog.tsx	kept: resources/js/components/games/room-settings-dialog.tsx
+file	resources/js/components/games/delete-room-dialog.tsx	kept: resources/js/components/games/delete-room-dialog.tsx
+file	resources/js/components/games/room-full.tsx	kept: resources/js/components/games/room-full.tsx
+file	resources/js/components/games/room-gone.tsx	kept: resources/js/components/games/room-gone.tsx
+file	resources/js/components/games/start-round-controls.tsx	kept: resources/js/components/games/start-round-controls.tsx
+file	resources/js/components/games/leader-picker.tsx	kept: resources/js/components/games/leader-picker.tsx
+file	resources/js/components/games/pass-round-button.tsx	kept: resources/js/components/games/pass-round-button.tsx
+file	resources/js/components/games/round-end-card.tsx	kept: resources/js/components/games/round-end-card.tsx
+file	resources/js/components/games/history-drawer.tsx	kept: resources/js/components/games/history-drawer.tsx
+file	resources/js/components/games/round-detail.tsx	kept: resources/js/components/games/round-detail.tsx
+file	resources/js/components/games/word-mask.tsx	kept: resources/js/components/games/word-mask.tsx
+file	resources/js/components/games/leader-word.tsx	kept: resources/js/components/games/leader-word.tsx
+file	resources/js/components/games/hint-button.tsx	kept: resources/js/components/games/hint-button.tsx
+file	resources/js/components/games/guess-chat.tsx	kept: resources/js/components/games/guess-chat.tsx
+file	resources/js/components/games/hangman-board.tsx	kept: resources/js/components/games/hangman-board.tsx
+file	resources/js/components/games/hangman-figure.tsx	kept: resources/js/components/games/hangman-figure.tsx
+file	resources/js/components/games/letter-keyboard.tsx	kept: resources/js/components/games/letter-keyboard.tsx
+file	resources/js/components/games/draw-board.tsx	kept: resources/js/components/games/draw-board.tsx
+file	resources/js/components/games/drawing-canvas.tsx	kept: resources/js/components/games/drawing-canvas.tsx
+file	resources/js/components/games/drawing-toolbar.tsx	kept: resources/js/components/games/drawing-toolbar.tsx
+file	resources/js/components/games/decoded-board.tsx	kept: resources/js/components/games/decoded-board.tsx
+file	resources/js/components/games/clue-editor.tsx	kept: resources/js/components/games/clue-editor.tsx
+file	resources/js/components/games/clue-row.tsx	kept: resources/js/components/games/clue-row.tsx
+file	resources/js/components/games/sprint-gif-board.tsx	kept: resources/js/components/games/sprint-gif-board.tsx
+file	resources/js/components/games/gif-question-banner.tsx	kept: resources/js/components/games/gif-question-banner.tsx
+file	resources/js/components/games/gif-answer-stage.tsx	kept: resources/js/components/games/gif-answer-stage.tsx
+file	resources/js/components/games/gif-voting-stage.tsx	kept: resources/js/components/games/gif-voting-stage.tsx
+file	resources/js/components/games/gif-round-results.tsx	kept: resources/js/components/games/gif-round-results.tsx
+file	resources/js/components/games/gif-tile.tsx	kept: resources/js/components/games/gif-tile.tsx
+file	resources/js/lib/games/types.ts	kept: resources/js/lib/games/types.ts
+file	resources/js/lib/games/room-reducer.ts	kept: resources/js/lib/games/room-reducer.ts
+file	resources/js/lib/games/drawing.ts	kept: resources/js/lib/games/drawing.ts
+file	resources/js/lib/games/stroke-whisper.ts	kept: resources/js/lib/games/stroke-whisper.ts
+file	resources/js/lib/games/gif.ts	kept: resources/js/lib/games/gif.ts
+file	resources/js/lib/games/leaderboard.ts	kept: resources/js/lib/games/leaderboard.ts
+file	resources/js/lib/games/rotation.ts	kept: resources/js/lib/games/rotation.ts
+file	resources/js/lib/games/hints.ts	kept: resources/js/lib/games/hints.ts
+file	resources/js/lib/games/clue.ts	kept: resources/js/lib/games/clue.ts
+file	resources/js/lib/games/outcomes.ts	kept: resources/js/lib/games/outcomes.ts
+file	resources/js/hooks/use-game-channel.ts	kept: resources/js/hooks/use-game-channel.ts
+file	resources/js/hooks/use-game-room.ts	kept: resources/js/hooks/use-game-room.ts
+file	resources/js/hooks/use-secret-word.ts	kept: resources/js/hooks/use-secret-word.ts
+file	resources/js/hooks/use-stroke-whispers.ts	kept: resources/js/hooks/use-stroke-whispers.ts
+file	resources/js/hooks/use-countdown.ts	kept: resources/js/hooks/use-countdown.ts
+file	resources/js/components/poker/game-context.tsx	kept: resources/js/components/poker/game-context.tsx
+file	resources/js/components/poker/auto-reveal-triggers.tsx	kept: resources/js/components/poker/auto-reveal-triggers.tsx
+file	resources/js/components/poker/estimate-conflict.tsx	kept: resources/js/components/poker/estimate-conflict.tsx
+file	resources/js/components/poker/import-tasks-dialog.tsx	kept: resources/js/components/poker/import-tasks-dialog.tsx
+file	resources/js/components/poker/game-cursors.tsx	moved: resources/js/components/poker/room-cursors.tsx (rename seen by git)
+file	resources/js/components/poker/game-reactions.tsx	moved: resources/js/components/poker/room-reactions.tsx (rename seen by git)
+file	resources/js/lib/poker/game-reducer.ts	kept: resources/js/lib/poker/game-reducer.ts
+file	resources/js/lib/poker/types.ts	kept: resources/js/lib/poker/types.ts
+file	resources/js/lib/poker/format.ts	kept: resources/js/lib/poker/format.ts
+file	resources/js/lib/realtime/whisper-transport.ts	kept: resources/js/lib/realtime/whisper-transport.ts
+file	resources/js/lib/realtime/realtime-state.ts	kept: resources/js/lib/realtime/realtime-state.ts
+file	resources/js/lib/reverb-config.ts	kept: resources/js/lib/reverb-config.ts
+file	resources/js/lib/utils.ts	kept: resources/js/lib/utils.ts
+file	resources/js/hooks/use-poker-channel.ts	kept: resources/js/hooks/use-poker-channel.ts
+file	resources/js/hooks/use-poker-game.ts	kept: resources/js/hooks/use-poker-game.ts
+file	resources/js/lib/retro/api.ts	kept: resources/js/lib/retro/api.ts
+file	resources/js/lib/retro/board-reducer.ts	kept: resources/js/lib/retro/board-reducer.ts
+file	resources/js/lib/retro/types.ts	kept: resources/js/lib/retro/types.ts
+file	resources/js/lib/retro/emoji.ts	kept: resources/js/lib/retro/emoji.ts
+file	resources/js/lib/retro/survey-api.ts	kept: resources/js/lib/retro/survey-api.ts
+file	resources/js/hooks/use-retro-board.ts	kept: resources/js/hooks/use-retro-board.ts
+file	resources/js/hooks/use-retro-channel.ts	kept: resources/js/hooks/use-retro-channel.ts
+file	resources/js/hooks/use-comment-notifications.ts	kept: resources/js/hooks/use-comment-notifications.ts
+file	resources/js/components/retro/board.tsx	kept: resources/js/components/retro/board.tsx
+file	resources/js/components/retro/board-context.tsx	kept: resources/js/components/retro/board-context.tsx
+file	resources/js/components/retro/board-ended.tsx	kept: resources/js/components/retro/board-ended.tsx
+file	resources/js/components/retro/card-insight.tsx	kept: resources/js/components/retro/card-insight.tsx
+file	resources/js/components/retro/reaction-chips.tsx	kept: resources/js/components/retro/reaction-chips.tsx
+file	resources/js/components/retro/emoji-picker.tsx	kept: resources/js/components/retro/emoji-picker.tsx
+file	resources/js/components/retro/comment-thread.tsx	kept: resources/js/components/retro/comment-thread.tsx
+file	resources/js/components/retro/dnd.tsx	kept: resources/js/components/retro/dnd.tsx
+file	resources/js/components/retro/icebreaker-game.tsx	moved: resources/js/components/games/icebreaker-stage.tsx (rename seen by git)
+file	resources/js/components/retro/timer-display.tsx	moved: resources/js/components/session/use-timer-alarm.ts (rename seen by git)
+file	resources/js/components/retro/suggestions-panel.tsx	kept: resources/js/components/retro/suggestions-panel.tsx
+file	resources/js/components/retro/survey-dialog.tsx	moved: resources/js/components/retro/surveys/survey-editor-dialog.tsx (rename seen by git)
+file	resources/js/components/retro/survey-draft-field.tsx	moved: resources/js/components/retro/surveys/survey-draft-field.tsx (rename seen by git)
+file	resources/js/components/retro/survey-menu.tsx	moved: resources/js/components/retro/surveys/survey-actions-menu.tsx (rename seen by git)
+file	resources/js/components/retro/survey-discussion.tsx	moved: resources/js/components/retro/surveys/survey-discussion.tsx (rename seen by git)
+file	resources/js/components/retro/live-cursor-layer.tsx	moved: resources/js/components/retro/board-cursors.tsx (rename seen by git)
+file	resources/js/components/whiteboard/board.tsx	kept: resources/js/components/whiteboard/board.tsx
+file	resources/js/components/whiteboard/board-menu.tsx	kept: resources/js/components/whiteboard/board-menu.tsx
+file	resources/js/components/whiteboard/board-reactions.tsx	kept: resources/js/components/whiteboard/board-reactions.tsx
+file	resources/js/components/whiteboard/board-gone.tsx	kept: resources/js/components/whiteboard/board-gone.tsx
+file	resources/js/components/whiteboard/scene-export.tsx	kept: resources/js/components/whiteboard/scene-export.tsx
+file	resources/js/components/whiteboard/sticky-tool.tsx	kept: resources/js/components/whiteboard/sticky-tool.tsx
+file	resources/js/lib/whiteboard/excalidraw.ts	kept: resources/js/lib/whiteboard/excalidraw.ts
+file	resources/js/lib/whiteboard/appearance.ts	kept: resources/js/lib/whiteboard/appearance.ts
+file	resources/js/lib/whiteboard/types.ts	kept: resources/js/lib/whiteboard/types.ts
+file	resources/js/lib/whiteboard/files.ts	kept: resources/js/lib/whiteboard/files.ts
+file	resources/js/lib/whiteboard/restore.ts	kept: resources/js/lib/whiteboard/restore.ts
+file	resources/js/lib/whiteboard/scene-sync.ts	kept: resources/js/lib/whiteboard/scene-sync.ts
+file	resources/js/components/retro/insights/summary-section.tsx	moved: resources/js/components/retro/results/summary.tsx (rename seen by git)
+file	resources/js/components/retro/insights/suggestions-list.tsx	moved: resources/js/components/retro/suggestions-list.tsx (rename seen by git)
+file	resources/js/components/retro/results/participants-section.tsx	moved: resources/js/components/retro/results/participants.tsx (rename seen by git)
+file	resources/js/components/retro/results/top-topics.tsx	kept: resources/js/components/retro/results/top-topics.tsx
+file	resources/js/components/retro/results/health-radar.tsx	kept: resources/js/components/retro/results/health-radar.tsx
+file	resources/js/components/retro/results/health-trend.tsx	kept: resources/js/components/retro/results/health-trend.tsx
+file	resources/js/hooks/use-whiteboard.ts	kept: resources/js/hooks/use-whiteboard.ts
+file	resources/js/hooks/use-whiteboard-channel.ts	kept: resources/js/hooks/use-whiteboard-channel.ts
+file	resources/js/hooks/use-whiteboard-cursors.ts	kept: resources/js/hooks/use-whiteboard-cursors.ts
+file	resources/js/hooks/use-whiteboard-follow.ts	kept: resources/js/hooks/use-whiteboard-follow.ts
+file	resources/js/hooks/use-whiteboard-request.ts	kept: resources/js/hooks/use-whiteboard-request.ts
+file	resources/js/hooks/use-whiteboard-toolbar-slot.ts	kept: resources/js/hooks/use-whiteboard-toolbar-slot.ts
+file	resources/js/hooks/use-appearance.tsx	kept: resources/js/hooks/use-appearance.tsx
+file	resources/js/hooks/use-clipboard.ts	kept: resources/js/hooks/use-clipboard.ts
+file	resources/js/hooks/use-flash-toast.ts	kept: resources/js/hooks/use-flash-toast.ts
+file	resources/js/hooks/use-initials.tsx	kept: resources/js/hooks/use-initials.tsx
+file	resources/js/hooks/use-is-mounted.ts	kept: resources/js/hooks/use-is-mounted.ts
+file	resources/js/hooks/use-local-preference.ts	kept: resources/js/hooks/use-local-preference.ts
+file	resources/js/hooks/use-mobile-navigation.ts	kept: resources/js/hooks/use-mobile-navigation.ts
+file	resources/js/hooks/use-mobile.tsx	kept: resources/js/hooks/use-mobile.tsx
+file	resources/js/hooks/use-trans.ts	kept: resources/js/hooks/use-trans.ts
+file	resources/js/hooks/use-two-factor-auth.ts	kept: resources/js/hooks/use-two-factor-auth.ts
