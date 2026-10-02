@@ -42,6 +42,7 @@ it('lists the user tokens without their secrets', function () {
     $user = apiTokenOwner();
     $team = Team::factory()->withMember($user)->create(['name' => 'Platform']);
     $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
+    $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
     $active = PersonalAccessToken::factory()->forUser($user)->withScopes(McpScope::Write)->boundTo($team)
         ->create(['name' => 'Claude Code', 'token_hint' => 'ab12']);
     PersonalAccessToken::factory()->forUser($user)->expired()->create(['name' => 'Old laptop']);
@@ -59,7 +60,7 @@ it('lists the user tokens without their secrets', function () {
             ->has('expirationOptions', 4)
             ->has('teamGroups', 1)
             ->where('teamGroups.0.teams.0.name', 'Platform')
-            ->where('teams', fn ($teams): bool => collect($teams)->isNotEmpty() && collect($teams)->every(fn (array $team): bool => array_keys($team) === ['id', 'name'])));
+            ->where('teams', [['id' => $team->id, 'name' => 'Platform']]));
 
     $tokens = collect($response->viewData('page')['props']['tokens'])->keyBy('name');
 
