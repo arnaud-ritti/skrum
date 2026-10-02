@@ -73,7 +73,11 @@ export function SessionShell({
             actions={
                 <>
                     {isReconnecting && (
-                        <span aria-hidden="true" className="flex">
+                        <span
+                            aria-hidden="true"
+                            data-slot="session-connection-pill"
+                            className="hidden md:flex"
+                        >
                             <ConnectionState
                                 status="reconnecting"
                                 variant="pill"
