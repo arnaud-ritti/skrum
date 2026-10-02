@@ -30,7 +30,7 @@ class EmailCodeChallengesController extends Controller
 
         event(new ValidTwoFactorAuthenticationCodeProvided($user));
 
-        $request->session()->forget('login.id');
+        $request->session()->forget(['login.id', 'login.local']);
 
         Auth::login($user, $request->remember());
 

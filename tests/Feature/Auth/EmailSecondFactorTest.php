@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use PragmaRX\Google2FA\Google2FA;
 
 beforeEach(function () {
     config(['mail.default' => 'smtp']);
@@ -255,6 +256,35 @@ it('the authenticator route refuses an e-mail code without a server error', func
     $this->post(route('two-factor.login.store'), ['recovery_code' => 'anything'])->assertRedirect(route('two-factor.login'));
     $this->assertGuest();
 });
+
+it('the authenticator route refuses the code and the recovery code of an app that was never confirmed', function () {
+    $secret = resolve(Google2FA::class)->generateSecretKey();
+    $user = User::factory()->withTwoFactor()->withEmailSecondFactor()->create([
+        'two_factor_secret' => encrypt($secret),
+        'two_factor_confirmed_at' => null,
+    ]);
+    startEmailChallenge($user);
+
+    $this->post(route('two-factor.login.store'), ['code' => resolve(Google2FA::class)->getCurrentOtp($secret)])->assertRedirect(route('two-factor.login'));
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])->assertRedirect(route('two-factor.login'));
+    $this->assertGuest();
+});
+
+it('leaves no challenge state in the session once signed in', function (string $factor) {
+    $user = $factor === 'totp' ? User::factory()->withTwoFactor()->create() : User::factory()->withEmailSecondFactor()->create();
+    $this->post(route('login'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('two-factor.login'));
+
+    expect(session('login.local'))->toBeTrue();
+
+    $factor === 'totp'
+        ? $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])
+        : $this->post(route('twoFactor.emailChallenges.store'), ['code' => lastEmailCode()]);
+
+    $this->assertAuthenticatedAs($user);
+
+    expect(session()->has('login.local'))->toBeFalse()
+        ->and(session()->has('login.id'))->toBeFalse();
+})->with(['totp', 'email']);
 
 it('still accepts a recovery code for a user with an authenticator app', function () {
     $user = User::factory()->withTwoFactor()->withEmailSecondFactor()->create();

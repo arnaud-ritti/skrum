@@ -2,14 +2,16 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
 
 /**
- * Fortify decrypts the authenticator secret and the recovery codes without
- * checking that they exist. A user whose only factor is the e-mail code has
- * neither: both answers are "no", not a decryption error.
+ * Fortify reads the authenticator secret and the recovery codes without
+ * checking that the app was confirmed. A user whose only factor is the
+ * e-mail code has none, or those of a setup left unfinished: both answers
+ * are "no", not a decryption error and not a way in.
  */
 class TwoFactorChallengeRequest extends TwoFactorLoginRequest
 {
@@ -32,7 +34,7 @@ class TwoFactorChallengeRequest extends TwoFactorLoginRequest
 
     public function hasValidCode(): bool
     {
-        if ($this->challengedUser()->two_factor_secret === null) {
+        if (! resolve(SecondFactors::class)->hasTotp($this->challengedUser())) {
             return false;
         }
 
@@ -41,7 +43,7 @@ class TwoFactorChallengeRequest extends TwoFactorLoginRequest
 
     public function validRecoveryCode(): ?string
     {
-        if ($this->challengedUser()->two_factor_recovery_codes === null) {
+        if (! resolve(SecondFactors::class)->hasTotp($this->challengedUser())) {
             return null;
         }
 
