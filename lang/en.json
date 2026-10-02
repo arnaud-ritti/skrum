@@ -4138,5 +4138,8 @@
     "Group with another card": "Group with another card",
     "Focus the selected card": "Focus the selected card",
     "Create a password": "Create a password",
-    "Create my account and join :workspace": "Create my account and join :workspace"
+    "Create my account and join :workspace": "Create my account and join :workspace",
+    "1 answer · avg :average": "1 answer · avg :average",
+    ":count answers · avg :average": ":count answers · avg :average",
+    ":statement dropped :delta — worth a topic next retro.": ":statement dropped :delta — worth a topic next retro."
 }

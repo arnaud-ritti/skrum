@@ -4358,5 +4358,8 @@
     "Group with another card": "Mit einer anderen Karte gruppieren",
     "Focus the selected card": "Ausgewählte Karte hervorheben",
     "Create a password": "Passwort erstellen",
-    "Create my account and join :workspace": "Konto erstellen und :workspace beitreten"
+    "Create my account and join :workspace": "Konto erstellen und :workspace beitreten",
+    "1 answer · avg :average": "1 Antwort · Ø :average",
+    ":count answers · avg :average": ":count Antworten · Ø :average",
+    ":statement dropped :delta — worth a topic next retro.": ":statement ist um :delta gesunken — ein Thema für die nächste Retro."
 }
