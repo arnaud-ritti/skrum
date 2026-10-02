@@ -74,7 +74,7 @@ export function PlayerRow({
                 data-slot="player-name"
                 className="flex min-w-0 flex-1 flex-col text-body-sm font-semibold"
             >
-                <span className="flex min-w-0 items-baseline gap-1">
+                <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
                     <span className="truncate">{name}</span>
                     {isGuest && (
                         <span className="shrink-0 font-medium text-muted-foreground">

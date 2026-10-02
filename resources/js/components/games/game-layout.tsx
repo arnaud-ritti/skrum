@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -120,6 +120,18 @@ export function GameLayout({
     ];
     const active = sheetPanels.find((panel) => panel.id === panelId);
     const isSheetOpen = isPanelOpen && active !== undefined;
+    const lastActive = useRef<SheetPanel | undefined>(undefined);
+
+    if (active !== undefined) {
+        lastActive.current = active;
+    }
+
+    /** A sheet whose panel left closes for good, and keeps what it showed while it slides out. */
+    const shown = active ?? lastActive.current;
+
+    if (isPanelOpen && active === undefined) {
+        setIsPanelOpen(false);
+    }
     const restoreFocus = useRestoreFocus(isSheetOpen);
     const hasSummary =
         summaryFor !== undefined &&
@@ -157,6 +169,7 @@ export function GameLayout({
                         <Button
                             type="button"
                             variant="outline"
+                            data-slot="game-chooser"
                             className="mt-auto w-full min-w-0 shrink-0"
                             onClick={() => open(chooser.id)}
                         >
@@ -231,15 +244,15 @@ export function GameLayout({
                 }}
             >
                 <SheetContent
-                    side={active?.side ?? 'right'}
+                    side={shown?.side ?? 'right'}
                     aria-describedby={undefined}
                     onCloseAutoFocus={restoreFocus}
                 >
                     <SheetHeader>
-                        <SheetTitle>{active?.label}</SheetTitle>
+                        <SheetTitle>{shown?.label}</SheetTitle>
                     </SheetHeader>
                     <SheetBody className="flex flex-col gap-5 space-y-0">
-                        {active?.content}
+                        {shown?.content}
                     </SheetBody>
                 </SheetContent>
             </Sheet>

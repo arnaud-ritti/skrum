@@ -131,6 +131,7 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <h2
                             id="game-stage-title"
+                            tabIndex={-1}
                             className="min-w-0 truncate font-display text-2xl font-title"
                         >
                             {gameLabel}

@@ -348,9 +348,7 @@ export function GuessDock({
                         <DrawerDescription>
                             {isLeader
                                 ? t('You know the word, so you cannot guess.')
-                                : t(
-                                      'Enter to send. Only you are told when you are close.',
-                                  )}
+                                : t('Only you are told when you are close.')}
                         </DrawerDescription>
                     </DrawerHeader>
                     {guesses.length > 0 && (

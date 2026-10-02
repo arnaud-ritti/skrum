@@ -67,6 +67,10 @@ describe('GuessDock', () => {
         expect(within(log).getByText('a boat')).toBeTruthy();
         expect(within(drawer).getByText('2 guesses')).toBeTruthy();
         expect(within(drawer).queryByRole('textbox')).toBeNull();
+        expect(
+            within(drawer).getByText('Only you are told when you are close.'),
+        ).toBeTruthy();
+        expect(within(drawer).queryByText(/Enter to send/)).toBeNull();
     });
 
     it('gives who draws the list without a field', () => {

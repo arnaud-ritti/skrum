@@ -165,6 +165,34 @@ describe('GameLayout', () => {
         ).toBeTruthy();
     });
 
+    it('closes the sheet for good when its panel leaves, without opening it again when the panel comes back', () => {
+        viewport(90);
+
+        const withChooser = (
+            <GameLayout
+                variant="players"
+                left={players}
+                chooser={choice}
+                stage={<p>stage</p>}
+            />
+        );
+        const { rerender } = renderWithProviders(withChooser);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Choose a game' }));
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
+
+        rerender(
+            <GameLayout left={choice} right={players} stage={<p>stage</p>} />,
+        );
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        rerender(withChooser);
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
     it('gives a game a footer under the stage on a phone, and none on a wider screen', () => {
         viewport(24);
 

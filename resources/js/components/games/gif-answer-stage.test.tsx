@@ -173,6 +173,25 @@ describe('GifAnswerStage', () => {
         expect(screen.queryByRole('heading', { name: 'Your pick' })).toBeNull();
     });
 
+    it('tells the host beside "Reveal the GIFs" that their draft is not sent', async () => {
+        wide(true);
+        renderStage(round(), { isHost: true, column: true });
+        await settle();
+
+        const hint = 'Your GIF is not sent yet: send it before the reveal.';
+
+        expect(screen.queryByText(hint)).toBeNull();
+
+        fireEvent.click(screen.getAllByRole('option')[1]);
+
+        expect(screen.getByText(hint)).toBeTruthy();
+        expect(
+            screen
+                .getByRole('button', { name: 'Reveal the GIFs' })
+                .getAttribute('aria-describedby'),
+        ).toBe(screen.getByText(hint).id);
+    });
+
     it('keeps "Reveal the GIFs" for the host alone and says so when GIFs are off', async () => {
         wide(true);
         const { unmount } = renderStage(round({ gifProvider: null }), {

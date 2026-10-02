@@ -4161,5 +4161,7 @@
     "giving clues": "donne les indices",
     "Open on a stage: no focus taken, as wide as its container": "Ouvert sur une scène : ne prend pas le focus, large comme son conteneur",
     "Send my GIF": "Envoyer mon GIF",
-    "Change": "Changer"
+    "Change": "Changer",
+    "Only you are told when you are close.": "Vous seul savez quand vous êtes tout près.",
+    "Your GIF is not sent yet: send it before the reveal.": "Votre GIF n’est pas encore envoyé : envoyez-le avant la révélation."
 }

@@ -37,6 +37,9 @@ export function GifAnswerStage({ round, caption }: Props) {
     const { room } = ctx.snapshot;
     const roomId = room.id;
     const provider = round.gifProvider ?? null;
+    /** A draft is not an answer: the reveal would leave its player out of the gallery. */
+    const hasUnsentDraft =
+        draft !== null && draft.id !== round.myAnswer?.gif.id;
 
     const search = useCallback(
         (query: string) =>
@@ -112,15 +115,30 @@ export function GifAnswerStage({ round, caption }: Props) {
                 </Card>
             )}
             {room.isHost && (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-2">
                     <Button
                         variant="secondary"
                         disabled={busy}
+                        aria-describedby={
+                            hasUnsentDraft ? 'gif-unsent-draft' : undefined
+                        }
                         onClick={() => void reveal()}
                     >
                         <Eye aria-hidden />
                         {t('Reveal the GIFs')}
                     </Button>
+                    <p
+                        role="status"
+                        className="text-center text-sm text-skrum-warning-text empty:hidden"
+                    >
+                        {hasUnsentDraft && (
+                            <span id="gif-unsent-draft">
+                                {t(
+                                    'Your GIF is not sent yet: send it before the reveal.',
+                                )}
+                            </span>
+                        )}
+                    </p>
                 </div>
             )}
         </div>
