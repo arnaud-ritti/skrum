@@ -66,6 +66,7 @@ export function SettingsShell({
             <SettingsLayout
                 title={t('Settings')}
                 description={t('Your account, applied in every workspace')}
+                stuckNav
                 nav={SettingsSections.filter((section) =>
                     sections.includes(section),
                 ).map((section) => ({
@@ -92,8 +93,9 @@ export function SettingsShell({
 }
 
 /**
- * One section of the page: the place its entry of the navigation leads to.
- * Its cards are the named regions; the section itself adds no landmark.
+ * One section of the page: the place its entry of the navigation leads to,
+ * named like that entry for the reader who lands on it. Its cards are the
+ * named regions; the section itself adds no landmark.
  */
 export function SettingsSection({
     id,
@@ -102,12 +104,16 @@ export function SettingsSection({
     id: SettingsSectionId;
     children: ReactNode;
 }): ReactElement {
+    const labels = useSettingsSectionLabels();
+
     return (
         <div
             id={id}
+            role="group"
+            aria-label={labels[id]}
             data-slot="settings-section"
             tabIndex={-1}
-            className="flex min-w-0 scroll-mt-20 flex-col gap-10 outline-none"
+            className="flex min-w-0 scroll-mt-27 flex-col gap-10 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:scroll-mt-20"
         >
             {children}
         </div>

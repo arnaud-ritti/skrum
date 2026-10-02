@@ -173,4 +173,48 @@ describe('useVisibleSection', () => {
 
         expect(current()).toBe('api-tokens');
     });
+
+    it('lets the mark follow the page again after a visit that comes back without an anchor', () => {
+        const { rerender } = render(<Page address="/settings#security" />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'go to security' }));
+        window.history.replaceState(null, '', '/settings');
+        rerender(<Page address="/settings" />);
+        scrollTo({ profile: -1700, security: -800, 'api-tokens': 110 });
+
+        expect(current()).toBe('api-tokens');
+    });
+
+    it('lets the mark follow the page again once the reader presses a pointer, on a scrollbar for instance', () => {
+        render(<Page />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'go to security' }));
+        fireEvent.pointerDown(window);
+        scrollTo({ profile: -1700, security: -800, 'api-tokens': 110 });
+
+        expect(current()).toBe('api-tokens');
+    });
+
+    it('lets the mark follow the page again once the scroll to the chosen section has ended', () => {
+        render(<Page />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'go to security' }));
+        fireEvent(document, new Event('scrollend'));
+        scrollTo({ profile: -1700, security: -800, 'api-tokens': 110 });
+
+        expect(current()).toBe('api-tokens');
+    });
+
+    it('keeps the chosen section when a scroll ends elsewhere than around it', () => {
+        render(<Page />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'go to security' }));
+        fireEvent(
+            screen.getByRole('button', { name: 'go to profile' }),
+            new Event('scrollend'),
+        );
+        scrollTo({ profile: -1700, security: -800, 'api-tokens': 110 });
+
+        expect(current()).toBe('security');
+    });
 });

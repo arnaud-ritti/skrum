@@ -6,6 +6,10 @@ const ReadingLineRem = 7;
 const ScrollEdgeTolerance = 2;
 
 function sectionOfHash(ids: readonly string[]): string | undefined {
+    if (typeof window === 'undefined') {
+        return undefined;
+    }
+
     const hash = window.location.hash.slice(1);
 
     return ids.find((id) => id === hash);
@@ -45,8 +49,9 @@ function reachedTheEnd(target: EventTarget | null): boolean {
 /**
  * Which section of a long page is in view: the last one whose top passed
  * the reading line, the last of all once the page is scrolled to its end.
- * A section chosen by its link stays the current one until the reader
- * scrolls by themselves, and the address keeps its anchor.
+ * A section chosen by its link stays the current one until the page has
+ * reached it or the reader scrolls by themselves, and the address keeps
+ * its anchor.
  *
  * @param ids the anchors of the sections, in the order of the page
  * @param address changes when a visit leads to another anchor of the same page
@@ -66,6 +71,8 @@ export function useVisibleSection(
         const id = sectionOfHash(anchors);
 
         if (id === undefined) {
+            chosen.current = null;
+
             return;
         }
 
@@ -121,10 +128,32 @@ export function useVisibleSection(
             chosen.current = null;
         };
 
+        /** A scroll that ends in another scroller, the list of the navigation for one, is not the arrival. */
+        const releaseOnArrival = (event: Event): void => {
+            const section =
+                chosen.current === null
+                    ? null
+                    : document.getElementById(chosen.current);
+
+            if (
+                event.target instanceof Element &&
+                !event.target.contains(section)
+            ) {
+                return;
+            }
+
+            release();
+        };
+
         document.addEventListener('scroll', onScroll, {
             capture: true,
             passive: true,
         });
+        document.addEventListener('scrollend', releaseOnArrival, {
+            capture: true,
+            passive: true,
+        });
+        window.addEventListener('pointerdown', release, { passive: true });
         window.addEventListener('wheel', release, { passive: true });
         window.addEventListener('touchmove', release, { passive: true });
         window.addEventListener('keydown', release);
@@ -132,6 +161,10 @@ export function useVisibleSection(
         return () => {
             window.cancelAnimationFrame(frame);
             document.removeEventListener('scroll', onScroll, { capture: true });
+            document.removeEventListener('scrollend', releaseOnArrival, {
+                capture: true,
+            });
+            window.removeEventListener('pointerdown', release);
             window.removeEventListener('wheel', release);
             window.removeEventListener('touchmove', release);
             window.removeEventListener('keydown', release);

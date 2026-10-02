@@ -119,6 +119,32 @@ describe('SettingsShell', () => {
         ]);
     });
 
+    it('keeps the navigation under the top bar on a phone, and stops each section under both', () => {
+        renderWithProviders(
+            <SettingsShell
+                sections={SettingsSections}
+                current="profile"
+                onSelect={onSelect}
+            >
+                <SettingsSection id="profile">
+                    <p>content</p>
+                </SettingsSection>
+            </SettingsShell>,
+        );
+
+        expect(
+            screen
+                .getByRole('navigation', { name: 'Settings' })
+                .hasAttribute('data-stuck'),
+        ).toBe(true);
+        expect(document.getElementById('profile')?.className).toContain(
+            'scroll-mt-27 ',
+        );
+        expect(document.getElementById('profile')?.className).toContain(
+            'lg:scroll-mt-20',
+        );
+    });
+
     it('hands the chosen section to the page instead of leaving it', () => {
         renderWithProviders(
             <SettingsShell
@@ -178,18 +204,20 @@ describe('SettingsShell', () => {
 });
 
 describe('SettingsSection', () => {
-    it('is the place its anchor reaches, can take the focus and adds no landmark around its cards', () => {
-        const { container } = renderWithProviders(
+    it('is the place its anchor reaches, can take the focus and says its name there, without a landmark around its cards', () => {
+        renderWithProviders(
             <SettingsSection id="api-tokens">
                 <p>content</p>
             </SettingsSection>,
         );
 
-        const section = container.querySelector<HTMLElement>('#api-tokens');
+        const section = screen.getByRole('group', { name: 'API tokens' });
 
-        expect(section?.dataset.slot).toBe('settings-section');
-        expect(section?.tabIndex).toBe(-1);
-        expect(section?.textContent).toBe('content');
+        expect(section.id).toBe('api-tokens');
+        expect(section.dataset.slot).toBe('settings-section');
+        expect(section.tabIndex).toBe(-1);
+        expect(section.textContent).toBe('content');
+        expect(section.className).toContain('focus-visible:ring-3');
         expect(screen.queryByRole('region')).toBeNull();
     });
 });
