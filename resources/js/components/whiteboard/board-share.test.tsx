@@ -1,0 +1,113 @@
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { retroRequest } from '@/lib/retro/api';
+import { renderWithProviders } from '@/test/render';
+import { BoardShare, GuestAccessSwitchId } from './board-share';
+import { boardState } from '@/test/whiteboard-state';
+
+vi.mock('@/lib/retro/api', async (original) => ({
+    ...(await original<typeof import('@/lib/retro/api')>()),
+    retroRequest: vi.fn(async () => null),
+}));
+
+afterEach(() => {
+    vi.mocked(retroRequest).mockClear();
+});
+
+function openShare() {
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+
+    return within(screen.getByRole('dialog'));
+}
+
+describe('BoardShare', () => {
+    it('gives the facilitator the link, "Allow guests" and "Create a new link"', () => {
+        renderWithProviders(<BoardShare state={boardState()} />);
+
+        const dialog = openShare();
+        const link = dialog.getByRole('textbox', { name: 'Guest link' });
+
+        expect((link as HTMLInputElement).value).toBe(
+            'https://skrum.test/whiteboards/join/token-1',
+        );
+        expect(dialog.getByRole('button', { name: 'Copy link' })).toBeTruthy();
+        expect(
+            dialog.getByRole('button', { name: 'Create a new link' }),
+        ).toBeTruthy();
+        expect(
+            document
+                .getElementById(GuestAccessSwitchId)
+                ?.getAttribute('aria-checked'),
+        ).toBe('true');
+    });
+
+    it('closes guest access through the settings endpoint and refetches', async () => {
+        const state = boardState();
+
+        renderWithProviders(<BoardShare state={state} />);
+        openShare();
+        fireEvent.click(document.getElementById(GuestAccessSwitchId)!);
+
+        await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(1));
+
+        expect(vi.mocked(retroRequest).mock.calls[0][1]).toEqual({
+            guest_access_enabled: false,
+        });
+    });
+
+    it('asks before it replaces the link, then posts and refetches', async () => {
+        const state = boardState();
+
+        renderWithProviders(<BoardShare state={state} />);
+
+        const dialog = openShare();
+
+        fireEvent.click(
+            dialog.getByRole('button', { name: 'Create a new link' }),
+        );
+
+        expect(retroRequest).not.toHaveBeenCalled();
+
+        const confirmation = within(screen.getByRole('alertdialog'));
+
+        fireEvent.click(
+            confirmation.getByRole('button', { name: 'Create a new link' }),
+        );
+
+        await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(1));
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets a member copy the link and shows no guest control', () => {
+        renderWithProviders(
+            <BoardShare state={boardState({ me: { isFacilitator: false } })} />,
+        );
+
+        const dialog = openShare();
+
+        expect(dialog.getByRole('button', { name: 'Copy link' })).toBeTruthy();
+        expect(document.getElementById(GuestAccessSwitchId)).toBeNull();
+        expect(
+            dialog.queryByRole('button', { name: 'Create a new link' }),
+        ).toBeNull();
+    });
+
+    it('shows no link while guest access is off', () => {
+        renderWithProviders(
+            <BoardShare
+                state={boardState({ board: { guestAccessEnabled: false } })}
+            />,
+        );
+
+        const dialog = openShare();
+
+        expect(
+            dialog.queryByRole('textbox', { name: 'Guest link' }),
+        ).toBeNull();
+        expect(
+            dialog.queryByRole('button', { name: 'Create a new link' }),
+        ).toBeNull();
+        expect(dialog.getByText('Guest link is off')).toBeTruthy();
+    });
+});

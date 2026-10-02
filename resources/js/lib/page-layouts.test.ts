@@ -19,6 +19,7 @@ describe('page layouts', () => {
             'games/join',
             'games/show',
             'whiteboards/show',
+            'whiteboards/join',
         ]) {
             expect(usesOwnLayout(name), name).toBe(true);
         }

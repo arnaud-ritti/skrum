@@ -22,6 +22,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 
+/**
+ * A footer button holds its label as its own text, not in a child element:
+ * the browser suite binds these buttons by their exact text. The button is a
+ * block so that the label still truncates.
+ */
+const FooterButtonClass = 'inline-block max-w-full min-w-0 truncate';
+const FooterIconClass = 'mr-2 inline-block align-text-bottom';
+
 export type DialogConsequence = { icon: LucideIcon; label: string };
 
 type DialogShellProps = {
@@ -42,9 +50,18 @@ export type ConfirmDialogProps = DialogShellProps & {
 };
 
 type FormDialogSubmit =
-    | { submitLabel: string; onSubmit: (data: FormData) => Promise<void> }
+    | {
+          submitLabel: string;
+          onSubmit: (data: FormData) => Promise<void>;
+          /** The form is not complete yet: the submit button is disabled and Enter does nothing. */
+          submitDisabled?: boolean;
+      }
     /** No submit button: the body explains why, the only action is Cancel. */
-    | { submitLabel?: undefined; onSubmit?: undefined };
+    | {
+          submitLabel?: undefined;
+          onSubmit?: undefined;
+          submitDisabled?: undefined;
+      };
 
 export type FormDialogProps = DialogShellProps & {
     description?: string;
@@ -228,21 +245,31 @@ export function ConfirmDialog({
                         type="button"
                         disabled={pending}
                         onClick={() => guardedOpenChange(false)}
+                        className={FooterButtonClass}
                     >
-                        <span className="truncate">{t('Cancel')}</span>
+                        {t('Cancel')}
                     </Button>
                     <Button
                         type="button"
                         variant={destructive ? 'destructive' : 'default'}
                         disabled={pending}
                         onClick={() => run(onConfirm)}
+                        className={FooterButtonClass}
                     >
                         {pending ? (
-                            <Spinner aria-label={t('Loading')} />
+                            <Spinner
+                                aria-label={t('Loading')}
+                                className={FooterIconClass}
+                            />
                         ) : (
-                            destructive && <Trash2Icon aria-hidden="true" />
+                            destructive && (
+                                <Trash2Icon
+                                    aria-hidden="true"
+                                    className={FooterIconClass}
+                                />
+                            )
                         )}
-                        <span className="truncate">{confirmLabel}</span>
+                        {confirmLabel}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -257,6 +284,7 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    submitDisabled = false,
     tone = 'default',
     children,
     unavailableMessage,
@@ -286,7 +314,7 @@ export function FormDialog({
             return;
         }
 
-        if (pending) {
+        if (pending || submitDisabled) {
             return;
         }
 
@@ -339,8 +367,9 @@ export function FormDialog({
                             variant="outline"
                             disabled={pending}
                             onClick={() => guardedOpenChange(false)}
+                            className={FooterButtonClass}
                         >
-                            <span className="truncate">{t('Cancel')}</span>
+                            {t('Cancel')}
                         </Button>
                         {onSubmit !== undefined && (
                             <Button
@@ -348,16 +377,23 @@ export function FormDialog({
                                 variant={
                                     destructive ? 'destructive' : 'default'
                                 }
-                                disabled={pending}
+                                disabled={pending || submitDisabled}
+                                className={FooterButtonClass}
                             >
                                 {pending ? (
-                                    <Spinner aria-label={t('Loading')} />
+                                    <Spinner
+                                        aria-label={t('Loading')}
+                                        className={FooterIconClass}
+                                    />
                                 ) : (
                                     destructive && (
-                                        <Trash2Icon aria-hidden="true" />
+                                        <Trash2Icon
+                                            aria-hidden="true"
+                                            className={FooterIconClass}
+                                        />
                                     )
                                 )}
-                                <span className="truncate">{submitLabel}</span>
+                                {submitLabel}
                             </Button>
                         )}
                     </DialogFooter>

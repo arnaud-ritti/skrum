@@ -127,10 +127,10 @@ it('[P17c-01c] shows the time-up notice in the top bar and as a toast to the fac
     expect(p17cTimerSeconds($franPage))->toBeBetween(1, 11)
         ->and(p17cTimerSeconds($guestPage))->toBeBetween(1, 11);
 
-    $franPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $franPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertPresent(P17cTimesUpToast);
 
-    $guestPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $guestPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertPresent(P17cTimesUpToast);
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->toBe($started['body']['timerEndsAt']);
@@ -149,7 +149,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
-    $guestPage->assertSeeIn('[role="timer"]', "Time's up!")
+    $guestPage->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
         ->assertNotPresent('[data-sonner-toast]');
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->not->toBeNull();
@@ -158,7 +158,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
-    $guestPage->assertSeeIn('header > h1', 'Sprint board')
+    $guestPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertNotPresent('[role="timer"]');
 
     expect($this->whiteboardSnapshot($guestPage, $board)['board']['timerEndsAt'])->toBeNull()
@@ -210,7 +210,7 @@ it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s
     $guestPage->assertPresent('[data-realtime="connected"]')
         ->assertDontSee('Your access to this board has ended.');
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
     $this->awaitWhiteboardElements($guestPage, 2);
 
     $moved = $this->writeWhiteboardElements($franPage, $board, [[...$shape, 'version' => 2, 'versionNonce' => 7001, 'x' => 250]]);
@@ -235,7 +235,7 @@ it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s
         ->assertPresent($stickyTool)
         ->assertPresent($shapesTool);
 
-    $this->addWhiteboardSticky($guestPage, 'Blue');
+    $this->addWhiteboardSticky($guestPage, 'Sky');
     $this->awaitWhiteboardStored($guestPage, $board, 3);
     $this->awaitWhiteboardScene($guestPage, $board);
     $this->awaitWhiteboardElements($franPage, 3);
@@ -259,7 +259,7 @@ it('[P17c-02b] drops the note a guest adds on a board that was locked behind the
     $guestPage->assertPresent('button[aria-label="Sticky note"]')
         ->assertNotPresent(P17cViewMode);
 
-    $this->addWhiteboardSticky($guestPage, 'Green');
+    $this->addWhiteboardSticky($guestPage, 'Moss');
 
     $guestPage->assertPresent(P17cLockedToast)
         ->assertPresent(P17cLockedNotice)
@@ -821,7 +821,7 @@ it('[P17c-08] duplicates a locked board with a running timer and follow-me into 
 
     $this->openWhiteboardMenu($page)
         ->click('[role="menuitem"]:has-text("Duplicate this board")')
-        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+        ->assertSeeIn('header span > h1', 'Sprint board (copy)');
 
     $copy = Whiteboard::query()->where('title', 'Sprint board (copy)')->sole();
 

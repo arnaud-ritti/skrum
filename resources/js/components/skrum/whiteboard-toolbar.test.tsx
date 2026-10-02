@@ -91,4 +91,63 @@ describe('WhiteboardColorBar', () => {
             screen.getByRole('radiogroup').getAttribute('aria-orientation'),
         ).toBe('vertical');
     });
+
+    it('checks no colour and keeps the first one reachable when the fill is not one of the eight', () => {
+        renderWithProviders(
+            <WhiteboardColorBar value={null} onChange={vi.fn()} />,
+        );
+
+        expect(
+            screen
+                .getAllByRole('radio')
+                .filter(
+                    (radio) => radio.getAttribute('aria-checked') === 'true',
+                ),
+        ).toHaveLength(0);
+        expect(
+            screen.getByRole('radio', { name: 'Sun' }).getAttribute('tabindex'),
+        ).toBe('0');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Apricot' })
+                .getAttribute('tabindex'),
+        ).toBe('-1');
+    });
+
+    it('starts from the first colour with the arrow keys when none is checked', () => {
+        const onChange = vi.fn();
+        renderWithProviders(
+            <WhiteboardColorBar value={null} onChange={onChange} />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Sun' }), {
+            key: 'ArrowRight',
+        });
+
+        expect(onChange).toHaveBeenLastCalledWith('apricot');
+    });
+
+    it('reports a press apart from a move of the selection', () => {
+        const onChange = vi.fn();
+        const onActivate = vi.fn();
+        renderWithProviders(
+            <WhiteboardColorBar
+                value="sun"
+                onChange={onChange}
+                onActivate={onActivate}
+            />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Sun' }), {
+            key: 'ArrowRight',
+        });
+
+        expect(onChange).toHaveBeenLastCalledWith('apricot');
+        expect(onActivate).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Sky' }));
+
+        expect(onChange).toHaveBeenLastCalledWith('sky');
+        expect(onActivate).toHaveBeenCalledWith('sky');
+    });
 });

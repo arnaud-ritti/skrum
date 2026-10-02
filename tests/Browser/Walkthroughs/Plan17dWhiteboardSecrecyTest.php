@@ -12,7 +12,7 @@ it('[P17d-00c] types a note into a sticky note by double-click, stores the text 
     $this->awaitWhiteboardElements($franPage, 0);
     $this->awaitWhiteboardElements($guestPage, 0);
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
 
     $this->awaitWhiteboardStored($franPage, $board, 1);
     $this->awaitWhiteboardElements($guestPage, 1);
@@ -125,6 +125,6 @@ it('[P17d-07a] refuses a change of the settings sent by a guest with 403 and cha
         ->and($snapshot['board']['guestUrl'])->toBeNull()
         ->and($snapshot['links']['team'])->toBeNull();
 
-    $guestPage->assertSeeIn('header > h1', 'Sprint board')
+    $guestPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertPresent('[data-realtime="connected"]');
 });

@@ -49,7 +49,7 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
     $this->awaitWhiteboardElements($page, 0);
 
     $page->assertPathIs($this->whiteboardPath($board))
-        ->assertSeeIn('header > h1', 'Sprint planning board')
+        ->assertSeeIn('header span > h1', 'Sprint planning board')
         ->assertPresent('[role="toolbar"][aria-label="Facilitation tools"]')
         ->assertPresent('header img[data-presence-id][alt="Fran Facilitator"]');
 
@@ -87,7 +87,7 @@ it('[P17a-02a] shows a guest who joined through the guest link the sticky note a
         ->assertNotPresent('a[aria-label="Back to the team"]')
         ->assertNotPresent('[role="toolbar"][aria-label="Facilitation tools"]');
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
 
     $this->awaitWhiteboardElements($guestPage, 1);
     $this->awaitWhiteboardScene($franPage, $board);
@@ -99,7 +99,8 @@ it('[P17a-02a] shows a guest who joined through the guest link the sticky note a
     expect($sticky->is_sticky)->toBeTrue()
         ->and($sticky->type)->toBe('rectangle')
         ->and($sticky->author_member_id)->toBe($franMember->id)
-        ->and($sticky->data['backgroundColor'])->toBe('#fff3bf')
+        ->and($sticky->data['backgroundColor'])->toBe('#fdf1c2')
+        ->and($sticky->data['strokeColor'])->toBe('#ddc362')
         ->and($received)->toHaveCount(1)
         ->and($received[0]['id'])->toBe($sticky->element_id)
         ->and($received[0]['customData'])->toBe(['skrum' => ['kind' => 'sticky']])
@@ -112,9 +113,9 @@ it('[P17a-04] keeps the scene over a reload of both pages and writes nothing whi
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
     $this->awaitWhiteboardElements($guestPage, 1);
-    $this->addWhiteboardSticky($franPage, 'Blue');
+    $this->addWhiteboardSticky($franPage, 'Sky');
     $this->awaitWhiteboardElements($guestPage, 2);
     $this->awaitWhiteboardScene($franPage, $board);
     $this->awaitWhiteboardScene($guestPage, $board);
@@ -315,7 +316,7 @@ it('[P17a-05a] replays the edit a member made while the board could not be reach
     $this->awaitResync($franPage);
     $this->blockWhiteboardRequests($franPage);
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
 
     $franPage->assertSee('Reconnecting…')
         ->assertScript('window.whiteboardBlocked.refused >= 1', true);
@@ -348,15 +349,17 @@ it('[P17a-05a] replays the edit a member made while the board could not be reach
 it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the facilitator turns guest access off', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $joinPath = $this->whiteboardJoinPath($board);
-    $guestSwitch = '[role="menuitemcheckbox"]:has-text("Allow guests to join with a link")';
+    $guestSwitch = '#whiteboard-guest-access';
+    $share = '[data-slot="share-dialog"]';
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($joinPath, 'Guest Gia'));
 
-    $this->openWhiteboardMenu($franPage)
+    $franPage->click('button[aria-label="Share"]')
         ->assertAriaAttribute($guestSwitch, 'checked', 'true')
-        ->assertPresent('[role="menuitem"]:has-text("Replace the guest link")')
-        ->assertPresent('[role="menuitem"]:has-text("Copy the guest link")')
+        ->assertPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertPresent("{$share} input[aria-label=\"Guest link\"]")
+        ->assertPresent("{$share} button:has-text(\"Copy link\")")
         ->click($guestSwitch);
 
     $guestPage->assertSee('Your access to this board has ended.')
@@ -365,10 +368,13 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
     expect($board->fresh()->guest_access_enabled)->toBeFalse()
         ->and(fn () => $this->whiteboardSnapshot($guestPage, $board))->toThrow(RuntimeException::class, 'HTTP 403');
 
-    $this->openWhiteboardMenu($franPage)
-        ->assertAriaAttribute($guestSwitch, 'checked', 'false')
-        ->assertNotPresent('[role="menuitem"]:has-text("Replace the guest link")')
-        ->assertNotPresent('[role="menuitem"]:has-text("Copy the guest link")');
+    $franPage->assertAriaAttribute($guestSwitch, 'checked', 'false')
+        ->assertNotPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertNotPresent("{$share} input[aria-label=\"Guest link\"]")
+        ->assertNotPresent("{$share} button:has-text(\"Copy link\")");
+
+    $this->openWhiteboardMenu($franPage->click("{$share} button:has-text(\"Done\")"))
+        ->assertDontSeeIn('[role="menu"]', 'guest');
 
     $visitorPage = visit($joinPath);
 
@@ -405,8 +411,9 @@ it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($oldJoinPath, 'Guest Gia'));
 
-    $this->openWhiteboardMenu($franPage)
-        ->click('[role="menuitem"]:has-text("Replace the guest link")');
+    $franPage->click('button[aria-label="Share"]')
+        ->click('[data-slot="share-dialog"] button:has-text("Create a new link")')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]');
@@ -445,7 +452,7 @@ it('[P17a-07b] shows the session-ended state on the next action of a guest whose
 
     $guestPage->assertPresent('[data-realtime="connected"]');
 
-    $this->addWhiteboardSticky($guestPage, 'Green');
+    $this->addWhiteboardSticky($guestPage, 'Moss');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]')
@@ -554,11 +561,11 @@ it('[P17a-11] refuses a new note on a full board, says so and takes the note off
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
-    $this->addWhiteboardSticky($page, 'Yellow');
+    $this->addWhiteboardSticky($page, 'Sun');
     $this->awaitWhiteboardStored($page, $board, 1);
     $this->awaitWhiteboardScene($page, $board);
 
-    $this->addWhiteboardSticky($page, 'Blue');
+    $this->addWhiteboardSticky($page, 'Sky');
 
     $page->assertSee('This board is full.');
 
@@ -567,7 +574,8 @@ it('[P17a-11] refuses a new note on a full board, says so and takes the note off
 
     $stored = WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole();
 
-    expect($stored->data['backgroundColor'])->toBe('#fff3bf')
+    expect($stored->data['backgroundColor'])->toBe('#fdf1c2')
+        ->and($stored->data['strokeColor'])->toBe('#ddc362')
         ->and($this->whiteboardElements($page, $board))->toHaveCount(1);
 });
 
@@ -587,7 +595,7 @@ it('[P17a-05b] shows the reconnecting banner while Reverb is down, still exchang
         $franPage->assertSee('Reconnecting…');
         $guestPage->assertSee('Reconnecting…');
 
-        $this->addWhiteboardSticky($franPage, 'Yellow');
+        $this->addWhiteboardSticky($franPage, 'Sun');
         $this->awaitWhiteboardElements($guestPage, 1);
 
         $this->addWhiteboardElement($guestPage, $board, ['type' => 'ellipse', 'x' => 900, 'y' => 300]);

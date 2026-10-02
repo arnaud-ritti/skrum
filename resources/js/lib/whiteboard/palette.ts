@@ -38,6 +38,12 @@ export const DEFAULT_POSTIT_COLOR: PostItColor = 'sun';
 /** Light value of --skrum-canvas, stored as the scene background. */
 export const CANVAS_LIGHT = '#f8f5f1';
 
+/**
+ * Excalidraw's own default stroke: what lines, arrows, pencil strokes and
+ * text are drawn in, so that they stay readable on the canvas and on a note.
+ */
+export const DEFAULT_STROKE = '#1e1e1e';
+
 export function isPostItColor(value: unknown): value is PostItColor {
     return (
         typeof value === 'string' &&
@@ -49,6 +55,14 @@ export function postItFromBackground(background: string): PostItColor | null {
     const wanted = background.toLowerCase();
 
     return PostItColors.find((color) => POSTIT[color].bg === wanted) ?? null;
+}
+
+export function postItFromStroke(stroke: string): PostItColor | null {
+    const wanted = stroke.toLowerCase();
+
+    return (
+        PostItColors.find((color) => POSTIT[color].stroke === wanted) ?? null
+    );
 }
 
 export function postItAppState(color: PostItColor): {

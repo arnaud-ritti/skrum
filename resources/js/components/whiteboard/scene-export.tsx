@@ -1,3 +1,4 @@
+import { FileJson } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import {
@@ -58,11 +59,24 @@ export function SceneExport({
     };
 
     return (
-        <div className="flex flex-col items-start gap-3 p-2">
-            <p className="text-sm">
+        <div
+            data-slot="scene-export"
+            className="flex w-full max-w-72 flex-col items-center gap-4 rounded-lg border bg-card p-6 text-center text-card-foreground"
+        >
+            <span
+                aria-hidden="true"
+                className="flex size-12 items-center justify-center rounded-full bg-skrum-primary-soft text-skrum-primary-text"
+            >
+                <FileJson className="size-6" />
+            </span>
+            <p className="text-sm text-muted-foreground">
                 {t('Download everything on the board as a data file.')}
             </p>
-            <Button type="button" onClick={download}>
+            <Button
+                type="button"
+                className="block max-w-full truncate"
+                onClick={download}
+            >
                 {t('Download board data')}
             </Button>
         </div>

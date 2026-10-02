@@ -327,7 +327,7 @@ it('[P17b-02] creates a board from each of the eight built-in templates, with it
 
         $this->awaitWhiteboardElements($page, $elements->count());
 
-        $page->assertSeeIn('header > h1', "Board from {$expected['key']}")
+        $page->assertSeeIn('header span > h1', "Board from {$expected['key']}")
             ->navigate(p17bTeamPath($team))
             ->assertPresent("a[href=\"/whiteboards/{$board->id}\"]");
     }
@@ -1006,7 +1006,7 @@ it('[P17b-23] duplicates a board from its menu and lands on the copy, with the s
     $this->openWhiteboardMenu($page)
         ->click('[role="menuitem"]:has-text("Duplicate this board")')
         ->assertPathIsNot($this->whiteboardPath($source))
-        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+        ->assertSeeIn('header span > h1', 'Sprint board (copy)');
 
     $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
 
@@ -1053,7 +1053,7 @@ it('[P17b-24] makes a second member the facilitator of the copy she duplicates, 
     $this->openWhiteboardMenu($miaPage)
         ->click('[role="menuitem"]:has-text("Duplicate this board")')
         ->assertPathIsNot($this->whiteboardPath($source))
-        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+        ->assertSeeIn('header span > h1', 'Sprint board (copy)');
 
     $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
 
@@ -1069,7 +1069,7 @@ it('[P17b-24] makes a second member the facilitator of the copy she duplicates, 
 
     $franSnapshot = $this->whiteboardSnapshot($franPage, $source);
 
-    $franPage->assertSeeIn('header > h1', 'Sprint board')
+    $franPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertDontSee('(copy)')
         ->assertNotPresent('[data-sonner-toast]')
         ->assertPresent('[role="toolbar"][aria-label="Facilitation tools"]');
@@ -1107,7 +1107,7 @@ it('[P17b-25] leaves the original unchanged when the copy is edited, after a rel
     $this->awaitRealtime($page);
     $this->awaitWhiteboardElements($page, 4);
 
-    $page->assertSeeIn('header > h1', 'Sprint board')
+    $page->assertSeeIn('header span > h1', 'Sprint board')
         ->assertDontSee('(copy)');
 
     expect(p17bShapes($this->whiteboardElements($page, $source)))->toBe(p17bShapes($sourceBefore))
@@ -1125,7 +1125,7 @@ it('[P17b-26] ends the title of a copy with the French word when the member who 
     $this->openWhiteboardMenu($page, 'Menu du tableau')
         ->click('[role="menuitem"]:has-text("Dupliquer ce tableau")')
         ->assertPathIsNot($this->whiteboardPath($source))
-        ->assertSeeIn('header > h1', 'Carte du sprint (copie)');
+        ->assertSeeIn('header span > h1', 'Carte du sprint (copie)');
 
     $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
 

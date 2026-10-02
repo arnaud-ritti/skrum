@@ -167,6 +167,7 @@ export function GuestJoin({
     const trimmedName = name.trim();
     const hasName = trimmedName !== '';
     const previewName = hasName ? trimmedName : (defaultName ?? '');
+    const hasPreview = previewName !== '';
     const previewPresence = showColors && color !== null ? color : undefined;
     const isBlocked = activeError !== null || processing;
 
@@ -446,53 +447,55 @@ export function GuestJoin({
                     </div>
                 )}
 
-                <div
-                    data-slot="guest-join-preview"
-                    className="flex items-center gap-3"
-                >
-                    {hasName ? (
-                        <PersonAvatar
-                            decorative
-                            size="xl"
-                            name={trimmedName}
-                            presence={previewPresence}
-                        />
-                    ) : (
-                        <PersonAvatar
-                            decorative
-                            size="xl"
-                            kind="guest"
-                            name={previewName}
-                        />
-                    )}
-                    <span className="flex min-w-0 flex-col gap-1">
+                {hasPreview && (
+                    <div
+                        data-slot="guest-join-preview"
+                        className="flex items-center gap-3"
+                    >
                         {hasName ? (
-                            <>
-                                <span className="truncate font-semibold">
-                                    {trimmedName}
-                                </span>
-                                <Badge
-                                    variant="secondary"
-                                    className="w-fit rounded-full"
-                                >
-                                    <VenetianMask aria-hidden />
-                                    {t('Guest')}
-                                </Badge>
-                            </>
+                            <PersonAvatar
+                                decorative
+                                size="xl"
+                                name={trimmedName}
+                                presence={previewPresence}
+                            />
                         ) : (
-                            <>
-                                <span className="truncate text-muted-foreground">
-                                    {previewName}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {t(
-                                        'Suggested nickname if you leave it empty',
-                                    )}
-                                </span>
-                            </>
+                            <PersonAvatar
+                                decorative
+                                size="xl"
+                                kind="guest"
+                                name={previewName}
+                            />
                         )}
-                    </span>
-                </div>
+                        <span className="flex min-w-0 flex-col gap-1">
+                            {hasName ? (
+                                <>
+                                    <span className="truncate font-semibold">
+                                        {trimmedName}
+                                    </span>
+                                    <Badge
+                                        variant="secondary"
+                                        className="w-fit rounded-full"
+                                    >
+                                        <VenetianMask aria-hidden />
+                                        {t('Guest')}
+                                    </Badge>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="truncate text-muted-foreground">
+                                        {previewName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t(
+                                            'Suggested nickname if you leave it empty',
+                                        )}
+                                    </span>
+                                </>
+                            )}
+                        </span>
+                    </div>
+                )}
 
                 {!hasName && onRandomName && (
                     <Button
