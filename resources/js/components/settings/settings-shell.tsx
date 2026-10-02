@@ -1,106 +1,83 @@
 import { usePage } from '@inertiajs/react';
 import { Bell, KeyRound, Palette, Shield, User } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import type { SubNavItem } from '@/components/skrum/sub-nav';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 import SettingsLayout from '@/layouts/skrum/settings-layout';
-import { index as apiTokens } from '@/routes/apiTokens';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit as editNotifications } from '@/routes/notificationPreferences';
-import { edit as editProfile } from '@/routes/profile';
-import { edit as editSecurity } from '@/routes/security';
+import { edit as editSettings } from '@/routes/settings';
 import type { Auth } from '@/types';
 
-type SettingsSection =
-    | 'profile'
-    | 'security'
-    | 'appearance'
-    | 'notifications'
-    | 'apiTokens';
+/** The anchor of each section of the account settings, in the order of the page. */
+export const SettingsSections = [
+    'profile',
+    'security',
+    'appearance',
+    'notifications',
+    'api-tokens',
+] as const;
 
-type SettingsNavEntry = Omit<SubNavItem, 'current'> & {
-    section: SettingsSection;
+export type SettingsSectionId = (typeof SettingsSections)[number];
+
+const SectionIcons: Record<SettingsSectionId, LucideIcon> = {
+    profile: User,
+    security: Shield,
+    appearance: Palette,
+    notifications: Bell,
+    'api-tokens': KeyRound,
 };
 
+function useSettingsSectionLabels(): Record<SettingsSectionId, string> {
+    const { t } = useTrans();
+
+    return {
+        profile: t('Profile'),
+        security: t('Security'),
+        appearance: t('Appearance'),
+        notifications: t('Notifications'),
+        'api-tokens': t('API tokens'),
+    };
+}
+
 export function SettingsShell({
-    active,
-    title,
-    description,
+    sections,
+    current,
+    onSelect,
     children,
 }: {
-    active: SettingsSection;
-    /**
-     * Title of a section that has its own page heading (and its own crumb);
-     * "Settings" when absent.
-     */
-    title?: string;
-    description?: string;
+    /** The sections the page holds; the navigation lists them in the order of the page. */
+    sections: readonly SettingsSectionId[];
+    /** The section in view. */
+    current: SettingsSectionId;
+    onSelect: (section: SettingsSectionId) => void;
     children: ReactNode;
 }): ReactElement {
     const { t } = useTrans();
-    const { auth, features } = usePage<{ auth: Auth }>().props;
-    /** The navigation takes its entries from this list: a new section is one more row. */
-    const entries: SettingsNavEntry[] = [
-        {
-            section: 'profile',
-            label: t('Profile'),
-            icon: User,
-            href: editProfile(),
-        },
-        {
-            section: 'security',
-            label: t('Security'),
-            icon: Shield,
-            href: editSecurity(),
-        },
-        {
-            section: 'appearance',
-            label: t('Appearance'),
-            icon: Palette,
-            href: editAppearance(),
-        },
-        {
-            section: 'notifications',
-            label: t('Notifications'),
-            icon: Bell,
-            href: editNotifications(),
-        },
-        ...(features.mcp
-            ? [
-                  {
-                      section: 'apiTokens' as const,
-                      label: t('API tokens'),
-                      icon: KeyRound,
-                      href: apiTokens(),
-                  },
-              ]
-            : []),
-    ];
-    const current =
-        entries.find((entry) => entry.section === active) ?? entries[0];
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const labels = useSettingsSectionLabels();
 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: auth.user.name, href: entries[0].href },
-                {
-                    title: t('Settings'),
-                    href: title === undefined ? current.href : entries[0].href,
-                },
-                ...(title === undefined ? [] : [{ title, href: current.href }]),
+                { title: auth.user.name, href: editSettings() },
+                { title: t('Settings'), href: editSettings() },
             ]}
         >
             <SettingsLayout
-                title={title ?? t('Settings')}
-                description={
-                    title === undefined
-                        ? t('Your account, applied in every workspace')
-                        : description
-                }
-                nav={entries.map(({ section, ...entry }) => ({
-                    ...entry,
-                    current: section === active,
+                title={t('Settings')}
+                description={t('Your account, applied in every workspace')}
+                nav={SettingsSections.filter((section) =>
+                    sections.includes(section),
+                ).map((section) => ({
+                    label: labels[section],
+                    icon: SectionIcons[section],
+                    href: `#${section}`,
+                    current: section === current,
+                    inPage: true,
+                    onSelect: (event) => {
+                        event.preventDefault();
+                        onSelect(section);
+                    },
                 }))}
             >
                 <div
@@ -111,5 +88,28 @@ export function SettingsShell({
                 </div>
             </SettingsLayout>
         </AppLayout>
+    );
+}
+
+/**
+ * One section of the page: the place its entry of the navigation leads to.
+ * Its cards are the named regions; the section itself adds no landmark.
+ */
+export function SettingsSection({
+    id,
+    children,
+}: {
+    id: SettingsSectionId;
+    children: ReactNode;
+}): ReactElement {
+    return (
+        <div
+            id={id}
+            data-slot="settings-section"
+            tabIndex={-1}
+            className="flex min-w-0 scroll-mt-20 flex-col gap-10 outline-none"
+        >
+            {children}
+        </div>
     );
 }

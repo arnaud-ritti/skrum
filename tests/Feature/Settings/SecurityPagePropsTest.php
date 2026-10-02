@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Http\Controllers\Settings\SecurityController;
 use App\Models\User;
+use App\Support\Settings\SecuritySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -45,7 +45,7 @@ class SecurityPagePropsTest extends TestCase
     {
         return $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('security.edit'));
+            ->get(route('settings.edit'));
     }
 
     public function test_user_without_second_factor_has_no_date_and_no_codes_left(): void
@@ -53,9 +53,9 @@ class SecurityPagePropsTest extends TestCase
         $user = User::factory()->create();
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('twoFactor.confirmedAt', null)
-            ->where('twoFactor.recoveryCodesRemaining', null)
-            ->where('twoFactor.recoveryCodesTotal', SecurityController::RecoveryCodesTotal),
+            ->where('security.protected.twoFactor.confirmedAt', null)
+            ->where('security.protected.twoFactor.recoveryCodesRemaining', null)
+            ->where('security.protected.twoFactor.recoveryCodesTotal', SecuritySettings::RecoveryCodesTotal),
         );
     }
 
@@ -64,9 +64,9 @@ class SecurityPagePropsTest extends TestCase
         $user = $this->userWithConfirmedSecondFactor();
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('twoFactor.confirmedAt', $user->two_factor_confirmed_at->toIso8601String())
-            ->where('twoFactor.recoveryCodesRemaining', 8)
-            ->where('twoFactor.recoveryCodesTotal', 8),
+            ->where('security.protected.twoFactor.confirmedAt', $user->two_factor_confirmed_at->toIso8601String())
+            ->where('security.protected.twoFactor.recoveryCodesRemaining', 8)
+            ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
         );
     }
 
@@ -83,8 +83,8 @@ class SecurityPagePropsTest extends TestCase
         expect($user->refresh()->recoveryCodes())->not->toContain($usedCode);
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('twoFactor.recoveryCodesRemaining', 7)
-            ->where('twoFactor.recoveryCodesTotal', 8),
+            ->where('security.protected.twoFactor.recoveryCodesRemaining', 7)
+            ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
         );
     }
 
@@ -111,7 +111,7 @@ class SecurityPagePropsTest extends TestCase
         }
 
         $this->getSecurityPage($user->refresh())->assertInertia(fn (Assert $page) => $page
-            ->where('twoFactor.recoveryCodesRemaining', 0),
+            ->where('security.protected.twoFactor.recoveryCodesRemaining', 0),
         );
     }
 
@@ -121,7 +121,7 @@ class SecurityPagePropsTest extends TestCase
 
         resolve(GenerateNewRecoveryCodes::class)($user);
 
-        expect($user->refresh()->recoveryCodes())->toHaveCount(SecurityController::RecoveryCodesTotal);
+        expect($user->refresh()->recoveryCodes())->toHaveCount(SecuritySettings::RecoveryCodesTotal);
     }
 
     public function test_props_never_contain_a_recovery_code_or_the_secret(): void
@@ -142,13 +142,13 @@ class SecurityPagePropsTest extends TestCase
         $user = User::factory()->create();
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('checksCompromisedPasswords', false),
+            ->where('security.checksCompromisedPasswords', false),
         );
 
         Password::defaults(fn (): Password => Password::min(12)->uncompromised());
 
         $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('checksCompromisedPasswords', true),
+            ->where('security.checksCompromisedPasswords', true),
         );
     }
 }

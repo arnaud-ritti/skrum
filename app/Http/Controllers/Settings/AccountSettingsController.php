@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Http\Controllers\Settings;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Models\User;
+use App\Support\Auth\PasswordConfirmation;
+use App\Support\Avatars\AvatarStyleCatalogue;
+use App\Support\Avatars\AvatarUrl;
+use App\Support\InstanceSettings;
+use App\Support\Settings\ApiTokenSettings;
+use App\Support\Settings\SecuritySettings;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Inertia\Inertia;
+use Inertia\Response;
+use Laravel\Fortify\Features;
+
+class AccountSettingsController extends Controller
+{
+    public function __construct(
+        private InstanceSettings $settings,
+        private AvatarStyleCatalogue $catalogue,
+        private AvatarUrl $avatarUrl,
+        private SecuritySettings $security,
+        private ApiTokenSettings $apiTokens,
+        private PasswordConfirmation $passwordConfirmation,
+    ) {}
+
+    /**
+     * Every section of the account on one page. An account whose address is
+     * not verified gets its profile only, and what the security and API
+     * token sections say about the account is sent only while the password
+     * confirmation of the session is still accepted.
+     */
+    public function edit(TwoFactorAuthenticationRequest $request): Response
+    {
+        $user = $request->user();
+        $verified = ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
+        $passwordConfirmed = $verified && $this->passwordConfirmation->isFresh($request);
+
+        if ($passwordConfirmed && Features::canManageTwoFactorAuthentication()) {
+            $request->ensureStateIsValid();
+        }
+
+        return Inertia::render('settings/account', [
+            'profile' => $this->profile($request, $user),
+            'security' => $verified ? $this->securitySection($user, $passwordConfirmed) : null,
+            'appearance' => $verified,
+            'notificationPreferences' => $verified ? $this->notificationPreferences($user) : null,
+            'apiTokens' => $verified && config('skrum.mcp.enabled') ? $this->apiTokensSection($user, $passwordConfirmed) : null,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function profile(TwoFactorAuthenticationRequest $request, User $user): array
+    {
+        $allowsMemberStyles = $this->settings->avatarMemberChoice();
+
+        return [
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'avatarMemberChoice' => $allowsMemberStyles,
+            'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,
+            'instanceAvatarStyle' => $this->avatarUrl->instanceStyle(),
+            'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($user) : [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function securitySection(User $user, bool $passwordConfirmed): array
+    {
+        return [
+            ...$this->security->offered($user),
+            'locked' => ! $passwordConfirmed,
+            'protected' => $passwordConfirmed ? $this->security->protected($user) : null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     preferences: array<string, bool>,
+     *     reminderTime: string,
+     *     remindersEnabled: bool
+     * }
+     */
+    private function notificationPreferences(User $user): array
+    {
+        return [
+            'preferences' => [
+                'action_item_reminders_by_email' => $user->action_item_reminders_by_email,
+                'action_item_reminders_in_app' => $user->action_item_reminders_in_app,
+                'recap_emails' => $user->recap_emails,
+                'recap_in_app' => $user->recap_in_app,
+            ],
+            'reminderTime' => (string) config('skrum.action_item_reminders.time'),
+            'remindersEnabled' => (bool) config('skrum.action_item_reminders.enabled'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function apiTokensSection(User $user, bool $passwordConfirmed): array
+    {
+        return [
+            'locked' => ! $passwordConfirmed,
+            'protected' => $passwordConfirmed ? $this->apiTokens->protected($user) : null,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     value: string,
+     *     name: string,
+     *     license: string,
+     *     attribution: ?string,
+     *     attributionRequired: bool,
+     *     sampleUrls: array<int, string>
+     * }>
+     */
+    private function avatarStyles(User $user): array
+    {
+        return array_map(fn (array $style): array => [
+            ...$style,
+            'sampleUrls' => [$this->avatarUrl->url($style['value'], $user->avatarSeed(), fn (): string => $user->name)],
+        ], $this->catalogue->styles());
+    }
+}

@@ -346,12 +346,12 @@ it('disabling needs password confirmation', function () {
 it('gives the security page the state of the e-mail factor', function () {
     $user = User::factory()->withEmailSecondFactor()->create(['email' => 'known@example.test']);
 
-    $this->actingAs($user)->withSession(confirmedPassword())->get(route('security.edit'))
+    $this->actingAs($user)->withSession(confirmedPassword())->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('emailSecondFactor.available', true)
-            ->where('emailSecondFactor.enabled', true)
-            ->where('emailSecondFactor.address', 'known@example.test')
-            ->where('emailSecondFactor.resendIn', 0));
+            ->where('security.protected.emailSecondFactor.available', true)
+            ->where('security.protected.emailSecondFactor.enabled', true)
+            ->where('security.protected.emailSecondFactor.address', 'known@example.test')
+            ->where('security.protected.emailSecondFactor.resendIn', 0));
 });
 
 it('writes the code mail with the code in the subject, grouped, without an unsubscribe header', function () {

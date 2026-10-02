@@ -91,8 +91,8 @@ it('lets the member subscribe again from the settings', function () {
     $user = User::factory()->create();
     $user->forceFill(['recap_emails' => false])->save();
 
-    $this->actingAs($user)->get(route('notificationPreferences.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('preferences.recap_emails', false));
+    $this->actingAs($user)->get(route('settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('notificationPreferences.preferences.recap_emails', false));
 
     $this->actingAs($user)->patch(route('notificationPreferences.update'), [
         'action_item_reminders_by_email' => true,

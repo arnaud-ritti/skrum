@@ -58,7 +58,7 @@ Plan 18g Task 8, reduced by the owner to **one configuration: light theme, 1440 
 | Password pages | `access-confirm-password-page`, `-forgot-`, `-reset-`, `access-verify-email-page` | ScreenAuth (no frame of their own) | faithful | D-53. |
 | Magic link, unsubscribe | `magic-link-invalid`, `recap-unsubscribe-page` | none | no mockup | Composed on the auth frame (18f). |
 | Error pages | `access-error-403-page`, `-404-`, `-404-guest-`, `-419-`, `-429-`, `-500-`, `-503-` | ScreenErrors | faithful | D-31, D-55. Seen: the 500 page has no footer line, the others have one. |
-| Settings, profile | `settings-profile-page`, `-unverified`, `-delete-dialog` | ScreenUserSettings | differences | One page per section, not one long page: D-130. No presence colour, no photo: D-25. Footer sentence: D-78. |
+| Settings, profile | `settings-profile-page`, `-unverified`, `-delete-dialog` | ScreenUserSettings | differences | One long page since rework 3, with locked cards before the password is confirmed: D-130 (captures older than the rework). No presence colour, no photo: D-25. Footer sentence: D-78. |
 | Settings, appearance | `settings-appearance-page` | ScreenUserSettings | differences | D-25, V22. |
 | Settings, notifications | `settings-notifications-page`, `-reminders-off` | ScreenUserSettings | differences | Two events of six: D-25. D-84. |
 | Settings, API tokens | `settings-api-tokens-page`, `-empty`, `-error`, `-new-token` | ScreenUserSettings | differences | D-82, D-83. |

@@ -148,7 +148,7 @@ function p18eSecurityVisit(User $member, array $options, string $marker): mixed
     return p18eSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs('/settings/security')
+        ->assertPathIs('/settings')
         ->assertPresent($marker);
 }
 
@@ -265,7 +265,7 @@ it('renders an enabled second factor with its recovery codes without overflow', 
             $page = p18eSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
                 ->fill('#password', 'password')
                 ->click('@confirm-password-button')
-                ->assertPathIs('/settings/security');
+                ->assertPathIs('/settings');
 
             $member->forceFill([
                 'two_factor_secret' => encrypt(P18eSettingsTwoFactorSecret),
@@ -348,7 +348,7 @@ function p18eTokensVisit(User $member, array $options, string $marker): mixed
     return p18eSettingsVisit($member, '/settings/api-tokens', $options, '[data-test="confirm-password-button"]')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs('/settings/api-tokens')
+        ->assertPathIs('/settings')
         ->assertPresent($marker);
 }
 

@@ -29,13 +29,14 @@ class SecurityTest extends TestCase
 
         $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('security.edit'))
+            ->get(route('settings.edit'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/security')
-                ->where('canManagePasskeys', true)
-                ->where('passkeys', [])
-                ->where('canManageTwoFactor', true)
-                ->where('twoFactorEnabled', false),
+                ->component('settings/account')
+                ->where('security.canManagePasskeys', true)
+                ->where('security.protected.passkeys', [])
+                ->where('security.canManageTwoFactor', true)
+                ->where('security.requiresConfirmation', true)
+                ->where('security.protected.twoFactorEnabled', false),
             );
     }
 
@@ -66,15 +67,15 @@ class SecurityTest extends TestCase
 
         $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('security.edit'))
+            ->get(route('settings.edit'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/security')
-                ->where('canManagePasskeys', false)
-                ->where('passkeys', [])
-                ->where('canManageTwoFactor', false)
-                ->missing('twoFactorEnabled')
-                ->missing('requiresConfirmation'),
+                ->component('settings/account')
+                ->where('security.canManagePasskeys', false)
+                ->where('security.protected.passkeys', [])
+                ->where('security.canManageTwoFactor', false)
+                ->where('security.protected.twoFactorEnabled', false)
+                ->where('security.requiresConfirmation', false),
             );
     }
 

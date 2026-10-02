@@ -17,7 +17,7 @@ it('stores the avatar style of a member when members may choose', function () {
     $this->actingAs($user)
         ->patch(route('profile.update'), ['name' => $user->name, 'email' => $user->email, 'avatar_style' => 'micah'])
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertRedirect(route('settings.edit'));
 
     expect($user->fresh()->avatar_style)->toBe('micah')
         ->and($user->fresh()->email_verified_at)->not->toBeNull();
@@ -92,13 +92,13 @@ it('lists the selectable styles on the profile page when members may choose', fu
     $user = User::factory()->create(['name' => 'Ada Lovelace', 'avatar_style' => 'micah']);
     $seed = $user->avatarSeed();
 
-    $this->actingAs($user)->get(route('profile.edit'))
+    $this->actingAs($user)->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('settings/profile')
-            ->where('avatarMemberChoice', true)
-            ->where('avatarStyle', 'micah')
-            ->where('instanceAvatarStyle', 'thumbs')
-            ->where('avatarStyles', fn ($styles) => collect($styles)->firstWhere('value', 'micah') == [
+            ->component('settings/account')
+            ->where('profile.avatarMemberChoice', true)
+            ->where('profile.avatarStyle', 'micah')
+            ->where('profile.instanceAvatarStyle', 'thumbs')
+            ->where('profile.avatarStyles', fn ($styles) => collect($styles)->firstWhere('value', 'micah') == [
                 'value' => 'micah',
                 'name' => 'Micah',
                 'license' => 'CC BY 4.0',
@@ -114,11 +114,11 @@ it('lists the selectable styles on the profile page when members may choose', fu
 it('sends no style list to the profile page when members may not choose', function () {
     $user = User::factory()->create(['avatar_style' => 'micah']);
 
-    $this->actingAs($user)->get(route('profile.edit'))
+    $this->actingAs($user)->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('avatarMemberChoice', false)
-            ->where('avatarStyle', null)
-            ->where('avatarStyles', []));
+            ->where('profile.avatarMemberChoice', false)
+            ->where('profile.avatarStyle', null)
+            ->where('profile.avatarStyles', []));
 });
 
 it('refuses to delete the account of the last instance admin', function (string $locale, string $message) {
@@ -126,9 +126,9 @@ it('refuses to delete the account of the last instance admin', function (string 
     User::factory()->create();
 
     $this->actingAs($admin)
-        ->from(route('profile.edit'))
+        ->from(route('settings.edit'))
         ->delete(route('profile.destroy'), ['password' => 'password'])
-        ->assertRedirect(route('profile.edit'))
+        ->assertRedirect(route('settings.edit'))
         ->assertSessionHasErrors(['password' => $message]);
 
     $this->assertAuthenticatedAs($admin);
@@ -161,7 +161,7 @@ it('asks for the password before the last-admin rule', function () {
     $admin = User::factory()->instanceAdmin()->create();
 
     $this->actingAs($admin)
-        ->from(route('profile.edit'))
+        ->from(route('settings.edit'))
         ->delete(route('profile.destroy'), ['password' => 'wrong-password'])
         ->assertSessionHasErrors('password');
 

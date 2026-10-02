@@ -149,7 +149,7 @@ it('neither lists nor counts a recap for a user who turned recaps off in the bel
         ->and($facilitator->notifications()->count())->toBe(2)
         ->and(array_column(bellOf($other), 'kind'))->toBe(['recap_ready']);
 
-    $this->actingAs($facilitator)->get(route('notificationPreferences.edit'))
+    $this->actingAs($facilitator)->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('notifications.unreadCount', 1));
 
     $facilitator->forceFill(['recap_in_app' => true])->save();
@@ -291,7 +291,7 @@ it('forgets the notification of an invitation that is accepted, revoked or sent 
 
 it('never counts a dead invitation in the unread badge', function (Closure $kill) {
     [$invited, $invitation] = invitedThroughTheBell();
-    $unreadCount = fn (): int => test()->actingAs($invited)->get(route('profile.edit'))->inertiaProps('notifications.unreadCount');
+    $unreadCount = fn (): int => test()->actingAs($invited)->get(route('settings.edit'))->inertiaProps('notifications.unreadCount');
 
     expect($unreadCount())->toBe(1);
 

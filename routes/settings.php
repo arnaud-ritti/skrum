@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AccountSettingsController;
 use App\Http\Controllers\Settings\ApiTokensController;
 use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
@@ -12,16 +13,21 @@ use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function (): void {
-    Route::redirect('settings', '/settings/profile');
+    Route::get('settings', [AccountSettingsController::class, 'edit'])->name('settings.edit');
 
-    Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::redirect('settings/profile', '/settings#profile')->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('settings/security', [SecurityController::class, 'edit'])
+    /*
+     * The two sections that say something about the account behind a
+     * confirmed password are opened through these addresses: they ask for
+     * the password, then lead to the section.
+     */
+    Route::redirect('settings/security', '/settings#security')
         ->middleware(RequirePassword::class)
         ->name('security.edit');
 
@@ -35,13 +41,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::delete('settings/email-second-factor', [EmailSecondFactorsController::class, 'destroy'])->name('emailSecondFactor.destroy');
     });
 
-    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('notificationPreferences.edit');
+    Route::redirect('settings/notifications', '/settings#notifications')->name('notificationPreferences.edit');
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');
 
     Route::patch('settings/shortcuts', [ShortcutPreferencesController::class, 'update'])->name('shortcutPreferences.update');
 
     Route::middleware(EnsureMcpIsEnabled::class)->group(function (): void {
-        Route::get('settings/api-tokens', [ApiTokensController::class, 'index'])
+        Route::redirect('settings/api-tokens', '/settings#api-tokens')
             ->middleware(RequirePassword::class)
             ->name('apiTokens.index');
 
@@ -50,11 +56,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('apiTokens.store');
 
         Route::delete('settings/api-tokens/{token}', [ApiTokensController::class, 'destroy'])
+            ->middleware(RequirePassword::class)
             ->whereUuid('token')
             ->name('apiTokens.destroy');
     });
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::redirect('settings/appearance', '/settings#appearance')->name('appearance.edit');
 });
 
 Route::get('.well-known/passkey-endpoints', fn () => response()->json([
