@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
@@ -37,6 +38,7 @@ class WorkspaceMembersController extends Controller
                     'isExpired' => ! $invitation->isPending(),
                     'invitedAt' => $invitation->created_at->toIso8601String(),
                 ]),
+            'invitationValidForDays' => CreateWorkspaceInvitation::ValidForDays,
             'canManage' => true,
             'isOwner' => $request->user()->roleIn($workspace) === WorkspaceRole::Owner,
         ]);

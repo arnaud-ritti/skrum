@@ -209,7 +209,7 @@ export function useInvitationActions(workspaceSlug: string) {
                 },
                 onSuccess: () => {
                     toast.success(
-                        t('Invitation sent to :email.', {
+                        t('Invitation created for :email.', {
                             email: invitation.email,
                         }),
                     );

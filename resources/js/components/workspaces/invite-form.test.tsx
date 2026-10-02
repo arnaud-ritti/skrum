@@ -28,6 +28,7 @@ function open(slots = {}) {
             open
             onOpenChange={onOpenChange}
             workspace={{ id: 'w1', name: 'Nordlys', slug: 'nordlys' }}
+            validForDays={7}
             slots={slots}
         />,
     );
@@ -88,7 +89,7 @@ describe('InviteDialog', () => {
 
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'Invitation sent to lucas@example.com.',
+            'Invitation created for lucas@example.com.',
         );
     });
 

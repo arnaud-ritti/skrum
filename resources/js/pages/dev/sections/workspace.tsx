@@ -158,6 +158,7 @@ const memberList: WorkspaceMembersProps = {
             invitedAt: '2026-09-12T09:00:00+00:00',
         },
     ],
+    invitationValidForDays: 7,
     isOwner: true,
 };
 

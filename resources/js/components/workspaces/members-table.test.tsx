@@ -73,6 +73,7 @@ const base: WorkspaceMembersProps = {
             invitedAt: '2026-09-12T09:00:00+00:00',
         },
     ],
+    invitationValidForDays: 7,
     isOwner: true,
 };
 
@@ -357,7 +358,7 @@ describe('MembersTable', () => {
         });
 
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'Invitation sent to sofia@example.com.',
+            'Invitation created for sofia@example.com.',
         );
     });
 

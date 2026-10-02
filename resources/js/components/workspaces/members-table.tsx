@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { DoorOpen, Ellipsis, UserMinus, UserPlus } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -34,6 +34,7 @@ import { InviteDialog } from '@/components/workspaces/invite-form';
 import type { InviteSlots } from '@/components/workspaces/invite-form';
 import { LeaveWorkspaceDialog } from '@/components/workspaces/leave-workspace-dialog';
 import { MembersLayout } from '@/components/workspaces/members-layout';
+import { useMenuDialogFocus } from '@/components/workspaces/use-menu-dialog-focus';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -47,6 +48,8 @@ export type WorkspaceMembersProps = {
     workspace: WorkspaceSummary;
     members: WorkspaceMember[];
     invitations: PendingInvitation[];
+    /** How long the link of an invitation works, as the server sets it. */
+    invitationValidForDays: number;
     isOwner: boolean;
 };
 
@@ -212,6 +215,7 @@ export function MembersTable({
     workspace,
     members,
     invitations,
+    invitationValidForDays,
     isOwner,
     currentUserId,
     invitationUrl,
@@ -229,17 +233,18 @@ export function MembersTable({
 }) {
     const { t } = useTrans();
     const headingId = useId();
-    const headingRef = useRef<HTMLHeadingElement>(null);
     const sectionRef = useRef<HTMLElement>(null);
-    const memberLeft = useRef(false);
-    const dialogWasOpen = useRef(false);
-    const menuMemberId = useRef('');
     const removal = useRouterAction();
     const invitationActions = useInvitationActions(workspace.slug);
     const [inviting, setInviting] = useState(false);
     const [leaving, setLeaving] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [removing, setRemoving] = useState<WorkspaceMember | null>(null);
+    const {
+        fallbackRef: headingRef,
+        openedFrom,
+        originRemoved,
+    } = useMenuDialogFocus<HTMLHeadingElement>(confirming || leaving);
     const [roleError, setRoleError] = useState<{
         memberId: string;
         message: string;
@@ -271,34 +276,12 @@ export function MembersTable({
     // A dialog opened from the menu of a row has no trigger to give the focus
     // back to. It returns to that menu, or to the heading of the card when
     // the row left with its member.
-    useEffect(() => {
-        const isOpen = confirming || leaving;
-
-        if (isOpen) {
-            dialogWasOpen.current = true;
-
-            return;
-        }
-
-        if (!dialogWasOpen.current) {
-            return;
-        }
-
-        dialogWasOpen.current = false;
-
-        if (memberLeft.current) {
-            memberLeft.current = false;
-            headingRef.current?.focus();
-
-            return;
-        }
-
-        sectionRef.current
-            ?.querySelector<HTMLElement>(
-                `[data-member-id="${menuMemberId.current}"] [data-member-menu]`,
-            )
-            ?.focus();
-    }, [confirming, leaving]);
+    const openedFromMenuOf = (member: WorkspaceMember): void =>
+        openedFrom(() =>
+            sectionRef.current?.querySelector<HTMLElement>(
+                `[data-member-id="${member.id}"] [data-member-menu]`,
+            ),
+        );
 
     const changeRole = (member: WorkspaceMember, role: string): void => {
         router.patch(
@@ -332,7 +315,7 @@ export function MembersTable({
             ),
         );
 
-        memberLeft.current = true;
+        originRemoved();
     };
 
     return (
@@ -405,13 +388,13 @@ export function MembersTable({
                                     changeRole(member, role)
                                 }
                                 onRemove={() => {
-                                    menuMemberId.current = member.id;
+                                    openedFromMenuOf(member);
                                     removal.reset();
                                     setRemoving(member);
                                     setConfirming(true);
                                 }}
                                 onLeave={() => {
-                                    menuMemberId.current = member.id;
+                                    openedFromMenuOf(member);
                                     setLeaving(true);
                                 }}
                             />
@@ -437,6 +420,7 @@ export function MembersTable({
                     open={inviting}
                     onOpenChange={setInviting}
                     workspace={workspace}
+                    validForDays={invitationValidForDays}
                     slots={slots}
                 />
 

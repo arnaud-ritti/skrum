@@ -35,11 +35,14 @@ export function InviteDialog({
     open,
     onOpenChange,
     workspace,
+    validForDays,
     slots = {},
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     workspace: WorkspaceSummary;
+    /** How long the link works, as the server sets it. */
+    validForDays: number;
     slots?: InviteSlots;
 }) {
     const { t } = useTrans();
@@ -59,7 +62,7 @@ export function InviteDialog({
             ),
         );
 
-        toast.success(t('Invitation sent to :email.', { email }));
+        toast.success(t('Invitation created for :email.', { email }));
     };
 
     return (
@@ -74,8 +77,8 @@ export function InviteDialog({
             }}
             title={t('Invite people')}
             description={t(
-                'They receive a link to join :workspace, valid for 7 days.',
-                { workspace: workspace.name },
+                'They receive a link to join :workspace, valid for :count days.',
+                { workspace: workspace.name, count: validForDays },
             )}
             submitLabel={t('Send invitation')}
             submitIcon={Send}

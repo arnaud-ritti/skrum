@@ -262,6 +262,7 @@ it('gives the author of a template and of a deck with an avatar, or null when th
 it('counts the retros created from a template', function () {
     [$member, $workspace] = templatesWorkspace(WorkspaceRole::Member);
     $team = Team::factory()->for($workspace)->create();
+    $team->members()->attach($member);
     $used = WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'A']);
     WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'B']);
     Retro::factory()->count(2)->create([
@@ -276,6 +277,30 @@ it('counts the retros created from a template', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('templates.0.usageCount', 2)
             ->where('templates.1.usageCount', 0));
+});
+
+it('counts the retros of the teams the user can view in the usage of a template', function () {
+    [$member, $workspace] = templatesWorkspace(WorkspaceRole::Member);
+    $visibleTeam = Team::factory()->for($workspace)->create();
+    $hiddenTeam = Team::factory()->for($workspace)->create();
+    $visibleTeam->members()->attach($member);
+    $template = WorkspaceTemplate::factory()->for($workspace)->create();
+
+    foreach ([$visibleTeam, $visibleTeam, $hiddenTeam] as $team) {
+        Retro::factory()->create([
+            'team_id' => $team->id,
+            'template' => 'workspace',
+            'workspace_template_id' => $template->id,
+        ]);
+    }
+
+    $this->actingAs($member)
+        ->get(route('workspaces.templates.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('templates.0.usageCount', 2));
+
+    $this->actingAs(workspaceManager($workspace))
+        ->get(route('workspaces.templates.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('templates.0.usageCount', 3));
 });
 
 it('runs a constant number of queries whatever the number of templates and decks', function () {

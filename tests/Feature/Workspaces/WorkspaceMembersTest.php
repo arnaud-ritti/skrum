@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
@@ -52,10 +53,11 @@ it('sends the avatar of each member and the day of each invitation', function ()
             ->where('invitations', fn ($invitations) => collect($invitations)->every(
                 fn (array $invitation): bool => $invitation['invitedAt'] === now()->toIso8601String(),
             ))
-            ->where('invitations', fn ($invitations) => collect($invitations)->pluck('isExpired', 'email')->all() === [
-                'pending@example.com' => false,
+            ->where('invitations', fn ($invitations) => collect($invitations)->pluck('isExpired', 'email')->sortKeys()->all() === [
                 'late@example.com' => true,
-            ]));
+                'pending@example.com' => false,
+            ])
+            ->where('invitationValidForDays', CreateWorkspaceInvitation::ValidForDays));
 });
 
 it('forbids members from the members page', function () {
