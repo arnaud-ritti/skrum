@@ -80,7 +80,13 @@ export function BoardSkeleton({
 
     return (
         <div className="flex flex-col gap-2">
-            {status ? <StatusLine status={status} /> : null}
+            {status ? (
+                <StatusLine status={status} />
+            ) : (
+                <p role="status" className="sr-only">
+                    {t('Loading the board')}
+                </p>
+            )}
             <div
                 role="group"
                 aria-busy="true"
@@ -154,6 +160,9 @@ export function ListSkeleton({
             aria-label={t('Loading sessions')}
             className="min-w-0 overflow-hidden rounded-xl border border-border bg-card"
         >
+            <p role="status" className="sr-only">
+                {t('Loading sessions')}
+            </p>
             {Array.from({ length: Math.max(0, Math.floor(rows)) }, (_, row) => (
                 <div
                     key={row}

@@ -2,6 +2,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 import * as React from "react"
 
+import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
 function Dialog({
@@ -48,19 +49,21 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  closeLabel = "Close",
+  closeLabel,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   closeLabel?: string
 }) {
+  const { t } = useTrans()
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-popover text-popover-foreground shadow-modal data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 data-[state=open]:duration-(--duration-slow) data-[state=open]:ease-(--ease-enter) data-[state=closed]:duration-(--duration-base) data-[state=closed]:ease-(--ease-exit) fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border p-6 sm:max-w-110",
+          "bg-popover text-popover-foreground shadow-modal data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 data-[state=open]:duration-(--duration-slow) data-[state=open]:ease-(--ease-enter) data-[state=closed]:duration-(--duration-base) data-[state=closed]:ease-(--ease-exit) fixed top-1/2 left-1/2 z-50 grid max-h-dialog w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border p-6 sm:max-w-110",
           className
         )}
         {...props}
@@ -72,7 +75,7 @@ function DialogContent({
             className="text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute top-4 right-4 flex size-8 items-center justify-center rounded-md transition-colors focus-visible:ring-3 focus-visible:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">{closeLabel}</span>
+            <span className="sr-only">{closeLabel ?? t("Close")}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>

@@ -9,10 +9,16 @@ import {
     Trash2Icon,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { Button } from '@/components/ui/button';
-import { CardMenu } from '@/components/ui/dropdown-menu';
+import {
+    CardMenu,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { MenuEntry } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 
@@ -29,9 +35,12 @@ function State({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function Trigger({ label }: { label: string }) {
+function Trigger({
+    label,
+    ...props
+}: { label: string } & ComponentProps<typeof Button>) {
     return (
-        <Button variant="ghost" size="icon" aria-label={label}>
+        <Button variant="ghost" size="icon" aria-label={label} {...props}>
             <MoreHorizontalIcon />
         </Button>
     );
@@ -181,6 +190,7 @@ export default function DropdownMenuSection() {
             >
                 <div>
                     <CardMenu
+                        defaultOpen
                         trigger={<Trigger label={t('Card actions')} />}
                         entries={cardActions}
                         label={t('Card actions')}
@@ -203,6 +213,43 @@ export default function DropdownMenuSection() {
                         entries={displayOptions}
                         label={t('Display options')}
                     />
+                </div>
+            </State>
+            <State label={t('Two-line items: the row grows with its content')}>
+                <div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={t('Notifications')}
+                            >
+                                <MoreHorizontalIcon />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="start"
+                            className="w-72"
+                            aria-label={t('Notifications')}
+                        >
+                            {[
+                                t(
+                                    'Sofia assigned you the action "Write the incident review before the next planning"',
+                                ),
+                                t('Retro sprint 42 starts in 10 minutes'),
+                            ].map((title) => (
+                                <DropdownMenuItem
+                                    key={title}
+                                    className="flex flex-col items-start gap-0.5"
+                                >
+                                    <span className="break-words">{title}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('Atlas · 2 days ago')}
+                                    </span>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </State>
             <State label={t('Aligned to start')}>

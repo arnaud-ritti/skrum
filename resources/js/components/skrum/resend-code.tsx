@@ -30,16 +30,24 @@ export function ResendCode({
     const justSent =
         !canResend && sentTo !== undefined && remaining >= cooldownSeconds;
 
+    const announcement = justSent
+        ? t('A new code was sent to :address', { address: sentTo })
+        : canResend
+          ? t('You can resend the code')
+          : '';
+
     return (
         <div
             data-slot="resend-code"
             className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground"
         >
-            {justSent ? (
-                <p className="text-skrum-success-text">
-                    {t('A new code was sent to :address', { address: sentTo })}
-                </p>
-            ) : null}
+            <p
+                role="status"
+                aria-live="polite"
+                className={justSent ? 'text-skrum-success-text' : 'sr-only'}
+            >
+                {announcement}
+            </p>
             {!canResend ? (
                 <p>
                     {t('Nothing received? Resend the code in')}{' '}
@@ -51,21 +59,21 @@ export function ResendCode({
                     </span>
                 </p>
             ) : null}
-            <span role="status" aria-live="polite" className="sr-only">
-                {canResend ? t('You can resend the code') : ''}
-            </span>
-            {canResend ? (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 text-skrum-primary-text"
-                    onClick={onResend}
-                >
-                    <RotateCw aria-hidden="true" />
-                    <span className="truncate">{t('Resend the code')}</span>
-                </Button>
-            ) : null}
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-disabled={canResend ? undefined : true}
+                className="-ml-3 text-skrum-primary-text aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                onClick={() => {
+                    if (canResend) {
+                        onResend();
+                    }
+                }}
+            >
+                <RotateCw aria-hidden="true" />
+                <span className="truncate">{t('Resend the code')}</span>
+            </Button>
         </div>
     );
 }

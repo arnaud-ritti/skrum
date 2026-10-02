@@ -24,6 +24,10 @@ type InputOTPProps = React.ComponentPropsWithoutRef<typeof OTPInput> & {
   label?: string
 }
 
+function stripCodeSeparators(text: string): string {
+  return text.replace(/[\s-]/g, "")
+}
+
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
   InputOTPProps
@@ -79,6 +83,7 @@ const InputOTP = React.forwardRef<
         value={{ invalid: hasError, pasted, disabled: Boolean(disabled) }}
       >
         <OTPInput
+          pasteTransformer={stripCodeSeparators}
           {...props}
           ref={setRefs}
           disabled={disabled}

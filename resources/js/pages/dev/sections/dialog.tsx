@@ -43,7 +43,7 @@ function State({
 
 export default function DialogSection() {
     const { t } = useTrans();
-    const [openState, setOpenState] = useState<StateKey | null>(null);
+    const [openState, setOpenState] = useState<StateKey | null>('consequences');
 
     const bind = (key: StateKey) => ({
         open: openState === key,

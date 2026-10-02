@@ -118,3 +118,18 @@ describe('Tabs', () => {
         expect(list.getAttribute('data-variant')).toBe('line');
     });
 });
+
+describe('TabsContent focus', () => {
+    it('is a tab stop with a visible focus ring', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<Controlled />);
+        const panel = screen.getByRole('tabpanel');
+
+        await user.tab();
+        await user.tab();
+
+        expect(document.activeElement).toBe(panel);
+        expect(panel.className).toContain('focus-visible:ring-2');
+        expect(panel.className).toContain('focus-visible:ring-ring');
+    });
+});

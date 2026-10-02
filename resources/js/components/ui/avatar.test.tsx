@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import {
     Avatar,
     AvatarFallback,
@@ -111,5 +112,50 @@ describe('PersonAvatar', () => {
         render(<PersonAvatar name="Inès B." decorative />);
 
         expect(screen.queryByRole('img')).toBeNull();
+    });
+});
+
+describe('PersonAvatar status tooltip', () => {
+    it('shows the status as text on hover, without a provider around it', async () => {
+        const user = userEvent.setup();
+        render(<PersonAvatar name="Inès B." status="away" typing />);
+
+        await user.hover(screen.getByRole('img', { name: /Inès B\./ }));
+
+        expect(
+            (await screen.findByRole('tooltip')).textContent,
+        ).toBe('Inès B., away, writing');
+    });
+
+    it('adds no tooltip when there is no status to tell', async () => {
+        const user = userEvent.setup();
+        render(<PersonAvatar name="Inès B." />);
+
+        await user.hover(screen.getByRole('img', { name: 'Inès B.' }));
+
+        expect(screen.queryByRole('tooltip')).toBeNull();
+    });
+
+    it('draws a plain image with the given attributes, for a guest too, and drops it on error', () => {
+        const onError = vi.fn();
+        const { container } = render(
+            <PersonAvatar
+                name="Sam Guest"
+                kind="guest"
+                src="/avatars/guest.png"
+                imgProps={{ alt: 'Sam Guest', 'data-presence-id': 'g1', onError }}
+            />,
+        );
+
+        const image = container.querySelector('img') as HTMLImageElement;
+        expect(image.getAttribute('src')).toBe('/avatars/guest.png');
+        expect(image.getAttribute('alt')).toBe('Sam Guest');
+        expect(image.getAttribute('data-presence-id')).toBe('g1');
+
+        fireEvent.error(image);
+
+        expect(onError).toHaveBeenCalledTimes(1);
+        expect(container.querySelector('img')).toBeNull();
+        expect(container.querySelector('[data-slot="avatar-fallback"]')).not.toBeNull();
     });
 });

@@ -33,7 +33,7 @@ const unavailable = ['13'];
 
 export default function DrawerSection() {
     const { t } = useTrans();
-    const [voteOpen, setVoteOpen] = useState(false);
+    const [voteOpen, setVoteOpen] = useState(true);
     const [plainOpen, setPlainOpen] = useState(false);
     const [picked, setPicked] = useState<string | null>('5');
 

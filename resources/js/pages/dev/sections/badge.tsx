@@ -102,6 +102,17 @@ export default function BadgeSection() {
                     </Badge>
                 </div>
             </State>
+            <State
+                label={t('Wrapping label: the caller opts in, the badge grows')}
+            >
+                <div className="w-40">
+                    <Badge variant="outline" className="whitespace-normal">
+                        {t(
+                            'Not synced: the remote tracker refused the request',
+                        )}
+                    </Badge>
+                </div>
+            </State>
         </div>
     );
 }

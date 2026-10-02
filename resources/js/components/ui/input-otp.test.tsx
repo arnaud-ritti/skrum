@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ResendCode } from '@/components/skrum/resend-code';
 import {
     InputOTP,
@@ -8,6 +9,10 @@ import {
     InputOTPSeparator,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+
+beforeAll(() => {
+    document.elementFromPoint ??= () => null;
+});
 
 function Field({
     onComplete,
@@ -89,18 +94,47 @@ describe('InputOTP', () => {
 });
 
 describe('ResendCode', () => {
-    it('shows a tabular countdown and no button while waiting', () => {
+    it('shows a tabular countdown and a disabled button while waiting', () => {
+        const onResend = vi.fn();
         render(
             <ResendCode
                 cooldownSeconds={60}
                 remaining={42}
-                onResend={() => {}}
+                onResend={onResend}
                 locale="en"
             />,
         );
+        const button = screen.getByRole('button', { name: 'Resend the code' });
 
         expect(screen.getByText('0:42')).toBeTruthy();
-        expect(screen.queryByRole('button')).toBeNull();
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+
+        fireEvent.click(button);
+
+        expect(onResend).not.toHaveBeenCalled();
+    });
+
+    it('keeps the button mounted and focused when the cooldown restarts', async () => {
+        const user = userEvent.setup();
+        const props = {
+            cooldownSeconds: 60,
+            onResend: () => {},
+            sentTo: 'ana@skrum.test',
+            locale: 'en' as const,
+        };
+        const { rerender } = render(<ResendCode {...props} remaining={0} />);
+        const button = screen.getByRole('button', { name: 'Resend the code' });
+
+        await user.click(button);
+        rerender(<ResendCode {...props} remaining={60} />);
+
+        expect(screen.getByRole('button', { name: 'Resend the code' })).toBe(
+            button,
+        );
+        expect(document.activeElement).toBe(button);
+        expect(screen.getByRole('status').textContent).toBe(
+            'A new code was sent to ana@skrum.test',
+        );
     });
 
     it('offers the button once the countdown ends and calls onResend', () => {
@@ -136,4 +170,84 @@ describe('ResendCode', () => {
             screen.getByText('A new code was sent to ana@skrum.test'),
         ).toBeTruthy();
     });
+});
+
+describe('InputOTP keyboard', () => {
+    it('advances while typing and completes on the sixth digit', async () => {
+        const user = userEvent.setup();
+        const onComplete = vi.fn();
+        render(<Field onComplete={onComplete} />);
+        const input = screen.getByRole('textbox') as HTMLInputElement;
+
+        await user.click(input);
+        await user.keyboard('48291');
+
+        expect(input.value).toBe('48291');
+        expect(onComplete).not.toHaveBeenCalled();
+
+        await user.keyboard('3');
+
+        expect(onComplete).toHaveBeenCalledWith('482913');
+    });
+
+    it('removes the last digit on Backspace', async () => {
+        const user = userEvent.setup();
+        render(<Field />);
+        const input = screen.getByRole('textbox') as HTMLInputElement;
+
+        await user.click(input);
+        await user.keyboard('482{Backspace}');
+
+        expect(input.value).toBe('48');
+    });
+
+    it('selects the whole code when an error arrives, ready to retype', () => {
+        function WithError({ error }: { error?: string }) {
+            return (
+                <InputOTP
+                    maxLength={6}
+                    defaultValue="482913"
+                    label="Verification code"
+                    error={error}
+                >
+                    <InputOTPGroup>
+                        {[0, 1, 2, 3, 4, 5].map((index) => (
+                            <InputOTPSlot key={index} index={index} />
+                        ))}
+                    </InputOTPGroup>
+                </InputOTP>
+            );
+        }
+
+        const { rerender } = render(<WithError />);
+        const input = screen.getByRole('textbox') as HTMLInputElement;
+
+        input.setSelectionRange(6, 6);
+        rerender(<WithError error="Invalid code." />);
+
+        expect(input.selectionStart).toBe(0);
+        expect(input.selectionEnd).toBe(6);
+    });
+
+    it.each(['482-913', '482 913', ' 482 - 913 '])(
+        'fills every slot when "%s" is pasted',
+        async (clipboard) => {
+            const user = userEvent.setup();
+            const onComplete = vi.fn();
+            const { container } = render(<Field onComplete={onComplete} />);
+            const input = screen.getByRole('textbox') as HTMLInputElement;
+
+            await user.click(input);
+            await user.paste(clipboard);
+
+            expect(input.value).toBe('482913');
+            expect(onComplete).toHaveBeenCalledWith('482913');
+            expect(
+                Array.from(
+                    container.querySelectorAll('[data-slot="input-otp-slot"]'),
+                    (slot) => slot.textContent,
+                ).join(''),
+            ).toBe('482913');
+        },
+    );
 });

@@ -34,7 +34,7 @@ function State({ label, children }: { label: string; children: ReactNode }) {
 
 export default function CommandSection() {
     const { t } = useTrans();
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
     const noop = () => {};
     const label = t('New retro');
     const query = t('retro');

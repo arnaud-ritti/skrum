@@ -1,7 +1,18 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { CardMenu } from '@/components/ui/dropdown-menu';
+import {
+    CardMenu,
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { MenuEntry } from '@/components/ui/dropdown-menu';
 
 function setup(entries: MenuEntry[]) {
@@ -162,5 +173,60 @@ describe('CardMenu', () => {
         expect(document.activeElement).toBe(
             screen.getByRole('menuitem', { name: 'Duplicate' }),
         );
+    });
+});
+
+describe('DropdownMenu rows', () => {
+    it('lets a two-line item grow instead of fixing its height', () => {
+        render(
+            <DropdownMenu open>
+                <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem className="flex flex-col items-start gap-0.5">
+                        <span>Ada assigned you an action</span>
+                        <span>Atlas · 2 hours ago</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuCheckboxItem checked>
+                        Authors
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuRadioGroup value="votes">
+                        <DropdownMenuRadioItem value="votes">
+                            Votes
+                        </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
+                    </DropdownMenuSub>
+                </DropdownMenuContent>
+            </DropdownMenu>,
+        );
+
+        const rows = [
+            screen.getByRole('menuitem', { name: /Ada assigned you/ }),
+            screen.getByRole('menuitemcheckbox', { name: 'Authors' }),
+            screen.getByRole('menuitemradio', { name: 'Votes' }),
+            screen.getByRole('menuitem', { name: 'Move to' }),
+        ];
+
+        rows.forEach((row) => {
+            const classes = row.className.split(/\s+/);
+
+            expect(classes).toContain('min-h-8');
+            expect(classes).toContain('py-1.5');
+            expect(classes).not.toContain('h-8');
+        });
+        expect(rows[0].textContent).toContain('Atlas · 2 hours ago');
+    });
+
+    it('opens the card menu at once with defaultOpen', () => {
+        render(
+            <CardMenu
+                defaultOpen
+                trigger={<button>Open</button>}
+                entries={[{ type: 'item', label: 'Edit', onSelect: vi.fn() }]}
+            />,
+        );
+
+        expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeTruthy();
     });
 });

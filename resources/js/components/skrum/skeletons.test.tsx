@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BoardSkeleton, ListSkeleton } from './skeletons';
 
 describe('BoardSkeleton', () => {
-    it('is a busy labelled group with no status by default', () => {
+    it('is a busy labelled group with one readable status by default', () => {
         render(<BoardSkeleton />);
 
         expect(
@@ -11,7 +11,10 @@ describe('BoardSkeleton', () => {
                 .getByLabelText('Loading the board')
                 .getAttribute('aria-busy'),
         ).toBe('true');
-        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.getAllByRole('status')).toHaveLength(1);
+        expect(screen.getByRole('status').textContent).toBe(
+            'Loading the board',
+        );
     });
 
     it('renders the requested number of columns with decorative content', () => {
@@ -35,7 +38,7 @@ describe('BoardSkeleton', () => {
         render(<BoardSkeleton columns={0} />);
 
         expect(
-            screen.getByLabelText('Loading the board').children,
+            screen.getByRole('group', { name: 'Loading the board' }).children,
         ).toHaveLength(0);
     });
 });
@@ -50,6 +53,8 @@ describe('ListSkeleton', () => {
         expect(
             screen.getByLabelText('Loading sessions').getAttribute('aria-busy'),
         ).toBe('true');
+        expect(screen.getAllByRole('status')).toHaveLength(1);
+        expect(screen.getByRole('status').textContent).toBe('Loading sessions');
     });
 
     it('omits avatar and badge when asked', () => {

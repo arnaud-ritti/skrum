@@ -100,16 +100,14 @@ export function SessionCard({
     const hiddenPeople = people.length - visiblePeople.length;
 
     return (
-        <Card asChild>
-            <Link
-                href={href}
-                data-kind={kind}
-                data-status={status}
-                className={cn(
-                    'block gap-3 p-4 transition-shadow duration-150 outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring',
-                    className,
-                )}
-            >
+        <Card
+            asChild
+            className={cn(
+                'gap-3 p-4 transition-shadow duration-150 outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring',
+                className,
+            )}
+        >
+            <Link href={href} data-kind={kind} data-status={status}>
                 <span className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 @max-card-compact/card:grid-cols-1 @card-wide/card:grid-cols-[auto_minmax(0,1fr)_auto] @card-wide/card:items-center">
                     <span
                         aria-hidden

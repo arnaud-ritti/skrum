@@ -14,6 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 
 export type DialogConsequence = { icon: LucideIcon; label: string };
@@ -72,11 +73,13 @@ function UnavailableDialog({
     onOpenChange,
     title,
     message,
+    restoreFocus,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     title: string;
     message: string;
+    restoreFocus: (event: Event) => void;
 }) {
     const { t } = useTrans();
 
@@ -86,6 +89,7 @@ function UnavailableDialog({
                 showCloseButton={false}
                 closeLabel={t('Close')}
                 data-test="dialog-unavailable"
+                onCloseAutoFocus={restoreFocus}
             >
                 <DialogHeader>
                     <DialogIcon>
@@ -118,6 +122,7 @@ export function ConfirmDialog({
     const { t } = useTrans();
     const cancelRef = useRef<HTMLButtonElement>(null);
     const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
+    const restoreFocus = useRestoreFocus(open);
     const destructive = tone === 'destructive';
 
     if (unavailableMessage !== undefined) {
@@ -127,6 +132,7 @@ export function ConfirmDialog({
                 onOpenChange={onOpenChange}
                 title={title}
                 message={unavailableMessage}
+                restoreFocus={restoreFocus}
             />
         );
     }
@@ -137,6 +143,7 @@ export function ConfirmDialog({
                 role="alertdialog"
                 showCloseButton={false}
                 closeLabel={t('Close')}
+                onCloseAutoFocus={restoreFocus}
                 onInteractOutside={(event) => event.preventDefault()}
                 onEscapeKeyDown={(event) => {
                     if (pending) {
@@ -218,6 +225,7 @@ export function FormDialog({
 }: FormDialogProps) {
     const { t } = useTrans();
     const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
+    const restoreFocus = useRestoreFocus(open);
 
     if (unavailableMessage !== undefined) {
         return (
@@ -226,6 +234,7 @@ export function FormDialog({
                 onOpenChange={onOpenChange}
                 title={title}
                 message={unavailableMessage}
+                restoreFocus={restoreFocus}
             />
         );
     }
@@ -246,6 +255,7 @@ export function FormDialog({
         <Dialog open={open} onOpenChange={guardedOpenChange}>
             <DialogContent
                 closeLabel={t('Close')}
+                onCloseAutoFocus={restoreFocus}
                 {...(description === undefined
                     ? { 'aria-describedby': undefined }
                     : {})}

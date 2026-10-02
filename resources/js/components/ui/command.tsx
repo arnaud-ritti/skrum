@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { useRestoreFocus } from "@/components/ui/use-restore-focus"
 import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
@@ -31,8 +32,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command palette",
-  description = "Search for a command to run",
+  title,
+  description,
   children,
   className,
   commandProps,
@@ -45,15 +46,21 @@ function CommandDialog({
   closeLabel?: string
   commandProps?: React.ComponentProps<typeof CommandPrimitive>
 }) {
+  const { t } = useTrans()
+  const restoreFocus = useRestoreFocus(props.open ?? false)
+
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle>{title ?? t("Command palette")}</DialogTitle>
+        <DialogDescription>
+          {description ?? t("Search, run an action or open a session")}
+        </DialogDescription>
       </DialogHeader>
       <DialogContent
         showCloseButton={false}
         closeLabel={closeLabel}
+        onCloseAutoFocus={restoreFocus}
         className={cn(
           "shadow-modal top-1/5 translate-y-0 gap-0 overflow-hidden rounded-xl p-0 sm:max-w-140",
           className
@@ -80,7 +87,7 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-12 items-center gap-2 border-b px-3.5"
+      className="focus-within:ring-ring flex h-12 items-center gap-2 border-b px-3.5 focus-within:ring-2 focus-within:ring-inset"
     >
       <SearchIcon aria-hidden="true" className="size-4 shrink-0 opacity-60" />
       <CommandPrimitive.Input

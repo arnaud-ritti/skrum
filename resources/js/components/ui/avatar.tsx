@@ -2,6 +2,12 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import { UserRound } from "lucide-react"
 import * as React from "react"
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useInitials } from "@/hooks/use-initials"
 import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
@@ -134,6 +140,14 @@ interface PersonAvatarProps extends Omit<
   typing?: boolean
   kind?: AvatarKind
   decorative?: boolean
+  /**
+   * Attributes of the image (`alt`, `data-*`, `onError`…). When given, the
+   * image is a plain `<img>` mounted at once over the fallback, for guests
+   * too, and it is removed when it fails to load.
+   */
+  imgProps?: Omit<React.ComponentProps<"img">, "src"> & {
+    [attribute: `data-${string}`]: string | undefined
+  }
 }
 
 function PersonAvatar({
@@ -145,6 +159,7 @@ function PersonAvatar({
   typing = false,
   kind = "member",
   decorative = false,
+  imgProps,
   className,
   ...props
 }: PersonAvatarProps) {
@@ -154,7 +169,14 @@ function PersonAvatar({
     "idle" | "loading" | "loaded" | "error"
   >("idle")
 
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null)
+
   const isMember = kind === "member"
+  const hasPlainImage =
+    imgProps !== undefined &&
+    Boolean(src) &&
+    kind !== "anonymous" &&
+    failedSrc !== src
   const initials = getInitials(name) || "?"
   const memberPresence = isMember ? presence : undefined
   const isLoadingImage = Boolean(src) && imageStatus === "loading"
@@ -175,7 +197,7 @@ function PersonAvatar({
       ? t(":name, :status", { name: label, status: details.join(", ") })
       : label
 
-  return (
+  const avatar = (
     <span
       data-slot="person-avatar"
       data-kind={kind}
@@ -199,7 +221,23 @@ function PersonAvatar({
           !isMember && "border border-input bg-card"
         )}
       >
-        {isMember && src && (
+        {hasPlainImage && (
+          <img
+            alt=""
+            {...imgProps}
+            src={src ?? undefined}
+            data-slot="avatar-image"
+            onError={(event) => {
+              setFailedSrc(src ?? null)
+              imgProps?.onError?.(event)
+            }}
+            className={cn(
+              "bg-muted absolute inset-0 z-10 size-full rounded-full object-cover",
+              imgProps?.className
+            )}
+          />
+        )}
+        {imgProps === undefined && isMember && src && (
           <AvatarImage
             src={src}
             alt=""
@@ -246,6 +284,19 @@ function PersonAvatar({
         />
       )}
     </span>
+  )
+
+  if (decorative || details.length === 0) {
+    return avatar
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{avatar}</TooltipTrigger>
+        <TooltipContent>{accessibleName}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

@@ -2,6 +2,7 @@ import { XIcon } from "lucide-react"
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
+import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
 function Drawer({
@@ -48,19 +49,21 @@ function DrawerContent({
   className,
   children,
   showCloseButton = true,
-  closeLabel = "Close",
+  closeLabel,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content> & {
   showCloseButton?: boolean
   closeLabel?: string
 }) {
+  const { t } = useTrans()
+
   return (
     <DrawerPortal>
       <DrawerOverlay />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "bg-popover text-popover-foreground shadow-modal group/drawer-content fixed inset-x-0 bottom-0 z-50 mx-auto flex h-auto max-h-[85dvh] w-full max-w-lg flex-col rounded-t-2xl border border-b-0 px-5 pt-2 pb-[calc(env(safe-area-inset-bottom)+2rem)] outline-hidden",
+          "bg-popover text-popover-foreground shadow-modal group/drawer-content fixed inset-x-0 bottom-0 z-50 mx-auto flex h-auto max-h-drawer w-full max-w-lg flex-col rounded-t-2xl border border-b-0 px-5 pt-2 pb-[calc(env(safe-area-inset-bottom)+2rem)] outline-hidden",
           className
         )}
         {...props}
@@ -76,7 +79,7 @@ function DrawerContent({
             className="text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute top-3 right-3 flex size-11 items-center justify-center rounded-md transition-colors focus-visible:ring-3 focus-visible:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">{closeLabel}</span>
+            <span className="sr-only">{closeLabel ?? t("Close")}</span>
           </DrawerPrimitive.Close>
         )}
       </DrawerPrimitive.Content>

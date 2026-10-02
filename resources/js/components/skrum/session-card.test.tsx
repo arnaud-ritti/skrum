@@ -96,3 +96,18 @@ describe('SessionCard', () => {
         },
     );
 });
+
+describe('SessionCard padding', () => {
+    it('keeps its padding and gap over the card defaults', () => {
+        render(<SessionCard {...base} className="extra" />);
+
+        const classes = screen.getByRole('link').className.split(/\s+/);
+
+        expect(classes).toContain('p-4');
+        expect(classes).toContain('gap-3');
+        expect(classes).toContain('extra');
+        expect(classes).not.toContain('py-0');
+        expect(classes).not.toContain('gap-0');
+        expect(classes).not.toContain('block');
+    });
+});

@@ -31,7 +31,7 @@ function State({ label, children }: { label: string; children: ReactNode }) {
 
 export default function SheetSection() {
     const { t } = useTrans();
-    const [variant, setVariant] = useState<Variant | null>(null);
+    const [variant, setVariant] = useState<Variant | null>('default');
     const close = (open: boolean) => {
         if (!open) {
             setVariant(null);

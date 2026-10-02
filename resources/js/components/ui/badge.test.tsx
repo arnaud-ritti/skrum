@@ -68,3 +68,20 @@ describe('Badge', () => {
         expect(link.firstElementChild?.tagName.toLowerCase()).toBe('svg');
     });
 });
+
+describe('Badge height', () => {
+    it('has a minimum height so a caller can let the text wrap', () => {
+        render(
+            <Badge variant="outline" className="whitespace-normal">
+                Not synced: the remote tracker refused the request
+            </Badge>,
+        );
+
+        const classes = screen.getByText(/Not synced/).className.split(/\s+/);
+
+        expect(classes).toContain('min-h-5.5');
+        expect(classes).not.toContain('h-5.5');
+        expect(classes).toContain('whitespace-normal');
+        expect(classes).not.toContain('whitespace-nowrap');
+    });
+});
