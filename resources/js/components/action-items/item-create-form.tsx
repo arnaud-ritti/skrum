@@ -6,12 +6,12 @@ import { AnonymousNote } from '@/components/action-items/item-parts';
 import {
     actionOwnerValue,
     ActionItemRecurrences,
+    ActionOwnerOptions,
     ActionPriorityMark,
     useActionItemLabels,
 } from '@/components/skrum/action-item';
 import type { ActionItemOwner } from '@/components/skrum/action-item';
 import { LoadingButton } from '@/components/skrum/loading-button';
-import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -174,21 +174,7 @@ export function ItemCreateForm({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value={None}>{t('Unassigned')}</SelectItem>
-                        {members.map((member) => (
-                            <SelectItem
-                                key={actionOwnerValue(member)}
-                                value={actionOwnerValue(member)}
-                            >
-                                <PersonAvatar
-                                    decorative
-                                    size="xs"
-                                    name={member.name}
-                                    kind={member.kind}
-                                    src={member.avatarUrl}
-                                />
-                                {labels.ownerName(member)}
-                            </SelectItem>
-                        ))}
+                        <ActionOwnerOptions members={members} withAvatar />
                     </SelectContent>
                 </Select>
                 <Input

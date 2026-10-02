@@ -31,7 +31,9 @@ import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -57,6 +59,11 @@ export type ActionItemOwner = {
     isTeamMember?: boolean;
     presence?: ComponentProps<typeof PersonAvatar>['presence'];
     avatarUrl?: string | null;
+    /**
+     * Heading the person is listed under in the assignee options, such as
+     * "In this retro". Left out, the options are one flat list.
+     */
+    group?: string;
 };
 
 export type ActionItemPerson = { name: string; avatarUrl?: string | null };
@@ -280,6 +287,68 @@ export function useActionItemLabels() {
     };
 
     return { status, priority, recurrence, repeats, statusAction, ownerName };
+}
+
+/** The people of an assignee select, under the heading of their group when they have one. */
+export function groupActionOwners(
+    members: ActionItemOwner[],
+): { label: string | null; members: ActionItemOwner[] }[] {
+    const groups: { label: string | null; members: ActionItemOwner[] }[] = [];
+
+    for (const member of members) {
+        const label = member.group ?? null;
+        const group = groups.find((candidate) => candidate.label === label);
+
+        if (group) {
+            group.members.push(member);
+
+            continue;
+        }
+
+        groups.push({ label, members: [member] });
+    }
+
+    return groups;
+}
+
+/** The options of an assignee select, inside its `SelectContent`. */
+export function ActionOwnerOptions({
+    members,
+    withAvatar = false,
+}: {
+    members: ActionItemOwner[];
+    withAvatar?: boolean;
+}) {
+    const labels = useActionItemLabels();
+
+    const option = (member: ActionItemOwner) => (
+        <SelectItem
+            key={actionOwnerValue(member)}
+            value={actionOwnerValue(member)}
+        >
+            {withAvatar && (
+                <PersonAvatar
+                    decorative
+                    size="xs"
+                    name={member.name}
+                    kind={member.kind}
+                    src={member.avatarUrl}
+                />
+            )}
+            {labels.ownerName(member)}
+        </SelectItem>
+    );
+
+    return groupActionOwners(members).map((group) =>
+        group.label === null ? (
+            group.members.map(option)
+        ) : (
+            <SelectGroup key={group.label}>
+                <SelectLabel>{group.label}</SelectLabel>
+                {group.members.map(option)}
+            </SelectGroup>
+        ),
+    );
 }
 
 export function ActionPriorityMark({
@@ -892,18 +961,9 @@ export function ActionItem({
                                                     {labels.ownerName(owner)}
                                                 </SelectItem>
                                             )}
-                                            {members.map((member) => (
-                                                <SelectItem
-                                                    key={actionOwnerValue(
-                                                        member,
-                                                    )}
-                                                    value={actionOwnerValue(
-                                                        member,
-                                                    )}
-                                                >
-                                                    {member.name}
-                                                </SelectItem>
-                                            ))}
+                                            <ActionOwnerOptions
+                                                members={members}
+                                            />
                                         </SelectContent>
                                     </Select>
                                 )}
