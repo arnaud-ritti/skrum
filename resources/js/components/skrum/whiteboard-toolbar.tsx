@@ -6,8 +6,11 @@ import type { PostItColor } from '@/lib/whiteboard/palette';
 import { cn } from '@/lib/utils';
 
 export type WhiteboardColorBarProps = {
-    value: PostItColor;
+    /** Null when the current fill is none of the eight: no radio is checked. */
+    value: PostItColor | null;
     onChange: (color: PostItColor) => void;
+    /** A press on a colour (pointer, Enter or Space), not a move with the arrow keys. */
+    onActivate?: (color: PostItColor) => void;
     orientation?: 'horizontal' | 'vertical';
     disabled?: boolean;
     className?: string;
@@ -42,6 +45,7 @@ export function useColorNames(): Record<PostItColor, string> {
 export function WhiteboardColorBar({
     value,
     onChange,
+    onActivate,
     orientation = 'horizontal',
     disabled = false,
     className,
@@ -57,7 +61,7 @@ export function WhiteboardColorBar({
         const forwardKey = isVertical ? 'ArrowDown' : 'ArrowRight';
         const backwardKey = isVertical ? 'ArrowUp' : 'ArrowLeft';
         const last = PostItColors.length - 1;
-        const index = PostItColors.indexOf(value);
+        const index = value === null ? 0 : PostItColors.indexOf(value);
         let next: number | null = null;
 
         if (event.key === forwardKey || event.key === 'ArrowDown') {
@@ -101,6 +105,7 @@ export function WhiteboardColorBar({
         >
             {PostItColors.map((color) => {
                 const isActive = color === value;
+                const isTabStop = color === (value ?? PostItColors[0]);
 
                 return (
                     <button
@@ -114,9 +119,12 @@ export function WhiteboardColorBar({
                         aria-label={names[color]}
                         title={names[color]}
                         disabled={disabled}
-                        tabIndex={isActive ? 0 : -1}
+                        tabIndex={isTabStop ? 0 : -1}
                         data-color={color}
-                        onClick={() => onChange(color)}
+                        onClick={() => {
+                            onChange(color);
+                            onActivate?.(color);
+                        }}
                         onKeyDown={move}
                         className="flex size-8 shrink-0 items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover disabled:pointer-events-none"
                     >
