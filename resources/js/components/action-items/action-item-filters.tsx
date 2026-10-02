@@ -33,7 +33,7 @@ type Props = {
     teams: { id: string; name: string }[];
     assignees: FilterAssignee[];
     overdueCount: number;
-    /** No facet narrows the list: nothing to reset. */
+    /** The page is as it opens: nothing to reset. */
     isDefault: boolean;
     onChange: (changes: ActionItemFilterChanges) => void;
     onReset: () => void;

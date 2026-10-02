@@ -97,14 +97,20 @@ describe('landingQuery', () => {
         });
     });
 
-    it('lets the stored team win, every team included', () => {
+    it('lets the stored team win over the current team', () => {
         expect(
             landingQuery({ team: 'team-2' }, 'team-1', ['team-1', 'team-2']),
         ).toEqual({ team: 'team-2' });
+    });
+
+    it('does not remember every team: an entry that says so follows the current team', () => {
         expect(
             landingQuery({ team: '', status: 'all' }, 'team-1', ['team-1']),
-        ).toEqual({ status: 'all' });
-        expect(landingQuery({ team: '' }, 'team-1', ['team-1'])).toBeNull();
+        ).toEqual({ status: 'all', team: 'team-1' });
+        expect(landingQuery({ team: '' }, 'team-1', ['team-1'])).toEqual({
+            team: 'team-1',
+        });
+        expect(landingQuery({ team: '' }, null, ['team-1'])).toBeNull();
     });
 
     it('never sends the grouping to the server', () => {
@@ -113,9 +119,7 @@ describe('landingQuery', () => {
                 'team-1',
             ]),
         ).toEqual({ team: 'team-2' });
-        expect(
-            landingQuery({ team: '', group: 'team' }, 'team-1', ['team-1']),
-        ).toBeNull();
+        expect(landingQuery({ group: 'team' }, null, ['team-1'])).toBeNull();
     });
 });
 
@@ -192,7 +196,7 @@ describe('useActionItemFilters', () => {
 
         act(() => result.current.apply({ team: null, status: 'completed' }));
 
-        expect(stored()).toEqual({ status: 'completed', team: '' });
+        expect(stored()).toEqual({ status: 'completed' });
         expect(lastVisit().url).toContain('status=completed');
         expect(lastVisit().url).not.toContain('item=');
         expect(lastVisit().url).not.toContain('team=');
@@ -247,38 +251,108 @@ describe('useActionItemFilters', () => {
         expect(lastVisit().url).not.toContain('team-1');
     });
 
-    it('stores the team the viewer picks, and every team after the cross', () => {
+    it('stores the team the viewer picks', () => {
         window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
 
         const { result } = mount({ ...defaults, team: 'team-1' });
 
         act(() => result.current.apply({ team: 'team-2' }));
-        expect(stored()).toEqual({ team: 'team-2' });
 
-        act(() => result.current.apply({ team: null }));
-        expect(stored()).toEqual({ team: '' });
+        expect(stored()).toEqual({ team: 'team-2' });
     });
 
-    it('resets to the bare page, which stays on every team', () => {
+    it('shows every team for this visit only after the cross of the team facet', () => {
         window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
         window.localStorage.setItem(
             filterStorageKey(workspace.id),
-            JSON.stringify({ team: 'team-1', group: 'team' }),
+            JSON.stringify({ team: 'team-2', status: 'all' }),
         );
 
-        const { result } = mount({ ...defaults, team: 'team-1' });
+        const { result, unmount } = mount({
+            status: 'all',
+            assignee: null,
+            team: 'team-2',
+            item: null,
+        });
 
-        act(() => result.current.reset());
+        act(() => result.current.apply({ team: null }));
 
-        expect(stored()).toEqual({ team: '' });
-        expect(result.current.grouping).toBe('none');
-        expect(lastVisit().url).not.toContain('?');
+        expect(lastVisit().url).not.toContain('team=');
+        expect(stored()).toEqual({ status: 'all' });
 
+        unmount();
         window.history.replaceState({}, '', '/w/nordlys/action-items');
         mocks.get.mockReset();
         mount();
 
-        expect(mocks.get).not.toHaveBeenCalled();
+        expect(lastVisit().url).toContain('team=team-1');
+    });
+
+    it('resets to the opening state: current team, open items, no grouping', () => {
+        window.history.replaceState(
+            {},
+            '',
+            '/w/nordlys/action-items?team=team-2&status=all',
+        );
+        window.localStorage.setItem(
+            filterStorageKey(workspace.id),
+            JSON.stringify({ team: 'team-2', status: 'all', group: 'team' }),
+        );
+
+        const { result, unmount } = mount({
+            status: 'all',
+            assignee: 'me',
+            team: 'team-2',
+            item: null,
+        });
+
+        act(() => result.current.reset());
+
+        expect(stored()).toBeNull();
+        expect(result.current.grouping).toBe('none');
+        expect(lastVisit().url).toContain('?team=team-1');
+        expect(lastVisit().url).not.toContain('status');
+        expect(lastVisit().url).not.toContain('assignee');
+
+        unmount();
+        window.history.replaceState({}, '', '/w/nordlys/action-items');
+        mocks.get.mockReset();
+        mount();
+
+        expect(lastVisit().url).toContain('team=team-1');
+    });
+
+    it('resets to every team without a current team the viewer can see', () => {
+        window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
+
+        const { result } = mount({ ...defaults, team: 'team-2' }, 'team-9');
+
+        act(() => result.current.reset());
+
+        expect(lastVisit().url).not.toContain('?');
+    });
+
+    it('is at its default on the opening state only', () => {
+        window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
+
+        const opening = mount({ ...defaults, team: 'team-1' });
+
+        expect(opening.result.current.isDefault).toBe(true);
+
+        act(() => opening.result.current.setGrouping('assignee'));
+        expect(opening.result.current.isDefault).toBe(false);
+        opening.unmount();
+        window.localStorage.clear();
+
+        expect(mount(defaults).result.current.isDefault).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-2' }).result.current.isDefault,
+        ).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-1', status: 'all' }).result.current
+                .isDefault,
+        ).toBe(false);
+        expect(mount(defaults, null).result.current.isDefault).toBe(true);
     });
 
     it('is loading while the landing visit runs', () => {
