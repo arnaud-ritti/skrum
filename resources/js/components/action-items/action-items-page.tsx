@@ -13,6 +13,7 @@ import { ActionItemSheet } from '@/components/action-items/action-item-sheet';
 import { ActionItemsHeader } from '@/components/action-items/action-items-header';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
 import { ActionItemsList } from '@/components/action-items/action-items-list';
+import { ActionItemsPagination } from '@/components/action-items/action-items-pagination';
 import { ActionItemsTable } from '@/components/action-items/action-items-table';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
 import { ItemDeleteConfirm } from '@/components/action-items/item-delete-confirm';
@@ -29,11 +30,6 @@ import {
 } from '@/components/action-items/use-action-items-realtime';
 import { useActionItemLabels } from '@/components/skrum/action-item';
 import { EmptyState } from '@/components/skrum/empty-state';
-import {
-    Pagination,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
@@ -43,7 +39,6 @@ import { groupItems } from '@/lib/action-items/grouping';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
-import { cn } from '@/lib/utils';
 import type { ExportSource, WorkspaceSummary } from '@/types';
 
 /** The table needs this much room for its seven columns beside the sidebar. */
@@ -315,34 +310,13 @@ export function ActionItemsPage({
 
     const pagination = (className: string) =>
         paged && (
-            <div
-                data-slot="action-items-pagination"
-                className={cn(
-                    'flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 text-sm',
-                    className,
-                )}
-            >
-                <span className="text-muted-foreground tabular-nums">
-                    {t('Page :page of :total', {
-                        page: items.currentPage,
-                        total: items.lastPage,
-                    })}
-                </span>
-                <Pagination className="mx-0 w-auto min-w-24 flex-1 justify-end gap-2">
-                    <PaginationPrevious
-                        size="sm"
-                        variant="outline"
-                        disabled={items.prevPageUrl === null}
-                        href={items.prevPageUrl ?? undefined}
-                    />
-                    <PaginationNext
-                        size="sm"
-                        variant="outline"
-                        disabled={items.nextPageUrl === null}
-                        href={items.nextPageUrl ?? undefined}
-                    />
-                </Pagination>
-            </div>
+            <ActionItemsPagination
+                currentPage={items.currentPage}
+                lastPage={items.lastPage}
+                prevPageUrl={items.prevPageUrl}
+                nextPageUrl={items.nextPageUrl}
+                className={className}
+            />
         );
 
     const list = (shown: typeof groups, label?: string) =>
