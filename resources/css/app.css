@@ -553,5 +553,23 @@
 @theme {
     /* Skeleton: components/Skeleton/README.md asks for 1.6s (Tailwind: 2s). */
     --animate-pulse: pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+    /*
+     * ReactionBar: components/ReactionBar/README.md asks for emoji rising
+     * 7.5rem while fading out over --duration-celebrate (1400ms).
+     */
+    --animate-reaction-rise: reaction-rise 1400ms cubic-bezier(0.2, 0, 0, 1)
+        forwards;
+
+    @keyframes reaction-rise {
+        0% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-7.5rem);
+            opacity: 0;
+        }
+    }
 }
 /* ===== End of plan 18b+18c additions ===== */
