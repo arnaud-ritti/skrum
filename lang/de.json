@@ -3923,5 +3923,9 @@
     "Sign-in": "Anmeldung",
     "Single sign-on is required.": "Single Sign-on ist vorgeschrieben.",
     "Single sign-on is optional.": "Single Sign-on ist freiwillig.",
-    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Schalten Sie einen zweiten Faktor für Ihr Konto ein, bevor Sie Single Sign-on vorschreiben: Damit kann sich ein Administrator mit Passwort anmelden, wenn Single Sign-on ausfällt."
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Schalten Sie einen zweiten Faktor für Ihr Konto ein, bevor Sie Single Sign-on vorschreiben: Damit kann sich ein Administrator mit Passwort anmelden, wenn Single Sign-on ausfällt.",
+    "Unsubscribe from recaps": "Zusammenfassungen abbestellen",
+    "Recap e-mails": "Zusammenfassungs-E-Mails",
+    "Stop the results of retrospectives sent by e-mail?": "Ergebnisse von Retrospektiven per E-Mail beenden?",
+    "You no longer receive the results of retrospectives by e-mail.": "Sie erhalten keine Ergebnisse von Retrospektiven mehr per E-Mail."
 }

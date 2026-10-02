@@ -3698,5 +3698,9 @@
     "Sign-in": "Sign-in",
     "Single sign-on is required.": "Single sign-on is required.",
     "Single sign-on is optional.": "Single sign-on is optional.",
-    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails."
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.",
+    "Unsubscribe from recaps": "Unsubscribe from recaps",
+    "Recap e-mails": "Recap e-mails",
+    "Stop the results of retrospectives sent by e-mail?": "Stop the results of retrospectives sent by e-mail?",
+    "You no longer receive the results of retrospectives by e-mail.": "You no longer receive the results of retrospectives by e-mail."
 }

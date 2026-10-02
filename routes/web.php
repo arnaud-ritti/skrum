@@ -97,6 +97,7 @@ use App\Http\Controllers\Poker\PokerVotesController;
 use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
+use App\Http\Controllers\RecapUnsubscribesController;
 use App\Http\Controllers\ReminderUnsubscribesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
@@ -185,6 +186,8 @@ Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, '
 Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
     Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->whereUuid('user')->name('reminderUnsubscribes.show');
     Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->whereUuid('user')->name('reminderUnsubscribes.store');
+    Route::get('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'show'])->whereUuid('user')->name('recapUnsubscribes.show');
+    Route::post('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'store'])->whereUuid('user')->name('recapUnsubscribes.store');
 });
 
 Route::get('dev/mail/{mail}', [MailPreviewsController::class, 'show'])->where('mail', '[a-z-]+')->name('dev.mail.show');

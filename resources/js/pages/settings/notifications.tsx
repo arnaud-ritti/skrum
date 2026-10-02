@@ -10,6 +10,7 @@ import { edit as editNotifications } from '@/routes/notificationPreferences';
 type Preferences = {
     action_item_reminders_by_email: boolean;
     action_item_reminders_in_app: boolean;
+    recap_emails: boolean;
 };
 
 type Props = {

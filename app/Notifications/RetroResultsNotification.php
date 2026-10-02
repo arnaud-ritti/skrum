@@ -14,6 +14,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Carries the retro id only: the recap is written when the mail is sent,
@@ -54,6 +55,8 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
         return resolve(RetroRecapMail::class)->build(
             resolve(BuildRetroRecap::class)->handle($retro),
             resolve(SummarizeHealthCheck::class)->handle($retro),
-        )->forNotifiable($notifiable);
+        )
+            ->unsubscribeVia(URL::signedRoute('recapUnsubscribes.show', ['user' => $notifiable->id]))
+            ->forNotifiable($notifiable);
     }
 }

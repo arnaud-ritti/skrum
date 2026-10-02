@@ -20,3 +20,7 @@
 @endforeach
 
 {!! __('View the results') !!}: {!! $url !!}
+{!! __('Notification settings') !!}: {!! $settingsUrl !!}
+@if($unsubscribeUrl !== null)
+{!! __('Unsubscribe from recaps') !!}: {!! $unsubscribeUrl !!}
+@endif

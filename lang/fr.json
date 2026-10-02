@@ -3923,5 +3923,9 @@
     "Sign-in": "Connexion",
     "Single sign-on is required.": "L'authentification unique est obligatoire.",
     "Single sign-on is optional.": "L'authentification unique est facultative.",
-    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Activez un second facteur sur votre compte avant d'imposer l'authentification unique : c'est ce qui permet à un administrateur de se connecter par mot de passe si l'authentification unique tombe en panne."
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Activez un second facteur sur votre compte avant d'imposer l'authentification unique : c'est ce qui permet à un administrateur de se connecter par mot de passe si l'authentification unique tombe en panne.",
+    "Unsubscribe from recaps": "Se désabonner des récapitulatifs",
+    "Recap e-mails": "E-mails de récapitulatif",
+    "Stop the results of retrospectives sent by e-mail?": "Arrêter l'envoi des résultats de rétrospective par e-mail ?",
+    "You no longer receive the results of retrospectives by e-mail.": "Vous ne recevez plus les résultats de rétrospective par e-mail."
 }

@@ -8,8 +8,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Only current team members with a verified email ever receive results;
- * guests have no account and are never emailed (spec 6 §5.3).
+ * Only current team members with a verified email and who did not
+ * unsubscribe from recaps ever receive results; guests have no account and are never emailed (spec 6 §5.3).
  */
 class RetroResultsRecipients
 {
@@ -21,6 +21,7 @@ class RetroResultsRecipients
         return User::query()
             ->whereIn('id', $retro->team->members()->select('users.id'))
             ->whereNotNull('email_verified_at')
+            ->where('recap_emails', true)
             ->when($audience === RetroResultsAudience::Participants, fn (Builder $query) => $query->whereIn(
                 'id',
                 $retro->participants()->whereNotNull('user_id')->select('user_id'),

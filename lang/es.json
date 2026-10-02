@@ -3923,5 +3923,9 @@
     "Sign-in": "Inicio de sesión",
     "Single sign-on is required.": "El inicio de sesión único es obligatorio.",
     "Single sign-on is optional.": "El inicio de sesión único es opcional.",
-    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Active un segundo factor en su cuenta antes de exigir el inicio de sesión único: es lo que permite a un administrador iniciar sesión con contraseña si el inicio de sesión único falla."
+    "Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.": "Active un segundo factor en su cuenta antes de exigir el inicio de sesión único: es lo que permite a un administrador iniciar sesión con contraseña si el inicio de sesión único falla.",
+    "Unsubscribe from recaps": "Darse de baja de los resúmenes",
+    "Recap e-mails": "Correos de resumen",
+    "Stop the results of retrospectives sent by e-mail?": "¿Dejar de recibir por correo los resultados de las retrospectivas?",
+    "You no longer receive the results of retrospectives by e-mail.": "Ya no recibe por correo los resultados de las retrospectivas."
 }

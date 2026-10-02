@@ -24,7 +24,7 @@ it('shows the notification preferences', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/notifications', false)
-            ->where('preferences', ['action_item_reminders_by_email' => true, 'action_item_reminders_in_app' => false])
+            ->where('preferences', ['action_item_reminders_by_email' => true, 'action_item_reminders_in_app' => false, 'recap_emails' => true])
             ->where('reminderTime', '08:00')
             ->where('remindersEnabled', true));
 });
@@ -37,6 +37,7 @@ it('saves the notification preferences', function () {
         ->patch(route('notificationPreferences.update'), [
             'action_item_reminders_by_email' => false,
             'action_item_reminders_in_app' => true,
+            'recap_emails' => true,
         ])
         ->assertRedirect(route('notificationPreferences.edit'));
 
@@ -49,7 +50,7 @@ it('validates the preferences as booleans', function () {
 
     $this->actingAs($user)
         ->patch(route('notificationPreferences.update'), ['action_item_reminders_by_email' => 'maybe'])
-        ->assertSessionHasErrors(['action_item_reminders_by_email', 'action_item_reminders_in_app']);
+        ->assertSessionHasErrors(['action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails']);
 });
 
 it('logs a reminder once per item, user, kind and due date', function () {

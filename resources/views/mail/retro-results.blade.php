@@ -27,5 +27,6 @@
 @endsection
 
 @section('footer')
-<p style="margin:0;">{{ __('You receive this e-mail because you took part in this retrospective or belong to its team.') }} <a class="m-muted" href="{{ $settingsUrl }}" style="color:{{ $colors['light']['muted-foreground'] }};">{{ __('Notification settings') }}</a></p>
+<p style="margin:0;">{{ __('You receive this e-mail because you took part in this retrospective or belong to its team.') }}</p>
+<p style="margin:8px 0 0;"><a class="m-muted" href="{{ $settingsUrl }}" style="color:{{ $colors['light']['muted-foreground'] }};">{{ __('Notification settings') }}</a>@if($unsubscribeUrl !== null) · <a class="m-muted" href="{{ $unsubscribeUrl }}" style="color:{{ $colors['light']['muted-foreground'] }};">{{ __('Unsubscribe from recaps') }}</a>@endif</p>
 @endsection
