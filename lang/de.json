@@ -3914,5 +3914,8 @@
     "Live updates are paused. Other people's changes appear when the connection returns.": "Live-Aktualisierungen sind pausiert. Die Änderungen der anderen erscheinen, sobald die Verbindung zurück ist.",
     "Session shell, every slot filled, reaction bar over a tall content": "Sitzungsrahmen, alle Bereiche gefüllt, Reaktionsleiste über einem hohen Inhalt",
     "Session shell, reconnecting: the banner of a retro above, then the sentence of each other session type": "Sitzungsrahmen, Verbindung wird wiederhergestellt: oben das Banner einer Retro, dann der Satz jedes anderen Sitzungstyps",
-    "Session shell, session expired: inert content": "Sitzungsrahmen, Sitzung abgelaufen: Inhalt inaktiv"
+    "Session shell, session expired: inert content": "Sitzungsrahmen, Sitzung abgelaufen: Inhalt inaktiv",
+    "started just now": "gerade gestartet",
+    "started :count min ago": "vor :count Min. gestartet",
+    "started :count h ago": "vor :count Std. gestartet"
 }

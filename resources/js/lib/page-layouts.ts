@@ -7,6 +7,7 @@ export const ownLayoutPages: readonly string[] = [
     'about',
     'retros/show',
     'poker/show',
+    'games/index',
     'games/show',
     'whiteboards/show',
 ];

@@ -14,6 +14,7 @@ describe('page layouts', () => {
             'dev/design-system',
             'retros/show',
             'poker/show',
+            'games/index',
             'games/show',
             'whiteboards/show',
         ]) {

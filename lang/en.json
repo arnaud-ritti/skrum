@@ -3689,5 +3689,8 @@
     "Live updates are paused. Other people's changes appear when the connection returns.": "Live updates are paused. Other people's changes appear when the connection returns.",
     "Session shell, every slot filled, reaction bar over a tall content": "Session shell, every slot filled, reaction bar over a tall content",
     "Session shell, reconnecting: the banner of a retro above, then the sentence of each other session type": "Session shell, reconnecting: the banner of a retro above, then the sentence of each other session type",
-    "Session shell, session expired: inert content": "Session shell, session expired: inert content"
+    "Session shell, session expired: inert content": "Session shell, session expired: inert content",
+    "started just now": "started just now",
+    "started :count min ago": "started :count min ago",
+    "started :count h ago": "started :count h ago"
 }
