@@ -109,6 +109,26 @@ describe('CardVotes', () => {
         expect(onUnvote).toHaveBeenCalledTimes(1);
     });
 
+    it('says "Total hidden" for a null total, unless the host leaves it out', () => {
+        const votes = (hiddenTotalNote?: boolean) => (
+            <CardVotes
+                mine={1}
+                total={null}
+                budgetLeft={3}
+                hiddenTotalNote={hiddenTotalNote}
+                onVote={vi.fn()}
+                onUnvote={vi.fn()}
+            />
+        );
+        const { rerender } = renderWithProviders(votes());
+
+        expect(screen.getByText('Total hidden')).toBeTruthy();
+
+        rerender(votes(false));
+
+        expect(screen.queryByText('Total hidden')).toBeNull();
+    });
+
     it('closes for a reason of the host: no vote added, none taken back', () => {
         const onVote = vi.fn();
         const onUnvote = vi.fn();

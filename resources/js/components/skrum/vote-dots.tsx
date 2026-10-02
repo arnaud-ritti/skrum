@@ -28,6 +28,11 @@ export type CardVotesProps = {
      * disabled with this reason and no vote can be taken back.
      */
     disabledReason?: string;
+    /**
+     * False leaves out the "Total hidden" pill of a null total, where the
+     * line is narrow and something else already says that totals are hidden.
+     */
+    hiddenTotalNote?: boolean;
     onVote: () => void;
     onUnvote: () => void;
     className?: string;
@@ -103,6 +108,7 @@ export function CardVotes({
     maxPerCard,
     budgetLeft,
     disabledReason,
+    hiddenTotalNote = true,
     onVote,
     onUnvote,
     className,
@@ -258,7 +264,7 @@ export function CardVotes({
                     <TooltipContent>{`${t('Remove a vote')} (Shift+V)`}</TooltipContent>
                 </Tooltip>
             )}
-            {total === null && (
+            {total === null && hiddenTotalNote && (
                 <span
                     data-slot="hidden-total"
                     aria-label={t('Total hidden until reveal')}
