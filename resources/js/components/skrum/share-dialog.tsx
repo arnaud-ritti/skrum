@@ -117,6 +117,8 @@ export type ShareDialogProps = {
     tab?: ShareTab;
     onTabChange?: (tab: ShareTab) => void;
     isMobile?: boolean;
+    /** Id of the "Allow guests" switch control, for a page that targets it. */
+    guestSwitchId?: string;
 };
 
 const roleIcons: Record<SessionRole, LucideIcon> = {
@@ -836,6 +838,7 @@ function ShareBody({
         channels = [],
         onShareToChannel,
         channelsExtra,
+        guestSwitchId,
     } = props;
     const { copied, copy } = useCopied(props.onCopy);
     const roleId = useId();
@@ -967,6 +970,7 @@ function ShareBody({
 
     const guestSwitch = canChange && (
         <Switch
+            id={guestSwitchId}
             checked={invite.allowGuests}
             onCheckedChange={(checked) => onChange({ allowGuests: checked })}
             label={t('Allow guests')}
