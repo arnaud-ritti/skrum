@@ -159,8 +159,46 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
     );
 }
 
+/** The round and its state; `short` keeps the number and says the state to the tooltip and to screen readers. */
+function RoundBadge({
+    number,
+    revealed,
+    short,
+}: {
+    number: number;
+    revealed: boolean;
+    short: boolean;
+}) {
+    const { t } = useTrans();
+    const full = revealed
+        ? t('Round :number · revealed', { number })
+        : t('Round :number · voting', { number });
+
+    if (!short) {
+        return (
+            <Badge variant="outline" shape="pill">
+                {full}
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="outline" shape="pill" title={full}>
+            <span aria-hidden="true">{t('Round :number', { number })}</span>
+            <span className="sr-only">{full}</span>
+        </Badge>
+    );
+}
+
 /** Where the game stands: the round, and what the facilitator turned on. */
-export function RoomStateBadges({ className }: { className?: string }) {
+export function RoomStateBadges({
+    roundOnly = false,
+    className,
+}: {
+    /** The header of a desktop narrower than 110rem: the round alone, on one line. */
+    roundOnly?: boolean;
+    className?: string;
+}) {
     const { snapshot } = useGame();
     const { t } = useTrans();
     const { game, current } = snapshot;
@@ -170,28 +208,25 @@ export function RoomStateBadges({ className }: { className?: string }) {
         <div
             data-slot="poker-state"
             className={cn(
-                'flex min-w-0 flex-wrap items-center gap-2',
+                'flex min-w-0 items-center gap-2',
+                roundOnly ? 'whitespace-nowrap' : 'flex-wrap',
                 className,
             )}
         >
             {isEnded && <Badge variant="muted">{t('Game ended')}</Badge>}
             {current && !isEnded && (
-                <Badge variant="outline" shape="pill">
-                    {current.round.revealedAt === null
-                        ? t('Round :number · voting', {
-                              number: current.round.number,
-                          })
-                        : t('Round :number · revealed', {
-                              number: current.round.number,
-                          })}
-                </Badge>
+                <RoundBadge
+                    number={current.round.number}
+                    revealed={current.round.revealedAt !== null}
+                    short={roundOnly}
+                />
             )}
-            {game.anonymousVotes && (
+            {game.anonymousVotes && !roundOnly && (
                 <Badge variant="outline" shape="pill">
                     {t('Anonymous votes')}
                 </Badge>
             )}
-            {game.autoReveal && (
+            {game.autoReveal && !roundOnly && (
                 <Badge variant="outline" shape="pill">
                     {t('Auto-reveal')}
                 </Badge>

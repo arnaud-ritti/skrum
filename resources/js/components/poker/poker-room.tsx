@@ -46,8 +46,8 @@ import { useRoundActions, useSetSpectator } from './use-round-actions';
 
 /** The queue is a side panel from this width; below, a drawer. */
 const WideFrom = 1024;
-/** From this width the header has room for the state badges between the title and the tools. */
-const BadgesInHeaderFrom = 1760;
+/** From this width the header has room for the option badges beside the round. */
+const OptionBadgesFrom = 1760;
 
 type Props = { snapshot: PokerSnapshot; deckOptions: PokerDeckOption[] };
 
@@ -139,7 +139,7 @@ export function RoomView({
     const { snapshot, online, sessionExpired } = useGame();
     const { t } = useTrans();
     const isWide = useMinWidth(WideFrom);
-    const badgesInHeader = useMinWidth(BadgesInHeaderFrom);
+    const roomForOptions = useMinWidth(OptionBadgesFrom);
     const isPhone = useIsMobile();
     const [stage, setStage] = useState<HTMLElement | null>(null);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
@@ -181,8 +181,11 @@ export function RoomView({
             connection={{ reconnecting, expired: sessionExpired }}
             title={<RoomTitle showDeck={!isPhone} />}
             phases={
-                badgesInHeader ? (
-                    <RoomStateBadges className="max-h-12 justify-center overflow-hidden" />
+                isWide ? (
+                    <RoomStateBadges
+                        roundOnly={!roomForOptions}
+                        className="justify-center"
+                    />
                 ) : undefined
             }
             timer={isPhone ? undefined : <RoomTimer />}
@@ -225,7 +228,7 @@ export function RoomView({
                 className="flex h-full min-h-0 flex-col"
             >
                 {!me.canVote && <WatchingBanner />}
-                {!badgesInHeader && (
+                {!isWide && (
                     <div
                         data-slot="poker-subbar"
                         className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2"
