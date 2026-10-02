@@ -57,8 +57,9 @@ it('lists the user tokens without their secrets', function () {
             ->where('mcpUrl', url('/mcp'))
             ->where('defaultExpiration', '90_days')
             ->has('expirationOptions', 4)
-            ->has('teams', 1)
-            ->where('teams.0.teams.0.name', 'Platform'));
+            ->has('teamGroups', 1)
+            ->where('teamGroups.0.teams.0.name', 'Platform')
+            ->where('teams', fn ($teams): bool => collect($teams)->every(fn (array $team): bool => array_keys($team) === ['id', 'name'])));
 
     $tokens = collect($response->viewData('page')['props']['tokens'])->keyBy('name');
 

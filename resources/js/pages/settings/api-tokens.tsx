@@ -21,7 +21,7 @@ import type {
 
 type Props = {
     tokens: ApiToken[];
-    teams: ApiTokenTeamGroup[];
+    teamGroups: ApiTokenTeamGroup[];
     mcpUrl: string;
     expirationOptions: ApiTokenExpirationOption[];
     defaultExpiration: ApiTokenExpiration;
@@ -35,7 +35,7 @@ const ScopeLabels: Record<ApiTokenScope, string> = {
 
 export default function ApiTokens({
     tokens,
-    teams,
+    teamGroups,
     mcpUrl,
     expirationOptions,
     defaultExpiration,
@@ -122,7 +122,7 @@ export default function ApiTokens({
                 </ul>
 
                 <CreateTokenDialog
-                    teams={teams}
+                    teamGroups={teamGroups}
                     expirationOptions={expirationOptions}
                     defaultExpiration={defaultExpiration}
                 />
