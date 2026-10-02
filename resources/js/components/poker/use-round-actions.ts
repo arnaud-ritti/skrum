@@ -29,8 +29,9 @@ export type RoundActions = {
     next: PokerTask | null;
     /**
      * The final estimate of the current round: what the facilitator chose,
-     * otherwise the saved estimate, otherwise the nearest card. Empty when
-     * nothing can be proposed.
+     * otherwise the saved estimate unless the round was revealed after it
+     * (a re-vote), otherwise the nearest card. Empty when nothing can be
+     * proposed.
      */
     estimate: string;
     /** The cards a final estimate is chosen from: the deck without "?" and the break. */
@@ -52,12 +53,19 @@ export function useRoundActions(): RoundActions {
     const task = snapshot.tasks.find(
         (candidate) => candidate.id === current?.taskId,
     );
+    const suggested = suggestedEstimate(round?.result, game.isNumeric);
+    // A reveal that came after the estimate was saved (a re-vote) proposes
+    // its own nearest card again.
+    const isRevotedSinceSaved =
+        suggested !== null &&
+        !!round?.revealedAt &&
+        !!task?.estimatedAt &&
+        Date.parse(round.revealedAt) > Date.parse(task.estimatedAt);
+    const saved = isRevotedSinceSaved ? null : (task?.estimate ?? null);
     const estimate =
         round !== null && choice?.roundId === round.id
             ? choice.value
-            : (task?.estimate ??
-              suggestedEstimate(round?.result, game.isNumeric) ??
-              '');
+            : (saved ?? suggested ?? '');
     const deckCards = game.cards.filter((card) => !isSpecialCard(card));
     // A saved estimate that left the deck stays among the cards.
     const estimateCards =

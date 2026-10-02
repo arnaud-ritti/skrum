@@ -183,13 +183,36 @@ describe('useRoundActions, the final estimate', () => {
         renderInRoom(
             <Harness />,
             pokerSnapshot({
-                tasks: [pokerTask('t1', 'Login page', { estimate: '13' })],
+                tasks: [
+                    pokerTask('t1', 'Login page', {
+                        estimate: '13',
+                        estimatedAt: '2026-10-02T09:02:00Z',
+                    }),
+                ],
                 current: { taskId: 't1', round: withResult },
             }),
         );
 
         expect(estimate()).toBe('13');
         expect(screen.getByRole('status').textContent).toBe('1,2,3,5,8,13');
+    });
+
+    it('proposes the nearest card of a round revealed after the estimate was saved', () => {
+        renderInRoom(
+            <Harness />,
+            pokerSnapshot({
+                tasks: [
+                    pokerTask('t1', 'Login page', {
+                        estimate: '13',
+                        estimatedAt: '2026-10-02T09:00:00Z',
+                    }),
+                ],
+                current: { taskId: 't1', round: withResult },
+            }),
+        );
+
+        expect(estimate()).toBe('5');
+        expect(screen.getByRole('status').textContent).toBe('1,2,3,5,8');
     });
 
     it('proposes nothing while no card can be counted', () => {
