@@ -23,28 +23,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
+import type { ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
 /** The server's empty board (`TemplateCatalogue::Custom`). */
 export const BlankTemplateId = 'custom';
 
-export type ServerColumnColor =
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'amber'
-    | 'purple'
-    | 'slate';
-export type DesignColumnColor =
-    | 'sun'
-    | 'apricot'
-    | 'coral'
-    | 'plum'
-    | 'iris'
-    | 'sky'
-    | 'lagoon'
-    | 'moss';
-export type TemplateColumnColor = DesignColumnColor | ServerColumnColor;
+export type TemplateColumnColor = ColumnColor;
 export type TemplateSource = 'builtin' | 'workspace' | 'recent';
 
 export type RetroTemplateColumn = {
@@ -97,7 +82,7 @@ export type RetroTemplatePickerProps = {
     className?: string;
 };
 
-const colorContext: Record<string, string> = {
+const colorContext: Record<ColumnColor, string> = {
     sun: 'col-sun',
     apricot: 'col-apricot',
     coral: 'col-coral',
@@ -106,16 +91,10 @@ const colorContext: Record<string, string> = {
     sky: 'col-sky',
     lagoon: 'col-lagoon',
     moss: 'col-moss',
-    amber: 'col-sun',
-    red: 'col-coral',
-    blue: 'col-sky',
-    green: 'col-moss',
-    purple: 'col-plum',
-    slate: 'col-iris',
 };
 
 export function columnColorClass(color: string): string {
-    return colorContext[color] ?? 'col-iris';
+    return colorContext[color as ColumnColor] ?? 'col-iris';
 }
 
 const SearchDebounceMs = 300;

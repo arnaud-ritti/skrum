@@ -359,7 +359,7 @@ describe('CardGroup', () => {
         const thirty = Array.from({ length: 30 }, (_, index) => ({
             id: `c${index}`,
             text: `Card number ${index + 1}`,
-            color: 'red' as const,
+            color: 'coral' as const,
             author: { id: `u${index % 14}`, name: `Person ${index % 14}` },
         }));
 
@@ -398,7 +398,10 @@ describe('CardGroup', () => {
             const text = 'word '.repeat(56);
 
             renderWithProviders(
-                group({ title: '', cards: [{ id: '1', text, color: 'red' }] }),
+                group({
+                    title: '',
+                    cards: [{ id: '1', text, color: 'coral' }],
+                }),
             );
 
             expect(text).toHaveLength(280);

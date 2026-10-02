@@ -18,7 +18,7 @@ class WorkspaceTemplateColumnFactory extends Factory
             'workspace_template_id' => WorkspaceTemplate::factory(),
             'title' => fake()->words(2, true),
             'description' => null,
-            'color' => ColumnColor::Green,
+            'color' => ColumnColor::Moss,
             'position' => 0,
         ];
     }

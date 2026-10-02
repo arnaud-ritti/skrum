@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { sortByVotes, topLevelCards } from '@/lib/retro/board-reducer';
-import { columnAccent } from '@/lib/retro/colors';
+import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import type { BoardColumn } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
@@ -68,8 +68,8 @@ export function RetroColumn({
         <section
             data-test={`retro-column-${column.id}`}
             className={cn(
-                'flex w-72 shrink-0 flex-col rounded-lg border border-t-4 bg-muted/30 p-3',
-                columnAccent[column.color],
+                'flex w-72 shrink-0 flex-col rounded-lg border border-t-4 border-t-(--col-border) bg-muted/30 p-3',
+                columnColorClass(column.color),
             )}
         >
             <ColumnDropZone

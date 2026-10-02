@@ -5,9 +5,8 @@ import {
     ColumnColorOptions,
     ColumnColorPicker,
     columnColors,
-    serverColumnColors,
 } from '@/components/skrum/column-color-picker';
-import type { AnyColumnColor } from '@/components/skrum/column-color-picker';
+import type { ColumnColor } from '@/components/skrum/column-color-picker';
 import { TemplateEditor } from '@/components/skrum/template-editor';
 import type {
     TemplateDefaults,
@@ -40,14 +39,14 @@ function useDrafts() {
         name: t('Start, Stop, Continue'),
         category: 'essentials',
         columns: [
-            { id: 'a', title: t('Start'), color: 'green' },
+            { id: 'a', title: t('Start'), color: 'moss' },
             {
                 id: 'b',
                 title: t('Stop'),
                 description: t('What slowed us down?'),
-                color: 'red',
+                color: 'coral',
             },
-            { id: 'c', title: t('Continue'), color: 'blue' },
+            { id: 'c', title: t('Continue'), color: 'sky' },
         ],
     };
 
@@ -84,7 +83,7 @@ function useDrafts() {
                           'What slowed us down the most during this sprint, and what could we try on Monday so that it does not happen again?',
                       )
                     : null,
-            color: serverColumnColors[index % serverColumnColors.length],
+            color: columnColors[index % columnColors.length],
         })),
     };
 
@@ -125,26 +124,26 @@ function StartFromEditor() {
             name: t('Mad, Sad, Glad'),
             category: 'team_mood',
             columns: [
-                { id: 'm', title: t('Mad'), color: 'red' },
-                { id: 's', title: t('Sad'), color: 'blue' },
-                { id: 'g', title: t('Glad'), color: 'green' },
+                { id: 'm', title: t('Mad'), color: 'coral' },
+                { id: 's', title: t('Sad'), color: 'sky' },
+                { id: 'g', title: t('Glad'), color: 'moss' },
             ],
         },
         four_ls: {
             name: t('4Ls'),
             category: 'essentials',
             columns: [
-                { id: 'l1', title: t('Liked'), color: 'green' },
-                { id: 'l2', title: t('Learned'), color: 'blue' },
-                { id: 'l3', title: t('Lacked'), color: 'amber' },
-                { id: 'l4', title: t('Longed for'), color: 'purple' },
+                { id: 'l1', title: t('Liked'), color: 'moss' },
+                { id: 'l2', title: t('Learned'), color: 'sky' },
+                { id: 'l3', title: t('Lacked'), color: 'sun' },
+                { id: 'l4', title: t('Longed for'), color: 'plum' },
             ],
         },
     };
     const [value, setValue] = useState<TemplateDraft>({
         name: '',
         category: 'essentials',
-        columns: [{ id: 'n', title: '', color: 'green' }],
+        columns: [{ id: 'n', title: '', color: 'moss' }],
     });
 
     return (
@@ -174,11 +173,11 @@ function Options({
     usedBy,
     title,
 }: {
-    colors: readonly AnyColumnColor[];
-    usedBy?: Partial<Record<AnyColumnColor, string>>;
+    colors?: readonly ColumnColor[];
+    usedBy?: Partial<Record<ColumnColor, string>>;
     title: string;
 }) {
-    const [value, setValue] = useState<AnyColumnColor>(colors[2]);
+    const [value, setValue] = useState<ColumnColor>('coral');
 
     return (
         <div className="w-72 max-w-full rounded-lg border bg-popover p-3 text-popover-foreground shadow-popover">
@@ -195,16 +194,15 @@ function Options({
 
 function OpenPicker() {
     const { t } = useTrans();
-    const [value, setValue] = useState<AnyColumnColor>('blue');
+    const [value, setValue] = useState<ColumnColor>('sky');
 
     return (
         <div className="h-64 max-w-88">
             <ColumnColorPicker
                 value={value}
                 onValueChange={setValue}
-                colors={serverColumnColors}
                 columnTitle={t('Ideas')}
-                usedBy={{ green: t('Continue'), red: t('Stop') }}
+                usedBy={{ moss: t('Continue'), coral: t('Stop') }}
                 defaultOpen
             />
         </div>
@@ -222,13 +220,13 @@ export default function TemplateEditorSection() {
     };
     const emptyTitle: TemplateDraft = {
         ...server,
-        columns: [...server.columns, { id: 'd', title: '', color: 'amber' }],
+        columns: [...server.columns, { id: 'd', title: '', color: 'sun' }],
     };
     const duplicate: TemplateDraft = {
         ...server,
         columns: [
             ...server.columns,
-            { id: 'd', title: ` ${t('stop')} `, color: 'amber' },
+            { id: 'd', title: ` ${t('stop')} `, color: 'sun' },
         ],
     };
     const meta = {
@@ -241,27 +239,23 @@ export default function TemplateEditorSection() {
         <div className="flex max-w-240 flex-col gap-8 p-6">
             <State
                 label={t(
-                    'Colour picker open (the six colours the server stores; two are used by another column)',
+                    'Colour picker open (two colours are used by another column)',
                 )}
             >
                 <OpenPicker />
             </State>
             <State
                 label={t(
-                    'Colour picker content: eight design colours, six server colours, a long column title',
+                    'Colour picker content: the eight colours, one used by another column, a long column title',
                 )}
             >
                 <div className="flex flex-wrap items-start gap-4">
-                    <Options colors={columnColors} title={t('Ideas')} />
+                    <Options title={t('Ideas')} />
                     <Options
-                        colors={serverColumnColors}
                         title={t('Ideas')}
-                        usedBy={{ slate: t('Continue') }}
+                        usedBy={{ iris: t('Continue') }}
                     />
-                    <Options
-                        colors={serverColumnColors}
-                        title={ten.columns[0].title}
-                    />
+                    <Options title={ten.columns[0].title} />
                 </div>
             </State>
             <State

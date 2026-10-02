@@ -28,10 +28,10 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import {
-    ColumnColors,
-    columnColorLabel,
-    columnSwatch,
-} from '@/lib/retro/colors';
+    ColorSwatch,
+    columnColors,
+    useColumnColorName,
+} from '@/components/skrum/column-color-picker';
 import type { BoardColumn, ColumnColor, RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
@@ -53,6 +53,7 @@ type Props = {
 export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
+    const colorName = useColumnColorName();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(column.title);
     const [busy, setBusy] = useState(false);
@@ -238,23 +239,23 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
                             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                 {t('Color')}
                             </DropdownMenuLabel>
-                            <div className="flex gap-1 px-2 pb-1.5">
-                                {ColumnColors.map((option) => (
+                            <div className="flex flex-wrap gap-1 px-2 pb-1.5">
+                                {columnColors.map((option) => (
                                     <DropdownMenuItem
                                         key={option}
                                         disabled={busy || hasCards}
                                         role="menuitemradio"
                                         aria-checked={column.color === option}
-                                        aria-label={t(columnColorLabel[option])}
+                                        aria-label={colorName(option)}
                                         className="size-6 justify-center rounded-full p-0"
                                         onSelect={() =>
                                             void update({ color: option })
                                         }
                                     >
-                                        <span
+                                        <ColorSwatch
+                                            color={option}
                                             className={cn(
-                                                'size-4 rounded-full',
-                                                columnSwatch[option],
+                                                'size-4',
                                                 column.color === option &&
                                                     'ring-2 ring-foreground ring-offset-1 ring-offset-background',
                                             )}

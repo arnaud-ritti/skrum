@@ -106,8 +106,8 @@ it('refuses requests without a resolved participant', function () {
 
 it('orders columns by position', function () {
     $retro = Retro::factory()->create();
-    $retro->columns()->create(['title' => 'B', 'color' => 'blue', 'position' => 1]);
-    $retro->columns()->create(['title' => 'A', 'color' => 'green', 'position' => 0]);
+    $retro->columns()->create(['title' => 'B', 'color' => 'sky', 'position' => 1]);
+    $retro->columns()->create(['title' => 'A', 'color' => 'moss', 'position' => 0]);
 
     expect($retro->columns->pluck('title')->all())->toBe(['A', 'B']);
 });

@@ -6,22 +6,11 @@ import {
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
-import type {
-    ServerColumnColor,
-    TemplateColumnColor,
-} from '@/components/skrum/retro-template-picker';
 import { useTrans } from '@/hooks/use-trans';
+import type { ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export type ColumnColor =
-    | 'sun'
-    | 'apricot'
-    | 'coral'
-    | 'plum'
-    | 'iris'
-    | 'sky'
-    | 'lagoon'
-    | 'moss';
+export type { ColumnColor };
 
 export const columnColors: ColumnColor[] = [
     'sun',
@@ -34,22 +23,11 @@ export const columnColors: ColumnColor[] = [
     'moss',
 ];
 
-export type AnyColumnColor = TemplateColumnColor;
-
-export const serverColumnColors: ServerColumnColor[] = [
-    'green',
-    'red',
-    'blue',
-    'amber',
-    'purple',
-    'slate',
-];
-
-export function useColumnColorName(): (color: AnyColumnColor) => string {
+export function useColumnColorName(): (color: ColumnColor) => string {
     const { t } = useTrans();
 
     return (color) => {
-        const names: Record<AnyColumnColor, string> = {
+        const names: Record<ColumnColor, string> = {
             sun: t('Sun'),
             apricot: t('Apricot'),
             coral: t('Coral'),
@@ -58,12 +36,6 @@ export function useColumnColorName(): (color: AnyColumnColor) => string {
             sky: t('Sky'),
             lagoon: t('Lagoon'),
             moss: t('Moss'),
-            green: t('Green'),
-            red: t('Red'),
-            blue: t('Blue'),
-            amber: t('Amber'),
-            purple: t('Purple'),
-            slate: t('Slate'),
         };
 
         return names[color] ?? color;
@@ -74,7 +46,7 @@ export function ColorSwatch({
     color,
     className,
 }: {
-    color: AnyColumnColor;
+    color: ColumnColor;
     className?: string;
 }) {
     return (
@@ -91,7 +63,7 @@ export function ColorSwatch({
     );
 }
 
-export type ColumnColorOptionsProps<C extends AnyColumnColor = ColumnColor> = {
+export type ColumnColorOptionsProps<C extends ColumnColor = ColumnColor> = {
     value: C;
     onValueChange: (color: C) => void;
     colors?: readonly C[];
@@ -99,16 +71,16 @@ export type ColumnColorOptionsProps<C extends AnyColumnColor = ColumnColor> = {
     columnTitle: string;
 };
 
-export function ColumnColorOptions<C extends AnyColumnColor = ColumnColor>({
+export function ColumnColorOptions<C extends ColumnColor = ColumnColor>({
     value,
     onValueChange,
-    colors = columnColors as readonly AnyColumnColor[] as readonly C[],
+    colors = columnColors as readonly ColumnColor[] as readonly C[],
     usedBy = {},
     columnTitle,
 }: ColumnColorOptionsProps<C>) {
     const { t } = useTrans();
     const colorName = useColumnColorName();
-    const optionRefs = useRef(new Map<AnyColumnColor, HTMLButtonElement>());
+    const optionRefs = useRef(new Map<ColumnColor, HTMLButtonElement>());
     const anyUsed = colors.some((color) => usedBy[color] !== undefined);
     const tabStop = colors.includes(value) ? value : colors[0];
     const displayTitle =
@@ -240,13 +212,13 @@ export function ColumnColorOptions<C extends AnyColumnColor = ColumnColor>({
     );
 }
 
-export type ColumnColorPickerProps<C extends AnyColumnColor = ColumnColor> =
+export type ColumnColorPickerProps<C extends ColumnColor = ColumnColor> =
     ColumnColorOptionsProps<C> & {
         defaultOpen?: boolean;
         className?: string;
     };
 
-export function ColumnColorPicker<C extends AnyColumnColor = ColumnColor>({
+export function ColumnColorPicker<C extends ColumnColor = ColumnColor>({
     value,
     onValueChange,
     colors,

@@ -23,7 +23,7 @@ function makeTemplate(
         description: `Description ${index}`,
         source: 'builtin',
         columns: [
-            { title: 'Went well', color: 'green', description: 'Good things' },
+            { title: 'Went well', color: 'moss', description: 'Good things' },
             { title: 'To improve', color: 'sky' },
         ],
         ...extra,
@@ -82,16 +82,17 @@ afterEach(() => {
 });
 
 describe('columnColorClass', () => {
-    it('maps both colour sets to the col-* context class', () => {
-        expect(columnColorClass('green')).toBe('col-moss');
-        expect(columnColorClass('red')).toBe('col-coral');
-        expect(columnColorClass('blue')).toBe('col-sky');
-        expect(columnColorClass('amber')).toBe('col-sun');
-        expect(columnColorClass('purple')).toBe('col-plum');
-        expect(columnColorClass('slate')).toBe('col-iris');
+    it('maps the eight colours to the col-* context class, and an unknown one to iris', () => {
+        expect(columnColorClass('moss')).toBe('col-moss');
+        expect(columnColorClass('coral')).toBe('col-coral');
+        expect(columnColorClass('sky')).toBe('col-sky');
+        expect(columnColorClass('sun')).toBe('col-sun');
+        expect(columnColorClass('plum')).toBe('col-plum');
+        expect(columnColorClass('iris')).toBe('col-iris');
         expect(columnColorClass('lagoon')).toBe('col-lagoon');
         expect(columnColorClass('apricot')).toBe('col-apricot');
         expect(columnColorClass('unknown')).toBe('col-iris');
+        expect(columnColorClass('green')).toBe('col-iris');
     });
 });
 

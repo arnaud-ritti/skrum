@@ -22,9 +22,9 @@ const catalogue: CatalogueTemplate[] = [
         isCommon: false,
         isWorkspace: true,
         columns: [
-            { title: 'Keep', description: null, color: 'green' },
-            { title: 'Drop', description: null, color: 'red' },
-            { title: 'Try', description: null, color: 'purple' },
+            { title: 'Keep', description: null, color: 'moss' },
+            { title: 'Drop', description: null, color: 'coral' },
+            { title: 'Try', description: null, color: 'plum' },
         ],
     },
     {
@@ -45,17 +45,17 @@ const catalogue: CatalogueTemplate[] = [
             {
                 title: 'Start',
                 description: 'What should we begin?',
-                color: 'green',
+                color: 'moss',
             },
             {
                 title: 'Stop',
                 description: 'What slows us down?',
-                color: 'red',
+                color: 'coral',
             },
             {
                 title: 'Continue',
                 description: 'What works well?',
-                color: 'blue',
+                color: 'sky',
             },
         ],
     },
@@ -66,10 +66,10 @@ const catalogue: CatalogueTemplate[] = [
         isCommon: true,
         isWorkspace: false,
         columns: [
-            { title: 'Liked', description: null, color: 'green' },
-            { title: 'Learned', description: null, color: 'amber' },
-            { title: 'Lacked', description: null, color: 'slate' },
-            { title: 'Longed for', description: null, color: 'purple' },
+            { title: 'Liked', description: null, color: 'moss' },
+            { title: 'Learned', description: null, color: 'sun' },
+            { title: 'Lacked', description: null, color: 'iris' },
+            { title: 'Longed for', description: null, color: 'plum' },
         ],
     },
     {
@@ -79,9 +79,9 @@ const catalogue: CatalogueTemplate[] = [
         isCommon: true,
         isWorkspace: false,
         columns: [
-            { title: 'Mad', description: null, color: 'red' },
-            { title: 'Sad', description: null, color: 'blue' },
-            { title: 'Glad', description: null, color: 'amber' },
+            { title: 'Mad', description: null, color: 'coral' },
+            { title: 'Sad', description: null, color: 'sky' },
+            { title: 'Glad', description: null, color: 'sun' },
         ],
     },
     {
@@ -94,22 +94,22 @@ const catalogue: CatalogueTemplate[] = [
             {
                 title: 'What is the wind pushing our sails that makes us go fast?',
                 description: 'Everything that helps the team move forward',
-                color: 'green',
+                color: 'moss',
             },
             {
                 title: 'What anchors are holding us back?',
                 description: 'What slows us down and adds drag every sprint',
-                color: 'red',
+                color: 'coral',
             },
             {
                 title: 'What rocks are ahead of us?',
                 description: null,
-                color: 'amber',
+                color: 'sun',
             },
             {
                 title: 'What is our ideal island destination?',
                 description: null,
-                color: 'blue',
+                color: 'sky',
             },
         ],
     },

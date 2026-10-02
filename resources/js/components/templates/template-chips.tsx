@@ -1,4 +1,4 @@
-import { columnSwatch } from '@/lib/retro/colors';
+import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { cn } from '@/lib/utils';
 import type { TemplateColumn } from '@/types';
 
@@ -15,8 +15,8 @@ export function TemplateChips({ columns, withDescriptions = false }: Props) {
                     <li key={index} className="flex gap-2">
                         <span
                             className={cn(
-                                'mt-1.5 size-2.5 shrink-0 rounded-full',
-                                columnSwatch[column.color],
+                                'mt-1.5 size-2.5 shrink-0 rounded-full bg-(--col-border)',
+                                columnColorClass(column.color),
                             )}
                         />
                         <div className="min-w-0">
@@ -44,8 +44,8 @@ export function TemplateChips({ columns, withDescriptions = false }: Props) {
                 >
                     <span
                         className={cn(
-                            'size-2 shrink-0 rounded-full',
-                            columnSwatch[column.color],
+                            'size-2 shrink-0 rounded-full bg-(--col-border)',
+                            columnColorClass(column.color),
                         )}
                     />
                     <span className="truncate">{column.title}</span>

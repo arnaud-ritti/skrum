@@ -46,8 +46,8 @@ function p08aTemplate(Workspace $workspace): WorkspaceTemplate
     ]);
 
     $columns = [
-        ['Energy', 'How much energy the sprint left us', ColumnColor::Green],
-        ['Blockers', 'What kept slowing us down', ColumnColor::Red],
+        ['Energy', 'How much energy the sprint left us', ColumnColor::Moss],
+        ['Blockers', 'What kept slowing us down', ColumnColor::Coral],
     ];
 
     foreach ($columns as $position => [$title, $description, $color]) {

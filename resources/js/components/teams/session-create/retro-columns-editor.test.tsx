@@ -10,10 +10,10 @@ const columns: DraftColumn[] = [
         id: 'a',
         title: 'Start',
         description: 'What should begin?',
-        color: 'green',
+        color: 'moss',
     },
-    { id: 'b', title: 'Stop', description: null, color: 'red' },
-    { id: 'c', title: 'Continue', description: null, color: 'blue' },
+    { id: 'b', title: 'Stop', description: null, color: 'coral' },
+    { id: 'c', title: 'Continue', description: null, color: 'sky' },
 ];
 
 function Harness({
@@ -84,7 +84,7 @@ describe('RetroColumnsEditor', () => {
 
         expect(added).toMatchObject({
             title: '',
-            color: 'amber',
+            color: 'sun',
             description: null,
         });
         expect(screen.getByText('Columns · 4')).toBeTruthy();
@@ -124,23 +124,23 @@ describe('RetroColumnsEditor', () => {
             palette
                 .querySelector('[aria-checked="true"]')
                 ?.getAttribute('data-color'),
-        ).toBe('red');
+        ).toBe('coral');
 
         fireEvent.click(
-            palette.querySelector('[data-color="purple"]') as HTMLElement,
+            palette.querySelector('[data-color="plum"]') as HTMLElement,
         );
 
-        expect(onChange.mock.calls[0][0][1].color).toBe('purple');
+        expect(onChange.mock.calls[0][0][1].color).toBe('plum');
 
         fireEvent.click(
-            palette.querySelector('[data-color="green"]') as HTMLElement,
+            palette.querySelector('[data-color="moss"]') as HTMLElement,
         );
 
         expect(
             onChange.mock.calls[1][0].map(
                 (column: DraftColumn) => column.color,
             ),
-        ).toEqual(['purple', 'green', 'blue']);
+        ).toEqual(['plum', 'moss', 'sky']);
     });
 
     it('reorders with the keyboard: Space picks up, the arrows move, Space drops', () => {

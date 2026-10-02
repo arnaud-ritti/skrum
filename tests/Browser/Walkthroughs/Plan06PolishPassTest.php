@@ -332,26 +332,26 @@ it('[P06-06] keeps the delete-column dialog open when the server refuses the del
 it('[P06-07a] resets the title and the colour of the add-column form after a column is added', function () {
     [$retro, , $alice, $bob] = plan06Board();
     $form = 'form:has([role="radiogroup"])';
-    $blue = "{$form} [role=\"radio\"][aria-label=\"Blue\"]";
-    $green = "{$form} [role=\"radio\"][aria-label=\"Green\"]";
+    $sky = "{$form} [role=\"radio\"][aria-label=\"Sky\"]";
+    $moss = "{$form} [role=\"radio\"][aria-label=\"Moss\"]";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertAriaAttribute($green, 'checked', 'true')
+    $alicePage->assertAriaAttribute($moss, 'checked', 'true')
         ->fill("{$form} input", 'Kudos')
-        ->click($blue)
-        ->assertAriaAttribute($blue, 'checked', 'true')
+        ->click($sky)
+        ->assertAriaAttribute($sky, 'checked', 'true')
         ->click("{$form} button[type=\"submit\"]")
         ->assertCount('[data-test^="retro-column-"]', 4)
         ->assertValue("{$form} input", '')
-        ->assertAriaAttribute($green, 'checked', 'true')
-        ->assertAriaAttribute($blue, 'checked', 'false');
+        ->assertAriaAttribute($moss, 'checked', 'true')
+        ->assertAriaAttribute($sky, 'checked', 'false');
 
     $bobPage->assertCount('[data-test^="retro-column-"]', 4)
         ->assertSee('Kudos');
 
-    expect($retro->columns()->where('title', 'Kudos')->sole()->color)->toBe(ColumnColor::Blue);
+    expect($retro->columns()->where('title', 'Kudos')->sole()->color)->toBe(ColumnColor::Sky);
 });
 
 it('[P06-07b] disables the assignee select of the action-item form while the item is being saved', function () {

@@ -21,12 +21,14 @@ export type RetroPhase =
     | 'discussing'
     | 'completed';
 export type ColumnColor =
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'amber'
-    | 'purple'
-    | 'slate';
+    | 'sun'
+    | 'apricot'
+    | 'coral'
+    | 'plum'
+    | 'iris'
+    | 'sky'
+    | 'lagoon'
+    | 'moss';
 
 export type CardSentiment = 'positive' | 'neutral' | 'negative';
 

@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ComponentProps, KeyboardEvent, ReactNode, Ref } from 'react';
-import type { ColumnColor as DesignColumnColor } from '@/components/skrum/column-color-picker';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
@@ -28,13 +27,10 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    CardSentiment,
-    ColumnColor as ServerColumnColor,
-} from '@/lib/retro/types';
+import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export type ColumnColor = DesignColumnColor | ServerColumnColor;
+export type { ColumnColor };
 
 export type RetroCardReaction = {
     emoji: string;

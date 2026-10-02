@@ -530,14 +530,14 @@ describe('RetroCard', () => {
             );
         });
 
-        it('accepts the colours the server sends today', () => {
-            const { rerender } = renderWithProviders(card({ color: 'green' }));
+        it('takes the column colour as its colour context', () => {
+            const { rerender } = renderWithProviders(card({ color: 'moss' }));
 
             expect(
                 screen.getByRole('article').classList.contains('col-moss'),
             ).toBe(true);
 
-            rerender(card({ color: 'slate' }));
+            rerender(card({ color: 'iris' }));
 
             expect(
                 screen.getByRole('article').classList.contains('col-iris'),

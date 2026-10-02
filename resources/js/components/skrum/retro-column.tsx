@@ -18,7 +18,6 @@ import {
     columnColors,
     useColumnColorName,
 } from '@/components/skrum/column-color-picker';
-import type { ColumnColor as DesignColumnColor } from '@/components/skrum/column-color-picker';
 import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Button } from '@/components/ui/button';
@@ -41,10 +40,10 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
-import type { ColumnColor as ServerColumnColor } from '@/lib/retro/types';
+import type { ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export type ColumnColor = DesignColumnColor | ServerColumnColor;
+export type { ColumnColor };
 
 export type RetroColumnColorOption = { value: ColumnColor; label: string };
 
@@ -82,19 +81,6 @@ export type RetroColumnProps = Omit<
 };
 
 type MenuAction = 'rename' | 'description' | 'delete';
-
-const serverColors: ServerColumnColor[] = [
-    'green',
-    'red',
-    'blue',
-    'amber',
-    'purple',
-    'slate',
-];
-
-function isServerColor(color: ColumnColor): color is ServerColumnColor {
-    return (serverColors as ColumnColor[]).includes(color);
-}
 
 function isTypingTarget(target: EventTarget | null): boolean {
     if (!(target instanceof HTMLElement)) {
@@ -189,7 +175,7 @@ export function RetroColumn({
     ...rest
 }: RetroColumnProps) {
     const { t } = useTrans();
-    const designColorName = useColumnColorName();
+    const colorName = useColumnColorName();
     const titleId = useId();
     const descriptionId = useId();
     const reasonId = useId();
@@ -214,22 +200,12 @@ export function RetroColumn({
     const resolvedEmptyHint =
         emptyHint ??
         (canAdd ? t('No card yet. Be the first to write.') : t('No card yet.'));
-    const serverColorOptions: RetroColumnColorOption[] = [
-        { value: 'green', label: t('Green') },
-        { value: 'red', label: t('Red') },
-        { value: 'blue', label: t('Blue') },
-        { value: 'amber', label: t('Amber') },
-        { value: 'purple', label: t('Purple') },
-        { value: 'slate', label: t('Slate') },
-    ];
     const resolvedColorOptions =
         colorOptions ??
-        (isServerColor(color)
-            ? serverColorOptions
-            : columnColors.map((value) => ({
-                  value,
-                  label: designColorName(value),
-              })));
+        columnColors.map((value) => ({
+            value,
+            label: colorName(value),
+        }));
     const hasMenu =
         onRename !== undefined ||
         onColorChange !== undefined ||
