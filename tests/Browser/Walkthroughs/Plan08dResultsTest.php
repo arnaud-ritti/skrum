@@ -293,7 +293,9 @@ it('[P08d-03] counts the ratings live during Discussing, shows no distribution a
         ->assertVisible('#retro-locked')
         ->click('#retro-locked')
         ->assertAriaAttribute('#retro-locked', 'checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing');
 

@@ -1,0 +1,426 @@
+import {
+    Ellipsis,
+    Lock,
+    MousePointer2,
+    MousePointerBan,
+    Settings2,
+    Share2,
+    Trash2,
+    UserRoundCog,
+} from 'lucide-react';
+import { useRef, useState } from 'react';
+import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
+import RetroTimerExtensionsController from '@/actions/App/Http/Controllers/Retros/RetroTimerExtensionsController';
+import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { CursorToggle } from '@/components/session/cursor-preference';
+import { SessionPresence } from '@/components/session/session-presence';
+import { SessionTimer } from '@/components/session/session-timer';
+import { SessionTitle } from '@/components/session/session-title';
+import { PhaseStepper } from '@/components/skrum/phase-stepper';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useServerOffset } from '@/hooks/use-countdown';
+import { useTrans } from '@/hooks/use-trans';
+import { retroRequest } from '@/lib/retro/api';
+import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
+import type { RetroPhase } from '@/lib/retro/types';
+import { useBoard } from './board-context';
+import { showsRetroCursors } from './board-cursors';
+import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
+import { BoardSettings } from './board-settings';
+import { BoardShare, showsBoardShare } from './board-share';
+
+/** Seconds "+2 min" adds, as RetroTimerExtensionsController does. */
+const ExtensionSeconds = 120;
+
+/**
+ * Title of the header. Its width is capped: the frame gives the title the
+ * room it asks for, and the stepper would be left with none.
+ */
+export function BoardTitle() {
+    const { board } = useBoard();
+    const { t } = useTrans();
+
+    return (
+        <SessionTitle
+            backHref={board.links.team}
+            badges={
+                board.retro.isLocked && (
+                    <Badge variant="secondary" className="shrink-0 gap-1">
+                        <Lock className="size-3" aria-hidden />
+                        <span className="sr-only 2xl:not-sr-only">
+                            {t('Board closed for editing')}
+                        </span>
+                    </Badge>
+                )
+            }
+        >
+            <span className="block max-w-28 truncate md:max-w-48 xl:max-w-80">
+                {board.retro.title}
+            </span>
+        </SessionTitle>
+    );
+}
+
+export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
+    const ctx = useBoard();
+    const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
+    const { retro, viewer, participants } = ctx.board;
+
+    const move = async (target: string) => {
+        setBusy(true);
+
+        const response = await ctx.run(
+            retroRequest<{ phase: RetroPhase }>(
+                RetroPhasesController.update(retro.id),
+                { phase: target },
+            ),
+        );
+
+        if (response) {
+            await ctx.refetch();
+        }
+
+        setBusy(false);
+    };
+
+    return (
+        <PhaseStepper
+            mobile={mobile}
+            phases={stepperPhases(retro.phases).map((phase) => ({
+                id: phase,
+                label: t(PhaseLabels[phase]),
+            }))}
+            current={retro.phase}
+            interactive={viewer.isFacilitator}
+            disabled={busy}
+            reopenTo={reopenPhase(retro.phases) ?? undefined}
+            leaderName={
+                participants.find(
+                    (participant) =>
+                        participant.id === retro.facilitatorParticipantId,
+                )?.name
+            }
+            onPhaseChange={(phase) => void move(phase)}
+            className="*:justify-center"
+        />
+    );
+}
+
+/**
+ * The countdown, for everyone. `controls` adds what only the facilitator of
+ * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
+ */
+export function BoardTimer({ controls = true }: { controls?: boolean }) {
+    const ctx = useBoard();
+    const { board } = ctx;
+    const { retro } = board;
+    const offset = useServerOffset(board.serverTime);
+    const [started, setStarted] = useState<{
+        endsAt: string;
+        seconds: number;
+    } | null>(null);
+    const canControl =
+        controls && board.viewer.isFacilitator && retro.phase !== 'completed';
+
+    const set = async (seconds: number | null) => {
+        const response = await ctx.run(
+            retroRequest<{ timerEndsAt: string | null }>(
+                RetroTimersController.update(retro.id),
+                { seconds },
+            ),
+        );
+
+        if (!response) {
+            return;
+        }
+
+        setStarted(
+            seconds !== null && response.timerEndsAt !== null
+                ? { endsAt: response.timerEndsAt, seconds }
+                : null,
+        );
+        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
+    };
+
+    const extend = async () => {
+        const response = await ctx.run(
+            retroRequest<{ timerEndsAt: string }>(
+                RetroTimerExtensionsController.store(retro.id),
+            ),
+        );
+
+        if (!response) {
+            return;
+        }
+
+        setStarted((current) =>
+            current !== null && current.endsAt === retro.timerEndsAt
+                ? {
+                      endsAt: response.timerEndsAt,
+                      seconds: current.seconds + ExtensionSeconds,
+                  }
+                : null,
+        );
+        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
+    };
+
+    return (
+        <SessionTimer
+            endsAt={retro.timerEndsAt}
+            offset={offset}
+            totalSeconds={
+                started !== null && started.endsAt === retro.timerEndsAt
+                    ? started.seconds
+                    : undefined
+            }
+            onStart={canControl ? (seconds) => void set(seconds) : undefined}
+            onStop={canControl ? () => void set(null) : undefined}
+            onExtend={canControl ? () => void extend() : undefined}
+            className="shrink-0"
+        />
+    );
+}
+
+export function BoardPresence() {
+    const { board, online } = useBoard();
+
+    return (
+        <SessionPresence
+            online={online}
+            selfId={board.viewer.participantId}
+            facilitatorId={board.retro.facilitatorParticipantId}
+            className="shrink-0 flex-nowrap"
+        />
+    );
+}
+
+const ReopenGuardMs = 250;
+
+type OpenPanel = 'settings' | 'share' | 'handover' | 'delete' | null;
+
+type ActionsProps = {
+    hideMyCursor: boolean;
+    onHideMyCursorChange: (hidden: boolean) => void;
+    /** Below `md` the header holds one menu: every entry moves into it. */
+    mobile?: boolean;
+};
+
+export function BoardActions({
+    hideMyCursor,
+    onHideMyCursorChange,
+    mobile = false,
+}: ActionsProps) {
+    const { board } = useBoard();
+    const { t } = useTrans();
+    const [panel, setPanel] = useState<OpenPanel>(null);
+    const settingsButton = useRef<HTMLButtonElement>(null);
+    const pendingFromMenu = useRef<OpenPanel>(null);
+    const settingsClosedAt = useRef(0);
+    const { retro, viewer } = board;
+    const isCompleted = retro.phase === 'completed';
+    const hasCursors = showsRetroCursors(retro);
+    const hasShare = showsBoardShare(board);
+    const hasShareButton = hasShare && !isCompleted && !mobile;
+    const hasShareEntry = hasShare && !hasShareButton;
+    const hasMenu = viewer.isFacilitator || mobile;
+
+    const close = (open: boolean) => {
+        if (open) {
+            return;
+        }
+
+        if (panel === 'settings') {
+            settingsClosedAt.current = Date.now();
+        }
+
+        setPanel(null);
+    };
+
+    /**
+     * A press on the settings button while the popover is open first closes
+     * it (a press outside), then reaches the button: it must not reopen it.
+     */
+    const toggleSettings = () => {
+        if (Date.now() - settingsClosedAt.current < ReopenGuardMs) {
+            return;
+        }
+
+        setPanel(panel === 'settings' ? null : 'settings');
+    };
+
+    /**
+     * A panel chosen in the menu opens once the menu is gone: while it
+     * closes, the menu still holds the focus and takes it back, which would
+     * dismiss the settings popover at once.
+     */
+    const fromMenu = (target: OpenPanel) => {
+        pendingFromMenu.current = target;
+    };
+
+    return (
+        <>
+            {hasCursors && !mobile && (
+                <CursorToggle
+                    hidden={hideMyCursor}
+                    onChange={onHideMyCursorChange}
+                />
+            )}
+            {!mobile && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            ref={settingsButton}
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={t('Settings')}
+                            aria-haspopup="dialog"
+                            aria-expanded={panel === 'settings'}
+                            onClick={toggleSettings}
+                        >
+                            <Settings2 aria-hidden />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('Settings')}</TooltipContent>
+                </Tooltip>
+            )}
+            {hasShareButton && (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPanel('share')}
+                    className="shrink-0"
+                >
+                    <Share2 aria-hidden />
+                    <span className="sr-only xl:not-sr-only xl:truncate">
+                        {t('Share')}
+                    </span>
+                </Button>
+            )}
+            {hasMenu && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={
+                                viewer.isFacilitator
+                                    ? t('Facilitator menu')
+                                    : t('Menu')
+                            }
+                        >
+                            <Ellipsis aria-hidden />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        size="wide"
+                        onCloseAutoFocus={(event) => {
+                            const target = pendingFromMenu.current;
+
+                            if (target === null) {
+                                return;
+                            }
+
+                            // The panel takes the focus, not the trigger.
+                            pendingFromMenu.current = null;
+                            event.preventDefault();
+                            setPanel(target);
+                        }}
+                    >
+                        <DropdownMenuItem onSelect={() => fromMenu('settings')}>
+                            <Settings2 aria-hidden />
+                            <span className="truncate">{t('Settings…')}</span>
+                        </DropdownMenuItem>
+                        {hasShareEntry && (
+                            <DropdownMenuItem
+                                onSelect={() => fromMenu('share')}
+                            >
+                                <Share2 aria-hidden />
+                                <span className="truncate">{t('Share…')}</span>
+                            </DropdownMenuItem>
+                        )}
+                        {mobile && hasCursors && (
+                            <DropdownMenuItem
+                                onSelect={() =>
+                                    onHideMyCursorChange(!hideMyCursor)
+                                }
+                            >
+                                {hideMyCursor ? (
+                                    <MousePointer2 aria-hidden />
+                                ) : (
+                                    <MousePointerBan aria-hidden />
+                                )}
+                                <span className="truncate">
+                                    {hideMyCursor
+                                        ? t('Show my cursor')
+                                        : t('Hide my cursor')}
+                                </span>
+                            </DropdownMenuItem>
+                        )}
+                        {viewer.isFacilitator && (
+                            <>
+                                <DropdownMenuItem
+                                    onSelect={() => fromMenu('handover')}
+                                >
+                                    <UserRoundCog aria-hidden />
+                                    <span className="truncate">
+                                        {t('Hand over facilitation…')}
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={() => fromMenu('delete')}
+                                >
+                                    <Trash2 aria-hidden />
+                                    <span className="truncate">
+                                        {t('Delete retrospective…')}
+                                    </span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+            {viewer.isGuest && !mobile && <LanguageSwitcher />}
+            <BoardSettings
+                open={panel === 'settings'}
+                onOpenChange={close}
+                anchorRef={settingsButton}
+            />
+            {hasShare && (
+                <BoardShare open={panel === 'share'} onOpenChange={close} />
+            )}
+            {viewer.isFacilitator && (
+                <>
+                    <HandoverDialog
+                        open={panel === 'handover'}
+                        onOpenChange={close}
+                    />
+                    <DeleteRetroDialog
+                        open={panel === 'delete'}
+                        onOpenChange={close}
+                    />
+                </>
+            )}
+        </>
+    );
+}

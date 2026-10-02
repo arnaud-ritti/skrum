@@ -87,7 +87,6 @@ it('[P12b-01a] posts the board link to Slack with the guest link and to Telegram
 
     $page->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
         ->assertSee('Post a link')
         ->assertVisible($guestLink)
         ->click($guestLink)
@@ -140,12 +139,12 @@ it('[P12b-01b] offers the guest link option only when guest access is on, and th
 
     $facilitator->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->assertSee('Post link to Slack')
         ->assertSee('Post link to Telegram')
         ->assertNotPresent('[role="dialog"] button[role="checkbox"]');
 
-    $member->assertSeeIn('header > h1', 'Sprint 42')
+    $member->assertSeeIn('header >> h1', 'Sprint 42')
         ->assertNotPresent('button:has-text("Share")');
 
     Http::assertNothingSent();
@@ -160,9 +159,14 @@ it('[P12b-01c] offers no share entry on the board, the results or the poker game
 
     $board = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $board->assertSeeIn('header > h1', 'Sprint 42')
+    $board->assertSeeIn('header >> h1', 'Sprint 42')
         ->assertPresent('[aria-label="Facilitator menu"]')
-        ->assertNotPresent('button:has-text("Share")');
+        ->click('Share')
+        ->assertVisible('[role="dialog"] [role="switch"]')
+        ->assertDontSee('Post a link')
+        ->assertNotPresent('[role="dialog"] button:has-text("Post link")')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
 
     $retro->forceFill(['phase' => RetroPhase::Completed, 'completed_at' => now()])->save();
 
@@ -186,9 +190,9 @@ it('[P12b-02a] escapes a retro title made of Slack and HTML markup in both messa
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn('header > h1', '<!channel> & <b>test</b>')
+    $page->assertSeeIn('header >> h1', '<!channel> & <b>test</b>')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Post link to Slack')
         ->assertSeeIn($lines, 'Sending to Slack…')
         ->click('Post link to Telegram')
@@ -417,7 +421,7 @@ it('[P12b-06a] turns the delivery line to failed and the Slack card to "Reconnec
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
     $page->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Post link to Slack')
         ->assertSeeIn($lines, 'Sending to Slack…');
 

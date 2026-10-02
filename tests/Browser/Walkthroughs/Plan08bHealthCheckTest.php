@@ -244,7 +244,7 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
     TeamHealthStatement::factory()->builtin(HealthStatement::Motivation)->create(['team_id' => $team->id, 'position' => 2]);
     TeamHealthStatement::factory()->builtin(HealthStatement::Interaction)->create(['team_id' => $team->id, 'position' => 3]);
     TeamHealthStatement::factory()->builtin(HealthStatement::ManagerSupport)->archived()->create(['team_id' => $team->id, 'position' => 4]);
-    $phaseOrder = "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] li')].map((step) => step.textContent).join(' > ')";
+    $phaseOrder = "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] [data-slot=\"phase-step\"]')].map((step) => step.querySelector('.truncate').textContent).join(' > ')";
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
@@ -258,9 +258,9 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
         ->assertAttribute('#new-retro-health-check', 'aria-checked', 'true')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 15 retro')
+        ->assertSeeIn('header >> h1', 'Sprint 15 retro')
         ->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertScript($phaseOrder, 'Health check > Writing > Grouping > Voting > Discussing > Completed')
+        ->assertScript($phaseOrder, 'Health check > Writing > Grouping > Voting > Discussing')
         ->assertSee('Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.')
         ->assertScript(p08bBoardStatements(), implode(' | ', [
             'The vision and goals are clear to me',
@@ -413,7 +413,9 @@ it('[P08b-05a] disables the score buttons for everyone when the board is closed 
     p08bOpenSettings($alicePage)
         ->click('#retro-locked')
         ->assertAttribute('#retro-locked', 'aria-checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing')
         ->assertScript($disabled, 60);
@@ -510,7 +512,9 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
         ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
         ->click('#retro-health-check')
         ->assertAttribute('#retro-health-check', 'aria-checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertDontSeeIn($stepper, 'Health check');
 
@@ -519,7 +523,9 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
     p08bOpenSettings($alicePage)
         ->click('#retro-health-check')
         ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSeeIn($stepper, 'Health check')
         ->click('header button:has-text("Previous")')

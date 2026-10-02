@@ -637,7 +637,7 @@ it('[P13d-12a] posts the room invite to Slack and to Telegram with a link that o
     $b = $this->signIn($bob, "/games/{$room->id}");
 
     $b->assertPathIs("/games/{$room->id}")
-        ->assertSeeIn('header > h1', 'Friday fun');
+        ->assertSeeIn('header >> h1', 'Friday fun');
 });
 
 it('[P13d-12b] posts the guest join link of a link room when "Include the guest link" is ticked', function () {

@@ -193,7 +193,7 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
     $delete = '[aria-label="Delete action item"]';
 
     $carolPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $hers = p09aItem($retro, $aliceParticipant, 'Tidy the backlog', ['assignee_participant_id' => p09aGuest($retro)->id]);
     $his = p09aItem($retro, $aliceParticipant, 'Automate the release notes', ['assignee_user_id' => $bob->id]);
@@ -304,7 +304,9 @@ it('[P09a-03a] disables the action item controls for everyone when the facilitat
         ->assertVisible('#retro-locked')
         ->click('#retro-locked')
         ->assertAttribute('#retro-locked', 'aria-checked', 'true')
-        ->press('Save')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing')
         ->assertDisabled($input);
@@ -345,7 +347,7 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
     $dueSoonLabel = p09aDueLabel($dueSoon);
 
     $carolPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $open = p09aItem($retro, $aliceParticipant, 'Rotate the on-call', [
         'priority' => ActionItemPriority::High,
@@ -446,7 +448,7 @@ it('[P09a-05] warns how many open action items are deleted with the retro', func
     $page->click('[aria-label="Facilitator menu"]')
         ->assertSee('Delete retrospective…')
         ->click('Delete retrospective…')
-        ->assertSeeIn('[role="dialog"]', $warning)
+        ->assertSeeIn('[role="alertdialog"]', $warning)
         ->press('Delete')
         ->assertPathIs($teamPath);
 

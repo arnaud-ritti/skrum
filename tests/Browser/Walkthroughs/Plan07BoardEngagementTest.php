@@ -116,7 +116,9 @@ function plan07OpenSettings(mixed $page): mixed
 
 function plan07SaveSettings(mixed $page): mixed
 {
-    return $page->click('[role="dialog"] button[type="submit"]')
+    return $page->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertNotPresent('[role="menu"]');
 }
@@ -243,12 +245,12 @@ it('[P07-03a] toggles card reactions with any emoji, counts them live and names 
 
     $alicePage->assertAriaAttribute(plan07Chip($card, '👍', 2), 'pressed', 'true');
 
-    $bobPage->hover('header > h1')
+    $bobPage->hover('header >> h1')
         ->hover(plan07Chip($card, '👍', 2))
         ->assertSeeIn($tooltip, 'Alice Martin')
         ->assertSeeIn($tooltip, 'Bob Stone');
 
-    $bobPage->hover('header > h1')
+    $bobPage->hover('header >> h1')
         ->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
         ->assertVisible('[role="menuitem"]:has-text("🎉")')
         ->click('[role="menuitem"]:has-text("🎉")')
@@ -528,7 +530,7 @@ it('[P07-06a] shows no name on reaction chips, comments or notification toasts o
         ->assertNotPresent($tooltip)
         ->click(plan07Chip($card, '👍', 1))
         ->assertAriaAttribute(plan07Chip($card, '👍', 2), 'pressed', 'true')
-        ->hover('header > h1')
+        ->hover('header >> h1')
         ->hover(plan07Chip($card, '👍', 2))
         ->assertNotPresent($tooltip);
 
@@ -808,7 +810,7 @@ it('[P07-01a] shows a named cursor over the same card on another page and keeps 
     ] = plan07Board();
     $first = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $third = plan07Card($retro, $columns[2], $aliceParticipant, 'Keep the demo on Fridays');
-    $board = 'document.querySelector("main:has([data-test^=\"retro-column-\"])")';
+    $board = 'document.querySelector("[data-slot=\"retro-columns\"]")';
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));

@@ -85,7 +85,7 @@ it('[P04-01] creates a Start, Stop, Continue retro from the team page', function
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 12 retro')
+        ->assertSeeIn('header >> h1', 'Sprint 12 retro')
         ->assertSeeIn('[aria-current="step"]', 'Writing')
         ->assertCount('[data-test^="retro-column-"]', 3)
         ->assertSeeIn('main:has([data-test^="retro-column-"])', 'Start')
@@ -212,8 +212,8 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
         ->assertScript($showsTotal($flaky), false);
 
     $alicePage->assertSee('2 of 4 votes cast')
-        ->assertAttribute('[role="progressbar"]', 'aria-valuenow', '2')
-        ->assertAttribute('[role="progressbar"]', 'aria-valuemax', '4')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '2')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuemax', '4')
         ->assertSee('Votes left: 2')
         ->assertScript($showsTotal($slow), false)
         ->assertScript($showsTotal($flaky), false);
@@ -416,7 +416,7 @@ it('[P04-08b] tells the participant when the timer reaches zero', function () {
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $page->assertSeeIn('[role="timer"]', "Time's up!");
+    $page->assertAttribute('[role="timer"]', 'aria-label', "Time's up!");
 });
 
 it('[P04-09] never shows the author of another participant\'s card on an anonymous retro', function (string $phase) {
@@ -454,14 +454,19 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$oldToken}", 'Carol Guest'));
 
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $alicePage->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+        ->assertSee('Settings…')
+        ->assertDontSee('Guest link…')
+        ->keys('[role="menu"]', 'Escape')
+        ->click('Share')
         ->assertVisible($link)
         ->assertScript("document.querySelector('{$link}').value.includes('{$oldToken}')", true)
-        ->press('Create a new link');
+        ->press('Create a new link')
+        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->assertNotPresent('[role="alertdialog"]');
 
     $carolPage->assertSee('Your access to this retrospective has ended.')
         ->assertNotPresent('[aria-label="Add a card…"]');
@@ -478,7 +483,7 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
 
     $davePage = $this->joinAsGuest("/join/{$newToken}", 'Dave Guest');
 
-    $davePage->assertSeeIn('header > h1', 'Sprint 12')
+    $davePage->assertSeeIn('header >> h1', 'Sprint 12')
         ->assertCount('[aria-label="Add a card…"]', 3);
 });
 
@@ -587,22 +592,26 @@ it('[P04-14c] reorders a card with the keyboard sensor during Writing', function
 it('[P04-14d] opens every facilitator dialog with the keyboard only', function () {
     [$retro, , $alice] = plan04Board();
     $dialogs = [
-        1 => 'Retrospective settings',
-        2 => 'Guest link',
-        3 => 'Hand over facilitation',
-        5 => 'Delete retrospective',
+        1 => ['[role="dialog"]', 'Retrospective settings'],
+        2 => ['[role="dialog"]', 'Hand over facilitation'],
+        4 => ['[role="alertdialog"]', 'Delete retrospective'],
     ];
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    foreach ($dialogs as $position => $title) {
+    foreach ($dialogs as $position => [$dialog, $title]) {
         $page->keys('[aria-label="Facilitator menu"]', 'Enter')
             ->assertPresent('[role="menu"]')
             ->keys("[role=\"menu\"] > :nth-child({$position})", 'Enter')
-            ->assertSeeIn('[role="dialog"]', $title)
-            ->keys('[role="dialog"]', 'Escape')
-            ->assertNotPresent('[role="dialog"]');
+            ->assertSeeIn($dialog, $title)
+            ->keys($dialog, 'Escape')
+            ->assertNotPresent($dialog);
     }
+
+    $page->keys('button:has-text("Share")', 'Enter')
+        ->assertVisible('[role="dialog"] input[aria-label="Guest link"]')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
 
     $page->keys('[aria-label="Timer"]', 'Enter')
         ->assertSeeIn('[role="menu"]', '1 min')
@@ -614,10 +623,13 @@ it('[P04-14d] opens every facilitator dialog with the keyboard only', function (
 it('[P04-15a] reflows the board between 375px and 1440px', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
-    $board = 'main:has([data-test^="retro-column-"])';
+    $board = '[data-slot="retro-columns"]';
     $panel = '[data-test="retro-action-items-panel"]';
+    $stepper = 'ol[aria-label="Phases"]';
     $columnsScroll = "(() => { const board = document.querySelector('{$board}'); return board.scrollWidth > board.clientWidth; })()";
-    $stepperWrapsBelowTitle = "document.querySelector('header ol[aria-label=\"Phases\"]').getBoundingClientRect().top >= document.querySelector('header h1').getBoundingClientRect().bottom";
+    $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
+    $stepperIsBelowTheHeader = "document.querySelector('header {$stepper}') === null && document.querySelector('{$stepper}').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom";
+    $stepperIsInTheHeader = "document.querySelector('header {$stepper}') !== null";
     $panelIsBelowBoard = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$board}').getBoundingClientRect().bottom";
     $panelIsBesideBoard = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$board}').getBoundingClientRect().right";
 
@@ -625,13 +637,16 @@ it('[P04-15a] reflows the board between 375px and 1440px', function () {
 
     $page->resize(375, 812)
         ->assertPresent($panel)
+        ->assertPresent("main {$board}")
         ->assertScript($columnsScroll, true)
-        ->assertScript($stepperWrapsBelowTitle, true)
+        ->assertScript($pageScrollsSideways, false)
+        ->assertScript($stepperIsBelowTheHeader, true)
         ->assertScript($panelIsBelowBoard, true)
         ->assertScript($panelIsBesideBoard, false);
 
     $page->resize(1440, 900)
-        ->assertScript($stepperWrapsBelowTitle, false)
+        ->assertScript($stepperIsInTheHeader, true)
+        ->assertScript($pageScrollsSideways, false)
         ->assertScript($panelIsBesideBoard, true)
         ->assertScript($panelIsBelowBoard, false);
 });
@@ -647,7 +662,7 @@ it('[P04-16a] keeps the dark appearance on the board', function () {
         ->assertScript($isDark, true)
         ->assertScript('localStorage.getItem("appearance")', 'dark')
         ->navigate("/retros/{$retro->id}")
-        ->assertSeeIn('header > h1', 'Sprint 12')
+        ->assertSeeIn('header >> h1', 'Sprint 12')
         ->assertScript($isDark, true);
 });
 

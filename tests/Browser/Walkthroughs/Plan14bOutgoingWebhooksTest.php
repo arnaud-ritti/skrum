@@ -238,7 +238,7 @@ it('[P14b-02a] sends a board link to the webhook from the board', function () {
 
     $page->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.')
         ->assertSee('Sending to Webhook…');
@@ -534,7 +534,7 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
 
     $page->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.');
 

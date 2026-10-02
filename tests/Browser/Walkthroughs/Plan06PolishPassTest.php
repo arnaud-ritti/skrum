@@ -177,7 +177,9 @@ it('[P06-02] keeps a vote cast while a snapshot refetch is in flight', function 
         ->assertVisible('#retro-hide-vote-counts')
         ->click('#retro-hide-vote-counts')
         ->assertAriaAttribute('#retro-hide-vote-counts', 'checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     $bobPage->assertScript(plan06Held(), 1)

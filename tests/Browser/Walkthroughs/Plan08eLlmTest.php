@@ -260,7 +260,7 @@ it('[P08e-04a] turns the AI summary on by default in the new retrospective dialo
         ->assertSeeIn('[role="dialog"]', 'When the retro is completed, its board content is sent automatically to Anthropic to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 13 retro');
+        ->assertSeeIn('header >> h1', 'Sprint 13 retro');
 
     expect(Retro::query()->where('title', 'Sprint 13 retro')->firstOrFail()->ai_summary_enabled)->toBeTrue();
 });
@@ -280,7 +280,9 @@ it('[P08e-04b] lets the facilitator turn the AI summary off in the board setting
         ->assertSeeIn('[role="dialog"]', 'its board content is sent automatically to Anthropic to write a summary')
         ->click('#retro-ai-summary')
         ->assertAriaAttribute('#retro-ai-summary', 'checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     expect($retro->fresh()->ai_summary_enabled)->toBeFalse();
@@ -707,7 +709,7 @@ it('[P08e-10a] creates a retro with the AI summary switched off in the dialog', 
         ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'false')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 14 retro');
+        ->assertSeeIn('header >> h1', 'Sprint 14 retro');
 
     expect(Retro::query()->where('title', 'Sprint 14 retro')->firstOrFail()->ai_summary_enabled)->toBeFalse();
 });
