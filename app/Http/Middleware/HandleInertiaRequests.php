@@ -48,7 +48,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => fn (): string => resolve(InstanceSettings::class)->displayName(),
             'brand' => $this->brand(...),
-            'adminUrl' => null,
+            'adminUrl' => fn (): ?string => $request->user()?->can('manageInstance')
+                ? route('admin.branding.edit')
+                : null,
             'auth' => [
                 'user' => $this->user($request),
             ],

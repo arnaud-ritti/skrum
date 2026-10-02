@@ -565,3 +565,4 @@ Route::prefix('games/{room}')
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
 
 require __DIR__.'/settings.php';
+require __DIR__.'/admin.php';

@@ -3740,5 +3740,14 @@
     "Too light to carry text: lightness adjusted from :from % to :to % in the light theme.": "Zu hell, um Text zu tragen: Helligkeit im hellen Design von :from % auf :to % angepasst.",
     "Hue close to the destructive red: destructive actions keep their icon and label, do not remove them.": "Farbton nahe am Rot für destruktive Aktionen: Destruktive Aktionen behalten Symbol und Beschriftung, entfernen Sie sie nicht.",
     "The image must not be larger than 512 KB.": "Das Bild darf nicht größer als 512 KB sein.",
-    "The image must be a PNG, JPEG, WebP or SVG file.": "Das Bild muss eine PNG-, JPEG-, WebP- oder SVG-Datei sein."
+    "The image must be a PNG, JPEG, WebP or SVG file.": "Das Bild muss eine PNG-, JPEG-, WebP- oder SVG-Datei sein.",
+    "An instance needs at least one admin.": "Eine Instanz braucht mindestens einen Administrator.",
+    "Branding saved.": "Branding gespeichert.",
+    "Branding reset to the Skrüm defaults.": "Branding auf die Skrüm-Standardwerte zurückgesetzt.",
+    "Image saved.": "Bild gespeichert.",
+    "Image removed.": "Bild entfernt.",
+    "Admin added.": "Administrator hinzugefügt.",
+    "Admin removed.": "Administrator entfernt.",
+    "See DiceBear": "Siehe DiceBear",
+    "Enter the colour as a 3- or 6-digit hex value, such as #2b63b0.": "Geben Sie die Farbe als 3- oder 6-stelligen Hexwert ein, zum Beispiel #2b63b0."
 }

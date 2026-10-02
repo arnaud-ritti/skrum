@@ -14,6 +14,7 @@ use App\Mcp\VisibleTeams;
 use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Policies\PokerDeckPolicy;
 use App\Support\Games\DecodedRules;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
         Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
+        Gate::define('manageInstance', fn (User $user): bool => $user->is_instance_admin === true);
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute((int) config('skrum.mcp.rate_limit'))
             ->by('mcp-token:'.McpGrant::current()->tokenId));
