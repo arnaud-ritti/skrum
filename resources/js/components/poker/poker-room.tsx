@@ -26,6 +26,7 @@ import type { RoomDialog } from './room-dialogs';
 import { RoomDock } from './room-dock';
 import { RoomGone } from './room-gone';
 import { RoomReactions } from './room-reactions';
+import { RoomResult } from './room-result';
 import { RoomTable } from './room-table';
 import {
     CopyGuestLinkButton,
@@ -261,13 +262,21 @@ export function RoomView({
                                     <StoryCard
                                         key={currentTask.id}
                                         task={currentTask}
+                                        roundsOpen={!isPhone}
                                         className="max-w-5xl"
                                     />
                                 )}
                                 <RoomTable
                                     task={currentTask}
                                     actions={actions}
+                                    compact={isPhone}
                                 />
+                                {isPhone && (
+                                    <RoomResult
+                                        layout="card"
+                                        actions={actions}
+                                    />
+                                )}
                                 <RoomCursors
                                     container={stage}
                                     hidden={hideMyCursor}

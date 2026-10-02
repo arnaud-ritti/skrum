@@ -84,6 +84,7 @@ class BuildPokerSnapshot
             'team.workspace',
             'players.user',
             'tasks' => fn ($query) => $query->withCount('rounds'),
+            'tasks.latestRound' => fn ($query) => $query->withCount('votes'),
             'currentTask.latestRound.votes',
         ]);
         $viewer->loadMissing('user');

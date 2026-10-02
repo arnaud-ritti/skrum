@@ -250,3 +250,70 @@ Fix later (defects, not deviations):
 - The voter avatars of the estimation history sit about 2 px above their count.
 - In a real-page capture only the viewer is online, so the other seats read "Offline" and their "…" menu shows under the name; at 1440 the bottom seats' menu is cut by the reactions strip until the stage is scrolled.
 - The settings dialog names itself twice to a screen reader (hidden dialog title, then the panel heading).
+
+## Rework RW-P1 — result in the oval and the dock, final-estimate cards (owner, fourth round)
+
+Rows D-64 and D-65. Built:
+
+- No result panel under the table (`PokerTable` takes `showResult={false}`). The oval keeps the average, the median and the spread.
+- The dock holds the result once the cards are revealed, in place of the deck (`RoomResult` on `skrum/PokerResultBar`): "Result · n votes", the nearest card, the reason of an automatic reveal, the viewer's card, the agreement, the distribution (with its table view) and the line naming the extremes. The section keeps `aria-labelledby="poker-result"`.
+- Facilitator: the final-estimate cards (radio group "Final estimate": the deck without "?" and the break, the saved estimate or the nearest card chosen), "Validate :value · Next story" ("Validate :value" when no other task waits) and "Re-vote". The button calls `PokerTaskEstimatesController@update` then `PokerCurrentTasksController@update`; when the second fails the estimate stays saved and the error shows. Ctrl/Cmd + Enter validates.
+- Focus goes to the result on a reveal when it was on the control that left (the Reveal button, a card of the deck) or on the page; focus that stands in a dialog or a field is left alone.
+- Phone (MobilePoker): the result is a card of the page under the seats, with the final-estimate cards; the dock keeps "Re-vote" (icon) and the validate button.
+
+### Parity
+
+| Feature before | Now |
+|---|---|
+| Average, median, spread | oval |
+| Nearest card, agreement, distribution, table view, extremes, reveal reason | dock (card on a phone) |
+| "Most played" figure | read in the agreement ("50 % on 5") and, on a deck without numbers, in the oval |
+| Estimate select | final-estimate cards |
+| "Save estimate" | "Validate :value" (and the next story when one waits) |
+| "Next task" after the reveal | the validate button; N still moves on without saving; the queue opens any task |
+| "Next task" before the reveal | unchanged |
+| Disabled deck after the reveal, with the played card pressed | the deck gives its place to the result; "Your card · n" in its heading line |
+| Anonymous votes listed under the seats | unchanged |
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The dock repeats the average and the median before the agreement, as ScreenPokerAfter does (fix round); "Spread" is a badge of the oval only | D-64 |
+| "Nearest card", the reveal reason, "Your card" and "View as table" in the dock | D-64 |
+| Every card of the deck as a final estimate, in a scrolling row centred on the chosen card | D-65 |
+| "Validate 5 · Next story" without "pts"; no "discuss with the extremes" button | D-65 |
+| At 1440 × 900 the oval and the dock are in view with a story of a few lines, also for a facilitator who watches on a second round (`P18e-03-06d`, and the capture test `P18e-03-09` checks it); the bottom row of seats and the watchers box, which is now under the seats, are under the fold (the stage scrolls). With a tall story card (Jira source with a conflict block) the bottom edge of the oval is still cut by the reactions: the dock holds the average and the median | D-66 (watchers box in the flow, under the seats) |
+| On a phone the result card is under the seats: a reveal that takes focus brings it into view, otherwise the page is scrolled by hand | D-66 (RW-P2 turns the seats into one scrolling row) |
+
+## Rework RW-P2 — past rounds, phone layout, queue (owner, fourth round)
+
+Rows D-66, D-67 and D-68. Built:
+
+- Rounds: the list of the story card is open by default and keeps "name: value". It scrolls inside the card beyond 8rem (13rem before the fix round) (`PokerRounds` takes `scrollable`; the list then takes the keyboard focus under the name "Rounds"), so the table stays near the story. On a phone it is folded, as the README of ScreenPokerQueue says. The viewer's own choice (open or folded) wins until the task changes.
+- Seats: the first word of the display name ("You" for the viewer); the full name is the tooltip (`title`) and the text a screen reader gets; the card keeps its accessible name with the full name ("Bob Martin: Voted").
+- Phone: `PokerTable` takes `seatsLayout="row"`: the progress bar, then the players in one row that scrolls sideways (focusable group "Players, scrolls sideways"), the avatar pinned on the card, a trema in an empty place, the facilitator's crown, the player menu and "Offline" kept.
+- Queue: "Votes: n" on every row. The current row reads the round being played (soft badge); an estimated row shows it as a muted line under the estimate; a row still to estimate as a muted badge. Back end: `PresentPokerTask` sends `votesCount`, the number of votes of the task's last round (never a value); `BuildPokerSnapshot` loads it in one query.
+- Drop line: the rows stay in place while one is dragged; a 2px line with its ring shows where it lands (inside the `li` under it, `aria-hidden`). Keyboard drag and its announcements are unchanged; the queue stays `ol > li`.
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| A round lists "name: value" under its header, not one line of chips; the list scrolls in the card | D-67 |
+| On a phone the progress and "Reveal cards" are a bar above the row of players (no "Participants · n / m voted" heading, no alert); the row stops at the page padding | D-66 |
+| On a phone the row of players is partly under the fold of an 844px screen even with a story of four lines: while the team votes the cards show and the first names are cut by the reactions (the stage scrolls); after a reveal the row and its names are in view and the result card is under the fold | D-66 |
+| Bare estimate without "pts"; the dragged row follows the pointer | D-68 |
+
+## Fix round after the review of RW-P1 and RW-P2
+
+- Oval in view: the watchers box is under the seats (it was above them), the open rounds list of the story card scrolls beyond 8rem, and the dock repeats the average and the median. `P18e-03-06d` checks at 1440 × 900 that the oval lies between the top of the stage and the reactions, for a facilitator who votes and for one who watches on a second round; the capture test of the revealed room checks the same with seven players.
+- Final estimate: a round revealed after the estimate was saved (a re-vote) proposes its nearest card again; otherwise the saved estimate is proposed first.
+- The scrolling row of players of a phone is named "Players, scrolls sideways" (the section keeps "Players").
+- The validate tooltip has no keyboard hint in the foot of a phone.
+- `PresentPokerTask` answers 0 votes without a query for a task created in the same request.
+
+Open, for the owner:
+
+- `N` after the reveal still moves the room to the next task without saving, with no visible control. Either drop it after the reveal (the queue opens any task) or show a small "Skip" beside "Re-vote" that carries the hint.
+- On a phone the row of players is partly under the fold while the team votes (see the D-66 row above). Fitting it needs the description clamped with a way to read it whole, or a one-line progress bar.

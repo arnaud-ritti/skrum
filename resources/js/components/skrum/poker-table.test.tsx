@@ -374,7 +374,7 @@ describe('PokerTable while voting', () => {
         ).toBeTruthy();
     });
 
-    it('shows the watchers in a box before the seats and crowns a watching facilitator', () => {
+    it('shows the watchers in a box after the seats, which keeps the oval near the story, and crowns a watching facilitator', () => {
         const { container } = renderTable({
             facilitatorId: 'u2',
             seats: [
@@ -389,7 +389,7 @@ describe('PokerTable while voting', () => {
             within(watching).getByRole('img', { name: 'Facilitator' }),
         ).toBeTruthy();
         expect(
-            watching.compareDocumentPosition(players) &
+            players.compareDocumentPosition(watching) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
         expect(
@@ -927,6 +927,57 @@ describe('PokerTable revealed', () => {
     });
 });
 
+describe('PokerTable, the result shown elsewhere', () => {
+    it('keeps the figures of the oval and has no result panel nor actions under the seats', () => {
+        const { container } = renderTable({
+            revealed: true,
+            showResult: false,
+            isFacilitator: true,
+            result: { ...dispersion, median: 5 },
+            onRevote: vi.fn(),
+            onAccept: vi.fn(),
+            onNext: vi.fn(),
+        });
+        const oval = container.querySelector(
+            '[data-slot="poker-oval"]',
+        ) as HTMLElement;
+
+        expect(within(oval).getByText('Average')).toBeTruthy();
+        expect(within(oval).getByText('Median')).toBeTruthy();
+        expect(within(oval).getByText('Spread 3 → 21')).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="poker-result"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Save estimate' }),
+        ).toBeNull();
+    });
+
+    it('leaves focus alone on a reveal: whoever shows the result takes it', () => {
+        const props: Partial<PokerTableProps> = {
+            isFacilitator: true,
+            showResult: false,
+            onReveal: vi.fn(),
+        };
+        const { rerender } = renderTable(props);
+
+        screen.getByRole('button', { name: 'Reveal cards' }).focus();
+
+        rerender(
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', '5', 'Camille')]}
+                revealed
+                result={dispersion}
+                {...props}
+            />,
+        );
+
+        expect(document.activeElement).toBe(document.body);
+    });
+});
+
 describe('suggestedEstimate', () => {
     it('takes the nearest card for numeric decks and the single mode otherwise', () => {
         expect(suggestedEstimate(dispersion, true)).toBe('8');
@@ -1126,5 +1177,97 @@ describe('PokerTable layout and extreme data', () => {
             document.querySelectorAll('[data-slot="poker-dist-bar"]'),
         ).toHaveLength(20);
         expect(container).toBeTruthy();
+    });
+});
+
+describe('PokerTable, the names on the seats', () => {
+    it('shows the first name, the full name as tooltip and for a screen reader', () => {
+        renderTable({
+            seats: [
+                seat(0, 'voted', undefined, 'Camille Roux de Lys'),
+                seat(1, 'waiting', undefined, 'Theo'),
+                {
+                    ...seat(2, 'waiting', undefined, 'Ada Lovelace'),
+                    user: { id: 'u2', name: 'Ada Lovelace', isMe: true },
+                },
+            ],
+        });
+
+        const names = Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '[data-slot="poker-seat-name"]',
+            ),
+        );
+
+        expect(names.map((name) => name.getAttribute('title'))).toEqual([
+            'Camille Roux de Lys',
+            null,
+            'Ada Lovelace',
+        ]);
+        expect(
+            names[0].querySelector('[aria-hidden="true"]')?.textContent,
+        ).toBe('Camille');
+        expect(names[0].querySelector('.sr-only')?.textContent).toBe(
+            'Camille Roux de Lys',
+        );
+        expect(names[1].textContent).toBe('Theo');
+        expect(names[2].textContent).toBe('You');
+        expect(
+            screen.getByRole('img', { name: 'Camille Roux de Lys: Voted' }),
+        ).toBeTruthy();
+    });
+});
+
+describe('PokerTable, the row of a phone', () => {
+    it('keeps the progress out of a row of seats that scrolls and can be reached with the keyboard', () => {
+        renderTable({ seatsLayout: 'row', facilitatorId: 'u0' });
+
+        const region = screen.getByRole('region', { name: 'Players' });
+        const row = within(region).getByRole('group', {
+            name: 'Players, scrolls sideways',
+        });
+
+        expect(region.getAttribute('data-layout')).toBe('row');
+        expect(row.getAttribute('tabindex')).toBe('0');
+        expect(row.className).toContain('overflow-x-auto');
+        expect(row.querySelectorAll('[data-slot="poker-seat"]')).toHaveLength(
+            4,
+        );
+        expect(
+            row.querySelector('[data-slot="poker-table-center"]'),
+        ).toBeNull();
+        expect(
+            region.querySelector(
+                '[data-slot="poker-bar"] [data-slot="poker-table-center"]',
+            ),
+        ).toBeTruthy();
+        expect(
+            within(row).getByRole('img', { name: 'Camille: Voted' }),
+        ).toBeTruthy();
+        expect(
+            within(row).getByRole('img', { name: 'Facilitator' }),
+        ).toBeTruthy();
+        expect(within(row).queryByText('thinking')).toBeNull();
+    });
+
+    it('keeps the row beyond twelve players and shows the cards once revealed', () => {
+        renderTable({
+            seatsLayout: 'row',
+            revealed: true,
+            result: dispersion,
+            showResult: false,
+            seats: Array.from({ length: 14 }, (_, index) =>
+                seat(index, 'voted', '5'),
+            ),
+        });
+
+        const region = screen.getByRole('region', { name: 'Players' });
+
+        expect(region.getAttribute('data-layout')).toBe('row');
+        expect(
+            region.querySelectorAll(
+                '[data-slot="poker-seat-card"][data-face="up"]',
+            ),
+        ).toHaveLength(14);
     });
 });

@@ -4015,5 +4015,10 @@
     "Send my GIF": "Send my GIF",
     "Change": "Change",
     "Only you are told when you are close.": "Only you are told when you are close.",
-    "Your GIF is not sent yet: send it before the reveal.": "Your GIF is not sent yet: send it before the reveal."
+    "Your GIF is not sent yet: send it before the reveal.": "Your GIF is not sent yet: send it before the reveal.",
+    ":label, scrolls sideways": ":label, scrolls sideways",
+    "Validate :value · Next story": "Validate :value · Next story",
+    "Final estimate": "Final estimate",
+    "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate": "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate",
+    "Result on a phone: a card in the page, the two buttons at the bottom": "Result on a phone: a card in the page, the two buttons at the bottom"
 }

@@ -11,10 +11,34 @@ type Props = {
     task: PokerTask;
     /** The round being played on this task; null when it is not the current one. */
     round: { number: number; votesCount: number } | null;
+    /** Votes of the last round of the task, shown when it is not the current one. */
+    votesCount?: number;
     sortable: boolean;
     selectable: boolean;
     onSelect: () => void;
 };
+
+/**
+ * Where the dragged row lands against the row it is over: `arrayMove` puts it
+ * after a row further down, before a row further up.
+ */
+export function dropLineOf({
+    isOver,
+    isDragging,
+    activeIndex,
+    index,
+}: {
+    isOver: boolean;
+    isDragging: boolean;
+    activeIndex: number;
+    index: number;
+}): 'before' | 'after' | null {
+    if (!isOver || isDragging || activeIndex < 0 || activeIndex === index) {
+        return null;
+    }
+
+    return activeIndex < index ? 'after' : 'before';
+}
 
 /**
  * One task of the queue. The title is the first text of the row in the
@@ -23,6 +47,7 @@ type Props = {
 export function TaskRow({
     task,
     round,
+    votesCount = 0,
     sortable,
     selectable,
     onSelect,
@@ -36,7 +61,11 @@ export function TaskRow({
         transform,
         transition,
         isDragging,
+        isOver,
+        activeIndex,
+        index,
     } = useSortable({ id: task.id, disabled: !sortable });
+    const dropLine = dropLineOf({ isOver, isDragging, activeIndex, index });
     const isCurrent = round !== null;
     const isDone = task.estimate !== null && !isCurrent;
     const hasMeta = task.external !== null || isCurrent;
@@ -77,6 +106,19 @@ export function TaskRow({
                         {t('Votes: :count', { count: round.votesCount })}
                     </Badge>
                 )}
+                {round === null && isDone && (
+                    <span
+                        data-slot="task-votes"
+                        className="text-xs whitespace-nowrap text-muted-foreground"
+                    >
+                        {t('Votes: :count', { count: votesCount })}
+                    </span>
+                )}
+                {round === null && !isDone && (
+                    <Badge variant="muted" shape="pill">
+                        {t('Votes: :count', { count: votesCount })}
+                    </Badge>
+                )}
             </span>
         </>
     );
@@ -94,12 +136,24 @@ export function TaskRow({
             data-dragging={isDragging}
             aria-current={isCurrent ? 'true' : undefined}
             className={cn(
-                'flex items-start gap-2 rounded-lg bg-card py-2.5 pr-3 data-[dragging=true]:opacity-60',
+                'relative flex items-start gap-2 rounded-lg bg-card py-2.5 pr-3 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80 data-[dragging=true]:shadow-raised',
                 sortable ? 'pl-1' : 'pl-3',
                 isCurrent &&
                     'bg-skrum-primary-soft ring-1 ring-primary ring-inset',
             )}
         >
+            {dropLine !== null && (
+                <span
+                    aria-hidden
+                    data-slot="task-drop-line"
+                    data-position={dropLine}
+                    className={cn(
+                        'pointer-events-none absolute inset-x-2 z-10 h-0.5 rounded-full bg-primary',
+                        'before:absolute before:-top-0.75 before:-left-1 before:size-2 before:rounded-full before:border-2 before:border-primary before:bg-card',
+                        dropLine === 'before' ? '-top-0.5' : '-bottom-0.5',
+                    )}
+                />
+            )}
             {sortable && (
                 <button
                     type="button"

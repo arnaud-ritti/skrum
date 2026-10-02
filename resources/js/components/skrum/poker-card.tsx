@@ -40,6 +40,8 @@ export type PokerDeckProps = {
      */
     selection?: 'toggle' | 'radio';
     label?: string;
+    /** Accessible name of a card; "Play :card" by default. */
+    cardLabel?: (card: string) => string;
     className?: string;
 };
 
@@ -279,6 +281,7 @@ export function PokerDeck({
     disabledValues = [],
     selection = 'toggle',
     label,
+    cardLabel,
     className,
 }: PokerDeckProps) {
     const { t } = useTrans();
@@ -383,6 +386,7 @@ export function PokerDeck({
                     value={card}
                     unit={unit}
                     size={size}
+                    label={cardLabel?.(card)}
                     radio={selection === 'radio'}
                     selected={value === card}
                     disabled={isDisabled(card)}

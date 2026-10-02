@@ -397,9 +397,9 @@ it('[P12c-04] writes a saved estimate back to Jira and shows it pending, then sy
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    $facilitator->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate')
+    $facilitator->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5')
         ->assertSee('Sync pending');
 
@@ -438,9 +438,9 @@ it('[P12c-05a] shows a failed sync for a half point on a Linear task and syncs a
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
-    $page->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '½')
-        ->click('Save estimate')
+    $page->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '½')
+        ->assertSee('Validate ½')
+        ->click('@poker-validate')
         ->assertSee('Estimate: ½')
         ->assertSee('Sync pending');
 
@@ -455,10 +455,10 @@ it('[P12c-05a] shows a failed sync for a half point on a Linear task and syncs a
     expect($task->refresh()->sync_error)->toBe('Linear only accepts whole-number estimates.')
         ->and($task->needs_sync)->toBeTrue();
 
-    $page->click('[aria-label="Estimate"]')
-        ->click('[role="option"]:has-text("8")')
-        ->assertSeeIn('[aria-label="Estimate"]', '8')
-        ->click('Save estimate')
+    $page->click('[aria-label="Final estimate"] [aria-label="8"]')
+        ->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '8')
+        ->assertSee('Validate 8')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 8')
         ->assertSee('Sync pending');
 
@@ -524,9 +524,9 @@ it('[P12c-06] does not write a T-shirt estimate to Jira and says why', function 
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
-    $page->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', 'M')
-        ->click('Save estimate')
+    $page->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', 'M')
+        ->assertSee('Validate M')
+        ->click('@poker-validate')
         ->assertSee('Estimate: M')
         ->assertSee("Not synced: T-shirt estimates can't be written to Jira.")
         ->assertDontSee('Sync pending')

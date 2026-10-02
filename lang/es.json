@@ -4238,5 +4238,10 @@
     "Send my GIF": "Enviar mi GIF",
     "Change": "Cambiar",
     "Only you are told when you are close.": "Solo tú sabes cuándo casi aciertas.",
-    "Your GIF is not sent yet: send it before the reveal.": "Tu GIF aún no se ha enviado: envíalo antes de la revelación."
+    "Your GIF is not sent yet: send it before the reveal.": "Tu GIF aún no se ha enviado: envíalo antes de la revelación.",
+    ":label, scrolls sideways": ":label, desplazamiento lateral",
+    "Validate :value · Next story": "Validar :value · Siguiente historia",
+    "Final estimate": "Estimación final",
+    "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate": "Resultado en el dock: el óvalo conserva las cifras, la barra lleva el acuerdo, la distribución y la estimación final",
+    "Result on a phone: a card in the page, the two buttons at the bottom": "Resultado en un teléfono: una tarjeta en la página, los dos botones abajo"
 }

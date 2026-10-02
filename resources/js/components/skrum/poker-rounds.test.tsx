@@ -383,3 +383,36 @@ describe('PokerRounds', () => {
         ).toEqual(['3 × 1', '5 × 1', '13 × 1']);
     });
 });
+
+describe('PokerRounds, a list that scrolls', () => {
+    it('caps the list, which takes the keyboard focus under the name Rounds; by default the list grows', () => {
+        const { unmount } = renderWithProviders(
+            <PokerRounds rounds={[round(), consensusRound]} defaultOpen />,
+        );
+
+        expect(document.querySelector('ol')?.hasAttribute('tabindex')).toBe(
+            false,
+        );
+        expect(document.querySelector('ol')?.className).not.toContain(
+            'overflow-y-auto',
+        );
+        unmount();
+
+        renderWithProviders(
+            <PokerRounds
+                rounds={[round(), consensusRound]}
+                defaultOpen
+                scrollable
+            />,
+        );
+
+        const list = screen.getByRole('list', { name: 'Rounds' });
+
+        expect(list.getAttribute('tabindex')).toBe('0');
+        expect(list.className).toContain('overflow-y-auto');
+        expect(list.className).toContain('max-h-32');
+        expect(
+            list.querySelectorAll(':scope > [data-slot="poker-round"]'),
+        ).toHaveLength(2);
+    });
+});

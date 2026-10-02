@@ -58,6 +58,7 @@ export function pokerTask(
         estimate: null,
         estimatedAt: null,
         roundsCount: 0,
+        votesCount: 0,
         external: null,
         ...overrides,
     };

@@ -1,6 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { GameProvider } from '@/components/poker/game-context';
 import { RoomTable } from '@/components/poker/room-table';
 import type { RoundActions } from '@/components/poker/use-round-actions';
 import {
@@ -26,6 +25,10 @@ function roundActions(overrides: Partial<RoundActions> = {}): RoundActions {
         revote: vi.fn(async () => {}),
         saveEstimate: vi.fn(async () => {}),
         goToNext: vi.fn(async () => {}),
+        validate: vi.fn(async () => {}),
+        estimate: '5',
+        estimateCards: ['1', '2', '3', '5', '8'],
+        chooseEstimate: vi.fn(),
         next: null,
         ...overrides,
     };
@@ -140,6 +143,24 @@ describe('RoomTable with a round', () => {
         expect(actions.reveal).toHaveBeenCalledTimes(1);
     });
 
+    it('puts the players in one scrolling row on a phone, the role menu kept', () => {
+        renderInRoom(
+            <RoomTable task={task} actions={roundActions()} compact />,
+        );
+        const players = screen.getByRole('region', { name: 'Players' });
+        const row = within(players).getByRole('group', {
+            name: 'Players, scrolls sideways',
+        });
+
+        expect(players.getAttribute('data-layout')).toBe('row');
+        expect(row.querySelectorAll('[data-slot="poker-seat"]')).toHaveLength(
+            3,
+        );
+        expect(
+            within(row).getAllByRole('button', { name: 'Player options' }),
+        ).toHaveLength(2);
+    });
+
     it('gives the facilitator a role menu on every seat but their own', () => {
         const { unmount } = renderInRoom(
             <RoomTable task={task} actions={roundActions()} />,
@@ -175,27 +196,26 @@ describe('RoomTable with a round', () => {
         ).toBeNull();
     });
 
-    it('shows the figures of the server once revealed, in the section the browser suite reads, without the actions', () => {
+    it('shows the average, the median and the spread in the oval once revealed, and no result panel under the table', () => {
         const { container } = renderInRoom(
             <RoomTable task={task} actions={roundActions()} />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
         );
-        const result = container.querySelector(
-            '[aria-labelledby="poker-result"]',
+        const oval = container.querySelector(
+            '[data-slot="poker-oval"]',
         ) as HTMLElement;
 
-        expect(within(result).getByText('Median')).toBeTruthy();
-        expect(within(result).getByText('Spread 3 → 8')).toBeTruthy();
-        expect(within(result).getByText('33 % on 3, 5, 8')).toBeTruthy();
-        expect(within(result).getByText('Nearest card: 5')).toBeTruthy();
+        expect(within(oval).getByText('Average')).toBeTruthy();
+        expect(within(oval).getByText('5.3')).toBeTruthy();
+        expect(within(oval).getByText('Median')).toBeTruthy();
+        expect(within(oval).getByText('Spread 3 → 8')).toBeTruthy();
         expect(
-            within(result).getByText(
-                'Bob (3) and Cleo (8) open the discussion.',
-            ),
-        ).toBeTruthy();
-        expect(
-            within(result).queryByRole('button', { name: 'Re-vote' }),
+            container.querySelector('[aria-labelledby="poker-result"]'),
         ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="poker-result"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
         expect(screen.getByRole('img', { name: 'Bob: 3' })).toBeTruthy();
     });
 
@@ -263,39 +283,5 @@ describe('RoomTable, a spectator who voted before a named reveal', () => {
         });
 
         expect(mocks.request.mock.calls[0][1]).toEqual({ spectator: false });
-    });
-});
-
-describe('RoomTable, when the cards are revealed', () => {
-    it('brings the result into view', () => {
-        const scrollIntoView = vi.fn();
-
-        Element.prototype.scrollIntoView = scrollIntoView;
-
-        const { ctx, rerender, container } = renderInRoom(
-            <RoomTable task={task} actions={roundActions()} />,
-        );
-
-        expect(scrollIntoView).not.toHaveBeenCalled();
-
-        act(() => {
-            rerender(
-                <GameProvider
-                    value={{
-                        ...ctx,
-                        snapshot: pokerSnapshot({
-                            current: { taskId: 't1', round: revealed },
-                        }),
-                    }}
-                >
-                    <RoomTable task={task} actions={roundActions()} />
-                </GameProvider>,
-            );
-        });
-
-        expect(scrollIntoView).toHaveBeenCalledTimes(1);
-        expect(scrollIntoView.mock.instances[0]).toBe(
-            container.querySelector('[aria-labelledby="poker-result"]'),
-        );
     });
 });

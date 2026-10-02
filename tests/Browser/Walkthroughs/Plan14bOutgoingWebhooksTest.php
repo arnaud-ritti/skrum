@@ -440,9 +440,9 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
 
     $page = $this->awaitRealtime($this->signIn($admin, "/poker/{$game->id}"));
 
-    $page->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate')
+    $page->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5');
 
     $this->workQueue();
