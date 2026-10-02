@@ -10,6 +10,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\EmailCodePurpose;
 use App\Enums\SecondFactorMethod;
 use App\Enums\SsoProvider;
+use App\Http\Middleware\EnsurePasswordIsText;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
@@ -59,6 +61,8 @@ class FortifyServiceProvider extends ServiceProvider
      * Fortify tells an unknown address, and one asked again too soon, from
      * one that was mailed, and puts no limit on the route. Every request
      * gets the answer of a sent link, and an address of origin is limited.
+     * Its password confirmation has no limit either, and fails on a password
+     * that is not text: an account gets six tries a minute, text only.
      */
     private function configurePasswordResetRequests(): void
     {
@@ -74,6 +78,7 @@ class FortifyServiceProvider extends ServiceProvider
             $routes = Route::getRoutes();
             $routes->refreshNameLookups();
             $routes->getByName('password.email')?->middleware('throttle:passwordResetLinks');
+            $routes->getByName('password.confirm.store')?->middleware(['throttle:passwordConfirmations', EnsurePasswordIsText::class]);
         });
     }
 
@@ -185,6 +190,12 @@ class FortifyServiceProvider extends ServiceProvider
             ->by('password-reset-ip:'.$request->ip())
             ->response(fn (): RedirectResponse => back()->withErrors([
                 'email' => __('Too many attempts. Wait a minute and try again.'),
+            ])));
+
+        RateLimiter::for('passwordConfirmations', fn (Request $request) => Limit::perMinute(6)
+            ->by('password-confirmation-user:'.$request->user()?->getAuthIdentifier())
+            ->response(fn () => throw ValidationException::withMessages([
+                'password' => __('Too many attempts. Wait a minute and try again.'),
             ])));
 
         RateLimiter::for('invitationAccounts', fn (Request $request) => Limit::perMinute(10)
