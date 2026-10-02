@@ -343,8 +343,9 @@ describe('DeckPicker, compact variant', () => {
         const { onCreate } = renderPicker({ variant: 'compact' });
 
         expect(
-            document.querySelector('[data-slot="deck-picker"]')?.dataset
-                .variant,
+            document
+                .querySelector('[data-slot="deck-picker"]')
+                ?.getAttribute('data-variant'),
         ).toBe('compact');
         expect(
             screen.queryByRole('button', { name: 'Create a deck' }),
