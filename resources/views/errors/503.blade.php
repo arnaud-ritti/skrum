@@ -4,8 +4,11 @@
     app.css: the colours below are copied from
     docs/design-system/tokens.json (light theme, then dark). This file is
     outside the token rule of the front end for that reason. Its only script is
-    inline: it asks the instance every 30 seconds and loads the page again once
-    the answer is no longer a 503.
+    inline: every 30 seconds it asks for the home route, a redirect that
+    changes nothing, and reloads once the answer is no longer a 503. It does
+    not ask for its own URL, which would run a one-time GET action twice, nor
+    for /up, which Laravel keeps answering 200 in maintenance mode. It reloads
+    rather than replaces: a URL with a fragment would only move the fragment.
 --}}
 @php
     $appearance = in_array(request()->cookie('appearance'), ['light', 'dark'], true) ? request()->cookie('appearance') : null;
@@ -330,14 +333,14 @@
                 };
 
                 var ask = function () {
-                    fetch(location.href, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' }).then(function (answer) {
+                    fetch('/', { method: 'HEAD', redirect: 'manual', cache: 'no-store', credentials: 'same-origin' }).then(function (answer) {
                         if (answer.status === 503) {
                             wait();
 
                             return;
                         }
 
-                        location.replace(location.href);
+                        location.reload();
                     }, wait);
                 };
 

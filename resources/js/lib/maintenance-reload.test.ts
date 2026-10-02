@@ -18,6 +18,12 @@ function start(visit: StartedVisit): void {
     );
 }
 
+function finish(visit: StartedVisit): void {
+    document.dispatchEvent(
+        new CustomEvent('inertia:finish', { detail: { visit } }),
+    );
+}
+
 function answer(status: number): boolean {
     return document.dispatchEvent(
         new CustomEvent('inertia:httpException', {
@@ -75,6 +81,51 @@ describe('loadDocumentOnMaintenance', () => {
 
         expect(answer(503)).toBe(false);
         expect(reload).not.toHaveBeenCalled();
+    });
+
+    it('loads the document of the clicked link when a prefetch started after it', () => {
+        start({ url: new URL('http://localhost/teams/demo'), method: 'get' });
+        start({
+            url: new URL('http://localhost/settings'),
+            method: 'get',
+            prefetch: true,
+        });
+
+        expect(answer(503)).toBe(false);
+        expect(reload).toHaveBeenCalledExactlyOnceWith(
+            'http://localhost/teams/demo',
+        );
+    });
+
+    it('forgets a visit once it has finished', () => {
+        const visit = {
+            url: new URL('http://localhost/teams/demo'),
+            method: 'get',
+        };
+
+        start(visit);
+        finish(visit);
+        start({
+            url: new URL('http://localhost/settings'),
+            method: 'get',
+            prefetch: true,
+        });
+
+        expect(answer(503)).toBe(false);
+        expect(reload).not.toHaveBeenCalled();
+    });
+
+    it('reloads the current document when the visit only differs from it by its fragment', () => {
+        window.history.replaceState(null, '', '/teams/demo#members');
+        start({
+            url: new URL(`${window.location.origin}/teams/demo#sessions`),
+            method: 'get',
+        });
+
+        expect(answer(503)).toBe(false);
+        expect(reload).toHaveBeenCalledExactlyOnceWith(null);
+
+        window.history.replaceState(null, '', '/');
     });
 
     it('reloads the current document when no visit is known', () => {

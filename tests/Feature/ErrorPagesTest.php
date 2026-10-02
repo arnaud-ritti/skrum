@@ -280,7 +280,7 @@ it('keeps the retry link of the 503 view on the instance', function () {
         ->not->toContain('href="//');
 });
 
-it('gives the static 503 view one inline script that asks the instance every 30 seconds and loads the page once it answers', function () {
+it('gives the static 503 view one inline script, no external one, a hidden reload line and a probe of the home route', function () {
     Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
 
     $content = $this->get('/error-pages-probe/unavailable')->assertServiceUnavailable()->getContent();
@@ -288,9 +288,11 @@ it('gives the static 503 view one inline script that asks the instance every 30 
     expect(substr_count($content, '<script'))->toBe(1)
         ->and($content)->toContain('<script>')
         ->toContain('30000')
-        ->toContain("method: 'HEAD'")
+        ->toContain("fetch('/', { method: 'HEAD', redirect: 'manual'")
         ->toContain('status === 503')
-        ->toContain('location.replace(location.href)')
+        ->toContain('location.reload()')
+        ->not->toContain('<script src')
+        ->not->toContain('location.replace')
         ->toMatch('/<span class="reload" data-slot="maintenance-reload" hidden>/');
 });
 
@@ -312,6 +314,8 @@ it('renders the static 503 view in maintenance mode', function () {
             ->assertSee('lang="en"', false)
             ->assertSee('This page reloads by itself as soon as the instance answers.')
             ->assertSee('Retry now');
+
+        $this->call('HEAD', '/')->assertServiceUnavailable();
     } finally {
         $this->artisan('up');
     }

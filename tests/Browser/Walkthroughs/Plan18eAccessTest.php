@@ -307,7 +307,7 @@ it('[P18e-11-10] "Reload" on the 419 page of a log out that expired goes back to
         ->assertNotPresent('[data-slot="error-page"]');
 });
 
-it('[P18e-11-11] a link followed during maintenance loads the static 503 page, which loads the page again once the instance answers', function () {
+it('[P18e-11-11] a link followed during maintenance loads the static 503 page, which loads the page again once the instance answers, fragment included', function () {
     config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
 
     $askNow = <<<'JS'
@@ -333,6 +333,7 @@ it('[P18e-11-11] a link followed during maintenance loads the static 503 page, w
             ->assertNotPresent('dialog')
             ->assertNotPresent('iframe');
 
+        $page->script("() => { window.location.hash = 'reset'; return true; }");
         $page->script($askNow);
 
         $keptWhileDown = $page->script(<<<'JS'
@@ -351,5 +352,6 @@ it('[P18e-11-11] a link followed during maintenance loads the static 503 page, w
 
     $page->assertPresent('#email')
         ->assertPathIs('/forgot-password')
+        ->assertScript('window.location.hash', '#reset')
         ->assertNotPresent('[data-slot="maintenance-page"]');
 });

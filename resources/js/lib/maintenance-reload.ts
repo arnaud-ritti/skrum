@@ -8,17 +8,28 @@ type StartedVisit = {
     async?: boolean;
 };
 
+function withoutFragment(url: URL | Location): string {
+    return `${url.origin}${url.pathname}${url.search}`;
+}
+
 /**
  * The maintenance page is a static document, not an Inertia page: Inertia would
  * show it inside its error modal. A visit answered 503 loads the document
- * instead, at the URL the visit was going to when it was a plain GET, at the
- * current URL otherwise. A prefetch answered 503 is dropped: nobody asked for it.
+ * instead, at the URL of the plain GET visit under way, at the current URL
+ * otherwise. The answer does not say which visit it belongs to, so every visit
+ * under way is kept: a 503 is dropped only when all of them are prefetches,
+ * which nobody asked for. A visit to the current URL with another fragment
+ * reloads, since assigning it would only move the fragment.
  */
 export function loadDocumentOnMaintenance(): () => void {
-    let lastVisit: StartedVisit | null = null;
+    const visitsUnderWay = new Set<StartedVisit>();
 
     const stopStart = router.on('start', (event) => {
-        lastVisit = event.detail.visit;
+        visitsUnderWay.add(event.detail.visit);
+    });
+
+    const stopFinish = router.on('finish', (event) => {
+        visitsUnderWay.delete(event.detail.visit);
     });
 
     const stopException = router.on('httpException', (event) => {
@@ -28,23 +39,32 @@ export function loadDocumentOnMaintenance(): () => void {
 
         event.preventDefault();
 
-        const visit = lastVisit;
+        const visits = [...visitsUnderWay];
 
-        if (visit?.prefetch) {
+        if (visits.length > 0 && visits.every((visit) => visit.prefetch)) {
             return;
         }
 
-        if (visit && visit.method === 'get' && !visit.async) {
-            reloadDocument(visit.url.href);
+        const navigation = visits.findLast(
+            (visit) =>
+                visit.method === 'get' && !visit.async && !visit.prefetch,
+        );
+
+        if (
+            !navigation ||
+            withoutFragment(navigation.url) === withoutFragment(window.location)
+        ) {
+            reloadDocument(null);
 
             return;
         }
 
-        reloadDocument(null);
+        reloadDocument(navigation.url.href);
     });
 
     return () => {
         stopStart();
+        stopFinish();
         stopException();
     };
 }
