@@ -4416,5 +4416,17 @@
     "all have an owner and a due date": "todas tienen responsable y fecha límite",
     "More actions": "Más acciones",
     "Session ended — 1 action created": "Sesión finalizada — 1 acción creada",
-    "Session ended — :count actions created": "Sesión finalizada — :count acciones creadas"
+    "Session ended — :count actions created": "Sesión finalizada — :count acciones creadas",
+    "Group by": "Agrupar por",
+    "Filters": "Filtros",
+    "Filters · :count": "Filtros · :count",
+    "on this page": "en esta página",
+    ":count open": ":count abiertas",
+    "from :count rituals": "de :count rituales",
+    "from 1 ritual": "de 1 ritual",
+    "Show all teams": "Mostrar todos los equipos",
+    ":count action items": ":count acciones",
+    "1 action item": "1 acción",
+    "Action items created in a retro or added here are listed on this page.": "Las acciones creadas en una retro o añadidas aquí aparecen en esta página.",
+    "Change the filters or reset them to see more.": "Cambia los filtros o restablécelos para ver más."
 }

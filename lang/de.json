@@ -4416,5 +4416,17 @@
     "all have an owner and a due date": "alle haben eine verantwortliche Person und ein Fälligkeitsdatum",
     "More actions": "Weitere Aktionen",
     "Session ended — 1 action created": "Sitzung beendet — 1 Maßnahme erstellt",
-    "Session ended — :count actions created": "Sitzung beendet — :count Maßnahmen erstellt"
+    "Session ended — :count actions created": "Sitzung beendet — :count Maßnahmen erstellt",
+    "Group by": "Gruppieren nach",
+    "Filters": "Filter",
+    "Filters · :count": "Filter · :count",
+    "on this page": "auf dieser Seite",
+    ":count open": ":count offen",
+    "from :count rituals": "aus :count Ritualen",
+    "from 1 ritual": "aus 1 Ritual",
+    "Show all teams": "Alle Teams anzeigen",
+    ":count action items": ":count Aktionspunkte",
+    "1 action item": "1 Aktionspunkt",
+    "Action items created in a retro or added here are listed on this page.": "Aktionspunkte aus einer Retro oder hier hinzugefügte stehen auf dieser Seite.",
+    "Change the filters or reset them to see more.": "Ändere die Filter oder setze sie zurück, um mehr zu sehen."
 }

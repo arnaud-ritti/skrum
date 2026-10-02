@@ -4194,5 +4194,17 @@
     "all have an owner and a due date": "all have an owner and a due date",
     "More actions": "More actions",
     "Session ended — 1 action created": "Session ended — 1 action created",
-    "Session ended — :count actions created": "Session ended — :count actions created"
+    "Session ended — :count actions created": "Session ended — :count actions created",
+    "Group by": "Group by",
+    "Filters": "Filters",
+    "Filters · :count": "Filters · :count",
+    "on this page": "on this page",
+    ":count open": ":count open",
+    "from :count rituals": "from :count rituals",
+    "from 1 ritual": "from 1 ritual",
+    "Show all teams": "Show all teams",
+    ":count action items": ":count action items",
+    "1 action item": "1 action item",
+    "Action items created in a retro or added here are listed on this page.": "Action items created in a retro or added here are listed on this page.",
+    "Change the filters or reset them to see more.": "Change the filters or reset them to see more."
 }
