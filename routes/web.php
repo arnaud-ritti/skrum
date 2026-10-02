@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AboutPagesController;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BrandAssetsController;
@@ -165,12 +164,12 @@ use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('welcome', [
-    'canRegister' => resolve(SignupGate::class)->canShowRegistration(),
-]))->name('home');
+Route::get('/', fn (Request $request) => $request->user() === null
+    ? to_route('login')
+    : to_route('dashboard'))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
 

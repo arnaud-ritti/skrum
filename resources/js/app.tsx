@@ -47,8 +47,6 @@ void createInertiaApp({
     },
     layout: (name) => {
         switch (true) {
-            case name === 'welcome':
-                return null;
             case name === 'retros/join':
             case name === 'retros/session-ended':
             case name === 'poker/join':
