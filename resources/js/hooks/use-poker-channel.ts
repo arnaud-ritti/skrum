@@ -4,7 +4,7 @@ import type { PresenceMember } from '@/lib/retro/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { useSafeConnectionStatus } from './use-retro-channel';
 
-export const PokerEvents = [
+const PokerEvents = [
     'task.saved',
     'task.deleted',
     'tasks.reordered',
@@ -21,14 +21,14 @@ export const PokerEvents = [
  */
 const ResyncCoalesceMs = 250;
 
-export type PokerEventName = (typeof PokerEvents)[number];
+type PokerEventName = (typeof PokerEvents)[number];
 
 export type PokerEvent = {
     name: PokerEventName;
     payload: Record<string, unknown>;
 };
 
-export type PokerChannelHandlers = {
+type PokerChannelHandlers = {
     onEvent: (event: PokerEvent) => void;
     onResync: () => void;
     onJoining: (member: PresenceMember) => void;

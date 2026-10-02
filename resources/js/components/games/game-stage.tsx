@@ -15,7 +15,7 @@ import { RoundEndCard } from './round-end-card';
 import { SprintGifBoard } from './sprint-gif-board';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
-export function RoundBoard({
+function RoundBoard({
     round,
     gifCaption,
 }: {
@@ -44,7 +44,7 @@ export function RoundBoard({
 }
 
 /** Who leads the round in play: the line above the name of the game. */
-export function RoundStatus({ round }: { round: GameRound }) {
+function RoundStatus({ round }: { round: GameRound }) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
 

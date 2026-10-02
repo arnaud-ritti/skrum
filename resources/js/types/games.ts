@@ -1,6 +1,6 @@
 import type { GameKind, GameOption, GameRoomAccess } from '@/lib/games/types';
 
-export type GameRoomSummaryPlayer = {
+type GameRoomSummaryPlayer = {
     id: string;
     name: string;
     avatarUrl: string;

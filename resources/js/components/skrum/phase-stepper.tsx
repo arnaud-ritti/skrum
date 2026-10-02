@@ -258,6 +258,12 @@ export function PhaseStepper({
             return;
         }
 
+        // An arrow with a modifier is a shortcut of the page (mod+ArrowRight
+        // is the next phase), not a move between the markers.
+        if (event.metaKey || event.ctrlKey || event.altKey) {
+            return;
+        }
+
         event.preventDefault();
         const targetIndex = event.key === 'ArrowRight' ? index + 1 : index - 1;
         const target = buttonRefs.current[targetIndex];

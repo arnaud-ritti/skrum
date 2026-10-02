@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
+use App\Support\Auth\LoginAddress;
 use Database\Factories\WorkspaceInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,7 +11,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -68,7 +68,7 @@ class WorkspaceInvitation extends Model
 
     public function matchesEmail(string $email): bool
     {
-        return Str::lower($this->email) === Str::lower($email);
+        return LoginAddress::normalise($this->email) === LoginAddress::normalise($email);
     }
 
     protected function casts(): array

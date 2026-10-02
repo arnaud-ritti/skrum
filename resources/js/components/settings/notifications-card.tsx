@@ -18,9 +18,11 @@ import { useTrans } from '@/hooks/use-trans';
 export type NotificationPreferences = {
     action_item_reminders_by_email: boolean;
     action_item_reminders_in_app: boolean;
+    recap_emails: boolean;
+    recap_in_app: boolean;
 };
 
-export type NotificationChannel = {
+type NotificationChannel = {
     id: string;
     field: keyof NotificationPreferences;
     /** Accessible name of the switch: the cell shows the switch alone. */
@@ -28,7 +30,7 @@ export type NotificationChannel = {
 };
 
 /** One event of the table. An event without a channel leaves that cell empty. */
-export type NotificationRow = {
+type NotificationRow = {
     key: string;
     event: string;
     description?: string;
@@ -40,7 +42,7 @@ type NotificationsCardProps = {
     preferences: NotificationPreferences;
     reminderTime: string;
     remindersEnabled: boolean;
-    /** The events of the table; the one event of today when absent. */
+    /** The events of the table; the two events of today when absent. */
     rows?: NotificationRow[];
 };
 
@@ -75,6 +77,20 @@ export function NotificationsCard({
                 id: 'action-item-reminders-by-email',
                 field: 'action_item_reminders_by_email',
                 label: t('Email me about due and overdue action items'),
+            },
+        },
+        {
+            key: 'retro-recap',
+            event: t('Retro recap'),
+            inApp: {
+                id: 'recap-in-app',
+                field: 'recap_in_app',
+                label: t('Show retro recaps in the notification bell'),
+            },
+            email: {
+                id: 'recap-emails',
+                field: 'recap_emails',
+                label: t('Email me the results of retrospectives'),
             },
         },
     ];

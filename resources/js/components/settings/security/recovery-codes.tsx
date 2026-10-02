@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 
-export const RecoveryCodesFileName = 'recovery-codes.txt';
+const RecoveryCodesFileName = 'recovery-codes.txt';
 
 function downloadText(name: string, text: string): void {
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));

@@ -30,7 +30,7 @@ export function canManageActionItem(
     );
 }
 
-export function isActionItemAssignee(
+function isActionItemAssignee(
     item: ActionItem,
     viewer: ActionItemViewer,
 ): boolean {

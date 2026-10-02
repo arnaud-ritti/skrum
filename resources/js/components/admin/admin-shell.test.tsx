@@ -4,9 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { AdminShell } from './admin-shell';
 
+const page = vi.hoisted(() => ({
+    props: { translations: {} } as Record<string, unknown>,
+}));
+
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
-    usePage: () => ({ props: { translations: {} } }),
+    usePage: () => page,
 }));
 
 vi.mock('@/layouts/skrum/app-layout', () => ({
@@ -41,12 +45,35 @@ describe('AdminShell', () => {
 
         expect(links.map((link) => link.textContent)).toEqual([
             'Branding',
+            'SSO authentication',
             'Admins',
         ]);
         expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([
             null,
+            null,
             'page',
         ]);
+    });
+
+    it('says "active" beside SSO authentication while single sign-on is in force', () => {
+        page.props = { translations: {}, ssoInForce: true };
+
+        renderWithProviders(
+            <AdminShell active="signIn">
+                <p>content</p>
+            </AdminShell>,
+        );
+
+        expect(
+            screen
+                .getByRole('link', {
+                    name: /^SSO authentication\s*active$/,
+                    hidden: true,
+                })
+                .getAttribute('aria-current'),
+        ).toBe('page');
+
+        page.props = { translations: {} };
     });
 
     it('shows the host of the instance under the navigation', () => {

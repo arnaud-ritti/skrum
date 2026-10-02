@@ -291,6 +291,36 @@ describe('PokerDeck', () => {
         );
     });
 
+    it('plays the "?" card with "?", and keeps the key from the page', () => {
+        const onChange = vi.fn();
+        renderWithProviders(
+            <PokerDeck
+                values={['XS', 'S', '?']}
+                value={null}
+                onChange={onChange}
+            />,
+        );
+        const card = screen.getByRole('button', { name: 'Play XS' });
+
+        expect(fireEvent.keyDown(card, { key: '?', shiftKey: true })).toBe(
+            false,
+        );
+        expect(onChange).toHaveBeenCalledWith('?');
+    });
+
+    it('leaves "?" to the page when the deck has no "?" card', () => {
+        const onChange = vi.fn();
+        renderWithProviders(
+            <PokerDeck values={['XS', 'S']} value={null} onChange={onChange} />,
+        );
+        const card = screen.getByRole('button', { name: 'Play XS' });
+
+        expect(fireEvent.keyDown(card, { key: '?', shiftKey: true })).toBe(
+            true,
+        );
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('ignores a digit with no matching card', () => {
         const onChange = vi.fn();
         renderWithProviders(

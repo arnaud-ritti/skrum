@@ -171,7 +171,7 @@ function mergeComment<T extends CardComment>(existing: T, incoming: T): T {
     };
 }
 
-export function upsertComment(
+function upsertComment(
     threads: CommentThread[],
     comment: CardComment,
 ): CommentThread[] {
@@ -210,7 +210,7 @@ export function upsertComment(
     });
 }
 
-export function removeComment(
+function removeComment(
     threads: CommentThread[],
     commentId: string,
     soft: boolean,
@@ -281,7 +281,7 @@ function applyCardTotal(
     );
 }
 
-export function placeCard(
+function placeCard(
     cards: BoardCard[],
     cardId: string,
     columnId: string,
@@ -324,7 +324,7 @@ export function placeCard(
  * Broadcast payloads are presented without a viewer, so they never mark
  * an item as mine; the known copy keeps it and its comment revision.
  */
-export function upsertActionItem(
+function upsertActionItem(
     items: ActionItem[],
     incoming: ActionItem,
 ): ActionItem[] {

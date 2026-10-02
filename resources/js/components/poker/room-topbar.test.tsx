@@ -100,6 +100,24 @@ describe('RoomStateBadges', () => {
         expect(screen.getByText('Anonymous votes')).toBeTruthy();
     });
 
+    it('keeps the round alone in a tight header, its state for the tooltip and screen readers', () => {
+        renderInRoom(
+            <RoomStateBadges roundOnly />,
+            pokerSnapshot({
+                game: { autoReveal: true, anonymousVotes: true },
+                current: {
+                    taskId: 't1',
+                    round: pokerRound({ number: 2, revealedAt: null }),
+                },
+            }),
+        );
+
+        expect(screen.getByText('Round 2')).toBeTruthy();
+        expect(screen.getByTitle('Round 2 · voting')).toBeTruthy();
+        expect(screen.queryByText('Auto-reveal')).toBeNull();
+        expect(screen.queryByText('Anonymous votes')).toBeNull();
+    });
+
     it('says an ended game is ended, and nothing of its round', () => {
         renderInRoom(
             <RoomStateBadges />,

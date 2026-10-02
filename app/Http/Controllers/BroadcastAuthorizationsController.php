@@ -64,11 +64,30 @@ class BroadcastAuthorizationsController extends Controller
             return $this->authorizeTeamActionItemsChannel($request, $validated);
         }
 
+        if (str_starts_with($validated['channel_name'], 'private-user.')) {
+            return $this->authorizeUserChannel($request, $validated);
+        }
+
         if (str_starts_with($validated['channel_name'], 'private-team-games.')) {
             return $this->authorizeTeamGamesChannel($request, $validated);
         }
 
         abort(403);
+    }
+
+    /**
+     * Only the signed-in user whose id the channel carries; a guest cookie
+     * never grants it.
+     *
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeUserChannel(Request $request, array $validated): JsonResponse
+    {
+        abort_unless($request->user()?->getKey() === Str::after($validated['channel_name'], 'private-user.'), 403);
+
+        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
+
+        return response()->json(json_decode($signature, true));
     }
 
     /**

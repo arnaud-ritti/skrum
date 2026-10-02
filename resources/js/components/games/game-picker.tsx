@@ -10,7 +10,7 @@ import type { GameKind } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useRoom } from './room-context';
 
-export type GamePickerProps = {
+type GamePickerProps = {
     /** Place left under the game cards for the settings card of a game (GM-1). */
     settings?: ReactNode;
     /** For a player of a retro's icebreaker: the cards tell the game in play, the facilitator chooses. */

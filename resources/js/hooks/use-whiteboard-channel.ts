@@ -4,7 +4,7 @@ import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
 import { useSafeConnectionStatus } from './use-retro-channel';
 
-export const WhiteboardEvents = [
+const WhiteboardEvents = [
     'elements.changed',
     'timer.changed',
     'board.changed',
@@ -17,14 +17,14 @@ export const WhiteboardEvents = [
  */
 const ResyncCoalesceMs = 250;
 
-export type WhiteboardEventName = (typeof WhiteboardEvents)[number];
+type WhiteboardEventName = (typeof WhiteboardEvents)[number];
 
-export type WhiteboardEvent = {
+type WhiteboardEvent = {
     name: WhiteboardEventName;
     payload: Record<string, unknown>;
 };
 
-export type WhiteboardChannelHandlers = {
+type WhiteboardChannelHandlers = {
     onEvent: (event: WhiteboardEvent) => void;
     onResync: () => void;
     onLeaving?: (member: PresenceMember) => void;

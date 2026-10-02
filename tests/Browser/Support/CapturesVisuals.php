@@ -98,15 +98,24 @@ trait CapturesVisuals
     }
 
     /**
+     * `VISUAL_ONLY=light-1440-fr` in the environment keeps one configuration and skips the seven others.
+     *
      * @param  null|callable(string, array<string, string>, int): mixed  $visit  receives the path, the visit options (colour scheme, locale, reduced motion) and the width of the capture, and returns the page
+     * @param  bool  $appShell  false for a page outside the application shell (a mail): it has no theme class, its dark colours come from the colour scheme of the visit alone
      */
-    protected function captureVisuals(string $name, string $path, ?callable $visit = null): void
+    protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true): void
     {
         File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
+
+        $only = getenv('VISUAL_ONLY') ?: null;
 
         foreach (['light', 'dark'] as $theme) {
             foreach (self::VisualLocales as $locale => $browserLocale) {
                 foreach (self::VisualWidths as $width => $height) {
+                    if ($only !== null && $only !== "{$theme}-{$width}-{$locale}") {
+                        continue;
+                    }
+
                     $options = [
                         'colorScheme' => $theme,
                         'locale' => $browserLocale,
@@ -120,7 +129,9 @@ trait CapturesVisuals
 
                     $label = "{$name}-{$theme}-{$width}-{$locale}";
 
-                    $this->assertVisualAppearance($page, $theme, $locale, $label);
+                    if ($appShell) {
+                        $this->assertVisualAppearance($page, $theme, $locale, $label);
+                    }
 
                     expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
 

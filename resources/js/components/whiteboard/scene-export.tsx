@@ -9,7 +9,7 @@ import {
 
 type SceneAppState = Parameters<typeof serializeAsJSON>[1];
 
-export function sceneFileName(title: string): string {
+function sceneFileName(title: string): string {
     const safeTitle = title.replace(/[\\/:*?"<>|]+/g, ' ').trim();
 
     return `${safeTitle || 'whiteboard'}.whiteboard.json`;

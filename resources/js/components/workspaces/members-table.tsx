@@ -57,7 +57,7 @@ export type WorkspaceMembersProps = {
  * Places left for the features that come after the rewrite; nothing is
  * rendered while a slot is undefined.
  */
-export type MembersTableSlots = InviteSlots;
+type MembersTableSlots = InviteSlots;
 
 const ManagerRoles: readonly WorkspaceRole[] = ['owner', 'admin'];
 

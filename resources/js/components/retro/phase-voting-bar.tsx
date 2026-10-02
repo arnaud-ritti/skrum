@@ -99,7 +99,7 @@ export function useVoteBlockedLabel(): (
     };
 }
 
-export type PhaseVotingBarProps = {
+type PhaseVotingBarProps = {
     /** Place of the per-card cap, said after "of n" in the budget (RT-3). */
     cap?: ReactNode;
     /** Place of "x/y have finished", at the end of the bar (RT-4). */

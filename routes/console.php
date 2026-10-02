@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\EmailTwoFactorCode;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
 use App\Models\IntegrationInboundEvent;
+use App\Models\MagicLink;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -37,7 +39,7 @@ Schedule::command('skrum:check-integrations')
     ->daily()
     ->onOneServer();
 
-Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class]])
+Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class, MagicLink::class, EmailTwoFactorCode::class]])
     ->daily()
     ->onOneServer();
 

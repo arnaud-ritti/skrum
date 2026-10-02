@@ -24,14 +24,14 @@ const MinOptions = 2;
 const MaxOptions = 10;
 const SurveyKinds: SurveyKind[] = ['single', 'multiple', 'text'];
 
-export type SurveyDraft = {
+type SurveyDraft = {
     kind: SurveyKind;
     question: string;
     description: string;
     options: string[];
 };
 
-export type SurveyEditor = {
+type SurveyEditor = {
     open: boolean;
     /** The survey being edited; none when a new one is written. */
     survey: SurveyPayload | undefined;

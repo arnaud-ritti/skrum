@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Label } from '@/components/ui/label';
 
-export type SettingRowProps = {
+type SettingRowProps = {
     label: string;
     htmlFor: string;
     help?: string;

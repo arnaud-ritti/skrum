@@ -18,12 +18,12 @@ export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
 };
 
-export type WorkspaceTeamMember = {
+type WorkspaceTeamMember = {
     name: string;
     avatarUrl: string;
 };
 
-export type WorkspaceTeamActivity = {
+type WorkspaceTeamActivity = {
     /** Title of the newest retro that is not completed. */
     openRetroTitle: string | null;
     /** When the last completed retro ended. */
@@ -50,7 +50,7 @@ export type CurrentTeam = TeamSummary & {
     membersCount: number;
 };
 
-export type MemberSummary = {
+type MemberSummary = {
     id: string;
     name: string;
     email: string;

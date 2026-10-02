@@ -10,7 +10,7 @@ import { retroRequest } from '@/lib/retro/api';
 import type { SurveyKind } from '@/lib/retro/types';
 import { useBoard } from '../board-context';
 
-export type GeneratedSurvey = {
+type GeneratedSurvey = {
     question: string;
     description: string | null;
     options: string[];

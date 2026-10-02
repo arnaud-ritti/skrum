@@ -11,7 +11,7 @@ export const SurveyPhases: RetroPhase[] = [
 
 export const MaxSurveys = 10;
 
-export const SurveyRefetchDelayMs = 1_000;
+const SurveyRefetchDelayMs = 1_000;
 
 export async function fetchSurvey(
     retroId: string,

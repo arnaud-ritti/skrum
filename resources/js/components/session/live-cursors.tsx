@@ -87,7 +87,7 @@ export function LiveCursors({
                 cursor.meta?.p === 'touch' || cursor.meta?.p === 'pen' ? (
                     <span className="flex items-center gap-1">
                         <span
-                            className="block size-4 rounded-full border-2 border-white shadow"
+                            className="block size-4 rounded-full border-2 border-card shadow"
                             style={{ backgroundColor: color }}
                         />
                         <span className="lc-label" style={{ marginTop: 0 }}>

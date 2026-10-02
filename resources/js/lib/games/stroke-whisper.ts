@@ -2,7 +2,7 @@ import { isDrawingColor, isDrawingPoint, isDrawingSize } from './drawing';
 import type { DrawingColor, DrawingPoint, DrawingSize } from './types';
 
 export const StrokeEvent = 'game-stroke';
-export const StrokeWhisperPoints = 100;
+const StrokeWhisperPoints = 100;
 export const StrokeWhisperThrottleMs = 40;
 
 const StrokeIdPattern = /^[A-Za-z0-9_-]{1,64}$/;
@@ -21,7 +21,7 @@ export type StrokeMessage = {
  * bits shared by rounds started within about a minute. The id stays at most
  * 36 + 1 + 8 + 10 = 55 characters, under the 64-character limit.
  */
-export function strokeIdPrefix(roundId: string): string {
+function strokeIdPrefix(roundId: string): string {
     return roundId;
 }
 

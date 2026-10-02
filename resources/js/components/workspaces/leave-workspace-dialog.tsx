@@ -16,7 +16,7 @@ const ListedTeams = 3;
 const NameSlot = '\u0000';
 
 /** What the person leaving is told; every field is optional on a page that does not hold it. */
-export type LeaveWorkspaceContext = {
+type LeaveWorkspaceContext = {
     /** Names of the teams of the workspace the person belongs to. */
     teams?: string[];
     /** Given to a person who manages the workspace: owners and admins, themselves included. */
@@ -24,7 +24,7 @@ export type LeaveWorkspaceContext = {
     otherAdminName?: string | null;
 };
 
-export type LeaveWorkspaceDialogProps = LeaveWorkspaceContext & {
+type LeaveWorkspaceDialogProps = LeaveWorkspaceContext & {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     workspace: WorkspaceSummary;

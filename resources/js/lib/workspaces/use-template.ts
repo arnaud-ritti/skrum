@@ -5,9 +5,9 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 export type TemplateKind = 'retro' | 'poker' | 'whiteboard';
 
 /** The team whose "New session" dialog opens on the template. */
-export type TemplateUseTarget = { workspace: string; team: string };
+type TemplateUseTarget = { workspace: string; team: string };
 
-export const WorkspaceTemplateKeyPrefix = 'workspace:';
+const WorkspaceTemplateKeyPrefix = 'workspace:';
 
 /** Key of a workspace template in the catalogue of a retro or a whiteboard. */
 export function workspaceTemplateKey(id: string): string {
@@ -36,10 +36,7 @@ export function templateHref(
     });
 }
 
-export type TemplateHrefFor = (
-    kind: TemplateKind,
-    key: string,
-) => string | null;
+type TemplateHrefFor = (kind: TemplateKind, key: string) => string | null;
 
 /** `templateHref` for the current team of the page, and whether there is one. */
 export function useTemplateHref(

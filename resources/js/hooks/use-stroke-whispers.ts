@@ -9,7 +9,7 @@ import {
     type WhisperChannel,
 } from '@/lib/realtime/whisper-transport';
 
-export type StrokeSource = { drawerPresenceId: string; roundId: string };
+type StrokeSource = { drawerPresenceId: string; roundId: string };
 
 /**
  * Live `game-stroke` whispers on any presence channel: a game room's, or

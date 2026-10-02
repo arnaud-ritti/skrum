@@ -31,7 +31,7 @@ export function GifDraftProvider({ children }: { children: ReactNode }) {
     return <GifDraftContext value={value}>{children}</GifDraftContext>;
 }
 
-export type GifDraft = {
+type GifDraft = {
     /** Null when nothing is picked, or when the pick belongs to another round. */
     draft: PickedGif | null;
     pick: (gif: PickedGif) => void;

@@ -16,7 +16,7 @@ import type {
     ActionItemRecurrence,
 } from '@/lib/retro/types';
 
-export type ActionItemContext = {
+type ActionItemContext = {
     locale: string;
     teamName?: string;
     viewer: ActionItemViewer;

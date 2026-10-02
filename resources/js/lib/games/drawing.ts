@@ -95,7 +95,7 @@ export function colorCss(color: DrawingColor): string {
     return `rgb(${red} ${green} ${blue})`;
 }
 
-export function strokeRadius(size: DrawingSize): number {
+function strokeRadius(size: DrawingSize): number {
     return Math.max(1, Math.round((size * Scale) / 2));
 }
 
@@ -198,12 +198,7 @@ function drawStroke(
 }
 
 /** Exact 4-connected scanline fill of the region under (x, y). */
-export function floodFill(
-    raster: Raster,
-    x: number,
-    y: number,
-    index: number,
-): void {
+function floodFill(raster: Raster, x: number, y: number, index: number): void {
     const target = raster[y * RasterWidth + x];
 
     if (target === index) {

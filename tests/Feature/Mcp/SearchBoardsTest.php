@@ -3,7 +3,6 @@
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
 use App\Mcp\McpGrant;
-use App\Mcp\Support\LikePattern;
 use App\Mcp\Tools\Retro\SearchBoards;
 use App\Models\ActionItem;
 use App\Models\Card;
@@ -11,6 +10,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\LikePattern;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**

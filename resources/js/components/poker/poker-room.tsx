@@ -46,6 +46,8 @@ import { useRoundActions, useSetSpectator } from './use-round-actions';
 
 /** The queue is a side panel from this width; below, a drawer. */
 const WideFrom = 1024;
+/** From this width the header has room for the option badges beside the round. */
+const OptionBadgesFrom = 1760;
 
 type Props = { snapshot: PokerSnapshot; deckOptions: PokerDeckOption[] };
 
@@ -137,6 +139,7 @@ export function RoomView({
     const { snapshot, online, sessionExpired } = useGame();
     const { t } = useTrans();
     const isWide = useMinWidth(WideFrom);
+    const roomForOptions = useMinWidth(OptionBadgesFrom);
     const isPhone = useIsMobile();
     const [stage, setStage] = useState<HTMLElement | null>(null);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
@@ -173,12 +176,16 @@ export function RoomView({
         <SessionShell
             kind="poker"
             self={self}
+            deck={game.cards}
             realtime={realtimeState(connected, online)}
             connection={{ reconnecting, expired: sessionExpired }}
             title={<RoomTitle showDeck={!isPhone} />}
             phases={
                 isWide ? (
-                    <RoomStateBadges className="max-h-12 justify-center overflow-hidden" />
+                    <RoomStateBadges
+                        roundOnly={!roomForOptions}
+                        className="justify-center"
+                    />
                 ) : undefined
             }
             timer={isPhone ? undefined : <RoomTimer />}

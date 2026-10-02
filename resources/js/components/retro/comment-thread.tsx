@@ -40,7 +40,7 @@ type Props<T extends ThreadComment> = {
     composerNote?: string;
 };
 
-export const CommentMaxLength = 500;
+const CommentMaxLength = 500;
 
 const iconButtonClass =
     'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';

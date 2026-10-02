@@ -37,7 +37,7 @@ export type GameEvent = {
     payload: Record<string, unknown>;
 };
 
-export type GameChannelHandlers = {
+type GameChannelHandlers = {
     onEvent: (event: GameEvent) => void;
     onResync: () => void;
     onJoining: (member: PresenceMember) => void;

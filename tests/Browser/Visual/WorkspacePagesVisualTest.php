@@ -284,7 +284,7 @@ it('[P18e-09-20e] renders the templates page of an admin without overflow', func
     $this->captureVisuals('workspace-templates-retro', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
         ->click('[data-slot="templates-tabs"] [role="tab"]:nth-of-type(2)')
         ->assertPresent('[data-slot="retro-template-picker"] [role="radiogroup"]')
-        ->assertPresent('section[aria-label="Template preview"]'));
+        ->assertPresent('section[data-slot="template-detail"]'));
 
     $this->captureVisuals('workspace-templates-editor', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-templates-page"] > header button')

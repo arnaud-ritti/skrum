@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type UnsavedBarProps = {
+type UnsavedBarProps = {
     count: number;
     saving?: boolean;
     onCancel: () => void;
@@ -38,7 +38,7 @@ export function UnsavedBar({
             <p
                 role="status"
                 data-dirty={dirty ? '' : undefined}
-                className="sr-only truncate text-xs text-muted-foreground data-[dirty]:font-semibold data-[dirty]:text-skrum-primary-text md:not-sr-only"
+                className="sr-only truncate text-xs text-muted-foreground data-[dirty]:font-semibold data-[dirty]:text-skrum-primary-text md:data-[dirty]:not-sr-only"
             >
                 {message}
             </p>

@@ -108,8 +108,8 @@ it('lists open action items first, by priority, at most ten', function () {
 
     expect($recap->actionItems)->toHaveCount(10)
         ->and($recap->hiddenActionItems)->toBe(2)
-        ->and($recap->actionItems[0])->toBe(['content' => 'Open high', 'assignee' => 'Ada', 'dueOn' => 'October 15, 2026', 'isCompleted' => false])
-        ->and($recap->actionItems[1])->toBe(['content' => 'Open medium', 'assignee' => 'Gus (guest)', 'dueOn' => null, 'isCompleted' => false])
+        ->and($recap->actionItems[0])->toMatchArray(['content' => 'Open high', 'assignee' => 'Ada', 'dueOn' => 'October 15, 2026', 'isCompleted' => false, 'assigneeInitials' => 'A', 'dueDay' => '15 Oct'])
+        ->and($recap->actionItems[1])->toMatchArray(['content' => 'Open medium', 'assignee' => 'Gus (guest)', 'dueOn' => null, 'isCompleted' => false, 'assigneeInitials' => 'G', 'dueDay' => null])
         ->and($recap->actionItems[2]['content'])->toBe('Open low')
         ->and(collect($recap->actionItems)->pluck('content'))->not->toContain('Done high');
 });

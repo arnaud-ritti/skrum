@@ -46,7 +46,7 @@ export function toParticipants(
     }));
 }
 
-export type SessionPresenceProps = {
+type SessionPresenceProps = {
     online: PresenceMember[];
     selfId: string | null;
     facilitatorId?: string | null;

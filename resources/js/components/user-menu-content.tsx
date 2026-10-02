@@ -1,13 +1,15 @@
 import { Link, router } from '@inertiajs/react';
-import { Info, LogOut, Settings } from 'lucide-react';
+import { Info, Keyboard, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Kbd } from '@/components/ui/kbd';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { logout } from '@/routes';
 import { show as about } from '@/routes/about';
 import { edit } from '@/routes/profile';
@@ -57,6 +59,21 @@ export function UserMenuContent({ user }: Props) {
                         <Info className="mr-2" />
                         {t('About')}
                     </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    className="max-md:hidden"
+                    aria-keyshortcuts="?"
+                    onSelect={() =>
+                        window.dispatchEvent(
+                            new Event(openKeyboardShortcutsEvent),
+                        )
+                    }
+                >
+                    <Keyboard className="mr-2" />
+                    <span className="min-w-0 flex-1 truncate">
+                        {t('Keyboard shortcuts')}
+                    </span>
+                    <Kbd aria-hidden="true">?</Kbd>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

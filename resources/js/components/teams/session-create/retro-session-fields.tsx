@@ -248,9 +248,11 @@ function TemplateShortcuts({
                                 {template.source === 'workspace'
                                     ? t('Workspace')
                                     : categoryLabel(template.category) ||
-                                      t(':count columns', {
-                                          count: template.columns.length,
-                                      })}
+                                      (template.columns.length === 1
+                                          ? t('1 column')
+                                          : t(':count columns', {
+                                                count: template.columns.length,
+                                            }))}
                             </span>
                         </span>
                     </button>

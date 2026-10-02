@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useRoom } from './room-context';
 
 /** 0 before the first round; 1 picking, 2 voting, 3 the results. */
-export type GifStep = 0 | 1 | 2 | 3;
+type GifStep = 0 | 1 | 2 | 3;
 
 /** Where Sprint in one GIF stands in this room; null when another game is on. */
 export function useGifStep(): GifStep | null {

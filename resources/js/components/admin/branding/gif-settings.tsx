@@ -29,11 +29,11 @@ export type GifSettingsValue = {
     keyClear: boolean;
 };
 
-export type GifSettingsErrors = Partial<
+type GifSettingsErrors = Partial<
     Record<'provider' | 'enabled' | 'rating' | 'key', string>
 >;
 
-export type GifSettingsProps = {
+type GifSettingsProps = {
     value: GifSettingsValue;
     onChange: (patch: Partial<GifSettingsValue>) => void;
     hasKey: boolean;

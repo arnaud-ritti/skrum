@@ -911,6 +911,12 @@ function ResultActions({
         scope: actionsRef,
         enabled: shortcuts && canNext,
     });
+    // These actions show after the reveal only; plain "r" (reveal) asks for
+    // no shift, so the two never answer the same key press.
+    useShortcut('shift+r', () => onRevote?.(), {
+        scope: actionsRef,
+        enabled: shortcuts && !!onRevote && !busy,
+    });
 
     if (!onRevote && !onAccept && !onNext) {
         return null;

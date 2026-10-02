@@ -76,7 +76,7 @@ type Row = {
     position: number | null;
 };
 
-export type RoomPlayersProps = {
+type RoomPlayersProps = {
     /** "Scores", "Players", "Participants": what the mockup of the game calls the list. */
     title: string;
     /** The players of a room are read under "game-players"; a second list takes another id. */

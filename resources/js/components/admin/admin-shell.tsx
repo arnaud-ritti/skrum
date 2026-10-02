@@ -1,10 +1,11 @@
-import { Link, router } from '@inertiajs/react';
-import { Palette, Server, ShieldCheck } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { KeyRound, Palette, Server, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import AdminsController from '@/actions/App/Http/Controllers/Admin/AdminsController';
 import BrandingController from '@/actions/App/Http/Controllers/Admin/BrandingController';
+import SignInSettingsController from '@/actions/App/Http/Controllers/Admin/SignInSettingsController';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -18,13 +19,15 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 
-export type AdminSection = 'branding' | 'admins';
+export type AdminSection = 'branding' | 'signIn' | 'admins';
 
 type AdminNavEntry = {
     section: AdminSection;
     label: string;
     icon: LucideIcon;
     href: NavHref;
+    /** A state of the section, said beside its name. */
+    badge?: string;
 };
 
 function subscribeToNothing(): () => void {
@@ -57,6 +60,7 @@ export function AdminShell({
     const { t } = useTrans();
     const host = useInstanceHost();
     const selectId = useId();
+    const { ssoInForce } = usePage().props;
     /** The navigation takes its entries from this list: a new section is one more row. */
     const entries: AdminNavEntry[] = [
         {
@@ -64,6 +68,13 @@ export function AdminShell({
             label: t('Branding'),
             icon: Palette,
             href: BrandingController.edit(),
+        },
+        {
+            section: 'signIn',
+            label: t('SSO authentication'),
+            icon: KeyRound,
+            href: SignInSettingsController.edit(),
+            badge: ssoInForce === true ? t('active') : undefined,
         },
         {
             section: 'admins',
@@ -153,7 +164,18 @@ export function AdminShell({
                                     aria-hidden="true"
                                     className="size-4 shrink-0"
                                 />
-                                <span className="truncate">{entry.label}</span>
+                                <span className="min-w-0 flex-1 truncate">
+                                    {entry.label}
+                                </span>
+                                {entry.badge !== undefined && (
+                                    <Badge
+                                        variant="success"
+                                        shape="pill"
+                                        data-slot="admin-nav-badge"
+                                    >
+                                        {entry.badge}
+                                    </Badge>
+                                )}
                             </Link>
                         ))}
                     </nav>

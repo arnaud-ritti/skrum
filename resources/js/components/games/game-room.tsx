@@ -16,7 +16,7 @@ import { RoomGone } from './room-gone';
 import { RoomActions, RoomTimer, RoomTitle } from './room-header';
 import { useRoomPanels } from './room-panels';
 
-export type GameRoomProps = {
+type GameRoomProps = {
     snapshot: GameSnapshot;
     /** Places left for later features; nothing fills them today. */
     settingsCard?: ReactNode;

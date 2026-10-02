@@ -46,7 +46,7 @@ import type {
     ColumnColor,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import { CardComposer, CardPreview } from './board-card';
+import { CardComposer, CardPreview, useGroupShortcut } from './board-card';
 import { BoardColumn } from './board-column';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
@@ -133,7 +133,7 @@ function AddColumnForm({ className }: { className?: string }) {
  * The line above the columns in Writing: what silent writing means, and how
  * far the room is.
  */
-export function WritingBanner({ typing }: { typing?: ReactNode }) {
+function WritingBanner({ typing }: { typing?: ReactNode }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { cards, written, present } = writingProgress(
@@ -425,6 +425,9 @@ export function ColumnsBoard({
         }),
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+    useGroupShortcut();
+
     const [activeCardWidth, setActiveCardWidth] = useState<number>();
     const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
     const dragAccessibility = useDragAccessibility(board);

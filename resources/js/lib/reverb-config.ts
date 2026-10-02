@@ -5,7 +5,7 @@ type ReverbClientConfig = {
     scheme: 'http' | 'https' | null;
 };
 
-export type EchoConnection = {
+type EchoConnection = {
     key: string;
     wsHost: string;
     wsPort: number;

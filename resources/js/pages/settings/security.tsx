@@ -6,7 +6,11 @@ import { SecurityStack } from '@/components/settings/security/security-stack';
 import { TwoFactorCard } from '@/components/settings/security/two-factor-card';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTrans } from '@/hooks/use-trans';
-import type { Passkey, TwoFactorSummary } from '@/types/auth';
+import type {
+    EmailSecondFactor,
+    Passkey,
+    TwoFactorSummary,
+} from '@/types/auth';
 
 type Props = {
     passwordRules: string;
@@ -18,6 +22,7 @@ type Props = {
     twoFactorEnabled?: boolean;
     canManagePasskeys?: boolean;
     passkeys?: Passkey[];
+    emailSecondFactor?: EmailSecondFactor;
 };
 
 export default function Security({
@@ -29,15 +34,20 @@ export default function Security({
     twoFactorEnabled = false,
     canManagePasskeys = false,
     passkeys = [],
+    emailSecondFactor,
 }: Props) {
     const { t } = useTrans();
+    const listsEmailCode =
+        emailSecondFactor !== undefined &&
+        (emailSecondFactor.available || emailSecondFactor.enabled);
+    const hasSecondFactorCard = canManageTwoFactor || listsEmailCode;
 
     const description = (): string => {
-        if (canManageTwoFactor && canManagePasskeys) {
+        if (hasSecondFactorCard && canManagePasskeys) {
             return t('Password, two-factor authentication and passkeys.');
         }
 
-        if (canManageTwoFactor) {
+        if (hasSecondFactorCard) {
             return t('Password and two-factor authentication.');
         }
 
@@ -65,11 +75,13 @@ export default function Security({
                         ) : undefined
                     }
                 />
-                {canManageTwoFactor && (
+                {hasSecondFactorCard && (
                     <TwoFactorCard
                         enabled={twoFactorEnabled}
                         requiresConfirmation={requiresConfirmation}
                         summary={twoFactor}
+                        appAvailable={canManageTwoFactor}
+                        emailCode={emailSecondFactor}
                     />
                 )}
                 {canManagePasskeys && <PasskeysCard passkeys={passkeys} />}

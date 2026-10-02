@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import type { ColumnColor } from '@/lib/retro/types';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
 export type { ColumnColor };
@@ -362,7 +363,12 @@ export function RetroColumn({
             return;
         }
 
-        if ((event.key === 'n' || event.key === 'N') && canAdd && onAdd) {
+        if (
+            (event.key === 'n' || event.key === 'N') &&
+            canAdd &&
+            onAdd &&
+            singleKeyShortcutsEnabled()
+        ) {
             event.preventDefault();
             onAdd();
 

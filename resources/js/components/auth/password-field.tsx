@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'suffix'> & {
+type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'suffix'> & {
     passwordrules?: string;
     /** State of the value, shown in the field before the show / hide button. */
     mark?: ReactNode;

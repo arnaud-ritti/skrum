@@ -18,6 +18,8 @@ class NotificationPreferencesController extends Controller
             'preferences' => [
                 'action_item_reminders_by_email' => $user->action_item_reminders_by_email,
                 'action_item_reminders_in_app' => $user->action_item_reminders_in_app,
+                'recap_emails' => $user->recap_emails,
+                'recap_in_app' => $user->recap_in_app,
             ],
             'reminderTime' => (string) config('skrum.action_item_reminders.time'),
             'remindersEnabled' => (bool) config('skrum.action_item_reminders.enabled'),
@@ -29,6 +31,8 @@ class NotificationPreferencesController extends Controller
         $validated = $request->validate([
             'action_item_reminders_by_email' => ['required', 'boolean'],
             'action_item_reminders_in_app' => ['required', 'boolean'],
+            'recap_emails' => ['required', 'boolean'],
+            'recap_in_app' => ['required', 'boolean'],
         ]);
 
         $request->user()->update($validated);

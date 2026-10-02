@@ -3,10 +3,13 @@ import type { ReactNode } from 'react';
 import { NavUser } from '@/components/nav-user';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { BrandLogo } from '@/components/skrum/brand-logo';
+import { KeyboardShortcutsTrigger } from '@/components/skrum/keyboard-shortcuts';
 import { SessionFrame } from '@/components/skrum/frames';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
+import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
+import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import { useTrans } from '@/hooks/use-trans';
 
@@ -34,10 +37,15 @@ type SessionLayoutProps = {
     homeHref?: NavHref | null;
     /** The viewer; a signed-in user is shown without it, a guest is not. */
     self?: SessionSelf | null;
+    /** The cards of a poker game: the shortcuts dialog lists the keys of those it holds. */
+    deck?: readonly string[];
     children: ReactNode;
 };
 
-type FrameSlots = Omit<SessionLayoutProps, 'chrome' | 'homeHref' | 'self'> & {
+type FrameSlots = Omit<
+    SessionLayoutProps,
+    'chrome' | 'homeHref' | 'self' | 'deck'
+> & {
     logo?: ReactNode;
     avatar?: ReactNode;
 };
@@ -120,36 +128,70 @@ export default function SessionLayout({
     chrome = 'rail',
     homeHref,
     self,
-    ...slots
+    deck,
+    actions,
+    ...rest
 }: SessionLayoutProps) {
     const user = usePage().props.auth?.user;
+    const shortcuts = useGlobalShortcuts();
     const viewer: SessionSelf | null =
         self ?? (user ? { name: user.name, avatarUrl: user.avatarUrl } : null);
     const avatar = viewer ? <SelfAvatar self={viewer} /> : undefined;
+    const hasRail = chrome === 'rail' && !!user;
+    const slots = {
+        ...rest,
+        actions: (
+            <>
+                {actions}
+                <KeyboardShortcutsTrigger
+                    onClick={() => shortcuts.setOpen(true)}
+                    className="hidden shrink-0 md:inline-flex"
+                />
+            </>
+        ),
+    };
+    const dialog = (
+        <KeyboardShortcutsDialog
+            shortcuts={shortcuts}
+            palette={false}
+            sidebar={hasRail}
+            deck={deck}
+            preference="switch"
+        />
+    );
 
     if (chrome === 'logo') {
         return (
-            <SessionFrame
-                {...slots}
-                logo={<HeaderLogo homeHref={homeHref} isGuest={!user} />}
-                avatar={avatar}
-            >
-                {children}
-            </SessionFrame>
+            <>
+                <SessionFrame
+                    {...slots}
+                    logo={<HeaderLogo homeHref={homeHref} isGuest={!user} />}
+                    avatar={avatar}
+                >
+                    {children}
+                </SessionFrame>
+                {dialog}
+            </>
         );
     }
 
     if (!user) {
         return (
-            <SessionFrame {...slots} avatar={avatar}>
-                {children}
-            </SessionFrame>
+            <>
+                <SessionFrame {...slots} avatar={avatar}>
+                    {children}
+                </SessionFrame>
+                {dialog}
+            </>
         );
     }
 
     return (
-        <MemberSessionLayout {...slots} avatar={avatar}>
-            {children}
-        </MemberSessionLayout>
+        <>
+            <MemberSessionLayout {...slots} avatar={avatar}>
+                {children}
+            </MemberSessionLayout>
+            {dialog}
+        </>
     );
 }

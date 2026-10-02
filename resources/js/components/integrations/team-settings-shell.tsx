@@ -10,7 +10,7 @@ import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 import type { TeamSummary, WorkspaceSummary } from '@/types';
 
-export type TeamSettingsSection = 'team' | 'integrations';
+type TeamSettingsSection = 'team' | 'integrations';
 
 type TeamSettingsNavEntry = Omit<SubNavItem, 'current'> & {
     section: TeamSettingsSection;

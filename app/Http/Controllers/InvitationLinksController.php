@@ -6,14 +6,17 @@ use App\Actions\Auth\SignupGate;
 use App\Enums\SsoProvider;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Support\Auth\SignInPolicy;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class InvitationLinksController extends Controller
 {
-    public function show(Request $request, string $token, SignupGate $signupGate): Response|SymfonyResponse
+    public function show(Request $request, string $token, SignupGate $signupGate, SignInPolicy $signInPolicy): Response|SymfonyResponse
     {
         $invitation = WorkspaceInvitation::findByToken($token);
 
@@ -40,10 +43,13 @@ class InvitationLinksController extends Controller
                 'isInvalid' => false,
                 'isExpired' => true,
                 'workspaceName' => $invitation->workspace->name,
-                'inviter' => $this->person($invitation->invitedBy),
-                'expiresAt' => $invitation->expires_at->toIso8601String(),
+                'inviter' => $invitation->invitedBy === null ? null : ['name' => $invitation->invitedBy->name],
             ]);
         }
+
+        $canRegister = Features::enabled(Features::registration())
+            && $signInPolicy->allowsLocalCredentials()
+            && $signupGate->canShowRegistration($invitation);
 
         return Inertia::render('invitations/show', [
             'token' => $token,
@@ -53,7 +59,9 @@ class InvitationLinksController extends Controller
             'isExpired' => false,
             'isLoggedIn' => $user !== null,
             'emailMatches' => $user !== null && $invitation->matchesEmail($user->email),
-            'canRegister' => $signupGate->canShowRegistration($invitation),
+            'canRegister' => $canRegister,
+            'passwordRules' => $user === null && $canRegister ? Password::defaults()->toPasswordRulesString() : null,
+            'ssoRequired' => $signInPolicy->ssoRequired(),
             'ssoProviders' => $user === null ? SsoProvider::options() : [],
             'inviter' => $this->person($invitation->invitedBy),
             'expiresAt' => $invitation->expires_at->toIso8601String(),

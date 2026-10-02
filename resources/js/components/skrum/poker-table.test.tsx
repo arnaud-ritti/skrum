@@ -927,6 +927,52 @@ describe('PokerTable revealed', () => {
     });
 });
 
+describe('PokerTable, Re-vote from the keyboard', () => {
+    it('asks for a re-vote with Shift+R after the reveal only, and never reveals with it', () => {
+        const onRevote = vi.fn();
+        const onReveal = vi.fn();
+        const open = renderTable({ isFacilitator: true, onRevote, onReveal });
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(onRevote).not.toHaveBeenCalled();
+        expect(onReveal).not.toHaveBeenCalled();
+        open.unmount();
+
+        renderTable({
+            isFacilitator: true,
+            revealed: true,
+            result: dispersion,
+            onRevote,
+            onReveal,
+        });
+
+        fireEvent.keyDown(document.body, { key: 'r' });
+
+        expect(onRevote).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(onRevote).toHaveBeenCalledTimes(1);
+        expect(onReveal).not.toHaveBeenCalled();
+    });
+
+    it('has no Shift+R with the shortcuts off', () => {
+        const onRevote = vi.fn();
+        renderTable({
+            isFacilitator: true,
+            revealed: true,
+            result: dispersion,
+            shortcuts: false,
+            onRevote,
+        });
+
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+
+        expect(onRevote).not.toHaveBeenCalled();
+    });
+});
+
 describe('PokerTable, the result shown elsewhere', () => {
     it('keeps the figures of the oval and has no result panel nor actions under the seats', () => {
         const { container } = renderTable({

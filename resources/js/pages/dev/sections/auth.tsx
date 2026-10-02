@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { AuthAside } from '@/components/auth/auth-aside';
 import { LoginForm } from '@/components/auth/login-form';
+import {
+    MagicLinkButton,
+    MagicLinkSent,
+} from '@/components/auth/magic-link-request';
 import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
 import { TwoFactorForm } from '@/components/auth/two-factor-form';
@@ -43,6 +47,7 @@ export default function AuthSection() {
                 <LoginForm
                     canResetPassword
                     canRegister
+                    canUseMagicLink
                     ssoProviders={providers}
                 />
             </AuthFrame>
@@ -67,6 +72,20 @@ export default function AuthSection() {
                 </State>
                 <State label={t('Email verification, link sent')}>
                     <VerifyEmailForm status="verification-link-sent" />
+                </State>
+                <State label={t('Magic link, button of the phone tab')}>
+                    <MagicLinkButton
+                        variant="primary"
+                        email="ada@example.com"
+                        onMissingAddress={() => {}}
+                        onSent={() => {}}
+                    />
+                </State>
+                <State label={t('Magic link, sent')}>
+                    <MagicLinkSent
+                        email="ada@example.com"
+                        onUseAnotherAddress={() => {}}
+                    />
                 </State>
                 <State label={t('Two-factor challenge, authentication code')}>
                     <TwoFactorForm mode="code" onModeChange={() => {}} />

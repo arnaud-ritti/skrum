@@ -2,7 +2,10 @@ import { useState } from 'react';
 import type { CSSProperties, KeyboardEvent, Ref } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import { isSpecialCard } from '@/lib/poker/types';
+import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
+
+const UnknownCard = '?';
 
 export type PokerCardSize = 'sm' | 'md' | 'lg';
 
@@ -332,7 +335,21 @@ export function PokerDeck({
             return;
         }
 
-        if (/^[0-9]$/.test(event.key)) {
+        if (
+            event.key === UnknownCard &&
+            enabledValues.includes(UnknownCard) &&
+            singleKeyShortcutsEnabled()
+        ) {
+            // The deck owns "?" while it has that card to play: the help
+            // dialog, on the same key, must not open as well.
+            event.preventDefault();
+            buttons.get(UnknownCard)?.focus();
+            select(UnknownCard);
+
+            return;
+        }
+
+        if (/^[0-9]$/.test(event.key) && singleKeyShortcutsEnabled()) {
             // The deck owns the digits while it has focus: page shortcuts on
             // the same keys (quick reactions) must not fire as well.
             event.preventDefault();

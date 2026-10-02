@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { paletteStyle } from './branding';
 import type { Palette, ThemeName } from './branding';
 
-export type PreviewPaneProps = {
+type PreviewPaneProps = {
     palette: Palette | null;
     radius: number;
     /** Name shown in the bar. */

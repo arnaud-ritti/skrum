@@ -21,6 +21,10 @@ declare module '@inertiajs/core' {
             name: string;
             brand: Brand;
             adminUrl: string | null;
+            /** Sent to instance admins only, while required single sign-on has no provider. */
+            signInAlert: 'sso_required_ignored' | null;
+            /** True for instance admins while only single sign-on signs in. */
+            ssoInForce: boolean;
             auth: Auth;
             sidebarOpen: boolean;
             locale: string;

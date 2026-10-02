@@ -9,7 +9,7 @@ import { WordMask } from './word-mask';
 type WordCardProps = { children: ReactNode; className?: string };
 
 /** The card of the word above a drawing or a clue: the word itself, or its mask. */
-export function WordCard({ children, className }: WordCardProps) {
+function WordCard({ children, className }: WordCardProps) {
     return (
         <div
             data-slot="word-card"

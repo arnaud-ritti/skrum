@@ -94,13 +94,10 @@ const recap: AppNotification = {
     kind: 'recap_ready',
     readAt: '2026-09-30T12:00:00Z',
     createdAt: '2026-09-30T12:00:00Z',
-    session: {
-        id: 's3',
-        title: 'Sprint 41 retro',
-        startsAt: '2026-09-30T10:00:00Z',
-        facilitator: 'Inès B.',
-        ended: true,
-    },
+    team: 'Atlas',
+    session: { id: 's3', title: 'Sprint 41 retro' },
+    actionsCount: 4,
+    roti: 3.8,
     href: '/sessions/s3/recap',
 };
 
@@ -239,7 +236,9 @@ describe('NotificationsPanel', () => {
         });
 
         expect(
-            screen.getByRole('link', { name: 'Overdue: Isolate E2E data' }),
+            screen.getByRole('link', {
+                name: 'Overdue action: Isolate E2E data',
+            }),
         ).toBeTruthy();
         expect(
             screen.getByRole('link', {
@@ -259,6 +258,98 @@ describe('NotificationsPanel', () => {
                 .getAllByRole('listitem')
                 .map((item) => item.getAttribute('data-kind')),
         ).toEqual(['overdue', 'due_soon', 'due_soon']);
+    });
+
+    it('orders the meta of an action as the mockup: due date, ticket, then team and time', () => {
+        setup({ notifications: [overdue] });
+
+        const meta = screen.getByText('Due Sep 29').parentElement;
+
+        expect(meta?.textContent).toMatch(
+            /^Due Sep 29·ATLAS-1287·Atlas·4 hours ago$/,
+        );
+    });
+
+    it('shows no ticket when the server sends null', () => {
+        setup({
+            notifications: [
+                {
+                    ...overdue,
+                    actionItem: {
+                        id: 'a1',
+                        content: 'Isolate E2E data',
+                        teamName: 'Atlas',
+                        dueOn: '2026-09-29',
+                        isOverdue: true,
+                        url: '/actions/a1',
+                        ticket: null,
+                    },
+                },
+            ],
+        });
+
+        expect(screen.queryByText('ATLAS-1287')).toBeNull();
+    });
+
+    it('gives an invitation one action, View invitation, when nothing answers it', () => {
+        const props = setup({ onInvite: undefined, notifications: [invite] });
+        const link = screen.getByRole('link', { name: 'View invitation' });
+
+        expect(screen.getByRole('listitem').textContent).toContain(
+            'Camille R. invited you to join Atlas',
+        );
+        expect(link.getAttribute('href')).toBe('/teams/atlas');
+        expect(screen.getAllByRole('link', { name: /invit/i })).toHaveLength(1);
+
+        fireEvent.click(link);
+
+        expect(props.onOpen).toHaveBeenCalledWith(invite);
+    });
+
+    it('names an invitation without an inviter', () => {
+        setup({
+            onInvite: undefined,
+            notifications: [{ ...invite, actor: null } as AppNotification],
+        });
+
+        expect(screen.getByRole('listitem').textContent).toContain(
+            'Someone invited you to join Atlas',
+        );
+    });
+
+    it('gives the recap its counts, its ROTI and its link', () => {
+        const props = setup({ notifications: [recap] });
+        const item = screen.getByRole('listitem');
+
+        expect(item.textContent).toContain(
+            'The recap of Sprint 41 retro is ready',
+        );
+        expect(item.textContent).toContain(
+            '4 action items · ROTI 3.8 · yesterday',
+        );
+
+        fireEvent.click(screen.getByRole('link', { name: 'View recap' }));
+
+        expect(props.onOpen).toHaveBeenCalledWith(recap);
+    });
+
+    it('leaves the ROTI out when it is hidden, and counts one action item', () => {
+        setup({
+            notifications: [
+                { ...recap, actionsCount: 1, roti: null } as AppNotification,
+            ],
+        });
+
+        expect(screen.getByRole('listitem').textContent).toContain(
+            '1 action item · yesterday',
+        );
+        expect(screen.getByRole('listitem').textContent).not.toContain('ROTI');
+    });
+
+    it('writes the ROTI in the locale', () => {
+        setup({ notifications: [recap], locale: 'fr' });
+
+        expect(screen.getByRole('listitem').textContent).toContain('ROTI 3,8');
     });
 
     it('omits the due date when the action has none', () => {
@@ -287,6 +378,9 @@ describe('NotificationsPanel', () => {
         expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Decline' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();
+        expect(
+            screen.getByRole('link', { name: 'View invitation' }),
+        ).toBeTruthy();
         expect(screen.getAllByRole('listitem')).toHaveLength(5);
     });
 
@@ -318,6 +412,11 @@ describe('NotificationsPanel', () => {
         setup({ notifications: [], unreadCount: 0 });
 
         expect(screen.getByText('No notifications yet')).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Invitations, reminders and recaps will show up here.',
+            ),
+        ).toBeTruthy();
         expect(screen.queryByRole('list')).toBeNull();
     });
 
@@ -360,7 +459,7 @@ describe('NotificationsPanel', () => {
 
     it('opens an item through its link and lets modified clicks through', () => {
         const props = setup();
-        const link = screen.getByRole('link', { name: /Overdue: / });
+        const link = screen.getByRole('link', { name: /Overdue action: / });
 
         expect(link.getAttribute('href')).toBe('/actions/a1');
 
@@ -525,6 +624,19 @@ describe('NotificationsBell', () => {
                 .getByRole('button', { name: 'Notifications, 12 unread' })
                 .getAttribute('aria-expanded'),
         ).toBe('true');
+    });
+
+    it('rings and pops the badge on arrival, only where motion is allowed', () => {
+        render(<NotificationsBell unreadCount={4} arriving />);
+
+        const bell = screen.getByRole('button', {
+            name: 'Notifications, 4 unread',
+        });
+
+        expect(bell.getAttribute('data-arriving')).toBe('true');
+        expect(
+            bell.querySelector('[data-slot="notifications-badge"]')?.className,
+        ).toContain('motion-safe:animate-vote-pop');
     });
 
     it('announces a new arrival in a polite live region', () => {

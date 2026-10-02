@@ -199,7 +199,46 @@ describe('BrandingForm images', () => {
             within(screen.getByRole('radiogroup', { name: 'Image' }))
                 .getAllByRole('radio')
                 .map((item) => item.textContent),
-        ).toEqual(['Light logo', 'Dark logo', 'Favicon']);
+        ).toEqual(['Light logo', 'Dark logo', 'Favicon', 'Logo for e-mails']);
+    });
+
+    it('offers a logo for e-mails with its own format line', async () => {
+        const { container } = setup();
+        const file = png();
+
+        fireEvent.click(
+            screen.getByRole('radio', { name: 'Logo for e-mails' }),
+        );
+
+        expect(
+            screen.getByText(
+                'PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.',
+            ),
+        ).toBeTruthy();
+        expect(container.querySelector('[data-slot=asset-warning]')).toBeNull();
+
+        choose(container, file);
+        await submit();
+
+        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith('logo-mail', file);
+    });
+
+    it('warns that e-mails show the name while the instance logo cannot be drawn in a mail', () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=1',
+                logoDarkUrl: null,
+                faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: true,
+            },
+        });
+
+        expect(
+            container.querySelector('[data-slot=asset-warning]')?.textContent,
+        ).toBe(
+            'E-mails show the name as text until a PNG or JPEG logo is added.',
+        );
     });
 
     it('counts a staged file as an unsaved change and shows it in the preview without sending it', () => {
@@ -363,6 +402,8 @@ describe('BrandingForm images', () => {
                 logoLightUrl: '/brand/logo-light?v=3',
                 logoDarkUrl: null,
                 faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: false,
             },
         });
 
@@ -432,6 +473,8 @@ describe('BrandingForm image undo', () => {
                 logoLightUrl: '/brand/logo-light?v=3',
                 logoDarkUrl: null,
                 faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: false,
             },
         });
 
@@ -474,6 +517,8 @@ describe('BrandingForm image undo', () => {
                 logoLightUrl: '/brand/logo-light?v=3',
                 logoDarkUrl: null,
                 faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: false,
             },
         });
 

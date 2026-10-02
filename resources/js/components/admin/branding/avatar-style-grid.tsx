@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { FeaturedAvatarStyles } from './branding';
 import type { AdminAvatarStyle } from './branding';
 
-export type AvatarStyleGridProps = {
+type AvatarStyleGridProps = {
     value: string;
     onChange: (style: string) => void;
     options: AdminAvatarStyle[];

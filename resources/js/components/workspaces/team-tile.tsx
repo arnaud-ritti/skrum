@@ -65,7 +65,7 @@ function ActivityLine({
     );
 }
 
-export type TeamTileProps = {
+type TeamTileProps = {
     team: WorkspaceTeamTile;
     href: NonNullable<InertiaLinkProps['href']>;
     locale: string;
@@ -191,7 +191,7 @@ export function TeamTile({
                     </span>
                 </span>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-skrum-primary-text">
-                    {t('Open')}
+                    {t('Open team')}
                     <ArrowRight aria-hidden className="size-3.5" />
                 </span>
             </div>

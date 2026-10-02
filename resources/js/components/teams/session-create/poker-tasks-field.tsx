@@ -5,13 +5,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 
 export const MaxPokerTasks = 50;
-export const MaxPokerTaskTitleLength = 200;
+const MaxPokerTaskTitleLength = 200;
 
-export type PokerTasksMode = 'type' | 'later';
+type PokerTasksMode = 'type' | 'later';
 
 export type PokerTasksValue = { mode: PokerTasksMode; text: string };
 
-export type PokerTasksFieldProps = {
+type PokerTasksFieldProps = {
     value: PokerTasksValue;
     onChange: (value: PokerTasksValue) => void;
     /** Error of the server on `tasks` or one of its lines. */

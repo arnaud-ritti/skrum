@@ -5,7 +5,7 @@ import { TextField } from '@/components/skrum/text-field';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
 
-export const TeamNameMaxLength = 100;
+const TeamNameMaxLength = 100;
 
 export function NewTeamDialog({
     open,

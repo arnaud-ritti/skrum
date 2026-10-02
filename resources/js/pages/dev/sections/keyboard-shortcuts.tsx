@@ -15,6 +15,7 @@ import type {
 } from '@/components/skrum/keyboard-shortcuts';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { shortcutSections } from '@/lib/shortcuts/sections';
 
 export const group: BenchGroup = 'skrum';
 
@@ -260,6 +261,12 @@ export default function KeyboardShortcutsSection() {
                     initialPlatform="mac"
                     initialQuery={t('export')}
                     withPalette
+                />
+            </Example>
+            <Example label={t('Wired in the application')}>
+                <KeyboardShortcutsPanel
+                    sections={shortcutSections(t)}
+                    className="w-full max-w-190"
                 />
             </Example>
             <BenchOverlayStage>

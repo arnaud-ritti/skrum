@@ -2,6 +2,7 @@
 
 namespace App\Actions\Workspaces;
 
+use App\Actions\Notifications\ForgetInvitationNotifications;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,8 @@ use InvalidArgumentException;
 
 class AcceptWorkspaceInvitation
 {
+    public function __construct(private ForgetInvitationNotifications $forgetNotifications) {}
+
     public function handle(WorkspaceInvitation $invitation, User $user): void
     {
         throw_unless($invitation->isPending(), InvalidArgumentException::class, 'The invitation is no longer pending.');
@@ -23,6 +26,7 @@ class AcceptWorkspaceInvitation
             }
 
             $invitation->update(['accepted_at' => now()]);
+            $this->forgetNotifications->handle([$invitation->id]);
 
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
         });

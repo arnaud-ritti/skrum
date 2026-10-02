@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { matchesShortcut, useShortcut } from '@/hooks/use-shortcut';
 import type { UseShortcutOptions } from '@/hooks/use-shortcut';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 
 function Probe({
     combo,
@@ -313,6 +314,23 @@ describe('matchesShortcut', () => {
         );
     });
 
+    it('accepts a sign typed with AltGr, reported as ctrl and alt together', () => {
+        const altGraph = { ctrlKey: true, altKey: true };
+
+        expect(matchesShortcut(press({ key: '?', ...altGraph }), '?')).toBe(
+            true,
+        );
+        expect(matchesShortcut(press({ key: 'k', ...altGraph }), 'k')).toBe(
+            false,
+        );
+        expect(matchesShortcut(press({ key: '1', ...altGraph }), '1')).toBe(
+            false,
+        );
+        expect(matchesShortcut(press({ key: '/', ...altGraph }), 'mod+/')).toBe(
+            false,
+        );
+    });
+
     it('rejects an extra modifier', () => {
         expect(matchesShortcut(press({ key: 'k', metaKey: true }), 'k')).toBe(
             false,
@@ -333,5 +351,41 @@ describe('matchesShortcut', () => {
             matchesShortcut(press({ key: '+', ctrlKey: true }), 'mod++'),
         ).toBe(true);
         expect(matchesShortcut(press({ key: ' ' }), 'space')).toBe(true);
+    });
+});
+
+describe('the single-key switch', () => {
+    it('ignores character-key shortcuts while the single-key switch is off and keeps the others', () => {
+        const letter = vi.fn();
+        const shifted = vi.fn();
+        const withMod = vi.fn();
+        const named = vi.fn();
+
+        function Keys() {
+            useShortcut('g', letter);
+            useShortcut('shift+r', shifted);
+            useShortcut('mod+arrowright', withMod);
+            useShortcut('escape', named);
+
+            return null;
+        }
+
+        render(<Keys />);
+        setSingleKeyShortcuts(false);
+
+        fireEvent.keyDown(document.body, { key: 'g' });
+        fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
+        fireEvent.keyDown(document.body, { key: 'ArrowRight', metaKey: true });
+        fireEvent.keyDown(document.body, { key: 'Escape' });
+
+        expect(letter).not.toHaveBeenCalled();
+        expect(shifted).not.toHaveBeenCalled();
+        expect(withMod).toHaveBeenCalledTimes(1);
+        expect(named).toHaveBeenCalledTimes(1);
+
+        setSingleKeyShortcuts(true);
+        fireEvent.keyDown(document.body, { key: 'g' });
+
+        expect(letter).toHaveBeenCalledTimes(1);
     });
 });

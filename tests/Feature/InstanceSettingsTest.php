@@ -454,6 +454,7 @@ it('lists every setting with its effective value', function () {
         'gif_enabled' => true,
         'gif_rating' => 'pg',
         'has_gif_key' => true,
+        'sso_required' => false,
     ]);
 });
 

@@ -182,14 +182,18 @@ export default function NotificationsPanelSection() {
         kind: 'recap_ready',
         readAt: '2026-09-30T12:00:00Z',
         createdAt: '2026-09-30T12:00:00Z',
-        session: {
-            id: 's3',
-            title: t('Sprint 41 retro'),
-            startsAt: '2026-09-30T10:00:00Z',
-            facilitator: 'Inès B.',
-            ended: true,
-        },
+        team: t('Atlas'),
+        session: { id: 's3', title: t('Sprint 41 retro') },
+        actionsCount: 4,
+        roti: 3.8,
         href: '#',
+    };
+    const recapWithoutRoti: AppNotification = {
+        ...recap,
+        id: 'n5b',
+        readAt: null,
+        actionsCount: 1,
+        roti: null,
     };
 
     const all = [invite, starting, overdue, mention, recap];
@@ -245,6 +249,26 @@ export default function NotificationsPanelSection() {
                             onJoin={undefined}
                             notifications={[overdue, dueSoon, dueToday]}
                             unreadCount={2}
+                        />
+                    </Frame>
+                </Example>
+                <Example
+                    label={t(
+                        'What the bell lists: invitation with its link, overdue action with its ticket, recap with and without ROTI',
+                    )}
+                >
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            onInvite={undefined}
+                            onJoin={undefined}
+                            notifications={[
+                                invite,
+                                withTicket,
+                                recapWithoutRoti,
+                                recap,
+                            ]}
+                            unreadCount={3}
                         />
                     </Frame>
                 </Example>

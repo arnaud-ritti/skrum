@@ -5,7 +5,7 @@ import { TextField } from '@/components/skrum/text-field';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 
-export const WorkspaceNameMaxLength = 100;
+const WorkspaceNameMaxLength = 100;
 
 /**
  * The first step of the onboarding mockup, with what the server holds: the

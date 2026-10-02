@@ -30,6 +30,8 @@ export type FacilitatorAction = {
     disabled?: boolean;
     disabledReason?: string;
     shortcut?: string;
+    /** The same key as `aria-keyshortcuts` writes it ("Meta+ArrowRight"), when `shortcut` is a glyph. */
+    ariaKeyShortcuts?: string;
     tone?: FacilitatorActionTone;
     kind?: 'button' | 'toggle';
     /** `end` puts the icon after the label, as the arrow of "next phase". */
@@ -128,7 +130,9 @@ function ActionButton({
                     }
                     aria-disabled={action.disabled || undefined}
                     aria-describedby={hasReason ? reasonId : undefined}
-                    aria-keyshortcuts={action.shortcut}
+                    aria-keyshortcuts={
+                        action.ariaKeyShortcuts ?? action.shortcut
+                    }
                     onFocus={() => onRovingFocus(rovingKey)}
                     onClick={select}
                     className={cn(
@@ -292,6 +296,12 @@ export function FacilitatorBar({
         }
 
         if (!target.hasAttribute('data-roving-item')) {
+            return;
+        }
+
+        // An arrow with a modifier is a shortcut of the page (mod+ArrowRight
+        // is the next phase), not a move inside the toolbar.
+        if (event.metaKey || event.ctrlKey || event.altKey) {
             return;
         }
 

@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     readNewSessionIntent,
@@ -95,7 +95,9 @@ describe('useNewSessionIntent', () => {
         expect(mocks.replace).toHaveBeenCalledTimes(1);
 
         window.history.replaceState(null, '', '/teams/1?new=retro');
-        listener();
+        act(() => {
+            listener();
+        });
 
         expect(mocks.replace).toHaveBeenCalledTimes(2);
 
@@ -111,6 +113,33 @@ describe('useNewSessionIntent', () => {
 
         expect(result.current).toBeNull();
         expect(mocks.replace).not.toHaveBeenCalled();
-        expect(mocks.on).not.toHaveBeenCalled();
+    });
+
+    it('reads an intent that a later navigation brings to the same page', () => {
+        window.history.replaceState(null, '', '/teams/1');
+
+        const { result } = renderHook(() => useNewSessionIntent());
+        const [, listener] = mocks.on.mock.calls[0];
+
+        expect(result.current).toBeNull();
+
+        window.history.replaceState(null, '', '/teams/1?new=poker');
+        act(() => {
+            listener();
+        });
+
+        expect(result.current).toEqual({ type: 'poker', request: 1 });
+        expect(mocks.replace).toHaveBeenCalledWith({
+            url: '/teams/1',
+            preserveScroll: true,
+            preserveState: true,
+        });
+
+        window.history.replaceState(null, '', '/teams/1?new=poker');
+        act(() => {
+            listener();
+        });
+
+        expect(result.current).toEqual({ type: 'poker', request: 2 });
     });
 });

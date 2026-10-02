@@ -6,7 +6,7 @@ import type { Roti, ROTIResult } from '@/components/skrum/roti-widget';
 import type { TrackerProviderKey } from '@/types/integrations';
 import type { ActionItem, HealthResults, RotiResults, Snapshot } from './types';
 
-export type SessionEndStats = {
+type SessionEndStats = {
     actions: number;
     participants: number;
     teamMembers: number;

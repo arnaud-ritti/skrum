@@ -32,7 +32,7 @@ export type PokerRound = {
 
 export type PokerTrackerSource = 'jira' | 'linear' | 'jira_dc' | 'github';
 
-export type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
+type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
 
 export type PokerEstimateConflict = {
     sourceEstimate: string;
@@ -61,9 +61,9 @@ export type PokerTaskExternal = {
     syncMode?: 'webhook' | 'polling' | 'off';
 };
 
-export type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
+type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
 
-export type PokerIntegrations = Record<
+type PokerIntegrations = Record<
     PokerTrackerSource,
     PokerTrackerConnection | null
 >;
@@ -135,7 +135,7 @@ export type PokerPlayer = {
     isSpectator: boolean;
 };
 
-export type PokerGame = {
+type PokerGame = {
     id: string;
     title: string;
     deck: string;
@@ -159,7 +159,7 @@ export type PokerGame = {
     teamName: string | null;
 };
 
-export type PokerMe = {
+type PokerMe = {
     playerId: string;
     userId: string | null;
     isGuest: boolean;
@@ -172,7 +172,7 @@ export type PokerMe = {
     transferCandidates: { userId: string; name: string }[];
 };
 
-export type PokerCurrent = { taskId: string; round: PokerRound };
+type PokerCurrent = { taskId: string; round: PokerRound };
 
 export type PokerSnapshot = {
     game: PokerGame;
@@ -198,7 +198,7 @@ export type PokerVoteResponse = {
     revealed: boolean;
 };
 
-export const SpecialCards: readonly string[] = ['?', '☕'];
+const SpecialCards: readonly string[] = ['?', '☕'];
 
 export function isSpecialCard(card: string): boolean {
     return SpecialCards.includes(card);

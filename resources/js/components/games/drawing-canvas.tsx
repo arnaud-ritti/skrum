@@ -35,7 +35,7 @@ export type PreviewStroke = {
 
 export type CanvasTool = 'pen' | 'eraser' | 'fill';
 
-export type CanvasInput = {
+type CanvasInput = {
     tool: CanvasTool;
     color: DrawingColor;
     size: DrawingSize;

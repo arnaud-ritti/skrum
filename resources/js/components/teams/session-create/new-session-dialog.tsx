@@ -30,11 +30,6 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 
-export type {
-    NewSessionIntent,
-    SessionType,
-} from '@/components/teams/session-create/use-new-session-intent';
-
 /** What the dialog hands to the form of a type. */
 export type SessionFormContext = {
     type: SessionType;
@@ -61,7 +56,7 @@ export type PokerSessionForm = SessionForm;
 export type WhiteboardSessionForm = SessionForm;
 export type IcebreakerSessionForm = SessionForm;
 
-export type NewSessionDialogProps = {
+type NewSessionDialogProps = {
     trigger: ReactNode;
     team: { id: string; name: string };
     intent?: NewSessionIntent | null;
@@ -78,7 +73,7 @@ const typeOrder: readonly SessionType[] = [
     'icebreaker',
 ];
 
-export type SessionFormFooterProps = {
+type SessionFormFooterProps = {
     context: SessionFormContext;
     /** Left of the footer: an option of the form, such as "Save as team template". */
     start?: ReactNode;
@@ -291,6 +286,16 @@ export function NewSessionDialog({
     const [open, setOpen] = useState(
         intent !== null && initialType === intent.type,
     );
+    const [knownRequest, setKnownRequest] = useState(intent?.request);
+
+    /** A later intent (asked from the page itself) opens the dialog when it is closed. */
+    if (intent?.request !== knownRequest) {
+        setKnownRequest(intent?.request);
+
+        if (intent !== null && initialType === intent.type && !open) {
+            setOpen(true);
+        }
+    }
 
     if (initialType === null) {
         return null;

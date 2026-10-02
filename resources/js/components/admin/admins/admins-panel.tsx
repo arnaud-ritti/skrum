@@ -23,7 +23,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest, RetroRequestError } from '@/lib/retro/api';
 
-export const CandidateSearchDelayMs = 300;
+const CandidateSearchDelayMs = 300;
 
 const PasswordConfirmationExpired = 423;
 

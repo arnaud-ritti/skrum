@@ -12,6 +12,7 @@ use App\Support\Branding\BrandPalette;
 use App\Support\Branding\BrandPaletteSummary;
 use App\Support\Branding\BrandStyle;
 use App\Support\InstanceSettings;
+use App\Support\Mail\MailBrand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -55,6 +56,8 @@ class BrandingController extends Controller
                 'logoLightUrl' => $assets->url('logo-light'),
                 'logoDarkUrl' => $assets->url('logo-dark'),
                 'faviconUrl' => $assets->url('favicon'),
+                'logoMailUrl' => $assets->url('logo-mail'),
+                'mailShowsName' => $assets->mime('logo-light') !== null && resolve(MailBrand::class)->logo() === null,
             ],
             'palette' => $color === null
                 ? null
@@ -78,7 +81,7 @@ class BrandingController extends Controller
             $assets->remove($asset);
         }
 
-        $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::cases(), 'value'), null));
+        $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::branding(), 'value'), null));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding reset to the Skrüm defaults.')]);
 

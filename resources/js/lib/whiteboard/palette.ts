@@ -11,7 +11,7 @@ export const PostItColors = [
 
 export type PostItColor = (typeof PostItColors)[number];
 
-export type PostItSwatch = {
+type PostItSwatch = {
     bg: string;
     stroke: string;
 };

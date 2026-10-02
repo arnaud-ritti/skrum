@@ -26,7 +26,7 @@ import { useBoard } from './board-context';
  * The viewer's rating: a press on a score gives it, a press on the score
  * already given takes it back.
  */
-export function useRotiVote(): {
+function useRotiVote(): {
     value: Roti | null;
     busy: boolean;
     vote: (score: Roti) => void;
@@ -80,7 +80,7 @@ export function useRotiVote(): {
     };
 }
 
-export type RotiVoter = PresenceMember & { hasVoted: boolean; isMe: boolean };
+type RotiVoter = PresenceMember & { hasVoted: boolean; isMe: boolean };
 
 /**
  * Who is in the room, the viewer first, each with whether they have voted.

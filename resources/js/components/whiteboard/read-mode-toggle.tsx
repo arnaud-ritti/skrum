@@ -3,7 +3,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 
-export type ReadModeToggleProps = {
+type ReadModeToggleProps = {
     reading: boolean;
     onChange: (reading: boolean) => void;
 };
@@ -33,7 +33,7 @@ export function ReadModeToggle({
     );
 }
 
-export type ReadModeLayerProps = ReadModeToggleProps & {
+type ReadModeLayerProps = ReadModeToggleProps & {
     /** Place left for the "Follow :name" pill of the phone (roadmap WB-3). */
     follow?: ReactNode;
     /** Place left for the phone tools before the toggle: fit to screen, comments (roadmap WB-1, WB-2). */

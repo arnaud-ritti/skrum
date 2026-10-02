@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
 import {
@@ -40,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
-import { dragIsolation, type CardDragState } from './dnd';
+import { dragIsolation, startKeyboardDrag, type CardDragState } from './dnd';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
 
@@ -74,7 +75,7 @@ function typedValue(event: FormEvent<HTMLElement>): string | null {
         : null;
 }
 
-export function CardGifDialog({
+function CardGifDialog({
     gif,
     open,
     onOpenChange,
@@ -283,12 +284,31 @@ export function CardComposer({
     );
 }
 
+/**
+ * G on the focused card while grouping: its keyboard move starts, as with
+ * Space on its drag handle. One listener for the board, mounted where the
+ * drag is set up.
+ */
+export function useGroupShortcut(): void {
+    const ctx = useBoard();
+
+    useShortcut(
+        'g',
+        (event) => {
+            if (!event.repeat) {
+                startKeyboardDrag(event.target);
+            }
+        },
+        {
+            enabled: ctx.board.retro.phase === 'grouping' && ctx.isEditable,
+        },
+    );
+}
+
 type ReactionsResponse = { cardId: string; reactions: ReactionSummary[] };
 
 /** Adds or takes back the viewer's reaction to a card, shown at once. */
-export function useCardReactionToggle(
-    card: BoardCardData,
-): (emoji: string) => void {
+function useCardReactionToggle(card: BoardCardData): (emoji: string) => void {
     const ctx = useBoard();
     const retroId = ctx.board.retro.id;
 
@@ -329,7 +349,7 @@ export function useCardReactionToggle(
  * Whether the comments of a card are open. Opening them marks them as read,
  * and so does a comment that arrives while they are open.
  */
-export function useCardComments(card: BoardCardData): {
+function useCardComments(card: BoardCardData): {
     open: boolean;
     toggle: () => void;
     isUnread: boolean;
@@ -347,7 +367,7 @@ export function useCardComments(card: BoardCardData): {
     return { open, toggle: () => setOpen((current) => !current), isUnread };
 }
 
-export function UnreadCommentsDot() {
+function UnreadCommentsDot() {
     const { t } = useTrans();
 
     return (
@@ -361,7 +381,7 @@ export function UnreadCommentsDot() {
 }
 
 /** The comments of a card, and the fields to write one when the phase allows. */
-export function CardThread({
+function CardThread({
     card,
     canWrite,
 }: {

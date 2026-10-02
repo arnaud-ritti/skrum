@@ -6,6 +6,8 @@ use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\DesignSystemPagesController;
+use App\Http\Controllers\EmailChallengeCodesController;
+use App\Http\Controllers\EmailCodeChallengesController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameAnswersController;
@@ -69,8 +71,12 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsControlle
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
+use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\MagicLinksController;
+use App\Http\Controllers\MagicLinkSessionsController;
+use App\Http\Controllers\MailPreviewsController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerAutoRevealsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
@@ -94,6 +100,9 @@ use App\Http\Controllers\PokerDeckDuplicatesController;
 use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
+use App\Http\Controllers\RecapUnsubscribesController;
+use App\Http\Controllers\RecentSessionsController;
+use App\Http\Controllers\ReminderUnsubscribesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
@@ -129,6 +138,7 @@ use App\Http\Controllers\Retros\SurveyDraftsController;
 use App\Http\Controllers\Retros\SurveyReactionsController;
 use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
+use App\Http\Controllers\SearchResultsController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
@@ -171,6 +181,7 @@ use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use App\Support\Branding\BrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -182,6 +193,14 @@ Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->n
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
+Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->whereUuid('user')->name('reminderUnsubscribes.show');
+    Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->whereUuid('user')->name('reminderUnsubscribes.store');
+    Route::get('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'show'])->whereUuid('user')->name('recapUnsubscribes.show');
+    Route::post('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'store'])->whereUuid('user')->name('recapUnsubscribes.store');
+});
+
+Route::get('dev/mail/{mail}', [MailPreviewsController::class, 'show'])->where('mail', '[a-z-]+')->name('dev.mail.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
 // Outside the web group, like the brand assets below.
@@ -190,7 +209,7 @@ Route::get('avatars/{style}/{seed}.svg', [StyledAvatarsController::class, 'show'
     ->withoutMiddleware('web')
     ->name('styledAvatars.show');
 // Outside the web group: a public, immutable response must not carry a session cookie.
-Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', 'logo-light|logo-dark|favicon')
+Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', BrandAssets::RoutePattern)
     ->withoutMiddleware('web')
     ->name('brand.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
@@ -208,8 +227,26 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
     ->name('invitations.acceptance.store');
 
 Route::middleware('guest')->group(function (): void {
+    Route::post('invitations/{token}/account', [InvitationAccountsController::class, 'store'])
+        ->middleware('throttle:invitationAccounts')
+        ->name('invitations.account.store');
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
     Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
+    Route::post('magic-link', [MagicLinksController::class, 'store'])->middleware('throttle:magicLinks')->name('magicLinks.store');
+    Route::get('magic-link/{token}', [MagicLinksController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->middleware('throttle:20,1,magicLinkOpens')
+        ->name('magicLinks.show');
+    Route::post('magic-link/{token}/session', [MagicLinkSessionsController::class, 'store'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->middleware('throttle:20,1,magicLinkOpens')
+        ->name('magicLinks.sessions.store');
+    Route::post('two-factor-challenge/email-code', [EmailChallengeCodesController::class, 'store'])
+        ->middleware('throttle:6,1,emailChallengeCodes')
+        ->name('twoFactor.emailCodes.store');
+    Route::post('two-factor-challenge/email', [EmailCodeChallengesController::class, 'store'])
+        ->middleware('throttle:two-factor')
+        ->name('twoFactor.emailChallenges.store');
 });
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');
@@ -224,6 +261,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
+    Route::get('search', [SearchResultsController::class, 'index'])->middleware('throttle:60,1,search')->name('search.index');
+    Route::get('recent-sessions', [RecentSessionsController::class, 'index'])->middleware('throttle:60,1,recent-sessions')->name('recentSessions.index');
 
     Route::get('integrations/jira-dc/callback', [IntegrationCallbacksController::class, 'show'])
         ->defaults('provider', 'jira_dc')

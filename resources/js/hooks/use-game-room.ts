@@ -34,7 +34,7 @@ import { useGameChannel, type GameEvent } from './use-game-channel';
 
 const SessionExpiredStatuses = [401, 419];
 
-export type RoomStatus = 'active' | 'ended' | 'deleted';
+type RoomStatus = 'active' | 'ended' | 'deleted';
 
 export type GameRoomHook = {
     state: GameRoomState;

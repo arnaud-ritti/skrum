@@ -12,7 +12,7 @@ export type SessionCrumb = {
     href?: NavHref | null;
 };
 
-export type SessionTitleProps = {
+type SessionTitleProps = {
     /** Absent or null for a guest: no back link. */
     backHref?: NavHref | null;
     /** The line above the title, "team · session type". It gives way below `md`. */

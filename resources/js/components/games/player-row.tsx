@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type PlayerRowProps = {
+type PlayerRowProps = {
     name: string;
     /** null for a player who left the room: no avatar. */
     avatarUrl: string | null;

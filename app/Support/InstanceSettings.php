@@ -26,6 +26,8 @@ class InstanceSettings
 
     public const bool DefaultAvatarMemberChoice = false;
 
+    public const bool DefaultSsoRequired = false;
+
     /** Without a provider and a key GIFs stay off whatever this switch says. */
     public const bool DefaultGifEnabled = true;
 
@@ -108,6 +110,11 @@ class InstanceSettings
     public function favicon(): ?string
     {
         return $this->storedString(InstanceSettingKey::Favicon);
+    }
+
+    public function logoMail(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::LogoMail);
     }
 
     public function avatarStyle(): string
@@ -234,6 +241,11 @@ class InstanceSettings
         $this->invalidateAfterCommit();
     }
 
+    public function ssoRequired(): bool
+    {
+        return $this->storedBool(InstanceSettingKey::SsoRequired) ?? self::DefaultSsoRequired;
+    }
+
     /**
      * @return array{
      *     brand_color: ?string,
@@ -248,7 +260,8 @@ class InstanceSettings
      *     gif_provider: ?string,
      *     gif_enabled: bool,
      *     gif_rating: string,
-     *     has_gif_key: bool
+     *     has_gif_key: bool,
+     *     sso_required: bool
      * }
      */
     public function all(): array
@@ -267,6 +280,7 @@ class InstanceSettings
             InstanceSettingKey::GifEnabled->value => $this->gifEnabled(),
             InstanceSettingKey::GifRating->value => $this->gifRating(),
             'has_gif_key' => $this->hasGifKey(),
+            InstanceSettingKey::SsoRequired->value => $this->ssoRequired(),
         ];
     }
 
@@ -300,7 +314,8 @@ class InstanceSettings
         return match ($key) {
             InstanceSettingKey::PoweredBy,
             InstanceSettingKey::AvatarMemberChoice,
-            InstanceSettingKey::GifEnabled => $this->booleanFrom($key, $value),
+            InstanceSettingKey::GifEnabled,
+            InstanceSettingKey::SsoRequired => $this->booleanFrom($key, $value),
             InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),
             InstanceSettingKey::GifKey => Crypt::encryptString($this->stringFrom($key, $value)),
             default => $value,
@@ -383,13 +398,18 @@ class InstanceSettings
 
     /**
      * Null when the table cannot be read, as between a deploy and its migration.
+     * Inside a transaction the read runs under a savepoint: PostgreSQL aborts
+     * the whole transaction on a failed query, and the caller's must survive.
      *
      * @return ?array<string, mixed>
      */
     private function rows(): ?array
     {
+        $connection = InstanceSetting::query()->getConnection();
+        $read = fn (): array => InstanceSetting::query()->get()->pluck('value', 'key')->all();
+
         try {
-            return InstanceSetting::query()->get()->pluck('value', 'key')->all();
+            return $connection->transactionLevel() > 0 ? $connection->transaction($read) : $read();
         } catch (QueryException) {
             return null;
         }

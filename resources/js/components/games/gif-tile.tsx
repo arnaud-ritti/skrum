@@ -5,7 +5,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { GameGif } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 
-export type GifTileAuthor = {
+type GifTileAuthor = {
     name: string;
     avatarUrl: string | null;
     isGuest: boolean;

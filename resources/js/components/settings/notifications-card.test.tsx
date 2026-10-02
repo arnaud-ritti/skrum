@@ -35,6 +35,8 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 const preferences = {
     action_item_reminders_by_email: true,
     action_item_reminders_in_app: false,
+    recap_emails: true,
+    recap_in_app: false,
 };
 
 beforeEach(() => {
@@ -72,17 +74,40 @@ describe('NotificationsCard', () => {
         ).toEqual(['Event', 'In-app', 'Email']);
     });
 
-    it('has the one event that exists, with the time the reminders are sent', () => {
+    it('has the two events that exist, the reminders with the time they are sent', () => {
         card();
 
         const rows = within(screen.getAllByRole('rowgroup')[1]).getAllByRole(
             'row',
         );
 
-        expect(rows.length).toBe(1);
+        expect(rows.length).toBe(2);
         expect(within(rows[0]).getByRole('rowheader').textContent).toBe(
             'Action item remindersReminders are sent at 08:00 for action items assigned to you.',
         );
+        expect(within(rows[1]).getByRole('rowheader').textContent).toBe(
+            'Retro recap',
+        );
+    });
+
+    it('has a row for the retro recap with its two switches, in-app first', () => {
+        card();
+
+        const inApp = screen.getByRole('switch', {
+            name: 'Show retro recaps in the notification bell',
+        });
+        const email = screen.getByRole('switch', {
+            name: 'Email me the results of retrospectives',
+        });
+
+        expect(inApp.id).toBe('recap-in-app');
+        expect(inApp.getAttribute('aria-checked')).toBe('false');
+        expect(email.id).toBe('recap-emails');
+        expect(email.getAttribute('aria-checked')).toBe('true');
+        expect(
+            inApp.compareDocumentPosition(email) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
     });
 
     it('keeps the ids of the old checkboxes on two switches named by the old labels', () => {
@@ -105,7 +130,7 @@ describe('NotificationsCard', () => {
         ).toBeTruthy();
     });
 
-    it('saves nothing until "Save" is pressed, then sends both preferences', () => {
+    it('saves nothing until "Save" is pressed, then sends the four preferences', () => {
         card();
 
         fireEvent.click(
@@ -116,6 +141,16 @@ describe('NotificationsCard', () => {
         fireEvent.click(
             screen.getByRole('switch', {
                 name: 'Email me about due and overdue action items',
+            }),
+        );
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Email me the results of retrospectives',
+            }),
+        );
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Show retro recaps in the notification bell',
             }),
         );
 
@@ -130,6 +165,8 @@ describe('NotificationsCard', () => {
         expect(data).toEqual({
             action_item_reminders_by_email: false,
             action_item_reminders_in_app: true,
+            recap_emails: false,
+            recap_in_app: true,
         });
         expect(route).toMatchObject({
             url: '/settings/notifications',

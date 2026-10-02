@@ -34,18 +34,18 @@ export type ColumnColor =
 
 export type CardSentiment = 'positive' | 'neutral' | 'negative';
 
-export type SummaryStatus = 'pending' | 'ready' | 'failed';
+type SummaryStatus = 'pending' | 'ready' | 'failed';
 
-export type ResultsSummary = {
+type ResultsSummary = {
     text: string | null;
     generatedAt: string | null;
     status: SummaryStatus | null;
     provider: string;
 };
 
-export type RetroTheme = { id: string; name: string; cardIds: string[] };
+type RetroTheme = { id: string; name: string; cardIds: string[] };
 
-export type SuggestedActionStatus = 'pending' | 'promoted' | 'rejected';
+type SuggestedActionStatus = 'pending' | 'promoted' | 'rejected';
 
 export type SuggestedAction = {
     id: string;
@@ -55,7 +55,7 @@ export type SuggestedAction = {
     actionItemId: string | null;
 };
 
-export type Insights = {
+type Insights = {
     themes: RetroTheme[];
     suggestedActions: SuggestedAction[];
 };
@@ -108,7 +108,7 @@ export type CommentNotificationPayload = {
 
 export type SurveyKind = 'single' | 'multiple' | 'text';
 
-export type SurveyOption = {
+type SurveyOption = {
     id: string;
     label: string;
     position: number;
@@ -116,7 +116,7 @@ export type SurveyOption = {
     voters: string[] | null;
 };
 
-export type SurveyTextAnswer = {
+type SurveyTextAnswer = {
     id: string;
     text: string;
     authorId: string | null;
@@ -125,7 +125,7 @@ export type SurveyTextAnswer = {
 
 export type SurveyComment = Omit<CardComment, 'cardId'> & { surveyId: string };
 
-export type SurveyCommentThread = SurveyComment & { replies: SurveyComment[] };
+type SurveyCommentThread = SurveyComment & { replies: SurveyComment[] };
 
 export type SurveyPayload = {
     id: string;
@@ -181,7 +181,7 @@ export type ActionItemPriority = 'high' | 'medium' | 'low';
 
 export type ActionItemRecurrence = 'weekly' | 'every_two_weeks' | 'monthly';
 
-export type ActionItemSubtask = {
+type ActionItemSubtask = {
     id: string;
     content: string;
     isCompleted: boolean;
@@ -190,7 +190,7 @@ export type ActionItemSubtask = {
 
 export type ActionItemStatus = 'open' | 'completed';
 
-export type ActionItemPerson = { name: string; avatarUrl: string };
+type ActionItemPerson = { name: string; avatarUrl: string };
 
 export type ActionItemAssignee = ActionItemPerson & {
     kind: 'member' | 'guest';
@@ -198,7 +198,7 @@ export type ActionItemAssignee = ActionItemPerson & {
     isTeamMember: boolean;
 };
 
-export type ActionItemSource = {
+type ActionItemSource = {
     retroTitle: string;
     retroCreatedAt: string | null;
     retroUrl: string;
@@ -243,16 +243,16 @@ export type ActionItemComment = {
     updatedAt: string | null;
 };
 
-export type TeamMember = {
+type TeamMember = {
     id: string;
     name: string;
     avatarUrl: string;
     participantId: string | null;
 };
 
-export type TransferCandidate = { userId: string; name: string };
+type TransferCandidate = { userId: string; name: string };
 
-export type HealthStatementPayload = {
+type HealthStatementPayload = {
     key: string;
     label: string;
     text: string;
@@ -268,7 +268,7 @@ export type HealthProgress = {
 export type HealthCheckStatement = HealthStatementPayload &
     HealthProgress & { myScore: number | null };
 
-export type HealthCheckState = { statements: HealthCheckStatement[] };
+type HealthCheckState = { statements: HealthCheckStatement[] };
 
 export type Snapshot = {
     retro: {
@@ -361,7 +361,7 @@ export type HealthStatementResult = {
     previousAverage: number | null;
 };
 
-export type HealthHighlight = { key: string; label: string; average: number };
+type HealthHighlight = { key: string; label: string; average: number };
 
 export type HealthResults = {
     statements: HealthStatementResult[];
@@ -397,7 +397,7 @@ export type RotiResults = {
     respondents: number;
 };
 
-export type RotiState = {
+type RotiState = {
     myScore: number | null;
     respondents: number;
     voterIds: string[];
@@ -443,7 +443,7 @@ export type GamesPlayed = {
     roundsPlayed: number;
 };
 
-export type ResultsStats = {
+type ResultsStats = {
     votesCast: number;
     votesAvailable: number;
     /** Team members who took part, of the team: guests are not counted. */
