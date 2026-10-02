@@ -14,7 +14,6 @@ import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -273,7 +272,7 @@ function SeatView({
             data-slot="poker-seat"
             data-state={seat.state}
             className={cn(
-                'flex w-18 min-w-0 shrink flex-col items-center gap-1.5',
+                'flex w-18 min-w-0 shrink flex-col items-center gap-1.5 @md/poker:w-24',
                 reverse && '@md/poker:flex-col-reverse',
                 (seat.state === 'absent' || seat.offline) && 'opacity-60',
             )}
@@ -411,6 +410,10 @@ function TableCenter({
     const votedCount = voters.filter((seat) => seat.state === 'voted').length;
     const title = storyLabel(story);
     const canReveal = !busy && votedCount > 0;
+    const progress = t(':voted of :total voted', {
+        voted: votedCount,
+        total: present.length,
+    });
 
     return (
         <div
@@ -425,41 +428,58 @@ function TableCenter({
             )}
             {revealed && result && hasCountableVotes(result) && (
                 <>
-                    <span className="max-w-full truncate text-xs text-secondary-foreground">
-                        {showsAverage(result, isNumeric)
-                            ? t('Average')
-                            : t('Most played')}
-                    </span>
-                    <span
-                        data-slot="poker-headline"
-                        className="max-w-full truncate font-display text-display-lg font-bold text-secondary-foreground"
-                    >
-                        {showsAverage(result, isNumeric) &&
-                        result.average !== null
-                            ? formatNumber(result.average, locale)
-                            : result.mode.join(', ')}
-                    </span>
-                    <ConsensusBadge consensus={result.consensus} />
+                    <div className="flex max-w-full min-w-0 flex-wrap items-end justify-center gap-x-8 gap-y-1">
+                        <CenterStat
+                            headline
+                            label={
+                                showsAverage(result, isNumeric)
+                                    ? t('Average')
+                                    : t('Most played')
+                            }
+                            value={
+                                showsAverage(result, isNumeric) &&
+                                result.average !== null
+                                    ? formatNumber(result.average, locale)
+                                    : result.mode.join(', ')
+                            }
+                        />
+                        {result.median !== undefined &&
+                            result.median !== null && (
+                                <CenterStat
+                                    label={t('Median')}
+                                    value={formatNumber(result.median, locale)}
+                                />
+                            )}
+                    </div>
+                    <ConsensusBadge consensus={result.consensus}>
+                        {verdictOf(t, result, locale)}
+                    </ConsensusBadge>
                 </>
             )}
             {!revealed && (
                 <>
-                    <div className="w-36 max-w-full">
-                        <Progress
-                            value={votedCount}
-                            max={Math.max(present.length, 1)}
-                            tone="primary"
-                            aria-label={t('Voting progress')}
-                        />
-                    </div>
                     <span
                         data-slot="poker-progress"
-                        className="max-w-full text-xs text-secondary-foreground"
+                        className="max-w-full text-sm font-semibold text-secondary-foreground"
                     >
-                        {t(':voted of :total voted', {
-                            voted: votedCount,
-                            total: present.length,
-                        })}
+                        {progress}
+                    </span>
+                    <span
+                        role="progressbar"
+                        aria-label={t('Voting progress')}
+                        aria-valuemin={0}
+                        aria-valuemax={present.length}
+                        aria-valuenow={votedCount}
+                        aria-valuetext={progress}
+                        data-slot="poker-progress-bar"
+                        className="block h-2 w-44 max-w-full overflow-hidden rounded-full bg-card ring-1 ring-border ring-inset"
+                    >
+                        <span
+                            className="block h-full rounded-full bg-primary transition-[width] duration-220 ease-standard motion-reduce:transition-none"
+                            style={{
+                                width: `${(votedCount / Math.max(present.length, 1)) * 100}%`,
+                            }}
+                        />
                     </span>
                     {isFacilitator && onReveal && (
                         <Tooltip>
@@ -493,6 +513,30 @@ function TableCenter({
                 </>
             )}
         </div>
+    );
+}
+
+function CenterStat({
+    label,
+    value,
+    headline = false,
+}: {
+    label: string;
+    value: string;
+    headline?: boolean;
+}) {
+    return (
+        <span className="flex max-w-full min-w-0 flex-col items-center">
+            <span className="max-w-full truncate text-xs text-secondary-foreground">
+                {label}
+            </span>
+            <span
+                data-slot={headline ? 'poker-headline' : 'poker-center-stat'}
+                className="max-w-full truncate font-display text-display-lg font-bold text-secondary-foreground"
+            >
+                {value}
+            </span>
+        </span>
     );
 }
 
@@ -913,6 +957,19 @@ function spreadOf(
     return played.length > 1 ? [played[0], played[played.length - 1]] : null;
 }
 
+/** "Consensus", the spread of a round that needs a discussion, or that it needs one. */
+function verdictOf(t: Translate, result: PokerResult, locale?: string): string {
+    if (result.consensus) {
+        return t('Consensus');
+    }
+
+    const spread = spreadOf(result, locale);
+
+    return spread
+        ? t('Spread :min → :max', { min: spread[0], max: spread[1] })
+        : t('Needs discussion');
+}
+
 function agreementOf(t: Translate, result: PokerResult): string | null {
     if (result.agreement === undefined || result.agreement === null) {
         return null;
@@ -948,7 +1005,6 @@ export function PokerResultPanel({
         (sum, entry) => sum + entry.count,
         0,
     );
-    const spread = spreadOf(result, locale);
     const countable = hasCountableVotes(result);
     const agreement = agreementOf(t, result);
     const sentence = countable
@@ -976,14 +1032,7 @@ export function PokerResultPanel({
                 </h3>
                 {countable && (
                     <ConsensusBadge consensus={result.consensus}>
-                        {result.consensus
-                            ? t('Consensus')
-                            : spread
-                              ? t('Spread :min → :max', {
-                                    min: spread[0],
-                                    max: spread[1],
-                                })
-                              : t('Needs discussion')}
+                        {verdictOf(t, result, locale)}
                     </ConsensusBadge>
                 )}
             </div>
@@ -1336,7 +1385,7 @@ export function PokerTable({
                     className={cn(
                         seatGrid,
                         seatsFocus,
-                        '@md/poker:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
+                        '@md/poker:grid-cols-[6rem_minmax(0,1fr)_6rem] @md/poker:grid-rows-[auto_minmax(8.25rem,auto)_auto] @md/poker:items-center',
                     )}
                 >
                     <div className="contents justify-around gap-2 @md/poker:col-span-3 @md/poker:row-start-1 @md/poker:flex @md/poker:w-full">

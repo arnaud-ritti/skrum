@@ -415,6 +415,20 @@ describe('PokerTable while voting', () => {
         expect(screen.getByRole('status').textContent).toBe('1 of 1 voted');
     });
 
+    it('shows the progress as a sentence and a bar, without a percentage in the Players section', () => {
+        renderTable();
+
+        const players = screen.getByRole('region', { name: 'Players' });
+        const bar = within(players).getByRole('progressbar', {
+            name: 'Voting progress',
+        });
+
+        expect(bar.getAttribute('aria-valuenow')).toBe('2');
+        expect(bar.getAttribute('aria-valuemax')).toBe('3');
+        expect(bar.getAttribute('aria-valuetext')).toBe('2 of 3 voted');
+        expect(players.textContent).not.toContain('%');
+    });
+
     it('marks the facilitator seat and an offline voter', () => {
         const { container } = renderTable({
             facilitatorId: 'u0',
@@ -523,11 +537,21 @@ describe('PokerTable revealed', () => {
             },
         });
 
+        const center = document.querySelector(
+            '[data-slot="poker-table-center"]',
+        ) as HTMLElement;
+
         expect(screen.getAllByText('7.9').length).toBeGreaterThan(0);
-        expect(screen.getByText('Median')).toBeTruthy();
+        expect(within(center).getByText('Median')).toBeTruthy();
+        expect(
+            center.querySelector('[data-slot="poker-center-stat"]')
+                ?.textContent,
+        ).toBe('5');
+        expect(within(center).getByText('Spread 3 → 21')).toBeTruthy();
+        expect(screen.getAllByText('Median')).toHaveLength(2);
         expect(screen.getByText('43 % on 5')).toBeTruthy();
         expect(screen.getByText('Result · 7 votes')).toBeTruthy();
-        expect(screen.getByText('Spread 3 → 21')).toBeTruthy();
+        expect(screen.getAllByText('Spread 3 → 21')).toHaveLength(2);
         expect(
             screen.getByText('Yuki (21) and Lucas (3) open the discussion.'),
         ).toBeTruthy();
@@ -588,7 +612,7 @@ describe('PokerTable revealed', () => {
             },
         });
 
-        expect(screen.getByText('Spread ½ → L')).toBeTruthy();
+        expect(screen.getAllByText('Spread ½ → L')).toHaveLength(2);
         expect(screen.getAllByText('M, L').length).toBeGreaterThan(0);
         expect(screen.queryByText('Average')).toBeNull();
         expect(
