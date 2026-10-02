@@ -25,9 +25,17 @@ type SettingsNavEntry = Omit<SubNavItem, 'current'> & {
 
 export function SettingsShell({
     active,
+    title,
+    description,
     children,
 }: {
     active: SettingsSection;
+    /**
+     * Title of a section that has its own page heading (and its own crumb);
+     * "Settings" when absent.
+     */
+    title?: string;
+    description?: string;
     children: ReactNode;
 }): ReactElement {
     const { t } = useTrans();
@@ -76,12 +84,20 @@ export function SettingsShell({
         <AppLayout
             breadcrumbs={[
                 { title: auth.user.name, href: entries[0].href },
-                { title: t('Settings'), href: current.href },
+                {
+                    title: t('Settings'),
+                    href: title === undefined ? current.href : entries[0].href,
+                },
+                ...(title === undefined ? [] : [{ title, href: current.href }]),
             ]}
         >
             <SettingsLayout
-                title={t('Settings')}
-                description={t('Your account, applied in every workspace')}
+                title={title ?? t('Settings')}
+                description={
+                    title === undefined
+                        ? t('Your account, applied in every workspace')
+                        : description
+                }
                 nav={entries.map(({ section, ...entry }) => ({
                     ...entry,
                     current: section === active,

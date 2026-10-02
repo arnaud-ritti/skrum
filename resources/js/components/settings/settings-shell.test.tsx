@@ -134,4 +134,30 @@ describe('SettingsShell', () => {
         ]);
         expect(layout.active).toBeUndefined();
     });
+
+    it('gives a section its own page title, its sentence and a third crumb', () => {
+        renderWithProviders(
+            <SettingsShell
+                active="security"
+                title="Security"
+                description="Password, two-factor authentication and passkeys."
+            >
+                <p>content</p>
+            </SettingsShell>,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 1, name: 'Security' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Password, two-factor authentication and passkeys.',
+            ),
+        ).toBeTruthy();
+        expect(layout.breadcrumbs.map((crumb) => crumb.title)).toEqual([
+            'Mona Member',
+            'Settings',
+            'Security',
+        ]);
+    });
 });

@@ -92,4 +92,26 @@ describe('SettingsCard', () => {
                 ?.getAttribute('aria-hidden'),
         ).toBe('true');
     });
+
+    it('draws a header row above the body, and a body without padding when it is flush', () => {
+        render(
+            <SettingsCard
+                title="Two-factor authentication"
+                header={<span>Authenticator</span>}
+                flush
+            >
+                <p>rows</p>
+            </SettingsCard>,
+        );
+
+        const card = screen
+            .getByRole('region', { name: 'Two-factor authentication' })
+            .querySelector('[data-slot="card"]')!;
+        const header = card.querySelector('[data-slot="settings-card-header"]');
+        const body = card.querySelector('[data-slot="settings-card-body"]');
+
+        expect(header?.textContent).toBe('Authenticator');
+        expect(header?.nextElementSibling).toBe(body);
+        expect(body?.className).not.toContain('p-5');
+    });
 });

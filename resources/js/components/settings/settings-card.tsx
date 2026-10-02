@@ -2,6 +2,7 @@ import { TriangleAlert } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 type SettingsCardProps = {
     title: string;
@@ -13,6 +14,10 @@ type SettingsCardProps = {
      * consequences on a row; the children are its action.
      */
     tone?: 'default' | 'destructive';
+    /** Row at the top of the card, above a rule: an icon, a name, a state. */
+    header?: ReactNode;
+    /** The body has no padding and no gap: its children are full-width rows. */
+    flush?: boolean;
     children: ReactNode;
 };
 
@@ -21,6 +26,8 @@ export function SettingsCard({
     description,
     footer,
     tone = 'default',
+    header,
+    flush = false,
     children,
 }: SettingsCardProps): ReactElement {
     const titleId = useId();
@@ -82,9 +89,20 @@ export function SettingsCard({
                 )}
             </div>
             <Card>
+                {header !== undefined && header !== null && (
+                    <div
+                        data-slot="settings-card-header"
+                        className="flex min-w-0 flex-wrap items-center gap-3 border-b px-5 py-4"
+                    >
+                        {header}
+                    </div>
+                )}
                 <div
                     data-slot="settings-card-body"
-                    className="flex min-w-0 flex-col gap-5 p-5"
+                    className={cn(
+                        'flex min-w-0 flex-col',
+                        !flush && 'gap-5 p-5',
+                    )}
                 >
                     {children}
                 </div>
