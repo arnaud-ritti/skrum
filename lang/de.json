@@ -4330,5 +4330,19 @@
     "Logo for e-mails": "Logo für E-Mails",
     "PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.": "PNG oder JPEG, mindestens 128 px breit. E-Mail-Programme stellen kein SVG dar.",
     "E-mails show the name as text until a PNG or JPEG logo is added.": "E-Mails zeigen den Namen als Text, bis ein PNG- oder JPEG-Logo hinzugefügt wird.",
-    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "Das Logo für E-Mails muss ein PNG- oder JPEG-Bild mit mindestens 128 px Breite sein."
+    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "Das Logo für E-Mails muss ein PNG- oder JPEG-Bild mit mindestens 128 px Breite sein.",
+    "E-mail me a magic link instead": "Stattdessen einen magischen Link erhalten",
+    "Enter your e-mail address first.": "Geben Sie zuerst Ihre E-Mail-Adresse ein.",
+    "Check your inbox": "Prüfen Sie Ihren Posteingang",
+    "If an account exists for :email, a sign-in link is on its way. It is valid for 15 minutes and works once.": "Wenn für :email ein Konto besteht, ist ein Anmeldelink unterwegs. Er ist 15 Minuten gültig und funktioniert einmal.",
+    "Resend in :time": "Erneut senden in :time",
+    "Resend the link": "Link erneut senden",
+    "Nothing received? Check your spam folder. On a self-hosted instance, sending depends on the SMTP your admin configured.": "Nichts erhalten? Prüfen Sie den Spam-Ordner. Auf einer selbst gehosteten Instanz hängt der Versand vom SMTP ab, das Ihr Admin eingerichtet hat.",
+    "Use another address": "Andere Adresse verwenden",
+    "Magic link": "Magischer Link",
+    "Sign-in method": "Anmeldemethode",
+    "Receive the magic link": "Magischen Link erhalten",
+    "We send you a sign-in link valid for 15 minutes.": "Wir senden Ihnen einen Anmeldelink, der 15 Minuten gültig ist.",
+    "Magic link, button of the phone tab": "Magischer Link, Schaltfläche des Tabs auf dem Telefon",
+    "Magic link, sent": "Magischer Link, gesendet"
 }

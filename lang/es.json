@@ -4330,5 +4330,19 @@
     "Logo for e-mails": "Logotipo para los correos",
     "PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.": "PNG o JPEG, de al menos 128 px de ancho. Los clientes de correo no muestran SVG.",
     "E-mails show the name as text until a PNG or JPEG logo is added.": "Los correos muestran el nombre como texto hasta que se añada un logotipo PNG o JPEG.",
-    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "El logotipo para los correos debe ser una imagen PNG o JPEG de al menos 128 px de ancho."
+    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "El logotipo para los correos debe ser una imagen PNG o JPEG de al menos 128 px de ancho.",
+    "E-mail me a magic link instead": "Recibir un enlace mágico en su lugar",
+    "Enter your e-mail address first.": "Introduzca primero su dirección de correo.",
+    "Check your inbox": "Revise su bandeja de entrada",
+    "If an account exists for :email, a sign-in link is on its way. It is valid for 15 minutes and works once.": "Si existe una cuenta para :email, un enlace de inicio de sesión está en camino. Es válido durante 15 minutos y funciona una sola vez.",
+    "Resend in :time": "Reenviar en :time",
+    "Resend the link": "Reenviar el enlace",
+    "Nothing received? Check your spam folder. On a self-hosted instance, sending depends on the SMTP your admin configured.": "¿No ha recibido nada? Revise el correo no deseado. En una instancia autoalojada, el envío depende del SMTP configurado por su administrador.",
+    "Use another address": "Usar otra dirección",
+    "Magic link": "Enlace mágico",
+    "Sign-in method": "Método de inicio de sesión",
+    "Receive the magic link": "Recibir el enlace mágico",
+    "We send you a sign-in link valid for 15 minutes.": "Le enviamos un enlace de inicio de sesión válido durante 15 minutos.",
+    "Magic link, button of the phone tab": "Enlace mágico, botón de la pestaña del teléfono",
+    "Magic link, sent": "Enlace mágico, enviado"
 }

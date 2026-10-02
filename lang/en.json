@@ -4108,5 +4108,19 @@
     "Logo for e-mails": "Logo for e-mails",
     "PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.": "PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.",
     "E-mails show the name as text until a PNG or JPEG logo is added.": "E-mails show the name as text until a PNG or JPEG logo is added.",
-    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "The logo for e-mails must be a PNG or JPEG image at least 128 px wide."
+    "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.": "The logo for e-mails must be a PNG or JPEG image at least 128 px wide.",
+    "E-mail me a magic link instead": "E-mail me a magic link instead",
+    "Enter your e-mail address first.": "Enter your e-mail address first.",
+    "Check your inbox": "Check your inbox",
+    "If an account exists for :email, a sign-in link is on its way. It is valid for 15 minutes and works once.": "If an account exists for :email, a sign-in link is on its way. It is valid for 15 minutes and works once.",
+    "Resend in :time": "Resend in :time",
+    "Resend the link": "Resend the link",
+    "Nothing received? Check your spam folder. On a self-hosted instance, sending depends on the SMTP your admin configured.": "Nothing received? Check your spam folder. On a self-hosted instance, sending depends on the SMTP your admin configured.",
+    "Use another address": "Use another address",
+    "Magic link": "Magic link",
+    "Sign-in method": "Sign-in method",
+    "Receive the magic link": "Receive the magic link",
+    "We send you a sign-in link valid for 15 minutes.": "We send you a sign-in link valid for 15 minutes.",
+    "Magic link, button of the phone tab": "Magic link, button of the phone tab",
+    "Magic link, sent": "Magic link, sent"
 }
