@@ -27,4 +27,10 @@ describe('cn', () => {
             'tracking-heading',
         );
     });
+
+    it('merges the named maximum sizes of the theme', () => {
+        expect(cn('max-h-dialog', 'max-h-96')).toBe('max-h-96');
+        expect(cn('max-h-96', 'max-h-drawer')).toBe('max-h-drawer');
+        expect(cn('max-w-viewport-gutter', 'max-w-sm')).toBe('max-w-sm');
+    });
 });

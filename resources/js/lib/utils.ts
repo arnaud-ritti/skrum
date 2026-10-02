@@ -33,6 +33,10 @@ const twMerge = extendTailwindMerge({
             ],
             ease: ['standard', 'enter', 'exit', 'spring', 'flip'],
         },
+        classGroups: {
+            'max-h': [{ 'max-h': ['dialog', 'drawer'] }],
+            'max-w': [{ 'max-w': ['viewport-gutter'] }],
+        },
     },
 });
 

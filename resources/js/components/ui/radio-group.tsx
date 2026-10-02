@@ -44,6 +44,29 @@ function RadioGroupItem({
   )
 }
 
+/**
+ * A card-shaped radio: the whole card is the `role="radio"` element and its
+ * children are its content, so the text of the card belongs to the radio.
+ */
+function RadioGroupCardItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+  return (
+    <RadioGroupPrimitive.Item
+      data-slot="radio-group-card-item"
+      className={cn(
+        "group/radio-card flex w-full min-w-0 cursor-pointer flex-col gap-2 rounded-lg border bg-card p-3 text-left shadow-card outline-none transition-[background-color,border-color,box-shadow] duration-140 ease-standard hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-card data-[state=checked]:border-primary data-[state=checked]:bg-skrum-primary-soft data-[state=checked]:ring-2 data-[state=checked]:ring-primary",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </RadioGroupPrimitive.Item>
+  )
+}
+
 function RadioOptionRow<T extends string>({
   option,
   variant,
@@ -131,5 +154,5 @@ function RadioGroup<T extends string = string>({
   )
 }
 
-export { RadioGroup, RadioGroupItem }
+export { RadioGroup, RadioGroupCardItem, RadioGroupItem }
 export type { RadioGroupProps, RadioOption }

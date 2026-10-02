@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { RadioGroup } from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupCardItem } from '@/components/ui/radio-group';
 import { renderWithProviders } from '@/test/render';
 
 const options = [
@@ -95,5 +95,29 @@ describe('RadioGroup', () => {
         rerender(<RadioGroup aria-label="x" value="own" options={options} />);
 
         expect(screen.getByRole('radio', { name: 'Only mine' }).getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('renders a card item whose children are the content of the radio', async () => {
+        const user = userEvent.setup();
+        const onValueChange = vi.fn();
+        renderWithProviders(
+            <RadioGroup aria-label="Deck" value="fibonacci" onValueChange={onValueChange}>
+                <RadioGroupCardItem value="fibonacci">
+                    <span>Fibonacci</span>
+                </RadioGroupCardItem>
+                <RadioGroupCardItem value="custom">
+                    <span>Custom</span>
+                    <span>3 cards</span>
+                </RadioGroupCardItem>
+            </RadioGroup>,
+        );
+
+        const custom = screen.getByRole('radio', { name: /Custom/ });
+        expect(custom.textContent).toBe('Custom3 cards');
+        expect(custom.getAttribute('aria-checked')).toBe('false');
+
+        await user.click(screen.getByText('3 cards'));
+
+        expect(onValueChange).toHaveBeenCalledWith('custom');
     });
 });
