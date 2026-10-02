@@ -291,6 +291,16 @@ export function NewSessionDialog({
     const [open, setOpen] = useState(
         intent !== null && initialType === intent.type,
     );
+    const [knownRequest, setKnownRequest] = useState(intent?.request);
+
+    /** A later intent (asked from the page itself) opens the dialog when it is closed. */
+    if (intent?.request !== knownRequest) {
+        setKnownRequest(intent?.request);
+
+        if (intent !== null && initialType === intent.type && !open) {
+            setOpen(true);
+        }
+    }
 
     if (initialType === null) {
         return null;
