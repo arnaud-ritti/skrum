@@ -2,6 +2,7 @@
 
 namespace App\Support\Sessions;
 
+use App\Support\Locales;
 use Illuminate\Support\Arr;
 
 /**
@@ -16,7 +17,7 @@ class GuestNames
 
     public static function random(string $locale): string
     {
-        $locale = self::supported($locale);
+        $locale = Locales::supported($locale);
 
         /** @var array{pattern: string, animals: array<int, array{name: string, gender: string}>, adjectives: array<int, array<string, string>>} $data */
         $data = self::$files[$locale] ??= require resource_path("games/guest-names/{$locale}.php");
@@ -31,13 +32,5 @@ class GuestNames
             ':adjective' => $adjective[$animal['gender']],
             ':animal' => $animal['name'],
         ]);
-    }
-
-    private static function supported(string $locale): string
-    {
-        /** @var array<int, string> $locales */
-        $locales = config('skrum.locales');
-
-        return in_array($locale, $locales, true) ? $locale : 'en';
     }
 }

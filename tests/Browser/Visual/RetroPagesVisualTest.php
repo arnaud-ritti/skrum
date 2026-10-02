@@ -49,7 +49,11 @@ it('[P18e-R2-01] renders the guest join, the invalid guest link and the ended se
     $this->captureVisuals(
         $name,
         str_replace('{retro}', $retro->id, $path),
-        fn (string $path, array $options) => visit($path, $options)->assertPresent($marker),
+        function (string $path, array $options) use ($name, $marker) {
+            $page = visit($path, $options)->assertPresent($marker);
+
+            return $name === 'retro-join' ? $page->fill('#name', 'Nadia') : $page;
+        },
     );
 })->with([
     'guest join' => ['retro-join', '/join/visual-guest-token-of-the-retro-pages-01', '[data-slot="guest-join"] #name'],
