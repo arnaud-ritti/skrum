@@ -48,6 +48,9 @@ export type RetroSummary = {
     phase: string;
     phaseLabel: string;
     createdAt: string;
+    templateName: string;
+    facilitator: { name: string; avatarUrl: string } | null;
+    rotiAverage: number | null;
 };
 
 export type TemplateCategory =

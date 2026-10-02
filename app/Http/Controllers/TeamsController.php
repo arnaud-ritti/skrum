@@ -7,9 +7,11 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Retros\PresentTeamRetro;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
+use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
@@ -35,6 +37,8 @@ class TeamsController extends Controller
         private TeamHealthStatements $teamHealthStatements,
         private PresentHealthStatement $presentHealthStatement,
         private PresentPokerGameSummary $presentPokerGameSummary,
+        private PresentTeamRetro $presentTeamRetro,
+        private PokerPresenceRoster $pokerPresenceRoster,
         private PresentWhiteboardSummary $presentWhiteboardSummary,
     ) {}
 
@@ -77,13 +81,12 @@ class TeamsController extends Controller
                 : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
-            'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro): array => [
-                'id' => $retro->id,
-                'title' => $retro->title,
-                'phase' => $retro->phase->value,
-                'phaseLabel' => $retro->phase->label(),
-                'createdAt' => $retro->created_at?->toIso8601String(),
-            ]),
+            'retros' => $team->retros()
+                ->with(['workspaceTemplate', 'facilitator.user'])
+                ->withAvg('rotiVotes', 'score')
+                ->latest()
+                ->get()
+                ->map(fn (Retro $retro): array => $this->presentTeamRetro->handle($retro)),
             'templateCategories' => TemplateCategory::options(),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
             'llm' => [
@@ -102,6 +105,7 @@ class TeamsController extends Controller
                 ->latest('updated_at')
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
+            'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
@@ -124,6 +128,26 @@ class TeamsController extends Controller
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend'),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
+    }
+
+    /**
+     * @return ?array<string, ?int>
+     */
+    private function pokerPresence(Team $team): ?array
+    {
+        $presence = [];
+
+        foreach ($team->pokerGames()->whereNull('ended_at')->get() as $game) {
+            $playerIds = $this->pokerPresenceRoster->playerIds($game);
+
+            if ($playerIds === null) {
+                return null;
+            }
+
+            $presence[$game->id] = count($playerIds);
+        }
+
+        return $presence;
     }
 
     /**

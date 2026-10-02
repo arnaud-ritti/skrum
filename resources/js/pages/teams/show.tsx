@@ -67,6 +67,7 @@ type Props = {
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
     moodTrend?: TeamMoodPoint[];
+    pokerPresence?: Record<string, number> | null;
 };
 
 export default function ShowTeam({
