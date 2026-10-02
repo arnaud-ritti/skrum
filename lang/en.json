@@ -4149,5 +4149,8 @@
     "Turn off the authenticator app?": "Turn off the authenticator app?",
     "Your recovery codes stop working. The e-mail code keeps protecting your account.": "Your recovery codes stop working. The e-mail code keeps protecting your account.",
     "A 6-digit code from an app on your phone.": "A 6-digit code from an app on your phone.",
-    "A 6-digit code on top of your password, from an authenticator app or by e-mail.": "A 6-digit code on top of your password, from an authenticator app or by e-mail."
+    "A 6-digit code on top of your password, from an authenticator app or by e-mail.": "A 6-digit code on top of your password, from an authenticator app or by e-mail.",
+    "Search is unavailable. Try again in a moment.": "Search is unavailable. Try again in a moment.",
+    "Invite to :workspace": "Invite to :workspace",
+    "Show keyboard shortcuts": "Show keyboard shortcuts"
 }

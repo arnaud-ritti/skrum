@@ -4371,5 +4371,8 @@
     "Turn off the authenticator app?": "¿Desactivar la aplicación de autenticación?",
     "Your recovery codes stop working. The e-mail code keeps protecting your account.": "Sus códigos de recuperación dejan de funcionar. El código por correo sigue protegiendo su cuenta.",
     "A 6-digit code from an app on your phone.": "Un código de 6 dígitos de una aplicación en su teléfono.",
-    "A 6-digit code on top of your password, from an authenticator app or by e-mail.": "Un código de 6 dígitos además de su contraseña, de una aplicación de autenticación o por correo."
+    "A 6-digit code on top of your password, from an authenticator app or by e-mail.": "Un código de 6 dígitos además de su contraseña, de una aplicación de autenticación o por correo.",
+    "Search is unavailable. Try again in a moment.": "La búsqueda no está disponible. Vuelva a intentarlo en un momento.",
+    "Invite to :workspace": "Invitar a :workspace",
+    "Show keyboard shortcuts": "Mostrar los atajos de teclado"
 }

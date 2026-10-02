@@ -5,6 +5,7 @@ import { NavUser } from '@/components/nav-user';
 import type { NavKey } from '@/components/skrum/app-sidebar';
 import { AppTopbar } from '@/components/skrum/app-topbar';
 import { AppFrame } from '@/components/skrum/frames';
+import { CommandMenu } from '@/components/workspaces/command-menu';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import type { BreadcrumbItem } from '@/types';
 
@@ -30,6 +31,7 @@ export default function AppLayout({
             topbar={
                 <AppTopbar
                     breadcrumbs={breadcrumbs}
+                    search={<CommandMenu links={sidebar.links} />}
                     actions={
                         <>
                             {actions}
