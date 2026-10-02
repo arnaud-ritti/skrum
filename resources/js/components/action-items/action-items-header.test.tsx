@@ -37,6 +37,20 @@ describe('ActionItemsHeader', () => {
         ).toBeTruthy();
     });
 
+    it('writes one open item in the singular', () => {
+        renderWithProviders(
+            <ActionItemsHeader
+                counts={{ ...counts, open: 1 }}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+            />,
+        );
+
+        expect(
+            screen.getByText('1 open · 4 overdue · from 9 rituals'),
+        ).toBeTruthy();
+    });
+
     it('offers Team, Assignee and None, in that order, and no Status', () => {
         const onGroupingChange = vi.fn();
 

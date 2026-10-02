@@ -166,6 +166,18 @@ describe('ActionItemFilterBar', () => {
         expect(props.onChange).toHaveBeenLastCalledWith({ status: 'open' });
     });
 
+    it('leaves the overdue shortcut when To do is picked in the facet', async () => {
+        const user = userEvent.setup();
+        const props = bar({ filters: { ...defaults, status: 'overdue' } });
+
+        renderWithProviders(<ActionItemFilterBar {...props} />);
+
+        await user.click(screen.getByRole('combobox', { name: 'Status' }));
+        await user.click(screen.getByRole('option', { name: 'To do' }));
+
+        expect(props.onChange).toHaveBeenLastCalledWith({ status: 'open' });
+    });
+
     it('offers Reset only when a facet narrows the list', () => {
         const props = bar({
             filters: { ...defaults, assignee: 'me' },

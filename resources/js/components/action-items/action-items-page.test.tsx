@@ -467,7 +467,22 @@ describe('ActionItemsPage', () => {
         expect(screen.getByText('No open action items.')).toBeTruthy();
 
         unmount();
-        renderPage({ items: none });
+
+        const team = renderPage({ items: none });
+
+        expect(screen.getByText('No open action items.')).toBeTruthy();
+        expect(screen.queryByText('Nothing matches these filters.')).toBeNull();
+
+        team.unmount();
+        renderPage({
+            items: none,
+            filters: {
+                status: 'open',
+                assignee: 'me',
+                team: 'team-1',
+                item: null,
+            },
+        });
 
         expect(screen.getByText('Nothing matches these filters.')).toBeTruthy();
     });

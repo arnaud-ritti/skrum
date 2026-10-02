@@ -34,7 +34,9 @@ export function ActionItemsHeader({
         none: t('None'),
     };
     const summary = [
-        t(':count open', { count: counts.open }),
+        counts.open === 1
+            ? t('1 open')
+            : t(':count open', { count: counts.open }),
         t(':count overdue', { count: counts.overdue }),
         counts.rituals === 1
             ? t('from 1 ritual')

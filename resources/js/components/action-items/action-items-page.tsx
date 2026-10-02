@@ -281,23 +281,27 @@ export function ActionItemsPage({
         extraFacets: slots.extraFacets,
     };
 
+    // The team is where the page lands, not a filter the viewer set: a
+    // team without open items has none, it does not fail to match.
+    const nothingOpen = filters.status === 'open' && filters.assignee === null;
+
     const empty = (
         <EmptyState
             module="actions"
             title={
-                filtering.isDefault
+                nothingOpen
                     ? t('No open action items.')
                     : t('Nothing matches these filters.')
             }
             description={
-                filtering.isDefault
+                nothingOpen
                     ? t(
                           'Action items created in a retro or added here are listed on this page.',
                       )
                     : t('Change the filters or reset them to see more.')
             }
             action={
-                filtering.isDefault
+                nothingOpen
                     ? undefined
                     : {
                           label: t('Reset'),

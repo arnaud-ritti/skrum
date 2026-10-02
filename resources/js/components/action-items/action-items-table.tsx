@@ -223,6 +223,8 @@ function Row({
     const busy = context.busyId === item.id;
     const nextStatus = nextActionStatus(item.status, false);
     const statusAction = labels.statusAction[nextStatus];
+    const titleId = `action-item-title-${item.id}`;
+    const statusId = `action-item-status-${item.id}`;
     const sourceLabel = data.source?.label ?? t('Added outside a retro');
     const teamName = context.showTeam
         ? context.teamName(item.teamId)
@@ -244,6 +246,7 @@ function Row({
                 <div className="flex min-w-0 flex-col items-start gap-0.5">
                     <button
                         type="button"
+                        id={titleId}
                         data-slot="action-row-title"
                         aria-haspopup="dialog"
                         onClick={() => onOpen(item)}
@@ -289,6 +292,7 @@ function Row({
                             type="button"
                             data-slot="action-row-status"
                             aria-label={statusAction}
+                            aria-describedby={statusId}
                             disabled={!canComplete || busy}
                             onClick={() =>
                                 context.onStatusChange(
@@ -303,10 +307,12 @@ function Row({
                                 focusRing,
                             )}
                         >
-                            <ActionStatusBadge
-                                status={item.status}
-                                overdue={false}
-                            />
+                            <span id={statusId} className="inline-flex">
+                                <ActionStatusBadge
+                                    status={item.status}
+                                    overdue={false}
+                                />
+                            </span>
                         </button>
                     </TooltipTrigger>
                     <TooltipContent>{statusAction}</TooltipContent>
@@ -397,7 +403,8 @@ function Row({
                                 type="button"
                                 size="icon-sm"
                                 variant="ghost"
-                                aria-label={t('More')}
+                                aria-label={t('More actions')}
+                                aria-describedby={titleId}
                                 disabled={busy}
                             >
                                 <Ellipsis aria-hidden />
@@ -474,7 +481,13 @@ export function ActionItemsTable({
             <Table aria-label={ariaLabel} aria-busy={loading || undefined}>
                 <TableHeader className="bg-muted">
                     <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-10">{selectionHead}</TableHead>
+                        {selectionHead === undefined ? (
+                            <TableCell className="w-10" />
+                        ) : (
+                            <TableHead className="w-10">
+                                {selectionHead}
+                            </TableHead>
+                        )}
                         <TableHead>{t('Action')}</TableHead>
                         <TableHead className="w-25">{t('Status')}</TableHead>
                         <TableHead className="w-34">{t('Assignee')}</TableHead>

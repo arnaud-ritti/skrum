@@ -84,11 +84,27 @@ describe('landingQuery', () => {
         expect(landingQuery(null, 'team-9', ['team-1'])).toBeNull();
     });
 
-    it('lets the stored filters win, an empty entry included', () => {
+    it('adds the current team to stored filters that chose no team', () => {
         expect(landingQuery({ status: 'all' }, 'team-1', ['team-1'])).toEqual({
             status: 'all',
+            team: 'team-1',
         });
-        expect(landingQuery({}, 'team-1', ['team-1'])).toBeNull();
+        expect(landingQuery({}, 'team-1', ['team-1'])).toEqual({
+            team: 'team-1',
+        });
+        expect(landingQuery({ status: 'all' }, null, ['team-1'])).toEqual({
+            status: 'all',
+        });
+    });
+
+    it('lets the stored team win, every team included', () => {
+        expect(
+            landingQuery({ team: 'team-2' }, 'team-1', ['team-1', 'team-2']),
+        ).toEqual({ team: 'team-2' });
+        expect(
+            landingQuery({ team: '', status: 'all' }, 'team-1', ['team-1']),
+        ).toEqual({ status: 'all' });
+        expect(landingQuery({ team: '' }, 'team-1', ['team-1'])).toBeNull();
     });
 
     it('never sends the grouping to the server', () => {
@@ -98,7 +114,7 @@ describe('landingQuery', () => {
             ]),
         ).toEqual({ team: 'team-2' });
         expect(
-            landingQuery({ group: 'team' }, 'team-1', ['team-1']),
+            landingQuery({ team: '', group: 'team' }, 'team-1', ['team-1']),
         ).toBeNull();
     });
 });
@@ -176,7 +192,7 @@ describe('useActionItemFilters', () => {
 
         act(() => result.current.apply({ team: null, status: 'completed' }));
 
-        expect(stored()).toEqual({ status: 'completed' });
+        expect(stored()).toEqual({ status: 'completed', team: '' });
         expect(lastVisit().url).toContain('status=completed');
         expect(lastVisit().url).not.toContain('item=');
         expect(lastVisit().url).not.toContain('team=');
@@ -184,6 +200,10 @@ describe('useActionItemFilters', () => {
 
     it('keeps the grouping in the same entry as the filters', () => {
         window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
+        window.localStorage.setItem(
+            filterStorageKey(workspace.id),
+            JSON.stringify({ team: 'team-1' }),
+        );
 
         const { result } = mount({ ...defaults, team: 'team-1' });
 
@@ -205,7 +225,41 @@ describe('useActionItemFilters', () => {
         expect(stored()).toEqual({ team: 'team-1' });
     });
 
-    it('resets to the bare page and forgets the stored entry', () => {
+    it('does not store the team of the landing as a choice', () => {
+        window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
+
+        const landed = mount({ ...defaults, team: 'team-1' });
+
+        act(() => landed.result.current.setGrouping('assignee'));
+        expect(stored()).toEqual({ group: 'assignee' });
+
+        act(() => landed.result.current.apply({ status: 'overdue' }));
+        expect(stored()).toEqual({ status: 'overdue', group: 'assignee' });
+
+        landed.unmount();
+        window.history.replaceState({}, '', '/w/nordlys/action-items');
+        mocks.get.mockReset();
+
+        mount(defaults, 'team-2');
+
+        expect(lastVisit().url).toContain('team=team-2');
+        expect(lastVisit().url).toContain('status=overdue');
+        expect(lastVisit().url).not.toContain('team-1');
+    });
+
+    it('stores the team the viewer picks, and every team after the cross', () => {
+        window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
+
+        const { result } = mount({ ...defaults, team: 'team-1' });
+
+        act(() => result.current.apply({ team: 'team-2' }));
+        expect(stored()).toEqual({ team: 'team-2' });
+
+        act(() => result.current.apply({ team: null }));
+        expect(stored()).toEqual({ team: '' });
+    });
+
+    it('resets to the bare page, which stays on every team', () => {
         window.history.replaceState({}, '', '/w/nordlys/action-items?team=t');
         window.localStorage.setItem(
             filterStorageKey(workspace.id),
@@ -216,9 +270,29 @@ describe('useActionItemFilters', () => {
 
         act(() => result.current.reset());
 
-        expect(stored()).toBeNull();
+        expect(stored()).toEqual({ team: '' });
         expect(result.current.grouping).toBe('none');
         expect(lastVisit().url).not.toContain('?');
+
+        window.history.replaceState({}, '', '/w/nordlys/action-items');
+        mocks.get.mockReset();
+        mount();
+
+        expect(mocks.get).not.toHaveBeenCalled();
+    });
+
+    it('is loading while the landing visit runs', () => {
+        const { result } = mount();
+        const { onStart, onFinish } = lastVisit().options as {
+            onStart: () => void;
+            onFinish: () => void;
+        };
+
+        act(() => onStart());
+        expect(result.current.loading).toBe(true);
+
+        act(() => onFinish());
+        expect(result.current.loading).toBe(false);
     });
 
     it('is loading between the start and the end of a filter visit', () => {

@@ -50,6 +50,7 @@ function Facet({
     label,
     icon: Icon,
     value,
+    placeholder,
     active,
     stacked,
     clearLabel,
@@ -60,6 +61,8 @@ function Facet({
     label: string;
     icon: LucideIcon;
     value: string;
+    /** What the trigger reads while the value is none of the options. */
+    placeholder?: string;
     active: boolean;
     stacked: boolean;
     clearLabel?: string;
@@ -85,7 +88,7 @@ function Facet({
                     size="sm"
                     aria-label={label}
                     className={cn(
-                        'h-full min-w-0 flex-1 gap-1.5 border-0 bg-transparent px-2.5 text-body-sm shadow-none data-[size=sm]:h-full',
+                        'h-full min-w-0 flex-1 gap-1.5 border-0 bg-transparent px-2.5 text-body-sm shadow-none data-[placeholder]:text-current data-[size=sm]:h-full',
                         clearable && 'pr-1 [&>svg]:hidden',
                     )}
                 >
@@ -107,7 +110,7 @@ function Facet({
                                     : 'sr-only'
                             }
                         >
-                            <SelectValue />
+                            <SelectValue placeholder={placeholder} />
                         </span>
                     </span>
                 </SelectTrigger>
@@ -182,7 +185,10 @@ export function ActionItemFilterBar({
             <Facet
                 label={t('Status')}
                 icon={CircleDot}
-                value={overdueOnly ? 'open' : filters.status}
+                // Overdue is not an option: an empty value lets "To do" be
+                // picked again to leave the shortcut.
+                value={overdueOnly ? '' : filters.status}
+                placeholder={t('To do')}
                 active={filters.status !== 'all'}
                 stacked={stacked}
                 onValueChange={(status) =>

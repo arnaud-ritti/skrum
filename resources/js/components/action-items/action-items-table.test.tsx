@@ -115,7 +115,6 @@ describe('ActionItemsTable', () => {
             .map((head) => head.textContent);
 
         expect(heads).toEqual([
-            '',
             'Action',
             'Status',
             'Assignee',
@@ -254,7 +253,9 @@ describe('ActionItemsTable', () => {
             ).disabled,
         ).toBe(true);
         expect(
-            within(row('item-1')).queryByRole('button', { name: 'More' }),
+            within(row('item-1')).queryByRole('button', {
+                name: 'More actions',
+            }),
         ).toBeNull();
     });
 
@@ -353,7 +354,7 @@ describe('ActionItemsTable', () => {
         const { onOpen } = renderTable([item]);
 
         await user.click(
-            within(row('item-1')).getByRole('button', { name: 'More' }),
+            within(row('item-1')).getByRole('button', { name: 'More actions' }),
         );
         await user.click(
             screen.getByRole('menuitem', { name: 'Edit action item' }),
@@ -368,7 +369,7 @@ describe('ActionItemsTable', () => {
         const { ctx } = renderTable([item]);
 
         await user.click(
-            within(row('item-1')).getByRole('button', { name: 'More' }),
+            within(row('item-1')).getByRole('button', { name: 'More actions' }),
         );
         await user.click(
             screen.getByRole('menuitem', { name: 'Delete action item' }),
