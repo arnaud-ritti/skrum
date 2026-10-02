@@ -727,12 +727,10 @@
     "Name this group": "Diese Gruppe benennen",
     "Group name": "Gruppenname",
     "Rename group": "Gruppe umbenennen",
-    "How was this retro?": "Wie war diese Retro?",
-    "Time wasted": "Zeitverschwendung",
-    "Not really worth it": "Hat sich kaum gelohnt",
-    "Break-even": "Ausgeglichen",
-    "Good use of time": "Gut genutzte Zeit",
-    "Excellent use of time": "Hervorragend genutzte Zeit",
+    "Was this time together worth it?": "Hat sich diese gemeinsame Zeit gelohnt?",
+    "Waste of time": "Zeitverschwendung",
+    "Not very useful": "Wenig nützlich",
+    "Useful": "Nützlich",
     "Team health radar": "Teamgesundheits-Radar",
     "No answers": "Keine Antworten",
     "Trend across retros": "Verlauf über Retros",
@@ -4364,5 +4362,8 @@
     "Group with another card": "Mit einer anderen Karte gruppieren",
     "Focus the selected card": "Ausgewählte Karte hervorheben",
     "Create a password": "Passwort erstellen",
-    "Create my account and join :workspace": "Konto erstellen und :workspace beitreten"
+    "Create my account and join :workspace": "Konto erstellen und :workspace beitreten",
+    "1 answer · avg :average": "1 Antwort · Ø :average",
+    ":count answers · avg :average": ":count Antworten · Ø :average",
+    ":statement dropped :delta — worth a topic next retro.": ":statement ist um :delta gesunken — ein Thema für die nächste Retro."
 }

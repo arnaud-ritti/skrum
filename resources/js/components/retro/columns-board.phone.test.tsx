@@ -260,6 +260,31 @@ describe('ColumnsBoard on a phone', () => {
         );
     });
 
+    it('closes the card drawer with Cancel, without publishing', async () => {
+        board();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Add a card in Start' }),
+        );
+
+        const drawer = await screen.findByRole('dialog', {
+            name: 'Add a card in Start',
+        });
+
+        expect(
+            within(drawer).getByRole('button', { name: 'Save' }),
+        ).toBeTruthy();
+
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Cancel' }));
+
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('dialog', { name: 'Add a card in Start' }),
+            ).toBeNull(),
+        );
+        expect(retroRequest).not.toHaveBeenCalled();
+    });
+
     it('keeps the card drawer closed once the session has expired', async () => {
         renderInBoard(
             <ColumnsBoard hideMyCursor />,

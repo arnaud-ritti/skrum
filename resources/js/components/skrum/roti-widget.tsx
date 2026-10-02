@@ -69,11 +69,11 @@ function useRotiLabels(): Record<Roti, string> {
     const { t } = useTrans();
 
     return {
-        1: t('Time wasted'),
-        2: t('Not really worth it'),
-        3: t('Break-even'),
-        4: t('Good use of time'),
-        5: t('Excellent use of time'),
+        1: t('Waste of time'),
+        2: t('Not very useful'),
+        3: t('OK'),
+        4: t('Useful'),
+        5: t('Excellent'),
     };
 }
 
@@ -114,7 +114,8 @@ function VotePanel({
 >) {
     const { t } = useTrans();
     const labels = useRotiLabels();
-    const question = overrides?.question ?? t('How was this retro?');
+    const question =
+        overrides?.question ?? t('Was this time together worth it?');
     const optionRefs = useRef<Record<number, HTMLButtonElement | null>>({});
     const focusable: Roti = value ?? 1;
     const isRow = layout === 'row';

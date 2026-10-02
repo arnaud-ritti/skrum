@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PhaseRoti, RotiVote, rotiVoters } from '@/components/retro/phase-roti';
 import type { PresenceMember } from '@/lib/retro/types';
+import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -41,7 +42,8 @@ function rotiBoard(roti = {}, phase: 'roti' | 'completed' = 'roti') {
     });
 }
 
-const group = () => screen.getByRole('group', { name: 'How was this retro?' });
+const group = () =>
+    screen.getByRole('group', { name: 'Was this time together worth it?' });
 const rows = () =>
     [...document.querySelectorAll('[data-test="retro-roti-voters"] > li')].map(
         (row) =>
@@ -102,6 +104,32 @@ describe('PhaseRoti', () => {
         expect(screen.queryByRole('status')).toBeNull();
     });
 
+    it('lists no action item, open or carried: they are ticked from the action items page', () => {
+        const item = actionItemFixture();
+        const carried = actionItemFixture({
+            id: 'item-2',
+            content: 'Rotate the on-call',
+        });
+
+        renderInBoard(
+            <PhaseRoti />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'roti' },
+                    actionItems: [item],
+                    carriedActionItems: [carried],
+                }),
+            ),
+        );
+
+        expect(group()).toBeTruthy();
+        expect(screen.queryByText(item.content)).toBeNull();
+        expect(screen.queryByText(carried.content)).toBeNull();
+        expect(
+            document.querySelector('[data-test="retro-action-items-panel"]'),
+        ).toBeNull();
+    });
+
     it('lists everyone present with "Voted" or "Thinking…", the count, and never a score', () => {
         const board = rotiBoard({
             myScore: 4,
@@ -150,7 +178,7 @@ describe('PhaseRoti', () => {
         const { ctx } = renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
 
         fireEvent.click(
-            within(group()).getByRole('button', { name: /Good use of time/ }),
+            within(group()).getByRole('button', { name: /Useful/ }),
         );
 
         await waitFor(() =>
@@ -196,9 +224,7 @@ describe('PhaseRoti', () => {
         retroRequest.mockRejectedValue(new Error('refused'));
         const { ctx } = renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
 
-        fireEvent.click(
-            within(group()).getByRole('button', { name: /Break-even/ }),
-        );
+        fireEvent.click(within(group()).getByRole('button', { name: /OK/ }));
 
         await waitFor(() => expect(retroRequest).toHaveBeenCalled());
         await Promise.resolve();
@@ -244,7 +270,7 @@ describe('RotiVote', () => {
 
         fireEvent.click(
             within(group()).getByRole('button', {
-                name: /Excellent use of time/,
+                name: /Excellent/,
             }),
         );
 

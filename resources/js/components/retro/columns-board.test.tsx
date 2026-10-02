@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { ColumnsBoard } from '@/components/retro/columns-board';
@@ -137,49 +137,132 @@ describe('ColumnsBoard in Writing', () => {
         ).toBeNull();
     });
 
-    it('offers one composer per column, named "Add a card…", inside a form', () => {
+    const openComposer = (container: HTMLElement, columnId: string) => {
+        const column = container.querySelector(
+            `[data-test="retro-column-${columnId}"]`,
+        ) as HTMLElement;
+
+        fireEvent.click(
+            within(column).getByRole('button', { name: 'Add a card' }),
+        );
+
+        return column.querySelector('form') as HTMLFormElement;
+    };
+
+    it('ends each column with the "Add a card" button, and no card open for writing', () => {
         const { container } = board();
 
-        expect(screen.getAllByLabelText('Add a card…')).toHaveLength(2);
         expect(
-            container.querySelectorAll(
-                '[data-test^="retro-column-"] form textarea',
-            ),
+            screen.getAllByRole('button', { name: 'Add a card' }),
         ).toHaveLength(2);
-        expect(document.activeElement).toBe(document.body);
+        expect(screen.queryByLabelText('Add a card…')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-card-composer"]'),
+        ).toBeNull();
     });
 
-    it('invites to write in an empty column, above its composer', () => {
+    it('opens one card in editing from "Add a card", with Cancel, Save and the focus in its field', () => {
+        const { container } = board();
+        const form = openComposer(container, 'stop');
+        const field = within(form).getByLabelText('Add a card…');
+
+        expect(document.activeElement).toBe(field);
+        expect(
+            within(form).getByRole('button', { name: 'Cancel' }),
+        ).toBeTruthy();
+        expect(within(form).getByRole('button', { name: 'Save' })).toBeTruthy();
+        expect(screen.getAllByLabelText('Add a card…')).toHaveLength(1);
+        expect(
+            screen.getAllByRole('button', { name: 'Add a card' }),
+        ).toHaveLength(1);
+    });
+
+    it('opens the card in editing with N on the column', () => {
+        const { container } = board();
+        const column = container.querySelector(
+            '[data-test="retro-column-start"]',
+        ) as HTMLElement;
+
+        column.focus();
+        fireEvent.keyDown(column, { key: 'n' });
+
+        expect(document.activeElement).toBe(
+            within(column).getByLabelText('Add a card…'),
+        );
+    });
+
+    it('closes the card in editing with Cancel, and gives the focus back to "Add a card"', () => {
+        const { container } = board();
+        const form = openComposer(container, 'stop');
+
+        fireEvent.input(within(form).getByLabelText('Add a card…'), {
+            target: { value: 'Never mind' },
+        });
+        fireEvent.click(within(form).getByRole('button', { name: 'Cancel' }));
+
+        expect(screen.queryByLabelText('Add a card…')).toBeNull();
+        expect(retroRequest).not.toHaveBeenCalled();
+
+        const column = container.querySelector(
+            '[data-test="retro-column-stop"]',
+        ) as HTMLElement;
+
+        expect(document.activeElement).toBe(
+            within(column).getByRole('button', { name: 'Add a card' }),
+        );
+    });
+
+    it('closes the card in editing with Esc', () => {
+        const { container } = board();
+        const form = openComposer(container, 'start');
+
+        fireEvent.keyDown(within(form).getByLabelText('Add a card…'), {
+            key: 'Escape',
+        });
+
+        expect(screen.queryByLabelText('Add a card…')).toBeNull();
+        expect(
+            screen.getAllByRole('button', { name: 'Add a card' }),
+        ).toHaveLength(2);
+    });
+
+    it('keeps GIF within reach of the card in editing', () => {
+        const { container } = board({
+            retro: { gifProvider: 'giphy', gifsEnabled: true },
+        });
+        const form = openComposer(container, 'start');
+
+        expect(within(form).getByRole('button', { name: 'GIF' })).toBeTruthy();
+    });
+
+    it('invites to write in an empty column, above "Add a card"', () => {
         board({ cards: [card()] });
 
         expect(
             screen.getAllByText('No card yet. Be the first to write.'),
         ).toHaveLength(1);
-        expect(screen.queryByRole('button', { name: 'Add a card' })).toBeNull();
     });
 
-    it('publishes a card from the composer, empties it and takes the writers count', async () => {
+    it('publishes a card with Save, empties the field for the next one and takes the writers count', async () => {
         retroRequest.mockResolvedValue({
             card: card({ id: 'c9', content: 'Typed' }),
             writersCount: 2,
         });
 
         const { container, ctx } = board();
-        const form = container.querySelector(
-            '[data-test="retro-column-stop"] form',
-        ) as HTMLFormElement;
+        const form = openComposer(container, 'stop');
         const field = form.querySelector('textarea') as HTMLTextAreaElement;
-        const add = form.querySelector(
-            'button:not([type="button"])',
-        ) as HTMLButtonElement;
+        const save = within(form).getByRole('button', {
+            name: 'Save',
+        }) as HTMLButtonElement;
 
-        expect(add.disabled).toBe(true);
+        expect(save.disabled).toBe(true);
 
         fireEvent.input(field, { target: { value: '  Typed  ' } });
 
-        expect(add.disabled).toBe(false);
+        expect(save.disabled).toBe(false);
 
-        fireEvent.click(add);
+        fireEvent.click(save);
 
         await waitFor(() =>
             expect(ctx.apply).toHaveBeenCalledWith({
@@ -209,8 +292,8 @@ describe('ColumnsBoard in Writing', () => {
         retroRequest.mockResolvedValue({ card: card(), writersCount: 1 });
 
         const { container } = board();
-        const field = container.querySelector(
-            '[data-test="retro-column-start"] form textarea',
+        const field = openComposer(container, 'start').querySelector(
+            'textarea',
         ) as HTMLTextAreaElement;
 
         fireEvent.change(field, { target: { value: 'Typed without a mouse' } });
@@ -229,6 +312,7 @@ describe('ColumnsBoard in Writing', () => {
         board({ cards: [card()], retro: { isLocked: true } });
 
         expect(screen.queryByLabelText('Add a card…')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Add a card' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Edit card' })).toBeNull();
         expect(
             screen.queryByRole('button', { name: 'Delete card' }),

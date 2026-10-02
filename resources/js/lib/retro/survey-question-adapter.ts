@@ -123,8 +123,8 @@ function textAnswersOf(
 /**
  * A survey of the retro as a `SurveyQuestion`. While the results are hidden
  * from the viewer, no count, voter or answer leaves here, whatever the
- * payload holds. The results of a completed retro still list the options,
- * without figures, for someone who never answered.
+ * payload holds. The server shows the results of a completed retro to
+ * everyone; a payload that hides them still lists the options, without figures.
  */
 export function toSurveyQuestionProps(
     survey: SurveyPayload,

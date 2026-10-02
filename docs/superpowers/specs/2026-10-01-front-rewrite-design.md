@@ -297,7 +297,7 @@ Known limit of B12 with B13: a magic link followed by an e-mail code proves cont
 
 ### 9.1 B1 — what is allowed in phases `actions` and `roti`
 
-Principle: `actions` behaves like `discussing` for everything that touches cards and action items. `roti` is a rating step: the board is read-only, action items stay editable so there is no phase in which an open retro's items cannot be ticked. Surveys are unchanged.
+Principle: `actions` behaves like `discussing` for everything that touches cards and action items. `roti` is a rating step: the board is read-only, action items stay editable on the server so there is no phase in which an open retro's items cannot be ticked. The ROTI screen itself lists no action item, as the mockup: the items are ticked from the action items page, or on the board after "Previous". Surveys are unchanged.
 
 | Capability | Guard (file) | discussing | actions | roti | completed |
 |---|---|---|---|---|---|
@@ -318,7 +318,7 @@ Principle: `actions` behaves like `discussing` for everything that touches cards
 | Timer, settings, lock, guest link, hand-over, delete | guards based on `RetroPhase::isOpen()` | yes | yes | yes | as today |
 | Cards: write, edit, move, group, vote | guards naming `writing`, `grouping`, `voting` | as today | no | no | no |
 | Live cursors (front rule `showsCursors`) | `components/session` container | on | on | off (a pointer on a score reveals a vote, as in voting) | off |
-| Flying reactions (front rule) | retro container | on | on | on | off |
+| Flying reactions (front rule) | retro container | on | on | on | on: the bar is docked under the results of the session end (owner, 2026-10-02, D-112). They stay whispers, never stored: the board itself stays read-only |
 
 `LocksDiscussingRetro` keeps its name in plan 18e (the rename is left to 18g); it reads a new `RetroPhase::takesActionItems(): bool` (`Discussing`, `Actions`, `Roti`).
 

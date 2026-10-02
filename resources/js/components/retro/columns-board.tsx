@@ -388,6 +388,7 @@ function PhoneColumns({
                                 color={column.color}
                                 autoFocus
                                 onAdded={() => setComposing(false)}
+                                onCancel={() => setComposing(false)}
                             />
                         </DrawerContent>
                     </Drawer>

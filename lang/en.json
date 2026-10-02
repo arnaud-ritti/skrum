@@ -472,12 +472,11 @@
     "Name this group": "Name this group",
     "Group name": "Group name",
     "Rename group": "Rename group",
-    "How was this retro?": "How was this retro?",
-    "Time wasted": "Time wasted",
-    "Not really worth it": "Not really worth it",
-    "Break-even": "Break-even",
-    "Good use of time": "Good use of time",
-    "Excellent use of time": "Excellent use of time",
+    "Was this time together worth it?": "Was this time together worth it?",
+    "Waste of time": "Waste of time",
+    "Not very useful": "Not very useful",
+    "OK": "OK",
+    "Useful": "Useful",
     "Team health radar": "Team health radar",
     "No answers": "No answers",
     "Trend across retros": "Trend across retros",
@@ -4143,5 +4142,8 @@
     "Group with another card": "Group with another card",
     "Focus the selected card": "Focus the selected card",
     "Create a password": "Create a password",
-    "Create my account and join :workspace": "Create my account and join :workspace"
+    "Create my account and join :workspace": "Create my account and join :workspace",
+    "1 answer · avg :average": "1 answer · avg :average",
+    ":count answers · avg :average": ":count answers · avg :average",
+    ":statement dropped :delta — worth a topic next retro.": ":statement dropped :delta — worth a topic next retro."
 }

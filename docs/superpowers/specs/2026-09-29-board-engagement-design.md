@@ -109,7 +109,7 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 - Bar with the six quick emoji plus a `+` opening the `frimousse` picker, bottom-centre of the board.
 - Each reaction rises from above the sender's avatar in the presence strip; if its position is unknown, or the retro is anonymous, from a random point near the centre (an avatar origin would reveal who reacted).
 - Same emoji from several senders within the library window gathers into a growing bubble (library default).
-- Available in every phase except `Completed`, only when `reactions_enabled`.
+- Available in every phase, `Completed` included (amended 2026-10-02, front-rewrite spec §9.1), only when `reactions_enabled`.
 - `prefers-reduced-motion`: emoji fade in place instead of flying (library default).
 
 ## 4. Card reactions and comments
