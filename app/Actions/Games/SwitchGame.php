@@ -17,6 +17,7 @@ class SwitchGame
     public function __construct(
         private GameRulesRegistry $gameRulesRegistry,
         private EndGameRound $endGameRound,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     public function handle(GameRoom $room, GamePlayer $host, GameKind $game): void
@@ -46,6 +47,8 @@ class SwitchGame
             $locked->update(['game' => $game]);
 
             (new GameRoomChanged($locked))->sendToOthers();
+
+            $this->announceTeamGameRoom->changed($locked);
         });
     }
 }

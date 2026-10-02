@@ -19,6 +19,7 @@ class EndGameRound
     public function __construct(
         private AwardRoundPoints $awardRoundPoints,
         private GameRulesRegistry $gameRulesRegistry,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     /**
@@ -49,6 +50,8 @@ class EndGameRound
         ];
 
         (new GameRoundEnded($room, $payload))->sendToOthers();
+
+        $this->announceTeamGameRoom->changed($room);
 
         return $payload;
     }

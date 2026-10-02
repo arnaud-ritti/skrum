@@ -33,3 +33,11 @@ export type TeamGameLeaderboardRow = {
     roundsPlayed: number;
     streak: number;
 };
+
+export type TeamGameRoomChangedPayload = {
+    room: GameRoomSummary;
+};
+
+export type TeamGameRoomDeletedPayload = {
+    roomId: string;
+};

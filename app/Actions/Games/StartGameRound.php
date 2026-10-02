@@ -18,6 +18,7 @@ class StartGameRound
         private EndGameRound $endGameRound,
         private PresentGameRound $presentGameRound,
         private ScheduleRoundExpiry $scheduleRoundExpiry,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     /**
@@ -56,6 +57,8 @@ class StartGameRound
             $this->scheduleRoundExpiry->handle($locked, $round);
 
             (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
+
+            $this->announceTeamGameRoom->changed($locked);
 
             return ['round' => $round, 'ended' => $ended];
         });
