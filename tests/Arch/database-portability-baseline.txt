@@ -1,6 +1,4 @@
 app/Actions/Retros/BuildSummaryInput.php|orderByRaw|1
-app/Actions/Search/SearchWorkspaceContent.php|ilike|7
-app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|1
 tests/Feature/Auth/MagicLinkTest.php|reads sql text|3
 tests/Feature/Poker/WorkspacePokerDecksTest.php|driver branch|1
 tests/Feature/Retros/HealthStatementModelsTest.php|driver branch|1

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Search\SearchWorkspaceContent;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
@@ -197,4 +198,40 @@ it('never returns a card of a team the user cannot view', function () {
     $this->actingAs($user)->getJson(route('search.index', ['q' => 'flaky']))
         ->assertOk()
         ->assertJsonMissing(['kind' => 'card']);
+});
+
+it('treats pattern characters as text in every kind of content', function () {
+    [$user, $team] = searcher();
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['title' => 'Plain retro']);
+    $matchedByTask = PokerGame::factory()->for($team)->create(['title' => 'Estimates']);
+    PokerTask::factory()->create(['poker_game_id' => $matchedByTask->id, 'title' => 'Reach 100% coverage']);
+    $nearMissByTask = PokerGame::factory()->for($team)->create(['title' => 'Near miss']);
+    PokerTask::factory()->create(['poker_game_id' => $nearMissByTask->id, 'title' => 'Ticket 1000']);
+    PokerGame::factory()->for($team)->create(['title' => 'Game 100% sure']);
+    PokerGame::factory()->for($team)->create(['title' => 'Game 1001']);
+    Whiteboard::factory()->for($team)->create(['title' => 'Board 100% drawn']);
+    Whiteboard::factory()->for($team)->create(['title' => 'Board 1002']);
+    GameRoom::factory()->for($team)->create(['name' => 'Room 100% fun']);
+    GameRoom::factory()->for($team)->create(['name' => 'Room 1003']);
+    ActionItem::factory()->create(['team_id' => $team->id, 'retro_id' => $retro->id, 'content' => 'Ship 100% of it']);
+    ActionItem::factory()->create(['team_id' => $team->id, 'retro_id' => $retro->id, 'content' => 'Ship 1004 things']);
+    Card::factory()->for($retro)->create(['content' => 'We did 100% of it']);
+    Card::factory()->for($retro)->create(['content' => 'We did 1005 things']);
+
+    expect(searchTitles($user, '100%'))->toEqualCanonicalizing([
+        'Estimates',
+        'Game 100% sure',
+        'Board 100% drawn',
+        'Room 100% fun',
+        'Ship 100% of it',
+        'We did 100% of it',
+    ]);
+});
+
+it('finds a match that is older than more near misses than a kind shows', function () {
+    [$user, $team] = searcher();
+    Retro::factory()->for($team)->create(['title' => 'Budget 100% spent', 'created_at' => now()->subDay()]);
+    Retro::factory()->for($team)->count(SearchWorkspaceContent::PerKind + 1)->sequence(fn ($sequence): array => ['title' => "Budget 100{$sequence->index}"])->create();
+
+    expect(searchTitles($user, '100%'))->toBe(['Budget 100% spent']);
 });

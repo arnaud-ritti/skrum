@@ -27,7 +27,7 @@ class AdminCandidatesController extends Controller
             ->where('is_instance_admin', false)
             ->where(fn (Builder $query) => $query
                 ->whereContains('name', $term)
-                ->orWhereLike('email', '%'.$this->escapeLike($term).'%'))
+                ->orWhereLike('email_key', SearchText::pattern($term), caseSensitive: true))
             ->orderBy('name')
             ->orderBy('id')
             ->lazy(self::RowsPerRead)
@@ -42,10 +42,5 @@ class AdminCandidatesController extends Controller
             ]);
 
         return response()->json(['candidates' => $candidates->all()]);
-    }
-
-    private function escapeLike(string $value): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 }

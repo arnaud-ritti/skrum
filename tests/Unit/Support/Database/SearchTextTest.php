@@ -38,3 +38,15 @@ it('checks a text exactly, whatever the case', function (string $text, string $t
 it('finds nothing in a missing text', function () {
     expect(SearchText::contains(null, 'a'))->toBeFalse();
 });
+
+it('tells whether a term holds a character the pattern loosens', function (string $term, bool $expected) {
+    expect(SearchText::hasWildcard($term))->toBe($expected);
+})->with([
+    ['Été 2026', false],
+    ['100%', true],
+    ['a_b', true],
+    ['a\\b', true],
+    ['a*b', true],
+    ['what?', true],
+    ['[x]', true],
+]);

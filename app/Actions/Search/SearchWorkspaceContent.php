@@ -8,11 +8,12 @@ use App\Models\Card;
 use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
+use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Whiteboard;
-use App\Support\LikePattern;
+use App\Support\Database\SearchText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -30,6 +31,14 @@ use Illuminate\Support\Str;
 class SearchWorkspaceContent
 {
     public const int PerKind = 5;
+
+    private const int RowsPerRead = 20;
+
+    /**
+     * SQL answers every true match and, for a term holding a wildcard character, some near ones:
+     * each kind is read newest first until PerKind true matches are found, and never past this.
+     */
+    private const int MaxRowsRead = 200;
 
     /**
      * Every query starts from the ids of the given teams: what the caller
@@ -49,29 +58,42 @@ class SearchWorkspaceContent
         $teamIds = $teams->modelKeys();
         $teamsById = $teams->keyBy('id');
         $workspace = $teams->first()->workspace;
-        $pattern = LikePattern::contains($term);
+        $termHasWildcard = SearchText::hasWildcard($term);
 
-        $retros = Retro::query()->whereIn('team_id', $teamIds)->where('title', 'ilike', $pattern)
-            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+        $retros = Retro::query()->whereIn('team_id', $teamIds)->whereContains('title', $term)
+            ->latest()->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (Retro $retro): bool => SearchText::contains($retro->title, $term))
+            ->take(self::PerKind)->collect()
             ->map(fn (Retro $retro): array => $this->result('retro', $retro->id, $retro->title, $teamsById[$retro->team_id], route('retros.show', $retro)));
 
         $games = PokerGame::query()->whereIn('team_id', $teamIds)
             ->where(fn (Builder $query) => $query
-                ->where('title', 'ilike', $pattern)
-                ->orWhereHas('tasks', fn (Builder $tasks) => $tasks->where('title', 'ilike', $pattern)))
-            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+                ->whereContains('title', $term)
+                ->orWhereHas('tasks', fn (Builder $tasks) => $tasks->whereContains('title', $term)))
+            ->latest()->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (PokerGame $game): bool => ! $termHasWildcard
+                || SearchText::contains($game->title, $term)
+                || $game->tasks()->whereContains('title', $term)->get(['id', 'title'])
+                    ->contains(fn (PokerTask $task): bool => SearchText::contains($task->title, $term)))
+            ->take(self::PerKind)->collect()
             ->map(fn (PokerGame $game): array => $this->result('poker', $game->id, $game->title, $teamsById[$game->team_id], route('poker.show', $game)));
 
-        $boards = Whiteboard::query()->whereIn('team_id', $teamIds)->where('title', 'ilike', $pattern)
-            ->latest('updated_at')->limit(self::PerKind)->get(['id', 'team_id', 'title'])
+        $boards = Whiteboard::query()->whereIn('team_id', $teamIds)->whereContains('title', $term)
+            ->latest('updated_at')->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (Whiteboard $board): bool => SearchText::contains($board->title, $term))
+            ->take(self::PerKind)->collect()
             ->map(fn (Whiteboard $board): array => $this->result('whiteboard', $board->id, $board->title, $teamsById[$board->team_id], route('whiteboards.show', $board)));
 
-        $rooms = GameRoom::query()->whereIn('team_id', $teamIds)->where('name', 'ilike', $pattern)
-            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'name'])
+        $rooms = GameRoom::query()->whereIn('team_id', $teamIds)->whereContains('name', $term)
+            ->latest()->orderByDesc('id')->select(['id', 'team_id', 'name'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (GameRoom $room): bool => SearchText::contains($room->name, $term))
+            ->take(self::PerKind)->collect()
             ->map(fn (GameRoom $room): array => $this->result('game', $room->id, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room)));
 
-        $items = ActionItem::query()->whereIn('team_id', $teamIds)->where('content', 'ilike', $pattern)
-            ->latest()->limit(self::PerKind)->get(['id', 'team_id', 'content'])
+        $items = ActionItem::query()->whereIn('team_id', $teamIds)->whereContains('content', $term)
+            ->latest()->orderByDesc('id')->select(['id', 'team_id', 'content'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (ActionItem $item): bool => SearchText::contains($item->content, $term))
+            ->take(self::PerKind)->collect()
             ->map(fn (ActionItem $item): array => $this->result('action', $item->id, $item->content, $teamsById[$item->team_id], route('workspaces.actionItems.index', ['workspace' => $workspace, 'item' => $item->id])));
 
         $ownParticipantIds = Participant::query()->where('user_id', $user->id)->select('id');
@@ -80,11 +102,13 @@ class SearchWorkspaceContent
         $cards = Card::query()
             ->with('retro:id,team_id,title')
             ->whereIn('retro_id', Retro::query()->whereIn('team_id', $teamIds)->select('id'))
-            ->where('content', 'ilike', $pattern)
+            ->whereContains('content', $term)
             ->where(fn (Builder $query) => $query
                 ->whereNotIn('retro_id', $hidingRetroIds)
                 ->orWhereIn('participant_id', $ownParticipantIds))
-            ->latest()->orderByDesc('id')->limit(self::PerKind)->get(['id', 'retro_id', 'content'])
+            ->latest()->orderByDesc('id')->select(['id', 'retro_id', 'content'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (Card $card): bool => SearchText::contains($card->content, $term))
+            ->take(self::PerKind)->collect()
             ->map(fn (Card $card): array => $this->result(
                 'card',
                 $card->id,

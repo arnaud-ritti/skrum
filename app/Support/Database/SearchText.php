@@ -30,6 +30,14 @@ class SearchText
         return '%'.str_replace(self::Wildcards, '_', self::lower($term)).'%';
     }
 
+    /**
+     * True when pattern() loosened the term: SQL may then answer a near match.
+     */
+    public static function hasWildcard(string $term): bool
+    {
+        return array_any(self::Wildcards, fn (string $wildcard): bool => str_contains($term, $wildcard));
+    }
+
     public static function contains(?string $text, string $term): bool
     {
         return $text !== null && str_contains(self::lower($text), self::lower($term));
