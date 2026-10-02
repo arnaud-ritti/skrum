@@ -279,3 +279,39 @@ The plan left it to the reading of `Plan08bHealthCheckTest.php` against `HealthC
 | `ol > li > [role="radiogroup"]` (`p08bBoardStatements`) | — | test: `ol > li [role="radiogroup"]`, because the README imposes the `fieldset` and its `legend` between the two |
 
 No test was removed.
+
+## Task R6 — Icebreaker phase in the new frame
+
+`board.tsx` mounts the old stage (`icebreaker-stage.tsx`, `icebreaker-game.tsx`) in the body of the session shell, in place of the columns; Task R3 had already moved the mount with the board, so this task checks it, tests it and captures it. One change was needed: `GamePanel` drew its own `main` inside the `main` of the shell (two landmarks on the page). It now takes `landmark` (default `true`, the game room is unchanged); the icebreaker passes `false` (commit `fix(games): …`). Task G6 rewrites the stage on the mockup and deletes the two retro files.
+
+### Parity (brief 02 row 71; brief 06 §3 rows 57–63)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 71 / 57 | The stage replaces the columns in the phase `icebreaker`; a spinner while `board.icebreaker` is null | `BoardBody` returns `IcebreakerStage`: no column, no add-column form, no health form. `section[aria-label="Icebreaker game"]` | yes |
+| 58 | Slim bar "Icebreaker", the game select of the facilitator (`[aria-label="Game"]`) or the game badge, "History" | old `icebreaker-game.tsx`, unchanged | yes |
+| 59 | The game runs on the retro's presence channel; players unknown to the snapshot are fetched again | old hooks, unchanged | yes |
+| 60 | Live cursors over the stage | `BoardCursors` on the stage element; the header's cursor toggle hides one's own | yes |
+| 61 | Not mounted: room timer menu, copy link, invite, room menu, presence strip, "Reset scores" | unchanged: the chrome is the board's (`SessionShell`) | yes |
+| 62 | The board timer is the game timer; "Time's up" in the stage | `withBoardTimer`, unchanged; the header's `SessionTimer` is the only timer control (in the facilitator bar below `md`). `TimeUpBadge` is not added (G6) | yes |
+| 63 | "Games we played" in the results | untouched | yes |
+| — | Reaction bar and facilitator bar ("Lock board", "Writing") over the stage | the board's; the body keeps the room of the two bars under the game (`pb-32`) | yes |
+
+### Places left
+
+None: the plan names none for this task.
+
+### Differences with the mockup
+
+Captures `retro-board-icebreaker-*` (facilitator, before the round) and `retro-board-icebreaker-round-*` (participant, a Hangman round running). Looked at by the implementer: light 1440 EN (both names), dark 390 EN and dark 390 FR. The stage is the old one on purpose (plan, Task R6): it is not compared element by element with `ScreenIcebreaker/preview.html`; Task G6 builds that mockup.
+
+| Difference | Covered by |
+|---|---|
+| The whole stage: the mockup's game cards on the left, the stage card, the players column, the `TimeUpBadge` | Task G6 (the plan keeps the old stage until then) |
+| The game is chosen in a select, not by cards | Task G6 (`P13d-06a`, `06b`, `06c` change there) |
+| The slim bar "Icebreaker · game · History" has no background of its own over the dotted ground | Task G6 |
+| At 390 the players list is under the fold, behind the reaction bar until one scrolls | Task G6 / R13 |
+
+### Browser tests changed
+
+None. `Plan13dIcebreakerScoresInvitesTest.php` passes unchanged. `RetroPagesVisualTest.php` has two more datasets (the captures above); its check "one `main`" is what found the nested landmark.

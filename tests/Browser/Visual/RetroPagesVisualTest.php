@@ -2,11 +2,14 @@
 
 use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\ColumnColor;
+use App\Enums\GameKind;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\Card;
 use App\Models\Column;
+use App\Models\GamePlayer;
+use App\Models\GameRoom;
 use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -55,7 +58,7 @@ it('[P18e-R2-01] renders the guest join, the invalid guest link and the ended se
  *     2: User
  * }
  */
-function p18eRetroVisualBoard(RetroPhase $phase): array
+function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -136,13 +139,28 @@ function p18eRetroVisualBoard(RetroPhase $phase): array
         }
     }
 
+    if ($phase === RetroPhase::Icebreaker) {
+        $retro->update(['icebreaker_enabled' => true, 'icebreaker_game' => GameKind::Hangman]);
+        $room = GameRoom::factory()->icebreaker($retro)->game(GameKind::Hangman)->create([
+            'id' => '0199b000-0000-7000-8000-000000000030',
+        ]);
+
+        foreach ($people as [, $participant]) {
+            GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
+        }
+
+        if ($icebreakerRound) {
+            activeGameRound($room, ['word' => 'sprint', 'picked_letters' => ['s', 'e', 'a'], 'revealed_positions' => [0], 'misses' => 2]);
+        }
+    }
+
     return [$retro->fresh(), $people[0][0], $people[1][0]];
 }
 
-it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false) {
+it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase);
+    [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase, $icebreakerRound);
     $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous]);
     $viewer = $asFacilitator ? $facilitator : $member;
 
@@ -173,6 +191,8 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
 })->with([
     'facilitator, health check' => ['retro-board-health', RetroPhase::HealthCheck, true, false],
     'participant, health check, locked' => ['retro-board-health-locked', RetroPhase::HealthCheck, false, true],
+    'facilitator, icebreaker, before the round' => ['retro-board-icebreaker', RetroPhase::Icebreaker, true, false],
+    'participant, icebreaker, round running' => ['retro-board-icebreaker-round', RetroPhase::Icebreaker, false, false, false, true],
     'facilitator, writing' => ['retro-board-facilitator', RetroPhase::Writing, true, false],
     'facilitator, writing, anonymous' => ['retro-board-anonymous', RetroPhase::Writing, true, false, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],

@@ -10,6 +10,56 @@ vi.mock('@/hooks/use-retro-board', () => ({
     useRetroBoard: () => state.value,
 }));
 
+vi.mock('@/components/retro/icebreaker-game', async () => {
+    const { GamePanel } = await import('@/components/games/game-panel');
+    const { RoomProvider } = await import('@/components/games/room-context');
+
+    return {
+        IcebreakerGame: ({
+            snapshot,
+        }: {
+            snapshot: { room: { id: string } };
+        }) => (
+            <RoomProvider value={{ snapshot, lastEnded: null } as never}>
+                <section
+                    aria-label="Icebreaker game"
+                    data-room={snapshot.room.id}
+                >
+                    <GamePanel landmark={false} />
+                </section>
+            </RoomProvider>
+        ),
+    };
+});
+
+vi.mock('@/components/games/round-end-card', () => ({
+    RoundEndCard: () => <p>Ready to play?</p>,
+}));
+
+vi.mock('@/components/games/room-sidebar', () => ({
+    RoomSidebar: () => <p>Players</p>,
+}));
+
+function icebreakerSnapshot(
+    icebreaker: unknown = { room: { id: 'room-1' }, round: null },
+) {
+    return retroSnapshot({
+        retro: {
+            phase: 'icebreaker',
+            icebreakerEnabled: true,
+            phases: [
+                'icebreaker',
+                'writing',
+                'grouping',
+                'voting',
+                'discussing',
+                'completed',
+            ],
+        },
+        icebreaker: icebreaker as never,
+    });
+}
+
 function given(
     overrides: Record<string, unknown> = {},
     snapshot = retroSnapshot(),
@@ -117,5 +167,67 @@ describe('Board', () => {
         expect(
             screen.queryByRole('button', { name: 'Facilitator menu' }),
         ).toBeNull();
+    });
+
+    describe('in the Icebreaker phase', () => {
+        it('shows the game in place of the columns, in the one main of the shell', () => {
+            const { container } = given({}, icebreakerSnapshot());
+
+            const stage = screen.getByRole('region', {
+                name: 'Icebreaker game',
+            });
+
+            expect(stage.getAttribute('data-room')).toBe('room-1');
+            expect(stage.textContent).toContain('Ready to play?');
+            expect(screen.getAllByRole('main')).toHaveLength(1);
+            expect(
+                container
+                    .querySelector('[data-slot="retro-body"]')
+                    ?.contains(stage),
+            ).toBe(true);
+            expect(
+                container.querySelectorAll('[data-test^="retro-column-"]'),
+            ).toHaveLength(0);
+            expect(
+                screen.queryByRole('button', { name: 'Add column' }),
+            ).toBeNull();
+        });
+
+        it('keeps the chrome of the board: the Icebreaker step, the timer, the facilitator bar', () => {
+            const { container } = given({}, icebreakerSnapshot());
+            const header = container.querySelector('header') as HTMLElement;
+
+            expect(
+                header.querySelector('[aria-current="step"]')?.textContent,
+            ).toContain('Icebreaker');
+            expect(
+                screen.getAllByRole('button', { name: 'Timer' }),
+            ).toHaveLength(1);
+            expect(
+                header.contains(screen.getByRole('button', { name: 'Timer' })),
+            ).toBe(true);
+            expect(
+                screen.getByRole('toolbar', { name: 'Facilitation tools' }),
+            ).toBeTruthy();
+        });
+
+        it('leaves the room of the facilitator bar under the game', () => {
+            const { container } = given({}, icebreakerSnapshot());
+
+            expect(
+                container.querySelector('[data-slot="retro-body"]')?.className,
+            ).toContain('pb-32');
+        });
+
+        it('waits with a spinner until the game has loaded', () => {
+            given({}, icebreakerSnapshot(null));
+
+            expect(
+                screen.getByRole('status', { name: 'Loading' }),
+            ).toBeTruthy();
+            expect(
+                screen.queryByRole('region', { name: 'Icebreaker game' }),
+            ).toBeNull();
+        });
     });
 });
