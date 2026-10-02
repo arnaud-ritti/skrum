@@ -76,13 +76,13 @@ it('[P04-01] creates a Start, Stop, Continue retro from the team page', function
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Sprint 12 retro')
         ->assertSee('Start, Stop, Continue')
-        ->click('[role="dialog"] li button:has-text("Start, Stop, Continue")')
-        ->assertSeeIn('[role="dialog"] li button[aria-pressed="true"]', 'Start, Stop, Continue')
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header > h1', 'Sprint 12 retro')

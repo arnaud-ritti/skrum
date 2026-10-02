@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
@@ -9,8 +10,10 @@ import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
-import { NewRetroDialog } from '@/components/teams/new-retro-dialog';
 import { PokerGamesSection } from '@/components/teams/poker-games-section';
+import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
+import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
+import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { WhiteboardsSection } from '@/components/teams/whiteboards-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,6 +87,7 @@ export default function ShowTeam({
     openActionItemCount,
     retros,
     templateCategories,
+    topTemplates,
     catalogue,
     canCreateRetro,
     healthStatements,
@@ -101,16 +105,46 @@ export default function ShowTeam({
     whiteboardGallery,
 }: Props) {
     const { t } = useTrans();
+    const { currentWorkspace } = usePage().props;
+    const newSessionIntent = useNewSessionIntent();
     const params = { workspace: workspace.slug, team: team.id };
+    const canManageTemplates =
+        currentWorkspace?.role === 'owner' ||
+        currentWorkspace?.role === 'admin';
 
     return (
         <>
             <Head title={team.name} />
             <div className="max-w-2xl space-y-8 p-4">
-                <Heading
-                    title={team.name}
-                    description={t('Retrospectives of this team')}
-                />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <Heading
+                        title={team.name}
+                        description={t('Retrospectives of this team')}
+                    />
+                    <NewSessionDialog
+                        trigger={
+                            <Button>
+                                <Plus aria-hidden />
+                                {t('New session')}
+                            </Button>
+                        }
+                        team={team}
+                        intent={newSessionIntent}
+                        retro={
+                            canCreateRetro
+                                ? retroSessionForm({
+                                      workspaceSlug: workspace.slug,
+                                      categories: templateCategories,
+                                      catalogue,
+                                      topTemplates,
+                                      llm,
+                                      icebreakerGames,
+                                      canSaveTemplate: canManageTemplates,
+                                  })
+                                : undefined
+                        }
+                    />
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" asChild>
@@ -168,17 +202,6 @@ export default function ShowTeam({
 
                 <section className="space-y-3">
                     <Heading variant="small" title={t('Retrospectives')} />
-
-                    {canCreateRetro && (
-                        <NewRetroDialog
-                            workspaceSlug={workspace.slug}
-                            teamId={team.id}
-                            categories={templateCategories}
-                            catalogue={catalogue}
-                            llm={llm}
-                            icebreakerGames={icebreakerGames}
-                        />
-                    )}
 
                     {retros.length === 0 && (
                         <p className="text-muted-foreground">

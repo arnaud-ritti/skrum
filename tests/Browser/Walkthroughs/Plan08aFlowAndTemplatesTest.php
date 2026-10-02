@@ -161,56 +161,60 @@ function p08aOpenSettings(mixed $page): mixed
 it('[P08a-01a] prefills the title and filters the template catalogue by search and by category', function () {
     $team = Team::factory()->create();
     $alice = p08aMember($team);
-    $templates = '[role="dialog"] li button';
+    $picker = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"]';
+    $templates = "{$picker} [role=\"radio\"]:not([data-template-id=\"custom\"])";
+    $blank = "{$picker} [role=\"radio\"][data-template-id=\"custom\"]";
     $all = '[role="dialog"] [aria-label="Category"] button:first-child';
     $themed = '[role="dialog"] [aria-label="Category"] button:has-text("Themed & fun")';
     $search = '[aria-label="Search templates"]';
-    $preview = '[role="dialog"] div:has(> h3:has-text("Preview"))';
+    $preview = '[role="dialog"] section[aria-label="Template preview"]';
     $prefilledTitle = "document.querySelector('#new-retro-title').value === 'Retro ' + new Date().toLocaleDateString('en', { dateStyle: 'medium' })";
-    $swatches = "[...[...document.querySelectorAll('[role=\"dialog\"] h3')].find((heading) => heading.textContent === 'Preview').parentElement.querySelectorAll('li > span')].map((swatch) => [...swatch.classList].find((name) => name.startsWith('bg-'))).join(',')";
+    $swatches = "[...document.querySelectorAll('[role=\"dialog\"] section[aria-label=\"Template preview\"] [data-slot=\"template-mini-board\"] > li')].map((column) => [...column.classList].find((name) => name.startsWith('col-'))).join(',')";
 
     $page = $this->signIn($alice, p08aTeamPath($team));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->assertScript($prefilledTitle, true)
-        ->assertSeeIn('[role="dialog"]', 'Common templates')
-        ->assertSeeIn('[role="dialog"]', 'More templates')
-        ->assertCount($templates, 53)
-        ->assertCount("{$templates}:has-text(\"Empty board\")", 1)
+        ->assertCount("{$picker} [role=\"radio\"]", 5)
+        ->click('Browse')
+        ->assertCount($templates, 52)
+        ->assertCount($blank, 1)
+        ->assertSeeIn($blank, 'Start from scratch')
         ->assertAttribute($all, 'aria-pressed', 'true');
 
     $page->fill($search, 'sail')
         ->assertCount($templates, 1)
         ->assertSeeIn($templates, 'Sailboat')
-        ->assertSeeIn($templates, 'Themed & fun')
-        ->assertSeeIn($templates, 'What anchors are holding us back?')
+        ->click($templates)
+        ->assertAttribute($templates, 'aria-checked', 'true')
         ->assertSeeIn($preview, 'Sailboat')
-        ->assertCount("{$preview} li", 4)
+        ->assertSeeIn($preview, 'Themed & fun')
+        ->assertCount("{$preview} [data-slot=\"template-mini-board\"] > li", 4)
         ->assertSeeIn($preview, 'What anchors are holding us back?')
         ->assertSeeIn($preview, 'What slows us down and adds drag every sprint')
         ->assertSeeIn($preview, 'What is our ideal island destination?')
-        ->assertScript($swatches, 'bg-emerald-500,bg-rose-500,bg-amber-500,bg-sky-500');
+        ->assertScript($swatches, 'col-moss,col-coral,col-sun,col-sky');
 
     $page->fill($search, 'no such template')
-        ->assertSeeIn('[role="dialog"]', 'No templates match your search.')
+        ->assertSeeIn('[role="dialog"]', 'No template matches "no such template"')
         ->assertNotPresent($templates)
         ->fill($search, '')
-        ->assertCount($templates, 53);
+        ->assertCount($templates, 52);
 
     $page->click($themed)
         ->assertAttribute($themed, 'aria-pressed', 'true')
         ->assertAttribute($all, 'aria-pressed', 'false')
         ->assertCount($templates, 9)
         ->assertCount("{$templates}:has-text(\"Sailboat\")", 1)
-        ->assertNotPresent("{$templates}:has-text(\"Empty board\")")
+        ->assertCount($blank, 1)
         ->assertNotPresent("{$templates}:has-text(\"Start, Stop, Continue\")")
         ->click($all)
-        ->assertCount($templates, 53)
-        ->click("{$templates}:has-text(\"Empty board\")")
-        ->assertSeeIn($preview, 'Custom')
-        ->assertSeeIn($preview, 'Start with an empty board and add your own columns.');
+        ->assertCount($templates, 52)
+        ->click($blank)
+        ->assertSeeIn($preview, 'Start from scratch')
+        ->assertSeeIn($preview, 'An empty board: add your own columns.');
 
     expect(Retro::query()->count())->toBe(0);
 });
@@ -218,19 +222,19 @@ it('[P08a-01a] prefills the title and filters the template catalogue by search a
 it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote limit from the creation dialog', function () {
     $team = Team::factory()->create();
     $alice = p08aMember($team);
-    $templates = '[role="dialog"] li button';
+    $templates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:not([data-template-id="custom"])';
 
     $page = $this->signIn($alice, p08aTeamPath($team));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Sprint 14 retro')
+        ->click('Browse')
         ->fill('[aria-label="Search templates"]', 'sail')
         ->assertCount($templates, 1)
         ->click($templates)
-        ->assertAttribute($templates, 'aria-pressed', 'true')
-        ->click('[role="dialog"] button:has-text("Settings")')
+        ->assertAttribute($templates, 'aria-checked', 'true')
         ->assertVisible('#new-retro-icebreaker')
         ->assertAttribute('#new-retro-icebreaker', 'aria-checked', 'false')
         ->assertAttribute('#new-retro-health-check', 'aria-checked', 'false')
@@ -348,23 +352,23 @@ it('[P08a-07c] starts a retro from a workspace template found under its category
     $team = Team::factory()->create();
     $alice = p08aMember($team);
     $template = p08aTemplate($team->workspace);
-    $templates = '[role="dialog"] li button';
-    $preview = '[role="dialog"] div:has(> h3:has-text("Preview"))';
-    $firstTemplate = "document.querySelector('[role=\"dialog\"] li button').innerText.includes('Team pulse')";
+    $templates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:not([data-template-id="custom"])';
+    $preview = '[role="dialog"] section[aria-label="Template preview"]';
 
     $page = $this->signIn($alice, p08aTeamPath($team));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Pulse check')
-        ->assertSeeIn('[role="dialog"]', 'Workspace templates')
-        ->assertCount($templates, 54)
+        ->click('Browse')
+        ->assertCount($templates, 52)
         ->click('[role="dialog"] [aria-label="Category"] button:has-text("Team & mood")')
-        ->assertCount($templates, 9)
-        ->assertScript($firstTemplate, true)
+        ->assertCount($templates, 8)
+        ->click('[role="dialog"] [role="tab"]:has-text("My workspace")')
+        ->assertCount($templates, 1)
         ->click("{$templates}:has-text(\"Team pulse\")")
-        ->assertAttribute("{$templates}:has-text(\"Team pulse\")", 'aria-pressed', 'true')
+        ->assertAttribute("{$templates}:has-text(\"Team pulse\")", 'aria-checked', 'true')
         ->assertSeeIn($preview, 'Team pulse')
         ->assertSeeIn($preview, 'How much energy the sprint left us')
         ->assertSeeIn($preview, 'What kept slowing us down')

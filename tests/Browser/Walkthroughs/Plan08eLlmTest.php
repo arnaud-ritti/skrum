@@ -123,10 +123,9 @@ it('[P08e-01a] offers no AI summary switch in the new retrospective dialog witho
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
-        ->click('[role="dialog"] [data-slot="collapsible-trigger"]')
         ->assertVisible('#new-retro-votes-auto')
         ->assertNotPresent('#new-retro-ai-summary')
         ->assertDontSee('Automatic AI summary');
@@ -249,13 +248,12 @@ it('[P08e-04a] turns the AI summary on by default in the new retrospective dialo
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Sprint 13 retro')
         ->assertSee('Start, Stop, Continue')
-        ->click('[role="dialog"] li button:has-text("Start, Stop, Continue")')
-        ->click('[role="dialog"] [data-slot="collapsible-trigger"]')
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
         ->assertVisible('#new-retro-ai-summary')
         ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'true')
         ->assertSeeIn('[role="dialog"]', 'Automatic AI summary')
@@ -698,13 +696,12 @@ it('[P08e-10a] creates a retro with the AI summary switched off in the dialog', 
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Sprint 14 retro')
         ->assertSee('Start, Stop, Continue')
-        ->click('[role="dialog"] li button:has-text("Start, Stop, Continue")')
-        ->click('[role="dialog"] [data-slot="collapsible-trigger"]')
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
         ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'true')
         ->click('#new-retro-ai-summary')
         ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'false')
