@@ -77,9 +77,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
 
     public function avatarUrl(): string
     {
-        $seed = substr(hash_hmac('sha256', $this->id, (string) config('app.key')), 0, 32);
+        return route('avatars.show', $this->avatarSeed(), absolute: false);
+    }
 
-        return route('avatars.show', $seed, absolute: false);
+    public function avatarSeed(): string
+    {
+        return substr(hash_hmac('sha256', $this->id, (string) config('app.key')), 0, 32);
     }
 
     public function preferredLocale(): ?string
