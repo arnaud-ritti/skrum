@@ -4395,5 +4395,11 @@
     "Blocked: nothing lets this admin require it": "Bloqueado: nada permite a este administrador exigirlo",
     "Required and in force": "Exigido y en vigor",
     "Stored but not in force": "Guardado pero sin efecto",
-    "Narrow container": "Contenedor estrecho"
+    "Narrow container": "Contenedor estrecho",
+    "Retro recap": "Resumen de la retro",
+    "Show retro recaps in the notification bell": "Mostrar los resúmenes de retro en la campana de notificaciones",
+    "Email me the results of retrospectives": "Enviarme por correo los resultados de las retrospectivas",
+    "Accessibility": "Accesibilidad",
+    "Single-key shortcuts": "Atajos de una sola tecla",
+    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "Si están desactivados, los atajos de una sola letra, dígito o signo no hacen nada. Los atajos con ⌘ o Ctrl, Intro, Escape y las flechas siguen funcionando."
 }

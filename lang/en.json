@@ -4173,5 +4173,11 @@
     "Blocked: nothing lets this admin require it": "Blocked: nothing lets this admin require it",
     "Required and in force": "Required and in force",
     "Stored but not in force": "Stored but not in force",
-    "Narrow container": "Narrow container"
+    "Narrow container": "Narrow container",
+    "Retro recap": "Retro recap",
+    "Show retro recaps in the notification bell": "Show retro recaps in the notification bell",
+    "Email me the results of retrospectives": "Email me the results of retrospectives",
+    "Accessibility": "Accessibility",
+    "Single-key shortcuts": "Single-key shortcuts",
+    "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working.": "When off, shortcuts made of a single letter, digit or sign do nothing. Shortcuts with ⌘ or Ctrl, Enter, Escape and the arrows keep working."
 }
