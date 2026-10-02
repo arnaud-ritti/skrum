@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
+use App\Actions\Notifications\BellNotifications;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
@@ -77,7 +78,7 @@ class HandleInertiaRequests extends Middleware
             'currentTeam' => fn (): ?array => $this->currentTeam($teamResolver),
             'notifications' => fn (): ?array => $request->user() === null
                 ? null
-                : ['unreadCount' => $request->user()->unreadNotifications()->count()],
+                : ['unreadCount' => resolve(BellNotifications::class)->unreadCount($request->user())],
             'actionItems' => fn (): ?array => $this->actionItemCounts($request),
         ];
     }

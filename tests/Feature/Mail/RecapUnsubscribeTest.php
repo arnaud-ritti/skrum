@@ -98,6 +98,7 @@ it('lets the member subscribe again from the settings', function () {
         'action_item_reminders_by_email' => true,
         'action_item_reminders_in_app' => true,
         'recap_emails' => true,
+        'recap_in_app' => true,
     ])->assertSessionHasNoErrors();
 
     expect($user->fresh()->recap_emails)->toBeTrue();

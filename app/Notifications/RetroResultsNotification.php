@@ -48,6 +48,10 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
             return false;
         }
 
+        if ($channel === 'database' && ! $notifiable->recap_in_app) {
+            return false;
+        }
+
         return resolve(RetroResultsRecipients::class)->isRecipient($retro, $notifiable);
     }
 

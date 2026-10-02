@@ -16,6 +16,7 @@ class ListNotifications
     public const int PerPage = 20;
 
     public function __construct(
+        private BellNotifications $bellNotifications,
         private PresentActionItemNotifications $presentActionItemNotifications,
         private PresentRecapNotifications $presentRecapNotifications,
         private PresentInvitationNotifications $presentInvitationNotifications,
@@ -35,7 +36,7 @@ class ListNotifications
      */
     public function handle(User $user, ?string $before): array
     {
-        $query = $user->notifications()->orderByDesc('id')->limit(self::PerPage + 1);
+        $query = $this->bellNotifications->query($user)->orderByDesc('id')->limit(self::PerPage + 1);
 
         if ($before !== null) {
             /** @var DatabaseNotification $cursor */
@@ -75,7 +76,7 @@ class ListNotifications
                 ])
                 ->values()
                 ->all(),
-            'unreadCount' => $user->unreadNotifications()->count(),
+            'unreadCount' => $this->bellNotifications->unreadCount($user),
             'hasMore' => $fetched->count() > self::PerPage,
         ];
     }

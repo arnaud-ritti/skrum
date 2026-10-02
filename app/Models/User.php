@@ -46,12 +46,13 @@ use SensitiveParameter;
  * @property bool $action_item_reminders_by_email
  * @property bool $action_item_reminders_in_app
  * @property bool $recap_emails
+ * @property bool $recap_in_app
  * @property bool $single_key_shortcuts
  * @property string|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'single_key_shortcuts'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
@@ -69,6 +70,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         'action_item_reminders_by_email' => true,
         'action_item_reminders_in_app' => true,
         'recap_emails' => true,
+        'recap_in_app' => true,
         'single_key_shortcuts' => true,
     ];
 
@@ -88,6 +90,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'action_item_reminders_by_email' => 'boolean',
             'action_item_reminders_in_app' => 'boolean',
             'recap_emails' => 'boolean',
+            'recap_in_app' => 'boolean',
             'single_key_shortcuts' => 'boolean',
         ];
     }

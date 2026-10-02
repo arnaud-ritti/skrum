@@ -128,6 +128,45 @@ it('hides the ROTI of a recap under three votes', function () {
     expect(bellOf($facilitator)[0]['roti'])->toBeNull();
 });
 
+it('neither lists nor counts a recap for a user who turned recaps off in the bell', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 42']);
+    [$facilitator] = retroFacilitator($retro);
+    $other = teamMember($retro->team);
+    $item = ActionItem::factory()->withoutRetro($retro->team, $facilitator)->assignedTo($facilitator)->create(['due_on' => '2026-10-08']);
+    $facilitator->notify(new ActionItemReminderNotification($item->id, ActionItemReminderKind::Overdue, $retro->team->workspace_id, '2026-10-08'));
+    $facilitator->notify(new RetroResultsNotification($retro->id));
+    $other->notify(new RetroResultsNotification($retro->id));
+
+    $facilitator->forceFill(['recap_in_app' => false])->save();
+
+    $bell = $this->actingAs($facilitator)->getJson(route('notifications.index'))->assertOk();
+
+    expect($bell->json('notifications.*.kind'))->toBe(['overdue'])
+        ->and($bell->json('unreadCount'))->toBe(1)
+        ->and($facilitator->notifications()->count())->toBe(2)
+        ->and(array_column(bellOf($other), 'kind'))->toBe(['recap_ready']);
+
+    $this->actingAs($facilitator)->get(route('notificationPreferences.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('notifications.unreadCount', 1));
+
+    $facilitator->forceFill(['recap_in_app' => true])->save();
+
+    expect(array_column(bellOf($facilitator), 'kind'))->toEqualCanonicalizing(['overdue', 'recap_ready']);
+});
+
+it('stores no recap for a user who turned recaps off in the bell, and still mails it', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [$facilitator] = retroFacilitator($retro);
+    $facilitator->forceFill(['recap_in_app' => false])->save();
+    $notification = new RetroResultsNotification($retro->id);
+
+    $facilitator->notify($notification);
+
+    expect($facilitator->notifications()->count())->toBe(0)
+        ->and($notification->shouldSend($facilitator, 'mail'))->toBeTrue()
+        ->and($notification->shouldSend($facilitator, 'database'))->toBeFalse();
+});
+
 it('notifies the one verified account that owns the invited address', function () {
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create(['name' => 'Acme']);
