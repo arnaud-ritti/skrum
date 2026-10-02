@@ -41,7 +41,7 @@ export function SessionTimer({
     const remaining = useCountdown(endsAt, offset);
     const isMounted = useIsMounted();
 
-    useTimerAlarm(alarm ? endsAt : null, remaining);
+    useTimerAlarm(alarm ? endsAt : null, remaining, offset);
 
     return (
         <Timer

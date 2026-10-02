@@ -47,7 +47,7 @@ export type TimerProps = {
     onPause?: () => void;
     onResume?: () => void;
     onAdd?: (seconds: number) => void;
-    /** Seconds added by the "+" control and the + key; one minute by default. */
+    /** Seconds added by the "+" control and the + key; one minute by default. A multiple of 60: the label counts minutes. */
     addSeconds?: number;
     onDone?: () => void;
     className?: string;

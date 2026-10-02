@@ -2,8 +2,16 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useTrans } from '@/hooks/use-trans';
 
+let sharedContext: AudioContext | null = null;
+
+/** One context for every alarm: a context blocked by autoplay stays suspended and would never close. */
 function beep(): void {
-    const context = new AudioContext();
+    sharedContext ??= new AudioContext();
+
+    const context = sharedContext;
+
+    void context.resume().catch(() => {});
+
     const oscillator = context.createOscillator();
     const gain = context.createGain();
 
@@ -12,7 +20,6 @@ function beep(): void {
     gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.6);
     oscillator.connect(gain).connect(context.destination);
     oscillator.start();
-    oscillator.onended = () => void context.close();
     oscillator.stop(context.currentTime + 0.6);
 }
 
@@ -20,6 +27,7 @@ function beep(): void {
 export function useTimerAlarm(
     endsAt: string | null,
     remaining: number | null,
+    offset: number,
 ): void {
     const { t } = useTrans();
     const announced = useRef<string | null>(null);
@@ -31,7 +39,10 @@ export function useTimerAlarm(
         }
 
         if (remaining !== null && remaining > 0) {
-            sawRunning.current = endsAt;
+            /** `remaining` of the first render after a new end time is computed from a stale clock. */
+            if (new Date(endsAt).getTime() > Date.now() + offset) {
+                sawRunning.current = endsAt;
+            }
 
             return;
         }
@@ -52,5 +63,5 @@ export function useTimerAlarm(
         } catch {
             // Audio can be unavailable or blocked until the user interacts.
         }
-    }, [remaining, endsAt, t]);
+    }, [remaining, endsAt, offset, t]);
 }
