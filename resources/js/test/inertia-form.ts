@@ -1,10 +1,14 @@
 import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
-type FormSlot = { processing: boolean; errors: Record<string, string> };
+type FormState = { processing: boolean; errors: Record<string, string> };
 
-export type FormMockState = FormSlot & {
+type FormSlot = FormState & { clearErrors: () => void };
+
+export type FormMockState = FormState & {
     props: Record<string, unknown>;
+    /** How many times the render prop's `clearErrors` was called. */
+    cleared?: number;
 };
 
 export function createFormState(): FormMockState {
@@ -33,7 +37,13 @@ export function formMock(state: FormMockState) {
         return createElement(
             'form',
             { className, action, method },
-            children({ processing: state.processing, errors: state.errors }),
+            children({
+                processing: state.processing,
+                errors: state.errors,
+                clearErrors: () => {
+                    state.cleared = (state.cleared ?? 0) + 1;
+                },
+            }),
         );
     };
 }

@@ -111,3 +111,35 @@ No mockup draws these screens; they follow the ScreenAuth form pattern (spec §7
 | Forgot: `autocomplete="email"` where the old field had `off` | reported |
 | Verify: "Log out" is a full-width ghost button, where the old page had an underlined link | brief row 20 |
 | The read-only e-mail of the reset page looks like an editable field (`TextField` has no read-only style) | `skrum/text-field` (not in this task's files): reported |
+
+## Task 11.4 — two-factor challenge and password confirmation
+
+Pages `auth/two-factor-challenge` and `auth/confirm-password` render `AuthLayout` (split, with `BrandAside`) themselves and are in `ownLayoutPages`. Containers: `TwoFactorForm`, `ConfirmPasswordForm` (`resources/js/components/auth/`). Captures: `access-two-factor-page-*`, `access-two-factor-recovery-page-*`, `access-confirm-password-page-*`. `components/passkey-verify.tsx` is deleted (no importer left).
+
+### Parity (brief 11 §3, rows 21–25)
+
+| # | Behaviour | Control | Done |
+|---|---|---|---|
+| 21 | 2FA: 6-digit code | `InputOTP name="code"`, digits only, `OTP_MAX_LENGTH`, autofocus, disabled while the code is checked; two groups of three (InputOTP mockup); "Continue" posts to `two-factor.login`; the error under the code | yes |
+| 22 | 2FA: switch to a recovery code and back, clearing the errors and the field | link-style button "login using a recovery code" / "login using an authentication code" after "or you can"; the page title and description follow the mode ("Authentication code", "Recovery code") | yes |
+| 23 | 2FA: recovery code | `TextField name="recovery_code"`, placeholder "Enter recovery code", required; `resetOnSuccess` only in code mode, as before | yes |
+| 24 | Confirm password with a passkey | `PasskeySignIn` on `/passkeys/confirm/options` and `/passkeys/confirm`: "Confirm with passkey", "Confirming...", separator "Or confirm with password"; hidden without WebAuthn | yes |
+| 25 | Confirm password: password submit | `ConfirmPasswordForm`: `#password`, `data-test="confirm-password-button"` named "Confirm password", posts to `password.confirm.store`, `resetOnSuccess=['password']`; the error under the field | yes |
+
+### Places left
+
+None: no mockup shows these two screens.
+
+### Differences with the mockup
+
+No mockup draws these screens; they follow the ScreenAuth form pattern (spec §7) and the InputOTP mockup for the code. The differences of `AuthFrame` listed under Task 11.2 apply as they are.
+
+| Difference | Covered by |
+|---|---|
+| The code is sent by itself at the sixth digit, and "Continue" is disabled while the code is incomplete; the old page did neither | InputOTP README ("submit automatically at the 6th digit", button disabled while incomplete) |
+| A refused code stays in the field, selected and focused, where the old form asked for `resetOnError`; a refused recovery code is still reset | InputOTP README ("avoid: clearing the code on error without selecting it"): reported |
+| No resend line, no "Use another email", no `mail-check` mark of the InputOTP verification card | N: a TOTP code is not sent; the e-mail code is plan 18f (B13) |
+| The field label repeats the page title ("Authentication code", "Recovery code") | brief row 22 keeps the titles; a field needs its label: reported |
+| The recovery code is typed in the mono font | ScreenSecurity (codes in `font-mono`) |
+| The right pane repeats the login promise on a page reached while signed in (password confirmation) | 11-D4; no mockup: reported |
+| Password confirmation: no placeholder (the old "Password" repeated the label) | same as Task 11.3 |

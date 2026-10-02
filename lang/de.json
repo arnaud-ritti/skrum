@@ -3922,6 +3922,8 @@
     "A single provider": "Ein einziger Anbieter",
     "Two providers": "Zwei Anbieter",
     "Email verification, link sent": "E-Mail-Bestätigung, Link gesendet",
+    "Two-factor challenge, authentication code": "Zwei-Faktor-Abfrage, Authentifizierungscode",
+    "Two-factor challenge, recovery code": "Zwei-Faktor-Abfrage, Wiederherstellungscode",
     "Passkey, password confirmation": "Passkey, Passwortbestätigung",
     "The provided password is incorrect.": "Das angegebene Passwort ist falsch.",
     "Welcome back": "Willkommen zurück",

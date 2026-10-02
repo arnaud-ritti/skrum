@@ -3697,6 +3697,8 @@
     "A single provider": "A single provider",
     "Two providers": "Two providers",
     "Email verification, link sent": "Email verification, link sent",
+    "Two-factor challenge, authentication code": "Two-factor challenge, authentication code",
+    "Two-factor challenge, recovery code": "Two-factor challenge, recovery code",
     "Passkey, password confirmation": "Passkey, password confirmation",
     "The provided password is incorrect.": "The provided password is incorrect.",
     "Welcome back": "Welcome back",

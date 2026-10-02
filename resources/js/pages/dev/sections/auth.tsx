@@ -3,6 +3,7 @@ import { AuthAside } from '@/components/auth/auth-aside';
 import { LoginForm } from '@/components/auth/login-form';
 import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
+import { TwoFactorForm } from '@/components/auth/two-factor-form';
 import { VerifyEmailForm } from '@/components/auth/verify-email-form';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import type { BenchGroup } from '@/components/dev/bench';
@@ -66,6 +67,12 @@ export default function AuthSection() {
                 </State>
                 <State label={t('Email verification, link sent')}>
                     <VerifyEmailForm status="verification-link-sent" />
+                </State>
+                <State label={t('Two-factor challenge, authentication code')}>
+                    <TwoFactorForm mode="code" onModeChange={() => {}} />
+                </State>
+                <State label={t('Two-factor challenge, recovery code')}>
+                    <TwoFactorForm mode="recovery" onModeChange={() => {}} />
                 </State>
                 <State label={t('Field in error')}>
                     <PasswordField
