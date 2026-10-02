@@ -243,6 +243,34 @@ const revealed = snapshot({
     },
 });
 
+/** The estimate was saved and written to Jira, then changed there: the facilitator decides. */
+const changedInSource = snapshot({
+    tasks: queue({
+        roundsCount: 2,
+        estimate: '5',
+        external: {
+            source: 'jira',
+            key: 'ATLAS-1287',
+            url: '/dev/design-system/poker-room',
+            isManaged: true,
+            assignee: 'Camille Roux',
+            sourceEstimate: '8',
+            syncState: 'synced',
+            status: 'In Progress',
+            statusCategory: 'in_progress',
+            estimateConflict: { sourceEstimate: '8', matchingCard: '8' },
+        },
+    }).map((task) =>
+        task.estimate !== null && task.external && task.position < 3
+            ? {
+                  ...task,
+                  external: { ...task.external, statusCategory: 'done' },
+              }
+            : task,
+    ),
+    current: revealed.current,
+});
+
 /** A participant between two tasks: nothing to vote on yet. */
 const waiting = snapshot({
     game: { facilitatorPlayerId: camille.id, autoReveal: false },
@@ -296,6 +324,9 @@ export default function PokerRoomSection() {
             </div>
             <div data-slot="poker-room-bench" data-state="revealed">
                 <BenchRoom source={revealed} />
+            </div>
+            <div data-slot="poker-room-bench" data-state="changed-in-source">
+                <BenchRoom source={changedInSource} />
             </div>
             <div data-slot="poker-room-bench" data-state="waiting">
                 <BenchRoom source={waiting} />

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerTask } from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
-import { TaskSourceChip } from './task-source-chip';
+import { TaskSourceChip } from './task-source';
 
 type Props = {
     task: PokerTask;

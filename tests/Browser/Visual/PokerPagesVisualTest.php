@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\ExternalStatusCategory;
+use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Enums\WorkspaceRole;
@@ -9,6 +11,7 @@ use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -193,5 +196,107 @@ it('[P18e-03-11] renders the share dialog of the facilitator without overflow', 
             ->click('[data-slot="poker-share"]')
             ->assertPresent('[data-slot="share-dialog"] #poker-guest-link-access')
             ->assertNotPresent('[data-slot="share-dialog"] input[aria-label]'),
+    );
+});
+
+/**
+ * The Jira board of the Atlas team: two issues, the second one already in the game.
+ */
+function pokerVisualJira(PokerGame $game): void
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Jira);
+    TeamIntegration::factory()->jira()->create(['team_id' => $game->team_id]);
+    fakeJiraTrackerApi([
+        jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page']),
+        jiraTrackerIssue('10002', 'PROJ-2', ['summary' => 'Order history', 'assignee' => ['displayName' => 'Camille Roux'], 'customfield_10016' => 8]),
+        jiraTrackerIssue('10003', 'PROJ-3', ['summary' => 'Refund of a cancelled order after the invoice was sent', 'assignee' => null, 'customfield_10016' => null]),
+    ]);
+}
+
+/**
+ * Below 1024 px the queue is a drawer: the dialog is opened at the width of the capture, from the drawer.
+ */
+it('[P18e-03-12] renders the import dialog with the issues of a sprint without overflow', function () {
+    ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
+    pokerVisualJira($game);
+    openPokerRound($game, $task);
+    importedPokerTask($game, [
+        'title' => 'Order history',
+        'external_id' => '10002',
+        'external_key' => 'PROJ-2',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-2',
+    ]);
+
+    $this->captureVisuals(
+        'poker-room-import',
+        "/poker/{$game->id}",
+        function (string $path, array $options, int $width) use ($facilitator) {
+            $french = str_starts_with($options['locale'], 'fr');
+            $page = pokerVisualRoom($facilitator, $path, $options);
+
+            if ($width < 1024) {
+                $page->resize($width, 844)->click('button:has(svg.lucide-list-todo)');
+            }
+
+            return $page
+                ->click($french ? '#poker-tasks button:has-text("Importer")' : '#poker-tasks button:has-text("Import")')
+                ->click($french ? '[aria-label="Choisir un tableau"]' : '[aria-label="Choose a board"]')
+                ->click('[role="option"]:has-text("Sweep scrum board")')
+                ->assertEnabled($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
+                ->click($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
+                ->click('[role="option"]:has-text("Sprint 31")')
+                ->click($french ? 'Afficher les tickets' : 'Show issues')
+                ->assertCount('[data-slot="poker-import"] [data-slot="import-preview"] li', 3)
+                ->assertAttribute('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-1"]', 'aria-checked', 'true')
+                ->assertDisabled('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-2"]')
+                ->assertNotPresent('[data-slot="poker-import"] [aria-label="Source"]');
+        },
+    );
+});
+
+it('[P18e-03-13] renders the story of an imported task whose estimate changed in Jira without overflow', function () {
+    ['game' => $game, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
+    pokerVisualJira($game);
+    importedPokerTask($game, [
+        'title' => 'Order history',
+        'external_id' => '10002',
+        'external_key' => 'PROJ-2',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-2',
+        'external_status_name' => 'Done',
+        'external_status_category' => ExternalStatusCategory::Done,
+    ]);
+    $task = importedPokerTask($game, [
+        'title' => 'Checkout page',
+        'description' => 'As a customer, I want to pay my basket by card or by transfer.',
+        'external_id' => '10001',
+        'external_key' => 'PROJ-1',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-1',
+        'external_assignee' => 'Camille Roux',
+        'external_estimate' => '8',
+        'external_updated_at' => now(),
+        'external_status_name' => 'In Progress',
+        'external_status_category' => ExternalStatusCategory::InProgress,
+        'estimate' => '5',
+        'estimate_numeric' => 5,
+        'estimated_at' => now()->subHour(),
+        'synced_at' => now()->subHour(),
+    ]);
+    $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+
+    foreach (['Arnaud Ritti' => '5', 'Camille Roux' => '5', 'Théo Martin' => '5', 'Inès Benali' => '8'] as $name => $value) {
+        pokerVote($round, $players[$name], $value);
+    }
+
+    $game->forceFill(['current_task_id' => $task->id])->save();
+
+    $this->captureVisuals(
+        'poker-room-source',
+        "/poker/{$game->id}",
+        fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
+            ->assertPresent('[data-slot="story-card"] a[data-slot="ticket"][href="https://acme.atlassian.net/browse/PROJ-1"]')
+            ->assertPresent('[data-slot="story-card"] [data-slot="estimate-conflict"]')
+            ->assertCount('[data-slot="story-card"] [data-slot="estimate-conflict"] button', 2)
+            ->assertPresent('[data-test="poker-task-row"] [data-slot="badge"] [role="img"]'),
     );
 });

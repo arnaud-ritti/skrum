@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
 import { MarkdownClasses } from './markdown-classes';
 import { TaskFormDialog } from './room-dialogs';
-import { TaskSourceDetails } from './task-source-details';
+import { TaskSourceDetails, TaskSourceLink } from './task-source';
 
 type LoadedRounds =
     | { state: 'loading' }
@@ -136,6 +136,9 @@ export function StoryCard({ task, details, className }: Props) {
             >
                 <div className="flex min-w-0 flex-col gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        {task.external && (
+                            <TaskSourceLink external={task.external} />
+                        )}
                         {position !== null && (
                             <span className="text-xs whitespace-nowrap text-muted-foreground">
                                 {t(':position / :total in this game', {

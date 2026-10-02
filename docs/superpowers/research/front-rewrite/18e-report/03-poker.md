@@ -109,3 +109,30 @@ These dialogs have no mockup of their own (brief §6): they follow `ShareDialog/
 | The game settings are a dialog, not a popover anchored to a header button: the entry is the facilitator menu (browser contract "Settings…") | plan, 3.1b |
 | The deck editor of the settings has no name field: the settings endpoint cannot save a deck | no row: reason F |
 | End and Delete are alert dialogs (`Dialog/README.md`) | — |
+
+## Task 3.1c — Import, source details, sync and conflict
+
+### Parity (brief 03 §3, rows 27–31)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 27 | Import tasks | `Dialog` (`[data-slot="poker-import"]`), "Import tasks": source as a segmented `ToggleGroup` (`[aria-label="Source"]`, when more than one tracker), mode as line `Tabs` (`[aria-label="Import from Jira"]`: Sprint / Query), board search (`#import-container-search`, 300 ms) and its `Select` (`[aria-label="Choose a board"]`), sprint `Select` (`[aria-label="Choose a sprint"]`), `#import-query`, "Show issues", "Select all", one checkbox per issue named by its key, "Already imported", "Showing the first 100. Narrow the query.", "Import n tasks", toast ":imported imported, :skipped skipped." | yes |
+| 28 | Refresh from the source | `[aria-label="More task actions"]` of the queue header, "Refresh from Jira" (3.1a, unchanged) | yes |
+| 29 | Ticket, assignee, source estimate, sync state, status, not found, managed note | ticket link first in the head of the story (`a[data-slot="ticket"]`, new tab); under the title: "Assignee: …", "Jira estimate: …", the badges "Synced to Jira" / "Sync pending" / "Sync failed" / "Not synced: …", ":status in Jira" / "Done in Jira", "Not found in Jira"; the error of a failed sync; the note "The title and description are managed in Jira…". Ticket chip on a queue row (`[data-slot="badge"]`), with the "Done in Jira" mark. A guest gets the ticket and the note only | yes |
+| 30 | Sync again / Retry | outline button in the same line, facilitator, task estimated | yes |
+| 31 | Estimate conflict | warning `Alert` (`[data-slot="estimate-conflict"]`, `role="status"`) "Changed in Jira to 8", "Keep skrum estimate", "Use Jira estimate" (disabled, with ":value is not in this deck.", when the deck has no such card) | yes |
+
+### Places left
+
+None in this task (the `details` slot of the story card, 3.1a, is unchanged and sits between the title and the source block).
+
+### Differences with the mockup
+
+The import dialog, the source block and the conflict have no mockup (brief §6). They follow `Dialog/README.md`, `Tabs`, `ToggleGroup`, `Badge` and the `sk-ticket` of ScreenPokerQueue.
+
+| Difference | Row |
+|---|---|
+| No ticket type badge ("Story") after the ticket of the story | D-16 |
+| The board is a search field and a select, not a `Combobox` (brief row 27): the search is done by the tracker (300 ms debounce, kept), `Combobox` filters its own options and has no query callback, and `[aria-label="Choose a board"]` then `[role="option"]` is the browser contract | no row: reported |
+| The ticket of a queue row shows a check when the issue is done in its tracker; the mockup's ticket has no state | browser contract (`P14d-10a`) |
+| The story of an imported task carries a block the mockup does not draw (assignee, tracker estimate, sync state, status, note): parity rows 29–31 | parity |
