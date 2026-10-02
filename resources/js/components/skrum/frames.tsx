@@ -4,6 +4,7 @@ import {
     AppSidebar,
     type AppSidebarProps,
 } from '@/components/skrum/app-sidebar';
+import { BrandLogo } from '@/components/skrum/brand-logo';
 import { MobileTabBar } from '@/components/skrum/mobile-tab-bar';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { SubNav, type SubNavItem } from '@/components/skrum/sub-nav';
@@ -12,6 +13,7 @@ import {
     SidebarTrigger,
     useSidebar,
 } from '@/components/ui/sidebar';
+import type { BrandIdentity } from '@/types';
 
 function Inset({
     className,
@@ -164,23 +166,31 @@ const dotPattern = {
 };
 
 export function AuthFrame({
+    brand,
     title,
     description,
     aside,
     headerEnd,
+    footer,
     children,
 }: {
+    brand?: BrandIdentity;
     title: string;
     description?: string;
     aside?: ReactNode;
     headerEnd?: ReactNode;
+    footer?: ReactNode;
     children: ReactNode;
 }) {
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-8 p-6 md:p-10">
                 <header className="flex items-center justify-between gap-4">
-                    <SkrumLogo className="h-7 w-auto" />
+                    <BrandLogo
+                        brand={brand}
+                        className="h-12"
+                        fallback={<SkrumLogo className="h-7 w-auto" />}
+                    />
                     {headerEnd}
                 </header>
                 <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6">
@@ -196,6 +206,11 @@ export function AuthFrame({
                     </div>
                     {children}
                 </main>
+                {footer && (
+                    <footer className="text-center text-xs text-muted-foreground">
+                        {footer}
+                    </footer>
+                )}
             </div>
             <aside
                 className="hidden items-center justify-center bg-secondary p-10 lg:flex"
@@ -208,11 +223,13 @@ export function AuthFrame({
 }
 
 export function OnboardingFrame({
+    brand,
     stepper,
     headerEnd,
     aside,
     children,
 }: {
+    brand?: BrandIdentity;
     stepper?: ReactNode;
     headerEnd?: ReactNode;
     aside?: ReactNode;
@@ -221,7 +238,11 @@ export function OnboardingFrame({
     return (
         <div className="flex min-h-svh flex-col">
             <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4 md:px-10">
-                <SkrumLogo className="h-6 w-auto" />
+                <BrandLogo
+                    brand={brand}
+                    className="h-7"
+                    fallback={<SkrumLogo className="h-6 w-auto" />}
+                />
                 <div className="flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1">
                     {stepper}
                 </div>

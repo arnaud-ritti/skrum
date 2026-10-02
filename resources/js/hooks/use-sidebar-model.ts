@@ -17,8 +17,15 @@ function initialsOf(name: string): string {
 }
 
 export function useSidebarModel(active?: NavKey): AppSidebarProps {
-    const { currentWorkspace, currentTeam, teams, workspaces, actionItems } =
-        usePage().props;
+    const {
+        currentWorkspace,
+        currentTeam,
+        teams,
+        workspaces,
+        actionItems,
+        brand,
+        adminUrl,
+    } = usePage().props;
 
     const links: AppSidebarProps['links'] = {};
 
@@ -45,8 +52,13 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         }
     }
 
+    if (adminUrl) {
+        links.admin = adminUrl;
+    }
+
     return {
         active,
+        brand,
         team: currentTeam
             ? { ...currentTeam, initials: initialsOf(currentTeam.name) }
             : null,

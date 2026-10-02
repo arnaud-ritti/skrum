@@ -1,5 +1,6 @@
 import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
+import type { Brand } from '@/types/brand';
 import type { FlashToast } from '@/types/ui';
 import type {
     CurrentTeam,
@@ -18,6 +19,8 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            brand: Brand;
+            adminUrl: string | null;
             auth: Auth;
             sidebarOpen: boolean;
             locale: string;

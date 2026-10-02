@@ -70,6 +70,26 @@ describe('useSidebarModel', () => {
         expect(model.links.settings).toBeUndefined();
     });
 
+    it('links to the admin area only when the server shares its URL', () => {
+        expect(modelFor({ adminUrl: null }).links.admin).toBeUndefined();
+        expect(modelFor({}).links.admin).toBeUndefined();
+        expect(modelFor({ adminUrl: '/admin/branding' }).links.admin).toBe(
+            '/admin/branding',
+        );
+    });
+
+    it('hands the instance brand to the sidebar', () => {
+        const brand = {
+            name: 'Acme',
+            logoLightUrl: '/brand/logo-light?v=1',
+            logoDarkUrl: null,
+            faviconUrl: null,
+            poweredBy: true,
+        };
+
+        expect(modelFor({ brand }).brand).toEqual(brand);
+    });
+
     it('offers the team settings to a workspace owner', () => {
         const model = modelFor({
             currentWorkspace: { ...workspace, role: 'owner' },

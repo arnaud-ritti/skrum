@@ -17,6 +17,7 @@ import {
     Users,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { BrandLogo } from '@/components/skrum/brand-logo';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { UserCard, type UserCardUser } from '@/components/skrum/user-card';
 import {
@@ -40,6 +41,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/hooks/use-trans';
+import type { BrandIdentity } from '@/types';
 
 export type NavKey =
     | 'dashboard'
@@ -57,6 +59,7 @@ export type NavHref = NonNullable<InertiaLinkProps['href']>;
 
 export type AppSidebarProps = {
     active?: NavKey;
+    brand?: BrandIdentity;
     team: {
         id: string;
         name: string;
@@ -265,6 +268,7 @@ function TeamSwitcher({
 
 export function AppSidebar({
     active,
+    brand,
     team,
     teams,
     workspace,
@@ -310,18 +314,26 @@ export function AppSidebar({
                             <Link
                                 href={homeHref}
                                 prefetch
-                                aria-label="Skrüm"
+                                aria-label={brand?.name ?? 'Skrüm'}
                                 className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
                             >
-                                <SkrumLogo
-                                    decorative
-                                    variant="symbol"
-                                    className="size-6!"
-                                />
-                                <SkrumLogo
-                                    decorative
-                                    variant="wordmark"
-                                    className="h-5! w-auto! group-data-[collapsible=icon]:hidden"
+                                <BrandLogo
+                                    brand={brand}
+                                    className="h-7"
+                                    fallback={
+                                        <>
+                                            <SkrumLogo
+                                                decorative
+                                                variant="symbol"
+                                                className="size-6!"
+                                            />
+                                            <SkrumLogo
+                                                decorative
+                                                variant="wordmark"
+                                                className="h-5! w-auto! group-data-[collapsible=icon]:hidden"
+                                            />
+                                        </>
+                                    }
                                 />
                             </Link>
                         </SidebarMenuButton>

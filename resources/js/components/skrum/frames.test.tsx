@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import SessionLayout from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
@@ -181,7 +181,97 @@ describe('AuthFrame', () => {
     });
 });
 
+describe('AuthFrame with an instance brand', () => {
+    it('replaces the Skrüm logo of the header by the instance logo', () => {
+        renderWithProviders(
+            <AuthFrame
+                title="Log in"
+                brand={{
+                    name: 'Acme',
+                    logoLightUrl: '/brand/logo-light?v=1',
+                    logoDarkUrl: '/brand/logo-dark?v=2',
+                }}
+            >
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        const logos = within(screen.getByRole('banner')).getAllByRole('img');
+
+        expect(logos.map((logo) => logo.getAttribute('src'))).toEqual([
+            '/brand/logo-light?v=1',
+            '/brand/logo-dark?v=2',
+        ]);
+        expect(logos.map((logo) => logo.getAttribute('alt'))).toEqual([
+            'Acme',
+            'Acme',
+        ]);
+        expect(logos[0].className).toContain('h-12');
+        expect(logos[0].className).toContain('dark:hidden');
+        expect(logos[1].className).toContain('dark:block');
+    });
+
+    it('keeps the Skrüm logo when the brand has no logo', () => {
+        renderWithProviders(
+            <AuthFrame
+                title="Log in"
+                brand={{ name: 'Acme', logoLightUrl: null, logoDarkUrl: null }}
+            >
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        expect(
+            within(screen.getByRole('banner')).getByRole('img', {
+                name: 'Skrüm',
+            }).tagName,
+        ).toBe('svg');
+    });
+
+    it('renders a footer only when one is given', () => {
+        const { unmount } = renderWithProviders(
+            <AuthFrame title="Log in" footer="Powered by Skrüm">
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        expect(screen.getByRole('contentinfo').textContent).toBe(
+            'Powered by Skrüm',
+        );
+
+        unmount();
+        renderWithProviders(
+            <AuthFrame title="Log in">
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        expect(screen.queryByRole('contentinfo')).toBeNull();
+    });
+});
+
 describe('OnboardingFrame', () => {
+    it('shows the instance logo in the header when the brand has one', () => {
+        renderWithProviders(
+            <OnboardingFrame
+                brand={{
+                    name: 'Acme',
+                    logoLightUrl: '/brand/logo-light?v=1',
+                    logoDarkUrl: null,
+                }}
+            >
+                <p>step</p>
+            </OnboardingFrame>,
+        );
+
+        const logo = within(screen.getByRole('banner')).getByRole('img', {
+            name: 'Acme',
+        });
+
+        expect(logo.getAttribute('src')).toBe('/brand/logo-light?v=1');
+        expect(logo.className).toContain('h-7');
+    });
+
     it('renders the stepper in the header and the content in main', () => {
         renderWithProviders(
             <OnboardingFrame stepper={<ol aria-label="Steps" />}>

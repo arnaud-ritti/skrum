@@ -169,6 +169,50 @@ describe('AppSidebar', () => {
         expect(screen.queryByRole('img', { name: 'Skrüm' })).toBeNull();
     });
 
+    it('keeps the Skrüm logo when the brand has no logo', () => {
+        const { container } = renderSidebar({
+            brand: { name: 'Acme', logoLightUrl: null, logoDarkUrl: null },
+        });
+        const link = screen.getByRole('link', { name: 'Acme' });
+
+        expect(link.querySelectorAll('svg')).toHaveLength(2);
+        expect(container.querySelector('img')).toBeNull();
+    });
+
+    it('shows the instance logo as an image in the brand link', () => {
+        renderSidebar({
+            brand: {
+                name: 'Acme',
+                logoLightUrl: '/brand/logo-light?v=1',
+                logoDarkUrl: null,
+            },
+        });
+        const link = screen.getByRole('link', { name: 'Acme' });
+        const logo = within(link).getByRole('img', { name: 'Acme' });
+
+        expect(logo.getAttribute('src')).toBe('/brand/logo-light?v=1');
+        expect(logo.className).toContain('h-7');
+        expect(logo.className).toContain('dark:bg-card');
+        expect(link.querySelector('svg')).toBeNull();
+    });
+
+    it('shows the dark logo in the dark theme when the brand has one', () => {
+        renderSidebar({
+            brand: {
+                name: 'Acme',
+                logoLightUrl: '/brand/logo-light?v=1',
+                logoDarkUrl: '/brand/logo-dark?v=2',
+            },
+        });
+        const [light, dark] = within(
+            screen.getByRole('link', { name: 'Acme' }),
+        ).getAllByRole('img', { name: 'Acme' });
+
+        expect(light.className).toContain('dark:hidden');
+        expect(dark.getAttribute('src')).toBe('/brand/logo-dark?v=2');
+        expect(dark.className).toContain('dark:block');
+    });
+
     it('offers New team in the switcher only with a href', async () => {
         const user = userEvent.setup();
         const { unmount } = renderSidebar({ newTeamHref: '/teams/create' });
