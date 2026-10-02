@@ -364,6 +364,7 @@ export function BrandingForm({
                                         type="single"
                                         variant="segmented"
                                         fullWidth
+                                        className="grid grid-cols-2"
                                         aria-label={t('Image')}
                                         value={variant}
                                         onValueChange={setVariant}
