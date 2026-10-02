@@ -173,6 +173,7 @@ export function RoomView({
         <SessionShell
             kind="poker"
             self={self}
+            deck={game.cards}
             realtime={realtimeState(connected, online)}
             connection={{ reconnecting, expired: sessionExpired }}
             title={<RoomTitle showDeck={!isPhone} />}

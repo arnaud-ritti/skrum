@@ -37,10 +37,15 @@ type SessionLayoutProps = {
     homeHref?: NavHref | null;
     /** The viewer; a signed-in user is shown without it, a guest is not. */
     self?: SessionSelf | null;
+    /** The cards of a poker game: the shortcuts dialog lists the keys of those it holds. */
+    deck?: readonly string[];
     children: ReactNode;
 };
 
-type FrameSlots = Omit<SessionLayoutProps, 'chrome' | 'homeHref' | 'self'> & {
+type FrameSlots = Omit<
+    SessionLayoutProps,
+    'chrome' | 'homeHref' | 'self' | 'deck'
+> & {
     logo?: ReactNode;
     avatar?: ReactNode;
 };
@@ -123,6 +128,7 @@ export default function SessionLayout({
     chrome = 'rail',
     homeHref,
     self,
+    deck,
     actions,
     ...rest
 }: SessionLayoutProps) {
@@ -149,6 +155,7 @@ export default function SessionLayout({
             shortcuts={shortcuts}
             palette={false}
             sidebar={hasRail}
+            deck={deck}
             preference="switch"
         />
     );

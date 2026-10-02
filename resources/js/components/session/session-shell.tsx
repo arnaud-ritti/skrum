@@ -30,6 +30,8 @@ export type SessionShellProps = {
     homeHref?: NavHref | null;
     /** The viewer, shown at the end of the header; needed for a guest, who has no account. */
     self?: SessionSelf | null;
+    /** The cards of a poker game, for the shortcuts dialog. */
+    deck?: readonly string[];
     /** Value of the page's single `data-realtime` attribute. */
     realtime: RealtimeState;
     connection: SessionConnection;
@@ -68,6 +70,7 @@ export function SessionShell({
     chrome,
     homeHref,
     self,
+    deck,
     realtime,
     connection,
     rootRef,
@@ -93,6 +96,7 @@ export function SessionShell({
             chrome={chrome}
             homeHref={homeHref}
             self={self}
+            deck={deck}
             status={
                 <>
                     {isReconnecting && (

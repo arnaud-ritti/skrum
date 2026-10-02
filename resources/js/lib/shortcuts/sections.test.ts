@@ -53,6 +53,56 @@ describe('shortcutSections', () => {
         );
     });
 
+    it('lists the keys of the "?" and coffee cards only for a deck that holds them', () => {
+        expect(ids(shortcutSections(t))).toEqual(
+            expect.arrayContaining(['poker.unknown', 'poker.coffee']),
+        );
+
+        const withoutSpecials = ids(
+            shortcutSections(t, { deck: ['1', '2', '3'] }),
+        );
+
+        expect(withoutSpecials).not.toContain('poker.unknown');
+        expect(withoutSpecials).not.toContain('poker.coffee');
+
+        const withUnknown = ids(shortcutSections(t, { deck: ['1', '?'] }));
+
+        expect(withUnknown).toContain('poker.unknown');
+        expect(withUnknown).not.toContain('poker.coffee');
+    });
+
+    it('lists the keys the whiteboard canvas answers to', () => {
+        const whiteboard = shortcutSections(t).find(
+            (section) => section.id === 'whiteboard',
+        );
+
+        expect(whiteboard?.items.map((item) => item.id)).toEqual([
+            'select',
+            'hand',
+            'rectangle',
+            'text',
+            'pencil',
+            'arrow',
+            'pan',
+            'undo',
+            'redo',
+            'zoom-in',
+            'zoom-out',
+        ]);
+    });
+
+    it('finds the reaction keys under the name of their section', () => {
+        const reactions = shortcutSections(t).find(
+            (section) => section.id === 'reactions',
+        );
+
+        expect(
+            reactions?.items.every((item) =>
+                item.keywords?.includes('Reactions'),
+            ),
+        ).toBe(true);
+    });
+
     it('marks the facilitator shortcuts', () => {
         const items = shortcutSections(t).flatMap((section) => section.items);
         const facilitatorOnly = (id: string) =>

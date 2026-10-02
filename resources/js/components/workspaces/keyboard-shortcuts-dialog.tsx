@@ -43,6 +43,7 @@ export function KeyboardShortcutsDialog({
     shortcuts,
     palette = true,
     sidebar = true,
+    deck,
     preference = 'settings',
 }: ShortcutSurface & {
     shortcuts: GlobalShortcuts;
@@ -54,7 +55,7 @@ export function KeyboardShortcutsDialog({
         <KeyboardShortcuts
             open={shortcuts.open}
             onOpenChange={shortcuts.setOpen}
-            sections={shortcutSections(t, { palette, sidebar })}
+            sections={shortcutSections(t, { palette, sidebar, deck })}
             context={shortcuts.context}
             singleKeyDisabled={!shortcuts.singleKey}
             footerExtra={

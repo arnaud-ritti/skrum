@@ -6,8 +6,11 @@ import { useSingleKeyShortcuts } from '@/hooks/use-single-key-shortcuts';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { contextOfPage } from '@/lib/shortcuts/sections';
 
-/** Where "?" belongs to the element: the whiteboard canvas has its own help, the deck its own card. */
-const ownKeyAreas = '.excalidraw, [data-slot="poker-deck"]';
+/**
+ * Where "?" belongs to the element: the whiteboard canvas has its own help.
+ * A poker deck that holds the "?" card plays it and prevents the event.
+ */
+const ownKeyAreas = '.excalidraw';
 
 function isInOwnKeyArea(event: KeyboardEvent): boolean {
     return (
@@ -26,8 +29,8 @@ export type GlobalShortcuts = {
 };
 
 /**
- * "?" opens the shortcuts dialog outside fields, the whiteboard canvas, the
- * poker deck and other overlays; mod+/ opens it from a field too, for when
+ * "?" opens the shortcuts dialog outside fields, the whiteboard canvas, a
+ * poker deck with a "?" card and other overlays; mod+/ opens it from a field too, for when
  * "?" is being typed or single-key shortcuts are off. The palette entry and
  * the visible buttons ask for it through a window event.
  */

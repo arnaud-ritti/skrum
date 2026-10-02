@@ -639,6 +639,18 @@ export function KeyboardShortcutsPanel({
     );
 }
 
+/**
+ * Where focus returns when the dialog closes. An item of a menu is gone by
+ * then, as the menu closed: its trigger stands for it.
+ */
+function focusOrigin(element: Element | null): Element | null {
+    const triggerId = element
+        ?.closest('[role="menu"]')
+        ?.getAttribute('aria-labelledby');
+
+    return (triggerId ? document.getElementById(triggerId) : null) ?? element;
+}
+
 export function KeyboardShortcuts({
     open,
     onOpenChange,
@@ -649,14 +661,16 @@ export function KeyboardShortcuts({
     const searchRef = useRef<HTMLInputElement>(null);
     const [wasOpen, setWasOpen] = useState(open);
     const [opener, setOpener] = useState<Element | null>(() =>
-        open && typeof document !== 'undefined' ? document.activeElement : null,
+        open && typeof document !== 'undefined'
+            ? focusOrigin(document.activeElement)
+            : null,
     );
 
     if (open !== wasOpen) {
         setWasOpen(open);
 
         if (open) {
-            setOpener(document.activeElement);
+            setOpener(focusOrigin(document.activeElement));
         }
     }
 

@@ -5,6 +5,8 @@ import { isSpecialCard } from '@/lib/poker/types';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
+const UnknownCard = '?';
+
 export type PokerCardSize = 'sm' | 'md' | 'lg';
 
 export type PokerCardProps = {
@@ -329,6 +331,20 @@ export function PokerDeck({
 
             event.preventDefault();
             onRetract();
+
+            return;
+        }
+
+        if (
+            event.key === UnknownCard &&
+            enabledValues.includes(UnknownCard) &&
+            singleKeyShortcutsEnabled()
+        ) {
+            // The deck owns "?" while it has that card to play: the help
+            // dialog, on the same key, must not open as well.
+            event.preventDefault();
+            buttons.get(UnknownCard)?.focus();
+            select(UnknownCard);
 
             return;
         }

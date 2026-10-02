@@ -17,7 +17,15 @@ export type ShortcutSurface = {
     palette?: boolean;
     /** The application sidebar is on screen: `mod+B` folds it. */
     sidebar?: boolean;
+    /**
+     * The cards of the poker game on screen: the keys of the "?" and coffee
+     * cards are listed only when the deck holds them. Outside a game both are.
+     */
+    deck?: readonly string[];
 };
+
+const UnknownCard = '?';
+const CoffeeCard = '☕';
 
 export function contextOfPage(
     component: string,
@@ -34,8 +42,10 @@ export function contextOfPage(
  */
 export function shortcutSections(
     t: (key: string) => string,
-    { palette = true, sidebar = true }: ShortcutSurface = {},
+    { palette = true, sidebar = true, deck }: ShortcutSurface = {},
 ): ShortcutSection[] {
+    const hasCard = (card: string) => deck === undefined || deck.includes(card);
+    const reactions = t('Reactions');
     const general: (Shortcut | null)[] = [
         palette
             ? { id: 'palette', label: t('Command palette'), keys: ['mod', 'K'] }
@@ -109,7 +119,24 @@ export function shortcutSections(
                     range: ['0', '9'],
                     keywords: [t('vote'), t('estimate')],
                 },
-                { id: 'coffee', label: t('Coffee break'), keys: ['C'] },
+                ...(hasCard(UnknownCard)
+                    ? [
+                          {
+                              id: 'unknown',
+                              label: t('Play the “?” card'),
+                              keys: ['?'],
+                          },
+                      ]
+                    : []),
+                ...(hasCard(CoffeeCard)
+                    ? [
+                          {
+                              id: 'coffee',
+                              label: t('Coffee break'),
+                              keys: ['C'],
+                          },
+                      ]
+                    : []),
                 {
                     id: 'reveal',
                     label: t('Reveal cards'),
@@ -141,12 +168,31 @@ export function shortcutSections(
             id: 'whiteboard',
             title: t('Whiteboard'),
             icon: PenTool,
-            items: [],
+            // The keys the canvas library answers to, not those of the
+            // mockup: the whiteboard keeps its own shortcuts.
+            items: [
+                { id: 'select', label: t('Selection'), keys: ['V'] },
+                { id: 'hand', label: t('Hand'), keys: ['H'] },
+                { id: 'rectangle', label: t('Rectangle'), keys: ['R'] },
+                { id: 'text', label: t('Text'), keys: ['T'] },
+                { id: 'pencil', label: t('Pencil'), keys: ['P'] },
+                { id: 'arrow', label: t('Arrow'), keys: ['A'] },
+                {
+                    id: 'pan',
+                    label: t('Pan'),
+                    keys: ['Space'],
+                    suffix: t('+ drag'),
+                },
+                { id: 'undo', label: t('Undo'), keys: ['mod', 'Z'] },
+                { id: 'redo', label: t('Redo'), keys: ['shift', 'mod', 'Z'] },
+                { id: 'zoom-in', label: t('Zoom in'), keys: ['mod', '+'] },
+                { id: 'zoom-out', label: t('Zoom out'), keys: ['mod', '−'] },
+            ],
             note: t('The whiteboard uses the shortcuts of its own toolbar.'),
         },
         {
             id: 'reactions',
-            title: t('Reactions'),
+            title: reactions,
             icon: Smile,
             note: t(
                 'The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.',
@@ -155,6 +201,7 @@ export function shortcutSections(
                 id: `reaction-${index + 1}`,
                 label: emoji,
                 keys: [String(index + 1)],
+                keywords: [reactions],
             })),
         },
     ];
