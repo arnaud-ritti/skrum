@@ -38,10 +38,12 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
             >
                 <MessageSquare
                     className="mt-0.5 size-3.5 shrink-0"
-                    aria-label={commentsLabel}
+                    aria-hidden
                 />
                 <span className="min-w-0">
-                    {survey.commentCount} · {t('Answer to join the discussion')}
+                    <span className="sr-only">{commentsLabel} · </span>
+                    <span aria-hidden="true">{survey.commentCount} · </span>
+                    {t('Answer to join the discussion')}
                 </span>
             </p>
         );
@@ -156,6 +158,7 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
                     type="button"
                     size="sm"
                     variant="ghost"
+                    data-slot="survey-comments-toggle"
                     className="ms-auto shrink-0 gap-1.5 text-muted-foreground tabular-nums"
                     aria-expanded={open}
                     aria-controls={open ? threadsId : undefined}

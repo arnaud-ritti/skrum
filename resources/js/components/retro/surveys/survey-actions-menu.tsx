@@ -1,5 +1,5 @@
 import { Ellipsis, Lock, LockOpen, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SurveyClosuresController from '@/actions/App/Http/Controllers/Retros/SurveyClosuresController';
 import SurveysController from '@/actions/App/Http/Controllers/Retros/SurveysController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -28,6 +28,7 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
     const editor = useSurveyEditor();
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [busy, setBusy] = useState(false);
+    const afterMenuClose = useRef<(() => void) | null>(null);
     const { retro, viewer } = ctx.board;
 
     if (!viewer.isFacilitator || retro.phase === 'completed') {
@@ -74,10 +75,28 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
                         <Ellipsis aria-hidden />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-w-64">
+                {/*
+                  A dialog gives the keyboard back to what had it at its
+                  opening. Opened from an entry, that is the entry, gone with
+                  the menu: it opens once the menu has closed, and the menu
+                  then hands the keyboard to its button.
+                */}
+                <DropdownMenuContent
+                    align="end"
+                    className="max-w-64"
+                    onCloseAutoFocus={() => {
+                        const open = afterMenuClose.current;
+
+                        afterMenuClose.current = null;
+                        open?.();
+                    }}
+                >
                     <DropdownMenuItem
                         disabled={!canEdit || survey.responseCount > 0}
-                        onSelect={() => editor.openEdit(survey)}
+                        onSelect={() => {
+                            afterMenuClose.current = () =>
+                                editor.openEdit(survey);
+                        }}
                     >
                         <Pencil aria-hidden />
                         <span className="truncate">{t('Edit survey')}</span>
@@ -135,7 +154,10 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
                     <DropdownMenuItem
                         variant="destructive"
                         disabled={!canEdit}
-                        onSelect={() => setConfirmingDelete(true)}
+                        onSelect={() => {
+                            afterMenuClose.current = () =>
+                                setConfirmingDelete(true);
+                        }}
                     >
                         <Trash2 aria-hidden />
                         <span className="truncate">{t('Delete survey')}</span>

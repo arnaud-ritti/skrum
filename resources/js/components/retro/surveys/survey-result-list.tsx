@@ -31,7 +31,6 @@ export function SurveyResultList({ surveys }: { surveys: SurveyPayload[] }) {
                             participants: board.participants,
                             mode: 'results',
                         })}
-                        closed
                         aria-label={survey.question}
                         footer={<SurveyDiscussion survey={survey} />}
                     />

@@ -118,9 +118,12 @@ export function BoardSettings({
     };
 
     // The survey dialog takes the place of the panel: a draft of the
-    // settings is kept for when the panel opens again.
+    // settings is kept for when the panel opens again. The dialog gives the
+    // keyboard back to what had it at its opening, and "Add survey" is gone
+    // with the panel: the settings button takes it first.
     const addSurvey = () => {
         onOpenChange(false);
+        anchorRef?.current?.focus();
         surveyEditor.openCreate();
     };
 

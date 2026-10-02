@@ -100,11 +100,11 @@ function textAnswersOf(
     survey: SurveyPayload,
     { participants, mode }: SurveyQuestionContext,
 ): SurveyQuestionTextAnswer[] | undefined {
-    if (survey.kind !== 'text' || !survey.resultsVisible) {
+    if (survey.kind !== 'text') {
         return undefined;
     }
 
-    if (survey.textAnswers === null) {
+    if (!survey.resultsVisible || survey.textAnswers === null) {
         return mode === 'results' ? [] : undefined;
     }
 
@@ -123,7 +123,8 @@ function textAnswersOf(
 /**
  * A survey of the retro as a `SurveyQuestion`. While the results are hidden
  * from the viewer, no count, voter or answer leaves here, whatever the
- * payload holds.
+ * payload holds. The results of a completed retro still list the options,
+ * without figures, for someone who never answered.
  */
 export function toSurveyQuestionProps(
     survey: SurveyPayload,
@@ -153,7 +154,7 @@ export function toSurveyQuestionProps(
         maxLength: SurveyTextMaxLength,
         results: {
             responses: survey.responseCount,
-            hidden: !visible,
+            hidden: !visible && context.mode === 'answer',
             textAnswers: textAnswersOf(survey, context),
         },
     };

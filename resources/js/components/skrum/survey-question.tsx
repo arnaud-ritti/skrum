@@ -172,7 +172,8 @@ function CountResults({
     items: {
         key: string;
         label: string;
-        count: number;
+        /** `null`: the figure is not given to this viewer, the label stands alone. */
+        count: number | null;
         voters?: SurveyQuestionVoter[] | null;
     }[];
     total: number;
@@ -180,13 +181,26 @@ function CountResults({
     asCount: boolean;
 }) {
     const { t } = useTrans();
-    const highest = Math.max(0, ...items.map((item) => item.count));
+    const highest = Math.max(0, ...items.map((item) => item.count ?? 0));
 
     return (
         <ul className="flex flex-col gap-3">
             {items.map((item) => {
-                const percent = percentOf(item.count, total);
                 const isMine = selectedKeys.includes(item.key);
+
+                if (item.count === null) {
+                    return (
+                        <li
+                            key={item.key}
+                            data-slot="survey-result"
+                            className="min-w-0 text-sm break-words"
+                        >
+                            {item.label}
+                        </li>
+                    );
+                }
+
+                const percent = percentOf(item.count, total);
 
                 return (
                     <li
@@ -441,7 +455,7 @@ function Results({
             items={options.map((option) => ({
                 key: option.id,
                 label: option.label,
-                count: option.count ?? 0,
+                count: option.count === null ? null : (option.count ?? 0),
                 voters: option.voters,
             }))}
             total={results.responses}

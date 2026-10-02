@@ -531,8 +531,8 @@ it('[P18e-08-04] renders the surveys column and an open thread at 390 without ov
 
             $capture($page, "retro-phone-surveys-{$theme}-390-{$locale}");
 
-            $page->click("{$thread} [data-slot=\"survey-discussion\"] button[aria-expanded]")
-                ->assertAriaAttribute("{$thread} [data-slot=\"survey-discussion\"] button[aria-expanded]", 'expanded', 'true')
+            $page->click("{$thread} [data-slot=\"survey-comments-toggle\"]")
+                ->assertAriaAttribute("{$thread} [data-slot=\"survey-comments-toggle\"]", 'expanded', 'true')
                 ->assertPresent("{$thread} [data-slot=\"comment\"]");
 
             $capture($page, "retro-phone-survey-thread-{$theme}-390-{$locale}");

@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import { SurveyBoardCard } from '@/components/retro/surveys/survey-board-card';
@@ -179,6 +180,15 @@ describe('SurveyBoardCard', () => {
             '1 · Answer to join the discussion',
         );
         expect(
+            card().querySelector('[data-slot="survey-discussion"] .sr-only')
+                ?.textContent,
+        ).toContain('Comments (1)');
+        expect(
+            card()
+                .querySelector('[data-slot="survey-discussion"] svg')
+                ?.getAttribute('aria-hidden'),
+        ).toBe('true');
+        expect(
             within(card()).queryByRole('button', { name: /^Comments/ }),
         ).toBeNull();
     });
@@ -350,6 +360,30 @@ describe('SurveyBoardCard', () => {
         ).toBeNull();
     });
 
+    it('gives the keyboard back to "Survey actions" when the edit dialog is cancelled', async () => {
+        const user = userEvent.setup();
+
+        renderInBoard(<SurveyBoardCard survey={survey()} />, boardContext());
+
+        const actions = within(card()).getByRole('button', {
+            name: 'Survey actions',
+        });
+
+        await user.click(actions);
+        await user.click(screen.getByRole('menuitem', { name: 'Edit survey' }));
+
+        const dialog = await screen.findByRole('dialog', {
+            name: 'Edit survey',
+        });
+
+        await user.click(
+            within(dialog).getByRole('button', { name: 'Cancel' }),
+        );
+
+        await waitFor(() => expect(document.activeElement).toBe(actions));
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
     it('names who answered an option when the survey shows them', () => {
         renderInBoard(
             <SurveyBoardCard
@@ -392,6 +426,7 @@ describe('SurveyBoardCard', () => {
         });
 
         expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(toggle.getAttribute('data-slot')).toBe('survey-comments-toggle');
 
         fireEvent.click(toggle);
 
@@ -469,14 +504,14 @@ describe('SurveyResultList', () => {
         expect(within(card()).getByText('1 response')).toBeTruthy();
     });
 
-    it('says "No answers yet." for a text survey nobody answered', () => {
+    it('says "No answers yet." for a text survey the viewer never answered', () => {
         renderInBoard(
             <SurveyResultList
                 surveys={[
                     survey({
                         kind: 'text',
                         options: [],
-                        resultsVisible: true,
+                        resultsVisible: false,
                         textAnswers: null,
                     }),
                 ]}
@@ -485,7 +520,54 @@ describe('SurveyResultList', () => {
         );
 
         expect(within(card()).getByText('No answers yet.')).toBeTruthy();
+        expect(
+            within(card()).queryByText('Results are not visible yet.'),
+        ).toBeNull();
         expect(within(card()).queryByRole('textbox')).toBeNull();
+    });
+
+    it('lists the options without figures for a viewer who never answered', () => {
+        renderInBoard(
+            <SurveyResultList surveys={[survey({ responseCount: 3 })]} />,
+            completed(),
+        );
+
+        expect(
+            [...card().querySelectorAll('[data-slot="survey-result"]')].map(
+                (row) => row.textContent,
+            ),
+        ).toEqual(['Great', 'OK']);
+        expect(
+            card().querySelector('[data-slot="survey-result-bar"]'),
+        ).toBeNull();
+        expect(card().textContent).not.toContain('%');
+        expect(within(card()).getByText('3 responses')).toBeTruthy();
+        expect(
+            within(card()).queryByText('Results are not visible yet.'),
+        ).toBeNull();
+    });
+
+    it('says "Closed" only on a survey the facilitator closed', () => {
+        renderInBoard(
+            <SurveyResultList
+                surveys={[
+                    answered(),
+                    answered({
+                        id: 'survey-2',
+                        question: 'What helped?',
+                        isClosed: true,
+                    }),
+                ]}
+            />,
+            completed(),
+        );
+
+        expect(within(card()).queryByText('Closed')).toBeNull();
+        expect(
+            within(
+                screen.getByRole('article', { name: 'What helped?' }),
+            ).getByText('Closed'),
+        ).toBeTruthy();
     });
 
     it('opens the comments without a field to write one', () => {

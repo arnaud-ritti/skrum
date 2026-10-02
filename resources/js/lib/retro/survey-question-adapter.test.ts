@@ -113,11 +113,57 @@ describe('toSurveyQuestionProps', () => {
                     },
                 ],
             }),
-            results,
+            answer,
         );
 
         expect(text.results?.hidden).toBe(true);
         expect(text.results?.textAnswers).toBeUndefined();
+    });
+
+    it('lists the options without figures in the results of someone who never answered', () => {
+        const unanswered = survey({
+            resultsVisible: false,
+            responseCount: 2,
+            options: [
+                {
+                    id: 'great',
+                    label: 'Great',
+                    position: 0,
+                    count: 2,
+                    voters: ['alice'],
+                },
+            ],
+        });
+        const props = toSurveyQuestionProps(unanswered, results);
+
+        expect(props.options).toEqual([
+            { id: 'great', label: 'Great', count: null, voters: null },
+        ]);
+        expect(props.results).toEqual({
+            responses: 2,
+            hidden: false,
+            textAnswers: undefined,
+        });
+
+        const text = toSurveyQuestionProps(
+            survey({
+                kind: 'text',
+                options: [],
+                resultsVisible: false,
+                textAnswers: [
+                    {
+                        id: 't1',
+                        text: 'Secret',
+                        authorId: 'bob',
+                        isMine: false,
+                    },
+                ],
+            }),
+            results,
+        );
+
+        expect(text.results?.hidden).toBe(false);
+        expect(text.results?.textAnswers).toEqual([]);
     });
 
     it('gives the counts once the results are visible', () => {

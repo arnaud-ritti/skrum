@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { useRef, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     BoardSettings,
@@ -45,6 +46,26 @@ describe('retroSettingsValues', () => {
         ).toBeNull();
     });
 });
+
+/** The panel under the settings button of the header, as the board places it. */
+function SettingsUnderButton() {
+    const anchorRef = useRef<HTMLButtonElement>(null);
+    const [open, setOpen] = useState(true);
+
+    return (
+        <>
+            <button type="button" ref={anchorRef}>
+                Settings
+            </button>
+            <BoardSettings
+                open={open}
+                onOpenChange={setOpen}
+                variant="popover"
+                anchorRef={anchorRef}
+            />
+        </>
+    );
+}
 
 describe('BoardSettings', () => {
     it('is a dialog named "Retrospective settings" with the ids the walkthroughs bind', () => {
@@ -153,6 +174,20 @@ describe('BoardSettings', () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
         expect(screen.getByRole('dialog', { name: 'New survey' })).toBeTruthy();
         expect(document.getElementById('survey-question')).not.toBeNull();
+    });
+
+    it('gives the keyboard to the settings button when the survey dialog is cancelled', async () => {
+        renderInBoard(<SettingsUnderButton />, boardContext());
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add survey' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+        await waitFor(() =>
+            expect(document.activeElement).toBe(
+                screen.getByRole('button', { name: 'Settings' }),
+            ),
+        );
+        expect(screen.queryByRole('dialog', { name: 'New survey' })).toBeNull();
     });
 
     it.each([

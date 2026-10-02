@@ -475,6 +475,28 @@ describe('SurveyQuestion results mode', () => {
         expect(screen.getByText('0 · 0%')).toBeTruthy();
     });
 
+    it('lists an option whose count is null without a figure or a bar', () => {
+        const { container } = setup({
+            mode: 'results',
+            results: { responses: 2 },
+            options: [
+                { id: 'a', label: 'Alpha', count: null },
+                { id: 'b', label: 'Beta', count: null },
+            ],
+        });
+
+        expect(
+            [...container.querySelectorAll('[data-slot="survey-result"]')].map(
+                (row) => row.textContent,
+            ),
+        ).toEqual(['Alpha', 'Beta']);
+        expect(
+            container.querySelector('[data-slot="survey-result-bar"]'),
+        ).toBeNull();
+        expect(container.textContent).not.toContain('%');
+        expect(screen.getByText('2 responses')).toBeTruthy();
+    });
+
     it('hidden results never put counts in the DOM', () => {
         const { container } = setup({
             mode: 'results',
