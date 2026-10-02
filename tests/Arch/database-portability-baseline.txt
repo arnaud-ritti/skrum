@@ -1,7 +1,0 @@
-app/Actions/Search/SearchWorkspaceContent.php|ilike|7
-app/Actions/Workspaces/CreateWorkspaceInvitation.php|whereRaw|1
-app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|1
-app/Models/User.php|whereRaw|1
-database/migrations/2026_10_14_100000_create_magic_links_table.php|non-null timestamp|1
-database/migrations/2026_10_15_100001_create_email_two_factor_codes_table.php|non-null timestamp|2
-tests/Feature/Auth/MagicLinkTest.php|reads sql text|3

@@ -6,6 +6,7 @@ use App\Enums\WorkspaceRole;
 use App\Support\Auth\LoginAddress;
 use Database\Factories\WorkspaceInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -69,6 +70,18 @@ class WorkspaceInvitation extends Model
     public function matchesEmail(string $email): bool
     {
         return LoginAddress::normalise($this->email) === LoginAddress::normalise($email);
+    }
+
+    /**
+     * Stored in the form it is looked up by, like the address of an account.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $email): string => LoginAddress::normalise($email),
+        );
     }
 
     protected function casts(): array

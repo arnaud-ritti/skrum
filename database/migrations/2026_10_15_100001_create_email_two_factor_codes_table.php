@@ -14,8 +14,8 @@ return new class extends Migration
             $table->string('purpose', 16);
             $table->string('code_hash', 64);
             $table->unsignedTinyInteger('attempts')->default(0);
-            $table->timestamp('sent_at');
-            $table->timestamp('expires_at')->index();
+            $table->dateTime('sent_at');
+            $table->dateTime('expires_at')->index();
             $table->timestamp('consumed_at')->nullable();
 
             $table->index(['user_id', 'purpose']);

@@ -24,7 +24,7 @@ class CreateWorkspaceInvitation
         $invitation = DB::transaction(function () use ($workspace, $inviter, $email, $role, $token): WorkspaceInvitation {
             /** @var array<int, string> $replacedIds */
             $replacedIds = $workspace->invitations()
-                ->whereRaw('lower(email) = ?', [LoginAddress::normalise($email)])
+                ->where('email', LoginAddress::normalise($email))
                 ->whereNull('accepted_at')
                 ->pluck('id')
                 ->all();

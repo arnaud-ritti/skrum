@@ -55,7 +55,7 @@ it('registers an invited person, verifies the email and joins the workspace', fu
 
     $this->get(route('invitations.show', 'secret-token'))->assertOk();
     $this->get(route('register'))
-        ->assertInertia(fn (Assert $page) => $page->where('invitationEmail', 'Invited@Example.com'));
+        ->assertInertia(fn (Assert $page) => $page->where('invitationEmail', 'invited@example.com'));
 
     $this->post(route('register.store'), registrationPayload('invited@example.com'))
         ->assertRedirect(route('dashboard'));

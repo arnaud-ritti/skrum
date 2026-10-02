@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Support\Auth\LoginAddress;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -49,14 +50,16 @@ class UserFactory extends Factory
 
     /**
      * A row written before addresses were normalised: the spelling is
-     * stored as given, past the model.
+     * stored as given, past the model, with the key the migration gave it.
      */
     public function storedWithAddress(string $email): static
     {
         return $this->afterCreating(function (User $user) use ($email): void {
-            DB::table('users')->where('id', $user->id)->update(['email' => $email]);
+            $stored = ['email' => $email, 'email_key' => LoginAddress::normalise($email)];
 
-            $user->setRawAttributes([...$user->getAttributes(), 'email' => $email], true);
+            DB::table('users')->where('id', $user->id)->update($stored);
+
+            $user->setRawAttributes([...$user->getAttributes(), ...$stored], true);
         });
     }
 

@@ -34,6 +34,7 @@ use SensitiveParameter;
  * @property string $id
  * @property string $name
  * @property string $email
+ * @property string $email_key
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -57,7 +58,7 @@ use SensitiveParameter;
  * @property-read int|null $rounds_played
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
     use HasApiTokens;
@@ -108,26 +109,30 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
 
     /**
      * Every writer goes through here, so an address is only ever stored in
-     * the form it is looked up by.
+     * the form it is looked up by, and its key is written with it.
      *
      * @return Attribute<string, string>
      */
     protected function email(): Attribute
     {
         return Attribute::make(
-            set: fn (string $email): string => LoginAddress::normalise($email),
+            set: function (string $email): array {
+                $address = LoginAddress::normalise($email);
+
+                return ['email' => $address, 'email_key' => $address];
+            },
         );
     }
 
     /**
-     * Compares normalised to normalised: rows stored before addresses were
-     * normalised may still hold capitals.
+     * Compares the stored key, so rows from before addresses were normalised are found too,
+     * and two of them sharing an address are both returned.
      *
      * @param  Builder<self>  $query
      */
     public function scopeWhereAddress(Builder $query, string $email): void
     {
-        $query->whereRaw("lower({$query->qualifyColumn('email')}) = ?", [LoginAddress::normalise($email)]);
+        $query->where($query->qualifyColumn('email_key'), LoginAddress::normalise($email));
     }
 
     public function avatarUrl(): string

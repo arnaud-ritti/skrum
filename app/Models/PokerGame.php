@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Contracts\DeliverySubject;
 use App\Enums\PokerDeck;
 use App\Events\Poker\PokerGameChanged;
@@ -49,6 +50,7 @@ class PokerGame extends Model implements DeliverySubject
     /** @use HasFactory<PokerGameFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     protected static function booted(): void
@@ -146,6 +148,12 @@ class PokerGame extends Model implements DeliverySubject
         }
 
         return $this->currentTask?->latestRound;
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['title' => 'title_search'];
     }
 
     protected function casts(): array

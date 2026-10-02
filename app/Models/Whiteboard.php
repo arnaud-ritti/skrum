@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use Database\Factories\WhiteboardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -38,6 +39,7 @@ class Whiteboard extends Model
     /** @use HasFactory<WhiteboardFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     public const MaxLiveElements = 5000;
@@ -91,6 +93,12 @@ class Whiteboard extends Model
     public function storageDirectory(): string
     {
         return "whiteboards/{$this->id}";
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['title' => 'title_search'];
     }
 
     protected function casts(): array

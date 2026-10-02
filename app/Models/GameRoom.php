@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Contracts\DeliverySubject;
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
@@ -48,6 +49,7 @@ class GameRoom extends Model implements DeliverySubject
     /** @use HasFactory<GameRoomFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     public const MaxRoomsPerTeam = 10;
@@ -189,6 +191,12 @@ class GameRoom extends Model implements DeliverySubject
         static::deleting(function (GameRoom $room): void {
             IntegrationDelivery::query()->whereMorphedTo('subject', $room)->delete();
         });
+    }
+
+    /** @return array<string, string> */
+    public function searchColumns(): array
+    {
+        return ['name' => 'name_search'];
     }
 
     protected function casts(): array

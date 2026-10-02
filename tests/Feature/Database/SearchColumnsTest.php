@@ -2,9 +2,12 @@
 
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GameRoom;
+use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\User;
+use App\Models\Whiteboard;
 use App\Support\Database\SearchText;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\DB;
@@ -108,6 +111,9 @@ it('finds a text by a term of another case in every searched model', function (s
     [ActionItem::class, 'content'],
     [PokerTask::class, 'title'],
     [User::class, 'name'],
+    [PokerGame::class, 'title'],
+    [Whiteboard::class, 'title'],
+    [GameRoom::class, 'name'],
 ]);
 
 it('gives the user created by the default seeder a folded name', function () {
@@ -122,3 +128,14 @@ it('searches people by name in any case', function () {
     expect(User::query()->whereContains('name', 'émile z')->count())->toBe(1)
         ->and(User::query()->whereContains('name', 'ZOLA')->count())->toBe(1);
 });
+
+it('finds a person by a part of their address in any case, a legacy address included', function (string $term) {
+    $this->actingAs(User::factory()->instanceAdmin()->create())->withSession(['auth.password_confirmed_at' => time()]);
+    $current = User::factory()->create(['name' => 'Ada', 'email' => 'lovelace@example.org']);
+    $legacy = User::factory()->storedWithAddress('Grace.LOVELACE@Example.org')->create(['name' => 'Grace']);
+    User::factory()->create(['name' => 'Unrelated', 'email' => 'unrelated@example.org']);
+
+    $this->getJson(route('admin.adminCandidates.index', ['query' => $term]))
+        ->assertOk()
+        ->assertJsonPath('candidates.*.id', [$current->id, $legacy->id]);
+})->with(['lovelace@', 'LOVELACE@EXAMPLE', 'Lovelace@Example.org']);
