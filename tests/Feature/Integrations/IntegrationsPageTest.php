@@ -115,3 +115,15 @@ it('offers the integrations link to managers only when a provider is configured'
     $this->actingAs($admin)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('canManageIntegrations', true));
     $this->actingAs($member)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('canManageIntegrations', false));
 });
+
+it('shares whether a provider is configured, for the "Team settings" entry of the sidebar', function () {
+    $team = Team::factory()->create();
+    $admin = integrationAdmin($team);
+    $teamPage = route('teams.show', [$team->workspace, $team]);
+
+    $this->actingAs($admin)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('features.integrations', false));
+
+    enableIntegrations(IntegrationProvider::Linear);
+
+    $this->actingAs($admin)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('features.integrations', true));
+});

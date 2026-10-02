@@ -224,10 +224,12 @@ export function TeamPage({
                         />
                     </div>
                     {props.canManage && (
-                        <TeamSettingsCard
-                            workspaceSlug={workspace.slug}
-                            team={team}
-                        />
+                        <div id="settings" className="min-w-0 scroll-mt-20">
+                            <TeamSettingsCard
+                                workspaceSlug={workspace.slug}
+                                team={team}
+                            />
+                        </div>
                     )}
                 </aside>
             </div>

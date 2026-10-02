@@ -32,7 +32,7 @@ declare module '@inertiajs/core' {
             currentTeam: CurrentTeam | null;
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
-            features: { mcp: boolean };
+            features: { mcp: boolean; integrations: boolean };
             [key: string]: unknown;
         };
         flashDataType: {

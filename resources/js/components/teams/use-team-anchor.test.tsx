@@ -27,10 +27,11 @@ afterEach(() => {
 });
 
 describe('teamAnchor', () => {
-    it('maps the three section hashes and falls back to the dashboard', () => {
+    it('maps the four section hashes and falls back to the dashboard', () => {
         expect(teamAnchor('#sessions')).toBe('sessions');
         expect(teamAnchor('#mood')).toBe('mood');
         expect(teamAnchor('#members')).toBe('members');
+        expect(teamAnchor('#settings')).toBe('settings');
         expect(teamAnchor('')).toBe('dashboard');
         expect(teamAnchor('#card-12')).toBe('dashboard');
     });

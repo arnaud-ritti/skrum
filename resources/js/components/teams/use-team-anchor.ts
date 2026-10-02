@@ -6,6 +6,7 @@ const Anchors: Record<string, NavKey> = {
     '#sessions': 'sessions',
     '#mood': 'mood',
     '#members': 'members',
+    '#settings': 'settings',
 };
 
 export function teamAnchor(hash: string): NavKey {
@@ -13,7 +14,7 @@ export function teamAnchor(hash: string): NavKey {
 }
 
 /**
- * The team page is four sidebar entries: the page itself and three of its
+ * The team page is five sidebar entries: the page itself and four of its
  * sections. The entry in use is read from the URL hash, after mount (the
  * server does not see a hash) and on every change of it.
  */

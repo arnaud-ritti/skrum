@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
+use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
@@ -60,6 +61,7 @@ class HandleInertiaRequests extends Middleware
             'locales' => config('skrum.locales'),
             'features' => [
                 'mcp' => (bool) config('skrum.mcp.enabled'),
+                'integrations' => IntegrationProvider::anyEnabled(),
             ],
             'translations' => fn (): array => $this->translations(app()->getLocale()),
             'workspaces' => fn (): array => $this->workspaces($request),

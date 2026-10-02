@@ -493,6 +493,7 @@ it('[P18e-10-10] the team settings name the team in the breadcrumb, mark "Integr
         ->assertAttribute('nav[aria-label="Team settings"] a:not([aria-current])', 'href', "{$teamPath}#settings")
         ->click('nav[aria-label="Team settings"] a:not([aria-current])')
         ->assertPathIs($teamPath)
+        ->assertPresent('#settings [data-slot="team-settings"]')
         ->assertNotPresent('[data-slot="team-settings-shell"]')
         ->assertNoJavaScriptErrors();
 });

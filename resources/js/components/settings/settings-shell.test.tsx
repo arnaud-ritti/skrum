@@ -36,7 +36,7 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
 beforeEach(() => {
     page.props = {
         translations: {},
-        features: { mcp: true },
+        features: { mcp: true, integrations: false },
         auth: { user: { name: 'Mona Member' } },
     };
 });

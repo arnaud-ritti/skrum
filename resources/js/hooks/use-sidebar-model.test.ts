@@ -19,6 +19,7 @@ const signedOut: SharedProps = {
     teams: [],
     workspaces: [],
     actionItems: null,
+    features: { mcp: false, integrations: false },
 };
 
 const workspace = { id: 'w1', name: 'Nordlys', slug: 'nordlys' };
@@ -28,6 +29,14 @@ function modelFor(props: SharedProps) {
     page.props = { ...signedOut, ...props };
 
     return renderHook(() => useSidebarModel()).result.current;
+}
+
+function hrefOf(link: unknown): string | undefined {
+    if (typeof link === 'string' || link === undefined) {
+        return link;
+    }
+
+    return (link as { url: string }).url;
 }
 
 describe('useSidebarModel', () => {
@@ -90,14 +99,31 @@ describe('useSidebarModel', () => {
         expect(modelFor({ brand }).brand).toEqual(brand);
     });
 
-    it('offers the team settings to a workspace owner', () => {
+    it('leads a workspace owner to the integrations of the team when a provider is configured', () => {
         const model = modelFor({
             currentWorkspace: { ...workspace, role: 'owner' },
             currentTeam: team,
             teams: [{ id: 't1', name: 'Atlas' }],
             workspaces: [workspace],
+            features: { mcp: false, integrations: true },
         });
 
-        expect(model.links.settings).toBeDefined();
+        expect(hrefOf(model.links.settings)).toBe(
+            '/w/nordlys/teams/t1/integrations',
+        );
+    });
+
+    it('leads a workspace owner to the settings card of the team page when no provider is configured', () => {
+        const model = modelFor({
+            currentWorkspace: { ...workspace, role: 'owner' },
+            currentTeam: team,
+            teams: [{ id: 't1', name: 'Atlas' }],
+            workspaces: [workspace],
+            features: { mcp: false, integrations: false },
+        });
+
+        expect(hrefOf(model.links.settings)).toBe(
+            '/w/nordlys/teams/t1#settings',
+        );
     });
 });
