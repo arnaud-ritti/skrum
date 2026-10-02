@@ -1,3 +1,7 @@
+@inject('instanceSettings', 'App\Support\InstanceSettings')
+@inject('brandStyle', 'App\Support\Branding\BrandStyle')
+@inject('brandAssets', 'App\Support\Branding\BrandAssets')
+@php($brandCss = $brandStyle->css())
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
@@ -31,12 +35,16 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="{{ $brandAssets->url('favicon') ?? '/favicon.svg' }}" type="{{ $brandAssets->mime('favicon') ?? 'image/svg+xml' }}">
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+@if($brandCss !== null)
+        {{-- Printed raw because BrandStyle builds it from numbers only: no stored string reaches this tag --}}
+        <style id="skrum-brand">{!! $brandCss !!}</style>
+@endif
         <x-inertia::head>
-            <title>{{ config('app.name', 'Skrüm') }}</title>
+            <title>{{ $instanceSettings->displayName() }}</title>
         </x-inertia::head>
     </head>
     <body>

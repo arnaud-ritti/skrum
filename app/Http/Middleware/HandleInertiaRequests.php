@@ -6,7 +6,9 @@ use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Branding\BrandAssets;
 use App\Support\CurrentTeamResolver;
+use App\Support\InstanceSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,7 +46,9 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => fn (): string => resolve(InstanceSettings::class)->displayName(),
+            'brand' => $this->brand(...),
+            'adminUrl' => null,
             'auth' => [
                 'user' => $this->user($request),
             ],
@@ -69,6 +73,29 @@ class HandleInertiaRequests extends Middleware
                 ? null
                 : ['unreadCount' => $request->user()->unreadNotifications()->count()],
             'actionItems' => fn (): ?array => $this->actionItemCounts($request),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     name: string,
+     *     logoLightUrl: ?string,
+     *     logoDarkUrl: ?string,
+     *     faviconUrl: ?string,
+     *     poweredBy: bool
+     * }
+     */
+    private function brand(): array
+    {
+        $settings = resolve(InstanceSettings::class);
+        $assets = resolve(BrandAssets::class);
+
+        return [
+            'name' => $settings->displayName(),
+            'logoLightUrl' => $assets->url('logo-light'),
+            'logoDarkUrl' => $assets->url('logo-dark'),
+            'faviconUrl' => $assets->url('favicon'),
+            'poweredBy' => $settings->poweredBy(),
         ];
     }
 
