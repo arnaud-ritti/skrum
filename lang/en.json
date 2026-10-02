@@ -3714,5 +3714,7 @@
     ":written/:present have written": ":written/:present have written",
     "Anonymity: on": "Anonymity: on",
     "Add a column to start writing.": "Add a column to start writing.",
-    "The facilitator has not added a column yet.": "The facilitator has not added a column yet."
+    "The facilitator has not added a column yet.": "The facilitator has not added a column yet.",
+    "Drop to add to the group": "Drop to add to the group",
+    "save": "save"
 }

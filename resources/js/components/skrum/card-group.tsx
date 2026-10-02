@@ -1,4 +1,10 @@
-import { ChevronDown, ChevronRight, ThumbsUp, Unlink } from 'lucide-react';
+import {
+    ChevronDown,
+    ChevronRight,
+    Plus,
+    ThumbsUp,
+    Unlink,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react';
 import { RetroCard } from '@/components/skrum/retro-card';
@@ -34,6 +40,20 @@ export type CardGroupProps = Omit<
     titleMaxLength?: number;
     /** Shown under the title (AI name suggestion). */
     titleHint?: ReactNode;
+    /**
+     * What the title field holds when `editingTitle` opens it: a suggested
+     * name the viewer wants to change before keeping it. Saving it unchanged
+     * still renames the group.
+     */
+    titleDraft?: string;
+    /**
+     * Draws a card of the group in place of the plain `RetroCard`, for a host
+     * whose cards hold state of their own. It receives the card as the group
+     * would draw it: without shadow, and with "Ungroup" in its footer.
+     */
+    renderCard?: (card: RetroCardProps, index: number) => ReactNode;
+    /** Told when the title field opens and closes, however it was closed. */
+    onEditingTitleChange?: (editing: boolean) => void;
     onToggle?: (collapsed: boolean) => void;
     /** `null` clears the name, which the server accepts. */
     onRename?: (title: string | null) => void;
@@ -65,6 +85,9 @@ export function CardGroup({
     dropTarget = false,
     titleMaxLength = 60,
     titleHint,
+    titleDraft,
+    renderCard,
+    onEditingTitleChange,
     onToggle,
     onRename,
     onUngroup,
@@ -79,7 +102,9 @@ export function CardGroup({
     const [seenCollapsed, setSeenCollapsed] = useState(collapsed);
     const [isEditing, setIsEditing] = useState(editingTitle);
     const [seenEditing, setSeenEditing] = useState(editingTitle);
-    const [draft, setDraft] = useState(title);
+    const [draft, setDraft] = useState(
+        editingTitle ? (titleDraft ?? title) : title,
+    );
 
     if (collapsed !== seenCollapsed) {
         setSeenCollapsed(collapsed);
@@ -94,14 +119,25 @@ export function CardGroup({
         setIsEditing(editingTitle);
 
         if (editingTitle) {
-            setDraft(title);
+            setDraft(titleDraft ?? title);
         }
     }
 
     const firstCard = cards[0];
     const editing = canEdit && isEditing;
+    const reportEditing = useRef(onEditingTitleChange);
+    const reportedEditing = useRef(editing);
 
     useEffect(() => {
+        reportEditing.current = onEditingTitleChange;
+    });
+
+    useEffect(() => {
+        if (reportedEditing.current !== editing) {
+            reportedEditing.current = editing;
+            reportEditing.current?.(editing);
+        }
+
         if (editing) {
             settled.current = false;
 
@@ -203,6 +239,10 @@ export function CardGroup({
         }
     }
 
+    function drawCard(card: RetroCardProps, index: number): ReactNode {
+        return renderCard ? renderCard(card, index) : <RetroCard {...card} />;
+    }
+
     const toggleLabel = isCollapsed ? t('Expand group') : t('Collapse group');
     const Chevron = isCollapsed ? ChevronRight : ChevronDown;
 
@@ -276,7 +316,7 @@ export function CardGroup({
                 columnColorClass(color),
                 '@container/card relative flex w-full min-w-0 flex-col gap-2 rounded-xl border-[1.5px] border-(--col-border) bg-[color-mix(in_oklab,var(--col)_55%,var(--card))] p-3 text-foreground shadow-card transition-shadow duration-140 ease-standard motion-reduce:transition-none',
                 dropTarget &&
-                    'outline-2 outline-offset-2 outline-(--col-text) outline-dashed',
+                    'bg-[color-mix(in_oklab,var(--col)_80%,var(--card))] outline-2 outline-offset-2 outline-(--col-text) outline-dashed',
                 className,
             )}
         >
@@ -355,10 +395,16 @@ export function CardGroup({
                         data-slot="card-group-stack"
                         className="relative isolate mb-3"
                     >
-                        <RetroCard
-                            {...firstCard}
-                            className={cn('shadow-none', firstCard.className)}
-                        />
+                        {drawCard(
+                            {
+                                ...firstCard,
+                                className: cn(
+                                    'shadow-none',
+                                    firstCard.className,
+                                ),
+                            },
+                            0,
+                        )}
                         {sliceCount > 0 && (
                             <div
                                 aria-hidden
@@ -392,43 +438,80 @@ export function CardGroup({
                 >
                     {cards.map((card, index) => (
                         <li key={card.id} className="min-w-0">
-                            <RetroCard
-                                {...card}
-                                className={cn('shadow-none', card.className)}
-                                footer={
-                                    <>
-                                        {card.footer}
-                                        {canEdit && onUngroup && index > 0 && (
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        type="button"
-                                                        data-slot="card-group-ungroup"
-                                                        aria-label={t(
-                                                            'Ungroup',
-                                                        )}
-                                                        onClick={() =>
-                                                            onUngroup(card.id)
-                                                        }
-                                                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                                    >
-                                                        <Unlink
-                                                            className="size-4"
-                                                            aria-hidden
-                                                        />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {t('Ungroup')}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        )}
-                                    </>
-                                }
-                            />
+                            {drawCard(
+                                {
+                                    ...card,
+                                    className: cn(
+                                        'shadow-none',
+                                        card.className,
+                                    ),
+                                    footer: (
+                                        <>
+                                            {card.footer}
+                                            {canEdit &&
+                                                onUngroup &&
+                                                index > 0 && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                data-slot="card-group-ungroup"
+                                                                aria-label={t(
+                                                                    'Ungroup',
+                                                                )}
+                                                                onClick={() =>
+                                                                    onUngroup(
+                                                                        card.id,
+                                                                    )
+                                                                }
+                                                                className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                                            >
+                                                                <Unlink
+                                                                    className="size-4"
+                                                                    aria-hidden
+                                                                />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {t('Ungroup')}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                        </>
+                                    ),
+                                },
+                                index,
+                            )}
                         </li>
                     ))}
+                    {dropTarget && (
+                        <li
+                            data-slot="card-group-drop-slot"
+                            className="flex min-h-15 min-w-0 items-start justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-(--col-text) bg-card/55 px-2 pt-2 text-xs font-semibold text-(--col-text)"
+                        >
+                            <Plus className="size-4 shrink-0" aria-hidden />
+                            <span className="min-w-0">
+                                {t('Drop to add to the group')}
+                            </span>
+                        </li>
+                    )}
                 </ul>
+            )}
+
+            {editing && (
+                <p
+                    data-slot="card-group-title-keys"
+                    className="flex min-w-0 flex-wrap items-center gap-x-1 px-0.5 text-xs text-muted-foreground"
+                >
+                    <kbd className="rounded-xs border border-border bg-card px-1 font-mono">
+                        ↵
+                    </kbd>
+                    {t('save')} ·
+                    <kbd className="rounded-xs border border-border bg-card px-1 font-mono">
+                        Esc
+                    </kbd>
+                    {t('cancel')}
+                </p>
             )}
 
             {footer}

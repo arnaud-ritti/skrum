@@ -3938,5 +3938,7 @@
     ":written/:present have written": ":written/:present ont écrit",
     "Anonymity: on": "Anonymat : activé",
     "Add a column to start writing.": "Ajoutez une colonne pour commencer à écrire.",
-    "The facilitator has not added a column yet.": "Le facilitateur n'a pas encore ajouté de colonne."
+    "The facilitator has not added a column yet.": "Le facilitateur n'a pas encore ajouté de colonne.",
+    "Drop to add to the group": "Relâchez pour ajouter au groupe",
+    "save": "valider"
 }
