@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 
 export type SubNavItem = {
@@ -16,8 +17,21 @@ export function SubNav({
     items: SubNavItem[];
     label: string;
 }) {
+    const nav = useRef<HTMLElement>(null);
+    const currentLabel = items.find((item) => item.current)?.label;
+
+    /** Below `lg` the list scrolls sideways: the entry in use must not stay cut at its edge. */
+    useEffect(() => {
+        const current = nav.current?.querySelector('[aria-current="page"]');
+
+        if (current && typeof current.scrollIntoView === 'function') {
+            current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    }, [currentLabel]);
+
     return (
         <nav
+            ref={nav}
             aria-label={label}
             className="flex gap-0.5 overflow-x-auto lg:sticky lg:top-20 lg:w-54 lg:shrink-0 lg:flex-col lg:self-start lg:overflow-visible"
         >

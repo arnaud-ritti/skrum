@@ -34,8 +34,11 @@ function Crumbs({ crumbs }: { crumbs: SessionCrumb[] }) {
             className="hidden shrink-0 md:block"
         >
             <ol className="flex items-center gap-1.5 text-sm font-normal text-muted-foreground">
-                {crumbs.map((crumb) => (
-                    <li key={crumb.label} className="flex items-center gap-1.5">
+                {crumbs.map((crumb, index) => (
+                    <li
+                        key={`${index}-${crumb.label}`}
+                        className="flex items-center gap-1.5"
+                    >
                         {crumb.href ? (
                             <Link
                                 href={crumb.href}

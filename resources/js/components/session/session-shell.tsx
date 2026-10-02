@@ -74,6 +74,7 @@ export function SessionShell({
     rootProps,
     children,
 }: SessionShellProps) {
+    const { t } = useTrans();
     const { className, ...root } = rootProps ?? {};
     const isReconnecting = connection.reconnecting && !connection.expired;
     const isSynced =
@@ -109,6 +110,7 @@ export function SessionShell({
                     {isSynced && (
                         <span
                             data-slot="session-synced"
+                            title={t('Synced')}
                             className="hidden shrink-0 md:flex"
                         >
                             <ConnectionState

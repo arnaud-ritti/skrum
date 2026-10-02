@@ -196,9 +196,11 @@ function TeamSwitcher({
                         {team !== null && workspace !== null && (
                             <span className="truncate text-xs text-muted-foreground">
                                 {workspace.name} ·{' '}
-                                {t(':count members', {
-                                    count: team.membersCount,
-                                })}
+                                {team.membersCount === 1
+                                    ? t('1 member')
+                                    : t(':count members', {
+                                          count: team.membersCount,
+                                      })}
                             </span>
                         )}
                     </span>
