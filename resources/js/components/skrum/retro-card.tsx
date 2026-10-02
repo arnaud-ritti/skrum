@@ -87,8 +87,14 @@ export type RetroCardProps = Omit<
     editorTools?: ReactNode;
     /** Replaces the built-in "Add a reaction" button and quick list (full emoji picker). */
     reactionPicker?: ReactNode;
-    /** `voteBlocked` is the reason read next to the vote button when `canVote` is false. */
-    labels?: { vote?: string; voteBlocked?: string };
+    /**
+     * `voteBlocked` is the reason read next to the vote button when `canVote`
+     * is false. `editor` names the editing field ("Card text" by default) and
+     * is then its placeholder too.
+     */
+    labels?: { vote?: string; voteBlocked?: string; editor?: string };
+    /** False when the editing field is always shown, as a composer is. */
+    autoFocusEditor?: boolean;
     children?: ReactNode;
     onVote?: (delta: 1 | -1) => void;
     onReact?: (emoji: string) => void;
@@ -194,6 +200,7 @@ export function RetroCard({
     editorTools,
     reactionPicker,
     labels,
+    autoFocusEditor = true,
     children,
     onVote,
     onReact,
@@ -573,8 +580,9 @@ export function RetroCard({
             {isEditing ? (
                 <textarea
                     data-slot="retro-card-input"
-                    aria-label={t('Card text')}
-                    autoFocus
+                    aria-label={labels?.editor ?? t('Card text')}
+                    placeholder={labels?.editor}
+                    autoFocus={autoFocusEditor}
                     value={draft}
                     maxLength={maxLength}
                     readOnly={isLocked}
@@ -586,7 +594,7 @@ export function RetroCard({
                     onBlur={() => {
                         editorHadFocus.current = false;
                     }}
-                    className="field-sizing-content min-h-16 w-full resize-none bg-transparent text-sm/snug text-foreground outline-none"
+                    className="field-sizing-content min-h-16 w-full resize-none bg-transparent text-sm/snug text-foreground outline-none placeholder:text-muted-foreground"
                 />
             ) : (
                 (masked || hasText || isLocked) && (

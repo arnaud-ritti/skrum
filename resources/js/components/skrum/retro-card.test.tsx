@@ -57,6 +57,31 @@ describe('RetroCard', () => {
         ).toBeTruthy();
     });
 
+    it('names the editing field "Card text", or as the host says', () => {
+        const { rerender } = renderWithProviders(card({ editing: true }));
+
+        expect(screen.getByRole('textbox', { name: 'Card text' })).toBeTruthy();
+
+        rerender(card({ editing: true, labels: { editor: 'Add a card…' } }));
+
+        expect(
+            screen
+                .getByRole('textbox', { name: 'Add a card…' })
+                .getAttribute('placeholder'),
+        ).toBe('Add a card…');
+    });
+
+    it('takes the focus when editing starts, unless the host keeps it', () => {
+        const { unmount } = renderWithProviders(card({ editing: true }));
+
+        expect(document.activeElement).toBe(screen.getByRole('textbox'));
+
+        unmount();
+        renderWithProviders(card({ editing: true, autoFocusEditor: false }));
+
+        expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+    });
+
     it('shows Anonymous instead of the author', () => {
         renderWithProviders(card({ author: null }));
 
