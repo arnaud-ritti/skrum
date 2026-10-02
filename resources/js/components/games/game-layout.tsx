@@ -35,7 +35,7 @@ export function useHasRightColumn(): boolean {
 }
 const LeftColumnFromRem = 80;
 
-type Panel = 'left' | 'right' | null;
+type Panel = 'left' | 'right';
 
 /** The three columns of a game, without a topbar: a room and the retro stage share it. */
 export function GameLayout({
@@ -49,16 +49,23 @@ export function GameLayout({
     const { t } = useTrans();
     const hasRightColumn = useMinWidth(RightColumnFromRem);
     const isWide = useMinWidth(LeftColumnFromRem);
-    const [panel, setPanel] = useState<Panel>(null);
-    const restoreFocus = useRestoreFocus(panel !== null);
+    const [panel, setPanel] = useState<Panel>('right');
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const restoreFocus = useRestoreFocus(isPanelOpen);
+
+    const open = (next: Panel) => {
+        setPanel(next);
+        setIsPanelOpen(true);
+    };
+
     const hasLeft = left !== undefined && left !== null;
     const hasLeftColumn = hasLeft && isWide;
     const leftInSheet = hasLeft && !isWide;
     const rightInSheet = !hasRightColumn;
-    const openPanel =
-        (panel === 'left' && leftInSheet) || (panel === 'right' && rightInSheet)
-            ? panel
-            : null;
+    const isSheetOpen =
+        isPanelOpen &&
+        ((panel === 'left' && leftInSheet) ||
+            (panel === 'right' && rightInSheet));
 
     return (
         <div
@@ -99,7 +106,7 @@ export function GameLayout({
                                 variant="outline"
                                 size="icon"
                                 aria-label={t('Players and scores')}
-                                onClick={() => setPanel('right')}
+                                onClick={() => open('right')}
                             >
                                 <Users aria-hidden />
                             </Button>
@@ -110,7 +117,7 @@ export function GameLayout({
                                 variant="outline"
                                 size="icon"
                                 aria-label={t('Choose a game')}
-                                onClick={() => setPanel('left')}
+                                onClick={() => open('left')}
                             >
                                 <Shapes aria-hidden />
                             </Button>
@@ -139,27 +146,27 @@ export function GameLayout({
                 </aside>
             )}
             <Sheet
-                open={openPanel !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setPanel(null);
+                open={isSheetOpen}
+                onOpenChange={(next) => {
+                    if (!next) {
+                        setIsPanelOpen(false);
                     }
                 }}
             >
                 <SheetContent
-                    side={openPanel === 'left' ? 'left' : 'right'}
+                    side={panel}
                     aria-describedby={undefined}
                     onCloseAutoFocus={restoreFocus}
                 >
                     <SheetHeader>
                         <SheetTitle>
-                            {openPanel === 'left'
+                            {panel === 'left'
                                 ? t('Choose a game')
                                 : t('Players and scores')}
                         </SheetTitle>
                     </SheetHeader>
                     <SheetBody className="flex flex-col gap-5 space-y-0">
-                        {openPanel === 'left' ? left : right}
+                        {panel === 'left' ? left : right}
                     </SheetBody>
                 </SheetContent>
             </Sheet>

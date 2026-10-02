@@ -3954,5 +3954,9 @@
     "Step 2 of 3 · Reveal & vote": "Paso 2 de 3 · Revelación y votos",
     "Step 3 of 3 · Results": "Paso 3 de 3 · Resultados",
     "Ready": "Listos",
-    "Your GIF stays hidden until the reveal.": "Tu GIF permanece oculto hasta la revelación."
+    "Your GIF stays hidden until the reveal.": "Tu GIF permanece oculto hasta la revelación.",
+    "Turn off guest access?": "¿Desactivar el acceso de invitados?",
+    "Turn off guest access": "Desactivar el acceso de invitados",
+    "blank": "vacío",
+    "space": "espacio"
 }

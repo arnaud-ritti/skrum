@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { TimeUpBadge } from '@/components/session/session-timer';
 import { useTrans } from '@/hooks/use-trans';
+import { outcomeLabel } from '@/lib/games/outcomes';
 import type { GameRound } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { DecodedBoard } from './decoded-board';
@@ -93,6 +94,7 @@ export type GameStageProps = {
 /** The centre of a room: the game's name, then the round in play or the end card. */
 export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
     const { snapshot, lastEnded, serverOffset } = useRoom();
+    const { t } = useTrans();
     const gifStep = useGifStep();
     const { room, round, games, history } = snapshot;
     const gameLabel =
@@ -103,6 +105,13 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
         null;
     /** The end card of a round the timer ended already says "Time's up". */
     const endCardSaysTimeUp = round === null && lastOutcome === 'timed_out';
+    const endedWord = lastEnded?.word ?? null;
+    const announcedOutcome =
+        round === null && lastOutcome !== null
+            ? [outcomeLabel(lastOutcome, t), endedWord]
+                  .filter((part) => part !== null)
+                  .join(': ')
+            : '';
 
     return (
         <section
@@ -139,6 +148,13 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
                     <HistoryDrawer />
                 </div>
             </div>
+            <p
+                role="status"
+                data-slot="round-outcome-status"
+                className="sr-only"
+            >
+                {announcedOutcome}
+            </p>
             {round ? (
                 <RoundBoard round={round} gifCaption={gifCaption} />
             ) : (

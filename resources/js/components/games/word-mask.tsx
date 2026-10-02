@@ -26,11 +26,21 @@ export function WordMask({
 }: Props) {
     const { t } = useTrans();
     const hidden = mask.filter((character) => character === null).length;
+    const spelled = mask
+        .map((character) => {
+            if (character === null) {
+                return t('blank');
+            }
+
+            return character === ' ' ? t('space') : character.toUpperCase();
+        })
+        .join(', ');
 
     return (
         <div
             role="img"
             aria-label={t(':count letters left to find', { count: hidden })}
+            aria-description={spelled}
             data-slot="word-mask"
             className={cn(
                 'flex max-w-full flex-wrap justify-center',

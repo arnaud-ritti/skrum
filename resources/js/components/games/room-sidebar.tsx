@@ -60,6 +60,7 @@ function PlayersList({
     const { round } = snapshot;
     const gifDone = gifDoneIds(round, snapshot.me.playerId);
     const isPicking = gifDone !== null && round?.revealedAt === null;
+    const expected = Math.max(online.length, gifDone?.size ?? 0);
     const players = [...snapshot.players].sort(
         (first, second) =>
             Number(onlineIds.has(second.presenceId)) -
@@ -84,8 +85,8 @@ function PlayersList({
                     data-slot="gif-ready"
                     label={t('Ready')}
                     value={gifDone.size}
-                    max={Math.max(players.length, 1)}
-                    valueLabel={`${gifDone.size} / ${players.length}`}
+                    max={Math.max(expected, 1)}
+                    valueLabel={`${gifDone.size} / ${expected}`}
                 />
             )}
             <ul className="flex flex-col gap-0.5">
@@ -177,7 +178,9 @@ export function RoomSidebar({
                     <GifSteps step={gifStep} />
                 </div>
             )}
-            {round?.game === 'hangman' && <HangmanFeed round={round} />}
+            {round?.game === 'hangman' && hasRightColumn && (
+                <HangmanFeed round={round} className="border-t pt-5" />
+            )}
             {round && hasGuesses && hasRightColumn && (
                 <GuessChat
                     round={round}

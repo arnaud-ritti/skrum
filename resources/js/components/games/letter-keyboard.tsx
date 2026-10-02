@@ -58,20 +58,31 @@ export function LetterKeyboard({
                 >
                     {row.map((letter) => {
                         const state = stateOf(letter);
+                        const isLocked = disabled || state !== 'free';
+                        const outcomes = {
+                            free: undefined,
+                            hit: `${letter}, ${t('in the word')}`,
+                            miss: `${letter}, ${t('not in the word')}`,
+                        };
 
                         return (
                             <button
                                 key={letter}
                                 type="button"
                                 data-state={state}
-                                disabled={disabled || state !== 'free'}
+                                aria-label={outcomes[state]}
+                                aria-disabled={isLocked}
                                 aria-pressed={state !== 'free'}
-                                onClick={() => onPick(letter)}
+                                onClick={() => {
+                                    if (!isLocked) {
+                                        onPick(letter);
+                                    }
+                                }}
                                 className={cn(
                                     'grid h-11.5 max-w-11.5 min-w-0 flex-1 place-items-center rounded-md border text-base font-bold uppercase outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-shadow motion-safe:duration-140 sm:h-12',
                                     stateClasses[state],
                                     state === 'free' &&
-                                        'disabled:hover:border-input disabled:hover:ring-0',
+                                        'aria-disabled:cursor-default aria-disabled:hover:border-input aria-disabled:hover:ring-0',
                                 )}
                             >
                                 {letter}

@@ -43,17 +43,20 @@ describe('LetterKeyboard', () => {
             />,
         );
 
-        const hit = screen.getByRole('button', { name: 'q' });
-        const miss = screen.getByRole('button', { name: 'x' });
+        const hit = screen.getByRole('button', { name: 'q, in the word' });
+        const miss = screen.getByRole('button', {
+            name: 'x, not in the word',
+        });
         const free = screen.getByRole('button', { name: 'u' });
 
         expect(hit.getAttribute('data-state')).toBe('hit');
         expect(hit.getAttribute('aria-pressed')).toBe('true');
-        expect(hit).toHaveProperty('disabled', true);
+        expect(hit.getAttribute('aria-disabled')).toBe('true');
         expect(miss.getAttribute('data-state')).toBe('miss');
-        expect(miss).toHaveProperty('disabled', true);
+        expect(miss.getAttribute('aria-disabled')).toBe('true');
         expect(free.getAttribute('data-state')).toBe('free');
         expect(free.getAttribute('aria-pressed')).toBe('false');
+        expect(free.getAttribute('aria-disabled')).toBe('false');
 
         fireEvent.click(free);
         fireEvent.click(miss);
@@ -62,21 +65,55 @@ describe('LetterKeyboard', () => {
         expect(onPick).toHaveBeenCalledWith('u');
     });
 
+    it('keeps the focus on a key once it is picked', () => {
+        const { rerender } = render(
+            <LetterKeyboard
+                layout="qwerty"
+                picked={[]}
+                hits={[]}
+                disabled={false}
+                onPick={vi.fn()}
+            />,
+        );
+
+        const key = screen.getByRole('button', { name: 'q' });
+
+        key.focus();
+        rerender(
+            <LetterKeyboard
+                layout="qwerty"
+                picked={['q']}
+                hits={['q']}
+                disabled
+                onPick={vi.fn()}
+            />,
+        );
+
+        expect(key).toHaveProperty('disabled', false);
+        expect(document.activeElement).toBe(key);
+    });
+
     it('locks every key while a pick is pending', () => {
+        const onPick = vi.fn();
+
         render(
             <LetterKeyboard
                 layout="qwerty"
                 picked={[]}
                 hits={[]}
                 disabled
-                onPick={vi.fn()}
+                onPick={onPick}
             />,
         );
 
+        const keys = screen.getAllByRole('button');
+
         expect(
-            screen
-                .getAllByRole('button')
-                .every((key) => (key as HTMLButtonElement).disabled),
+            keys.every((key) => key.getAttribute('aria-disabled') === 'true'),
         ).toBe(true);
+
+        fireEvent.click(keys[0]);
+
+        expect(onPick).not.toHaveBeenCalled();
     });
 });

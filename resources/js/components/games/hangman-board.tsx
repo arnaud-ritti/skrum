@@ -6,16 +6,22 @@ import { useTrans } from '@/hooks/use-trans';
 import { hitLetters, keyboardLayoutFor } from '@/lib/games/hangman';
 import type { GameLetterResponse, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { useHasRightColumn } from './game-layout';
+import { HangmanFeed } from './hangman-feed';
 import { HangmanFigure } from './hangman-figure';
 import { LetterKeyboard } from './letter-keyboard';
 import { useRoom } from './room-context';
 import { WordMask } from './word-mask';
+
+/** How many of the last letters stand under the keyboard where the right column is a sheet. */
+const StagePicks = 3;
 
 export function HangmanBoard({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const { locale } = usePage().props;
     const [pending, setPending] = useState(false);
+    const hasRightColumn = useHasRightColumn();
     const misses = round.misses ?? 0;
     const maxMisses = round.maxMisses ?? 6;
     const mask = round.mask ?? [];
@@ -84,6 +90,13 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                 disabled={pending}
                 onPick={(letter) => void pick(letter)}
             />
+            {!hasRightColumn && (
+                <HangmanFeed
+                    round={round}
+                    limit={StagePicks}
+                    className="w-full max-w-136"
+                />
+            )}
         </div>
     );
 }

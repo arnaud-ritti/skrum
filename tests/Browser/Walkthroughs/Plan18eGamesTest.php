@@ -287,13 +287,20 @@ it('[P18e-06-05] lays the hangman keyboard out for the language of the player, p
         ->click(p18eGamesKey('x'))
         ->assertAttribute(p18eGamesKey('x'), 'data-state', 'miss')
         ->assertSeeIn('[data-slot="hangman-missed"]', 'X')
+        ->assertVisible('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]')
+        ->assertSeeIn('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]', 'X')
+        ->assertScript(p18eGamesAbove('[data-layout]', 'ul[aria-label="Dernières lettres"]'), true)
+        ->assertAriaAttribute(p18eGamesKey('q'), 'label', 'q, dans le mot')
+        ->assertAriaAttribute(p18eGamesKey('x'), 'label', 'x, pas dans le mot')
         ->click('[aria-label="Joueurs et scores"]')
         ->assertSeeIn('[role="dialog"] section[aria-labelledby="game-players"]', 'Visitor')
-        ->assertSeeIn('[role="dialog"] ul[aria-label="Dernières lettres"]', 'X');
+        ->assertCount('ul[aria-label="Dernières lettres"]', 1)
+        ->assertNotPresent('[role="dialog"] ul[aria-label="Dernières lettres"]');
 
     $guest->assertAttribute(p18eGamesKey('q'), 'data-state', 'hit')
         ->assertAttribute(p18eGamesKey('x'), 'data-state', 'miss')
-        ->assertSeeIn('ul[aria-label="Last letters"]', 'Ada Host picked X');
+        ->assertSeeIn('[data-slot="game-right"] ul[aria-label="Last letters"]', 'Ada Host picked X')
+        ->assertCount('ul[aria-label="Last letters"]', 1);
 
     $host->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
@@ -359,6 +366,20 @@ it('[P18e-06-08] flies a reaction of a guest on the screen of the host, never ov
     expect($room->fresh()->reactions_enabled)->toBeFalse();
 });
 
+it('[P18e-06-08b] keeps the reaction bar under the guess field of a drawing at 390 pixels', function () {
+    [$room, $ada] = p18eGamesDrawing();
+    $bar = '[role="toolbar"][aria-label="Reactions"]';
+    $field = 'input[aria-label="Your guess"]';
+
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $guesser->resize(390, 844)
+        ->assertVisible($bar)
+        ->assertPresent($field)
+        ->assertScript(p18eGamesAbove($field, $bar), true)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+});
+
 it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the link, its QR code, and a new link after a confirmation', function () {
     [$room, $ada] = p18eGamesRoom();
     $oldToken = $room->guest_token;
@@ -383,6 +404,17 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
 
     expect($room->fresh()->guest_token)->toBe($oldToken);
 
+    $host->click('#room-guests')
+        ->assertSeeIn('[role="alertdialog"]', 'Turn off guest access?')
+        ->assertSeeIn('[role="alertdialog"]', 'Guests in this room lose access.')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertAriaAttribute('#room-guests', 'checked', 'true');
+
+    expect($room->fresh()->access)->toBe(GameRoomAccess::Link);
+
+    $guest->assertDontSee('Your access to this room has ended.');
+
     $host->click("{$dialog} button:has-text(\"Create a new link\")")
         ->click('[role="alertdialog"] button:has-text("Create a new link")')
         ->assertNotPresent('[role="alertdialog"]')
@@ -397,6 +429,8 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
     $guest->assertSee('Your access to this room has ended.');
 
     $host->click('#room-guests')
+        ->click('[role="alertdialog"] button:has-text("Turn off guest access")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertAriaAttribute('#room-guests', 'checked', 'false')
         ->assertSeeIn($dialog, 'Guest link is off')
         ->assertNotPresent("{$dialog} input[aria-label=\"Guest link\"]")
@@ -475,6 +509,24 @@ function p18eGamesStroke(mixed $page, array $points): void
         JS);
 }
 
+/** The largest gap, over the channels, between the colour a swatch shows and an ink. */
+function p18eGamesSwatchDistance(string $color, string $rgba): string
+{
+    $ink = json_encode(array_map(intval(...), explode(' ', $rgba)));
+
+    return <<<JS
+        (() => {
+            const swatch = document.querySelector('[role="toolbar"][aria-label="Drawing tools"] [data-color="{$color}"] span:last-child');
+            const context = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d');
+
+            context.fillStyle = getComputedStyle(swatch).backgroundColor;
+            context.fillRect(0, 0, 1, 1);
+
+            return Math.max(...Array.from(context.getImageData(0, 0, 1, 1).data).map((channel, index) => Math.abs(channel - {$ink}[index])));
+        })()
+        JS;
+}
+
 function p18eGamesPixel(string $label, int $x, int $y): string
 {
     return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
@@ -536,6 +588,15 @@ it('[P18e-06-10a] draws each of the eight colours with its own ink on the canvas
     $drawer->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertAriaAttribute('[aria-label="Pencil"]', 'pressed', 'true')
         ->assertAriaAttribute('[aria-label="Ink"]', 'pressed', 'true');
+
+    $drawer->script("() => { document.documentElement.classList.add('dark'); return true; }");
+
+    foreach ($inks as $name => $rgb) {
+        $drawer->assertScript(p18eGamesSwatchDistance($name, $rgb).' <= 12', true);
+    }
+
+    $drawer->assertScript(p18eGamesSwatchDistance('black', '255 255 255 255').' > 200', true);
+    $drawer->script("() => { document.documentElement.classList.remove('dark'); return true; }");
 
     $row = 0;
 

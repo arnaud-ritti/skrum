@@ -73,7 +73,7 @@ export function MaskedWord({ mask, maxHints }: MaskedWordProps) {
                     <Lightbulb aria-hidden className="size-3.5 shrink-0" />
                     {t('Hint')}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span role="status" className="text-xs text-muted-foreground">
                     {t('Letters revealed: :count of :max', {
                         count: hintsUsed(mask),
                         max: maxHints,
