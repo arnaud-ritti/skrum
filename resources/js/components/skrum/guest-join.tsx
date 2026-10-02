@@ -484,11 +484,13 @@ export function GuestJoin({
                                 <span className="truncate text-muted-foreground">
                                     {previewName}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {t(
-                                        'Suggested nickname if you leave it empty',
-                                    )}
-                                </span>
+                                {defaultName !== undefined && (
+                                    <span className="text-xs text-muted-foreground">
+                                        {t(
+                                            'Suggested nickname if you leave it empty',
+                                        )}
+                                    </span>
+                                )}
                             </>
                         )}
                     </span>

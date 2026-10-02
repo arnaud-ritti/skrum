@@ -181,6 +181,22 @@ describe('GuestJoin', () => {
         expect(screen.getByText('Guest')).toBeTruthy();
     });
 
+    it('announces a suggested nickname only when there is one', () => {
+        setup();
+
+        expect(
+            screen.queryByText('Suggested nickname if you leave it empty'),
+        ).toBeNull();
+    });
+
+    it('announces the suggested nickname it will submit', () => {
+        setup({ defaultName: 'Pensive otter' });
+
+        expect(
+            screen.getByText('Suggested nickname if you leave it empty'),
+        ).toBeTruthy();
+    });
+
     it('renders with only the kind and the title the join pages receive', () => {
         setup();
 
