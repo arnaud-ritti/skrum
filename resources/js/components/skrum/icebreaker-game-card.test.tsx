@@ -17,6 +17,23 @@ const base = {
 };
 
 describe('IcebreakerGameCard', () => {
+    it('shows the icon of the game alone when compact', () => {
+        const { container, rerender } = render(
+            <IcebreakerGameCard game="decoded" title="Decoded" />,
+        );
+
+        expect(screen.queryByRole('img', { hidden: true })).toBeTruthy();
+        expect(container.querySelectorAll('svg')).toHaveLength(1);
+
+        rerender(<IcebreakerGameCard game="decoded" title="Decoded" compact />);
+
+        expect(screen.queryByRole('img', { hidden: true })).toBeNull();
+        expect(container.querySelectorAll('svg')).toHaveLength(1);
+        expect(screen.getByRole('radio').getAttribute('data-compact')).toBe(
+            'true',
+        );
+    });
+
     it('renders a server option with only its kind and label', () => {
         const onSelect = vi.fn();
         render(
