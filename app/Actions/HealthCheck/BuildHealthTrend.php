@@ -3,12 +3,11 @@
 namespace App\Actions\HealthCheck;
 
 use App\Enums\RetroPhase;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroHealthStatement;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use stdClass;
 
 class BuildHealthTrend
 {
@@ -48,7 +47,7 @@ class BuildHealthTrend
 
         $retroIds = $retros->pluck('id');
         $keysByRetro = $this->statementKeysByRetro($retroIds);
-        $scores = $this->scoresWithKeys($retroIds, $keysByRetro);
+        $scores = $this->scores($retroIds);
 
         $points = [];
         $previous = null;
@@ -78,12 +77,35 @@ class BuildHealthTrend
     }
 
     /**
+     * Only answers to a statement frozen on their own retro count: the relation matches the key,
+     * the constraint matches the retro.
+     *
      * @param  Collection<int, string>  $retroIds
      * @return Collection<string, ?float> score of each retro, null when it has no answer to a frozen statement
      */
     public function scores(Collection $retroIds): Collection
     {
-        return $this->scoresWithKeys($retroIds, $this->statementKeysByRetro($retroIds));
+        $sameRetro = fn (Builder $answers): Builder => $answers->whereColumn(
+            $answers->qualifyColumn('retro_id'),
+            (new RetroHealthStatement)->qualifyColumn('retro_id'),
+        );
+
+        $statementsByRetro = RetroHealthStatement::query()
+            ->whereIn('retro_id', $retroIds)
+            ->withCount(['answers' => $sameRetro])
+            ->withSum(['answers' => $sameRetro], 'score')
+            ->get()
+            ->groupBy('retro_id');
+
+        return $retroIds->mapWithKeys(function (string $retroId) use ($statementsByRetro): array {
+            $averages = collect($statementsByRetro->get($retroId, []))
+                ->filter(fn (RetroHealthStatement $statement): bool => (int) $statement->answers_count > 0)
+                ->map(fn (RetroHealthStatement $statement): float => round((float) $statement->answers_sum_score / (int) $statement->answers_count, 1))
+                ->values()
+                ->all();
+
+            return [$retroId => SummarizeHealthCheck::scoreOf($averages)];
+        });
     }
 
     /**
@@ -97,33 +119,5 @@ class BuildHealthTrend
             ->get(['retro_id', 'key'])
             ->groupBy('retro_id')
             ->map(fn (Collection $statements) => $statements->pluck('key')->sort()->values()->all());
-    }
-
-    /**
-     * @param  Collection<int, string>  $retroIds
-     * @param  Collection<string, array<int, string>>  $keysByRetro
-     * @return Collection<string, ?float>
-     */
-    private function scoresWithKeys(Collection $retroIds, Collection $keysByRetro): Collection
-    {
-        $meansByRetro = HealthCheckAnswer::query()
-            ->toBase()
-            ->whereIn('retro_id', $retroIds)
-            ->selectRaw('retro_id, statement, sum(score) as total, count(*) as answers')
-            ->groupBy('retro_id', 'statement')
-            ->get()
-            ->groupBy('retro_id');
-
-        return $retroIds->mapWithKeys(function (string $retroId) use ($keysByRetro, $meansByRetro): array {
-            $keys = $keysByRetro->get($retroId, []);
-
-            $averages = collect($meansByRetro->get($retroId, []))
-                ->filter(fn (stdClass $row): bool => in_array($row->statement, $keys, true))
-                ->map(fn (stdClass $row): float => round((float) $row->total / (int) $row->answers, 1))
-                ->values()
-                ->all();
-
-            return [$retroId => SummarizeHealthCheck::scoreOf($averages)];
-        });
     }
 }

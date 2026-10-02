@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -27,6 +28,9 @@ use Illuminate\Support\Carbon;
  * @property-read GameRoom $room
  * @property-read User|null $user
  * @property-read Participant|null $participant
+ * @property-read int|string|null $total_points
+ * @property-read int|null $wins
+ * @property-read int|null $rounds_played
  */
 #[Fillable(['game_room_id', 'user_id', 'participant_id', 'guest_name', 'guest_secret_hash'])]
 #[Hidden(['guest_secret_hash'])]
@@ -68,6 +72,12 @@ class GamePlayer extends Model
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);
+    }
+
+    /** @return HasMany<GamePoint, $this> */
+    public function points(): HasMany
+    {
+        return $this->hasMany(GamePoint::class, 'player_id');
     }
 
     public function isGuest(): bool

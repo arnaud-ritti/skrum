@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Enums\TemplateCategory;
 use App\Http\Requests\WorkspaceTemplateRequest;
-use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
 use App\Models\User;
 use App\Models\WhiteboardTemplate;
@@ -151,21 +150,17 @@ class WorkspaceTemplatesController extends Controller
     private function pokerDecks(User $user, Workspace $workspace, array $visibleTeamIds): array
     {
         $canManage = $user->canManage($workspace);
-        $decks = $workspace->pokerDecks()->with('creator')->orderBy('name')->get();
 
-        $usageCounts = PokerGame::query()
-            ->whereIn('saved_deck_id', $decks->modelKeys())
-            ->whereIn('team_id', $visibleTeamIds)
-            ->selectRaw('saved_deck_id, count(*) as aggregate')
-            ->groupBy('saved_deck_id')
-            ->pluck('aggregate', 'saved_deck_id');
-
-        return $decks
+        return $workspace->pokerDecks()
+            ->with('creator')
+            ->withCount(['games as usage_count' => fn (Builder $games) => $games->whereIn('team_id', $visibleTeamIds)])
+            ->orderBy('name')
+            ->get()
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,
                 'cards' => $deck->cards,
-                'usageCount' => (int) ($usageCounts[$deck->id] ?? 0),
+                'usageCount' => (int) $deck->usage_count,
                 'author' => $this->author($deck->creator),
                 'canManage' => $canManage,
             ])

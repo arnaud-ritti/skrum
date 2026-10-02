@@ -86,6 +86,22 @@ it('keeps a reworded custom statement comparable across retros', function () {
         ->and($second->healthStatements()->where('key', $custom->id)->sole()->text)->toBe('We shipped what we promised');
 });
 
+it('scores a retro from the answers to its own frozen statements only', function () {
+    $team = Team::factory()->create();
+    $retro = trendRetro($team, ['vision' => 4, 'motivation' => 8, 'a_key_never_frozen' => 1], '2026-05-01 10:00:00');
+    $other = trendRetro($team, ['vision' => 10, 'motivation' => 10], '2026-06-01 10:00:00');
+    HealthCheckAnswer::factory()->create([
+        'retro_id' => $retro->id,
+        'participant_id' => Participant::factory()->create(['retro_id' => $retro->id])->id,
+        'statement' => 'vision',
+        'score' => 7,
+    ]);
+
+    $scores = resolve(BuildHealthTrend::class)->scores(collect([$retro->id, $other->id]));
+
+    expect($scores->all())->toBe([$retro->id => 6.8, $other->id => 10.0]);
+});
+
 it('builds the trend with a constant number of queries', function () {
     $team = Team::factory()->create();
     $countQueries = function (Retro $retro): int {

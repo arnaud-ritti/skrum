@@ -10,6 +10,7 @@ use App\Events\Retros\ResultsChanged;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * @property string $id
@@ -54,6 +56,7 @@ use Illuminate\Support\Carbon;
  * @property-read Team $team
  * @property-read float|string|null $roti_votes_avg_score
  * @property-read int|null $roti_votes_count
+ * @property-read int|null $mood_voters_count
  */
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
@@ -166,6 +169,26 @@ class Retro extends Model implements DeliverySubject
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
+    }
+
+    /**
+     * Cards without a vote are absent.
+     *
+     * @return Collection<string, int<0, max>>
+     */
+    public function voteCountsByCard(?Participant $voter = null): Collection
+    {
+        $cast = fn (Builder $votes): Builder => $votes
+            ->where('retro_id', $this->id)
+            ->when($voter !== null, fn (Builder $own) => $own->where('participant_id', $voter?->id));
+
+        return $this->cards()
+            ->select('id')
+            ->whereHas('votes', $cast)
+            ->withCount(['votes' => $cast])
+            ->get()
+            ->mapWithKeys(fn (Card $card): array => [$card->id => (int) $card->votes_count])
+            ->toBase();
     }
 
     public function writersCount(): int

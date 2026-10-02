@@ -44,12 +44,7 @@ class McpMessage
      */
     public function countVotes(Retro $retro): array
     {
-        return $retro->votes()
-            ->selectRaw('card_id, count(*) as total')
-            ->groupBy('card_id')
-            ->pluck('total', 'card_id')
-            ->map(fn (mixed $total): int => (int) $total)
-            ->all();
+        return $retro->voteCountsByCard()->all();
     }
 
     /**

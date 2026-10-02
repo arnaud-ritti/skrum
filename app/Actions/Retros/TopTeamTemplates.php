@@ -6,12 +6,19 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
+use Illuminate\Database\Eloquent\Collection;
 
 class TopTeamTemplates
 {
     private const int Count = 5;
 
-    /** @return list<string> */
+    private const int Window = 100;
+
+    /**
+     * The templates a team used most, counted over its latest hundred retros.
+     *
+     * @return list<string>
+     */
     public function handle(Team $team): array
     {
         $usedKeys = $this->usedKeys($team);
@@ -34,12 +41,16 @@ class TopTeamTemplates
         $keys = Retro::query()
             ->where('team_id', $team->id)
             ->where('template', '!=', TemplateCatalogue::Custom)
-            ->selectRaw('template, workspace_template_id, count(*) as uses, max(created_at) as last_used_at')
-            ->groupBy('template', 'workspace_template_id')
-            ->orderByDesc('uses')
-            ->latest('last_used_at')
-            ->get()
-            ->map(function (Retro $row) use ($workspaceTemplateIds): ?string {
+            ->latest()
+            ->orderByDesc('id')
+            ->limit(self::Window)
+            ->get(['template', 'workspace_template_id', 'created_at'])
+            ->groupBy(fn (Retro $retro): string => "{$retro->template}|{$retro->workspace_template_id}")
+            ->sort(fn (Collection $first, Collection $second): int => [$second->count(), $second->max('created_at')] <=> [$first->count(), $first->max('created_at')])
+            ->map(function (Collection $uses) use ($workspaceTemplateIds): ?string {
+                /** @var Retro $row */
+                $row = $uses->firstOrFail();
+
                 if ($row->workspace_template_id !== null) {
                     return in_array($row->workspace_template_id, $workspaceTemplateIds, true) ?
                         WorkspaceTemplate::KeyPrefix.$row->workspace_template_id :

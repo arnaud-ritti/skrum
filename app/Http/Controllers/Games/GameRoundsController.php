@@ -30,7 +30,7 @@ class GameRoundsController extends Controller
         GameGuard::host($room, $player);
 
         $validated = $request->validate([
-            'leader_player_id' => ['nullable', 'string', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
+            'leader_player_id' => ['nullable', 'string', 'uuid', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
         ]);
 
         ['round' => $round, 'ended' => $ended] = $startGameRound->handle($room, $player, $validated);

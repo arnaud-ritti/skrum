@@ -42,6 +42,9 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read int|string|null $total_points
+ * @property-read int|null $wins
+ * @property-read int|null $rounds_played
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -137,6 +140,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class)->withTimestamps();
+    }
+
+    /** @return HasMany<GamePoint, $this> */
+    public function gamePoints(): HasMany
+    {
+        return $this->hasMany(GamePoint::class);
     }
 
     /** @return HasMany<SocialAccount, $this> */

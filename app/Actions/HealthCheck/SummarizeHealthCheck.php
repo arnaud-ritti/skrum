@@ -2,6 +2,7 @@
 
 namespace App\Actions\HealthCheck;
 
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroHealthStatement;
@@ -34,11 +35,13 @@ class SummarizeHealthCheck
         }
 
         $totals = $retro->healthCheckAnswers()
-            ->toBase()
-            ->selectRaw('statement, count(*) as answers, sum(score) as total, sum(score * score) as squares')
+            ->get(['statement', 'score'])
             ->groupBy('statement')
-            ->get()
-            ->keyBy('statement');
+            ->map(fn (Collection $answers): object => (object) [
+                'answers' => $answers->count(),
+                'total' => $answers->sum('score'),
+                'squares' => $answers->sum(fn (HealthCheckAnswer $answer): int => $answer->score ** 2),
+            ]);
 
         $previousAverages = $viewer?->isGuest() ? [] : $this->previousAverages($retro);
 
@@ -111,11 +114,9 @@ class SummarizeHealthCheck
         }
 
         return $previous->healthCheckAnswers()
-            ->toBase()
-            ->selectRaw('statement, avg(score) as mean')
+            ->get(['statement', 'score'])
             ->groupBy('statement')
-            ->pluck('mean', 'statement')
-            ->map(fn (mixed $mean): float => round((float) $mean, 1))
+            ->map(fn (Collection $answers): float => round((float) $answers->avg('score'), 1))
             ->all();
     }
 
@@ -139,7 +140,7 @@ class SummarizeHealthCheck
     }
 
     /**
-     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float}>  $reported
+     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int<0, max>, consensus: ?float, previousAverage: ?float}>  $reported
      * @return array{
      *     0: ?array{key: string, label: string, average: float},
      *     1: ?array{key: string, label: string, average: float}

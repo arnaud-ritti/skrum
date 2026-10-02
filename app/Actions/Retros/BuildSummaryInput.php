@@ -6,7 +6,6 @@ use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Enums\SurveyKind;
 use App\Models\Card;
 use App\Models\Retro;
-use App\Models\RotiVote;
 use App\Models\Survey;
 use App\Models\SurveyOption;
 use App\Models\SurveyTextAnswer;
@@ -149,10 +148,7 @@ class BuildSummaryInput
      */
     private function cardsWithinBudget(Retro $retro, array $data): array
     {
-        $voteTotals = $retro->votes()
-            ->selectRaw('card_id, count(*) as total')
-            ->groupBy('card_id')
-            ->pluck('total', 'card_id');
+        $voteTotals = $retro->voteCountsByCard();
         $columnTitles = $retro->columns->pluck('title', 'id');
         $childrenByParent = $retro->cards->whereNotNull('parent_card_id')->sortBy('position')->groupBy('parent_card_id');
         $leads = $retro->cards
@@ -257,22 +253,13 @@ class BuildSummaryInput
      */
     private function roti(Retro $retro): ?array
     {
-        $aggregate = RotiVote::query()
-            ->where('retro_id', $retro->id)
-            ->selectRaw('count(*) as respondents, avg(score) as average')
-            ->first();
+        $scores = $retro->rotiVotes()->pluck('score');
 
-        if ($aggregate === null) {
+        if ($scores->isEmpty()) {
             return null;
         }
 
-        $respondents = (int) $aggregate->getAttribute('respondents');
-
-        if ($respondents === 0) {
-            return null;
-        }
-
-        return ['respondents' => $respondents, 'average' => round((float) $aggregate->getAttribute('average'), 1)];
+        return ['respondents' => $scores->count(), 'average' => round((float) $scores->avg(), 1)];
     }
 
     /**

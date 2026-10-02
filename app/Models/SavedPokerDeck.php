@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Team|null $team
  * @property-read Workspace|null $workspace
  * @property-read User|null $creator
+ * @property-read int|null $usage_count
  */
 #[Fillable(['name', 'cards', 'created_by_user_id'])]
 #[Table(name: 'poker_decks')]

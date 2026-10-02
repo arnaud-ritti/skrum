@@ -3,10 +3,10 @@
 namespace App\Actions\Games;
 
 use App\Models\GameRoom;
+use App\Models\GameUsedWord;
 use App\Support\Games\GameWordBook;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 class DrawGameWord
 {
@@ -28,19 +28,15 @@ class DrawGameWord
         /** @var string $word */
         $word = Arr::random($available);
 
-        DB::table('game_used_words')->insertOrIgnore([
-            'team_id' => $room->team_id,
-            'locale' => $room->locale,
-            'word' => $word,
-            'created_at' => now(),
-        ]);
+        GameUsedWord::query()->firstOrCreate(['team_id' => $room->team_id, 'locale' => $room->locale, 'word' => $word]);
 
         return $word;
     }
 
+    /** @return Builder<GameUsedWord> */
     private function history(GameRoom $room): Builder
     {
-        return DB::table('game_used_words')
+        return GameUsedWord::query()
             ->where('team_id', $room->team_id)
             ->where('locale', $room->locale);
     }

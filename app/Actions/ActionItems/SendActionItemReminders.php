@@ -4,6 +4,7 @@ namespace App\Actions\ActionItems;
 
 use App\Enums\ActionItemReminderKind;
 use App\Models\ActionItem;
+use App\Models\ActionItemReminder;
 use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
 use App\Notifications\ActionItemReminderNotification;
@@ -11,8 +12,6 @@ use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Throwable;
 
 class SendActionItemReminders
@@ -77,7 +76,6 @@ class SendActionItemReminders
             ->whereNotNull('assignee_user_id')
             ->whereBetween('due_on', [$today->subDays(7)->toDateString(), $today->addDay()->toDateString()])
             ->whereExists(fn ($query) => $query
-                ->select(DB::raw(1))
                 ->from('team_user')
                 ->whereColumn('team_user.team_id', 'action_items.team_id')
                 ->whereColumn('team_user.user_id', 'action_items.assignee_user_id'))
@@ -101,14 +99,15 @@ class SendActionItemReminders
      */
     private function log(ActionItem $item, User $user, CarbonImmutable $today): bool
     {
-        return DB::table('action_item_reminders')->insertOrIgnore([
-            'id' => (string) Str::uuid(),
-            'action_item_id' => $item->id,
-            'user_id' => $user->id,
-            'kind' => $this->kind($item, $today)->value,
-            'due_on' => (string) $item->due_on?->toDateString(),
-            'sent_at' => now(),
-        ]) === 1;
+        return ActionItemReminder::query()->createOrFirst(
+            [
+                'action_item_id' => $item->id,
+                'user_id' => $user->id,
+                'kind' => $this->kind($item, $today),
+                'due_on' => (string) $item->due_on?->toDateString(),
+            ],
+            ['sent_at' => now()],
+        )->wasRecentlyCreated;
     }
 
     /**

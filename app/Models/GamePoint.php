@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Enums\GameKind;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\GamePointFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property int $points
  * @property bool $is_win
  * @property Carbon|null $created_at
+ * @property string $week_start
  */
 #[Fillable(['team_id', 'game_room_id', 'game_round_id', 'player_id', 'user_id', 'game', 'points', 'is_win'])]
 class GamePoint extends Model
@@ -32,6 +36,27 @@ class GamePoint extends Model
     use HasUuids;
 
     public const UPDATED_AT = null;
+
+    /**
+     * The week is stored with the creation time, by a mutator: a model event would not run under Event::fake().
+     *
+     * @return Attribute<Carbon|null, mixed>
+     */
+    protected function createdAt(): Attribute
+    {
+        return Attribute::make(set: function (mixed $value): array {
+            if ($value === null) {
+                return ['created_at' => null, 'week_start' => null];
+            }
+
+            $createdAt = $this->asDateTime($value);
+
+            return [
+                'created_at' => $this->fromDateTime($createdAt),
+                'week_start' => CarbonImmutable::instance($createdAt)->utc()->startOfWeek(CarbonInterface::MONDAY)->toDateString(),
+            ];
+        });
+    }
 
     /** @return BelongsTo<GameRoom, $this> */
     public function room(): BelongsTo

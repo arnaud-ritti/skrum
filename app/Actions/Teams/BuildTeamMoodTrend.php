@@ -4,10 +4,10 @@ namespace App\Actions\Teams;
 
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Enums\RetroPhase;
-use App\Models\HealthCheckAnswer;
 use App\Models\Retro;
 use App\Models\Team;
 use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class BuildTeamMoodTrend
 {
@@ -36,17 +36,11 @@ class BuildTeamMoodTrend
             ->where(fn (Builder $query) => $query->whereHas('healthCheckAnswers')->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
+            ->withCount(['participants as mood_voters_count' => fn (EloquentBuilder $participants) => $participants->whereHas('healthCheckAnswers')])
             ->orderByDesc('completed_at')
             ->get(['id', 'title', 'completed_at']);
 
         $scores = $this->buildHealthTrend->scores($retros->pluck('id'));
-
-        $voters = HealthCheckAnswer::query()
-            ->toBase()
-            ->whereIn('retro_id', $retros->pluck('id'))
-            ->selectRaw('retro_id, count(distinct participant_id) as voters')
-            ->groupBy('retro_id')
-            ->pluck('voters', 'retro_id');
 
         return $retros
             ->filter(fn (Retro $retro): bool => $scores->get($retro->id) !== null || $retro->roti_votes_count > 0)
@@ -58,7 +52,7 @@ class BuildTeamMoodTrend
                 'completedAt' => $retro->completed_at->toIso8601String(),
                 'url' => route('retros.show', $retro),
                 'mood' => $scores->get($retro->id),
-                'moodVoters' => $scores->get($retro->id) === null ? 0 : (int) $voters->get($retro->id, 0),
+                'moodVoters' => $scores->get($retro->id) === null ? 0 : (int) $retro->mood_voters_count,
                 'roti' => $retro->roti_votes_avg_score === null ? null : round((float) $retro->roti_votes_avg_score, 1),
                 'rotiVoters' => (int) $retro->roti_votes_count,
             ])
