@@ -9,7 +9,8 @@ use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -141,7 +142,7 @@ it('refuses a name already used in the workspace, whatever its case', function (
     saveTemplate($this->actingAs($user), $board, ['name' => 'Elsewhere'])->assertCreated();
 });
 
-it('refuses a name the database folds to one already used', function () {
+it('refuses a name that folds to one already used', function () {
     [$board, $user] = boardWorthSaving();
     WhiteboardTemplate::factory()->create(['workspace_id' => $board->team->workspace_id, 'name' => 'İstanbul']);
 
@@ -154,8 +155,8 @@ it('keeps the name unique in the database too', function () {
     $workspace = Workspace::factory()->create();
     WhiteboardTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Sprint Map']);
 
-    expect(fn () => WhiteboardTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'sprint map']))
-        ->toThrow(QueryException::class);
+    expect(fn () => DB::transaction(fn () => WhiteboardTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'sprint map'])))
+        ->toThrow(UniqueConstraintViolationException::class);
 });
 
 it('stops at fifty templates per workspace', function () {

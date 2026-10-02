@@ -6,6 +6,7 @@ use App\Enums\ColumnColor;
 use App\Enums\TemplateCategory;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use App\Support\Database\NameKey;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -103,7 +104,7 @@ class WorkspaceTemplateRequest extends FormRequest
         $ignoredId = $template instanceof WorkspaceTemplate ? $template->id : null;
 
         return $this->workspace()->templates()
-            ->whereRaw('lower(name) = ?', [mb_strtolower((string) $this->input('name'))])
+            ->where('name_key', NameKey::of((string) $this->input('name')))
             ->when($ignoredId !== null, fn ($query) => $query->whereKeyNot($ignoredId))
             ->exists();
     }

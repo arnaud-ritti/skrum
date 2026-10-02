@@ -17,7 +17,6 @@ app/Actions/HealthCheck/SummarizeHealthCheck.php|selectRaw|2
 app/Actions/Integrations/TrackedIssues.php|boolean literal in raw sql|2
 app/Actions/Integrations/TrackedIssues.php|like comparison|1
 app/Actions/Integrations/TrackedIssues.php|whereRaw|2
-app/Actions/Poker/SavedPokerDeckRules.php|whereRaw|1
 app/Actions/Retros/BuildBoardSnapshot.php|selectRaw|2
 app/Actions/Retros/BuildSummaryInput.php|orderByRaw|1
 app/Actions/Retros/BuildSummaryInput.php|selectRaw|2
@@ -25,14 +24,12 @@ app/Actions/Retros/SummarizeRoti.php|selectRaw|1
 app/Actions/Retros/TopTeamTemplates.php|selectRaw|1
 app/Actions/Surveys/CloseOpenSurveys.php|raw expression|1
 app/Actions/Teams/BuildTeamMoodTrend.php|selectRaw|1
-app/Actions/Whiteboards/WhiteboardTemplateRules.php|whereRaw|1
 app/Actions/Workspaces/CreateWorkspaceInvitation.php|whereRaw|1
 app/Http/Controllers/Admin/AdminCandidatesController.php|like comparison|2
 app/Http/Controllers/PokerDecksController.php|selectRaw|1
 app/Http/Controllers/TeamEstimatesController.php|ilike|1
 app/Http/Controllers/WorkspaceInvitationsController.php|whereRaw|2
 app/Http/Controllers/WorkspaceTemplatesController.php|selectRaw|1
-app/Http/Requests/WorkspaceTemplateRequest.php|whereRaw|1
 app/Mcp/Presenters/McpMessage.php|selectRaw|1
 app/Mcp/Tools/Retro/SearchBoards.php|ilike|4
 tests/Feature/Admin/InstanceAdminsTest.php|lock syntax|1

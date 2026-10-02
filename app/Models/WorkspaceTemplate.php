@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\TemplateCategory;
+use App\Support\Database\NameKey;
 use Database\Factories\WorkspaceTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +19,7 @@ use Illuminate\Support\Str;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string $name_key
  * @property TemplateCategory $category
  * @property string|null $created_by_user_id
  * @property-read Collection<int, WorkspaceTemplateColumn> $columns
@@ -87,6 +90,18 @@ class WorkspaceTemplate extends Model
             'description' => $column->description,
             'color' => $column->color->value,
         ])->values()->all();
+    }
+
+    /**
+     * The key always follows the name: no caller sets it.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $name): array => ['name' => $name, 'name_key' => NameKey::of($name)],
+        );
     }
 
     protected function casts(): array

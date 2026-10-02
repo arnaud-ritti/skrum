@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Actions\Whiteboards\CopyWhiteboardScene;
 use App\Actions\Whiteboards\PresentWhiteboardPreview;
+use App\Support\Database\NameKey;
 use Database\Factories\WhiteboardTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string $name_key
  * @property string|null $description
  * @property Scene $scene
  * @property Preview $preview
@@ -54,6 +57,18 @@ class WhiteboardTemplate extends Model
     public function storageDirectory(): string
     {
         return self::StorageRoot."/{$this->id}";
+    }
+
+    /**
+     * The key always follows the name: no caller sets it.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $name): array => ['name' => $name, 'name_key' => NameKey::of($name)],
+        );
     }
 
     protected function casts(): array

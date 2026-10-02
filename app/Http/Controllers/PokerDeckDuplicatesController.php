@@ -6,6 +6,7 @@ use App\Actions\Poker\SavedPokerDeckRules;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Database\NameKey;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,13 +36,13 @@ class PokerDeckDuplicatesController extends Controller
 
     private function availableName(Team $team, string $originalName): string
     {
-        $takenNames = $team->pokerDecks()->pluck('name')->map(fn (string $name): string => mb_strtolower($name));
+        $takenKeys = $team->pokerDecks()->pluck('name_key');
         $baseName = __('Copy of :name', ['name' => $originalName]);
 
         $name = Str::limit($baseName, 40, '');
         $number = 2;
 
-        while ($takenNames->contains(mb_strtolower($name))) {
+        while ($takenKeys->contains(NameKey::of($name))) {
             $suffix = " {$number}";
 
             $name = Str::limit($baseName, 40 - mb_strlen($suffix), '').$suffix;
