@@ -9,6 +9,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SignInPolicy;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -52,17 +53,25 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->unconfirmedPasswordRules(),
         ])->validate();
 
-        return DB::transaction(function () use ($invitation, $input): User {
-            $lockedInvitation = WorkspaceInvitation::query()->lockForUpdate()->find($invitation->id);
+        try {
+            return DB::transaction(function () use ($invitation, $input): User {
+                $lockedInvitation = WorkspaceInvitation::query()->lockForUpdate()->find($invitation->id);
 
-            if ($lockedInvitation?->isPending() !== true) {
-                throw ValidationException::withMessages([
-                    'email' => __('This invitation link is no longer valid.'),
-                ]);
-            }
+                if ($lockedInvitation?->isPending() !== true) {
+                    throw ValidationException::withMessages([
+                        'email' => __('This invitation link is no longer valid.'),
+                    ]);
+                }
 
-            return $this->register($input, $lockedInvitation);
-        });
+                return $this->register($input, $lockedInvitation);
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Two invitations of one address, posted at the same moment, both
+            // pass the validation above: the unique index refuses the second.
+            throw ValidationException::withMessages([
+                'email' => trans('validation.unique', ['attribute' => 'email']),
+            ]);
+        }
     }
 
     /**

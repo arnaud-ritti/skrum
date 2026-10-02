@@ -129,6 +129,31 @@ it('creates no account when one already owns the address, and leaves the invitat
         ->and($invitation->fresh()->isPending())->toBeTrue();
 })->with(['invited@example.com', 'INVITED@Example.com']);
 
+it('answers with the taken address, not an error, when another request creates the account first', function () {
+    $invitation = invitationFor();
+    $hasCreatedRival = false;
+
+    User::creating(function (User $user) use (&$hasCreatedRival): void {
+        if ($hasCreatedRival) {
+            return;
+        }
+
+        $hasCreatedRival = true;
+
+        User::factory()->create(['email' => $user->email, 'name' => 'Rival']);
+    });
+
+    $this->from(route('invitations.show', 'secret-token'))
+        ->post(route('invitations.account.store', 'secret-token'), accountPayload())
+        ->assertRedirect(route('invitations.show', 'secret-token'))
+        ->assertSessionHasErrors(['email' => __('validation.unique', ['attribute' => 'email'])]);
+
+    $this->assertGuest();
+    expect(User::query()->where('email', 'invited@example.com')->count())->toBeLessThanOrEqual(1)
+        ->and(User::query()->where('name', 'Ines Invited')->exists())->toBeFalse()
+        ->and($invitation->fresh()->isPending())->toBeTrue();
+});
+
 it('creates no account while single sign-on is required', function () {
     resolve(InstanceSettings::class)->set('sso_required', true);
     $invitation = invitationFor();
