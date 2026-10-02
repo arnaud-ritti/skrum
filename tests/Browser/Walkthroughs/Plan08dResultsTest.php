@@ -127,7 +127,7 @@ it('[P08d-01a] shows a group name typed by a guest to the member without reloadi
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::Grouping);
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI');
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $group = "#card-{$lead->id}";
+    $group = "#group-{$lead->id}";
     $editor = '[aria-label="Group name"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -158,13 +158,13 @@ it('[P08d-01b] drops the group name in both browsers when the only grouped card 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertSeeIn("#card-{$lead->id} [aria-label=\"Rename group\"]", 'Pipeline');
+        $page->assertSeeIn("#group-{$lead->id} [aria-label=\"Rename group\"]", 'Pipeline');
     }
 
     $carolPage->click("#card-{$child->id} [aria-label=\"Ungroup\"]");
 
     foreach ([$carolPage, $alicePage] as $page) {
-        $page->assertNotPresent("#card-{$lead->id} #card-{$child->id}")
+        $page->assertNotPresent("#group-{$lead->id} #card-{$child->id}")
             ->assertPresent("#card-{$child->id}")
             ->assertDontSee('Pipeline')
             ->assertNotPresent('[aria-label="Rename group"]')
@@ -186,16 +186,16 @@ it('[P08d-01c] keeps only the target name when a named group is grouped onto ano
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSeeIn("#card-{$deploys->id} [aria-label=\"Rename group\"]", 'Deploys')
-        ->assertSeeIn("#card-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
+    $bobPage->assertSeeIn("#group-{$deploys->id} [aria-label=\"Rename group\"]", 'Deploys')
+        ->assertSeeIn("#group-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
         ->assertPresent($handle);
 
     $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowUp', 'Space'], handleRemains: false);
 
     foreach ([$bobPage, $alicePage] as $page) {
-        $page->assertPresent("#card-{$quality->id} #card-{$deploys->id}")
-            ->assertPresent("#card-{$quality->id} #card-{$deploysChild->id}")
-            ->assertSeeIn("#card-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
+        $page->assertPresent("#group-{$quality->id} #card-{$deploys->id}")
+            ->assertPresent("#group-{$quality->id} #card-{$deploysChild->id}")
+            ->assertSeeIn("#group-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
             ->assertCount('[aria-label="Rename group"]', 1)
             ->assertDontSee('Deploys');
     }
@@ -210,7 +210,7 @@ it('[P08d-02a] renames a group inline for everyone', function (string $phase) {
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::from($phase));
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI', ['group_name' => 'Pipeline']);
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $rename = "#card-{$lead->id} [aria-label=\"Rename group\"]";
+    $rename = "#group-{$lead->id} [aria-label=\"Rename group\"]";
     $editor = '[aria-label="Group name"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));

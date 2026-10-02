@@ -315,3 +315,75 @@ Captures `retro-board-icebreaker-*` (facilitator, before the round) and `retro-b
 ### Browser tests changed
 
 None. `Plan13dIcebreakerScoresInvitesTest.php` passes unchanged. `RetroPagesVisualTest.php` has two more datasets (the captures above); its check "one `main`" is what found the nested landmark.
+
+## Task R7 — Grouping phase
+
+A lead card and the cards grouped under it are drawn by `skrum/CardGroup` (`components/retro/board-group.tsx`, `toGroupProps`): the group is a section around its cards, `#group-{lead id}`. Reactions, comments and the group name are on the props of `RetroCard` and `CardGroup`; `comment-thread.tsx`, `reaction-chips.tsx` and `emoji-picker.tsx` are rewritten in place with the same exports (surveys, games and the session reaction bar still import them). `group-name.tsx`, `group-name-suggestions.tsx`, `card-comments.tsx` and `card-reactions.tsx` are deleted.
+
+### Parity (brief 02 §3.3 rows 49–54, 61–66)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 49 | Group two cards by dropping one on the other (pointer and keyboard) | `GroupableCard` around a card or around a whole group; the target shows a dashed outline, a group also its slot "Drop to add to the group" (`CardGroup dropTarget`) | yes |
+| 50 | Move a card to another column in Grouping | unchanged: the column is the drop zone (`RetroColumn isDropTarget`) | yes |
+| 51 | Ungroup | `CardGroup onUngroup`, in the footer of every card but the lead; Grouping only, open board only | yes |
+| 52 | Name, rename, clear the name of a group | `CardGroup onRename` (`null` clears); shown at once, then the answer of the server; Grouping, Voting and Discussing, open board; "Rename group", "Group name", "Name this group" | yes |
+| 52 | A group without a name | the text of its first card as title (`CardGroup`), "Name this group" for assistive technology | yes |
+| 53 | Suggest group names (anyone, with a provider, an opted-in retro and an unnamed group) | `SuggestGroupNames`: a bar under the Grouping banner with "Card contents of these groups are sent to :provider."; in Voting and Discussing it stays in the row above the board | yes |
+| 53 | Suggested name on its group, only for who asked | `CardGroup titleHint`: the chip `[title="Suggested name"]` | yes |
+| 54 | "Use this name", "Edit this name" | in the title hint; "Edit this name" opens the title field on the suggestion (`titleDraft`) | yes |
+| 53 | "No new names to suggest." | toast | yes |
+| 61 | React to a card; chips "👍, 1 reaction", mine pressed; names in a tooltip, none on an anonymous retro | `RetroCard reactions`, `onReact`; shown at once, then the answer of the server | yes |
+| 61 | Chips disabled where nobody may react (locked, Writing, completed) | native `disabled`; the names stay reachable on a focusable wrapper | yes |
+| 61 | "Add a reaction" | `RetroCard reactionPicker` = `AddReaction`: the menu of six emoji (`[role="menuitem"]`) | yes |
+| 62 | Full emoji search | "More emoji…" of the menu opens `EmojiSearchDialog` ("Search emoji…", `button[frimousse-emoji]`) | yes |
+| 61 | Reactions off for the retro | no chip, no button | yes |
+| 63 | Comments toggle "Comments (n)", `aria-expanded`; hidden on a masked card and in Writing without a comment | `RetroCard commentCount`, `commentsOpen`, `onOpenComments` | yes |
+| 63 | Unread dot, read when the thread opens | `UnreadCommentsDot` in the card's `footer` ("Unread comments") | yes |
+| 64 | Comment, reply | `CommentThreadList` as the card's `children`; Enter sends, Shift+Enter breaks the line; "Write a comment…", "Write a reply…" | yes |
+| 65 | Edit and delete one's comment; the facilitator deletes any; replies folded behind "n replies"; "Comment deleted" | same component | yes |
+| 65 | Read-only thread on a locked board and once completed | no field, no button; "No comments yet." when empty | yes |
+| 66 | Comment notification toast | unchanged (`use-retro-board.ts`) | yes |
+| — | Presentation overlay (old, until R9) | keeps its chips and its comments through `ReactionChips`, `CardThread` and the two hooks of `board-card.tsx` | yes |
+| — | Help line of the phase | `GroupingBanner`: the sentence of the mockup, "n groups · n cards", "n online" | yes |
+| — | Column counter | every card of the column, grouped ones included, as the mockup counts | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `moving` of `BoardColumn` | after the cards of a column: the mockup's "… is moving a card" line | RT-1 |
+
+### Differences with the mockup
+
+Captures `retro-board-grouping-*` (facilitator; one named group, one unnamed, a card with reactions and its comments open) and `retro-board-grouping-locked-*` (participant, anonymous retro, closed board) against `ScreenRetroGrouping`, `CardGroup` and `RetroCard`. Compared by the implementer on light 1440 EN (both names), dark 390 FR, and `design-system-card-group` light 1440 EN.
+
+| Difference | Covered by |
+|---|---|
+| No duplicate suggestion, no "Likely duplicate" pill, no "Undo last group" | D-10 |
+| No "… is moving a card", no cursor holding a card | D-10 (RT-1) |
+| The suggestion bar under the banner is the AI group names (sentence and "Suggest group names"), drawn in the frame of the mockup's duplicate suggestion; it shows to everyone, without the Facilitator chip | parity row 53. No row — reported |
+| Every card has a "Comments (n)" button, and, where reacting is open, a dashed "Add a reaction" chip on a line of its own; the mockup's cards show the author and the grip only | parity rows 61, 63 (the suite binds both on cards without reactions). No row — reported |
+| The grip is on the cards that can be dragged: a card alone. A group is dragged by its whole section and the cards inside it are not draggable (they leave with "Ungroup"); the mockup draws a grip on every card | parity (`P04-03` asserts that a grouped card has no handle). No row — for the owner |
+| The dragged card follows the pointer as `CardPreview` (text and author); its place keeps the dashed ghost | as R4 |
+| A card that is a drop target has the dashed outline of a group, without a slot | no mockup for a card as target |
+| "+2 min" beside the countdown; "Lock board" in the bar | reported in R3 |
+| "Add survey" above the banner | transitional (S1) |
+| The header rail shows the current label only at 1440 | reported in R3 |
+| Phone: columns scroll sideways; no "Add to group…" drawer; an own card keeps an empty line for its hidden edit and delete buttons | R13 |
+| The comment thread has no mockup: designed from the card (avatar, name, text, icon buttons, field) | — |
+
+### Browser tests changed
+
+Listed by the plan (group markup, `CardGroup/README.md`): `#card-{lead} …` → `#group-{lead} …` for "Name this group", "Rename group", `[title="Suggested name"]`, "Use this name", "Edit this name" and `#card-{x} #card-{y}` in `Plan04` (`P04-03`) and `Plan08e` (`P08e-02b`, `P08e-06`, `P08e-10c`). `Plan06` and `Plan07` needed no change.
+
+Not listed:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan08d` `P08d-01a`, `01b`, `01c`, `02a` | the same re-anchoring on `#group-{lead}` | same cause; the plan's count of five `#card-{x} #card-{y}` includes the three of this file, which its list of files leaves out |
+| `P04-03`, `P04-07` | "Drag cards onto each other to group them." → "Drag a card onto another to group them. Click a title to rename it." | the sentence of the mockup's help banner |
+
+Component fixes, in their own commits: `CardGroup` (`renderCard`, `titleDraft`, `onEditingTitleChange`, drop slot, keys of the title field); `RetroCard` (native `disabled` on chips nobody may press, as `P07-08a` and `P07-08b` read; the names tooltip keeps `data-slot="tooltip-content"`, as `P07-03a` reads).
+
+No test was removed.

@@ -159,18 +159,18 @@ it('[P04-03] groups, ungroups and moves a card during Grouping', function () {
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSee('Drag cards onto each other to group them.')
+    $bobPage->assertSee('Drag a card onto another to group them. Click a title to rename it.')
         ->assertPresent($handle);
 
     $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowDown', 'Space'], handleRemains: false);
 
-    $alicePage->assertPresent("#card-{$slow->id} #card-{$flaky->id}");
+    $alicePage->assertPresent("#group-{$slow->id} #card-{$flaky->id}");
     expect($flaky->fresh()->parent_card_id)->toBe($slow->id);
 
     $bobPage->assertPresent("#card-{$flaky->id} [aria-label=\"Ungroup\"]")
         ->click("#card-{$flaky->id} [aria-label=\"Ungroup\"]");
 
-    $alicePage->assertNotPresent("#card-{$slow->id} #card-{$flaky->id}")
+    $alicePage->assertNotPresent("#group-{$slow->id} #card-{$flaky->id}")
         ->assertPresent("#card-{$flaky->id}");
     expect($flaky->fresh()->parent_card_id)->toBeNull();
 
@@ -348,7 +348,7 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
 
     $alicePage->press('Next')->assertSeeIn($current, 'Grouping')->assertSee('Pair on reviews');
     $bobPage->assertSeeIn($current, 'Grouping')
-        ->assertSee('Drag cards onto each other to group them.')
+        ->assertSee('Drag a card onto another to group them. Click a title to rename it.')
         ->assertNotPresent('[aria-label="Add a card…"]');
 
     $alicePage->press('Next')->assertSeeIn($current, 'Voting');

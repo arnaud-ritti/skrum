@@ -173,7 +173,7 @@ it('[P08e-02b] offers no "Suggest group names" button during Grouping without a 
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn("#card-{$lead->id}", 'Name this group')
+    $page->assertSeeIn("#group-{$lead->id}", 'Name this group')
         ->assertDontSee('Suggest group names')
         ->assertDontSee('Card contents of these groups are sent to');
 });
@@ -416,10 +416,10 @@ it('[P08e-06] shows suggested group names only to the guest who asked, and appli
         ->assertSee('Card contents of these groups are sent to Anthropic.')
         ->click('Suggest group names')
         ->assertCount($ghost, 2)
-        ->assertSeeIn("#card-{$release->id} {$ghost}", 'Release pain')
-        ->assertSeeIn("#card-{$rituals->id} {$ghost}", 'Team rituals');
+        ->assertSeeIn("#group-{$release->id} {$ghost}", 'Release pain')
+        ->assertSeeIn("#group-{$rituals->id} {$ghost}", 'Team rituals');
 
-    $alicePage->assertSeeIn("#card-{$release->id}", 'Name this group')
+    $alicePage->assertSeeIn("#group-{$release->id}", 'Name this group')
         ->assertNotPresent($ghost)
         ->assertDontSee('Release pain')
         ->assertDontSee('Team rituals');
@@ -444,24 +444,24 @@ it('[P08e-06] shows suggested group names only to the guest who asked, and appli
         ->not->toContain($aliceParticipant->id)
         ->not->toContain($bobParticipant->id);
 
-    $carolPage->click("#card-{$release->id} button:has-text(\"Use this name\")")
-        ->assertPresent("#card-{$release->id} [aria-label=\"Rename group\"]")
+    $carolPage->click("#group-{$release->id} button:has-text(\"Use this name\")")
+        ->assertPresent("#group-{$release->id} [aria-label=\"Rename group\"]")
         ->assertCount($ghost, 1);
 
-    $alicePage->assertSeeIn("#card-{$release->id}", 'Release pain');
+    $alicePage->assertSeeIn("#group-{$release->id}", 'Release pain');
     expect($release->fresh()->group_name)->toBe('Release pain');
 
-    $carolPage->click("#card-{$rituals->id} button:has-text(\"Edit this name\")")
+    $carolPage->click("#group-{$rituals->id} button:has-text(\"Edit this name\")")
         ->assertValue($editor, 'Team rituals')
         ->assertNotPresent($ghost);
 
     $alicePage->assertDontSee('Team rituals');
 
     $carolPage->keys($editor, 'Enter')
-        ->assertPresent("#card-{$rituals->id} [aria-label=\"Rename group\"]")
+        ->assertPresent("#group-{$rituals->id} [aria-label=\"Rename group\"]")
         ->assertDontSee('Suggest group names');
 
-    $alicePage->assertSeeIn("#card-{$rituals->id}", 'Team rituals');
+    $alicePage->assertSeeIn("#group-{$rituals->id}", 'Team rituals');
     expect($rituals->fresh()->group_name)->toBe('Team rituals');
 });
 
@@ -766,7 +766,7 @@ it('[P08e-10c] offers no "Suggest group names" button on an opted-out retro', fu
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn("#card-{$lead->id}", 'Name this group')
+    $page->assertSeeIn("#group-{$lead->id}", 'Name this group')
         ->assertDontSee('Suggest group names');
 
     Http::assertNothingSent();

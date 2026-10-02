@@ -3940,5 +3940,8 @@
     "Add a column to start writing.": "Ajoutez une colonne pour commencer à écrire.",
     "The facilitator has not added a column yet.": "Le facilitateur n'a pas encore ajouté de colonne.",
     "Drop to add to the group": "Relâchez pour ajouter au groupe",
-    "save": "valider"
+    "save": "valider",
+    "Drag a card onto another to group them. Click a title to rename it.": "Glissez une carte sur une autre pour créer un groupe. Cliquez sur un titre pour le renommer.",
+    ":count group": ":count groupe",
+    ":count groups": ":count groupes"
 }

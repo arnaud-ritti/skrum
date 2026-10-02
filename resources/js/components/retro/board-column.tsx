@@ -2,7 +2,7 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import ColumnOrdersController from '@/actions/App/Http/Controllers/Retros/ColumnOrdersController';
 import ColumnsController from '@/actions/App/Http/Controllers/Retros/ColumnsController';
@@ -18,7 +18,13 @@ import type {
 } from '@/lib/retro/types';
 import { BoardCard, CardComposer } from './board-card';
 import { useBoard } from './board-context';
-import { GroupableCard, SortableCard, useColumnDropZone } from './dnd';
+import { BoardGroup } from './board-group';
+import {
+    GroupableCard,
+    SortableCard,
+    useColumnDropZone,
+    type CardDragState,
+} from './dnd';
 
 type ColumnsResponse = { columns: BoardColumnData[] };
 
@@ -34,10 +40,13 @@ class ColumnChangeRefused extends Error {}
 export function BoardColumn({
     column,
     typing,
+    moving,
 }: {
     column: BoardColumnData;
     /** Place of the "… is writing a card" line of the Writing mockup (RT-1). */
     typing?: ReactNode;
+    /** Place of the "… is moving a card" line of the Grouping mockup (RT-1). */
+    moving?: ReactNode;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -102,6 +111,20 @@ export function BoardColumn({
         }
     };
 
+    const leadIds = new Set(
+        ctx.board.cards.flatMap((card) =>
+            card.parentCardId === null ? [] : [card.parentCardId],
+        ),
+    );
+
+    /** A card alone, or the group it leads. */
+    const draw = (card: BoardCardData, drag?: CardDragState) =>
+        leadIds.has(card.id) ? (
+            <BoardGroup lead={card} drag={drag} />
+        ) : (
+            <BoardCard card={card} drag={drag} />
+        );
+
     const renderCard = (card: BoardCardData) => {
         if (phase === 'writing') {
             return (
@@ -122,12 +145,12 @@ export function BoardColumn({
                     id={card.id}
                     disabled={!ctx.isEditable}
                 >
-                    {(drag) => <BoardCard card={card} drag={drag} />}
+                    {(drag) => draw(card, drag)}
                 </GroupableCard>
             );
         }
 
-        return <BoardCard key={card.id} card={card} />;
+        return <Fragment key={card.id}>{draw(card)}</Fragment>;
     };
 
     const focusComposer = () => {
@@ -158,13 +181,6 @@ export function BoardColumn({
             sortedByVotes={isSortedByVotes}
             onSortByVotesChange={
                 canSortByVotes ? setIsSortedByVotes : undefined
-            }
-            notice={
-                phase === 'grouping' ? (
-                    <p className="shrink-0 text-xs text-muted-foreground">
-                        {t('Drag cards onto each other to group them.')}
-                    </p>
-                ) : undefined
             }
             onAdd={focusComposer}
             composer={
@@ -200,6 +216,7 @@ export function BoardColumn({
                 cards.map(renderCard)
             )}
             {typing}
+            {moving}
         </RetroColumn>
     );
 }

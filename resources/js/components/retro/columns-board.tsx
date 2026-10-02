@@ -34,6 +34,7 @@ import { CardPreview } from './board-card';
 import { BoardColumn } from './board-column';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
+import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { SurveysColumn } from './surveys-column';
 
@@ -286,6 +287,7 @@ export function ColumnsBoard({
         >
             <div className="flex min-w-0 flex-1 flex-col">
                 {phase === 'writing' && <WritingBanner typing={typing} />}
+                {phase === 'grouping' && <GroupingBanner />}
                 <div
                     ref={setBoardElement}
                     data-slot="retro-columns"

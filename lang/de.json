@@ -3940,5 +3940,8 @@
     "Add a column to start writing.": "Füge eine Spalte hinzu, um mit dem Schreiben zu beginnen.",
     "The facilitator has not added a column yet.": "Der Moderator hat noch keine Spalte hinzugefügt.",
     "Drop to add to the group": "Loslassen, um zur Gruppe hinzuzufügen",
-    "save": "speichern"
+    "save": "speichern",
+    "Drag a card onto another to group them. Click a title to rename it.": "Zieh eine Karte auf eine andere, um sie zu gruppieren. Klick auf einen Titel, um ihn umzubenennen.",
+    ":count group": ":count Gruppe",
+    ":count groups": ":count Gruppen"
 }

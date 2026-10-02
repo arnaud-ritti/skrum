@@ -3716,5 +3716,8 @@
     "Add a column to start writing.": "Add a column to start writing.",
     "The facilitator has not added a column yet.": "The facilitator has not added a column yet.",
     "Drop to add to the group": "Drop to add to the group",
-    "save": "save"
+    "save": "save",
+    "Drag a card onto another to group them. Click a title to rename it.": "Drag a card onto another to group them. Click a title to rename it.",
+    ":count group": ":count group",
+    ":count groups": ":count groups"
 }

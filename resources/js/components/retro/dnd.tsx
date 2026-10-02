@@ -156,12 +156,7 @@ export function GroupableCard({
                 drop.setNodeRef(node);
             }}
             data-test={`retro-card-handle-${id}`}
-            className={cn(
-                handleClass,
-                !disabled && 'cursor-grab',
-                isDropTarget &&
-                    'ring-2 ring-primary ring-offset-2 ring-offset-background',
-            )}
+            className={cn(handleClass, !disabled && 'cursor-grab')}
             {...drag.attributes}
             {...drag.listeners}
         >

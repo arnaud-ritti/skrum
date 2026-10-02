@@ -1,8 +1,9 @@
-import { EyeOff, ImageOff, Ungroup } from 'lucide-react';
+import { EyeOff, GripVertical, ImageOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { toast } from 'sonner';
-import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
+import CardCommentsController from '@/actions/App/Http/Controllers/Retros/CardCommentsController';
+import CardReactionsController from '@/actions/App/Http/Controllers/Retros/CardReactionsController';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
 import RetroGifsController from '@/actions/App/Http/Controllers/Retros/RetroGifsController';
 import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
@@ -11,32 +12,45 @@ import {
     type PickedGif,
 } from '@/components/gifs/gif-search-dialog';
 import { RetroCard } from '@/components/skrum/retro-card';
+import type { RetroCardProps } from '@/components/skrum/retro-card';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
-import { CardMaxLength, toCardProps } from '@/lib/retro/adapters';
+import {
+    cardEngagement,
+    CardMaxLength,
+    toCardProps,
+} from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
-import { childrenOf } from '@/lib/retro/board-reducer';
 import type {
     BoardCard as BoardCardData,
+    CardComment,
     CardGif as CardGifPayload,
     CardPayload,
     ColumnColor,
-    RetroPhase,
+    ReactionSummary,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
-import { CardComments } from './card-comments';
-import { CardReactions } from './card-reactions';
+import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, type CardDragState } from './dnd';
-import { GroupName } from './group-name';
+import { AddReaction, optimisticReactions } from './reaction-chips';
 import { VoteControls } from './vote-controls';
 
-/** Phases in which a reaction can be added to a card (as `CardReactions` rules). */
-const ReactionPhases: RetroPhase[] = ['grouping', 'voting', 'discussing'];
+/**
+ * The place a dragged card or group leaves behind: the dashed ghost of the
+ * mockup. What the card holds stays mounted, invisible, so that the board
+ * does not move under the drag.
+ */
+export const DraggedCardClass =
+    'border-dashed bg-transparent shadow-none *:invisible';
+
+/** A card or a group a dragged card is over: dropping here groups them. */
+const DropTargetClass =
+    'outline-2 outline-offset-2 outline-(--col-text) outline-dashed';
 
 const EditorSelector = '[data-slot="retro-card-input"]';
 
@@ -285,6 +299,180 @@ export function CardComposer({
     );
 }
 
+type ReactionsResponse = { cardId: string; reactions: ReactionSummary[] };
+
+/** Adds or takes back the viewer's reaction to a card, shown at once. */
+export function useCardReactionToggle(
+    card: BoardCardData,
+): (emoji: string) => void {
+    const ctx = useBoard();
+    const retroId = ctx.board.retro.id;
+
+    return (emoji) => {
+        const removing =
+            card.reactions.find((reaction) => reaction.emoji === emoji)
+                ?.mine === true;
+        const route = { retro: retroId, card: card.id };
+
+        ctx.dispatch({
+            type: 'reactions.set',
+            cardId: card.id,
+            reactions: optimisticReactions(card.reactions, emoji, removing),
+        });
+
+        void ctx
+            .run(
+                retroRequest<ReactionsResponse>(
+                    removing
+                        ? CardReactionsController.destroy(route)
+                        : CardReactionsController.update(route),
+                    { emoji },
+                ),
+            )
+            .then((response) => {
+                if (response) {
+                    ctx.apply({
+                        type: 'reactions.set',
+                        cardId: response.cardId,
+                        reactions: response.reactions,
+                    });
+                }
+            });
+    };
+}
+
+/**
+ * Whether the comments of a card are open. Opening them marks them as read,
+ * and so does a comment that arrives while they are open.
+ */
+export function useCardComments(card: BoardCardData): {
+    open: boolean;
+    toggle: () => void;
+    isUnread: boolean;
+} {
+    const { unreadCardIds, markCommentsRead } = useBoard();
+    const [open, setOpen] = useState(false);
+    const isUnread = unreadCardIds.has(card.id);
+
+    useEffect(() => {
+        if (open && isUnread) {
+            markCommentsRead(card.id);
+        }
+    }, [open, isUnread, card.id, markCommentsRead]);
+
+    return { open, toggle: () => setOpen((current) => !current), isUnread };
+}
+
+export function UnreadCommentsDot() {
+    const { t } = useTrans();
+
+    return (
+        <span
+            role="img"
+            data-slot="retro-card-unread"
+            aria-label={t('Unread comments')}
+            className="size-2 shrink-0 rounded-full bg-primary"
+        />
+    );
+}
+
+/** The comments of a card, and the fields to write one when the phase allows. */
+export function CardThread({
+    card,
+    canWrite,
+}: {
+    card: BoardCardData;
+    canWrite: boolean;
+}) {
+    const ctx = useBoard();
+    const retroId = ctx.board.retro.id;
+
+    const save = async (
+        request: Promise<{ comment: CardComment }>,
+    ): Promise<boolean> => {
+        const response = await ctx.run(request);
+
+        if (!response) {
+            return false;
+        }
+
+        ctx.apply({ type: 'comment.upsert', comment: response.comment });
+
+        return true;
+    };
+
+    const actions: CommentThreadActions<CardComment> = {
+        create: (content, parentCommentId) =>
+            save(
+                retroRequest<{ comment: CardComment }>(
+                    CardCommentsController.store({
+                        retro: retroId,
+                        card: card.id,
+                    }),
+                    { content, parentCommentId },
+                ),
+            ),
+        update: (comment, content) =>
+            save(
+                retroRequest<{ comment: CardComment }>(
+                    CardCommentsController.update({
+                        retro: retroId,
+                        comment: comment.id,
+                    }),
+                    { content },
+                ),
+            ),
+        remove: async (comment, hasReplies) => {
+            const result = await ctx.run(
+                retroRequest(
+                    CardCommentsController.destroy({
+                        retro: retroId,
+                        comment: comment.id,
+                    }),
+                ),
+            );
+
+            if (result === undefined) {
+                return;
+            }
+
+            ctx.apply({
+                type: 'comment.remove',
+                cardId: comment.cardId,
+                commentId: comment.id,
+                soft: comment.parentCommentId === null && hasReplies,
+            });
+
+            if (comment.parentCommentId === null) {
+                return;
+            }
+
+            const thread = card.comments.find(
+                (candidate) => candidate.id === comment.parentCommentId,
+            );
+
+            if (thread?.deleted && thread.replies.length === 1) {
+                ctx.apply({
+                    type: 'comment.remove',
+                    cardId: comment.cardId,
+                    commentId: thread.id,
+                    soft: false,
+                });
+            }
+        },
+    };
+
+    return (
+        <div {...dragIsolation} data-slot="retro-card-thread">
+            <CommentThreadList
+                threads={card.comments}
+                canWrite={canWrite}
+                actions={actions}
+            />
+        </div>
+    );
+}
+
 /**
  * The caption of the Writing mockup under a card nobody else can read yet. It
  * takes the last line of the footer: beside the author there is no room left
@@ -306,16 +494,21 @@ function OnlyYouNote() {
 
 export function BoardCard({
     card,
-    isChild = false,
     drag,
+    inGroup,
 }: {
     card: BoardCardData;
-    isChild?: boolean;
     drag?: CardDragState;
+    /** What the group adds to a card it holds: no shadow, and "Ungroup". */
+    inGroup?: Pick<RetroCardProps, 'className' | 'footer'>;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const props = toCardProps(card, ctx.board);
+    const engagement = cardEngagement(card, ctx.board);
+    const toggleReaction = useCardReactionToggle(card);
+    const comments = useCardComments(card);
+    const isChild = card.parentCardId !== null;
     const { retro, viewer } = ctx.board;
     const { phase } = retro;
     const articleRef = useRef<HTMLElement>(null);
@@ -490,37 +683,20 @@ export function BoardCard({
         }
     };
 
-    const ungroup = async () => {
-        const response = await ctx.run(
-            retroRequest<{ cards: CardPayload[] }>(
-                CardGroupsController.destroy({
-                    retro: retro.id,
-                    card: card.id,
-                }),
-            ),
-        );
-
-        if (response) {
-            ctx.apply({ type: 'cards.upsert', cards: response.cards });
-        }
-    };
-
     const isEditing = editing && props.canEdit;
-    const groupedCards = isChild ? [] : childrenOf(ctx.board.cards, card.id);
     const showsTotal =
         !isChild &&
         ((phase === 'voting' && card.votes !== null) ||
             phase === 'discussing' ||
             phase === 'completed');
-    const showsReactions =
-        retro.reactionsEnabled &&
-        (card.reactions.length > 0 ||
-            (ctx.isEditable && ReactionPhases.includes(phase)));
     const canHighlight =
         !isChild && phase === 'discussing' && viewer.isFacilitator;
 
-    // Votes, reactions, comments and groups keep their old controls here
-    // until the task of their phase moves them onto the card's own props.
+    const canDrag =
+        drag !== undefined && phase === 'grouping' && ctx.isEditable;
+
+    // Votes keep their old controls here until R8 moves them onto the card's
+    // own props.
     const footer: ReactNode = (
         <>
             {card.isMine && phase === 'writing' && <OnlyYouNote />}
@@ -536,17 +712,17 @@ export function BoardCard({
                     {card.votes ?? 0}
                 </Badge>
             )}
-            {isChild && phase === 'grouping' && ctx.isEditable && (
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t('Ungroup')}
-                    onClick={() => void ungroup()}
-                >
-                    <Ungroup aria-hidden />
-                </Button>
+            {comments.isUnread && engagement.showsComments && (
+                <UnreadCommentsDot />
             )}
+            {canDrag && (
+                <GripVertical
+                    data-slot="retro-card-grip"
+                    className="size-4 shrink-0 text-muted-foreground opacity-60"
+                    aria-hidden
+                />
+            )}
+            {inGroup?.footer}
         </>
     );
 
@@ -558,12 +734,24 @@ export function BoardCard({
                 gif={isEditing ? draftGif(gif) : props.gif}
                 editing={isEditing}
                 className={cn(
-                    isChild && 'border-dashed',
-                    // Dimmed, not the dashed ghost: the ghost drops what the
-                    // card holds under its text, and the board must not move
-                    // under a card that is being dragged.
-                    drag?.isDragging && 'opacity-50',
+                    inGroup?.className,
+                    drag?.isDragging && DraggedCardClass,
+                    drag?.isDropTarget && DropTargetClass,
                 )}
+                reactions={engagement.reactions}
+                onReact={engagement.canReact ? toggleReaction : undefined}
+                reactionPicker={
+                    engagement.canReact ? (
+                        <AddReaction onPick={toggleReaction} />
+                    ) : undefined
+                }
+                commentCount={card.commentCount}
+                commentsOpen={
+                    engagement.showsComments ? comments.open : undefined
+                }
+                onOpenComments={
+                    engagement.showsComments ? comments.toggle : undefined
+                }
                 footer={footer}
                 editorTools={
                     <>
@@ -603,16 +791,9 @@ export function BoardCard({
                     canHighlight ? () => void toggleHighlight() : undefined
                 }
             >
-                {groupedCards.length > 0 && (
-                    <div className="order-first">
-                        <GroupName card={card} />
-                    </div>
+                {comments.open && engagement.showsComments && (
+                    <CardThread card={card} canWrite={engagement.canComment} />
                 )}
-                {showsReactions && <CardReactions card={card} />}
-                <CardComments card={card} />
-                {groupedCards.map((child) => (
-                    <BoardCard key={child.id} card={child} isChild />
-                ))}
             </RetroCard>
             {card.gif && !card.hidden && (
                 <CardGifDialog

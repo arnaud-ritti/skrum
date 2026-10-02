@@ -1,3 +1,4 @@
+import { MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,16 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { childrenOf } from '@/lib/retro/board-reducer';
 import type { BoardCard } from '@/lib/retro/types';
+import { cardEngagement } from '@/lib/retro/adapters';
+import {
+    CardGif,
+    CardThread,
+    UnreadCommentsDot,
+    useCardComments,
+    useCardReactionToggle,
+} from './board-card';
 import { useBoard } from './board-context';
-import { CardComments } from './card-comments';
-import { CardGif } from './board-card';
-import { CardReactions } from './card-reactions';
+import { ReactionChips } from './reaction-chips';
 
 function PresentedContent({
     card,
@@ -27,6 +34,52 @@ function PresentedContent({
             {card.gif && <CardGif gif={card.gif} />}
             {card.content !== null && (
                 <p className={className}>{card.content}</p>
+            )}
+        </>
+    );
+}
+
+/** The reactions and the comments of the presented card, until R9 rebuilds the overlay. */
+function PresentedEngagement({ card }: { card: BoardCard }) {
+    const ctx = useBoard();
+    const { t } = useTrans();
+    const engagement = cardEngagement(card, ctx.board);
+    const toggleReaction = useCardReactionToggle(card);
+    const comments = useCardComments(card);
+
+    return (
+        <>
+            {ctx.board.retro.reactionsEnabled && (
+                <ReactionChips
+                    reactions={engagement.reactions}
+                    canReact={engagement.canReact}
+                    onToggle={toggleReaction}
+                />
+            )}
+            {engagement.showsComments && (
+                <div className="flex min-w-0 flex-col gap-2">
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="self-start"
+                        aria-expanded={comments.open}
+                        aria-label={t('Comments (:count)', {
+                            count: card.commentCount,
+                        })}
+                        onClick={comments.toggle}
+                    >
+                        <MessageSquare aria-hidden />
+                        {card.commentCount}
+                        {comments.isUnread && <UnreadCommentsDot />}
+                    </Button>
+                    {comments.open && (
+                        <CardThread
+                            card={card}
+                            canWrite={engagement.canComment}
+                        />
+                    )}
+                </div>
             )}
         </>
     );
@@ -139,8 +192,7 @@ export function PresentationOverlay() {
                         </span>
                     )}
                 </div>
-                <CardReactions card={card} />
-                <CardComments card={card} />
+                <PresentedEngagement card={card} />
                 {viewer.isFacilitator && (
                     <Button
                         variant="outline"

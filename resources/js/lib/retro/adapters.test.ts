@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+    cardEngagement,
+    groupingProgress,
     toCardProps,
     toColumnProps,
+    toGroupProps,
     toHealthStatements,
     writingProgress,
 } from '@/lib/retro/adapters';
@@ -147,7 +150,7 @@ describe('toColumnProps', () => {
         card({ id: 'c3', parentCardId: 'c2' }),
     ];
 
-    it('counts the top-level cards and knows its neighbours', () => {
+    it('counts every card, grouped ones included, and knows its neighbours', () => {
         const board = retroSnapshot({ columns, cards });
 
         expect(toColumnProps(columns[0], board)).toMatchObject({
@@ -155,7 +158,7 @@ describe('toColumnProps', () => {
             title: 'Start',
             color: 'moss',
             description: null,
-            count: 2,
+            count: 3,
             canAdd: true,
             canMoveLeft: false,
             canMoveRight: true,
@@ -283,6 +286,177 @@ describe('toHealthStatements', () => {
             count: 3,
             answeredBy: [],
             myScore: null,
+        });
+    });
+});
+
+describe('toGroupProps', () => {
+    const lead = card({ id: 'lead', columnId: 'stop', content: 'Slow CI' });
+    const second = card({
+        id: 'second',
+        columnId: 'stop',
+        parentCardId: 'lead',
+        position: 1,
+        content: 'Flaky tests',
+    });
+    const first = card({
+        id: 'first',
+        columnId: 'stop',
+        parentCardId: 'lead',
+        position: 0,
+        content: 'Slow deploys',
+    });
+
+    function board(retro: Parameters<typeof retroSnapshot>[0] = {}) {
+        return retroSnapshot({
+            columns,
+            cards: [lead, second, first],
+            retro: { phase: 'grouping' },
+            ...retro,
+        });
+    }
+
+    it('is nothing for a card that leads no other card', () => {
+        expect(toGroupProps(first, board())).toBeNull();
+        expect(
+            toGroupProps(lead, retroSnapshot({ columns, cards: [lead] })),
+        ).toBeNull();
+    });
+
+    it('puts the lead first, then its cards in their order, under the colour of the column', () => {
+        const group = toGroupProps(lead, board());
+
+        expect(group).toMatchObject({
+            id: 'lead',
+            domId: 'group-lead',
+            title: '',
+            color: 'coral',
+            titleMaxLength: 60,
+        });
+        expect(group?.cards.map((member) => member.id)).toEqual([
+            'lead',
+            'first',
+            'second',
+        ]);
+        expect(group?.cards[1]).toMatchObject({
+            text: 'Slow deploys',
+            color: 'coral',
+        });
+    });
+
+    it('takes the name of the group from its lead', () => {
+        const named = { ...lead, groupName: 'Delivery pain' };
+
+        expect(
+            toGroupProps(named, board({ cards: [named, first] }))?.title,
+        ).toBe('Delivery pain');
+    });
+
+    it('lets everyone name a group from Grouping to Discussing, on an open board', () => {
+        const canEdit = (retro: Parameters<typeof board>[0]) =>
+            toGroupProps(lead, board(retro))?.canEdit;
+
+        expect(canEdit({ retro: { phase: 'grouping' } })).toBe(true);
+        expect(canEdit({ retro: { phase: 'voting' } })).toBe(true);
+        expect(canEdit({ retro: { phase: 'discussing' } })).toBe(true);
+        expect(canEdit({ retro: { phase: 'completed' } })).toBe(false);
+        expect(canEdit({ retro: { phase: 'grouping', isLocked: true } })).toBe(
+            false,
+        );
+    });
+
+    it('lets a card leave its group in Grouping only', () => {
+        const canUngroup = (retro: Parameters<typeof board>[0]) =>
+            toGroupProps(lead, board(retro))?.canUngroup;
+
+        expect(canUngroup({ retro: { phase: 'grouping' } })).toBe(true);
+        expect(canUngroup({ retro: { phase: 'voting' } })).toBe(false);
+        expect(
+            canUngroup({ retro: { phase: 'grouping', isLocked: true } }),
+        ).toBe(false);
+    });
+});
+
+describe('groupingProgress', () => {
+    it('counts the groups and every card, grouped ones included', () => {
+        const lead = card({ id: 'lead' });
+        const child = card({ id: 'child', parentCardId: 'lead' });
+        const alone = card({ id: 'alone', position: 1 });
+
+        expect(
+            groupingProgress(
+                retroSnapshot({ columns, cards: [lead, child, alone] }),
+            ),
+        ).toEqual({ groups: 1, cards: 3 });
+    });
+});
+
+describe('cardEngagement', () => {
+    const reacted = card({
+        isMine: false,
+        reactions: [{ emoji: '👍', count: 1, mine: false, names: [] }],
+        commentCount: 1,
+    });
+
+    function engagement(
+        retro: NonNullable<Parameters<typeof retroSnapshot>[0]>['retro'],
+        target = reacted,
+    ) {
+        return cardEngagement(
+            target,
+            retroSnapshot({ columns, cards: [target], retro }),
+        );
+    }
+
+    it('opens reactions and comments from Grouping to Discussing', () => {
+        expect(engagement({ phase: 'grouping' })).toEqual({
+            reactions: reacted.reactions,
+            canReact: true,
+            showsComments: true,
+            canComment: true,
+        });
+        expect(engagement({ phase: 'voting' }).canReact).toBe(true);
+        expect(engagement({ phase: 'discussing' }).canComment).toBe(true);
+    });
+
+    it('keeps what was said readable once the retro is completed or the board is closed', () => {
+        expect(engagement({ phase: 'completed' })).toEqual({
+            reactions: reacted.reactions,
+            canReact: false,
+            showsComments: true,
+            canComment: false,
+        });
+        expect(engagement({ phase: 'grouping', isLocked: true })).toMatchObject(
+            { canReact: false, canComment: false, showsComments: true },
+        );
+    });
+
+    it('shows no reaction at all when the retro has them off', () => {
+        expect(
+            engagement({ phase: 'grouping', reactionsEnabled: false }),
+        ).toMatchObject({ reactions: [], canReact: false });
+    });
+
+    it('has no comments in Writing unless one was already written', () => {
+        expect(
+            engagement({ phase: 'writing' }, card({ commentCount: 0 }))
+                .showsComments,
+        ).toBe(false);
+        expect(engagement({ phase: 'writing' }).showsComments).toBe(true);
+        expect(engagement({ phase: 'writing' }).canComment).toBe(false);
+    });
+
+    it('offers nothing on a card that is still hidden', () => {
+        expect(
+            engagement(
+                { phase: 'writing' },
+                card({ hidden: true, content: null, commentCount: 2 }),
+            ),
+        ).toEqual({
+            reactions: [],
+            canReact: false,
+            showsComments: false,
+            canComment: false,
         });
     });
 });

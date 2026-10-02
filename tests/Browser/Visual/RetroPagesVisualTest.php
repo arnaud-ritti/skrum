@@ -7,6 +7,8 @@ use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\Card;
+use App\Models\CardComment;
+use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
@@ -116,6 +118,46 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
+    if ($phase === RetroPhase::Grouping) {
+        $groups = [
+            ['Went well', 'Client demo', 'The client signed off the flow without a single change.'],
+            ['To improve', null, 'Requirements keep moving while we build.'],
+        ];
+
+        foreach ($groups as [$title, $name, $content]) {
+            $column = Column::query()->where('retro_id', $retro->id)->where('title', $title)->sole();
+            $lead = Card::query()->where('column_id', $column->id)->where('position', 0)->sole();
+            $lead->update(['group_name' => $name]);
+
+            Card::factory()->create([
+                'retro_id' => $retro->id,
+                'column_id' => $column->id,
+                'participant_id' => $people[1][1]->id,
+                'parent_card_id' => $lead->id,
+                'content' => $content,
+                'position' => 0,
+            ]);
+        }
+
+        $idea = Card::query()->where('retro_id', $retro->id)->where('content', 'like', 'A “no meeting”%')->sole();
+
+        foreach ([[$people[0][1], '🎉'], [$people[1][1], '🎉'], [$people[1][1], '👍']] as [$participant, $emoji]) {
+            CardReaction::factory()->create([
+                'retro_id' => $retro->id,
+                'card_id' => $idea->id,
+                'participant_id' => $participant->id,
+                'emoji' => $emoji,
+            ]);
+        }
+
+        CardComment::factory()->create([
+            'retro_id' => $retro->id,
+            'card_id' => $idea->id,
+            'participant_id' => $people[1][1]->id,
+            'content' => 'Thursday is the day of the sprint review, Wednesday would be easier.',
+        ]);
+    }
+
     if ($phase === RetroPhase::HealthCheck) {
         $retro->update(['health_check_enabled' => true]);
         resolve(FreezeHealthStatements::class)->handle($retro);
@@ -169,7 +211,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     $this->captureVisuals(
         $name,
         "/retros/{$retro->id}",
-        function (string $path, array $options) use ($viewer) {
+        function (string $path, array $options) use ($viewer, $retro, $phase, $asFacilitator) {
             User::query()->whereKey($viewer->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
 
             $page = visit('/login', $options);
@@ -181,11 +223,22 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
 
             $page->navigate($path);
 
-            return $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+            $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->assertCount('[data-realtime]', 1)
                 ->assertScript("document.querySelectorAll('main').length", 1)
                 ->assertPresent('[data-slot="session-frame"] header h1, [data-slot="sidebar-wrapper"] header h1')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+
+            if ($phase === RetroPhase::Grouping && $asFacilitator) {
+                $commented = CardComment::query()->where('retro_id', $retro->id)->sole();
+                $toggle = "#card-{$commented->card_id} [data-slot=\"retro-card-comments\"]";
+
+                $page->click($toggle)
+                    ->assertAriaAttribute($toggle, 'expanded', 'true')
+                    ->assertPresent("#card-{$commented->card_id} [data-slot=\"comment\"]");
+            }
+
+            return $page;
         },
     );
 })->with([
@@ -195,6 +248,8 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'participant, icebreaker, round running' => ['retro-board-icebreaker-round', RetroPhase::Icebreaker, false, false, false, true],
     'facilitator, writing' => ['retro-board-facilitator', RetroPhase::Writing, true, false],
     'facilitator, writing, anonymous' => ['retro-board-anonymous', RetroPhase::Writing, true, false, true],
+    'facilitator, grouping' => ['retro-board-grouping', RetroPhase::Grouping, true, false],
+    'participant, grouping, anonymous, locked' => ['retro-board-grouping-locked', RetroPhase::Grouping, false, true, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);

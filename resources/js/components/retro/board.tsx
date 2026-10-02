@@ -24,10 +24,7 @@ import {
 import { CarriedActionItemsPanel } from './carried-action-items-panel';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
-import {
-    GroupNameSuggestionsProvider,
-    SuggestGroupNamesButton,
-} from './group-name-suggestions';
+import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
 import { IcebreakerStage } from './icebreaker-stage';
 import { PhaseHealth } from './phase-health';
 import { PresentationOverlay } from './presentation-overlay';
@@ -45,7 +42,7 @@ import { VoteProgress } from './vote-progress';
 /**
  * What the old board header held beside the chrome, until the task of each
  * phase gives it its place: vote progress (R8), carried action items (R10),
- * group name suggestions (R7), "Add survey" (S1).
+ * group name suggestions outside Grouping (R8, R9), "Add survey" (S1).
  */
 function PhaseTools() {
     const { board } = useBoard();
@@ -57,7 +54,7 @@ function PhaseTools() {
         >
             {board.retro.phase === 'voting' && <VoteProgress />}
             <CarriedActionItemsPanel />
-            <SuggestGroupNamesButton />
+            {board.retro.phase !== 'grouping' && <SuggestGroupNames />}
             <AddSurveyButton />
         </div>
     );

@@ -1,7 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
+import type { BoardContextValue } from '@/components/retro/board-context';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -313,9 +315,6 @@ describe('ColumnsBoard columns', () => {
             screen.queryByRole('button', { name: 'Column menu' }),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
-        expect(
-            screen.getAllByText('Drag cards onto each other to group them.'),
-        ).toHaveLength(2);
     });
 
     it('adds a column and resets the form', async () => {
@@ -378,5 +377,587 @@ describe('ColumnsBoard columns', () => {
         );
 
         expect(order()).toEqual(['card-low', 'card-high']);
+    });
+});
+
+describe('ColumnsBoard in Grouping', () => {
+    const lead = card({ id: 'lead', content: 'Slow CI', isMine: false });
+    const child = card({
+        id: 'child',
+        parentCardId: 'lead',
+        content: 'Flaky tests',
+        isMine: false,
+    });
+    const alone = card({
+        id: 'alone',
+        position: 1,
+        content: 'Pairing works',
+        isMine: false,
+    });
+
+    function grouping(
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+        context: Partial<BoardContextValue> = {},
+    ) {
+        const { retro, ...rest } = overrides;
+
+        return renderInBoard(
+            <GroupNameSuggestionsProvider>
+                <ColumnsBoard hideMyCursor />
+            </GroupNameSuggestionsProvider>,
+            boardContext(
+                retroSnapshot({
+                    columns,
+                    cards: [lead, child, alone],
+                    retro: { phase: 'grouping', ...retro },
+                    ...rest,
+                }),
+                context,
+            ),
+        );
+    }
+
+    it('says how to group, and counts the groups, the cards and the people', () => {
+        const { container } = grouping();
+
+        expect(
+            screen.getByText(
+                'Drag a card onto another to group them. Click a title to rename it.',
+            ),
+        ).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="retro-grouping-progress"]')
+                ?.textContent,
+        ).toBe('1 group · 3 cards');
+        expect(
+            container.querySelector('[data-slot="retro-grouping-online"]')
+                ?.textContent,
+        ).toBe('2 online');
+        expect(
+            container.querySelector('[data-slot="retro-writing-banner"]'),
+        ).toBeNull();
+    });
+
+    it('draws a group as a section around its cards, dragged by its lead', () => {
+        const { container } = grouping();
+        const group = container.querySelector('#group-lead') as HTMLElement;
+
+        expect(group.matches('section[data-slot="card-group"]')).toBe(true);
+        expect(group.querySelector('#card-lead')).not.toBeNull();
+        expect(group.querySelector('#card-child')).not.toBeNull();
+        expect(container.querySelector('#card-lead #card-child')).toBeNull();
+        expect(
+            container
+                .querySelector('[data-test="retro-card-handle-lead"]')
+                ?.contains(group),
+        ).toBe(true);
+        expect(
+            container.querySelector('[data-test="retro-card-handle-child"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector(
+                '[data-test="retro-card-handle-alone"] #card-alone [data-slot="retro-card-grip"]',
+            ),
+        ).not.toBeNull();
+        expect(group.querySelector('[data-slot="retro-card-grip"]')).toBeNull();
+    });
+
+    it('invites to name a group that has no name, under the text of its first card', () => {
+        const { container } = grouping();
+
+        const title = container.querySelector(
+            '#group-lead [data-slot="card-group-title"]',
+        ) as HTMLElement;
+
+        expect(title.tagName).toBe('BUTTON');
+        expect(title.textContent).toBe('Slow CI · Name this group');
+    });
+
+    it('takes a card out of its group, the lead excepted', async () => {
+        retroRequest.mockResolvedValue({ cards: [lead, child] });
+
+        const { container, ctx } = grouping();
+
+        expect(
+            container.querySelector('#card-lead [aria-label="Ungroup"]'),
+        ).toBeNull();
+
+        fireEvent.click(
+            container.querySelector(
+                '#card-child [aria-label="Ungroup"]',
+            ) as HTMLElement,
+        );
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'cards.upsert',
+                cards: [lead, child],
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'delete',
+                url: expect.stringContaining('/cards/child/group'),
+            }),
+        );
+    });
+
+    it('names a group, shown at once, and clears the name when the field is emptied', async () => {
+        const named = { ...lead, groupName: 'Delivery' };
+
+        retroRequest.mockResolvedValue({
+            cardId: 'lead',
+            groupName: 'Delivery pain',
+        });
+
+        const { ctx } = grouping({ cards: [named, child] });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename group' }));
+        fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
+            target: { value: ' Delivery pain ' },
+        });
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Enter',
+        });
+
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'card.groupName',
+            cardId: 'lead',
+            groupName: 'Delivery pain',
+        });
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'put',
+                    url: expect.stringContaining('/cards/lead/group-name'),
+                }),
+                { name: 'Delivery pain' },
+            ),
+        );
+
+        retroRequest.mockClear();
+        fireEvent.click(screen.getByRole('button', { name: 'Rename group' }));
+        fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
+            target: { value: '' },
+        });
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Enter',
+        });
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ method: 'delete' }),
+            ),
+        );
+    });
+
+    it('keeps a group readable and closed on a locked board', () => {
+        const { container } = grouping({
+            retro: { isLocked: true },
+            cards: [{ ...lead, groupName: 'Delivery' }, child],
+        });
+
+        expect(
+            screen.queryByRole('button', { name: 'Rename group' }),
+        ).toBeNull();
+        expect(container.querySelector('#group-lead')?.textContent).toContain(
+            'Delivery',
+        );
+        expect(container.querySelector('[aria-label="Ungroup"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-card-grip"]'),
+        ).toBeNull();
+    });
+
+    it('still names a group in Voting, without letting a card leave it', () => {
+        const { container } = grouping({ retro: { phase: 'voting' } });
+
+        expect(
+            screen.getByRole('button', { name: /Name this group/ }),
+        ).toBeTruthy();
+        expect(container.querySelector('[aria-label="Ungroup"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-grouping-banner"]'),
+        ).toBeNull();
+    });
+
+    describe('suggested names', () => {
+        const withProvider = {
+            retro: { aiSummaryEnabled: true },
+            features: { llm: true, llmProvider: 'Anthropic' },
+        };
+
+        it('are not offered without a provider, on an opted-out retro, or once every group is named', () => {
+            grouping();
+
+            expect(
+                screen.queryByRole('button', { name: 'Suggest group names' }),
+            ).toBeNull();
+
+            grouping({
+                ...withProvider,
+                retro: { aiSummaryEnabled: false },
+            });
+            grouping({
+                ...withProvider,
+                cards: [{ ...lead, groupName: 'Delivery' }, child],
+            });
+
+            expect(
+                screen.queryByRole('button', { name: 'Suggest group names' }),
+            ).toBeNull();
+        });
+
+        it('says where the cards go, shows the name on its group and saves it when it is kept', async () => {
+            retroRequest.mockResolvedValueOnce({
+                suggestions: [{ cardId: 'lead', name: 'Delivery pain' }],
+            });
+
+            const { container, ctx } = grouping(withProvider);
+
+            expect(
+                screen.getByText(
+                    'Card contents of these groups are sent to Anthropic.',
+                ),
+            ).toBeTruthy();
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Suggest group names' }),
+            );
+
+            const ghost = await waitFor(() => {
+                const found = container.querySelector(
+                    '#group-lead [title="Suggested name"]',
+                );
+
+                expect(found).not.toBeNull();
+
+                return found as HTMLElement;
+            });
+
+            expect(ghost.textContent).toBe('Delivery pain');
+
+            retroRequest.mockResolvedValueOnce({
+                cardId: 'lead',
+                groupName: 'Delivery pain',
+            });
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Use this name' }),
+            );
+
+            await waitFor(() =>
+                expect(ctx.apply).toHaveBeenCalledWith({
+                    type: 'card.groupName',
+                    cardId: 'lead',
+                    groupName: 'Delivery pain',
+                }),
+            );
+            expect(retroRequest).toHaveBeenLastCalledWith(
+                expect.objectContaining({ method: 'put' }),
+                { name: 'Delivery pain' },
+            );
+            expect(
+                container.querySelector('[title="Suggested name"]'),
+            ).toBeNull();
+        });
+
+        it('opens the title field on the suggested name to change it first', async () => {
+            retroRequest.mockResolvedValueOnce({
+                suggestions: [{ cardId: 'lead', name: 'Delivery pain' }],
+            });
+
+            const { container } = grouping(withProvider);
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Suggest group names' }),
+            );
+            fireEvent.click(
+                await screen.findByRole('button', { name: 'Edit this name' }),
+            );
+
+            const field = screen.getByRole('textbox', {
+                name: 'Group name',
+            }) as HTMLInputElement;
+
+            expect(field.value).toBe('Delivery pain');
+            expect(
+                container.querySelector('[title="Suggested name"]'),
+            ).toBeNull();
+
+            retroRequest.mockResolvedValueOnce({
+                cardId: 'lead',
+                groupName: 'Delivery pain',
+            });
+            fireEvent.keyDown(field, { key: 'Enter' });
+
+            await waitFor(() =>
+                expect(retroRequest).toHaveBeenLastCalledWith(
+                    expect.objectContaining({ method: 'put' }),
+                    { name: 'Delivery pain' },
+                ),
+            );
+        });
+
+        it('tells when there is nothing new to suggest', async () => {
+            retroRequest.mockResolvedValueOnce({ suggestions: [] });
+
+            const { container } = grouping(withProvider);
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Suggest group names' }),
+            );
+
+            await waitFor(() =>
+                expect(
+                    (
+                        screen.getByRole('button', {
+                            name: 'Suggest group names',
+                        }) as HTMLButtonElement
+                    ).disabled,
+                ).toBe(false),
+            );
+            expect(
+                container.querySelector('[title="Suggested name"]'),
+            ).toBeNull();
+        });
+    });
+});
+
+describe('ColumnsBoard reactions and comments', () => {
+    const reacted = card({
+        isMine: false,
+        reactions: [
+            { emoji: '👍', count: 1, mine: false, names: ['Bob Stone'] },
+        ],
+        commentCount: 1,
+        comments: [
+            {
+                id: 'm1',
+                cardId: 'c1',
+                parentCommentId: null,
+                isMine: false,
+                deleted: false,
+                content: 'Which pipeline is slow?',
+                author: { id: 'bob', name: 'Bob Stone' },
+                createdAt: '2026-10-02T10:00:00Z',
+                replies: [],
+            },
+        ],
+    });
+
+    function engaged(
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+        context: Partial<BoardContextValue> = {},
+    ) {
+        const { retro, ...rest } = overrides;
+
+        return renderInBoard(
+            <ColumnsBoard hideMyCursor />,
+            boardContext(
+                retroSnapshot({
+                    columns,
+                    cards: [reacted],
+                    retro: { phase: 'grouping', ...retro },
+                    ...rest,
+                }),
+                context,
+            ),
+        );
+    }
+
+    it('adds my reaction to a chip at once, then takes the answer of the server', async () => {
+        const answered = [
+            {
+                emoji: '👍',
+                count: 2,
+                mine: true,
+                names: ['Bob Stone', 'Alice'],
+            },
+        ];
+
+        retroRequest.mockResolvedValue({ cardId: 'c1', reactions: answered });
+
+        const { ctx } = engaged();
+
+        fireEvent.click(screen.getByRole('button', { name: '👍, 1 reaction' }));
+
+        expect(ctx.dispatch).toHaveBeenCalledWith({
+            type: 'reactions.set',
+            cardId: 'c1',
+            reactions: [
+                { emoji: '👍', count: 2, mine: true, names: ['Bob Stone'] },
+            ],
+        });
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'reactions.set',
+                cardId: 'c1',
+                reactions: answered,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'put',
+                url: expect.stringContaining('/cards/c1/reactions'),
+            }),
+            { emoji: '👍' },
+        );
+    });
+
+    it('takes my reaction back when I press my own chip', () => {
+        engaged({
+            cards: [
+                {
+                    ...reacted,
+                    reactions: [
+                        { emoji: '👍', count: 1, mine: true, names: [] },
+                    ],
+                },
+            ],
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: '👍, 1 reaction' }));
+
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ method: 'delete' }),
+            { emoji: '👍' },
+        );
+    });
+
+    it('offers "Add a reaction" as a menu button on the card', () => {
+        const { container } = engaged();
+        const add = container.querySelector(
+            '#card-c1 [aria-label="Add a reaction"]',
+        ) as HTMLElement;
+
+        expect(add.getAttribute('aria-haspopup')).toBe('menu');
+    });
+
+    it('disables the chips and hides "Add a reaction" on a locked board, in Writing and once completed', () => {
+        for (const retro of [
+            { isLocked: true },
+            { phase: 'writing' as const },
+            { phase: 'completed' as const },
+        ]) {
+            const { container, unmount } = engaged({ retro });
+
+            expect(
+                (
+                    screen.getByRole('button', {
+                        name: '👍, 1 reaction',
+                    }) as HTMLButtonElement
+                ).disabled,
+            ).toBe(true);
+            expect(
+                container.querySelector('[aria-label="Add a reaction"]'),
+            ).toBeNull();
+
+            unmount();
+        }
+    });
+
+    it('shows no reaction when the retro has them off', () => {
+        const { container } = engaged({ retro: { reactionsEnabled: false } });
+
+        expect(
+            container.querySelector('[data-slot="retro-card-reactions"]'),
+        ).toBeNull();
+    });
+
+    it('opens the comments of a card, and writes one with Enter', async () => {
+        retroRequest.mockResolvedValue({
+            comment: { ...reacted.comments[0], id: 'm2', content: 'Deploy' },
+        });
+
+        const { container, ctx } = engaged();
+        const toggle = screen.getByRole('button', { name: 'Comments (1)' });
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(container.querySelector('#card-c1 textarea')).toBeNull();
+
+        fireEvent.click(toggle);
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(
+            container.querySelector('#card-c1 [data-slot="comment"]')
+                ?.textContent,
+        ).toContain('Which pipeline is slow?');
+        expect(
+            container.querySelector('#card-c1 [data-slot="comment"] p')
+                ?.textContent,
+        ).toBe('Bob Stone');
+
+        const field = screen.getByLabelText('Write a comment…');
+
+        fireEvent.change(field, { target: { value: ' Deploy ' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'comment.upsert' }),
+            ),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: expect.stringContaining('/cards/c1/comments'),
+            }),
+            { content: 'Deploy', parentCommentId: null },
+        );
+    });
+
+    it('lets the comments be read, not written, on a locked board', () => {
+        const { container } = engaged({ retro: { isLocked: true } });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Comments (1)' }));
+
+        expect(container.querySelector('#card-c1')?.textContent).toContain(
+            'Which pipeline is slow?',
+        );
+        expect(container.querySelector('#card-c1 textarea')).toBeNull();
+        expect(
+            container.querySelector('[aria-label="Delete comment"]'),
+        ).toBeNull();
+    });
+
+    it('marks a card with unread comments, and reads them when they are opened', () => {
+        const markCommentsRead = vi.fn();
+        const { container } = engaged(
+            {},
+            { unreadCardIds: new Set(['c1']), markCommentsRead },
+        );
+
+        expect(
+            container.querySelector('#card-c1 [aria-label="Unread comments"]'),
+        ).not.toBeNull();
+        expect(markCommentsRead).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Comments (1)' }));
+
+        expect(markCommentsRead).toHaveBeenCalledWith('c1');
+    });
+
+    it('has no comments on a card of the Writing phase nobody commented', () => {
+        const { container } = engaged({
+            retro: { phase: 'writing' },
+            cards: [card({ commentCount: 0 })],
+        });
+
+        expect(
+            container.querySelector('[data-slot="retro-card-comments"]'),
+        ).toBeNull();
+    });
+
+    it('shows nothing of a card that is still hidden', () => {
+        const { container } = engaged({
+            retro: { phase: 'writing' },
+            cards: [{ ...reacted, hidden: true, content: null }],
+        });
+
+        expect(
+            container.querySelector('[data-slot="retro-card-reactions"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-card-comments"]'),
+        ).toBeNull();
     });
 });

@@ -4,11 +4,12 @@ import type {
     RetroCardGif,
     RetroCardInsight,
 } from '@/components/skrum/retro-card';
-import { topLevelCards } from './board-reducer';
+import { childrenOf } from './board-reducer';
 import type {
     BoardCard,
     BoardColumn,
     ColumnColor,
+    ReactionSummary,
     RetroPhase,
     Snapshot,
 } from './types';
@@ -29,7 +30,23 @@ export const ColumnEditPhases: RetroPhase[] = [
 /** Phases in which an author may edit or delete their card. */
 export const CardEditPhases: RetroPhase[] = ['writing', 'grouping'];
 
+/** Phases in which anyone may name or rename a group. */
+export const GroupNamingPhases: RetroPhase[] = [
+    'grouping',
+    'voting',
+    'discussing',
+];
+
+/** Phases in which a card takes reactions and comments. */
+export const CardEngagementPhases: RetroPhase[] = [
+    'grouping',
+    'voting',
+    'discussing',
+];
+
 export const CardMaxLength = 1000;
+
+export const GroupNameMaxLength = 60;
 
 const FallbackColor: ColumnColor = 'moss';
 
@@ -60,6 +77,29 @@ export type BoardColumnProps = {
     canManage: boolean;
     /** A column with cards cannot be renamed, recoloured or deleted. */
     hasCards: boolean;
+};
+
+export type BoardGroupProps = {
+    /** The id of the lead card: the server knows a group by it. */
+    id: string;
+    domId: string;
+    /** Empty while the group has no name. */
+    title: string;
+    color: ColumnColor;
+    /** The lead, then the cards grouped under it. */
+    cards: BoardCardProps[];
+    canEdit: boolean;
+    /** A card leaves its group in Grouping only. */
+    canUngroup: boolean;
+    titleMaxLength: number;
+};
+
+/** What a card shows and takes of reactions and comments. */
+export type CardEngagement = {
+    reactions: ReactionSummary[];
+    canReact: boolean;
+    showsComments: boolean;
+    canComment: boolean;
 };
 
 export function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
@@ -109,20 +149,91 @@ export function toColumnProps(
     const index = board.columns.findIndex(
         (candidate) => candidate.id === column.id,
     );
+    // Every card, grouped ones included, as the Grouping mockup counts them.
+    const columnCards = board.cards.filter(
+        (card) => card.columnId === column.id,
+    );
 
     return {
         id: column.id,
         title: column.title,
         color: column.color,
         description: column.description,
-        count: topLevelCards(board.cards, column.id).length,
+        count: columnCards.length,
         canAdd: board.retro.phase === 'writing' && isBoardEditable(board),
         canMoveLeft: index > 0,
         canMoveRight: index !== -1 && index < board.columns.length - 1,
         canManage:
             board.viewer.isFacilitator &&
             ColumnEditPhases.includes(board.retro.phase),
-        hasCards: board.cards.some((card) => card.columnId === column.id),
+        hasCards: columnCards.length > 0,
+    };
+}
+
+/**
+ * A lead card and the cards grouped under it, as `CardGroup` takes them. A
+ * card that leads no other card is not a group.
+ */
+export function toGroupProps(
+    lead: BoardCard,
+    board: BoardView,
+): BoardGroupProps | null {
+    const members = childrenOf(board.cards, lead.id);
+
+    if (lead.parentCardId !== null || members.length === 0) {
+        return null;
+    }
+
+    const editable = isBoardEditable(board);
+    const cards = [lead, ...members].map((card) => toCardProps(card, board));
+
+    return {
+        id: lead.id,
+        domId: `group-${lead.id}`,
+        title: lead.groupName ?? '',
+        color: cards[0].color,
+        cards,
+        canEdit: editable && GroupNamingPhases.includes(board.retro.phase),
+        canUngroup: editable && board.retro.phase === 'grouping',
+        titleMaxLength: GroupNameMaxLength,
+    };
+}
+
+/** The counter of the Grouping banner: the groups, and every card. */
+export function groupingProgress(board: Pick<Snapshot, 'cards'>): {
+    groups: number;
+    cards: number;
+} {
+    const leads = new Set(
+        board.cards.flatMap((card) =>
+            card.parentCardId === null ? [] : [card.parentCardId],
+        ),
+    );
+
+    return { groups: leads.size, cards: board.cards.length };
+}
+
+export function cardEngagement(
+    card: BoardCard,
+    board: Pick<Snapshot, 'retro'>,
+): CardEngagement {
+    if (card.hidden) {
+        return {
+            reactions: [],
+            canReact: false,
+            showsComments: false,
+            canComment: false,
+        };
+    }
+
+    const { phase, reactionsEnabled } = board.retro;
+    const open = isBoardEditable(board) && CardEngagementPhases.includes(phase);
+
+    return {
+        reactions: reactionsEnabled ? card.reactions : [],
+        canReact: reactionsEnabled && open,
+        showsComments: phase !== 'writing' || card.commentCount > 0,
+        canComment: open,
     };
 }
 
