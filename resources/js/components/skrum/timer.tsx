@@ -2,7 +2,6 @@ import {
     AlarmClock,
     Pause,
     Play,
-    Plus,
     SlidersHorizontal,
     Square,
     Timer as TimerIcon,
@@ -48,6 +47,8 @@ export type TimerProps = {
     onPause?: () => void;
     onResume?: () => void;
     onAdd?: (seconds: number) => void;
+    /** Seconds added by the "+" control and the + key; one minute by default. */
+    addSeconds?: number;
     onDone?: () => void;
     className?: string;
 };
@@ -100,6 +101,7 @@ export function Timer({
     onPause,
     onResume,
     onAdd,
+    addSeconds = 60,
     onDone,
     className,
 }: TimerProps) {
@@ -187,7 +189,7 @@ export function Timer({
 
         if (event.key === '+' && onAdd && hasTimer) {
             event.preventDefault();
-            onAdd(60);
+            onAdd(addSeconds);
         }
     }
 
@@ -299,10 +301,11 @@ export function Timer({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => onAdd(60)}
+                    onClick={() => onAdd(addSeconds)}
                 >
-                    <Plus aria-hidden />
-                    <span className="truncate">{t('1 min')}</span>
+                    <span className="truncate">
+                        {t('+:count min', { count: addSeconds / 60 })}
+                    </span>
                 </Button>
             )}
             {hasMenu && (

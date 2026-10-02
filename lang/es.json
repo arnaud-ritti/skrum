@@ -3275,6 +3275,7 @@
     "React to this card": "Reaccionar a esta tarjeta",
     "Pause": "Pausa",
     "+2 min": "+2 min",
+    "+:count min": "+:count min",
     "Reveal cards": "Revelar las tarjetas",
     "Reveal votes": "Revelar los votos",
     "Everyone follows": "Todos siguen",
