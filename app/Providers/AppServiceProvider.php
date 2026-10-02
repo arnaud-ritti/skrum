@@ -22,6 +22,7 @@ use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
+use App\Support\InstanceSettings;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -59,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);
         $this->app->scoped(McpTrackers::class);
+        $this->app->scoped(InstanceSettings::class);
         $this->app->bind(McpGrant::class, fn (): McpGrant => McpGrant::current());
     }
 

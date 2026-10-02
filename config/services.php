@@ -106,7 +106,7 @@ return [
     'gifs' => [
         'provider' => env('SKRUM_GIF_PROVIDER'),
         'key' => env('SKRUM_GIF_API_KEY'),
-        'rating' => env('SKRUM_GIF_RATING', 'pg'),
+        'rating' => env('SKRUM_GIF_RATING', 'g'),
     ],
 
     'llm' => [
