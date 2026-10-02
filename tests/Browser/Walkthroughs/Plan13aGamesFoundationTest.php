@@ -336,8 +336,8 @@ it('[P13a-06a] ends a round as "Time\'s up" when the one-minute timer of the hos
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->click('[aria-label="Timer"]')
-        ->assertVisible('[role="menuitem"]:has(:text-is("1 min"))')
-        ->click('[role="menuitem"]:has(:text-is("1 min"))');
+        ->assertVisible('[role="menuitem"]:text-is("1 min")')
+        ->click('[role="menuitem"]:text-is("1 min")');
 
     foreach ([$host, $guest] as $page) {
         $page->assertSeeIn('header:has(h1)', '0:');
