@@ -312,6 +312,7 @@ function StatementRow({
         transition,
         isDragging,
     } = useSortable({ id: statement.id, disabled: !canManage });
+    const handleHintId = useId();
     const canEdit = canManage && !statement.isBuiltin && onEdit !== undefined;
     const canArchive = canManage && onArchive !== undefined;
 
@@ -338,10 +339,19 @@ function StatementRow({
                     {...attributes}
                     {...listeners}
                     aria-label={t('Drag to reorder')}
+                    aria-describedby={[
+                        handleHintId,
+                        attributes['aria-describedby'],
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
                     data-action="reorder"
                     className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
                 >
                     <GripVerticalIcon className="size-4" aria-hidden />
+                    <span id={handleHintId} hidden>
+                        {statement.label}
+                    </span>
                 </button>
             ) : null}
             {editing && onEdit ? (

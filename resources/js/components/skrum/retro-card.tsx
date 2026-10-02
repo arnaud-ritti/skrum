@@ -40,6 +40,8 @@ export type RetroCardReaction = {
     emoji: string;
     count: number;
     mine: boolean;
+    /** Who reacted; shown in a tooltip. Absent on an anonymous retro. */
+    names?: string[];
 };
 
 export type RetroCardAuthor = {
@@ -61,6 +63,8 @@ export type RetroCardProps = Omit<
     'id' | 'color' | 'children'
 > & {
     id: string;
+    /** DOM id of the article. Defaults to `card-{id}`. */
+    domId?: string;
     text: string | null;
     color: ColumnColor;
     gif?: RetroCardGif | null;
@@ -85,9 +89,15 @@ export type RetroCardProps = Omit<
     menuEntries?: MenuEntry[];
     footer?: ReactNode;
     editorTools?: ReactNode;
+    /** Replaces the built-in "Add a reaction" button and quick list (full emoji picker). */
+    reactionPicker?: ReactNode;
+    /** `voteBlocked` is the reason read next to the vote button when `canVote` is false. */
+    labels?: { vote?: string; voteBlocked?: string };
     children?: ReactNode;
     onVote?: (delta: 1 | -1) => void;
     onReact?: (emoji: string) => void;
+    /** When given, "Add a reaction" calls it instead of opening the quick list. */
+    onOpenReactionPicker?: () => void;
     onEdit?: (text: string) => void;
     onEditStart?: () => void;
     onEditCancel?: () => void;
@@ -161,6 +171,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
 
 export function RetroCard({
     id,
+    domId,
     text,
     color,
     gif = null,
@@ -185,9 +196,12 @@ export function RetroCard({
     menuEntries,
     footer,
     editorTools,
+    reactionPicker,
+    labels,
     children,
     onVote,
     onReact,
+    onOpenReactionPicker,
     onEdit,
     onEditStart,
     onEditCancel,
@@ -363,35 +377,46 @@ export function RetroCard({
         addReactionRef.current?.focus();
     }
 
+    const voteBlockedReason = canVote ? undefined : labels?.voteBlocked;
+
     const voteButton = showVoteControls && (
         <Tooltip>
             <TooltipTrigger asChild>
-                <button
-                    type="button"
-                    data-slot="retro-card-vote"
-                    aria-label={
-                        votes.total === null
-                            ? t('Vote')
-                            : t('Vote, :count votes', { count: votes.total })
-                    }
-                    aria-pressed={mineVotes > 0}
-                    aria-disabled={!canVote || undefined}
-                    onClick={() => vote(1)}
-                    className={cn(
-                        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
-                        mineVotes > 0
-                            ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
-                            : 'border-input bg-card text-foreground hover:bg-accent',
-                        !canVote && 'cursor-not-allowed opacity-60',
-                    )}
+                <span
+                    data-slot="retro-card-vote-wrapper"
+                    tabIndex={voteBlockedReason === undefined ? undefined : 0}
+                    className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    <ThumbsUp className="size-4" aria-hidden />
-                    {votes.total !== null && (
-                        <span aria-hidden>{votes.total}</span>
+                    <button
+                        type="button"
+                        data-slot="retro-card-vote"
+                        aria-label={labels?.vote ?? t('Add a vote')}
+                        aria-pressed={mineVotes > 0}
+                        disabled={!canVote}
+                        onClick={() => vote(1)}
+                        className={cn(
+                            'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                            mineVotes > 0
+                                ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
+                                : 'border-input bg-card text-foreground hover:bg-accent',
+                            !canVote && 'cursor-not-allowed opacity-60',
+                        )}
+                    >
+                        <ThumbsUp className="size-4" aria-hidden />
+                        {votes.total !== null && (
+                            <span aria-hidden>{votes.total}</span>
+                        )}
+                    </button>
+                    {voteBlockedReason !== undefined && (
+                        <span className="sr-only">{voteBlockedReason}</span>
                     )}
-                </button>
+                </span>
             </TooltipTrigger>
-            <TooltipContent shortcut={['V']}>{t('Vote')}</TooltipContent>
+            {voteBlockedReason === undefined ? (
+                <TooltipContent shortcut={['V']}>{t('Vote')}</TooltipContent>
+            ) : (
+                <TooltipContent>{voteBlockedReason}</TooltipContent>
+            )}
         </Tooltip>
     );
 
@@ -428,6 +453,7 @@ export function RetroCard({
             aria-hidden={ghost || undefined}
             aria-selected={selected || undefined}
             {...rest}
+            id={domId ?? `card-${id}`}
             ref={(node) => {
                 articleRef.current = node;
                 assignRef(ref, node);
@@ -579,75 +605,116 @@ export function RetroCard({
                 )
             )}
 
-            {!masked && !isEditing && (reactions.length > 0 || onReact) && (
-                <div
-                    data-slot="retro-card-reactions"
-                    className="flex flex-wrap items-center gap-1.5"
-                >
-                    {reactions.map((reaction) => (
-                        <button
-                            key={reaction.emoji}
-                            type="button"
-                            aria-pressed={reaction.mine}
-                            aria-label={t(':emoji, :count reactions', {
-                                emoji: reaction.emoji,
-                                count: reaction.count,
-                            })}
-                            disabled={!onReact}
-                            onClick={() => onReact?.(reaction.emoji)}
-                            className={cn(
-                                'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                reaction.mine
-                                    ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
-                                    : 'border-input bg-card text-foreground',
-                            )}
-                        >
-                            <span aria-hidden>{reaction.emoji}</span>
-                            <span aria-hidden>{reaction.count}</span>
-                        </button>
-                    ))}
-                    {onReact && (
-                        <>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        ref={addReactionRef}
-                                        type="button"
-                                        aria-label={t('Add a reaction')}
-                                        aria-expanded={pickerOpen}
-                                        onClick={() =>
-                                            setPickerOpen((open) => !open)
-                                        }
-                                        className="inline-flex h-6 items-center rounded-full border border-dashed border-input bg-card px-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <SmilePlus
-                                            className="size-3.5"
-                                            aria-hidden
-                                        />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {t('Add a reaction')}
-                                </TooltipContent>
-                            </Tooltip>
-                            {pickerOpen &&
-                                quickReactions.map((emoji) => (
-                                    <button
-                                        key={emoji}
-                                        type="button"
-                                        aria-label={t('React with :emoji', {
-                                            emoji,
-                                        })}
-                                        onClick={() => pickReaction(emoji)}
-                                        className="inline-flex h-6 items-center rounded-full border border-input bg-card px-2 text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <span aria-hidden>{emoji}</span>
-                                    </button>
-                                ))}
-                        </>
-                    )}
-                </div>
-            )}
+            {!masked &&
+                !isEditing &&
+                (reactions.length > 0 ||
+                    onReact !== undefined ||
+                    reactionPicker !== undefined) && (
+                    <div
+                        data-slot="retro-card-reactions"
+                        className="flex flex-wrap items-center gap-1.5"
+                    >
+                        {reactions.map((reaction) => {
+                            const names = reaction.names ?? [];
+                            const chip = (
+                                <button
+                                    key={reaction.emoji}
+                                    type="button"
+                                    aria-pressed={reaction.mine}
+                                    aria-label={
+                                        reaction.count === 1
+                                            ? t(':emoji, :count reaction', {
+                                                  emoji: reaction.emoji,
+                                                  count: reaction.count,
+                                              })
+                                            : t(':emoji, :count reactions', {
+                                                  emoji: reaction.emoji,
+                                                  count: reaction.count,
+                                              })
+                                    }
+                                    aria-disabled={!onReact || undefined}
+                                    onClick={() => onReact?.(reaction.emoji)}
+                                    className={cn(
+                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        reaction.mine
+                                            ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
+                                            : 'border-input bg-card text-foreground',
+                                    )}
+                                >
+                                    <span aria-hidden>{reaction.emoji}</span>
+                                    <span aria-hidden>{reaction.count}</span>
+                                </button>
+                            );
+
+                            if (names.length === 0) {
+                                return chip;
+                            }
+
+                            return (
+                                <Tooltip key={reaction.emoji}>
+                                    <TooltipTrigger asChild>
+                                        {chip}
+                                    </TooltipTrigger>
+                                    <TooltipContent data-slot="retro-card-reaction-names">
+                                        {names.join(', ')}
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })}
+                        {reactionPicker}
+                        {onReact && reactionPicker === undefined && (
+                            <>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            ref={addReactionRef}
+                                            type="button"
+                                            aria-label={t('Add a reaction')}
+                                            aria-expanded={
+                                                onOpenReactionPicker
+                                                    ? undefined
+                                                    : pickerOpen
+                                            }
+                                            onClick={() => {
+                                                if (onOpenReactionPicker) {
+                                                    onOpenReactionPicker();
+
+                                                    return;
+                                                }
+
+                                                setPickerOpen((open) => !open);
+                                            }}
+                                            className="inline-flex h-6 items-center rounded-full border border-dashed border-input bg-card px-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <SmilePlus
+                                                className="size-3.5"
+                                                aria-hidden
+                                            />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {t('Add a reaction')}
+                                    </TooltipContent>
+                                </Tooltip>
+                                {pickerOpen &&
+                                    !onOpenReactionPicker &&
+                                    quickReactions.map((emoji) => (
+                                        <button
+                                            key={emoji}
+                                            type="button"
+                                            aria-label={t('React with :emoji', {
+                                                emoji,
+                                            })}
+                                            onClick={() => pickReaction(emoji)}
+                                            className="inline-flex h-6 items-center rounded-full border border-input bg-card px-2 text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <span aria-hidden>{emoji}</span>
+                                        </button>
+                                    ))}
+                            </>
+                        )}
+                    </div>
+                )}
 
             <div
                 data-slot="retro-card-footer"

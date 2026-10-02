@@ -34,6 +34,29 @@ describe('RetroCard', () => {
         ).toBeTruthy();
     });
 
+    it('carries the DOM id the browser suite binds to', () => {
+        const { rerender } = renderWithProviders(card());
+
+        expect(screen.getByRole('article').id).toBe('card-c1');
+
+        rerender(card({ domId: 'preview-c1' }));
+
+        expect(screen.getByRole('article').id).toBe('preview-c1');
+    });
+
+    it('lets the host rename the vote button', () => {
+        renderWithProviders(
+            card({
+                votes: { total: 1, mine: 0 },
+                labels: { vote: 'Vote for this idea' },
+            }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Vote for this idea' }),
+        ).toBeTruthy();
+    });
+
     it('shows Anonymous instead of the author', () => {
         renderWithProviders(card({ author: null }));
 
@@ -79,7 +102,7 @@ describe('RetroCard', () => {
             card({ votes: { total: null, mine: 2 }, canVote: true }),
         );
 
-        expect(screen.getByRole('button', { name: 'Vote' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Add a vote' })).toBeTruthy();
         expect(screen.getByRole('img', { name: 'Your votes: 2' })).toBeTruthy();
     });
 
@@ -103,10 +126,30 @@ describe('RetroCard', () => {
             card({ votes: { total: 1, mine: 0 }, canVote: false, onVote }),
         );
 
-        fireEvent.keyDown(screen.getByRole('article'), { key: 'v' });
-        fireEvent.click(screen.getByRole('button', { name: /Vote/ }));
+        const button = screen.getByRole('button', { name: 'Add a vote' });
 
+        fireEvent.keyDown(screen.getByRole('article'), { key: 'v' });
+        fireEvent.click(button);
+
+        expect((button as HTMLButtonElement).disabled).toBe(true);
         expect(onVote).not.toHaveBeenCalled();
+    });
+
+    it('keeps the reason of a closed vote reachable next to the disabled button', () => {
+        renderWithProviders(
+            card({
+                votes: { total: 1, mine: 0 },
+                canVote: false,
+                labels: { voteBlocked: 'You have used all your votes' },
+            }),
+        );
+
+        const wrapper = screen
+            .getByRole('button', { name: 'Add a vote' })
+            .closest('[data-slot="retro-card-vote-wrapper"]');
+
+        expect(wrapper?.getAttribute('tabindex')).toBe('0');
+        expect(wrapper?.textContent).toContain('You have used all your votes');
     });
 
     it('starts editing on Enter only for editable, unlocked cards', () => {
@@ -256,6 +299,78 @@ describe('RetroCard', () => {
                 screen.getByRole('button', { name: 'React with 💡' }),
             );
             expect(onReact).toHaveBeenLastCalledWith('💡');
+        });
+
+        it('names a chip in the singular and in the plural', () => {
+            renderWithProviders(
+                card({
+                    onReact: vi.fn(),
+                    reactions: [
+                        { emoji: '👍', count: 1, mine: false },
+                        { emoji: '🎉', count: 2, mine: false },
+                    ],
+                }),
+            );
+
+            expect(
+                screen.getByRole('button', { name: '👍, 1 reaction' }),
+            ).toBeTruthy();
+            expect(
+                screen.getByRole('button', { name: '🎉, 2 reactions' }),
+            ).toBeTruthy();
+        });
+
+        it('names who reacted in a tooltip', async () => {
+            renderWithProviders(
+                card({
+                    reactions: [
+                        {
+                            emoji: '👍',
+                            count: 2,
+                            mine: false,
+                            names: ['Alice', 'Bob'],
+                        },
+                    ],
+                }),
+            );
+
+            fireEvent.focus(
+                screen.getByRole('button', { name: '👍, 2 reactions' }),
+            );
+
+            expect(
+                (await screen.findAllByText('Alice, Bob')).length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('hands the add control to the host picker', () => {
+            const onOpenReactionPicker = vi.fn();
+            const { rerender } = renderWithProviders(
+                card({ onReact: vi.fn(), onOpenReactionPicker }),
+            );
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Add a reaction' }),
+            );
+
+            expect(onOpenReactionPicker).toHaveBeenCalledOnce();
+            expect(
+                screen.queryByRole('button', { name: 'React with 💡' }),
+            ).toBeNull();
+
+            rerender(
+                card({
+                    onReact: vi.fn(),
+                    reactionPicker: <button>Full picker</button>,
+                }),
+            );
+
+            expect(
+                screen.getByRole('button', { name: 'Full picker' }),
+            ).toBeTruthy();
+            expect(
+                screen.queryByRole('button', { name: 'Add a reaction' }),
+            ).toBeNull();
         });
 
         it('hides the add control without onReact', () => {

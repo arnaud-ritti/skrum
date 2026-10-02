@@ -11,6 +11,7 @@ import {
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -39,6 +40,12 @@ export type SessionCardProps = {
     team: string;
     when: string;
     status: SessionCardStatus;
+    /** Replaces the default status word (the server's own phase name, for example). */
+    statusLabel?: string;
+    /** Extra line inside the link: text and icons only, nothing interactive. */
+    meta?: ReactNode;
+    /** Rendered outside the link, so it may hold buttons or a menu. */
+    action?: ReactNode;
     stats?: { participants: number; cards?: number; actions?: number };
     people?: SessionCardPerson[];
     className?: string;
@@ -82,6 +89,9 @@ export function SessionCard({
     team,
     when,
     status,
+    statusLabel,
+    meta,
+    action,
     stats,
     people = [],
     className,
@@ -99,109 +109,153 @@ export function SessionCard({
     const visiblePeople = people.slice(0, maxVisiblePeople);
     const hiddenPeople = people.length - visiblePeople.length;
 
+    const hasAction = action !== undefined && action !== null;
+    const content = (
+        <>
+            <span className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 @max-card-compact/card:grid-cols-1 @card-wide/card:grid-cols-[auto_minmax(0,1fr)_auto] @card-wide/card:items-center">
+                <span
+                    aria-hidden
+                    className={cn(
+                        'row-span-2 flex size-8 items-center justify-center rounded-md @max-card-compact/card:hidden @card-wide/card:row-span-1',
+                        tone,
+                    )}
+                >
+                    <KindIcon className="size-4" />
+                </span>
+                <span className="block min-w-0">
+                    <span className="line-clamp-2 block font-semibold">
+                        {title}
+                    </span>
+                    <span className="block truncate text-xs font-medium text-muted-foreground">
+                        {team} · {when}
+                    </span>
+                </span>
+                <Badge
+                    className={cn(
+                        'col-start-2 max-w-full min-w-0 justify-self-start rounded-full border-transparent @max-card-compact/card:col-start-1 @card-wide/card:col-start-3 @card-wide/card:row-start-1',
+                        statusTones[status],
+                    )}
+                >
+                    {isLive && (
+                        <span
+                            aria-hidden
+                            className="size-1.5 rounded-full bg-skrum-success"
+                        />
+                    )}
+                    <span className="truncate">
+                        {statusLabel ?? statusLabels[status]}
+                    </span>
+                </Badge>
+            </span>
+            {meta !== undefined && meta !== null && (
+                <span
+                    data-slot="session-card-meta"
+                    className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground"
+                >
+                    {meta}
+                </span>
+            )}
+            {showPresence && (
+                <span className="flex items-center justify-between gap-2">
+                    <span
+                        data-slot="session-card-presence"
+                        className="flex items-center -space-x-1.5"
+                    >
+                        {visiblePeople.map((person) => (
+                            <Avatar
+                                key={person.name}
+                                className="size-6 ring-2 ring-card"
+                                title={person.name}
+                            >
+                                {person.avatarUrl ? (
+                                    <AvatarImage
+                                        src={person.avatarUrl}
+                                        alt=""
+                                    />
+                                ) : null}
+                                <AvatarFallback className="text-overline tracking-normal">
+                                    {getInitials(person.name)}
+                                </AvatarFallback>
+                            </Avatar>
+                        ))}
+                        {hiddenPeople > 0 && (
+                            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-overline font-semibold tracking-normal text-muted-foreground ring-2 ring-card">
+                                +{hiddenPeople}
+                            </span>
+                        )}
+                    </span>
+                    <span className="text-xs font-semibold whitespace-nowrap text-skrum-primary-text">
+                        {t('Join')} →
+                    </span>
+                </span>
+            )}
+            {!showPresence && stats && (
+                <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground *:whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1">
+                        <Users className="size-3.5" aria-hidden />
+                        {stats.participants}
+                        <span className="sr-only">{t('participants')}</span>
+                    </span>
+                    {stats.cards !== undefined && (
+                        <span className="inline-flex items-center gap-1">
+                            <StickyNote className="size-3.5" aria-hidden />
+                            {stats.cards}
+                            <span className="@max-card-compact/card:sr-only">
+                                {t('cards')}
+                            </span>
+                        </span>
+                    )}
+                    {stats.actions !== undefined && (
+                        <span className="inline-flex items-center gap-1">
+                            <ListChecks className="size-3.5" aria-hidden />
+                            {stats.actions}
+                            <span className="@max-card-compact/card:sr-only">
+                                {t('actions')}
+                            </span>
+                        </span>
+                    )}
+                </span>
+            )}
+        </>
+    );
+
+    if (hasAction) {
+        return (
+            <Card
+                data-slot="session-card"
+                className={cn(
+                    'relative gap-3 p-4 transition-shadow duration-140 hover:border-primary/35 hover:shadow-raised has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ring',
+                    className,
+                )}
+            >
+                <Link
+                    href={href}
+                    data-kind={kind}
+                    data-status={status}
+                    className="flex min-w-0 flex-col gap-3 outline-none after:absolute after:inset-0 after:rounded-xl"
+                >
+                    {content}
+                </Link>
+                <div
+                    data-slot="session-card-action"
+                    className="relative z-10 flex min-w-0 flex-wrap items-center justify-end gap-2"
+                >
+                    {action}
+                </div>
+            </Card>
+        );
+    }
+
     return (
         <Card
             asChild
             className={cn(
-                'gap-3 p-4 transition-shadow duration-150 outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring',
+                'gap-3 p-4 transition-shadow duration-140 outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring',
                 className,
             )}
         >
             <Link href={href} data-kind={kind} data-status={status}>
-                <span className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 @max-card-compact/card:grid-cols-1 @card-wide/card:grid-cols-[auto_minmax(0,1fr)_auto] @card-wide/card:items-center">
-                    <span
-                        aria-hidden
-                        className={cn(
-                            'row-span-2 flex size-8 items-center justify-center rounded-md @max-card-compact/card:hidden @card-wide/card:row-span-1',
-                            tone,
-                        )}
-                    >
-                        <KindIcon className="size-4" />
-                    </span>
-                    <span className="block min-w-0">
-                        <span className="line-clamp-2 block font-semibold">
-                            {title}
-                        </span>
-                        <span className="block truncate text-xs font-medium text-muted-foreground">
-                            {team} · {when}
-                        </span>
-                    </span>
-                    <Badge
-                        className={cn(
-                            'col-start-2 justify-self-start rounded-full border-transparent @max-card-compact/card:col-start-1 @card-wide/card:col-start-3 @card-wide/card:row-start-1',
-                            statusTones[status],
-                        )}
-                    >
-                        {isLive && (
-                            <span
-                                aria-hidden
-                                className="size-1.5 rounded-full bg-skrum-success"
-                            />
-                        )}
-                        {statusLabels[status]}
-                    </Badge>
-                </span>
-                {showPresence && (
-                    <span className="flex items-center justify-between gap-2">
-                        <span
-                            data-slot="session-card-presence"
-                            className="flex items-center -space-x-1.5"
-                        >
-                            {visiblePeople.map((person) => (
-                                <Avatar
-                                    key={person.name}
-                                    className="size-6 ring-2 ring-card"
-                                    title={person.name}
-                                >
-                                    {person.avatarUrl ? (
-                                        <AvatarImage
-                                            src={person.avatarUrl}
-                                            alt=""
-                                        />
-                                    ) : null}
-                                    <AvatarFallback className="text-overline tracking-normal">
-                                        {getInitials(person.name)}
-                                    </AvatarFallback>
-                                </Avatar>
-                            ))}
-                            {hiddenPeople > 0 && (
-                                <span className="flex size-6 items-center justify-center rounded-full bg-muted text-overline font-semibold tracking-normal text-muted-foreground ring-2 ring-card">
-                                    +{hiddenPeople}
-                                </span>
-                            )}
-                        </span>
-                        <span className="text-xs font-semibold whitespace-nowrap text-skrum-primary-text">
-                            {t('Join')} →
-                        </span>
-                    </span>
-                )}
-                {!showPresence && stats && (
-                    <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground *:whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                            <Users className="size-3.5" aria-hidden />
-                            {stats.participants}
-                            <span className="sr-only">{t('participants')}</span>
-                        </span>
-                        {stats.cards !== undefined && (
-                            <span className="inline-flex items-center gap-1">
-                                <StickyNote className="size-3.5" aria-hidden />
-                                {stats.cards}
-                                <span className="@max-card-compact/card:sr-only">
-                                    {t('cards')}
-                                </span>
-                            </span>
-                        )}
-                        {stats.actions !== undefined && (
-                            <span className="inline-flex items-center gap-1">
-                                <ListChecks className="size-3.5" aria-hidden />
-                                {stats.actions}
-                                <span className="@max-card-compact/card:sr-only">
-                                    {t('actions')}
-                                </span>
-                            </span>
-                        )}
-                    </span>
-                )}
+                {content}
             </Link>
         </Card>
     );

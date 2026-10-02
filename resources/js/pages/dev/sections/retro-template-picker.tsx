@@ -194,7 +194,7 @@ function Demo({
     width?: string;
 }) {
     const [value, setValue] = useState(
-        initialValue ?? templates[0]?.id ?? 'blank',
+        initialValue ?? templates[0]?.id ?? 'custom',
     );
     const [tab, setTab] = useState<TemplateSource>(initialTab ?? 'builtin');
     const [query, setQuery] = useState(initialQuery ?? '');
@@ -248,7 +248,7 @@ export default function RetroTemplatePickerSection() {
                 <Demo templates={eight} loading />
             </Example>
             <Example label={t('0 templates')}>
-                <Demo templates={[]} initialValue="blank" />
+                <Demo templates={[]} initialValue="custom" />
             </Example>
             <Example label={t('1 template')}>
                 <Demo templates={[startStop]} />

@@ -85,6 +85,40 @@ describe('SessionCard', () => {
         expect(screen.queryByText('cards')).toBeNull();
     });
 
+    it('shows the status word the host gives and a meta line', () => {
+        render(
+            <SessionCard
+                {...base}
+                statusLabel="Voting"
+                meta={<span>Facilitated by Tess</span>}
+            />,
+        );
+
+        expect(screen.getByText('Voting')).toBeTruthy();
+        expect(screen.queryByText('Ended')).toBeNull();
+        expect(
+            screen
+                .getByText('Facilitated by Tess')
+                .closest('[data-slot="session-card-meta"]'),
+        ).not.toBeNull();
+    });
+
+    it('keeps an action outside the link', () => {
+        render(
+            <SessionCard
+                {...base}
+                action={<button type="button">Delete</button>}
+            />,
+        );
+
+        const link = screen.getByRole('link', { name: /Sprint 42 retro/ });
+        const button = screen.getByRole('button', { name: 'Delete' });
+
+        expect(link.contains(button)).toBe(false);
+        expect(link.querySelector('button, a')).toBeNull();
+        expect(link.getAttribute('data-status')).toBe('ended');
+    });
+
     it.each(['retro', 'poker', 'whiteboard', 'survey', 'icebreaker'] as const)(
         'renders the %s kind',
         (kind) => {

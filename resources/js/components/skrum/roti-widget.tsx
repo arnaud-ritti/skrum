@@ -14,7 +14,8 @@ export type Roti = 1 | 2 | 3 | 4 | 5;
 export type ROTIParticipant = AvatarStackProps['people'][number];
 
 export interface ROTIResult {
-    mean: number;
+    /** `null` while nobody has voted. */
+    mean: number | null;
     votes: number;
     distribution: Record<Roti, number>;
     previousMean?: number;
@@ -28,10 +29,11 @@ export interface ROTIWidgetProps {
     result?: ROTIResult;
     canClose?: boolean;
     onClose?: () => void;
+    /** Results stay hidden below this number of votes. The server sends the average for any count. */
+    minimumRespondents?: number;
+    labels?: { question?: string };
     className?: string;
 }
-
-export const rotiMinimumRespondents = 3;
 
 const scale: Roti[] = [1, 2, 3, 4, 5];
 
@@ -82,7 +84,8 @@ function RotiBadge({ value, className }: { value: Roti; className?: string }) {
 function VotePanel({
     value,
     onVote,
-}: Pick<ROTIWidgetProps, 'value' | 'onVote'>) {
+    labels: overrides,
+}: Pick<ROTIWidgetProps, 'value' | 'onVote' | 'labels'>) {
     const { t } = useTrans();
     const labels = useRotiLabels();
     const questionId = useId();
@@ -98,7 +101,19 @@ function VotePanel({
     }
 
     function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-        if (event.metaKey || event.ctrlKey || event.altKey) {
+        if (
+            event.defaultPrevented ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        if (
+            !(event.target instanceof Node) ||
+            !event.currentTarget.contains(event.target)
+        ) {
             return;
         }
 
@@ -131,7 +146,7 @@ function VotePanel({
                 id={questionId}
                 className="text-ui-lg font-semibold text-card-foreground"
             >
-                {t('Was the time we spent together worth it?')}
+                {overrides?.question ?? t('How was this retro?')}
             </p>
             <div
                 role="radiogroup"
@@ -217,7 +232,11 @@ function ResultPanel({
     result,
     canClose,
     onClose,
-}: Pick<ROTIWidgetProps, 'result' | 'canClose' | 'onClose'>) {
+    minimumRespondents = 0,
+}: Pick<
+    ROTIWidgetProps,
+    'result' | 'canClose' | 'onClose' | 'minimumRespondents'
+>) {
     const { t } = useTrans();
     const labels = useRotiLabels();
 
@@ -225,7 +244,8 @@ function ResultPanel({
         return null;
     }
 
-    const revealed = result.votes >= rotiMinimumRespondents;
+    const mean = result.mean;
+    const revealed = mean !== null && result.votes >= minimumRespondents;
     const missing = result.missing ?? [];
     const maxCount = Math.max(1, ...scale.map((r) => result.distribution[r]));
     const breakdownLabel = scale
@@ -239,7 +259,7 @@ function ResultPanel({
 
     return (
         <>
-            {revealed ? (
+            {revealed && mean !== null ? (
                 <>
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                         <div className="flex min-w-0 items-center gap-4">
@@ -247,7 +267,7 @@ function ResultPanel({
                                 data-slot="roti-mean"
                                 className="font-display text-display-xl font-bold tracking-tight"
                             >
-                                {formatDecimal(result.mean)}
+                                {formatDecimal(mean)}
                                 <small className="ml-1 text-lg font-semibold tracking-normal text-muted-foreground">
                                     {t('/ 5')}
                                 </small>
@@ -257,14 +277,18 @@ function ResultPanel({
                                     {t('Average ROTI')}
                                 </span>
                                 <span className="truncate text-xs text-muted-foreground">
-                                    {t(':count votes', { count: result.votes })}
+                                    {result.votes === 1
+                                        ? t(':count vote', {
+                                              count: result.votes,
+                                          })
+                                        : t(':count votes', {
+                                              count: result.votes,
+                                          })}
                                 </span>
                             </span>
                         </div>
                         {result.previousMean !== undefined && (
-                            <TrendBadge
-                                delta={result.mean - result.previousMean}
-                            />
+                            <TrendBadge delta={mean - result.previousMean} />
                         )}
                     </div>
                     <div
@@ -322,13 +346,15 @@ function ResultPanel({
                     data-slot="roti-hidden"
                     className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
                 >
-                    {t(
-                        'Results appear once :minimum people have voted. :count so far.',
-                        {
-                            minimum: rotiMinimumRespondents,
-                            count: result.votes,
-                        },
-                    )}
+                    {result.votes < minimumRespondents
+                        ? t(
+                              'Results appear once :minimum people have voted. :count so far.',
+                              {
+                                  minimum: minimumRespondents,
+                                  count: result.votes,
+                              },
+                          )
+                        : t('Nobody has voted yet.')}
                 </p>
             )}
             {(missing.length > 0 || (canClose && onClose)) && (
@@ -337,9 +363,13 @@ function ResultPanel({
                         <>
                             <AvatarStack people={missing} size="sm" />
                             <span className="min-w-0">
-                                {t(':count participants have not voted', {
-                                    count: missing.length,
-                                })}
+                                {missing.length === 1
+                                    ? t(':count participant has not voted', {
+                                          count: missing.length,
+                                      })
+                                    : t(':count participants have not voted', {
+                                          count: missing.length,
+                                      })}
                             </span>
                         </>
                     )}
@@ -348,10 +378,12 @@ function ResultPanel({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="ml-auto"
+                            className="ml-auto min-w-0"
                             onClick={onClose}
                         >
-                            {t('Close the ROTI')}
+                            <span className="truncate">
+                                {t('Close the ROTI')}
+                            </span>
                         </Button>
                     )}
                 </div>
@@ -367,6 +399,8 @@ export function ROTIWidget({
     result,
     canClose,
     onClose,
+    minimumRespondents,
+    labels,
     className,
 }: ROTIWidgetProps) {
     return (
@@ -376,12 +410,13 @@ export function ROTIWidget({
             className={cn('gap-4 p-5', className)}
         >
             {mode === 'vote' ? (
-                <VotePanel value={value} onVote={onVote} />
+                <VotePanel value={value} onVote={onVote} labels={labels} />
             ) : (
                 <ResultPanel
                     result={result}
                     canClose={canClose}
                     onClose={onClose}
+                    minimumRespondents={minimumRespondents}
                 />
             )}
         </Card>

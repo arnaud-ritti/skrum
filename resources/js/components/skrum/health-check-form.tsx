@@ -5,6 +5,7 @@ import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { isEditableTarget } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +87,24 @@ function ScaleQuestion({
     }
 
     function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-        if (readOnly || event.metaKey || event.ctrlKey || event.altKey) {
+        if (
+            readOnly ||
+            event.defaultPrevented ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        if (
+            !(event.target instanceof Node) ||
+            !event.currentTarget.contains(event.target)
+        ) {
+            return;
+        }
+
+        if (isEditableTarget(event.target)) {
             return;
         }
 
@@ -193,14 +211,14 @@ function ScaleQuestion({
                         {respondents.length > 0 ? (
                             <ul
                                 aria-label={t('Answered')}
-                                className="flex -space-x-1.5"
+                                className="flex -space-x-1"
                             >
                                 {respondents
                                     .slice(0, visibleRespondents)
                                     .map((respondent) => (
                                         <li key={respondent.id}>
                                             <PersonAvatar
-                                                size="xs"
+                                                size="sm"
                                                 name={respondent.name}
                                                 src={respondent.avatarUrl}
                                                 className="ring-2 ring-card"
@@ -208,7 +226,7 @@ function ScaleQuestion({
                                         </li>
                                     ))}
                                 {hiddenRespondents > 0 ? (
-                                    <li className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-overline font-semibold ring-2 ring-card">
+                                    <li className="flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-1 text-overline font-semibold ring-2 ring-card">
                                         +{hiddenRespondents}
                                     </li>
                                 ) : null}

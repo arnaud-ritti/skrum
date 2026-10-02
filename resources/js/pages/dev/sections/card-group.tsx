@@ -18,6 +18,10 @@ function Example({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
+function scoped(scope: string, cards: RetroCardProps[]): RetroCardProps[] {
+    return cards.map((card) => ({ ...card, id: `${scope}-${card.id}` }));
+}
+
 const sampleNames = ['Inès Bernard', 'Lucas Durand', 'Camille Roux'];
 
 function useSampleCards(
@@ -123,7 +127,7 @@ export default function CardGroupSection() {
                         id="expanded"
                         title={t('Code review quality')}
                         color="coral"
-                        cards={coral}
+                        cards={scoped('g1', coral)}
                         canEdit
                         votes={{ total: 11, mine: 2 }}
                         onRename={noop}
@@ -136,7 +140,7 @@ export default function CardGroupSection() {
                         id="collapsed"
                         title={t('CI tooling')}
                         color="sky"
-                        cards={sky}
+                        cards={scoped('g2', sky)}
                         collapsed
                         votes={{ total: 6, mine: 0 }}
                         onToggle={noop}
@@ -147,7 +151,7 @@ export default function CardGroupSection() {
                         id="editing"
                         title={t('Team support')}
                         color="moss"
-                        cards={coralTwo.map((card) => ({
+                        cards={scoped('g3', coralTwo).map((card) => ({
                             ...card,
                             color: 'moss',
                         }))}
@@ -161,7 +165,7 @@ export default function CardGroupSection() {
                         id="drop"
                         title={t('Meetings')}
                         color="plum"
-                        cards={moss
+                        cards={scoped('g4', moss)
                             .slice(0, 2)
                             .map((card) => ({ ...card, color: 'plum' }))}
                         dropTarget
@@ -172,7 +176,7 @@ export default function CardGroupSection() {
                         id="readonly"
                         title={t('Deployments')}
                         color="iris"
-                        cards={coralTwo.map((card) => ({
+                        cards={scoped('g5', coralTwo).map((card) => ({
                             ...card,
                             color: 'iris',
                         }))}
@@ -184,7 +188,7 @@ export default function CardGroupSection() {
                         id="untitled"
                         title=""
                         color="lagoon"
-                        cards={coralTwo.map((card) => ({
+                        cards={scoped('g6', coralTwo).map((card) => ({
                             ...card,
                             color: 'lagoon',
                         }))}
@@ -199,7 +203,7 @@ export default function CardGroupSection() {
                         id="controls"
                         title={t('Code review quality')}
                         color="red"
-                        cards={coral.map((card) => ({
+                        cards={scoped('g7', coral).map((card) => ({
                             ...card,
                             color: 'red',
                             canEdit: true,
@@ -221,7 +225,7 @@ export default function CardGroupSection() {
                         id="masked"
                         title=""
                         color="blue"
-                        cards={coralTwo.map((card) => ({
+                        cards={scoped('g8', coralTwo).map((card) => ({
                             ...card,
                             color: 'blue',
                             text: null,
@@ -231,12 +235,49 @@ export default function CardGroupSection() {
                         onUngroup={noop}
                     />
                 </Example>
+                <Example
+                    label={t('Collapsed with a masked card: its author hidden')}
+                >
+                    <CardGroup
+                        id="masked-collapsed"
+                        title={t('Code review quality')}
+                        color="blue"
+                        collapsed
+                        cards={scoped('g9', coralTwo).map((card, index) => ({
+                            ...card,
+                            color: 'blue',
+                            text: index === 0 ? card.text : null,
+                            masked: index > 0,
+                        }))}
+                    />
+                </Example>
+                <Example label={t('No name yet, with a name suggestion')}>
+                    <CardGroup
+                        id="hint"
+                        title=""
+                        color="green"
+                        cards={scoped('g10', coralTwo).map((card) => ({
+                            ...card,
+                            color: 'green',
+                        }))}
+                        canEdit
+                        onRename={noop}
+                        onUngroup={noop}
+                        titleHint={
+                            <p className="truncate text-xs text-muted-foreground">
+                                {t('Suggested name: :name', {
+                                    name: t('Code review quality'),
+                                })}
+                            </p>
+                        }
+                    />
+                </Example>
                 <Example label={t('Group of 30 cards, collapsed')}>
                     <CardGroup
                         id="thirty-collapsed"
                         title={t('Everything about deployments')}
                         color="amber"
-                        cards={thirty}
+                        cards={scoped('g11', thirty)}
                         collapsed
                         votes={{ total: 200, mine: 5 }}
                     />
@@ -248,7 +289,7 @@ export default function CardGroupSection() {
                         id="thirty"
                         title={t('Everything about deployments')}
                         color="green"
-                        cards={thirty.map((card) => ({
+                        cards={scoped('g12', thirty).map((card) => ({
                             ...card,
                             color: 'green',
                         }))}
@@ -274,7 +315,10 @@ export default function CardGroupSection() {
                             'A very long group title that must be truncated gracefully',
                         )}
                         color="sun"
-                        cards={coral.map((card) => ({ ...card, color: 'sun' }))}
+                        cards={scoped('g13', coral).map((card) => ({
+                            ...card,
+                            color: 'sun',
+                        }))}
                         canEdit
                         votes={{ total: 4, mine: 1 }}
                         onUngroup={noop}

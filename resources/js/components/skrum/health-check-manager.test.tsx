@@ -150,6 +150,23 @@ describe('HealthStatementsManager', () => {
         );
     });
 
+    it('tells the reorder handles apart by their statement', () => {
+        setup();
+
+        const handles = screen.getAllByRole('button', {
+            name: 'Drag to reorder',
+        });
+        const descriptions = handles.map((handle) =>
+            (handle.getAttribute('aria-describedby') ?? '')
+                .split(' ')
+                .map((id) => document.getElementById(id)?.textContent ?? '')
+                .join(' '),
+        );
+
+        expect(descriptions[0]).toContain('Interaction');
+        expect(new Set(descriptions).size).toBe(handles.length);
+    });
+
     it('is read-only without manage rights', () => {
         setup({ canManage: false, defaultArchivedOpen: true });
 

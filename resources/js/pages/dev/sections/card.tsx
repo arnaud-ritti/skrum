@@ -133,6 +133,23 @@ export default function CardSection() {
                         stats={{ participants: 6 }}
                     />
                 </State>
+                <State
+                    label={t('Session · server phase, meta line and action')}
+                >
+                    <SessionCard
+                        {...ended}
+                        status="live"
+                        statusLabel={t('Voting')}
+                        meta={<span>{t('Facilitated by Tess Martin')}</span>}
+                        action={
+                            <Button type="button" variant="outline" size="sm">
+                                <span className="truncate">
+                                    {t('Duplicate')}
+                                </span>
+                            </Button>
+                        }
+                    />
+                </State>
                 <State label={t('Session · whiteboard')}>
                     <SessionCard {...ended} kind="whiteboard" />
                 </State>

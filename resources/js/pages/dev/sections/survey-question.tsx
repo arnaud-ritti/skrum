@@ -99,6 +99,21 @@ export default function SurveyQuestionSection() {
                     required
                 />
             </Example>
+            <Example
+                label={t('Single choice, answered: counts shown, can change')}
+            >
+                <SurveyQuestion
+                    id="sca"
+                    kind="single"
+                    label={t('Which ritual helps most?')}
+                    mode="answer"
+                    options={options}
+                    value="b"
+                    hasAnswered
+                    onWithdraw={() => undefined}
+                    results={{ responses: 15 }}
+                />
+            </Example>
             <Example label={t('Single choice, required error')}>
                 <SurveyQuestion
                     id="sce"

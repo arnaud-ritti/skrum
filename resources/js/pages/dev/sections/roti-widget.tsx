@@ -59,9 +59,32 @@ export default function ROTIWidgetSection() {
                     onClose={() => undefined}
                 />
             </State>
+            <State label={t('Result, one vote (shown by default)')}>
+                <ROTIWidget
+                    mode="result"
+                    result={{
+                        mean: 4,
+                        votes: 1,
+                        distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 0 },
+                    }}
+                />
+            </State>
+            <State label={t('Result, nobody has voted')}>
+                <ROTIWidget
+                    mode="result"
+                    result={{
+                        mean: null,
+                        votes: 0,
+                        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+                    }}
+                    canClose
+                    onClose={() => undefined}
+                />
+            </State>
             <State label={t('Result hidden below three respondents')}>
                 <ROTIWidget
                     mode="result"
+                    minimumRespondents={3}
                     result={{
                         ...result,
                         votes: 2,

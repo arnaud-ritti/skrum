@@ -30,13 +30,21 @@ function Example({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function Cards({ color, texts }: { color: ColumnColor; texts: string[] }) {
+function Cards({
+    color,
+    texts,
+    scope = color,
+}: {
+    color: ColumnColor;
+    texts: string[];
+    scope?: string;
+}) {
     return (
         <>
             {texts.map((text, index) => (
                 <RetroCard
-                    key={`${color}-${index}`}
-                    id={`${color}-${index}`}
+                    key={`${scope}-${index}`}
+                    id={`${scope}-${index}`}
                     text={text}
                     color={color}
                     author={{
@@ -100,7 +108,11 @@ function SortableColumn({ texts }: { texts: string[] }) {
             sortedByVotes={sorted}
             onSortByVotesChange={setSorted}
         >
-            <Cards color="red" texts={sorted ? [...texts].reverse() : texts} />
+            <Cards
+                color="red"
+                scope="sorted"
+                texts={sorted ? [...texts].reverse() : texts}
+            />
         </RetroColumn>
     );
 }

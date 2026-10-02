@@ -62,6 +62,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { isEditableTarget } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -129,6 +130,8 @@ export type TemplateEditorProps = {
     onCancel: () => void;
     onDuplicate?: () => void;
     onDelete?: () => void;
+    /** DOM ids of the controls. Defaults: `template-name`, `template-source`, `template-category`. */
+    ids?: { name?: string; source?: string; category?: string };
     className?: string;
 };
 
@@ -491,13 +494,18 @@ function SortableColumnRow(props: RowProps) {
         column.title.trim() === '' ? t('Untitled') : column.title;
 
     const handleKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
-        if (event.key !== 'Delete' || !canDelete) {
+        if (event.key !== 'Delete' || !canDelete || event.defaultPrevented) {
             return;
         }
 
-        const target = event.target as HTMLElement;
+        if (
+            !(event.target instanceof Node) ||
+            !event.currentTarget.contains(event.target)
+        ) {
+            return;
+        }
 
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        if (isEditableTarget(event.target)) {
             return;
         }
 
@@ -682,17 +690,18 @@ export function TemplateEditor({
     onCancel,
     onDuplicate,
     onDelete,
+    ids,
     className,
 }: TemplateEditorProps) {
     const { t } = useTrans();
     const headingId = useId();
-    const nameId = useId();
+    const nameId = ids?.name ?? 'template-name';
     const nameErrorId = useId();
     const descriptionId = useId();
     const visibilityHelpId = useId();
-    const categoryId = useId();
+    const categoryId = ids?.category ?? 'template-category';
     const categoryErrorId = useId();
-    const startFromId = useId();
+    const startFromId = ids?.source ?? 'template-source';
     const [submitted, setSubmitted] = useState(false);
     const [nameTouched, setNameTouched] = useState(false);
     const [touched, setTouched] = useState<Set<string>>(new Set());

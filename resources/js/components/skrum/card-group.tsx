@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, ThumbsUp, Unlink } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { ComponentProps, KeyboardEvent } from 'react';
+import type { ComponentProps, KeyboardEvent, ReactNode } from 'react';
 import { RetroCard } from '@/components/skrum/retro-card';
 import type {
     ColumnColor,
@@ -21,6 +21,8 @@ export type CardGroupProps = Omit<
     'id' | 'title' | 'color' | 'children'
 > & {
     id: string;
+    /** DOM id of the section. The old markup had none, so there is no default. */
+    domId?: string;
     title: string;
     color: ColumnColor;
     cards: RetroCardProps[];
@@ -30,9 +32,12 @@ export type CardGroupProps = Omit<
     canEdit?: boolean;
     dropTarget?: boolean;
     titleMaxLength?: number;
+    /** Shown under the title (AI name suggestion). */
+    titleHint?: ReactNode;
     onToggle?: (collapsed: boolean) => void;
     /** `null` clears the name, which the server accepts. */
     onRename?: (title: string | null) => void;
+    /** Never offered for the first card: the server cannot ungroup the lead. */
     onUngroup?: (cardId: string) => void;
 };
 
@@ -49,6 +54,7 @@ function truncate(text: string, length: number): string {
 
 export function CardGroup({
     id,
+    domId,
     title,
     color,
     cards,
@@ -58,6 +64,7 @@ export function CardGroup({
     canEdit = false,
     dropTarget = false,
     titleMaxLength = 60,
+    titleHint,
     onToggle,
     onRename,
     onUngroup,
@@ -132,9 +139,11 @@ export function CardGroup({
         title.trim() !== ''
             ? title.trim()
             : fallbackTitle || t('Untitled group');
+    const hasTitle = title.trim() !== '';
     const hiddenCards = cards.slice(1);
     const sliceCount = Math.min(hiddenCards.length, 2);
     const authors = cards
+        .filter((card) => !card.masked)
         .map((card) => card.author)
         .filter((author) => author != null)
         .filter(
@@ -256,6 +265,7 @@ export function CardGroup({
                 count: cards.length,
             })}
             {...rest}
+            id={domId}
             data-slot="card-group"
             data-group-id={id}
             data-color={color}
@@ -290,7 +300,7 @@ export function CardGroup({
                 {editing ? (
                     <input
                         data-slot="card-group-title-input"
-                        aria-label={t('Group title')}
+                        aria-label={t('Group name')}
                         autoFocus
                         value={draft}
                         maxLength={titleMaxLength}
@@ -305,10 +315,16 @@ export function CardGroup({
                         type="button"
                         data-slot="card-group-title"
                         title={t('Click to rename')}
+                        aria-label={hasTitle ? t('Rename group') : undefined}
                         onClick={startEditing}
                         className="-mx-1.5 h-7 min-w-0 flex-1 cursor-text truncate rounded-sm px-1.5 text-left text-sm font-semibold transition-colors duration-140 ease-standard outline-none hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
                     >
                         {displayTitle}
+                        {!hasTitle && (
+                            <span className="sr-only">
+                                {` · ${t('Name this group')}`}
+                            </span>
+                        )}
                     </button>
                 ) : (
                     <span
@@ -327,6 +343,11 @@ export function CardGroup({
                     {cards.length}
                 </span>
             </header>
+            {titleHint !== undefined && titleHint !== null && !editing && (
+                <div data-slot="card-group-title-hint" className="min-w-0">
+                    {titleHint}
+                </div>
+            )}
 
             {isCollapsed ? (
                 firstCard && (
@@ -369,7 +390,7 @@ export function CardGroup({
                     data-slot="card-group-stack"
                     className="flex min-w-0 flex-col gap-2"
                 >
-                    {cards.map((card) => (
+                    {cards.map((card, index) => (
                         <li key={card.id} className="min-w-0">
                             <RetroCard
                                 {...card}
@@ -377,22 +398,14 @@ export function CardGroup({
                                 footer={
                                     <>
                                         {card.footer}
-                                        {canEdit && onUngroup && (
+                                        {canEdit && onUngroup && index > 0 && (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
                                                         type="button"
                                                         data-slot="card-group-ungroup"
                                                         aria-label={t(
-                                                            'Remove from group: :text',
-                                                            {
-                                                                text: truncate(
-                                                                    readableText(
-                                                                        card,
-                                                                    ),
-                                                                    40,
-                                                                ),
-                                                            },
+                                                            'Ungroup',
                                                         )}
                                                         onClick={() =>
                                                             onUngroup(card.id)
@@ -406,7 +419,7 @@ export function CardGroup({
                                                     </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    {t('Remove from group')}
+                                                    {t('Ungroup')}
                                                 </TooltipContent>
                                             </Tooltip>
                                         )}

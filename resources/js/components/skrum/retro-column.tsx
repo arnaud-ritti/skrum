@@ -518,7 +518,7 @@ export function RetroColumn({
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    aria-label={t('Column options')}
+                                    aria-label={t('Column menu')}
                                     data-slot="retro-column-menu"
                                 >
                                     <Ellipsis aria-hidden />
@@ -526,7 +526,8 @@ export function RetroColumn({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                                 align="end"
-                                aria-label={t('Column options')}
+                                size="wide"
+                                aria-label={t('Column menu')}
                                 onCloseAutoFocus={handleMenuCloseAutoFocus}
                             >
                                 {onRename && (
@@ -566,7 +567,7 @@ export function RetroColumn({
                                                 {t('Color')}
                                             </span>
                                         </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent>
+                                        <DropdownMenuSubContent size="wide">
                                             <DropdownMenuRadioGroup
                                                 value={color}
                                                 onValueChange={(value) =>

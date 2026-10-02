@@ -197,6 +197,34 @@ export default function RetroCardSection() {
                         onReact={noop}
                     />
                 </Example>
+                <Example
+                    label={t('Reactions with names (hover) and a host picker')}
+                >
+                    <RetroCard
+                        id="reaction-names"
+                        color="sun"
+                        text={t(
+                            'Thursday pair programming unblocked the Postgres migration.',
+                        )}
+                        author={theo}
+                        reactions={[
+                            {
+                                emoji: '👍',
+                                count: 1,
+                                mine: false,
+                                names: ['Inès Bernard'],
+                            },
+                            {
+                                emoji: '🎉',
+                                count: 2,
+                                mine: true,
+                                names: ['Theo Martin', 'Camille Roux'],
+                            },
+                        ]}
+                        onReact={noop}
+                        onOpenReactionPicker={noop}
+                    />
+                </Example>
                 <Example label={t('Edited by someone else')}>
                     <RetroCard
                         id="5"

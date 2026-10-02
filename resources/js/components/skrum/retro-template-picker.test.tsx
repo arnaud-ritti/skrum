@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,6 +10,7 @@ import type {
     RetroTemplate,
     RetroTemplatePickerProps,
 } from '@/components/skrum/retro-template-picker';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { renderWithProviders } from '@/test/render';
 
 function makeTemplate(
@@ -178,7 +180,7 @@ describe('RetroTemplatePicker', () => {
         fireEvent.keyDown(document.activeElement as HTMLElement, {
             key: 'End',
         });
-        expect(onValueChange).toHaveBeenLastCalledWith('blank');
+        expect(onValueChange).toHaveBeenLastCalledWith('custom');
     });
 
     it('uses a roving tab stop on the selected card', () => {
@@ -268,7 +270,7 @@ describe('RetroTemplatePicker', () => {
         fireEvent.click(
             screen.getByRole('button', { name: 'Start from scratch' }),
         );
-        expect(onValueChange).toHaveBeenCalledWith('blank');
+        expect(onValueChange).toHaveBeenCalledWith('custom');
 
         fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
         expect(screen.getByRole('radiogroup')).toBeTruthy();
@@ -285,6 +287,141 @@ describe('RetroTemplatePicker', () => {
 
         fireEvent.keyDown(search, { key: '/' });
         expect(document.activeElement).toBe(search);
+    });
+
+    it('leaves the slash key alone when its shortcut is turned off', () => {
+        renderWithProviders(
+            <RetroTemplatePicker
+                value="tpl-1"
+                onValueChange={vi.fn()}
+                templates={templates}
+                shortcuts={false}
+            />,
+        );
+
+        fireEvent.keyDown(document.body, { key: '/' });
+
+        expect(document.activeElement).not.toBe(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+        );
+    });
+
+    it('does not focus the search when slash is typed in a dialog opened over the picker', () => {
+        renderWithProviders(
+            <>
+                <RetroTemplatePicker
+                    value="tpl-1"
+                    onValueChange={vi.fn()}
+                    templates={templates}
+                />
+                <Dialog open>
+                    <DialogContent>
+                        <DialogTitle>Other dialog</DialogTitle>
+                        <button type="button">Inside</button>
+                    </DialogContent>
+                </Dialog>
+            </>,
+        );
+
+        const inside = screen.getByRole('button', { name: 'Inside' });
+
+        inside.focus();
+        fireEvent.keyDown(inside, { key: '/' });
+
+        expect(document.activeElement).toBe(inside);
+    });
+
+    it('clears the search with Escape without closing the host dialog, then lets Escape close it', async () => {
+        const user = userEvent.setup();
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <Dialog open onOpenChange={onOpenChange}>
+                <DialogContent>
+                    <DialogTitle>Pick a template</DialogTitle>
+                    <RetroTemplatePicker
+                        value="tpl-1"
+                        onValueChange={vi.fn()}
+                        templates={templates}
+                    />
+                </DialogContent>
+            </Dialog>,
+        );
+
+        const search = screen.getByRole('searchbox', {
+            name: 'Search templates',
+        });
+
+        await user.click(search);
+        await user.keyboard('sail');
+
+        expect((search as HTMLInputElement).value).toBe('sail');
+
+        await user.keyboard('{Escape}');
+
+        expect((search as HTMLInputElement).value).toBe('');
+        expect(onOpenChange).not.toHaveBeenCalled();
+
+        await user.keyboard('{Escape}');
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('focuses the search with slash from inside its own host dialog', async () => {
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <Dialog open>
+                <DialogContent>
+                    <DialogTitle>Pick a template</DialogTitle>
+                    <RetroTemplatePicker
+                        value="tpl-1"
+                        onValueChange={vi.fn()}
+                        templates={templates}
+                    />
+                </DialogContent>
+            </Dialog>,
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        screen.getAllByRole('radio')[0].focus();
+        await user.keyboard('/');
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+        );
+    });
+
+    it('sends the server id of the empty board and does not list that template twice', () => {
+        const { onValueChange } = renderPicker({
+            templates: [
+                ...templates,
+                makeTemplate(99, { id: 'custom', name: 'Custom' }),
+            ],
+        });
+        const radios = within(screen.getByRole('radiogroup')).getAllByRole(
+            'radio',
+        );
+
+        expect(radios).toHaveLength(5);
+        expect(screen.queryByText('Custom')).toBeNull();
+
+        fireEvent.click(radios[4]);
+
+        expect(onValueChange).toHaveBeenLastCalledWith('custom');
+    });
+
+    it('takes another id for the empty board', () => {
+        const { onValueChange } = renderPicker({ blankId: 'empty' });
+
+        fireEvent.click(
+            screen.getByRole('radio', { name: 'Start from scratch' }),
+        );
+
+        expect(onValueChange).toHaveBeenLastCalledWith('empty');
     });
 
     it('announces the result count after the debounce', () => {
@@ -358,7 +495,7 @@ describe('RetroTemplatePicker', () => {
     });
 
     it('shows the blank detail when blank is selected', () => {
-        renderPicker({ value: 'blank', onUse: vi.fn(), onDuplicate: vi.fn() });
+        renderPicker({ value: 'custom', onUse: vi.fn(), onDuplicate: vi.fn() });
 
         expect(
             screen.getByRole('heading', { name: 'Start from scratch' }),

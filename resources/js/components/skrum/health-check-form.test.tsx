@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { HealthCheckForm } from '@/components/skrum/health-check-form';
@@ -268,5 +268,52 @@ describe('HealthCheckForm', () => {
         );
         expect(screen.getAllByRole('radiogroup')).toHaveLength(200);
         expect(screen.getByText('0 of 200 answered')).toBeTruthy();
+    });
+
+    it('prevents the default of a digit so a global reaction shortcut does not also fire', () => {
+        const { onAnswer } = setup();
+
+        const notPrevented = fireEvent.keyDown(radios('Interaction')[0], {
+            key: '4',
+        });
+
+        expect(notPrevented).toBe(false);
+        expect(onAnswer).toHaveBeenCalledWith('a', 4);
+    });
+
+    it('ignores a digit that another handler already took', () => {
+        const { onAnswer } = setup();
+        const radio = radios('Interaction')[0];
+
+        radio.addEventListener('keydown', (event) => event.preventDefault(), {
+            once: true,
+        });
+        fireEvent.keyDown(radio, { key: '4' });
+
+        expect(onAnswer).not.toHaveBeenCalled();
+    });
+
+    it('shows respondents at a readable size', () => {
+        const { container } = setup(
+            {},
+            {
+                statements: [
+                    {
+                        ...statements[0],
+                        count: 2,
+                        answeredBy: [
+                            { id: '1', name: 'Tess Martin' },
+                            { id: '2', name: 'Noa Kim' },
+                        ],
+                    },
+                ],
+            },
+        );
+        const avatars = container.querySelectorAll(
+            '[data-slot="health-answered"] [data-slot="person-avatar"]',
+        );
+
+        expect(avatars).toHaveLength(2);
+        expect(avatars[0].querySelector('.size-6')).not.toBeNull();
     });
 });

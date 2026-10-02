@@ -21,10 +21,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export const BlankTemplateId = 'blank';
+/** The server's empty board (`TemplateCatalogue::Custom`). */
+export const BlankTemplateId = 'custom';
 
 export type ServerColumnColor =
     | 'green'
@@ -76,6 +78,8 @@ export type RetroTemplatePickerProps = {
     value: string;
     onValueChange: (id: string) => void;
     templates: RetroTemplate[];
+    /** Id sent for "Start from scratch". A template with this id is not listed twice. */
+    blankId?: string;
     name?: string;
     tab?: TemplateSource;
     onTabChange?: (tab: TemplateSource) => void;
@@ -88,6 +92,8 @@ export type RetroTemplatePickerProps = {
     onUse?: (id: string) => void;
     onDuplicate?: (id: string) => void;
     onCreate?: () => void;
+    /** `/` focuses the search. Off when the host owns that key. */
+    shortcuts?: boolean;
     className?: string;
 };
 
@@ -300,10 +306,12 @@ function TemplateCard({
 }
 
 function BlankCard({
+    blankId,
     selected,
     focusable,
     onSelect,
 }: {
+    blankId: string;
     selected: boolean;
     focusable: boolean;
     onSelect: () => void;
@@ -320,7 +328,7 @@ function BlankCard({
             aria-describedby={`${id}-meta`}
             tabIndex={focusable ? 0 : -1}
             data-slot="template-card"
-            data-template-id={BlankTemplateId}
+            data-template-id={blankId}
             onClick={onSelect}
             className={cn(cardClasses, 'border-dashed bg-transparent')}
         >
@@ -467,12 +475,14 @@ function MiniBoard({ columns }: { columns: RetroTemplateColumn[] }) {
 function DetailPanel({
     template,
     blank,
+    blankId,
     onUse,
     onDuplicate,
     categoryLabel,
 }: {
     template: RetroTemplate | undefined;
     blank: boolean;
+    blankId: string;
     onUse?: (id: string) => void;
     onDuplicate?: (id: string) => void;
     categoryLabel?: string;
@@ -483,7 +493,7 @@ function DetailPanel({
         return null;
     }
 
-    const id = template?.id ?? BlankTemplateId;
+    const id = template?.id ?? blankId;
     const name = template?.name ?? t('Start from scratch');
     const description =
         template === undefined
@@ -595,7 +605,8 @@ function LoadingState() {
 export function RetroTemplatePicker({
     value,
     onValueChange,
-    templates,
+    templates: allTemplates,
+    blankId = BlankTemplateId,
     name,
     tab: controlledTab,
     onTabChange,
@@ -608,6 +619,7 @@ export function RetroTemplatePicker({
     onUse,
     onDuplicate,
     onCreate,
+    shortcuts = true,
     className,
 }: RetroTemplatePickerProps) {
     const { t } = useTrans();
@@ -626,7 +638,11 @@ export function RetroTemplatePicker({
         AllCategories,
         onCategoryChange,
     );
+    const rootRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
+    const templates = allTemplates.filter(
+        (template) => template.id !== blankId,
+    );
     const groupRef = useRef<HTMLDivElement>(null);
 
     const needle = normalize(query);
@@ -653,62 +669,53 @@ export function RetroTemplatePicker({
     const selectedTemplate = templates.find(
         (template) => template.id === value,
     );
-    const isBlank = value === BlankTemplateId;
+    const isBlank = value === blankId;
     const rovingId = visible.some((template) => template.id === value)
         ? value
         : isBlank
-          ? BlankTemplateId
-          : (visible[0]?.id ?? BlankTemplateId);
+          ? blankId
+          : (visible[0]?.id ?? blankId);
     const announcedCount = useDebounced(visible.length, SearchDebounceMs);
     const hasResults = visible.length > 0;
     const isFiltering = needle !== '' || category !== AllCategories;
 
+    useShortcut('/', () => searchRef.current?.focus(), {
+        enabled: shortcuts,
+        scope: rootRef,
+    });
+
+    /**
+     * Radix closes a dialog from a capture listener on `document`, before
+     * React sees the key. Escape that clears the search is taken on `window`,
+     * one step earlier, so a host dialog stays open.
+     */
     useEffect(() => {
-        function focusSearch(event: globalThis.KeyboardEvent): void {
-            if (event.key !== '/' || event.defaultPrevented) {
+        if (query === '') {
+            return;
+        }
+
+        function clearOnEscape(event: globalThis.KeyboardEvent): void {
+            if (event.key !== 'Escape' || event.defaultPrevented) {
                 return;
             }
 
-            if (event.ctrlKey || event.metaKey || event.altKey) {
-                return;
-            }
-
-            const target = event.target;
-
-            if (
-                target instanceof HTMLElement &&
-                (target.isContentEditable ||
-                    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-            ) {
-                return;
-            }
-
-            if (searchRef.current === null) {
+            if (event.target !== searchRef.current) {
                 return;
             }
 
             event.preventDefault();
-            searchRef.current.focus();
+            event.stopPropagation();
+            setQuery('');
         }
 
-        document.addEventListener('keydown', focusSearch);
+        window.addEventListener('keydown', clearOnEscape, true);
 
-        return () => document.removeEventListener('keydown', focusSearch);
-    }, []);
+        return () => window.removeEventListener('keydown', clearOnEscape, true);
+    });
 
     function clearQuery(): void {
         setQuery('');
         searchRef.current?.focus();
-    }
-
-    function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-        if (event.key !== 'Escape' || query === '') {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        setQuery('');
     }
 
     function handleGroupKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
@@ -728,7 +735,7 @@ export function RetroTemplatePicker({
             }
 
             event.preventDefault();
-            onUse(items[current].dataset.templateId ?? BlankTemplateId);
+            onUse(items[current].dataset.templateId ?? blankId);
 
             return;
         }
@@ -764,7 +771,7 @@ export function RetroTemplatePicker({
 
         event.preventDefault();
         items[next].focus();
-        onValueChange(items[next].dataset.templateId ?? BlankTemplateId);
+        onValueChange(items[next].dataset.templateId ?? blankId);
     }
 
     const emptyState = (() => {
@@ -774,7 +781,7 @@ export function RetroTemplatePicker({
 
         const blankAction = {
             label: t('Start from scratch'),
-            onClick: () => onValueChange(BlankTemplateId),
+            onClick: () => onValueChange(blankId),
         };
 
         if (isFiltering) {
@@ -828,6 +835,7 @@ export function RetroTemplatePicker({
 
     return (
         <div
+            ref={rootRef}
             data-slot="retro-template-picker"
             className={cn('@container/picker flex min-w-0 flex-col', className)}
         >
@@ -864,7 +872,6 @@ export function RetroTemplatePicker({
                             aria-keyshortcuts="/"
                             className="px-8 [&::-webkit-search-cancel-button]:hidden"
                             onChange={(event) => setQuery(event.target.value)}
-                            onKeyDown={handleSearchKeyDown}
                         />
                         {query !== '' && (
                             <button
@@ -941,12 +948,11 @@ export function RetroTemplatePicker({
                                             />
                                         ))}
                                         <BlankCard
+                                            blankId={blankId}
                                             selected={isBlank}
-                                            focusable={
-                                                rovingId === BlankTemplateId
-                                            }
+                                            focusable={rovingId === blankId}
                                             onSelect={() =>
-                                                onValueChange(BlankTemplateId)
+                                                onValueChange(blankId)
                                             }
                                         />
                                     </div>
@@ -957,6 +963,7 @@ export function RetroTemplatePicker({
                             <DetailPanel
                                 template={selectedTemplate}
                                 blank={isBlank}
+                                blankId={blankId}
                                 onUse={onUse}
                                 onDuplicate={onDuplicate}
                                 categoryLabel={

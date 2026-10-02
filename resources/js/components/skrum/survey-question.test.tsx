@@ -2,6 +2,11 @@ import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SurveyQuestion } from '@/components/skrum/survey-question';
 import type { SurveyQuestionProps } from '@/components/skrum/survey-question';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { renderWithProviders } from '@/test/render';
 
 const options = [
@@ -215,6 +220,130 @@ describe('SurveyQuestion answer mode', () => {
             (screen.getByRole('radio', { name: 'Beta' }) as HTMLInputElement)
                 .checked,
         ).toBe(true);
+    });
+});
+
+describe('SurveyQuestion answer mode with results', () => {
+    it('shows the counts to someone who answered and still lets them change or withdraw', () => {
+        const onChange = vi.fn();
+        const onWithdraw = vi.fn();
+        const { container } = setup({
+            value: 'a',
+            hasAnswered: true,
+            onChange,
+            onWithdraw,
+            results: { responses: 4 },
+        });
+
+        expect(
+            container.querySelectorAll('[data-slot="survey-result-bar"]')
+                .length,
+        ).toBeGreaterThan(0);
+        expect(screen.getByText('4 responses')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Beta' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Withdraw my answer' }),
+        );
+
+        expect(onChange).toHaveBeenCalledWith('b');
+        expect(onWithdraw).toHaveBeenCalledOnce();
+    });
+
+    it('shows no results in answer mode while they are hidden or absent', () => {
+        const { container, rerender } = setup({
+            results: { responses: 4, hidden: true },
+        });
+
+        expect(
+            container.querySelector('[data-slot="survey-result-bar"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="survey-results-hidden"]'),
+        ).toBeNull();
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="single"
+                label="Pick one"
+                mode="answer"
+                options={options}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="survey-result-bar"]'),
+        ).toBeNull();
+    });
+});
+
+describe('SurveyQuestion digit keys', () => {
+    it('prevents the default so a global reaction shortcut does not also fire', () => {
+        const onChange = vi.fn();
+        setup({ onChange });
+
+        const notPrevented = fireEvent.keyDown(
+            screen.getByRole('radio', { name: 'Alpha' }),
+            { key: '2' },
+        );
+
+        expect(notPrevented).toBe(false);
+        expect(onChange).toHaveBeenCalledWith('b');
+    });
+
+    it('ignores a digit typed in a field of its slots and one that another handler took', () => {
+        const onChange = vi.fn();
+        setup({
+            onChange,
+            footer: (
+                <>
+                    <input aria-label="Comment" />
+                    <div
+                        role="textbox"
+                        aria-label="Rich comment"
+                        tabIndex={0}
+                    />
+                </>
+            ),
+        });
+
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Comment' }), {
+            key: '2',
+        });
+        fireEvent.keyDown(
+            screen.getByRole('textbox', { name: 'Rich comment' }),
+            { key: '2' },
+        );
+
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores a digit typed in content portaled out of the question', () => {
+        const onChange = vi.fn();
+        setup({
+            onChange,
+            footer: (
+                <Popover open>
+                    <PopoverTrigger>Open</PopoverTrigger>
+                    <PopoverContent>
+                        <button type="button">In popover</button>
+                    </PopoverContent>
+                </Popover>
+            ),
+        });
+
+        const inside = screen.getByRole('button', { name: 'In popover' });
+
+        expect(
+            document
+                .querySelector('[data-slot="survey-question"]')
+                ?.contains(inside),
+        ).toBe(false);
+
+        fireEvent.keyDown(inside, { key: '2' });
+
+        expect(onChange).not.toHaveBeenCalled();
     });
 });
 

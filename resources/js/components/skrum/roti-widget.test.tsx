@@ -29,6 +29,47 @@ describe('ROTIWidget vote', () => {
         expect(screen.queryByRole('status')).toBeNull();
     });
 
+    it('asks the question the old board asked, unless the host renames it', () => {
+        const { rerender } = render(<ROTIWidget mode="vote" />);
+
+        expect(
+            screen.getByRole('radiogroup', { name: 'How was this retro?' }),
+        ).toBeTruthy();
+
+        rerender(
+            <ROTIWidget
+                mode="vote"
+                labels={{ question: 'Worth your time?' }}
+            />,
+        );
+
+        expect(
+            screen.getByRole('radiogroup', { name: 'Worth your time?' }),
+        ).toBeTruthy();
+    });
+
+    it('ignores a digit typed in a field portaled out of the group', () => {
+        const onVote = vi.fn();
+        render(<ROTIWidget mode="vote" onVote={onVote} />);
+
+        fireEvent.keyDown(document.body, { key: '5' });
+
+        expect(onVote).not.toHaveBeenCalled();
+    });
+
+    it('prevents the default of a digit so a global shortcut does not also fire', () => {
+        render(<ROTIWidget mode="vote" onVote={vi.fn()} />);
+
+        const notPrevented = fireEvent.keyDown(
+            screen.getAllByRole('radio')[0],
+            {
+                key: '3',
+            },
+        );
+
+        expect(notPrevented).toBe(false);
+    });
+
     it('votes on click and shows confirmation when a value is set', () => {
         const onVote = vi.fn();
         const { rerender } = render(<ROTIWidget mode="vote" onVote={onVote} />);
@@ -86,8 +127,41 @@ describe('ROTIWidget result', () => {
         expect(screen.queryByRole('radiogroup')).toBeNull();
     });
 
-    it('hides the result below three respondents', () => {
-        render(<ROTIWidget mode="result" result={{ ...result, votes: 2 }} />);
+    it('shows the average for any count by default', () => {
+        render(<ROTIWidget mode="result" result={{ ...result, votes: 1 }} />);
+
+        expect(screen.getByText('3.8')).toBeTruthy();
+        expect(screen.queryByRole('status')).toBeNull();
+    });
+
+    it('shows no average while nobody has voted', () => {
+        render(
+            <ROTIWidget
+                mode="result"
+                result={{
+                    mean: null,
+                    votes: 0,
+                    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+                    previousMean: 3.4,
+                }}
+            />,
+        );
+
+        expect(screen.queryByText('/ 5')).toBeNull();
+        expect(screen.queryByText(/vs previous sprint/)).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe(
+            'Nobody has voted yet.',
+        );
+    });
+
+    it('hides the result below the minimum the host asks for', () => {
+        render(
+            <ROTIWidget
+                mode="result"
+                minimumRespondents={3}
+                result={{ ...result, votes: 2 }}
+            />,
+        );
 
         expect(screen.queryByText('3.8')).toBeNull();
         expect(screen.queryByRole('img')).toBeNull();
@@ -138,5 +212,21 @@ describe('ROTIWidget result', () => {
         );
 
         expect(screen.getByText('2 participants have not voted')).toBeTruthy();
+    });
+
+    it('uses the singular for one vote and one missing participant', () => {
+        render(
+            <ROTIWidget
+                mode="result"
+                result={{
+                    ...result,
+                    votes: 1,
+                    missing: [{ name: 'Hana G' }],
+                }}
+            />,
+        );
+
+        expect(screen.getByText('1 vote')).toBeTruthy();
+        expect(screen.getByText('1 participant has not voted')).toBeTruthy();
     });
 });

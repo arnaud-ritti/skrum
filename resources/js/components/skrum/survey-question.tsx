@@ -87,6 +87,15 @@ const collapsedAnswerCount = 5;
 const npsValues = Array.from({ length: 11 }, (_, value) => value);
 const scaleValues = [1, 2, 3, 4, 5];
 
+const textEntrySelector =
+    'textarea, select, input:not([type="radio"]):not([type="checkbox"]), [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"], [role="textbox"]';
+
+function isTextEntry(target: Node): boolean {
+    return (
+        target instanceof Element && target.closest(textEntrySelector) !== null
+    );
+}
+
 function percentOf(count: number, total: number): number {
     if (total <= 0) {
         return 0;
@@ -110,7 +119,7 @@ function ResultBar({
         >
             <div
                 className={cn(
-                    'h-full rounded-full bg-chart-1 transition-[width] duration-300 ease-standard motion-reduce:transition-none',
+                    'h-full rounded-full bg-chart-1 transition-[width] duration-220 ease-standard motion-reduce:transition-none',
                     !isLeading && 'opacity-45',
                 )}
                 style={{ width: `${percent}%` }}
@@ -545,11 +554,25 @@ export function SurveyQuestion({
     };
 
     const handleDigitKey = (event: KeyboardEvent<HTMLElement>): void => {
-        if (!isAnswer || disabled || event.ctrlKey || event.metaKey) {
+        if (
+            !isAnswer ||
+            disabled ||
+            event.defaultPrevented ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.altKey
+        ) {
             return;
         }
 
-        if (event.target instanceof HTMLTextAreaElement) {
+        if (
+            !(event.target instanceof Node) ||
+            !event.currentTarget.contains(event.target)
+        ) {
+            return;
+        }
+
+        if (isTextEntry(event.target)) {
             return;
         }
 
@@ -801,7 +824,7 @@ export function SurveyQuestion({
                 </div>
             )}
 
-            {!isAnswer && results && (
+            {results && (!isAnswer || !results.hidden) && (
                 <Results
                     kind={kind}
                     options={options}

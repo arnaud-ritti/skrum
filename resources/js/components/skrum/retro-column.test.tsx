@@ -148,7 +148,7 @@ describe('RetroColumn', () => {
         const onRename = vi.fn();
 
         renderWithProviders(column({ onRename }));
-        const trigger = screen.getByRole('button', { name: 'Column options' });
+        const trigger = screen.getByRole('button', { name: 'Column menu' });
 
         fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
         fireEvent.click(
@@ -170,7 +170,7 @@ describe('RetroColumn', () => {
         renderWithProviders(column({ onRename }));
         const open = async () => {
             fireEvent.pointerDown(
-                screen.getByRole('button', { name: 'Column options' }),
+                screen.getByRole('button', { name: 'Column menu' }),
                 { button: 0, ctrlKey: false },
             );
             fireEvent.click(
@@ -198,7 +198,7 @@ describe('RetroColumn', () => {
         renderWithProviders(column());
 
         expect(
-            screen.queryByRole('button', { name: 'Column options' }),
+            screen.queryByRole('button', { name: 'Column menu' }),
         ).toBeNull();
     });
 
@@ -251,7 +251,7 @@ describe('RetroColumn', () => {
     describe('column menu', () => {
         const openMenu = () =>
             fireEvent.pointerDown(
-                screen.getByRole('button', { name: 'Column options' }),
+                screen.getByRole('button', { name: 'Column menu' }),
                 { button: 0, ctrlKey: false },
             );
         const settle = () =>
@@ -280,7 +280,7 @@ describe('RetroColumn', () => {
 
             expect(onRename).toHaveBeenCalledWith('Went great');
             expect(document.activeElement).toBe(
-                screen.getByRole('button', { name: 'Column options' }),
+                screen.getByRole('button', { name: 'Column menu' }),
             );
         });
 
@@ -295,7 +295,7 @@ describe('RetroColumn', () => {
 
             expect(screen.queryByRole('textbox')).toBeNull();
             expect(document.activeElement).toBe(
-                screen.getByRole('button', { name: 'Column options' }),
+                screen.getByRole('button', { name: 'Column menu' }),
             );
         });
 
@@ -459,7 +459,7 @@ describe('RetroColumn', () => {
             expect(onDelete).not.toHaveBeenCalled();
             expect(screen.queryByRole('alertdialog')).toBeNull();
             expect(document.activeElement).toBe(
-                screen.getByRole('button', { name: 'Column options' }),
+                screen.getByRole('button', { name: 'Column menu' }),
             );
         });
 

@@ -633,6 +633,61 @@ describe('TemplateEditor columns', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
+    it('does not delete a column when Delete is pressed in its portaled colour popover', async () => {
+        const onChange = vi.fn();
+
+        renderWithProviders(<Harness onChange={onChange} />);
+
+        const row = screen
+            .getByLabelText('Column 2 title')
+            .closest('[data-slot="template-column-row"]') as HTMLElement;
+        const trigger = row.querySelector(
+            '[data-slot="column-color-trigger"], [aria-haspopup]',
+        ) as HTMLElement;
+
+        fireEvent.click(trigger);
+
+        const option = (await screen.findAllByRole('radio')).find(
+            (radio) => !row.contains(radio),
+        ) as HTMLElement;
+
+        expect(option).toBeTruthy();
+
+        fireEvent.keyDown(option, { key: 'Delete' });
+
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('gives the fields the ids the browser suite binds to, or the ones the host asks for', () => {
+        const startFrom = [{ key: 'ssc', name: 'Start, Stop, Continue' }];
+        const { unmount } = renderWithProviders(
+            <Harness
+                initial={serverDraft}
+                categories={categories}
+                startFrom={startFrom}
+                onStartFrom={vi.fn()}
+                mode="create"
+            />,
+        );
+
+        expect(document.getElementById('template-name')?.tagName).toBe('INPUT');
+        expect(document.getElementById('template-source')).not.toBeNull();
+        expect(document.getElementById('template-category')).not.toBeNull();
+
+        unmount();
+        renderWithProviders(
+            <Harness
+                initial={serverDraft}
+                categories={categories}
+                ids={{ name: 'copy-name', category: 'copy-category' }}
+            />,
+        );
+
+        expect(document.getElementById('copy-name')?.tagName).toBe('INPUT');
+        expect(document.getElementById('copy-category')).not.toBeNull();
+        expect(document.getElementById('template-name')).toBeNull();
+    });
+
     it('keeps the last column', () => {
         renderWithProviders(
             <Harness initial={{ ...draft, columns: [draft.columns[0]] }} />,

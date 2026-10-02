@@ -83,35 +83,29 @@ describe('CardGroup', () => {
         renderWithProviders(group({ canEdit: true, onRename }));
 
         fireEvent.click(screen.getByText('Code review quality'));
-        fireEvent.change(screen.getByRole('textbox', { name: 'Group title' }), {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
             target: { value: 'Reviews' },
         });
-        fireEvent.keyDown(
-            screen.getByRole('textbox', { name: 'Group title' }),
-            {
-                key: 'Enter',
-            },
-        );
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Enter',
+        });
 
         expect(onRename).toHaveBeenCalledWith('Reviews');
         expect(
-            screen.queryByRole('textbox', { name: 'Group title' }),
+            screen.queryByRole('textbox', { name: 'Group name' }),
         ).toBeNull();
 
         fireEvent.click(screen.getByText('Code review quality'));
-        fireEvent.change(screen.getByRole('textbox', { name: 'Group title' }), {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
             target: { value: 'Other' },
         });
-        fireEvent.keyDown(
-            screen.getByRole('textbox', { name: 'Group title' }),
-            {
-                key: 'Escape',
-            },
-        );
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Escape',
+        });
 
         expect(onRename).toHaveBeenCalledTimes(1);
         expect(
-            screen.queryByRole('textbox', { name: 'Group title' }),
+            screen.queryByRole('textbox', { name: 'Group name' }),
         ).toBeNull();
     });
 
@@ -121,15 +115,12 @@ describe('CardGroup', () => {
         renderWithProviders(group({ canEdit: true, onRename }));
 
         fireEvent.click(screen.getByText('Code review quality'));
-        fireEvent.change(screen.getByRole('textbox', { name: 'Group title' }), {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
             target: { value: '   ' },
         });
-        fireEvent.keyDown(
-            screen.getByRole('textbox', { name: 'Group title' }),
-            {
-                key: 'Enter',
-            },
-        );
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Enter',
+        });
 
         expect(onRename).toHaveBeenCalledTimes(1);
         expect(onRename).toHaveBeenCalledWith(null);
@@ -149,7 +140,7 @@ describe('CardGroup', () => {
         );
 
         const input = screen.getByRole('textbox', {
-            name: 'Group title',
+            name: 'Group name',
         }) as HTMLInputElement;
 
         expect(input.value).toBe('');
@@ -165,7 +156,7 @@ describe('CardGroup', () => {
         fireEvent.click(screen.getByText('Code review quality'));
 
         expect(
-            screen.queryByRole('textbox', { name: 'Group title' }),
+            screen.queryByRole('textbox', { name: 'Group name' }),
         ).toBeNull();
     });
 
@@ -173,7 +164,7 @@ describe('CardGroup', () => {
         renderWithProviders(group({ canEdit: true, editingTitle: true }));
 
         expect(
-            screen.getByRole('textbox', { name: 'Group title' }),
+            screen.getByRole('textbox', { name: 'Group name' }),
         ).toBeTruthy();
     });
 
@@ -181,13 +172,19 @@ describe('CardGroup', () => {
         const onUngroup = vi.fn();
 
         renderWithProviders(group({ canEdit: true, onUngroup }));
-        fireEvent.click(
-            screen.getByRole('button', {
-                name: 'Remove from group: Huge pull requests',
-            }),
-        );
+
+        const buttons = screen.getAllByRole('button', { name: 'Ungroup' });
+
+        expect(buttons).toHaveLength(2);
+
+        fireEvent.click(buttons[0]);
 
         expect(onUngroup).toHaveBeenCalledWith('2');
+        expect(
+            document
+                .getElementById('card-1')
+                ?.querySelector('[data-slot="card-group-ungroup"]'),
+        ).toBeNull();
     });
 
     it('shows the vote total, hidden when null', () => {
@@ -221,11 +218,9 @@ describe('CardGroup', () => {
                 name: 'Group: Untitled group, 2 cards',
             }),
         ).toBeTruthy();
-        expect(
-            screen.getByRole('button', {
-                name: 'Remove from group: Card hidden until the reveal',
-            }),
-        ).toBeTruthy();
+        expect(screen.getAllByRole('button', { name: 'Ungroup' })).toHaveLength(
+            1,
+        );
         expect(container.innerHTML).not.toContain(secret);
     });
 
@@ -278,6 +273,7 @@ describe('CardGroup', () => {
                 canEdit: true,
                 onUngroup,
                 cards: [
+                    { id: '0', text: 'Lead card', color: 'coral' },
                     {
                         id: '1',
                         text: 'Reviews come too late',
@@ -291,20 +287,18 @@ describe('CardGroup', () => {
                 ],
             }),
         );
-        const ungroup = screen.getByRole('button', {
-            name: 'Remove from group: Reviews come too late',
-        });
+        const ungroup = screen.getByRole('button', { name: 'Ungroup' });
         const footer = ungroup.closest('[data-slot="retro-card-footer"]');
 
         expect(footer).not.toBeNull();
         expect(ungroup.className).not.toContain('absolute');
         expect(
             footer?.contains(
-                screen.getByRole('button', { name: 'Vote, 2 votes' }),
+                screen.getByRole('button', { name: 'Add a vote' }),
             ),
         ).toBe(true);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Vote, 2 votes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add a vote' }));
         fireEvent.click(screen.getByRole('button', { name: 'Delete card' }));
 
         expect(onVote).toHaveBeenCalledWith(1);
@@ -320,7 +314,7 @@ describe('CardGroup', () => {
         renderWithProviders(group({ canEdit: true, onRename: vi.fn() }));
 
         fireEvent.click(screen.getByText('Code review quality'));
-        const input = screen.getByRole('textbox', { name: 'Group title' });
+        const input = screen.getByRole('textbox', { name: 'Group name' });
 
         expect(document.activeElement).toBe(input);
 
@@ -328,17 +322,16 @@ describe('CardGroup', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Code review quality' }),
+            screen.getByRole('button', { name: 'Rename group' }),
         );
 
         fireEvent.click(screen.getByText('Code review quality'));
-        fireEvent.keyDown(
-            screen.getByRole('textbox', { name: 'Group title' }),
-            { key: 'Escape' },
-        );
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Escape',
+        });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Code review quality' }),
+            screen.getByRole('button', { name: 'Rename group' }),
         );
     });
 
@@ -347,7 +340,7 @@ describe('CardGroup', () => {
 
         expect(
             screen
-                .getByRole('textbox', { name: 'Group title' })
+                .getByRole('textbox', { name: 'Group name' })
                 .getAttribute('maxlength'),
         ).toBe('60');
     });
@@ -382,8 +375,8 @@ describe('CardGroup', () => {
             ).toBeTruthy();
             expect(screen.getAllByRole('article')).toHaveLength(30);
             expect(
-                screen.getAllByRole('button', { name: /Remove from group/ }),
-            ).toHaveLength(30);
+                screen.getAllByRole('button', { name: 'Ungroup' }),
+            ).toHaveLength(29);
         });
 
         it('collapses a group of 30 cards to one card, three avatars and a count', () => {
@@ -414,5 +407,100 @@ describe('CardGroup', () => {
                     ?.textContent,
             ).toBe('word word word word word word word word…');
         });
+    });
+
+    it('gives every card and no group a DOM id by default', () => {
+        const { container } = renderWithProviders(group());
+
+        expect(document.getElementById('card-2')?.tagName).toBe('ARTICLE');
+        expect(container.querySelector('[data-slot="card-group"]')?.id).toBe(
+            '',
+        );
+    });
+
+    it('takes a DOM id for the group', () => {
+        renderWithProviders(group({ domId: 'group-g1' }));
+
+        expect(
+            document.getElementById('group-g1')?.getAttribute('data-group-id'),
+        ).toBe('g1');
+    });
+
+    it('does not show the authors of masked cards on a collapsed group', () => {
+        const { container } = renderWithProviders(
+            group({
+                collapsed: true,
+                cards: [
+                    {
+                        id: '1',
+                        text: 'Reviews come too late',
+                        color: 'coral',
+                        author: { id: 'u1', name: 'Camille Roux' },
+                    },
+                    {
+                        id: '2',
+                        text: 'Secret',
+                        color: 'coral',
+                        masked: true,
+                        author: {
+                            id: 'u2',
+                            name: 'Zinedine Hidden',
+                            avatarUrl: '/avatars/hidden.png',
+                        },
+                    },
+                ],
+            }),
+        );
+        const footer = container.querySelector(
+            '[data-slot="card-group-footer"]',
+        );
+
+        expect(
+            footer?.querySelectorAll('[data-slot="person-avatar"]'),
+        ).toHaveLength(1);
+        expect(container.innerHTML).not.toContain('Zinedine');
+        expect(container.innerHTML).not.toContain('hidden.png');
+        expect(container.innerHTML).not.toContain('ZH');
+    });
+
+    it('names the title button "Rename group" once the group has a name', () => {
+        const { rerender } = renderWithProviders(group({ canEdit: true }));
+
+        expect(
+            screen.getByRole('button', { name: 'Rename group' }).textContent,
+        ).toBe('Code review quality');
+
+        rerender(group({ canEdit: true, title: '' }));
+
+        expect(
+            screen.queryByRole('button', { name: 'Rename group' }),
+        ).toBeNull();
+        expect(
+            screen.getByRole('button', { name: /Name this group/ }),
+        ).toBeTruthy();
+    });
+
+    it('renders the title hint under the title, not while renaming', () => {
+        const { rerender } = renderWithProviders(
+            group({ canEdit: true, titleHint: <button>Use "Reviews"</button> }),
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Use "Reviews"' })
+                .closest('[data-slot="card-group-title-hint"]'),
+        ).not.toBeNull();
+
+        rerender(
+            group({
+                canEdit: true,
+                editingTitle: true,
+                titleHint: <button>Use "Reviews"</button>,
+            }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Use "Reviews"' }),
+        ).toBeNull();
     });
 });
