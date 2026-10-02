@@ -3911,5 +3911,8 @@
     "What visitors see before they are signed in.": "Was Besucher sehen, bevor sie angemeldet sind.",
     "Live updates are paused. What you see may be out of date.": "Live-Aktualisierungen sind pausiert. Was Sie sehen, ist möglicherweise nicht mehr aktuell.",
     "Live updates are paused. The round may have moved on.": "Live-Aktualisierungen sind pausiert. Die Runde ist möglicherweise schon weiter.",
-    "Live updates are paused. Other people's changes appear when the connection returns.": "Live-Aktualisierungen sind pausiert. Die Änderungen der anderen erscheinen, sobald die Verbindung zurück ist."
+    "Live updates are paused. Other people's changes appear when the connection returns.": "Live-Aktualisierungen sind pausiert. Die Änderungen der anderen erscheinen, sobald die Verbindung zurück ist.",
+    "Session shell, every slot filled, reaction bar over a tall content": "Sitzungsrahmen, alle Bereiche gefüllt, Reaktionsleiste über einem hohen Inhalt",
+    "Session shell, reconnecting: the banner of a retro above, then the sentence of each other session type": "Sitzungsrahmen, Verbindung wird wiederhergestellt: oben das Banner einer Retro, dann der Satz jedes anderen Sitzungstyps",
+    "Session shell, session expired: inert content": "Sitzungsrahmen, Sitzung abgelaufen: Inhalt inaktiv"
 }
