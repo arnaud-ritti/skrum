@@ -317,6 +317,7 @@ export type Snapshot = {
     exportSources: ExportSource[];
     teamMembers: TeamMember[];
     surveys: SurveyPayload[];
+    writersCount: number;
     roti: RotiState;
     results: Results | null;
     insights: Insights | null;
@@ -389,7 +390,11 @@ export type RotiResults = {
     respondents: number;
 };
 
-export type RotiState = { myScore: number | null; respondents: number };
+export type RotiState = {
+    myScore: number | null;
+    respondents: number;
+    voterIds: string[];
+};
 
 export type GamesPlayedPerson = {
     playerId: string;

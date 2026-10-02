@@ -48,7 +48,7 @@ class DeleteCard
                 return $this->presentCard->handle($child, $locked, null);
             })->all();
 
-            (new CardDeleted($locked->id, $card->id, $ungroupedCards))->sendToOthers();
+            (new CardDeleted($locked->id, $card->id, $ungroupedCards, $locked->writersCount()))->sendToOthers();
 
             $formerLead = $formerLeadId === null ? null : $locked->cards()->whereKey($formerLeadId)->first();
 

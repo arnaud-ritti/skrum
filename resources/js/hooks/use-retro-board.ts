@@ -165,12 +165,23 @@ export function useRetroBoard(initial: Snapshot) {
                         type: 'cards.upsert',
                         cards: [payload.card as CardPayload],
                     });
+
+                    if (typeof payload.writersCount === 'number') {
+                        apply({
+                            type: 'writers.set',
+                            writersCount: payload.writersCount,
+                        });
+                    }
                     break;
                 case 'card.deleted':
                     apply({
                         type: 'card.remove',
                         cardId: payload.cardId as string,
                         ungroupedCards: payload.ungroupedCards as CardPayload[],
+                    });
+                    apply({
+                        type: 'writers.set',
+                        writersCount: payload.writersCount as number,
                     });
                     break;
                 case 'cards.moved':
@@ -336,6 +347,7 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({
                         type: 'roti.set',
                         respondents: payload.respondents as number,
+                        voterIds: payload.voterIds as string[],
                     });
 
                     if (latestBoard.current.retro.phase === 'completed') {

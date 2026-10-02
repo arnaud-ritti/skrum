@@ -65,10 +65,10 @@ class RetroRotiController extends Controller
 
     private function announce(Retro $retro): int
     {
-        $respondents = $retro->rotiVotes()->count();
+        $voterIds = $retro->rotiVotes()->pluck('participant_id')->all();
 
-        (new RotiChanged($retro->id, $respondents))->sendToOthers();
+        (new RotiChanged($retro->id, count($voterIds), $voterIds))->sendToOthers();
 
-        return $respondents;
+        return count($voterIds);
     }
 }

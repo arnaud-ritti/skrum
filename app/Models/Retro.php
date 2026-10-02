@@ -153,6 +153,11 @@ class Retro extends Model implements DeliverySubject
         return $this->hasMany(Vote::class);
     }
 
+    public function writersCount(): int
+    {
+        return $this->cards()->distinct()->count('participant_id');
+    }
+
     /** @return HasMany<RotiVote, $this> */
     public function rotiVotes(): HasMany
     {

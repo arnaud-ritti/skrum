@@ -71,7 +71,7 @@ class CardsController extends Controller
                 'position' => $position === null ? 0 : $position + 1,
             ]);
 
-            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null)))->sendToOthers();
+            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null), $locked->writersCount()))->sendToOthers();
             (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant)))->sendToOthers();
 
             return [$card, $locked];

@@ -25,7 +25,13 @@ export type BoardAction =
           commentCount?: number;
       }
     | { type: 'replace'; snapshot: Snapshot }
-    | { type: 'roti.set'; respondents: number; myScore?: number | null }
+    | {
+          type: 'roti.set';
+          respondents: number;
+          voterIds?: string[];
+          myScore?: number | null;
+      }
+    | { type: 'writers.set'; writersCount: number }
     | { type: 'card.groupName'; cardId: string; groupName: string | null }
     | { type: 'health.progress'; statements: HealthProgress[] }
     | { type: 'health.answer'; key: string; score: number | null }
@@ -394,8 +400,11 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                             ? state.roti.myScore
                             : action.myScore,
                     respondents: action.respondents,
+                    voterIds: action.voterIds ?? state.roti.voterIds,
                 },
             };
+        case 'writers.set':
+            return { ...state, writersCount: action.writersCount };
         case 'card.groupName':
             return updateCard(state, action.cardId, (card) => ({
                 ...card,
