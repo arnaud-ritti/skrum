@@ -69,6 +69,32 @@ describe('RoomView, when the current task changes', () => {
 });
 
 describe('RoomView on a phone', () => {
+    it('puts the settings button in the header, and in the bar under it on a phone', () => {
+        const { unmount } = renderInRoom(room);
+
+        expect(
+            document.querySelector('header [aria-label="Game settings"]'),
+        ).toBeTruthy();
+        expect(
+            screen.getAllByRole('button', { name: 'Game settings' }),
+        ).toHaveLength(1);
+        unmount();
+
+        viewport.isPhone = true;
+        viewport.isWide = false;
+
+        renderInRoom(room);
+
+        expect(
+            document.querySelector(
+                '[data-slot="poker-subbar"] [aria-label="Game settings"]',
+            ),
+        ).toBeTruthy();
+        expect(
+            screen.getAllByRole('button', { name: 'Game settings' }),
+        ).toHaveLength(1);
+    });
+
     it('keeps "Copy guest link" for a member who does not facilitate', () => {
         viewport.isPhone = true;
         viewport.isWide = false;

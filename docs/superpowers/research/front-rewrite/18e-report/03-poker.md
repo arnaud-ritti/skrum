@@ -79,11 +79,11 @@ Added by the mockup: the place of the task ("3 / 6 in this game"), the points es
 
 | # | Action | New control | Done |
 |---|---|---|---|
-| 10 | Facilitator menu | `FacilitatorMenu`: "Share…" (when a channel is connected; always on a phone, where the header has no Share button), "Settings…", "Hand over facilitation…", "End game" / "Reopen game", "Delete game…". No "Guest link…" (7-D2). Nothing opens once the session has expired | yes |
+| 10 | Facilitator menu | `FacilitatorMenu`: "Share…" (when a channel is connected; always on a phone, where the header has no Share button), "Hand over facilitation…", "End game" / "Reopen game", "Delete game…". No "Guest link…" (7-D2). Nothing opens once the session has expired | yes |
 | 11 | Share to a channel | `ShareDialog` (`kind="poker"`): "Post link to Slack"…, toast "The message is on its way.", `DeliveryLines` under the buttons | yes |
 | 12 | Guest link: allow, copy | `ShareDialog`: switch `#poker-guest-link-access`, `input[aria-label="Guest link"]`, "Copy link", QR code with "Download the QR code" | yes |
 | 13 | Create a new guest link | "Create a new link", confirmed in an `alertdialog` ("Create a new link?") | yes |
-| 15 | Settings | `SessionSettingsContent` in a `Dialog` (`[data-slot="poker-settings"]`), "Game settings": `#poker-title`, `#poker-auto-reveal`, `#poker-anonymous-votes`, `#poker-cursors`, `#poker-reactions`; "Apply (n)"; server messages under their field; "Applies from the next round." when anonymity is turned off | yes |
+| 15 | Settings | `GameSettings`: the icon button "Game settings" of the header (in the bar under the header on a phone) opens `SessionSettingsPopover` (RW-P3; a drawer on a phone; read as text by a player who does not facilitate; absent once the game has ended), "Game settings": `#poker-title`, `#poker-auto-reveal`, `#poker-anonymous-votes`, `#poker-cursors`, `#poker-reactions`; "Apply (n)"; server messages under their field; "Applies from the next round." when anonymity is turned off | yes |
 | 16 | Deck of the game | `DeckPicker` (built-in, saved with the "Saved" / "Workspace" badge, "This game only") and `DeckEditor idPrefix="deck-custom"` behind "Create a deck"; "Manage decks" goes to the saved decks page; locked, with the cards shown, once votes exist | yes |
 | 17 | Hand over facilitation | `FormDialog`, `#poker-new-facilitator`, "Hand over"; "No one else can facilitate this game yet." with Cancel only | yes |
 | 18 | End game / Reopen | `ConfirmDialog` "End this game?"; "Reopen game" acts from the menu | yes |
@@ -106,7 +106,7 @@ These dialogs have no mockup of their own (brief §6): they follow `ShareDialog/
 | Share dialog: no session code, default role, expiry, members tab | D-16 (share roles), D-32 (short code) |
 | Share dialog: the description reads ":count present" without the team name (the room does not receive it) | D-69 |
 | The header's "Share" shows its label from 96rem; below it is an icon with a tooltip (the header also holds "Watch only" and "Hide tasks", which the mockup's header does not) | D-69 |
-| The game settings are a dialog, not a popover anchored to a header button: the entry is the facilitator menu (browser contract "Settings…") | D-70 |
+| The game settings: a popover anchored to the header button "Game settings" since RW-P3. On a phone the button is in the bar under the header; it is absent once the game has ended; no side sheet on a wide screen | D-70 |
 | The deck editor of the settings has no name field: the settings endpoint cannot save a deck | D-70 |
 | End and Delete are alert dialogs (`Dialog/README.md`) | — |
 

@@ -232,7 +232,8 @@ it('[P10a-05] lets the facilitator allow guests and gives a working guest link',
 
     $facilitator->assertVisible('[aria-label="Facilitator menu"]')
         ->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Settings…')
+        ->assertSee('Hand over facilitation…')
+        ->assertDontSee('Settings…')
         ->assertDontSee('Guest link…')
         ->keys('[role="menu"]', 'Escape')
         ->assertNotPresent('[role="menu"]')

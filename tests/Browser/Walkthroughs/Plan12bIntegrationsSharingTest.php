@@ -175,7 +175,7 @@ it('[P12b-01c] offers no share entry on the board, the results or the poker game
     $poker = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
     $poker->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Settings…')
+        ->assertSee('Hand over facilitation…')
         ->assertDontSee('Share…');
 });
 
