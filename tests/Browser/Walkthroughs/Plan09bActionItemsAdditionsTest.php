@@ -219,7 +219,7 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
 
     $page = $this->signIn($alice, route('teams.show', [$workspace, $team], false));
 
-    $page->assertScript($sidebarEntries, 'Teams / Action items / Templates')
+    $page->assertScript($sidebarEntries, 'Dashboard / Sessions / Actions / Mood & ROTI / Games / Members / Templates / All teams')
         ->click('a:has-text("Open action items (1)")')
         ->assertPathIs($path)
         ->assertQueryStringHas('team', $team->id)

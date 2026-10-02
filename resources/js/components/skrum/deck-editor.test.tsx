@@ -45,6 +45,7 @@ function Harness({
                 errors={props.errors}
                 saving={props.saving}
                 nameRequired={props.nameRequired}
+                withoutName={props.withoutName}
                 saveLabel={props.saveLabel}
                 idPrefix={props.idPrefix}
             />
@@ -147,6 +148,27 @@ describe('DeckEditor', () => {
         expect(screen.getAllByRole('button', { name: /^Value / })).toHaveLength(
             20,
         );
+    });
+
+    it('has no name field and asks for no name when withoutName is set', () => {
+        renderWithProviders(
+            <Harness initial={{ ...base, name: '' }} withoutName />,
+        );
+
+        expect(screen.queryByLabelText('Name')).toBeNull();
+        expect(screen.queryByLabelText('Name (optional)')).toBeNull();
+        expect(
+            screen.queryByText(
+                'Give it a name to save this deck for the team.',
+            ),
+        ).toBeNull();
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Save deck',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
     });
 
     it('requires a name unless nameRequired is false', () => {

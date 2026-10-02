@@ -132,3 +132,46 @@ it('lets workspace managers create games for any team', function () {
 
     expect(PokerGame::query()->sole()->facilitator->user_id)->toBe($admin->id);
 });
+
+it('stores the guest access flag of a game, false by default', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    postPokerGame($this, $user, $team, createPokerGameRequest(['title' => 'Open', 'guest_access_enabled' => true]));
+    postPokerGame($this, $user, $team, createPokerGameRequest(['title' => 'Closed']));
+
+    expect(PokerGame::query()->where('title', 'Open')->sole()->guest_access_enabled)->toBeTrue()
+        ->and(PokerGame::query()->where('title', 'Closed')->sole()->guest_access_enabled)->toBeFalse();
+});
+
+it('creates a game whose creator is watching', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    postPokerGame($this, $user, $team, createPokerGameRequest(['spectator' => true]));
+
+    expect(PokerGame::query()->sole()->players()->sole()->is_spectator)->toBeTrue();
+});
+
+it('creates the typed tasks in order', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    postPokerGame($this, $user, $team, createPokerGameRequest(['tasks' => ['Login page', 'Billing', 'Export']]))->assertRedirect();
+
+    $tasks = PokerGame::query()->sole()->tasks()->orderBy('position')->get();
+
+    expect($tasks->pluck('title')->all())->toBe(['Login page', 'Billing', 'Export'])
+        ->and($tasks->pluck('position')->all())->toBe([1, 2, 3]);
+});
+
+it('refuses too many or too long task titles', function (array $tasks, string $field) {
+    $team = Team::factory()->create();
+
+    postPokerGame($this, teamMember($team), $team, createPokerGameRequest(['tasks' => $tasks]))->assertSessionHasErrors($field);
+
+    expect(PokerGame::query()->count())->toBe(0);
+})->with([
+    '51 titles' => [fn () => array_fill(0, 51, 'Task'), 'tasks'],
+    'a 201-character title' => [[str_repeat('a', 201)], 'tasks.0'],
+]);

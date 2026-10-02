@@ -11,6 +11,9 @@ class TemplateCatalogue
 
     public const Workspace = 'workspace';
 
+    /** @var list<string> The five shortcut cards of a team that has no retro yet, in order. */
+    public const array Shortcuts = ['went_well_to_improve_actions', 'start_stop_continue', 'four_ls', 'sailboat', 'mad_sad_glad'];
+
     private const int CommonCount = 8;
 
     /**

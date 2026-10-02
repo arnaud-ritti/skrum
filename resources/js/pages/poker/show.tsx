@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Game } from '@/components/poker/game';
+import { PokerRoom } from '@/components/poker/poker-room';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import type { PokerDeckOption } from '@/types';
 
@@ -9,7 +9,7 @@ export default function ShowPokerGame({ snapshot, deckOptions }: Props) {
     return (
         <>
             <Head title={snapshot.game.title} />
-            <Game snapshot={snapshot} deckOptions={deckOptions} />
+            <PokerRoom snapshot={snapshot} deckOptions={deckOptions} />
         </>
     );
 }

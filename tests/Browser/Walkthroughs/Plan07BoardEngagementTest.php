@@ -998,7 +998,7 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
         'carol' => $carol,
     ] = plan07Board(RetroPhase::Writing);
     $start = "[data-test=\"retro-column-{$columns[0]->id}\"]";
-    $result = '[role="dialog"] button[aria-label="Choose this GIF"]';
+    $result = '[role="dialog"] [role="option"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -1009,7 +1009,7 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
         ->assertSeeIn('[role="dialog"]', 'Choose a GIF')
         ->assertSeeIn('[role="dialog"]', 'Powered by GIPHY')
         ->assertCount($result, 2)
-        ->fill('[aria-label="Search GIFs…"]', 'party')
+        ->fill('[role="dialog"] [aria-label="Search GIPHY"]', 'party')
         ->assertCount($result, 1)
         ->assertAttribute("{$result} img", 'src', '/gifs/party1/preview')
         ->assertScript(plan07ImageLoaded("{$result} img"), true)

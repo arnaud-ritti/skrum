@@ -94,6 +94,33 @@ describe('GameRoomList', () => {
         expect(document.querySelector('[data-status]')).toBeNull();
     });
 
+    it('shows the context of a live room beside the game, the rounds after the players, and counts the players who are not sent', () => {
+        renderWithProviders(
+            <GameRoomList
+                rooms={[
+                    room({
+                        status: 'live',
+                        context: 'started 4 min ago',
+                        playersCount: 7,
+                        players: ['A', 'B', 'C', 'D', 'E'].map((name) => ({
+                            name,
+                        })),
+                    }),
+                ]}
+            />,
+        );
+
+        const row = screen.getByRole('link');
+
+        expect(within(row).getByText('started 4 min ago')).toBeTruthy();
+        expect(
+            row.querySelector('[data-slot="game-room-rounds"]')?.textContent,
+        ).toBe('2 rounds');
+        expect(
+            row.querySelector('[data-slot="avatar-stack-more"]')?.textContent,
+        ).toBe('+4');
+    });
+
     it('renders a slot action beside the link, outside it', () => {
         renderWithProviders(
             <GameRoomList
@@ -309,6 +336,31 @@ describe('Leaderboard', () => {
                 .querySelector('[data-slot="leaderboard-list"]')
                 ?.className.includes('overflow-y-auto'),
         ).toBe(true);
+    });
+
+    it('shows the streak of a player on the podium, and none below two weeks', () => {
+        const list = entries(3);
+
+        list[0].streak = 2;
+        list[1].streak = 1;
+
+        renderWithProviders(
+            <Leaderboard
+                period="30d"
+                onPeriodChange={() => {}}
+                entries={list}
+            />,
+        );
+
+        const first = document.querySelector(
+            '[data-slot="podium-place"][data-place="1"]',
+        );
+        const second = document.querySelector(
+            '[data-slot="podium-place"][data-place="2"]',
+        );
+
+        expect(first?.textContent).toContain('2-week streak');
+        expect(second?.textContent).not.toContain('streak');
     });
 });
 

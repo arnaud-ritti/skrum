@@ -18,6 +18,7 @@ class StartGameRound
         private EndGameRound $endGameRound,
         private PresentGameRound $presentGameRound,
         private ScheduleRoundExpiry $scheduleRoundExpiry,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     /**
@@ -57,6 +58,8 @@ class StartGameRound
 
             (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
 
+            $this->announceTeamGameRoom->changed($locked);
+
             return ['round' => $round, 'ended' => $ended];
         });
     }
@@ -82,7 +85,7 @@ class StartGameRound
             throw new ConflictHttpException(__('A round is already in progress.'));
         }
 
-        return $this->endGameRound->handle($room, $round, $outcome);
+        return $this->endGameRound->handle($room, $round, $outcome, announcesToTeam: false);
     }
 
     /**

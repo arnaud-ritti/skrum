@@ -58,6 +58,7 @@ type Props = {
 /**
  * Committed operations are rasterised by `drawing.ts` (identical on every
  * client); live strokes are drawn on top by the browser until committed.
+ * The sheet is white in both themes: its colour is the raster's, not a class.
  */
 export function DrawingCanvas({
     ops,
@@ -319,7 +320,7 @@ export function DrawingCanvas({
             role="img"
             aria-label={label}
             className={cn(
-                'aspect-[4/3] w-full touch-none rounded-lg border bg-white',
+                'aspect-4/3 w-full touch-none rounded-lg border',
                 input && 'cursor-crosshair',
                 className,
             )}

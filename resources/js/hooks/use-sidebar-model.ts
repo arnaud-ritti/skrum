@@ -25,6 +25,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         actionItems,
         brand,
         adminUrl,
+        features,
     } = usePage().props;
 
     const links: AppSidebarProps['links'] = {};
@@ -47,7 +48,14 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             links.games = TeamGameRoomsController.index(team);
 
             if (currentWorkspace.role !== 'member') {
-                links.settings = TeamIntegrationsController.index(team);
+                /**
+                 * The integrations page answers 404 while the instance has no
+                 * provider configured: the entry then leads to the settings
+                 * card of the team page.
+                 */
+                links.settings = features?.integrations
+                    ? TeamIntegrationsController.index(team)
+                    : `${teamUrl}#settings`;
             }
         }
     }

@@ -105,6 +105,52 @@ describe('DeckPicker', () => {
         expect(screen.getByText('Ada')).toBeTruthy();
     });
 
+    it('marks a deck typed for one game and a deck of the workspace', () => {
+        const onEdit = vi.fn();
+
+        renderPicker({
+            onEdit,
+            onDelete: vi.fn(),
+            decks: [
+                ...decks.slice(0, 2),
+                {
+                    id: 'shared',
+                    name: 'Hours',
+                    values: ['1', '2', '4'],
+                    unknownCard: false,
+                    breakCard: false,
+                    source: 'saved',
+                    scope: 'workspace',
+                },
+                {
+                    id: 'custom',
+                    name: 'Custom deck',
+                    values: ['1', '2'],
+                    unknownCard: true,
+                    breakCard: false,
+                    source: 'custom',
+                    canManage: true,
+                },
+            ],
+        });
+
+        const shared = screen.getByRole('radio', { name: 'Hours, 3 cards' });
+        const custom = screen.getByRole('radio', {
+            name: 'Custom deck, 3 cards',
+        });
+
+        expect(within(shared).getByText('Workspace')).toBeTruthy();
+        expect(within(shared).queryByText('Saved')).toBeNull();
+        expect(within(custom).getByText('This game only')).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit Custom deck' }),
+        );
+
+        expect(onEdit).toHaveBeenCalledWith('custom');
+        expect(screen.queryByRole('button', { name: 'Edit Hours' })).toBeNull();
+    });
+
     it('lists every value of the selected deck, specials with their label', () => {
         renderPicker();
 
@@ -289,5 +335,98 @@ describe('DeckPicker', () => {
                 .getByRole('group', { name: new RegExp(`^${name}, 22 cards:`) })
                 .querySelectorAll('[data-slot="deck-preview-card"]'),
         ).toHaveLength(22);
+    });
+});
+
+describe('DeckPicker, compact variant', () => {
+    it('heads the section with its title and a "New deck" button, without the dashed card', () => {
+        const { onCreate } = renderPicker({ variant: 'compact' });
+
+        expect(
+            document
+                .querySelector('[data-slot="deck-picker"]')
+                ?.getAttribute('data-variant'),
+        ).toBe('compact');
+        expect(
+            screen.queryByRole('button', { name: 'Create a deck' }),
+        ).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
+
+        expect(onCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows on each tile the name, every value in mono and where the deck comes from', () => {
+        renderPicker({ variant: 'compact' });
+
+        const tile = screen.getByRole('radio', { name: 'Fibonacci, 13 cards' });
+        const values = tile.querySelector('[data-slot="deck-values"]');
+
+        expect(within(tile).getByText('Fibonacci')).toBeTruthy();
+        expect(values?.textContent).toBe('0 1 2 3 5 8 13 21 34 55 89 ? ☕');
+        expect(values?.className).toContain('font-mono');
+        expect(values?.getAttribute('aria-hidden')).toBe('true');
+        expect(within(tile).getByText('Built-in')).toBeTruthy();
+        expect(
+            within(
+                screen.getByRole('radio', { name: 'Team sizes, 3 cards' }),
+            ).getByText('Saved'),
+        ).toBeTruthy();
+    });
+
+    it('selects a tile on click and lists the values of the selected deck', () => {
+        const { onValueChange } = renderPicker({ variant: 'compact' });
+
+        fireEvent.click(
+            screen.getByRole('radio', { name: 'Fibonacci, 13 cards' }),
+        );
+
+        expect(onValueChange).toHaveBeenCalledWith('fibonacci');
+        expect(
+            screen
+                .getByRole('group', {
+                    name: 'T-shirt, 7 cards: XS, S, M, L, XL, XXL, ?',
+                })
+                .querySelectorAll('[data-slot="deck-preview-card"]'),
+        ).toHaveLength(7);
+    });
+
+    it('offers edit and delete for the selected deck only, when the user can manage it', () => {
+        const onEdit = vi.fn();
+        const { rerender } = renderWithProviders(
+            <DeckPicker
+                variant="compact"
+                value="tshirt"
+                onValueChange={vi.fn()}
+                decks={decks}
+                onCreate={vi.fn()}
+                onEdit={onEdit}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        expect(screen.queryByRole('button', { name: /^Edit/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Delete/ })).toBeNull();
+
+        rerender(
+            <DeckPicker
+                variant="compact"
+                value="mine"
+                onValueChange={vi.fn()}
+                decks={decks}
+                onCreate={vi.fn()}
+                onEdit={onEdit}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit Team sizes' }),
+        );
+
+        expect(onEdit).toHaveBeenCalledWith('mine');
+        expect(
+            screen.getByRole('button', { name: 'Delete Team sizes' }),
+        ).toBeTruthy();
     });
 });

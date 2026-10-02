@@ -2,9 +2,12 @@
 
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Enums\WorkspaceRole;
+use App\Models\GameRoom;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Games\GameRulesRegistry;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function workspaceWith(User $user, WorkspaceRole $role): Workspace
@@ -185,4 +188,78 @@ it('presents built-in statements translated and custom statements as stored', fu
                 'isBuiltin' => false,
                 'isArchived' => false,
             ]));
+});
+
+it('carries the game options of the games page on the team page', function () {
+    $member = User::factory()->create();
+    $workspace = workspaceWith($member, WorkspaceRole::Member);
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('gameOptions', app(GameRulesRegistry::class)->options(new GameRoom(['team_id' => $team->id])))
+            ->where('gameOptions.2', ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true])
+            ->where('canCreateGameRoom', true)
+            ->where('roomLimit', GameRoom::MaxRoomsPerTeam));
+});
+
+it('disables game room creation at the room limit', function () {
+    $member = User::factory()->create();
+    $workspace = workspaceWith($member, WorkspaceRole::Member);
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+    GameRoom::factory()->count(GameRoom::MaxRoomsPerTeam)->create(['team_id' => $team->id]);
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canCreateGameRoom', false)
+            ->where('roomLimit', GameRoom::MaxRoomsPerTeam));
+});
+
+it('does not count icebreaker rooms of retros against the room limit', function () {
+    $member = User::factory()->create();
+    $workspace = workspaceWith($member, WorkspaceRole::Member);
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+    GameRoom::factory()->count(GameRoom::MaxRoomsPerTeam - 1)->create(['team_id' => $team->id]);
+    GameRoom::factory()->icebreaker(Retro::factory()->create(['team_id' => $team->id]))->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('canCreateGameRoom', true));
+});
+
+it('gives each team member and each available member an avatar url', function () {
+    $admin = User::factory()->create();
+    $colleague = User::factory()->create();
+    $workspace = Workspace::factory()
+        ->withMember($admin, WorkspaceRole::Admin)
+        ->withMember($colleague, WorkspaceRole::Member)
+        ->create();
+    $team = Team::factory()->for($workspace)->withMember($admin)->create();
+    $avatarRoute = '/avatars/';
+
+    $this->actingAs($admin)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('members', 1, fn (Assert $member) => $member
+                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
+                ->etc())
+            ->has('availableMembers', 1, fn (Assert $member) => $member
+                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
+                ->etc()));
+});
+
+it('keeps the available members empty for a user who cannot manage members', function () {
+    $member = User::factory()->create();
+    $colleague = User::factory()->create();
+    $workspace = Workspace::factory()
+        ->withMember($member, WorkspaceRole::Member)
+        ->withMember($colleague, WorkspaceRole::Member)
+        ->create();
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->has('availableMembers', 0));
 });

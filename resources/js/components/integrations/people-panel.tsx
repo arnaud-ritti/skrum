@@ -1,18 +1,17 @@
-import { RefreshCw, UserSearch } from 'lucide-react';
+import { RefreshCw, RotateCcw, UserSearch, UserX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationUserMappingsController from '@/actions/App/Http/Controllers/Integrations/IntegrationUserMappingsController';
 import IntegrationUserMatchesController from '@/actions/App/Http/Controllers/Integrations/IntegrationUserMatchesController';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LoadingButton } from '@/components/skrum/loading-button';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -25,6 +24,7 @@ import type {
     UserMappings,
 } from '@/types';
 import { AccountPickerDialog } from './account-picker-dialog';
+import { PanelError, PanelLoading, TrackerPanel } from './tracker-parts';
 
 /** Spec §11: the page polls every 5 s while email matching runs. */
 const MatchingPollMs = 5_000;
@@ -34,6 +34,8 @@ type Props = {
     connection: TeamIntegration;
     providerLabel: string;
 };
+
+type Failure = { error: unknown };
 
 function MappingBadge({ row }: { row: UserMappingRow }) {
     const { t } = useTrans();
@@ -48,7 +50,7 @@ function MappingBadge({ row }: { row: UserMappingRow }) {
     }
 
     if (mapping.accountId === null) {
-        return <Badge variant="secondary">{t('Never assign')}</Badge>;
+        return <Badge variant="muted">{t('Never assign')}</Badge>;
     }
 
     const matchedBy: Record<UserMapping['matchedBy'], string> = {
@@ -57,7 +59,7 @@ function MappingBadge({ row }: { row: UserMappingRow }) {
         sso: t('Linked via GitHub sign-in'),
     };
 
-    return <Badge variant="secondary">{matchedBy[mapping.matchedBy]}</Badge>;
+    return <Badge variant="success">{matchedBy[mapping.matchedBy]}</Badge>;
 }
 
 type Translate = ReturnType<typeof useTrans>['t'];
@@ -79,10 +81,14 @@ function matchingHint(provider: IntegrationProviderKey, t: Translate): string {
     }
 }
 
+/**
+ * The members stay a list, one item per member: three attributes do not make
+ * a table, and the browser suite reads each member as a list item.
+ */
 export function PeoplePanel({ scope, connection, providerLabel }: Props) {
     const { t } = useTrans();
     const [data, setData] = useState<UserMappings | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [failure, setFailure] = useState<Failure | null>(null);
     const [busyUser, setBusyUser] = useState<string | null>(null);
     const [picking, setPicking] = useState<UserMappingRow | null>(null);
     const [revision, setRevision] = useState(0);
@@ -103,24 +109,19 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
             .then((loaded) => {
                 if (!cancelled) {
                     setData(loaded);
-                    setError(null);
+                    setFailure(null);
                 }
             })
-            .catch((failure: unknown) => {
+            .catch((error: unknown) => {
                 if (!cancelled) {
-                    setError(
-                        integrationErrorMessage(
-                            failure,
-                            t('Could not load the people of this team.'),
-                        ),
-                    );
+                    setFailure({ error });
                 }
             });
 
         return () => {
             cancelled = true;
         };
-    }, [workspace, team, integration, revision, t]);
+    }, [workspace, team, integration, revision]);
 
     useEffect(() => {
         if (!matching) {
@@ -135,6 +136,11 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
         return () => clearInterval(timer);
     }, [matching]);
 
+    const retry = () => {
+        setFailure(null);
+        setRevision((current) => current + 1);
+    };
+
     const replaceRow = (row: UserMappingRow) =>
         setData((current) =>
             current === null
@@ -147,10 +153,8 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                   },
         );
 
-    const fail = (failure: unknown) =>
-        toast.error(
-            integrationErrorMessage(failure, t('Something went wrong.')),
-        );
+    const fail = (error: unknown) =>
+        toast.error(integrationErrorMessage(error, t('Something went wrong.')));
 
     const save = async (row: UserMappingRow, accountId: string | null) => {
         setBusyUser(row.userId);
@@ -167,8 +171,8 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                     { external_account_id: accountId },
                 ),
             );
-        } catch (failure) {
-            fail(failure);
+        } catch (error) {
+            fail(error);
         } finally {
             setBusyUser(null);
         }
@@ -187,8 +191,8 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                 }),
             );
             replaceRow({ ...row, mapping: null });
-        } catch (failure) {
-            fail(failure);
+        } catch (error) {
+            fail(error);
         } finally {
             setBusyUser(null);
         }
@@ -206,73 +210,84 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
             setData((current) =>
                 current === null ? current : { ...current, matching: true },
             );
-        } catch (failure) {
-            fail(failure);
+        } catch (error) {
+            fail(error);
         }
     };
 
     return (
-        <section className="space-y-3 border-t pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <h3 className="text-sm font-medium">{t('People')}</h3>
-                    <p className="text-xs text-muted-foreground">
-                        {matchingHint(connection.provider, t)}
-                    </p>
-                </div>
-                <Button
+        <TrackerPanel
+            slot="tracker-people"
+            title={t('People')}
+            description={matchingHint(connection.provider, t)}
+            action={
+                <LoadingButton
+                    type="button"
                     variant="outline"
                     size="sm"
-                    disabled={matching || data === null}
+                    className="max-w-full"
+                    loading={matching}
+                    disabled={data === null}
                     onClick={() => void matchByEmail()}
                 >
-                    {matching ? (
-                        <Spinner />
-                    ) : (
-                        <RefreshCw className="size-4" aria-hidden />
+                    <RefreshCw aria-hidden="true" />
+                    <span className="truncate">
+                        {connection.provider === 'github'
+                            ? t('Match GitHub sign-ins')
+                            : t('Match by email')}
+                    </span>
+                </LoadingButton>
+            }
+        >
+            {failure !== null && (
+                <PanelError
+                    message={integrationErrorMessage(
+                        failure.error,
+                        t('Could not load the people of this team.'),
                     )}
-                    {connection.provider === 'github'
-                        ? t('Match GitHub sign-ins')
-                        : t('Match by email')}
-                </Button>
-            </div>
-            {error !== null && (
-                <p className="text-sm text-destructive">{error}</p>
+                    retryLabel={t('Retry')}
+                    onRetry={retry}
+                />
             )}
-            {data === null && error === null && <Spinner />}
-            {data !== null && (
-                <ul className="divide-y rounded-md border">
+            {data === null && failure === null && <PanelLoading />}
+            {data !== null && data.members.length > 0 && (
+                <ul className="flex min-w-0 flex-col divide-y rounded-lg border">
                     {data.members.map((row) => (
                         <li
                             key={row.userId}
-                            className="flex flex-wrap items-center gap-3 p-2 text-sm"
+                            className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-sm"
                         >
-                            <Avatar className="size-6">
-                                <AvatarImage src={row.avatarUrl} alt="" />
-                                <AvatarFallback />
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate font-medium">
-                                    {row.name}
-                                </p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                    {row.email}
-                                </p>
+                            <div className="flex min-w-0 flex-1 basis-48 items-center gap-2.5">
+                                <PersonAvatar
+                                    decorative
+                                    size="sm"
+                                    name={row.name}
+                                    src={row.avatarUrl}
+                                />
+                                <div className="grid min-w-0 flex-1">
+                                    <span className="truncate font-medium">
+                                        {row.name}
+                                    </span>
+                                    <span className="truncate text-body-sm text-muted-foreground">
+                                        {row.email}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                                 {row.mapping?.displayName && (
-                                    <span className="truncate">
+                                    <span className="min-w-0 truncate">
                                         {row.mapping.displayName}
                                     </span>
                                 )}
                                 <MappingBadge row={row} />
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button
+                                        <LoadingButton
+                                            type="button"
                                             variant="ghost"
-                                            size="icon"
-                                            className="size-7"
-                                            disabled={busyUser === row.userId}
+                                            size="icon-sm"
+                                            className="shrink-0 text-muted-foreground"
+                                            loading={busyUser === row.userId}
                                             aria-label={t(
                                                 'Change the :provider account of :name',
                                                 {
@@ -281,20 +296,14 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                                                 },
                                             )}
                                         >
-                                            {busyUser === row.userId ? (
-                                                <Spinner />
-                                            ) : (
-                                                <UserSearch
-                                                    className="size-4"
-                                                    aria-hidden
-                                                />
-                                            )}
-                                        </Button>
+                                            <UserSearch aria-hidden="true" />
+                                        </LoadingButton>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem
                                             onSelect={() => setPicking(row)}
                                         >
+                                            <UserSearch aria-hidden="true" />
                                             {t('Choose an account…')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
@@ -302,12 +311,14 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                                                 void save(row, null)
                                             }
                                         >
+                                            <UserX aria-hidden="true" />
                                             {t('Never assign')}
                                         </DropdownMenuItem>
                                         {row.mapping !== null && (
                                             <DropdownMenuItem
                                                 onSelect={() => void reset(row)}
                                             >
+                                                <RotateCcw aria-hidden="true" />
                                                 {t('Reset')}
                                             </DropdownMenuItem>
                                         )}
@@ -333,6 +344,6 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                     }}
                 />
             )}
-        </section>
+        </TrackerPanel>
     );
 }

@@ -74,12 +74,19 @@ trait CapturesVisuals
     }))
     JS_WRAP;
 
+    /**
+     * An open menu or popover is placed again after the resize, a frame or more later under load:
+     * the capture waits for it, or the overflow check meets it at its old place.
+     */
     private const string SettleScript = <<<'JS'
         () => document.fonts.ready
             .then(() => Promise.allSettled(document.getAnimations()
                 .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
                 .map((animation) => animation.finished)))
             .then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))
+            .then(() => document.querySelector('[data-radix-popper-content-wrapper]') === null
+                ? true
+                : new Promise((resolve) => setTimeout(() => resolve(true), 200)))
         JS;
 
     /**
@@ -91,7 +98,7 @@ trait CapturesVisuals
     }
 
     /**
-     * @param  null|callable(string, array<string, string>): mixed  $visit  receives the path and the visit options (colour scheme, locale, reduced motion) and returns the page
+     * @param  null|callable(string, array<string, string>, int): mixed  $visit  receives the path, the visit options (colour scheme, locale, reduced motion) and the width of the capture, and returns the page
      */
     protected function captureVisuals(string $name, string $path, ?callable $visit = null): void
     {
@@ -106,7 +113,7 @@ trait CapturesVisuals
                         'reducedMotion' => 'reduce',
                     ];
 
-                    $page = $visit === null ? visit($path, $options) : $visit($path, $options);
+                    $page = $visit === null ? visit($path, $options) : $visit($path, $options, $width);
 
                     $page->resize($width, $height);
                     $page->script(self::SettleScript);

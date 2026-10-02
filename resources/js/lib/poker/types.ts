@@ -8,6 +8,10 @@ export type PokerResult = {
     mode: string[];
     consensus: boolean;
     nearestCard: string | null;
+    median?: number | null;
+    spread?: { min: number; max: number } | null;
+    agreement?: number | null;
+    outliers?: { low: string[]; high: string[] };
 };
 
 export type PokerRoundVote = { playerId: string; value: string | null };
@@ -118,6 +122,8 @@ export type PokerTask = {
     estimate: string | null;
     estimatedAt: string | null;
     roundsCount: number;
+    /** Votes of the task's last round; the current round's own count is fresher. */
+    votesCount: number;
     external: PokerTaskExternal | null;
 };
 
@@ -149,6 +155,8 @@ export type PokerGame = {
     anonymousVotes: boolean;
     cursorsEnabled: boolean;
     reactionsEnabled: boolean;
+    /** Null for a guest. */
+    teamName: string | null;
 };
 
 export type PokerMe = {
@@ -172,7 +180,8 @@ export type PokerSnapshot = {
     players: PokerPlayer[];
     tasks: PokerTask[];
     current: PokerCurrent | null;
-    links: { team: string | null };
+    /** Both are null for a guest. `decks` is the saved decks page of the team. */
+    links: { team: string | null; decks: string | null };
     share: ShareAvailability;
     deliveries: IntegrationDelivery[];
     integrations: PokerIntegrations | null;

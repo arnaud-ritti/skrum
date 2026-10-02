@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\Retros\CreateRetro;
 use App\Actions\Retros\NewRetro;
+use App\Enums\ColumnColor;
 use App\Enums\GameKind;
+use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Team;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
@@ -31,6 +33,11 @@ class TeamRetrosController extends Controller
             'icebreaker_game' => ['sometimes', Rule::enum(GameKind::class), $icebreakerGameOptions->rule()],
             'votes_per_participant' => ['nullable', 'integer', 'min:1', 'max:20'],
             'ai_summary_enabled' => ['sometimes', 'boolean'],
+            'guest_access_enabled' => ['sometimes', 'boolean'],
+            'columns' => ['sometimes', 'array', 'min:1', 'max:'.WorkspaceTemplateRequest::MaxColumns],
+            'columns.*.title' => ['required', 'string', 'max:100'],
+            'columns.*.description' => ['nullable', 'string', 'max:200'],
+            'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
         ]);
 
         $retro = $createRetro->handle($team, $request->user(), new NewRetro(
@@ -42,9 +49,28 @@ class TeamRetrosController extends Controller
             votesPerParticipant: isset($validated['votes_per_participant']) ? (int) $validated['votes_per_participant'] : null,
             aiSummaryEnabled: $request->boolean('ai_summary_enabled', true),
             icebreakerGame: isset($validated['icebreaker_game']) ? GameKind::from($validated['icebreaker_game']) : null,
+            guestAccessEnabled: (bool) ($validated['guest_access_enabled'] ?? false),
+            columns: $this->columns($validated['columns'] ?? null),
         ));
 
         return to_route('retros.show', $retro);
+    }
+
+    /**
+     * @param  ?array<int, array{title: string, description?: ?string, color: string}>  $columns
+     * @return ?array<int, array{title: string, description: ?string, color: ColumnColor}>
+     */
+    private function columns(?array $columns): ?array
+    {
+        if ($columns === null) {
+            return null;
+        }
+
+        return array_map(fn (array $column): array => [
+            'title' => $column['title'],
+            'description' => $column['description'] ?? null,
+            'color' => ColumnColor::from($column['color']),
+        ], array_values($columns));
     }
 
     private function availableTemplate(Workspace $workspace): Closure

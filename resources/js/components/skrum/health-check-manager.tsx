@@ -29,7 +29,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import {
     Collapsible,
     CollapsibleContent,
@@ -65,8 +65,11 @@ type SaveResult = void | boolean | Promise<void | boolean>;
 export interface HealthStatementsManagerProps {
     statements: HealthStatement[];
     canManage: boolean;
-    /** Ids of the active statements, in their new order. */
-    onReorder: (orderedIds: string[]) => void;
+    /**
+     * Ids of the active statements, in their new order. Resolving to `false`
+     * puts the list back in the server order (the order was not saved).
+     */
+    onReorder: (orderedIds: string[]) => SaveResult;
     onAdd: (statement: HealthStatementDraft) => SaveResult;
     /** Custom statements only; "Edit" is rendered only when given. */
     onEdit?: (id: string, statement: HealthStatementDraft) => SaveResult;
@@ -74,6 +77,8 @@ export interface HealthStatementsManagerProps {
     onRestore?: (id: string) => void;
     /** Server errors of the add form. */
     addErrors?: HealthStatementErrors;
+    /** An editor opens: the errors of an earlier save are to be dropped. */
+    onEditOpen?: (id: string) => void;
     /** Server errors of the open editor. */
     editErrors?: HealthStatementErrors;
     /** Error on the list itself (reorder, archive). */
@@ -251,9 +256,11 @@ function StatementFields({
 
 function StatementText({
     statement,
+    labelId,
     muted = false,
 }: {
     statement: HealthStatement;
+    labelId?: string;
     muted?: boolean;
 }) {
     const { t } = useTrans();
@@ -262,6 +269,7 @@ function StatementText({
         <div className="flex min-w-0 shrink grow basis-40 flex-col gap-0.5 py-2">
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 <span
+                    id={labelId}
                     data-slot="health-statement-label"
                     className={cn(
                         'min-w-0 truncate text-sm font-bold',
@@ -315,6 +323,7 @@ function StatementRow({
     const handleHintId = useId();
     const canEdit = canManage && !statement.isBuiltin && onEdit !== undefined;
     const canArchive = canManage && onArchive !== undefined;
+    const isEditing = editing && onEdit !== undefined;
 
     return (
         <li
@@ -349,12 +358,14 @@ function StatementRow({
                     className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
                 >
                     <GripVerticalIcon className="size-4" aria-hidden />
-                    <span id={handleHintId} hidden>
-                        {statement.label}
-                    </span>
+                    {isEditing ? (
+                        <span id={handleHintId} hidden>
+                            {statement.label}
+                        </span>
+                    ) : null}
                 </button>
             ) : null}
-            {editing && onEdit ? (
+            {isEditing ? (
                 <div className="min-w-0 flex-1 py-2">
                     <StatementFields
                         focusOnMount
@@ -379,7 +390,10 @@ function StatementRow({
                 </div>
             ) : (
                 <div className="flex min-w-0 flex-1 flex-wrap items-start justify-end gap-x-2">
-                    <StatementText statement={statement} />
+                    <StatementText
+                        statement={statement}
+                        labelId={handleHintId}
+                    />
                     {canEdit || canArchive ? (
                         <div className="flex min-h-11 max-w-full shrink-0 flex-wrap items-center gap-1">
                             {canEdit ? (
@@ -452,6 +466,7 @@ export function HealthStatementsManager({
     onReorder,
     onAdd,
     onEdit,
+    onEditOpen,
     onArchive,
     onRestore,
     addErrors,
@@ -461,6 +476,7 @@ export function HealthStatementsManager({
     className,
 }: HealthStatementsManagerProps) {
     const { t } = useTrans();
+    const headingId = useId();
     const rootRef = useRef<HTMLDivElement>(null);
     const pendingFocus = useRef<PendingFocus | null>(null);
     const closedEditorOf = useRef<string | null>(null);
@@ -631,199 +647,225 @@ export function HealthStatementsManager({
             return;
         }
 
-        setPending({ source: statements, ids: next });
-        onReorder(next);
+        const optimistic = { source: statements, ids: next };
+
+        setPending(optimistic);
+        void Promise.resolve(onReorder(next)).then((saved) => {
+            if (saved === false) {
+                setPending((current) =>
+                    current === optimistic ? null : current,
+                );
+            }
+        });
     }
 
     return (
-        <Card
-            data-slot="health-statements"
-            title={t('Health check statements')}
-            className={className}
-        >
-            <div
-                ref={rootRef}
-                className="flex flex-col gap-4 px-5 pb-5 @max-card-narrow/card:px-4 @max-card-narrow/card:pb-4"
-            >
-                <p className="flex items-start gap-2 text-body-sm text-muted-foreground">
-                    <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
-                    <span>
-                        {t(
-                            'Changes apply to retros that have not collected answers yet.',
-                        )}
-                    </span>
-                </p>
-                {error ? (
-                    <p
-                        role="alert"
-                        data-slot="health-statements-error"
-                        className="flex items-start gap-1.5 text-body-sm font-medium text-skrum-destructive-text"
+        <Card asChild data-slot="health-statements" className={className}>
+            <section aria-labelledby={headingId}>
+                <CardHeader>
+                    <h2
+                        id={headingId}
+                        className="text-base leading-snug font-title"
                     >
-                        <CircleAlertIcon
+                        {t('Health check statements')}
+                    </h2>
+                </CardHeader>
+                <div
+                    ref={rootRef}
+                    className="flex flex-col gap-4 px-5 pb-5 @max-card-narrow/card:px-4 @max-card-narrow/card:pb-4"
+                >
+                    <p className="flex items-start gap-2 text-body-sm text-muted-foreground">
+                        <InfoIcon
                             className="mt-0.5 size-4 shrink-0"
                             aria-hidden
                         />
-                        <span className="min-w-0 break-words">{error}</span>
-                    </p>
-                ) : null}
-                {moving ? (
-                    <span
-                        aria-hidden
-                        data-slot="health-statements-moving"
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                    >
-                        <MoveVerticalIcon className="size-4 shrink-0" />
-                        <span className="min-w-0 break-words">{moving}</span>
-                    </span>
-                ) : null}
-                {ordered.length === 0 ? (
-                    <p
-                        data-slot="health-statements-empty"
-                        className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
-                    >
-                        {t('No statements yet.')}
-                    </p>
-                ) : (
-                    <DndContext
-                        id="health-statements"
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        accessibility={{
-                            announcements,
-                            screenReaderInstructions: {
-                                draggable: t(
-                                    'Press space to pick up, the up and down arrows to move, space to drop, escape to cancel.',
-                                ),
-                            },
-                        }}
-                        onDragStart={({ active: dragged }) =>
-                            setMoving(
-                                movingText(dragged.id, positionOf(dragged.id)),
-                            )
-                        }
-                        onDragOver={({ active: dragged, over }) =>
-                            over
-                                ? setMoving(
-                                      movingText(
-                                          dragged.id,
-                                          positionOf(over.id),
-                                      ),
-                                  )
-                                : undefined
-                        }
-                        onDragCancel={() => setMoving(null)}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext
-                            items={ids}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            <ol
-                                data-slot="health-statements-active"
-                                className="flex flex-col divide-y rounded-lg border"
-                            >
-                                {ordered.map((statement) => (
-                                    <StatementRow
-                                        key={statement.id}
-                                        statement={statement}
-                                        canManage={canManage}
-                                        editing={editingId === statement.id}
-                                        editErrors={editErrors}
-                                        onEditRequest={() =>
-                                            setEditingId(statement.id)
-                                        }
-                                        onEditClose={() =>
-                                            closeEditor(statement.id)
-                                        }
-                                        onEdit={onEdit}
-                                        onArchive={
-                                            onArchive
-                                                ? () => archive(statement.id)
-                                                : undefined
-                                        }
-                                    />
-                                ))}
-                            </ol>
-                        </SortableContext>
-                    </DndContext>
-                )}
-                {canManage ? (
-                    <div data-action="add-text">
-                        <StatementFields
-                            initial={{ label: '', text: '' }}
-                            submitLabel={t('Add statement')}
-                            submitIcon={PlusIcon}
-                            errors={addErrors}
-                            onSubmit={onAdd}
-                            textPlaceholder={t(
-                                'New statement, e.g. Our meetings were useful',
+                        <span>
+                            {t(
+                                'Changes apply to retros that have not collected answers yet.',
                             )}
-                        />
-                    </div>
-                ) : null}
-                {archived.length > 0 ? (
-                    <Collapsible defaultOpen={defaultArchivedOpen}>
-                        <CollapsibleTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="max-w-full"
-                                data-slot="health-archived-trigger"
+                        </span>
+                    </p>
+                    {error ? (
+                        <p
+                            role="alert"
+                            data-slot="health-statements-error"
+                            className="flex items-start gap-1.5 text-body-sm font-medium text-skrum-destructive-text"
+                        >
+                            <CircleAlertIcon
+                                className="mt-0.5 size-4 shrink-0"
+                                aria-hidden
+                            />
+                            <span className="min-w-0 break-words">{error}</span>
+                        </p>
+                    ) : null}
+                    {moving ? (
+                        <span
+                            aria-hidden
+                            data-slot="health-statements-moving"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                        >
+                            <MoveVerticalIcon className="size-4 shrink-0" />
+                            <span className="min-w-0 break-words">
+                                {moving}
+                            </span>
+                        </span>
+                    ) : null}
+                    {ordered.length === 0 ? (
+                        <p
+                            data-slot="health-statements-empty"
+                            className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
+                        >
+                            {t('No statements yet.')}
+                        </p>
+                    ) : (
+                        <DndContext
+                            id="health-statements"
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            accessibility={{
+                                announcements,
+                                screenReaderInstructions: {
+                                    draggable: t(
+                                        'Press space to pick up, the up and down arrows to move, space to drop, escape to cancel.',
+                                    ),
+                                },
+                            }}
+                            onDragStart={({ active: dragged }) =>
+                                setMoving(
+                                    movingText(
+                                        dragged.id,
+                                        positionOf(dragged.id),
+                                    ),
+                                )
+                            }
+                            onDragOver={({ active: dragged, over }) =>
+                                over
+                                    ? setMoving(
+                                          movingText(
+                                              dragged.id,
+                                              positionOf(over.id),
+                                          ),
+                                      )
+                                    : undefined
+                            }
+                            onDragCancel={() => setMoving(null)}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={ids}
+                                strategy={verticalListSortingStrategy}
                             >
-                                <ArchiveIcon aria-hidden />
-                                <span className="truncate">
-                                    {t('Archived (:count)', {
-                                        count: archived.length,
-                                    })}
-                                </span>
-                            </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <ul
-                                data-slot="health-statements-archived"
-                                className="mt-2 flex flex-col divide-y rounded-lg border"
-                            >
-                                {archived.map((statement) => (
-                                    <li
-                                        key={statement.id}
-                                        data-slot="health-statement"
-                                        data-statement-id={statement.id}
-                                        data-archived
-                                        className="flex flex-wrap items-start justify-end gap-x-2 px-3 py-1 @max-card-narrow/card:px-2"
-                                    >
-                                        <StatementText
+                                <ol
+                                    data-slot="health-statements-active"
+                                    className="flex flex-col divide-y rounded-lg border"
+                                >
+                                    {ordered.map((statement) => (
+                                        <StatementRow
+                                            key={statement.id}
                                             statement={statement}
-                                            muted
+                                            canManage={canManage}
+                                            editing={editingId === statement.id}
+                                            editErrors={editErrors}
+                                            onEditRequest={() => {
+                                                onEditOpen?.(statement.id);
+                                                setEditingId(statement.id);
+                                            }}
+                                            onEditClose={() =>
+                                                closeEditor(statement.id)
+                                            }
+                                            onEdit={onEdit}
+                                            onArchive={
+                                                onArchive
+                                                    ? () =>
+                                                          archive(statement.id)
+                                                    : undefined
+                                            }
                                         />
-                                        {canManage && onRestore ? (
-                                            <div className="flex min-h-11 max-w-full shrink-0 items-center">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="max-w-full"
-                                                    data-action="restore"
-                                                    onClick={() =>
-                                                        restore(statement.id)
-                                                    }
-                                                >
-                                                    <ArchiveRestoreIcon
-                                                        aria-hidden
-                                                    />
-                                                    <span className="truncate">
-                                                        {t('Restore')}
-                                                    </span>
-                                                </Button>
-                                            </div>
-                                        ) : null}
-                                    </li>
-                                ))}
-                            </ul>
-                        </CollapsibleContent>
-                    </Collapsible>
-                ) : null}
-            </div>
+                                    ))}
+                                </ol>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                    {canManage ? (
+                        <div data-action="add-text">
+                            <StatementFields
+                                initial={{ label: '', text: '' }}
+                                submitLabel={t('Add statement')}
+                                submitIcon={PlusIcon}
+                                errors={addErrors}
+                                onSubmit={onAdd}
+                                textPlaceholder={t(
+                                    'New statement, e.g. Our meetings were useful',
+                                )}
+                            />
+                        </div>
+                    ) : null}
+                    {archived.length > 0 ? (
+                        <Collapsible defaultOpen={defaultArchivedOpen}>
+                            <CollapsibleTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="max-w-full"
+                                    data-slot="health-archived-trigger"
+                                >
+                                    <ArchiveIcon aria-hidden />
+                                    <span className="truncate">
+                                        {t('Archived (:count)', {
+                                            count: archived.length,
+                                        })}
+                                    </span>
+                                </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <ul
+                                    data-slot="health-statements-archived"
+                                    className="mt-2 flex flex-col divide-y rounded-lg border"
+                                >
+                                    {archived.map((statement) => (
+                                        <li
+                                            key={statement.id}
+                                            data-slot="health-statement"
+                                            data-statement-id={statement.id}
+                                            data-archived
+                                            className="flex flex-wrap items-start justify-end gap-x-2 px-3 py-1 @max-card-narrow/card:px-2"
+                                        >
+                                            <StatementText
+                                                statement={statement}
+                                                muted
+                                            />
+                                            {canManage && onRestore ? (
+                                                <div className="flex min-h-11 max-w-full shrink-0 items-center">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="max-w-full"
+                                                        data-action="restore"
+                                                        onClick={() =>
+                                                            restore(
+                                                                statement.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        <ArchiveRestoreIcon
+                                                            aria-hidden
+                                                        />
+                                                        <span className="truncate">
+                                                            {t('Restore')}
+                                                        </span>
+                                                    </Button>
+                                                </div>
+                                            ) : null}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CollapsibleContent>
+                        </Collapsible>
+                    ) : null}
+                </div>
+            </section>
         </Card>
     );
 }

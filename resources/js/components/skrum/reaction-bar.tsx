@@ -546,9 +546,9 @@ export function ReactionBar({
                 )}
                 {!compact && picker}
             </div>
-            <div role="status" aria-live="polite" className="sr-only">
+            <span role="status" aria-live="polite" className="sr-only">
                 {announced}
-            </div>
+            </span>
         </div>
     );
 }

@@ -133,6 +133,23 @@ export default function IcebreakerGameCardSection() {
                     />
                 </IcebreakerGameGrid>
             </State>
+            <State label={t('In play')}>
+                <IcebreakerGameGrid className="max-w-80 grid-cols-2 gap-3 sm:grid-cols-2">
+                    <IcebreakerGameCard
+                        game="hangman"
+                        title={t('Hangman')}
+                        compact
+                        selected
+                        inPlay
+                    />
+                    <IcebreakerGameCard
+                        game="draw"
+                        title={t('Draw & Guess')}
+                        compact
+                        inPlay
+                    />
+                </IcebreakerGameGrid>
+            </State>
             <State label={t('Choose an icebreaker')}>
                 <IcebreakerGameGrid>
                     {games.map((game) => (

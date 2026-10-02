@@ -261,7 +261,7 @@ it('[P14a-03b] posts a game room invite to Microsoft Teams and to Mattermost', f
 
     $page->assertSee('Invite')
         ->click('Invite')
-        ->assertSee('Invite to the room')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Invite to ')
         ->assertSee('Only members of Platform can join.')
         ->assertNotPresent('[role="dialog"] button[role="checkbox"]')
         ->click('Post link to Microsoft Teams')

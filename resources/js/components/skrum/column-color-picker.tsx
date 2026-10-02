@@ -3,6 +3,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
@@ -97,6 +102,11 @@ export type ColumnColorOptionsProps<C extends AnyColumnColor = ColumnColor> = {
     colors?: readonly C[];
     usedBy?: Partial<Record<C, string>>;
     columnTitle: string;
+    /**
+     * `tooltip`: swatches alone on the line of the title; the colour name is
+     * the tooltip and the accessible name of each swatch.
+     */
+    labels?: 'visible' | 'tooltip';
 };
 
 export function ColumnColorOptions<C extends AnyColumnColor = ColumnColor>({
@@ -105,6 +115,7 @@ export function ColumnColorOptions<C extends AnyColumnColor = ColumnColor>({
     colors = columnColors as readonly AnyColumnColor[] as readonly C[],
     usedBy = {},
     columnTitle,
+    labels = 'visible',
 }: ColumnColorOptionsProps<C>) {
     const { t } = useTrans();
     const colorName = useColumnColorName();
@@ -152,79 +163,127 @@ export function ColumnColorOptions<C extends AnyColumnColor = ColumnColor>({
         }
     };
 
-    return (
-        <div data-slot="column-color-options" className="@container/cpick">
-            <p className="mb-2 truncate text-sm font-semibold">
-                {t('Color of “:title”', { title: displayTitle })}
-            </p>
-            <div
-                role="radiogroup"
-                aria-label={t('Color of “:title”', {
-                    title: displayTitle,
-                })}
-                className="grid grid-cols-4 gap-1 @sm/cpick:grid-cols-8"
-            >
-                {colors.map((color) => {
-                    const taken = usedBy[color];
-                    const checked = color === value;
-                    const name = colorName(color);
+    const swatchesOnly = labels === 'tooltip';
+    const groupLabel = t('Color of “:title”', { title: displayTitle });
 
-                    return (
+    const option = (color: C) => {
+        const taken = usedBy[color];
+        const checked = color === value;
+        const name = colorName(color);
+        const accessibleName =
+            taken === undefined
+                ? name
+                : t(':color, used by :title', { color: name, title: taken });
+        const usedDot = taken !== undefined && (
+            <span
+                aria-hidden="true"
+                data-slot="used-dot"
+                className="size-1.5 rounded-full bg-foreground"
+            />
+        );
+        const shared = {
+            ref: (node: HTMLButtonElement | null) => {
+                if (node === null) {
+                    optionRefs.current.delete(color);
+
+                    return;
+                }
+
+                optionRefs.current.set(color, node);
+            },
+            type: 'button' as const,
+            role: 'radio',
+            'aria-checked': checked,
+            'aria-label': accessibleName,
+            tabIndex: color === tabStop ? 0 : -1,
+            'data-state': checked ? 'checked' : 'unchecked',
+            'data-color': color,
+            onClick: () => onValueChange(color),
+            onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) =>
+                handleKeyDown(event, color),
+        };
+
+        if (swatchesOnly) {
+            return (
+                <Tooltip key={color}>
+                    <TooltipTrigger asChild>
                         <button
-                            key={color}
-                            ref={(node) => {
-                                if (node === null) {
-                                    optionRefs.current.delete(color);
-
-                                    return;
-                                }
-
-                                optionRefs.current.set(color, node);
-                            }}
-                            type="button"
-                            role="radio"
-                            aria-checked={checked}
-                            aria-label={
-                                taken === undefined
-                                    ? name
-                                    : t(':color, used by :title', {
-                                          color: name,
-                                          title: taken,
-                                      })
-                            }
-                            tabIndex={color === tabStop ? 0 : -1}
-                            data-state={checked ? 'checked' : 'unchecked'}
-                            data-color={color}
-                            onClick={() => onValueChange(color)}
-                            onKeyDown={(event) => handleKeyDown(event, color)}
-                            className="flex min-w-0 flex-col items-center gap-1 rounded-sm p-1 text-overline text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=checked]:text-foreground"
+                            {...shared}
+                            className="grid size-7 shrink-0 place-items-center rounded-full outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                         >
                             <span
                                 className={cn(
-                                    'relative grid size-7 place-items-center rounded-full bg-(--col-border)',
+                                    'grid size-5.5 place-items-center rounded-full bg-(--col-border) inset-ring inset-ring-(--col-text)',
                                     columnColorClass(color),
                                     checked &&
                                         'ring-2 ring-ring ring-offset-2 ring-offset-popover',
                                 )}
                             >
-                                {taken !== undefined && (
-                                    <span
-                                        aria-hidden="true"
-                                        data-slot="used-dot"
-                                        className="size-1.5 rounded-full bg-foreground"
-                                    />
-                                )}
-                            </span>
-                            <span
-                                aria-hidden="true"
-                                className="max-w-full truncate"
-                            >
-                                {name}
+                                {usedDot}
                             </span>
                         </button>
-                    );
-                })}
-            </div>
+                    </TooltipTrigger>
+                    <TooltipContent>{accessibleName}</TooltipContent>
+                </Tooltip>
+            );
+        }
+
+        return (
+            <button
+                key={color}
+                {...shared}
+                className="flex min-w-0 flex-col items-center gap-1 rounded-sm p-1 text-overline text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=checked]:text-foreground"
+            >
+                <span
+                    className={cn(
+                        'relative grid size-7 place-items-center rounded-full bg-(--col-border)',
+                        columnColorClass(color),
+                        checked &&
+                            'ring-2 ring-ring ring-offset-2 ring-offset-popover',
+                    )}
+                >
+                    {usedDot}
+                </span>
+                <span aria-hidden="true" className="max-w-full truncate">
+                    {name}
+                </span>
+            </button>
+        );
+    };
+
+    return (
+        <div
+            data-slot="column-color-options"
+            data-labels={labels}
+            className="@container/cpick"
+        >
+            {swatchesOnly ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="max-w-full truncate text-xs text-muted-foreground">
+                        {groupLabel}
+                    </p>
+                    <div
+                        role="radiogroup"
+                        aria-label={groupLabel}
+                        className="flex min-w-0 flex-wrap items-center gap-0.5"
+                    >
+                        {colors.map(option)}
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <p className="mb-2 truncate text-sm font-semibold">
+                        {groupLabel}
+                    </p>
+                    <div
+                        role="radiogroup"
+                        aria-label={groupLabel}
+                        className="grid grid-cols-4 gap-1 @sm/cpick:grid-cols-8"
+                    >
+                        {colors.map(option)}
+                    </div>
+                </>
+            )}
             {anyUsed && (
                 <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span

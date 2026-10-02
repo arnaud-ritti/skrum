@@ -22,6 +22,23 @@ describe('ConnectionState', () => {
         ).not.toBeNull();
     });
 
+    it('shows "Synced" with its dot as a resting state, not as a live region', () => {
+        const { container } = render(
+            <ConnectionState status="synced" labelClassName="sr-only" />,
+        );
+        const pill = container.querySelector('[data-slot="connection-state"]');
+
+        expect(pill?.textContent).toBe('Synced');
+        expect(pill?.getAttribute('data-status')).toBe('synced');
+        expect(pill?.hasAttribute('role')).toBe(false);
+        expect(pill?.hasAttribute('aria-live')).toBe(false);
+        expect(
+            pill?.querySelector('[data-slot="connection-dot"]'),
+        ).not.toBeNull();
+        expect(screen.getByText('Synced').className).toContain('sr-only');
+        expect(screen.queryByRole('status')).toBeNull();
+    });
+
     it('shows the attempt out of the maximum while reconnecting', () => {
         render(
             <ConnectionState
@@ -142,6 +159,21 @@ describe('ConnectionState', () => {
             'Your session has expired.',
         );
         expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('shows the given hint in place of the kept-locally sentence', () => {
+        render(
+            <ConnectionState
+                status="reconnecting"
+                variant="banner"
+                hint="Live updates are paused."
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            'Live updates are paused.',
+        );
+        expect(screen.queryByText(/kept locally/)).toBeNull();
     });
 });
 

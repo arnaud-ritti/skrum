@@ -499,35 +499,64 @@
 }
 
 /*
- * The reactions bar (fixed, 16px from the bottom, 46px tall: 36px buttons,
- * 8px of padding, 2px of border) and the canvas's bottom controls, sizes from
- * Excalidraw 0.18.1. The bar follows the canvas container as a sibling.
+ * The reactions bar (`[data-slot='reaction-bar']`, fixed, 1.5rem from the
+ * bottom, 3.375rem + 2px tall: 2.75rem buttons, 0.5rem of padding, 2px of
+ * border) and the canvas's bottom controls, sizes from Excalidraw 0.18.1.
+ * The bar follows the canvas container as a sibling; its toolbar carries
+ * `whiteboard-reactions`.
  *
  * "Scroll back to content" sits at the bottom centre too (30px up, or 80px
- * in the mobile layout): it moves above the bar, which ends 62px up.
+ * in the mobile layout): it moves above the bar, which ends 4.875rem + 2px
+ * up, and keeps 0.625rem of air.
  *
  * In the mobile layout (the library's own class, set below 730px of width or
  * below 500px of height and 1000px of width) the canvas has a toolbar along
  * the bottom: 14px of margin, the safe area, then at most 56px (8px of
  * padding around buttons of at most 40px). The bar sits 8px above it, and
- * the scroll-back button, placed from the top of that margin, 10px above the
- * bar. The panel of shape actions opens over that area: the bar gives way.
+ * the scroll-back button, placed from the top of that margin, 0.625rem above
+ * the bar. The panel of shape actions opens over that area: the bar gives way.
  */
-.whiteboard-canvas:has(~ .whiteboard-reactions) .scroll-back-to-content {
-    bottom: 72px !important;
+.whiteboard-canvas:has(~ [data-slot='reaction-bar']) .scroll-back-to-content {
+    bottom: calc(5.5rem + 2px) !important;
 }
 
-.whiteboard-canvas:has(~ .whiteboard-reactions)
+.whiteboard-canvas:has(~ [data-slot='reaction-bar'])
     .excalidraw--mobile
     .scroll-back-to-content {
-    bottom: 120px !important;
+    bottom: calc(64px + 4rem + 2px) !important;
 }
 
-.whiteboard-canvas:has(.excalidraw--mobile) ~ .whiteboard-reactions {
+.whiteboard-canvas:has(.excalidraw--mobile) ~ [data-slot='reaction-bar'] {
     bottom: calc(78px + env(safe-area-inset-bottom, 0px));
 }
 
-.whiteboard-canvas:has(.App-mobile-menu) ~ .whiteboard-reactions {
+.whiteboard-canvas:has(.App-mobile-menu) ~ [data-slot='reaction-bar'] {
+    display: none;
+}
+
+/*
+ * The phone's read mode (`[data-slot='read-mode-dock']`, as tall as the
+ * reactions bar) makes one dock with the reactions: in the mobile layout it
+ * sits on the same line, at the right, and the bar moves to the left; the
+ * scroll-back button goes above both, with or without the bar. Like the bar,
+ * it gives way to the panel of shape actions.
+ */
+.whiteboard-canvas:has(.excalidraw--mobile) [data-slot='read-mode-dock'] {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+.whiteboard-canvas:has(.excalidraw--mobile):has([data-slot='read-mode-dock'])
+    ~ [data-slot='reaction-bar'] {
+    margin-left: 1rem;
+}
+
+.whiteboard-canvas:has([data-slot='read-mode-dock'])
+    .excalidraw--mobile
+    .scroll-back-to-content {
+    bottom: calc(64px + 4rem + 2px) !important;
+}
+
+.whiteboard-canvas:has(.App-mobile-menu) [data-slot='read-mode-dock'] {
     display: none;
 }
 
@@ -712,3 +741,22 @@
   --z-cursor: 20; --z-chrome: 30; --z-sidebar: 40; --z-overlay: 50; --z-toast: 60; --z-drag: 70;
 }
 /* ===== End of plan 18d additions ===== */
+
+/*
+ * ===== Plan 18e additions to @theme =====
+ * The paper of a whiteboard template preview. A scene's colours are canvas
+ * data, drawn for a white board: the paper stays white in the dark theme
+ * (spec ruling 36, decision 1-D5). The line is the grey bar that stands for
+ * a text of the scene.
+ */
+@theme {
+  --color-whiteboard-paper: #ffffff;
+  --color-whiteboard-paper-line: #ced4da;
+}
+
+@layer utilities {
+  /* Drawing sheet of Draw & Guess: the largest 4:3 box of its area, whichever of the width or the height is short. */
+  .draw-area { container-type: size; }
+  .draw-sheet { width: min(100cqw, calc(100cqh * 4 / 3)); aspect-ratio: 4 / 3; }
+}
+/* ===== End of plan 18e additions ===== */

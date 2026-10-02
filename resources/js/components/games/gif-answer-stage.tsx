@@ -1,82 +1,57 @@
-import { Eye, ImageIcon } from 'lucide-react';
-import { useState } from 'react';
-import GameAnswersController from '@/actions/App/Http/Controllers/Games/GameAnswersController';
+import { Eye } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import GameGifsController from '@/actions/App/Http/Controllers/Games/GameGifsController';
 import GameRevealsController from '@/actions/App/Http/Controllers/Games/GameRevealsController';
-import type { PickedGif } from '@/components/gifs/gif-search-dialog';
+import { useGifSearch } from '@/components/gifs/use-gif-search';
+import { GifPicker } from '@/components/skrum/gif-picker';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
-import { pendingAnswers } from '@/lib/games/gif';
-import type { GameMyGifAnswer, GameRound } from '@/lib/games/types';
+import type { GameGifSearchResult, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
-import { GameGifPicker } from './game-gif-picker';
-import { GifTile } from './gif-tile';
+import { useHasRightColumn } from './game-layout';
+import { useGifDraft } from './gif-draft';
+import { GifYourPick } from './gif-your-pick';
 import { useRoom } from './room-context';
 
-/** Other players' GIFs are never known before the reveal: only placeholders. */
-export function GifAnswerStage({ round }: { round: GameRound }) {
+type Props = {
+    round: GameRound;
+    /** Place left under the chosen GIF for its caption (GM-3). */
+    caption?: ReactNode;
+};
+
+const noop = (): void => {};
+
+/**
+ * The picker stands open on the stage; a pick is a draft until it is sent
+ * from "Your pick", which the right column holds where there is one.
+ */
+export function GifAnswerStage({ round, caption }: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
-    const [picking, setPicking] = useState(false);
+    const hasRightColumn = useHasRightColumn();
+    const { draft, pick, pickerRef } = useGifDraft(round.id);
+    const pickRef = useRef<HTMLDivElement>(null);
     const [busy, setBusy] = useState(false);
-    const { room, me, players } = ctx.snapshot;
-    const others = pendingAnswers(round).filter(
-        (answer) => answer.playerId !== me.playerId,
+    const { room } = ctx.snapshot;
+    const roomId = room.id;
+    const provider = round.gifProvider ?? null;
+    /** A draft is not an answer: the reveal would leave its player out of the gallery. */
+    const hasUnsentDraft =
+        draft !== null && draft.id !== round.myAnswer?.gif.id;
+
+    const search = useCallback(
+        (query: string) =>
+            retroRequest<{ gifs: GameGifSearchResult[] }>(
+                GameGifsController.index(roomId, { query: { q: query } }),
+            ),
+        [roomId],
     );
-    const names = new Map(players.map((player) => [player.id, player.name]));
-    const target = { room: room.id, round: round.id };
-
-    const markAnswered = (myAnswer: GameMyGifAnswer | null) => {
-        ctx.dispatch({
-            type: 'answer.changed',
-            roundId: round.id,
-            playerId: me.playerId,
-            answered: myAnswer !== null,
-        });
-        ctx.dispatch({
-            type: 'round.patched',
-            roundId: round.id,
-            patch: { myAnswer },
-        });
-    };
-
-    const choose = async (gif: PickedGif) => {
-        setBusy(true);
-
-        let response: { myAnswer: GameMyGifAnswer } | undefined;
-
-        try {
-            response = await ctx.run(
-                retroRequest<{ myAnswer: GameMyGifAnswer }>(
-                    GameAnswersController.update(target),
-                    { gif_id: gif.id },
-                ),
-            );
-        } finally {
-            setBusy(false);
-        }
-
-        if (response) {
-            markAnswered(response.myAnswer);
-        }
-    };
-
-    const remove = async () => {
-        setBusy(true);
-
-        let result: null | undefined;
-
-        try {
-            result = await ctx.run(
-                retroRequest(GameAnswersController.destroy(target)),
-            );
-        } finally {
-            setBusy(false);
-        }
-
-        if (result !== undefined) {
-            markAnswered(null);
-        }
-    };
+    const { results, status, setQuery, retry } = useGifSearch(
+        search,
+        provider !== null,
+    );
 
     const reveal = async () => {
         setBusy(true);
@@ -85,7 +60,12 @@ export function GifAnswerStage({ round }: { round: GameRound }) {
 
         try {
             revealed = await ctx.run(
-                retroRequest<GameRound>(GameRevealsController.store(target)),
+                retroRequest<GameRound>(
+                    GameRevealsController.store({
+                        room: roomId,
+                        round: round.id,
+                    }),
+                ),
             );
         } finally {
             setBusy(false);
@@ -101,70 +81,66 @@ export function GifAnswerStage({ round }: { round: GameRound }) {
     };
 
     return (
-        <section className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-                {t('Pick a GIF that answers the question.')}
-            </p>
-            {round.myAnswer && (
-                <div className="w-48">
-                    <GifTile gif={round.myAnswer.gif} caption={t('Your GIF')} />
-                </div>
-            )}
-            <div className="flex gap-2">
-                <Button disabled={busy} onClick={() => setPicking(true)}>
-                    {round.myAnswer ? t('Change GIF') : t('Choose a GIF')}
-                </Button>
-                {round.myAnswer && (
-                    <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void remove()}
-                    >
-                        {t('Remove GIF')}
-                    </Button>
-                )}
+        <div
+            data-slot="gif-answer-stage"
+            className="flex w-full max-w-160 flex-col gap-4"
+        >
+            <div ref={pickerRef} className="flex min-w-0">
+                <GifPicker
+                    open
+                    inline
+                    results={results}
+                    provider={provider ?? undefined}
+                    status={provider === null ? 'disabled' : status}
+                    selectedId={draft?.id ?? round.myAnswer?.gif.id}
+                    onOpenChange={noop}
+                    onSelect={(gif) => {
+                        pick({ id: gif.id, previewUrl: gif.previewUrl });
+
+                        if (!hasRightColumn) {
+                            requestAnimationFrame(() =>
+                                pickRef.current?.scrollIntoView?.({
+                                    block: 'nearest',
+                                }),
+                            );
+                        }
+                    }}
+                    onQueryChange={setQuery}
+                    onRetry={retry}
+                />
             </div>
-            {others.length > 0 ? (
-                <ul
-                    aria-label={t('Answers')}
-                    className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-                >
-                    {others.map((answer) => (
-                        <li
-                            key={answer.playerId}
-                            className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-2 text-center text-sm text-muted-foreground"
-                        >
-                            <ImageIcon className="size-6" aria-hidden />
-                            {t(':name answered', {
-                                name:
-                                    names.get(answer.playerId) ?? t('Someone'),
-                            })}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                !round.myAnswer && (
-                    <p className="text-sm text-muted-foreground">
-                        {t('No GIFs yet.')}
-                    </p>
-                )
+            {!hasRightColumn && (
+                <Card ref={pickRef} className="p-4">
+                    <GifYourPick round={round} heading="h3" caption={caption} />
+                </Card>
             )}
             {room.isHost && (
-                <Button
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => void reveal()}
-                >
-                    <Eye className="size-4" />
-                    {t('Reveal the GIFs')}
-                </Button>
+                <div className="flex flex-col items-center gap-2">
+                    <Button
+                        variant="secondary"
+                        disabled={busy}
+                        aria-describedby={
+                            hasUnsentDraft ? 'gif-unsent-draft' : undefined
+                        }
+                        onClick={() => void reveal()}
+                    >
+                        <Eye aria-hidden />
+                        {t('Reveal the GIFs')}
+                    </Button>
+                    <p
+                        role="status"
+                        className="text-center text-sm text-skrum-warning-text empty:hidden"
+                    >
+                        {hasUnsentDraft && (
+                            <span id="gif-unsent-draft">
+                                {t(
+                                    'Your GIF is not sent yet: send it before the reveal.',
+                                )}
+                            </span>
+                        )}
+                    </p>
+                </div>
             )}
-            <GameGifPicker
-                open={picking}
-                onOpenChange={setPicking}
-                onPick={(gif) => void choose(gif)}
-                provider={round.gifProvider ?? null}
-            />
-        </section>
+        </div>
     );
 }

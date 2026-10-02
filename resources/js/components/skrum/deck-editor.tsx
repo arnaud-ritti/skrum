@@ -34,6 +34,11 @@ export interface DeckEditorProps {
     errors?: { name?: string; values?: string };
     saving?: boolean;
     nameRequired?: boolean;
+    /**
+     * Hides the name field, where the deck cannot be saved under a name:
+     * the deck of a running game. The save button then asks for no name.
+     */
+    withoutName?: boolean;
     saveLabel?: string;
     /**
      * Prefix of the control ids: `-name`, `-cards`, `-unknown`, `-coffee`.
@@ -139,6 +144,7 @@ export function DeckEditor({
     errors,
     saving = false,
     nameRequired = true,
+    withoutName = false,
     saveLabel,
     idPrefix = 'deck-new',
     onSave,
@@ -220,7 +226,9 @@ export function DeckEditor({
             : undefined);
 
     const saveDisabled =
-        saving || tooFew || (nameRequired && value.name.trim() === '');
+        saving ||
+        tooFew ||
+        (!withoutName && nameRequired && value.name.trim() === '');
 
     function setValues(next: string[], message: string) {
         onChange({ ...value, values: next });
@@ -484,52 +492,70 @@ export function DeckEditor({
         >
             <div className="grid gap-5 p-5 @3xl/deck:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
                 <div className="flex min-w-0 flex-col gap-5">
-                    <div className="flex flex-col gap-1.5">
-                        <label
-                            htmlFor={nameId}
-                            className="text-sm font-semibold"
-                        >
-                            {nameRequired ? t('Name') : t('Name (optional)')}
-                        </label>
-                        <Input
-                            id={nameId}
-                            maxLength={DeckMaxNameLength}
-                            value={value.name}
-                            onChange={(event) =>
-                                onChange({ ...value, name: event.target.value })
-                            }
-                            aria-invalid={errors?.name ? true : undefined}
-                            aria-describedby={
-                                errors?.name
-                                    ? nameErrorId
-                                    : nameRequired
-                                      ? undefined
-                                      : nameHelpId
-                            }
-                        />
-                        {!nameRequired && !errors?.name ? (
-                            <p
-                                id={nameHelpId}
-                                className="text-xs text-muted-foreground"
+                    {withoutName ? null : (
+                        <div className="flex flex-col gap-1.5">
+                            <label
+                                htmlFor={nameId}
+                                className="text-sm font-semibold"
                             >
-                                {t(
-                                    'Give it a name to save this deck for the team.',
-                                )}
-                            </p>
-                        ) : null}
-                        {errors?.name ? (
-                            <p
-                                id={nameErrorId}
-                                className="flex items-center gap-1.5 text-xs text-skrum-destructive-text"
-                            >
-                                <CircleAlert
-                                    aria-hidden="true"
-                                    className="size-3.5 shrink-0"
-                                />
-                                {errors.name}
-                            </p>
-                        ) : null}
-                    </div>
+                                {nameRequired
+                                    ? t('Name')
+                                    : t('Name (optional)')}
+                            </label>
+                            <Input
+                                id={nameId}
+                                maxLength={DeckMaxNameLength}
+                                value={value.name}
+                                onChange={(event) =>
+                                    onChange({
+                                        ...value,
+                                        name: event.target.value,
+                                    })
+                                }
+                                onKeyDown={(event) => {
+                                    if (event.key !== 'Enter') {
+                                        return;
+                                    }
+
+                                    event.preventDefault();
+
+                                    if (!saveDisabled) {
+                                        onSave();
+                                    }
+                                }}
+                                aria-invalid={errors?.name ? true : undefined}
+                                aria-describedby={
+                                    errors?.name
+                                        ? nameErrorId
+                                        : nameRequired
+                                          ? undefined
+                                          : nameHelpId
+                                }
+                            />
+                            {!nameRequired && !errors?.name ? (
+                                <p
+                                    id={nameHelpId}
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    {t(
+                                        'Give it a name to save this deck for the team.',
+                                    )}
+                                </p>
+                            ) : null}
+                            {errors?.name ? (
+                                <p
+                                    id={nameErrorId}
+                                    className="flex items-center gap-1.5 text-xs text-skrum-destructive-text"
+                                >
+                                    <CircleAlert
+                                        aria-hidden="true"
+                                        className="size-3.5 shrink-0"
+                                    />
+                                    {errors.name}
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
 
                     <div className="flex flex-col gap-1.5">
                         <span

@@ -1,6 +1,5 @@
+import { cn } from '@/lib/utils';
 import type { WhiteboardPreview, WhiteboardPreviewShape } from '@/types';
-
-const TextBarFill = '#ced4da';
 
 function ShapeMark({
     shape,
@@ -56,8 +55,8 @@ function ShapeMark({
                 y={y}
                 width={width}
                 height={height}
-                fill={TextBarFill}
                 stroke="none"
+                className="fill-whiteboard-paper-line"
             />
         );
     }
@@ -65,15 +64,27 @@ function ShapeMark({
     return <rect x={x} y={y} width={width} height={height} {...common} />;
 }
 
+/**
+ * The outline of a whiteboard scene. Fills and strokes are the scene's own
+ * colours (canvas data), so the paper is white in both themes.
+ */
 export function WhiteboardTemplatePreview({
     preview,
+    className,
 }: {
     preview: WhiteboardPreview;
+    className?: string;
 }) {
     const strokeWidth = Math.max(preview.width, preview.height) / 200;
 
     return (
-        <div className="rounded-md border border-black/10 bg-white p-2">
+        <div
+            data-slot="whiteboard-template-preview"
+            className={cn(
+                'rounded-md border bg-whiteboard-paper p-2',
+                className,
+            )}
+        >
             <svg
                 viewBox={`0 0 ${preview.width || 1} ${preview.height || 1}`}
                 preserveAspectRatio="xMidYMid meet"

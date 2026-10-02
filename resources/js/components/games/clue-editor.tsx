@@ -3,14 +3,20 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import GameRoundCluesController from '@/actions/App/Http/Controllers/Games/GameRoundCluesController';
 import { EmojiPicker } from '@/components/retro/emoji-picker';
-import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { ClueSlots, isClueEmoji } from '@/lib/games/clue';
 import type { GameClueResponse, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
+import { clueGapClasses, clueTileClasses } from './clue-row';
 import { useRoom } from './room-context';
 
 const SaveDelayMs = 300;
+
+const slotClass = cn(
+    'relative flex shrink-0 items-center justify-center border leading-none outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+    clueTileClasses.lg,
+);
 
 /**
  * The round's clue is the source of truth: edits patch it at once and the
@@ -69,8 +75,11 @@ export function ClueEditor({ round }: { round: GameRound }) {
     };
 
     return (
-        <div className="flex flex-col items-center gap-2">
-            <div className="flex justify-center gap-2">
+        <div
+            data-slot="clue-editor"
+            className="flex w-full flex-col items-center gap-3"
+        >
+            <div className={cn('flex justify-center', clueGapClasses.lg)}>
                 {Array.from({ length: ClueSlots }, (_, index) => {
                     const emoji = clue[index];
 
@@ -80,7 +89,10 @@ export function ClueEditor({ round }: { round: GameRound }) {
                                 key={index}
                                 type="button"
                                 aria-label={t('Remove :emoji', { emoji })}
-                                className="group relative flex size-14 items-center justify-center rounded-lg border text-3xl hover:bg-muted"
+                                className={cn(
+                                    slotClass,
+                                    'group bg-card shadow-card hover:bg-muted',
+                                )}
                                 onClick={() =>
                                     save(
                                         clue.filter(
@@ -90,7 +102,10 @@ export function ClueEditor({ round }: { round: GameRound }) {
                                 }
                             >
                                 {emoji}
-                                <X className="absolute -top-1.5 -right-1.5 size-4 rounded-full border bg-background opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" />
+                                <X
+                                    aria-hidden
+                                    className="absolute -top-1.5 -right-1.5 size-4 rounded-full border bg-background text-foreground"
+                                />
                             </button>
                         );
                     }
@@ -99,7 +114,10 @@ export function ClueEditor({ round }: { round: GameRound }) {
                         return (
                             <span
                                 key={index}
-                                className="size-14 rounded-lg border border-dashed"
+                                className={cn(
+                                    slotClass,
+                                    'border-dashed border-input',
+                                )}
                             />
                         );
                     }
@@ -111,18 +129,20 @@ export function ClueEditor({ round }: { round: GameRound }) {
                             emojiData={ctx.snapshot.emojiData}
                             onPick={add}
                         >
-                            <Button
+                            <button
                                 type="button"
-                                variant="outline"
-                                className="size-14"
+                                className={cn(
+                                    slotClass,
+                                    'border-dashed border-(--col-text) text-(--col-text) hover:bg-card/60',
+                                )}
                             >
-                                <Plus className="size-5" />
-                            </Button>
+                                <Plus aria-hidden className="size-5" />
+                            </button>
                         </EmojiPicker>
                     );
                 })}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-center text-xs text-muted-foreground">
                 {t(
                     'Describe the word with up to five emoji, without letters or digits.',
                 )}

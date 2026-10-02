@@ -1,0 +1,60 @@
+import type { LucideIcon } from 'lucide-react';
+import { useId } from 'react';
+import type { ReactNode, Ref } from 'react';
+import { Badge } from '@/components/ui/badge';
+
+type Props = {
+    icon: LucideIcon;
+    title: string;
+    count?: number;
+    /** Links, the "…" menu: at the end of the heading row. */
+    actions?: ReactNode;
+    /** Given when the heading receives the focus (after a row is deleted). */
+    headingRef?: Ref<HTMLHeadingElement>;
+    children: ReactNode;
+};
+
+/** One titled block of the main column of the team page. */
+export function TeamSection({
+    icon: Icon,
+    title,
+    count,
+    actions,
+    headingRef,
+    children,
+}: Props) {
+    const headingId = useId();
+
+    return (
+        <section
+            aria-labelledby={headingId}
+            className="flex min-w-0 flex-col gap-3"
+        >
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <h2
+                    id={headingId}
+                    ref={headingRef}
+                    tabIndex={headingRef === undefined ? undefined : -1}
+                    className="flex min-w-0 items-center gap-2 rounded-sm text-base font-title outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                    <Icon
+                        aria-hidden
+                        className="size-4 shrink-0 text-muted-foreground"
+                    />
+                    <span className="truncate">{title}</span>
+                    {count !== undefined && (
+                        <Badge variant="muted" shape="pill">
+                            {count}
+                        </Badge>
+                    )}
+                </h2>
+                {actions !== undefined && (
+                    <div className="flex min-w-0 items-center gap-2">
+                        {actions}
+                    </div>
+                )}
+            </div>
+            {children}
+        </section>
+    );
+}

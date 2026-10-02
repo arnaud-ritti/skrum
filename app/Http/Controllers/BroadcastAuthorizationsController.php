@@ -68,6 +68,10 @@ class BroadcastAuthorizationsController extends Controller
             return $this->authorizeUserChannel($request, $validated);
         }
 
+        if (str_starts_with($validated['channel_name'], 'private-team-games.')) {
+            return $this->authorizeTeamGamesChannel($request, $validated);
+        }
+
         abort(403);
     }
 
@@ -286,6 +290,33 @@ class BroadcastAuthorizationsController extends Controller
     private function authorizeTeamActionItemsChannel(Request $request, array $validated): JsonResponse
     {
         $teamId = Str::after($validated['channel_name'], 'private-team-action-items.');
+
+        abort_unless(Str::isUuid($teamId), 403);
+
+        $user = $request->user();
+
+        abort_if($user === null, 403);
+
+        $team = Team::query()->find($teamId);
+
+        abort_if($team === null, 403);
+        abort_unless($team->id === $teamId, 403);
+        abort_unless($user->can('view', $team), 403);
+
+        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * Only an authenticated user who can view the team; a room's guest
+     * never gets the team's rooms list.
+     *
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeTeamGamesChannel(Request $request, array $validated): JsonResponse
+    {
+        $teamId = Str::after($validated['channel_name'], 'private-team-games.');
 
         abort_unless(Str::isUuid($teamId), 403);
 

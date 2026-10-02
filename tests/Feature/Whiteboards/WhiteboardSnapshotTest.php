@@ -82,6 +82,24 @@ it('hides the guest link, the team link and the token from guests', function () 
     expect($response->getContent())->not->toContain($board->guest_token);
 });
 
+it('names the team of the board for a member and not for a guest', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    [$user] = whiteboardFacilitator($board);
+    $guest = whiteboardGuest($board);
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertOk()
+        ->assertJsonPath('board.teamName', $board->team->name);
+
+    auth()->logout();
+
+    $this->withCookies(whiteboardGuestCookie($guest))->withCredentials()
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertOk()
+        ->assertJsonPath('board.teamName', null);
+});
+
 it('gives the server time to the millisecond', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);

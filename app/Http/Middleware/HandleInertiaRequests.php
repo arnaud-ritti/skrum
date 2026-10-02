@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
+use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
@@ -10,6 +11,7 @@ use App\Support\Auth\SignInPolicy;
 use App\Support\Branding\BrandAssets;
 use App\Support\CurrentTeamResolver;
 use App\Support\InstanceSettings;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -63,13 +65,10 @@ class HandleInertiaRequests extends Middleware
             'locales' => config('skrum.locales'),
             'features' => [
                 'mcp' => (bool) config('skrum.mcp.enabled'),
+                'integrations' => IntegrationProvider::anyEnabled(),
             ],
             'translations' => fn (): array => $this->translations(app()->getLocale()),
-            'workspaces' => fn () => $request->user()?->workspaces()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Workspace $workspace) => $workspace->only(['id', 'name', 'slug']))
-                ->all() ?? [],
+            'workspaces' => fn (): array => $this->workspaces($request),
             'currentWorkspace' => fn (): ?array => $this->currentWorkspace($request),
             'teams' => fn (): array => $teamResolver->visibleTeams()
                 ->map(fn (Team $team): array => $team->only(['id', 'name']))
@@ -120,6 +119,43 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     slug: string,
+     *     teamsCount: int,
+     *     role: string
+     * }>
+     */
+    private function workspaces(Request $request): array
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return [];
+        }
+
+        return $user->workspaces()
+            ->withCount([
+                'teams',
+                'teams as member_teams_count' => fn (Builder $teams) => $teams
+                    ->whereHas('members', fn (Builder $members) => $members->whereKey($user->id)),
+            ])
+            ->orderBy('name')
+            ->get()
+            ->map(function (Workspace $workspace): array {
+                $role = $workspace->membership->role;
+
+                return [
+                    ...$workspace->only(['id', 'name', 'slug']),
+                    'teamsCount' => $role->canManageWorkspace() ? $workspace->teams_count : $workspace->member_teams_count,
+                    'role' => $role->value,
+                ];
+            })
+            ->all();
+    }
+
+    /**
      * @return array{
      *     id: string,
      *     name: string,
@@ -143,7 +179,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * @return array<string, string>
      */
-    private function translations(string $locale): array
+    public function translations(string $locale): array
     {
         $path = lang_path("{$locale}.json");
 

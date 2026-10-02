@@ -74,6 +74,7 @@ class BuildGameSnapshot
                 'game' => $room->game->value,
                 'locale' => $room->locale,
                 'access' => $room->access->value,
+                'reactionsEnabled' => $room->reactions_enabled,
                 'timerEndsAt' => $room->effectiveTimerEndsAt()?->toIso8601String(),
                 'isHost' => $isHost,
                 'canManage' => $isManager,

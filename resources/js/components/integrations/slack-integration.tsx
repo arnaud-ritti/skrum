@@ -3,8 +3,11 @@ import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -17,9 +20,8 @@ export function SlackIntegration({ card, scope }: Props) {
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={Hash}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, Hash, t)}
                 actions={
                     <ConnectLink
                         scope={scope}
@@ -33,16 +35,47 @@ export function SlackIntegration({ card, scope }: Props) {
                         'Post board links and results to a Slack channel. Slack asks for the channel while connecting; reconnect to change it.',
                     )}
                 </p>
-            </IntegrationCard>
+            </ProviderCard>
         );
     }
 
     const { settings } = connection;
 
     return (
-        <IntegrationCard
-            icon={Hash}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, Hash, t)}
+            details={
+                <ProviderDetails
+                    connection={connection}
+                    rows={[
+                        {
+                            label: t('Slack workspace'),
+                            value: settings.teamName,
+                        },
+                        {
+                            label: t('Channel'),
+                            value: settings.configurationUrl ? (
+                                <a
+                                    href={settings.configurationUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex max-w-full items-center gap-1 rounded-xs underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                                >
+                                    <span className="min-w-0 break-words">
+                                        {settings.channelName}
+                                    </span>
+                                    <ExternalLink
+                                        className="size-3 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                </a>
+                            ) : (
+                                settings.channelName
+                            ),
+                        },
+                    ]}
+                />
+            }
             actions={
                 <>
                     <ConnectLink
@@ -70,29 +103,6 @@ export function SlackIntegration({ card, scope }: Props) {
                     />
                 </>
             }
-        >
-            <IntegrationDetails
-                connection={connection}
-                rows={[
-                    { label: t('Slack workspace'), value: settings.teamName },
-                    {
-                        label: t('Channel'),
-                        value: settings.configurationUrl ? (
-                            <a
-                                href={settings.configurationUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 underline"
-                            >
-                                {settings.channelName}
-                                <ExternalLink className="size-3" aria-hidden />
-                            </a>
-                        ) : (
-                            settings.channelName
-                        ),
-                    },
-                ]}
-            />
-        </IntegrationCard>
+        />
     );
 }

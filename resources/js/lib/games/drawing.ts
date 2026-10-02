@@ -18,18 +18,25 @@ export const EraserColor: DrawingColor = 'white';
 
 export const DrawingColors: DrawingColor[] = [
     'black',
-    'red',
-    'orange',
-    'green',
-    'blue',
-    'purple',
+    'sun',
+    'apricot',
+    'coral',
+    'plum',
+    'iris',
+    'sky',
+    'lagoon',
+    'moss',
 ];
 
 export const DrawingSizes: DrawingSize[] = [4, 10, 24];
 
 const Scale = RasterWidth / DrawingWidth;
 
-/** Index 0 is the white background of a fresh raster. */
+/**
+ * Index 0 is the white background of a fresh raster. Indexes 0 to 6 never
+ * change: a stored raster or replay must keep its pixels. The eight theme
+ * inks are the light `--skrum-col-<name>-text` tokens.
+ */
 const Palette: [DrawingColor, [number, number, number]][] = [
     ['white', [255, 255, 255]],
     ['black', [23, 23, 23]],
@@ -38,6 +45,14 @@ const Palette: [DrawingColor, [number, number, number]][] = [
     ['green', [22, 163, 74]],
     ['blue', [37, 99, 235]],
     ['purple', [147, 51, 234]],
+    ['sun', [92, 76, 0]], // --skrum-col-sun-text
+    ['apricot', [115, 62, 0]], // --skrum-col-apricot-text
+    ['coral', [122, 52, 45]], // --skrum-col-coral-text
+    ['plum', [114, 52, 89]], // --skrum-col-plum-text
+    ['iris', [77, 66, 127]], // --skrum-col-iris-text
+    ['sky', [0, 83, 125]], // --skrum-col-sky-text
+    ['lagoon', [0, 89, 89]], // --skrum-col-lagoon-text
+    ['moss', [44, 90, 33]], // --skrum-col-moss-text
 ];
 
 const PaletteIndex = new Map<DrawingColor, number>(

@@ -75,7 +75,14 @@
 }
 
 /* Excalidraw 0.18.1 cannot swap its colour palette through props: a wrapper
-   with this class hides the native quick picks so WhiteboardColorBar replaces them. */
-.skrum-whiteboard--fallback-colors .excalidraw .color-picker__top-picks {
+   with this class hides the native quick picks so WhiteboardColorBar replaces them.
+   The separator that follows the picks has no class of its own; without both, the
+   row is its picker button alone, at the start of the row. */
+.skrum-whiteboard--fallback-colors .excalidraw .color-picker__top-picks,
+.skrum-whiteboard--fallback-colors .excalidraw .color-picker__top-picks + div {
     display: none;
+}
+
+.skrum-whiteboard--fallback-colors .excalidraw .color-picker-container {
+    grid-template-columns: 1.625rem;
 }

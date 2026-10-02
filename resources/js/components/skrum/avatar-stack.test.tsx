@@ -26,6 +26,27 @@ describe('AvatarStack', () => {
         expect(screen.getByText('+7')).toBeTruthy();
     });
 
+    it('counts the remainder from the total when only some people are given', () => {
+        const { container } = render(
+            <AvatarStack people={people.slice(0, 5)} total={11} max={3} />,
+        );
+
+        expect(
+            container.querySelectorAll('[data-slot="person-avatar"]'),
+        ).toHaveLength(3);
+        expect(screen.getByRole('img', { name: '8 more' })).toBeTruthy();
+    });
+
+    it('draws the remainder over the avatar it overlaps', () => {
+        render(<AvatarStack people={people} />);
+
+        expect(
+            screen
+                .getByRole('img', { name: '4 more' })
+                .classList.contains('relative'),
+        ).toBe(true);
+    });
+
     it('shows no remainder when everyone fits', () => {
         render(<AvatarStack people={people.slice(0, 3)} />);
 

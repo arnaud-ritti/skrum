@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Retros;
 
 use App\Actions\HealthCheck\PresentHealthProgress;
+use App\Actions\Retros\MarkRetroStarted;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
 use App\Events\Retros\HealthAnswered;
@@ -15,7 +16,10 @@ use Illuminate\Support\Facades\DB;
 
 class HealthCheckAnswersController extends Controller
 {
-    public function __construct(private PresentHealthProgress $presentHealthProgress) {}
+    public function __construct(
+        private PresentHealthProgress $presentHealthProgress,
+        private MarkRetroStarted $markRetroStarted,
+    ) {}
 
     public function update(Request $request, Retro $retro, string $statement): JsonResponse
     {
@@ -36,6 +40,8 @@ class HealthCheckAnswersController extends Controller
                 ['participant_id' => $participant->id, 'statement' => $statement],
                 ['score' => $score],
             );
+
+            $this->markRetroStarted->handle($locked);
 
             return $this->broadcastProgress($locked);
         });

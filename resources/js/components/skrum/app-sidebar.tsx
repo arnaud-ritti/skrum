@@ -196,9 +196,11 @@ function TeamSwitcher({
                         {team !== null && workspace !== null && (
                             <span className="truncate text-xs text-muted-foreground">
                                 {workspace.name} ·{' '}
-                                {t(':count members', {
-                                    count: team.membersCount,
-                                })}
+                                {team.membersCount === 1
+                                    ? t('1 member')
+                                    : t(':count members', {
+                                          count: team.membersCount,
+                                      })}
                             </span>
                         )}
                     </span>
@@ -388,7 +390,7 @@ export function AppSidebar({
 
             <SidebarFooter>
                 {hasFooterLinks && (
-                    <nav aria-label={t('Settings')}>
+                    <nav aria-label={t('Team and administration')}>
                         <NavEntries
                             entries={footerEntries}
                             active={active}

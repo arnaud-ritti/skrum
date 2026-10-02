@@ -1,7 +1,5 @@
-import { Settings2 } from 'lucide-react';
+import { Crown, Settings, Trash2, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import GameGuestTokensController from '@/actions/App/Http/Controllers/Games/GameGuestTokensController';
 import GameHostsController from '@/actions/App/Http/Controllers/Games/GameHostsController';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +20,7 @@ import { RoomSettingsDialog } from './room-settings-dialog';
 
 type OpenDialog = 'settings' | 'delete' | null;
 
+/** The guest link is not here: it lives in the Share dialog, behind "Invite". */
 export function RoomMenu() {
     const ctx = useRoom();
     const { t } = useTrans();
@@ -51,52 +50,38 @@ export function RoomMenu() {
         }
     };
 
-    const regenerateLink = async () => {
-        const result = await ctx.run(
-            retroRequest<{ guestUrl: string | null }>(
-                GameGuestTokensController.store(room.id),
-            ),
-        );
-
-        if (result) {
-            toast(
-                t('A new guest link was created. The old one no longer works.'),
-            );
-            await ctx.refetch();
-        }
-    };
-
     return (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         aria-label={t('Room menu')}
+                        disabled={ctx.sessionExpired}
                     >
-                        <Settings2 className="size-4" />
+                        <Settings aria-hidden />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" size="wide">
                     {room.canManage && (
                         <DropdownMenuItem
                             onSelect={() => setChosen('settings')}
                         >
-                            {t('Room settings')}
-                        </DropdownMenuItem>
-                    )}
-                    {room.canManage && room.access === 'link' && (
-                        <DropdownMenuItem
-                            onSelect={() => void regenerateLink()}
-                        >
-                            {t('Regenerate guest link')}
+                            <Settings aria-hidden />
+                            <span className="truncate">
+                                {t('Room settings')}
+                            </span>
                         </DropdownMenuItem>
                     )}
                     {room.isHost && hostCandidates.length > 0 && (
                         <DropdownMenuSub>
                             <DropdownMenuSubTrigger>
-                                {t('Hand over hosting')}
+                                <UserRoundCog aria-hidden />
+                                <span className="truncate">
+                                    {t('Hand over hosting')}
+                                </span>
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                                 {hostCandidates.map((player) => (
@@ -104,7 +89,9 @@ export function RoomMenu() {
                                         key={player.id}
                                         onSelect={() => void setHost(player.id)}
                                     >
-                                        {player.name}
+                                        <span className="truncate">
+                                            {player.name}
+                                        </span>
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuSubContent>
@@ -114,7 +101,8 @@ export function RoomMenu() {
                         <DropdownMenuItem
                             onSelect={() => void setHost(me.playerId)}
                         >
-                            {t('Become host')}
+                            <Crown aria-hidden />
+                            <span className="truncate">{t('Become host')}</span>
                         </DropdownMenuItem>
                     )}
                     {room.canDelete && (
@@ -124,16 +112,21 @@ export function RoomMenu() {
                                 variant="destructive"
                                 onSelect={() => setChosen('delete')}
                             >
-                                {t('Delete room')}
+                                <Trash2 aria-hidden />
+                                <span className="truncate">
+                                    {t('Delete room')}
+                                </span>
                             </DropdownMenuItem>
                         </>
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
-            <RoomSettingsDialog
-                open={open === 'settings'}
-                onOpenChange={(next) => setChosen(next ? 'settings' : null)}
-            />
+            {open === 'settings' && (
+                <RoomSettingsDialog
+                    open
+                    onOpenChange={(next) => setChosen(next ? 'settings' : null)}
+                />
+            )}
             <DeleteRoomDialog
                 open={open === 'delete'}
                 onOpenChange={(next) => setChosen(next ? 'delete' : null)}

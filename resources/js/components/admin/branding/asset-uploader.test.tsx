@@ -118,6 +118,75 @@ describe('AssetUploader', () => {
         await vi.waitFor(() => expect(onRemove).toHaveBeenCalledOnce());
     });
 
+    it('takes a dropped file like a chosen one', () => {
+        const { container, onUpload } = setup();
+        const file = new File(['x'], 'logo.png', { type: 'image/png' });
+
+        fireEvent.drop(
+            container.querySelector(
+                '[data-slot=asset-drop-zone]',
+            ) as HTMLElement,
+            { dataTransfer: { files: [file] } },
+        );
+
+        expect(onUpload).toHaveBeenCalledExactlyOnceWith(file);
+    });
+
+    it('undoes a staged file without confirmation and marks it as not saved', () => {
+        const onRemove = vi.fn();
+        const onUndo = vi.fn();
+
+        renderWithProviders(
+            <AssetUploader
+                label="Light logo"
+                url="blob:staged"
+                fileName="atlas.png"
+                staged
+                onUpload={vi.fn()}
+                onRemove={onRemove}
+                onUndo={onUndo}
+            />,
+        );
+
+        expect(screen.getByText('atlas.png')).toBeTruthy();
+        expect(screen.getByText('Not saved')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(onUndo).toHaveBeenCalledOnce();
+        expect(onRemove).not.toHaveBeenCalled();
+        expect(document.activeElement?.textContent).toBe('Replace');
+    });
+
+    it('undoes a staged removal', () => {
+        const onUndo = vi.fn();
+
+        renderWithProviders(
+            <AssetUploader
+                label="Light logo"
+                url={null}
+                staged
+                onUpload={vi.fn()}
+                onRemove={vi.fn()}
+                onUndo={onUndo}
+            />,
+        );
+
+        expect(screen.getByText('No image')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+        expect(onUndo).toHaveBeenCalledOnce();
+    });
+
+    it('offers no undo for a stored image', () => {
+        setup('/brand/logo-light?v=3');
+
+        expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    });
+
     it('offers no removal without an image', () => {
         setup();
 

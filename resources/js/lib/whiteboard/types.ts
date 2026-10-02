@@ -23,6 +23,8 @@ export type WhiteboardSnapshot = {
         locked: boolean;
         followEnabled: boolean;
         timerEndsAt: string | null;
+        /** Null for a guest. */
+        teamName: string | null;
     };
     me: {
         id: string;

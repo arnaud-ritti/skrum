@@ -70,6 +70,8 @@ export type GamesRoom = {
     status?: GameRoomStatus;
     minPlayers?: number;
     players?: GameRoomPlayer[];
+    /** Replaces the rounds count beside the game, e.g. "started 4 min ago". */
+    context?: string;
 };
 
 export type GameOption = { value: GameKind; label: string; available: boolean };
@@ -161,10 +163,6 @@ function useCounts() {
             count === 1
                 ? t(':count win', { count })
                 : t(':count wins', { count }),
-        points: (count: number) =>
-            count === 1
-                ? t(':count point', { count: formatNumber(count) })
-                : t(':count points', { count: formatNumber(count) }),
     };
 }
 
@@ -451,12 +449,13 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
     const AccessIcon = room.access === 'link' ? Globe : Users;
     const accessLabel =
         room.access === 'link' ? t('Open by link') : t('Team only');
+    const rounds = counts.rounds(room.roundsCount);
     const context =
         missing > 0
             ? missing === 1
                 ? t('needs 1 more player')
                 : t('needs :count more players', { count: missing })
-            : counts.rounds(room.roundsCount);
+            : (room.context ?? rounds);
     const label = [
         title,
         gameLabel,
@@ -496,6 +495,7 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                             <AvatarStack
                                 size="xs"
                                 max={3}
+                                total={room.playersCount}
                                 people={room.players.map((player) => ({
                                     name: player.name,
                                     src: player.avatarUrl,
@@ -506,6 +506,14 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                         <span className="text-xs text-muted-foreground">
                             {counts.players(room.playersCount)}
                         </span>
+                        {context !== rounds && (
+                            <span
+                                data-slot="game-room-rounds"
+                                className="text-xs text-muted-foreground"
+                            >
+                                {rounds}
+                            </span>
+                        )}
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <AccessIcon className="size-3.5" aria-hidden />
                             <span className="truncate">{accessLabel}</span>
@@ -549,7 +557,7 @@ export function GameRoomList({
         <ul
             data-slot="game-room-list"
             className={cn(
-                'relative flex max-h-120 flex-col gap-2 overflow-y-auto p-1',
+                'relative flex flex-col gap-2 p-1 lg:max-h-120 lg:overflow-y-auto',
                 className,
             )}
         >
@@ -628,7 +636,6 @@ function PodiumPlace({
     isMe: boolean;
 }) {
     const { t } = useTrans();
-    const counts = useCounts();
 
     if (!entry) {
         return (
@@ -654,7 +661,7 @@ function PodiumPlace({
             data-me={isMe || undefined}
             className={cn('flex min-w-0 flex-col items-center gap-1', order)}
         >
-            <div className="flex min-w-0 flex-col items-center gap-1 px-1 text-center">
+            <div className="flex w-full min-w-0 flex-col items-center gap-1 px-1 text-center">
                 {place === 1 && (
                     <Crown
                         aria-hidden
@@ -674,16 +681,37 @@ function PodiumPlace({
                     {entry.name}
                     {isMe && <span className="sr-only"> ({t('you')})</span>}
                 </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                    {counts.points(entry.points)}
+                <span
+                    data-slot="podium-points"
+                    className={cn(
+                        'text-xs font-semibold whitespace-nowrap tabular-nums',
+                        place === 1
+                            ? 'text-skrum-primary-text'
+                            : 'text-muted-foreground',
+                    )}
+                >
+                    {formatNumber(entry.points)} {t('pts')}
                 </span>
+                {(entry.streak ?? 0) >= StreakBadgeFrom && (
+                    <Badge
+                        variant="outline"
+                        icon={Flame}
+                        className="max-w-full"
+                    >
+                        <span className="truncate">
+                            {t(':count-week streak', {
+                                count: entry.streak ?? 0,
+                            })}
+                        </span>
+                    </Badge>
+                )}
             </div>
             <div
                 className={cn(
-                    'flex w-full items-center justify-center rounded-t-md text-sm font-bold',
+                    'flex w-full items-start justify-center rounded-t-md border border-b-0 pt-2 font-display text-xl font-bold',
                     step,
                     place === 1
-                        ? 'bg-skrum-primary-soft text-skrum-primary-text'
+                        ? 'border-primary/35 bg-skrum-primary-soft text-skrum-primary-text'
                         : 'bg-muted text-muted-foreground',
                 )}
             >
@@ -730,7 +758,7 @@ function LeaderboardBody({
                 <ol
                     start={4}
                     data-slot="leaderboard-list"
-                    className="relative flex max-h-80 flex-col gap-1 overflow-y-auto"
+                    className="relative flex max-h-80 flex-col divide-y overflow-y-auto border-t"
                 >
                     {rest.map((entry, index) => {
                         const me = isMe(entry);
@@ -741,8 +769,8 @@ function LeaderboardBody({
                                 data-slot="leaderboard-row"
                                 data-me={me || undefined}
                                 className={cn(
-                                    'flex items-center gap-3 rounded-md px-2 py-1.5 text-sm',
-                                    me && 'bg-accent',
+                                    'flex items-center gap-3 p-2 text-sm',
+                                    me && 'rounded-md bg-accent',
                                 )}
                             >
                                 <span className="w-6 shrink-0 text-right text-muted-foreground tabular-nums">
@@ -765,20 +793,28 @@ function LeaderboardBody({
                                             </span>
                                         )}
                                     </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {counts.rounds(entry.roundsPlayed)} ·{' '}
-                                        {counts.wins(entry.wins)}
+                                    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                        <span className="truncate text-xs text-muted-foreground">
+                                            {counts.rounds(entry.roundsPlayed)}{' '}
+                                            · {counts.wins(entry.wins)}
+                                        </span>
+                                        {(entry.streak ?? 0) >=
+                                            StreakBadgeFrom && (
+                                            <Badge
+                                                variant="outline"
+                                                icon={Flame}
+                                                className="max-w-full"
+                                            >
+                                                <span className="truncate">
+                                                    {t(':count-week streak', {
+                                                        count:
+                                                            entry.streak ?? 0,
+                                                    })}
+                                                </span>
+                                            </Badge>
+                                        )}
                                     </span>
                                 </span>
-                                {(entry.streak ?? 0) >= StreakBadgeFrom && (
-                                    <Badge variant="outline" icon={Flame}>
-                                        <span className="truncate">
-                                            {t(':count-week streak', {
-                                                count: entry.streak ?? 0,
-                                            })}
-                                        </span>
-                                    </Badge>
-                                )}
                                 <span className="shrink-0 font-semibold tabular-nums">
                                     {formatNumber(entry.points)}{' '}
                                     <span className="text-xs font-normal text-muted-foreground">

@@ -3,15 +3,13 @@ import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingButton } from '@/components/skrum/loading-button';
+import { TextField } from '@/components/skrum/text-field';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import type { IntegrationScope, PriorityLevel, TeamIntegration } from '@/types';
+import { TrackerPanel } from './tracker-parts';
 
 type Props = {
     scope: IntegrationScope;
@@ -66,14 +64,21 @@ export function GitHubPriorityLabels({ scope, connection }: Props) {
             router.reload({ only: ['providers'] });
         } catch (error) {
             if (error instanceof RetroRequestError && error.status === 422) {
-                setErrors(
-                    Object.fromEntries(
-                        Levels.map((level) => [
-                            level,
-                            error.errors[`priority_labels.${level}`]?.[0],
-                        ]),
-                    ),
+                const refused = Object.fromEntries(
+                    Levels.map((level) => [
+                        level,
+                        error.errors[`priority_labels.${level}`]?.[0],
+                    ]),
                 );
+                const first = Levels.find(
+                    (level) => refused[level] !== undefined,
+                );
+
+                setErrors(refused);
+
+                if (first !== undefined) {
+                    document.getElementById(`${id}-${first}`)?.focus();
+                }
             } else {
                 toast.error(
                     integrationErrorMessage(error, t('Something went wrong.')),
@@ -85,45 +90,45 @@ export function GitHubPriorityLabels({ scope, connection }: Props) {
     };
 
     return (
-        <section className="space-y-3 border-t pt-4">
-            <div>
-                <h3 className="text-sm font-medium">{t('Priority labels')}</h3>
-                <p className="text-xs text-muted-foreground">
-                    {t(
-                        'Label added to exported issues for each priority. Leave empty to add none; skrum never creates labels.',
-                    )}
-                </p>
-            </div>
-            <form className="space-y-2" onSubmit={(event) => void save(event)}>
-                {Levels.map((level) => (
-                    <div
-                        key={level}
-                        className="grid gap-1 sm:grid-cols-[8rem_1fr] sm:items-center"
-                    >
-                        <Label htmlFor={`${id}-${level}`}>
-                            {levelLabels[level]}
-                        </Label>
-                        <div>
-                            <Input
-                                id={`${id}-${level}`}
-                                maxLength={50}
-                                value={labels[level]}
-                                onChange={(event) =>
-                                    setLabels({
-                                        ...labels,
-                                        [level]: event.target.value,
-                                    })
-                                }
-                            />
-                            <InputError message={errors[level]} />
-                        </div>
-                    </div>
-                ))}
-                <Button type="submit" size="sm" disabled={busy}>
-                    {busy && <Spinner />}
-                    {t('Save')}
-                </Button>
+        <TrackerPanel
+            slot="github-priority-labels"
+            title={t('Priority labels')}
+            description={t(
+                'Label added to exported issues for each priority. Leave empty to add none; skrum never creates labels.',
+            )}
+        >
+            <form
+                className="flex min-w-0 flex-col gap-3"
+                onSubmit={(event) => void save(event)}
+            >
+                <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] items-start gap-3">
+                    {Levels.map((level) => (
+                        <TextField
+                            key={level}
+                            id={`${id}-${level}`}
+                            label={levelLabels[level]}
+                            maxLength={50}
+                            autoComplete="off"
+                            value={labels[level]}
+                            error={errors[level]}
+                            onChange={(event) =>
+                                setLabels({
+                                    ...labels,
+                                    [level]: event.target.value,
+                                })
+                            }
+                        />
+                    ))}
+                </div>
+                <LoadingButton
+                    type="submit"
+                    size="sm"
+                    className="max-w-full self-start"
+                    loading={busy}
+                >
+                    <span className="truncate">{t('Save')}</span>
+                </LoadingButton>
             </form>
-        </section>
+        </TrackerPanel>
     );
 }

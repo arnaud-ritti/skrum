@@ -54,6 +54,23 @@ describe('Timer', () => {
         expect(state(container)).toBe('low');
     });
 
+    it('offers "+2 min" when told to add 120 seconds', () => {
+        const onAdd = vi.fn();
+
+        renderWithProviders(
+            <Timer
+                remainingSeconds={90}
+                onStart={() => {}}
+                onStop={() => {}}
+                onAdd={onAdd}
+                addSeconds={120}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: '+2 min' }));
+        expect(onAdd).toHaveBeenCalledWith(120);
+    });
+
     it('shows done with nudge that reduced motion disables', () => {
         const { container } = renderWithProviders(
             <Timer remainingSeconds={0} />,
@@ -152,7 +169,7 @@ describe('Timer', () => {
             <Timer remainingSeconds={120} onPause={onPause} onAdd={onAdd} />,
         );
         fireEvent.click(screen.getByRole('button', { name: 'Pause timer' }));
-        fireEvent.click(screen.getByRole('button', { name: '1 min' }));
+        fireEvent.click(screen.getByRole('button', { name: '+1 min' }));
 
         expect(onPause).toHaveBeenCalledTimes(1);
         expect(onAdd).toHaveBeenCalledWith(60);

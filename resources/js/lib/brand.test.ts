@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { showsPoweredBy } from '@/lib/brand';
+import { isRebranded, showsPoweredBy } from '@/lib/brand';
 import type { Brand } from '@/types';
 
 const skrum: Brand = {
@@ -13,6 +13,7 @@ const skrum: Brand = {
 describe('showsPoweredBy', () => {
     it('stays silent for the product under its own name and logo', () => {
         expect(showsPoweredBy(skrum)).toBe(false);
+        expect(showsPoweredBy({ ...skrum, name: 'Skrum' })).toBe(false);
         expect(showsPoweredBy(undefined)).toBe(false);
     });
 
@@ -32,5 +33,23 @@ describe('showsPoweredBy', () => {
                 poweredBy: false,
             }),
         ).toBe(false);
+    });
+});
+
+describe('isRebranded', () => {
+    it('is false for the product, with or without its diaeresis', () => {
+        expect(isRebranded(skrum)).toBe(false);
+        expect(isRebranded({ ...skrum, name: 'Skrum' })).toBe(false);
+        expect(isRebranded(undefined)).toBe(false);
+    });
+
+    it('is true with another name or a logo, credit line or not', () => {
+        const silent: Brand = { ...skrum, name: 'Acme', poweredBy: false };
+
+        expect(isRebranded({ ...skrum, name: 'Acme' })).toBe(true);
+        expect(
+            isRebranded({ ...skrum, logoLightUrl: '/brand/logo-light' }),
+        ).toBe(true);
+        expect(isRebranded(silent)).toBe(true);
     });
 });

@@ -59,11 +59,37 @@ const ListComponents: Partial<EmojiPickerListComponents> = {
     Emoji,
 };
 
-export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
-    const { t } = useTrans();
+/** The viewer's emoji list: the one given, else the retro board's. */
+export function useEmojiData(
+    emojiData?: EmojiDataLocation,
+): EmojiDataLocation | null {
     const board = useOptionalBoard();
-    const data = emojiData ?? board?.board.emojiData ?? null;
-    const [browsing, setBrowsing] = useState(false);
+
+    return emojiData ?? board?.board.emojiData ?? null;
+}
+
+type EmojiSearchDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    label: string;
+    onPick: (emoji: string) => void;
+    /** Where the full emoji list lives; defaults to the retro board's. */
+    emojiData?: EmojiDataLocation;
+    /** Where focus goes on close, when the opener is no longer mounted. */
+    onCloseAutoFocus?: (event: Event) => void;
+};
+
+/** The full emoji set, searchable. Renders nothing without an emoji list. */
+export function EmojiSearchDialog({
+    open,
+    onOpenChange,
+    label,
+    onPick,
+    emojiData,
+    onCloseAutoFocus,
+}: EmojiSearchDialogProps) {
+    const { t } = useTrans();
+    const data = useEmojiData(emojiData);
     const [unavailable, setUnavailable] = useState(false);
 
     /**
@@ -88,6 +114,64 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
         },
         [],
     );
+
+    if (data === null) {
+        return null;
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent
+                {...dragIsolation}
+                aria-describedby={undefined}
+                onCloseAutoFocus={onCloseAutoFocus}
+                className="max-w-sm"
+            >
+                <DialogTitle>{label}</DialogTitle>
+                {unavailable && (
+                    <p role="alert" className="text-sm text-destructive">
+                        {t('Emoji list unavailable')}
+                    </p>
+                )}
+                <Frimousse.Root
+                    className="flex h-80 flex-col"
+                    locale={data.locale}
+                    emojibaseUrl={data.baseUrl}
+                    resolveEmojiData={resolveEmojiData}
+                    onEmojiSelect={({ emoji }) => {
+                        onOpenChange(false);
+                        onPick(emoji);
+                    }}
+                >
+                    <Frimousse.Search
+                        className="mb-2 rounded-md border bg-background px-2 py-1 text-sm"
+                        placeholder={t('Search emoji…')}
+                        aria-label={t('Search emoji…')}
+                    />
+                    <Frimousse.Viewport className="relative flex-1">
+                        {!unavailable && (
+                            <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
+                                {t('Loading…')}
+                            </Frimousse.Loading>
+                        )}
+                        <Frimousse.Empty className="p-2 text-sm text-muted-foreground">
+                            {t('No emoji found.')}
+                        </Frimousse.Empty>
+                        <Frimousse.List
+                            className="select-none"
+                            components={ListComponents}
+                        />
+                    </Frimousse.Viewport>
+                </Frimousse.Root>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
+    const { t } = useTrans();
+    const data = useEmojiData(emojiData);
+    const [browsing, setBrowsing] = useState(false);
 
     return (
         <>
@@ -121,55 +205,13 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
-            {data !== null && (
-                <Dialog open={browsing} onOpenChange={setBrowsing}>
-                    <DialogContent
-                        {...dragIsolation}
-                        aria-describedby={undefined}
-                        className="max-w-sm"
-                    >
-                        <DialogTitle>{label}</DialogTitle>
-                        {unavailable && (
-                            <p
-                                role="alert"
-                                className="text-sm text-destructive"
-                            >
-                                {t('Emoji list unavailable')}
-                            </p>
-                        )}
-                        <Frimousse.Root
-                            className="flex h-80 flex-col"
-                            locale={data.locale}
-                            emojibaseUrl={data.baseUrl}
-                            resolveEmojiData={resolveEmojiData}
-                            onEmojiSelect={({ emoji }) => {
-                                setBrowsing(false);
-                                onPick(emoji);
-                            }}
-                        >
-                            <Frimousse.Search
-                                className="mb-2 rounded-md border bg-background px-2 py-1 text-sm"
-                                placeholder={t('Search emoji…')}
-                                aria-label={t('Search emoji…')}
-                            />
-                            <Frimousse.Viewport className="relative flex-1">
-                                {!unavailable && (
-                                    <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
-                                        {t('Loading…')}
-                                    </Frimousse.Loading>
-                                )}
-                                <Frimousse.Empty className="p-2 text-sm text-muted-foreground">
-                                    {t('No emoji found.')}
-                                </Frimousse.Empty>
-                                <Frimousse.List
-                                    className="select-none"
-                                    components={ListComponents}
-                                />
-                            </Frimousse.Viewport>
-                        </Frimousse.Root>
-                    </DialogContent>
-                </Dialog>
-            )}
+            <EmojiSearchDialog
+                open={browsing}
+                onOpenChange={setBrowsing}
+                label={label}
+                onPick={onPick}
+                emojiData={emojiData}
+            />
         </>
     );
 }

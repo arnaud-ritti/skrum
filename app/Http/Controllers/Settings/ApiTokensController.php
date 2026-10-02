@@ -39,7 +39,7 @@ class ApiTokensController extends Controller
                 ->get()
                 ->map(fn (PersonalAccessToken $token): array => $this->presentToken($token, $viewableTeamIds))
                 ->values(),
-            'teams' => $this->teamsByWorkspace($user),
+            'teamGroups' => $this->teamsByWorkspace($user),
             'mcpUrl' => url('/mcp'),
             'expirationOptions' => collect(self::Expirations)
                 ->map(fn (string $value): array => ['value' => $value, 'label' => $this->expirationLabel($value)])

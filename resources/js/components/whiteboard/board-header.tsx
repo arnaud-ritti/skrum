@@ -1,0 +1,308 @@
+import { Download, Pencil } from 'lucide-react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
+import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+import { SessionPresence } from '@/components/session/session-presence';
+import { SessionTitle } from '@/components/session/session-title';
+import type { SessionCrumb } from '@/components/session/session-title';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { retroRequest } from '@/lib/retro/api';
+import { presenceFor, presenceSlot } from '@/lib/whiteboard/presence-slot';
+import { BoardFacilitation } from './board-facilitation';
+import { BoardMenu } from './board-menu';
+import { BoardShare } from './board-share';
+import { TitleMaxLength } from '@/components/whiteboard/board-dialogs';
+
+const FromMd = '(min-width: 768px)';
+/** The facilitation tools show their labels from here: below, the breadcrumb and the name keep the room. */
+const From2xl = '(min-width: 1536px)';
+
+function useMatches(query: string): boolean {
+    return useSyncExternalStore(
+        (onChange) => {
+            const list = window.matchMedia(query);
+
+            list.addEventListener('change', onChange);
+
+            return () => list.removeEventListener('change', onChange);
+        },
+        () => window.matchMedia(query).matches,
+        () => true,
+    );
+}
+
+/** From `md` the facilitator's tools are in the header; below, under it. */
+export function useFacilitationInHeader(): boolean {
+    return useMatches(FromMd);
+}
+
+type BoardSnapshot = Pick<
+    WhiteboardState['snapshot'],
+    'board' | 'me' | 'links'
+>;
+
+/** The viewer as the end of the header shows them, in their colour on the board. */
+export function boardSelf(snapshot: BoardSnapshot) {
+    const { me } = snapshot;
+
+    return {
+        name: me.name,
+        avatarUrl: me.avatarUrl,
+        isGuest: me.isGuest,
+        presence: presenceSlot(me.id),
+    };
+}
+
+/** "team › Whiteboards", before the name. A guest is not told the team and follows no link. */
+export function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
+    const { t } = useTrans();
+    const { board, links } = snapshot;
+    const boards: SessionCrumb = {
+        label: t('Whiteboards'),
+        href: links.team === null ? null : `${links.team}#sessions`,
+    };
+
+    return board.teamName === null
+        ? [boards]
+        : [{ label: board.teamName, href: links.team }, boards];
+}
+
+/**
+ * The board's name at the end of its breadcrumb (the logo of the header leads
+ * back to the team), renamed in place by who may rename it (the facilitator):
+ * a press on it, or F2, turns it into a field; Enter saves, and so does
+ * leaving the field with a changed name; Escape cancels. While it saves the
+ * field is read-only, not disabled, so it keeps the focus if the save fails.
+ */
+export function BoardTitle({ state }: { state: WhiteboardState }) {
+    const { t } = useTrans();
+    const request = useWhiteboardRequest();
+    const { board, me } = state.snapshot;
+    const crumbs = useBoardCrumbs(state.snapshot);
+    const [draft, setDraft] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const trigger = useRef<HTMLButtonElement>(null);
+    const restoreFocus = useRef(false);
+    const isClosing = useRef(false);
+    const isEditing = draft !== null;
+
+    useEffect(() => {
+        if (isEditing || !restoreFocus.current) {
+            return;
+        }
+
+        restoreFocus.current = false;
+        trigger.current?.focus();
+    }, [isEditing]);
+
+    const open = (): void => {
+        isClosing.current = false;
+        setDraft(board.title);
+    };
+
+    /** Leaving the field by itself sends the focus nowhere: it is already elsewhere. */
+    const close = (toTrigger = true): void => {
+        isClosing.current = true;
+        restoreFocus.current = toTrigger;
+        setDraft(null);
+    };
+
+    const save = async (toTrigger = true): Promise<void> => {
+        const title = (draft ?? '').trim();
+
+        if (saving || isClosing.current) {
+            return;
+        }
+
+        if (title === '' || title === board.title) {
+            close(toTrigger);
+
+            return;
+        }
+
+        setSaving(true);
+
+        const done = await request(
+            retroRequest(WhiteboardSettingsController.update(board.id), {
+                title,
+            }),
+        );
+
+        if (done !== undefined) {
+            await state.refetch();
+            close(toTrigger);
+        }
+
+        setSaving(false);
+    };
+
+    const onFieldKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            void save();
+
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+        }
+    };
+
+    const onTriggerKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+        if (event.key !== 'F2') {
+            return;
+        }
+
+        event.preventDefault();
+        open();
+    };
+
+    if (!me.isFacilitator) {
+        return <SessionTitle crumbs={crumbs}>{board.title}</SessionTitle>;
+    }
+
+    return (
+        <SessionTitle
+            crumbs={crumbs}
+            badges={
+                !isEditing && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t('Rename the board')}
+                        aria-keyshortcuts="F2"
+                        onClick={open}
+                        onKeyDown={onTriggerKeyDown}
+                        className="hidden shrink-0 md:inline-flex"
+                    >
+                        <Pencil aria-hidden />
+                    </Button>
+                )
+            }
+        >
+            {isEditing ? (
+                <span className="block p-1">
+                    <Input
+                        autoFocus
+                        required
+                        maxLength={TitleMaxLength}
+                        value={draft}
+                        readOnly={saving}
+                        aria-busy={saving || undefined}
+                        aria-label={t('Board name')}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={onFieldKeyDown}
+                        onBlur={() => void save(false)}
+                        onFocus={(event) => event.target.select()}
+                        className="h-8 w-64 max-w-full text-base font-semibold"
+                    />
+                </span>
+            ) : (
+                <span className="block p-1">
+                    <button
+                        ref={trigger}
+                        type="button"
+                        title={t('Rename the board')}
+                        aria-description={t('Rename the board')}
+                        aria-keyshortcuts="F2"
+                        onClick={open}
+                        onKeyDown={onTriggerKeyDown}
+                        className="block max-w-full truncate rounded-sm text-left outline-offset-2 outline-ring hover:bg-accent focus-visible:outline-2"
+                    >
+                        {board.title}
+                    </button>
+                </span>
+            )}
+        </SessionTitle>
+    );
+}
+
+export function BoardPresence({
+    state,
+    follow,
+}: {
+    state: WhiteboardState;
+    /** Place left for the "Follow :name" pill (roadmap WB-3). */
+    follow?: ReactNode;
+}) {
+    const { board, me } = state.snapshot;
+
+    return (
+        <>
+            <SessionPresence
+                online={state.online}
+                selfId={me.id}
+                facilitatorId={board.facilitatorMemberId}
+                presenceFor={presenceFor}
+                className="shrink-0 flex-nowrap"
+            />
+            {follow}
+        </>
+    );
+}
+
+export type BoardActionsProps = {
+    state: WhiteboardState;
+    /** Opens the canvas's export dialog; absent until the canvas is ready. */
+    onExport?: () => void;
+    hideMyCursor: boolean;
+    onHideMyCursorChange: (hidden: boolean) => void;
+    /** The sticky tool, when the canvas's own toolbar has no room for it. */
+    sticky?: ReactNode;
+    /** Place left for the "Comments" button (roadmap WB-2). */
+    comments?: ReactNode;
+};
+
+/** Right of the header: facilitation tools, Export, Share and the board menu. */
+export function BoardActions({
+    state,
+    onExport,
+    hideMyCursor,
+    onHideMyCursorChange,
+    sticky,
+    comments,
+}: BoardActionsProps) {
+    const { t } = useTrans();
+    const { me } = state.snapshot;
+    const facilitationInHeader = useFacilitationInHeader();
+    const hasRoomForLabels = useMatches(From2xl);
+
+    return (
+        <>
+            {me.isFacilitator && facilitationInHeader && (
+                <BoardFacilitation state={state} compact={!hasRoomForLabels} />
+            )}
+            {sticky}
+            <span
+                aria-hidden
+                data-slot="board-header-separator"
+                className="hidden h-6 w-px shrink-0 bg-border md:block"
+            />
+            {comments}
+            <Button
+                type="button"
+                variant="outline"
+                aria-label={t('Export')}
+                aria-disabled={onExport === undefined || undefined}
+                onClick={() => onExport?.()}
+                className="hidden shrink-0 max-lg:size-9 max-lg:px-0 md:inline-flex"
+            >
+                <Download aria-hidden />
+                <span className="truncate max-lg:sr-only">{t('Export')}</span>
+            </Button>
+            {!me.isGuest && <BoardShare state={state} />}
+            <BoardMenu
+                state={state}
+                hideMyCursor={hideMyCursor}
+                onHideMyCursorChange={onHideMyCursorChange}
+            />
+        </>
+    );
+}

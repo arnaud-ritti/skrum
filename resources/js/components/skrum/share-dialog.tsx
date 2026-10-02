@@ -111,12 +111,15 @@ export type ShareDialogProps = {
         channel: ShareChannel,
         includeGuestLink: boolean,
     ) => Promise<boolean | void>;
+    /** Under the channel buttons (delivery lines); shown even when no channel is left. */
     channelsExtra?: ReactNode;
     members?: ShareMember[];
     onInvite?: (memberIds: string[], role: SessionRole) => Promise<void>;
     tab?: ShareTab;
     onTabChange?: (tab: ShareTab) => void;
     isMobile?: boolean;
+    /** Id of the "Allow guests" switch control, for a page that targets it. */
+    guestSwitchId?: string;
 };
 
 const roleIcons: Record<SessionRole, LucideIcon> = {
@@ -776,7 +779,7 @@ function ChannelsSection({
             className="flex min-w-0 flex-col gap-3"
         >
             <h3 className="text-sm font-semibold">{t('Post a link')}</h3>
-            {allowsGuestLink && (
+            {allowsGuestLink && channels.length > 0 && (
                 <div className="flex items-center gap-2">
                     <Checkbox
                         id={checkboxId}
@@ -790,23 +793,25 @@ function ChannelsSection({
                     </Label>
                 </div>
             )}
-            <div className="flex flex-wrap gap-2">
-                {channels.map((channel) => (
-                    <Button
-                        key={channel}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void post(channel)}
-                        className="max-w-full"
-                    >
-                        <span className="truncate">
-                            {postLinkLabel(channel, t)}
-                        </span>
-                    </Button>
-                ))}
-            </div>
+            {channels.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {channels.map((channel) => (
+                        <Button
+                            key={channel}
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null}
+                            onClick={() => void post(channel)}
+                            className="max-w-full"
+                        >
+                            <span className="truncate">
+                                {postLinkLabel(channel, t)}
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            )}
             {extra}
         </section>
     );
@@ -836,6 +841,7 @@ function ShareBody({
         channels = [],
         onShareToChannel,
         channelsExtra,
+        guestSwitchId,
     } = props;
     const { copied, copy } = useCopied(props.onCopy);
     const roleId = useId();
@@ -845,7 +851,9 @@ function ShareBody({
     const url = invite.url ?? '';
     const canChange = canManage && onChange !== undefined;
     const showChannels =
-        canManage && onShareToChannel !== undefined && channels.length > 0;
+        canManage &&
+        onShareToChannel !== undefined &&
+        (channels.length > 0 || Boolean(channelsExtra));
     const expiresText =
         invite.expiresAt !== undefined && invite.expiresAt !== null
             ? formatDate(invite.expiresAt)
@@ -967,6 +975,7 @@ function ShareBody({
 
     const guestSwitch = canChange && (
         <Switch
+            id={guestSwitchId}
             checked={invite.allowGuests}
             onCheckedChange={(checked) => onChange({ allowGuests: checked })}
             label={t('Allow guests')}
@@ -1258,7 +1267,9 @@ export function ShareDialog(props: ShareDialogProps) {
         session.teamName,
         session.presentCount === undefined
             ? undefined
-            : t(':count present', { count: session.presentCount }),
+            : session.presentCount === 1
+              ? t('1 present')
+              : t(':count present', { count: session.presentCount }),
     ]
         .filter((part) => part !== undefined && part !== '')
         .join(' · ');

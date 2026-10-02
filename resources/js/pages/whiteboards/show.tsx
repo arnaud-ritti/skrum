@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { RefreshCw } from 'lucide-react';
 import {
     Component,
     Suspense,
@@ -8,9 +9,11 @@ import {
     type ErrorInfo,
     type ReactNode,
 } from 'react';
-import { Button } from '@/components/ui/button';
+import { SessionTitle } from '@/components/session/session-title';
+import { EmptyState } from '@/components/skrum/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
+import SessionLayout from '@/layouts/skrum/session-layout';
 import type { WhiteboardSnapshot } from '@/lib/whiteboard/types';
 
 type Props = { snapshot: WhiteboardSnapshot };
@@ -42,15 +45,43 @@ class ChunkBoundary extends Component<
     }
 }
 
+/** The frame of the board while its canvas is not there: loading, or failed. */
+function BoardFrame({
+    title,
+    teamUrl,
+    children,
+}: {
+    title: string;
+    teamUrl: string | null;
+    children: ReactNode;
+}) {
+    return (
+        <SessionLayout
+            chrome="logo"
+            homeHref={teamUrl}
+            title={<SessionTitle>{title}</SessionTitle>}
+        >
+            {children}
+        </SessionLayout>
+    );
+}
+
 function CanvasError({ onRetry }: { onRetry: () => void }) {
     const { t } = useTrans();
 
     return (
-        <div className="flex h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-            <p>{t('The canvas could not be loaded.')}</p>
-            <Button variant="outline" onClick={onRetry}>
-                {t('Retry')}
-            </Button>
+        <div className="flex h-full items-center justify-center overflow-y-auto p-6">
+            <EmptyState
+                module="whiteboard"
+                title={t('The canvas could not be loaded.')}
+                description={t('Check your connection, then try again.')}
+                action={{
+                    label: t('Retry'),
+                    icon: RefreshCw,
+                    variant: 'outline',
+                    onClick: onRetry,
+                }}
+            />
         </div>
     );
 }
@@ -58,6 +89,7 @@ function CanvasError({ onRetry }: { onRetry: () => void }) {
 export default function ShowWhiteboard({ snapshot }: Props) {
     const [attempt, setAttempt] = useState(0);
     const [Board, setBoard] = useState<BoardComponent>(() => lazy(loadBoard));
+    const { title } = snapshot.board;
 
     const retry = () => {
         setBoard(() => lazy(loadBoard));
@@ -66,12 +98,22 @@ export default function ShowWhiteboard({ snapshot }: Props) {
 
     return (
         <>
-            <Head title={snapshot.board.title} />
+            <Head title={title} />
             <ChunkBoundary
                 key={attempt}
-                fallback={<CanvasError onRetry={retry} />}
+                fallback={
+                    <BoardFrame title={title} teamUrl={snapshot.links.team}>
+                        <CanvasError onRetry={retry} />
+                    </BoardFrame>
+                }
             >
-                <Suspense fallback={<Skeleton className="h-dvh w-full" />}>
+                <Suspense
+                    fallback={
+                        <BoardFrame title={title} teamUrl={snapshot.links.team}>
+                            <Skeleton className="size-full rounded-none" />
+                        </BoardFrame>
+                    }
+                >
                     <Board snapshot={snapshot} />
                 </Suspense>
             </ChunkBoundary>

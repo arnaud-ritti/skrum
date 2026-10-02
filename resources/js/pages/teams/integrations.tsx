@@ -1,6 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
-import Heading from '@/components/heading';
+import { Head } from '@inertiajs/react';
+import { useId } from 'react';
 import { GitHubIntegration } from '@/components/integrations/github-integration';
 import { JiraDataCenterIntegration } from '@/components/integrations/jira-data-center-integration';
 import { JiraIntegration } from '@/components/integrations/jira-integration';
@@ -9,8 +8,8 @@ import { SlackIntegration } from '@/components/integrations/slack-integration';
 import { StatusSyncSection } from '@/components/integrations/status-sync-section';
 import { UrlChannelIntegration } from '@/components/integrations/url-channel-integration';
 import { WebhookIntegration } from '@/components/integrations/webhook-integration';
+import { TeamSettingsShell } from '@/components/integrations/team-settings-shell';
 import { TelegramIntegration } from '@/components/integrations/telegram-integration';
-import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     IntegrationProviderCard,
@@ -41,29 +40,37 @@ export default function TeamIntegrations({
     webhookEvents,
 }: Props) {
     const { t } = useTrans();
+    const titleId = useId();
     const scope: IntegrationScope = {
         workspace: workspace.slug,
         team: team.id,
     };
 
     return (
-        <>
+        <TeamSettingsShell
+            workspace={workspace}
+            team={team}
+            active="integrations"
+        >
             <Head title={t('Integrations')} />
-            <div className="max-w-2xl space-y-6 p-4">
-                <Heading
-                    title={t('Integrations')}
-                    description={t(
-                        'Connect :team to the tools it already uses.',
-                        {
+            <section
+                data-slot="team-integrations"
+                aria-labelledby={titleId}
+                className="flex min-w-0 flex-col gap-4"
+            >
+                <div className="flex flex-col gap-0.5">
+                    <h2
+                        id={titleId}
+                        className="text-xl font-title tracking-heading"
+                    >
+                        {t('Integrations')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        {t('Connect :team to the tools it already uses.', {
                             team: team.name,
-                        },
-                    )}
-                />
-                <Button variant="outline" size="sm" asChild>
-                    <Link href={TeamsController.show(scope)}>
-                        {t('Back to the team')}
-                    </Link>
-                </Button>
+                        })}
+                    </p>
+                </div>
                 {providers.map((card) => {
                     switch (card.provider) {
                         case 'slack':
@@ -156,7 +163,7 @@ export default function TeamIntegrations({
                             return null;
                     }
                 })}
-            </div>
-        </>
+            </section>
+        </TeamSettingsShell>
     );
 }

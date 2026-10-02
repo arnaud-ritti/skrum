@@ -173,10 +173,12 @@ function Options({
     colors,
     usedBy,
     title,
+    labels,
 }: {
     colors: readonly AnyColumnColor[];
     usedBy?: Partial<Record<AnyColumnColor, string>>;
     title: string;
+    labels?: 'visible' | 'tooltip';
 }) {
     const [value, setValue] = useState<AnyColumnColor>(colors[2]);
 
@@ -188,6 +190,7 @@ function Options({
                 colors={colors}
                 usedBy={usedBy}
                 columnTitle={title}
+                labels={labels}
             />
         </div>
     );
@@ -261,6 +264,30 @@ export default function TemplateEditorSection() {
                     <Options
                         colors={serverColumnColors}
                         title={ten.columns[0].title}
+                    />
+                </div>
+            </State>
+            <State
+                label={t(
+                    'Colour swatches alone: the name is the tooltip and the accessible name; eight colours, one used by another column, a long column title',
+                )}
+            >
+                <div className="flex flex-wrap items-start gap-4">
+                    <Options
+                        colors={columnColors}
+                        title={t('Ideas')}
+                        labels="tooltip"
+                    />
+                    <Options
+                        colors={columnColors}
+                        title={t('Ideas')}
+                        usedBy={{ sun: t('Continue') }}
+                        labels="tooltip"
+                    />
+                    <Options
+                        colors={columnColors}
+                        title={ten.columns[0].title}
+                        labels="tooltip"
                     />
                 </div>
             </State>

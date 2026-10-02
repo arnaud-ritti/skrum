@@ -1,7 +1,14 @@
 import { Link } from '@inertiajs/react';
+import type { LucideIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 
-export type SubNavItem = { label: string; href: NavHref; current: boolean };
+export type SubNavItem = {
+    label: string;
+    href: NavHref;
+    current: boolean;
+    icon?: LucideIcon;
+};
 
 export function SubNav({
     items,
@@ -10,19 +17,39 @@ export function SubNav({
     items: SubNavItem[];
     label: string;
 }) {
+    const nav = useRef<HTMLElement>(null);
+    const currentLabel = items.find((item) => item.current)?.label;
+
+    /** Below `lg` the list scrolls sideways: the entry in use must not stay cut at its edge. */
+    useEffect(() => {
+        const current = nav.current?.querySelector('[aria-current="page"]');
+
+        if (current && typeof current.scrollIntoView === 'function') {
+            current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    }, [currentLabel]);
+
     return (
         <nav
+            ref={nav}
             aria-label={label}
-            className="flex gap-1 overflow-x-auto lg:w-56 lg:shrink-0 lg:flex-col lg:overflow-visible"
+            className="flex gap-0.5 overflow-x-auto lg:sticky lg:top-20 lg:w-54 lg:shrink-0 lg:flex-col lg:self-start lg:overflow-visible"
         >
             {items.map((item) => (
                 <Link
                     key={item.label}
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
-                    className="min-h-9 max-w-full shrink-0 truncate rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-skrum-primary-soft aria-[current=page]:text-skrum-primary-text"
+                    className="group flex min-h-9 max-w-full shrink-0 items-center gap-2.5 rounded-md px-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:font-semibold aria-[current=page]:text-accent-foreground lg:min-h-8.5"
                 >
-                    {item.label}
+                    {item.icon && (
+                        <item.icon
+                            aria-hidden="true"
+                            data-slot="sub-nav-icon"
+                            className="size-4 shrink-0 text-muted-foreground group-aria-[current=page]:text-skrum-primary-text"
+                        />
+                    )}
+                    <span className="truncate">{item.label}</span>
                 </Link>
             ))}
         </nav>

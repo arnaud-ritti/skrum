@@ -1,22 +1,12 @@
 import { router } from '@inertiajs/react';
 import { MessageCircle, MessagesSquare } from 'lucide-react';
 import { useId, useState } from 'react';
-import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import IntegrationUrlsController from '@/actions/App/Http/Controllers/Integrations/IntegrationUrlsController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import InputError from '@/components/input-error';
+import { FormDialog } from '@/components/skrum/confirm-dialog';
+import { TextField } from '@/components/skrum/text-field';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
@@ -27,8 +17,11 @@ import type {
 } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -37,6 +30,12 @@ type Props = {
 };
 
 type FieldErrors = { url?: string; channel_label?: string };
+
+function textOf(data: FormData, name: string): string {
+    const value = data.get(name);
+
+    return typeof value === 'string' ? value : '';
+}
 
 /**
  * Microsoft Teams and Mattermost connect with a pasted webhook URL. The URL
@@ -49,9 +48,6 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
     const connection = card.connection;
     const isTeams = card.provider === 'msteams';
     const [open, setOpen] = useState(false);
-    const [busy, setBusy] = useState(false);
-    const [url, setUrl] = useState('');
-    const [channelLabel, setChannelLabel] = useState('');
     const [errors, setErrors] = useState<FieldErrors>({});
 
     const description = isTeams
@@ -74,19 +70,17 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
               'In Mattermost, create an incoming webhook for the channel and paste its URL.',
           );
 
-    const openDialog = () => {
-        setUrl('');
-        setChannelLabel(connection?.settings.channelLabel ?? '');
+    const changeOpen = (next: boolean) => {
         setErrors({});
-        setOpen(true);
+        setOpen(next);
     };
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault();
-        setBusy(true);
+    /** A rejection keeps the dialog open: the form dialog closes on success only. */
+    const submit = async (data: FormData) => {
         setErrors({});
 
-        const label = channelLabel.trim();
+        const url = textOf(data, 'url');
+        const label = textOf(data, 'channel_label').trim();
 
         try {
             await retroRequest(
@@ -104,144 +98,150 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                     channel_label: label === '' ? null : label,
                 },
             );
-            setOpen(false);
-            toast.success(
-                connection === null
-                    ? t(':provider connected.', { provider: card.label })
-                    : t('Connection saved.'),
-            );
-            router.reload({ only: ['providers'] });
         } catch (error) {
             if (error instanceof RetroRequestError && error.status === 422) {
-                setErrors({
+                const refused: FieldErrors = {
                     url: error.errors.url?.[0],
                     channel_label: error.errors.channel_label?.[0],
-                });
+                };
+
+                setErrors(refused);
+                document
+                    .getElementById(refused.url === undefined ? labelId : urlId)
+                    ?.focus();
             } else {
                 toast.error(
                     integrationErrorMessage(error, t('Something went wrong.')),
                 );
             }
-        } finally {
-            setBusy(false);
+
+            throw error;
         }
+
+        toast.success(
+            connection === null
+                ? t(':provider connected.', { provider: card.label })
+                : t('Connection saved.'),
+        );
+        router.reload({ only: ['providers'] });
     };
 
     const destination =
         connection?.settings.channelLabel ?? connection?.settings.host ?? '';
 
     return (
-        <IntegrationCard
-            icon={isTeams ? MessagesSquare : MessageCircle}
-            card={card}
-            actions={
-                connection === null ? (
-                    <Button size="sm" onClick={openDialog}>
-                        {t('Connect')}
-                    </Button>
-                ) : (
-                    <>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={openDialog}
-                        >
-                            {t('Replace URL')}
-                        </Button>
-                        {connection.status === 'active' && (
-                            <TestConnectionButton
-                                scope={scope}
-                                connection={connection}
-                                label={t('Send a test message')}
-                                successMessage={t('Test message sent.')}
-                            />
-                        )}
-                        <DisconnectIntegrationDialog
-                            scope={scope}
-                            card={card}
+        <>
+            <ProviderCard
+                {...providerCardProps(
+                    card,
+                    isTeams ? MessagesSquare : MessageCircle,
+                    t,
+                )}
+                details={
+                    connection !== null && (
+                        <ProviderDetails
                             connection={connection}
-                            description={t(
-                                'Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.',
-                                { channel: destination, provider: card.label },
-                            )}
+                            rows={[
+                                {
+                                    label: t('Host'),
+                                    value: connection.settings.host,
+                                },
+                                {
+                                    label: t('Channel'),
+                                    value:
+                                        connection.settings.channelLabel ?? '—',
+                                },
+                            ]}
                         />
-                    </>
-                )
-            }
-        >
-            {connection === null ? (
-                <p className="text-sm text-muted-foreground">{description}</p>
-            ) : (
-                <IntegrationDetails
-                    connection={connection}
-                    rows={[
-                        { label: t('Host'), value: connection.settings.host },
-                        {
-                            label: t('Channel'),
-                            value: connection.settings.channelLabel ?? '—',
-                        },
-                    ]}
-                />
-            )}
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent>
-                    <form className="space-y-4" onSubmit={submit}>
-                        <DialogTitle>
-                            {connection === null
-                                ? t('Connect :provider', {
-                                      provider: card.label,
-                                  })
-                                : t('Replace the URL')}
-                        </DialogTitle>
-                        <DialogDescription>{help}</DialogDescription>
-                        <div className="space-y-2">
-                            <Label htmlFor={urlId}>{t('Webhook URL')}</Label>
-                            <Input
-                                id={urlId}
-                                type="url"
-                                required={connection === null}
-                                autoComplete="off"
-                                value={url}
-                                onChange={(event) => setUrl(event.target.value)}
-                            />
-                            <InputError message={errors.url} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor={labelId}>
-                                {t('Channel label (optional)')}
-                            </Label>
-                            <Input
-                                id={labelId}
-                                maxLength={80}
-                                autoComplete="off"
-                                value={channelLabel}
-                                onChange={(event) =>
-                                    setChannelLabel(event.target.value)
-                                }
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                {t(
-                                    'Shown on this page only, to remember where messages go.',
-                                )}
-                            </p>
-                            <InputError message={errors.channel_label} />
-                        </div>
-                        <DialogFooter className="gap-2">
+                    )
+                }
+                actions={
+                    connection === null ? (
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="max-w-full"
+                            onClick={() => changeOpen(true)}
+                        >
+                            <span className="truncate">{t('Connect')}</span>
+                        </Button>
+                    ) : (
+                        <>
                             <Button
                                 type="button"
-                                variant="secondary"
-                                onClick={() => setOpen(false)}
+                                size="sm"
+                                variant="outline"
+                                className="max-w-full"
+                                onClick={() => changeOpen(true)}
                             >
-                                {t('Cancel')}
+                                <span className="truncate">
+                                    {t('Replace URL')}
+                                </span>
                             </Button>
-                            <Button type="submit" disabled={busy}>
-                                {busy && <Spinner />}
-                                {connection === null ? t('Connect') : t('Save')}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </IntegrationCard>
+                            {connection.status === 'active' && (
+                                <TestConnectionButton
+                                    scope={scope}
+                                    connection={connection}
+                                    label={t('Send a test message')}
+                                    successMessage={t('Test message sent.')}
+                                />
+                            )}
+                            <DisconnectIntegrationDialog
+                                scope={scope}
+                                card={card}
+                                connection={connection}
+                                description={t(
+                                    'Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.',
+                                    {
+                                        channel: destination,
+                                        provider: card.label,
+                                    },
+                                )}
+                            />
+                        </>
+                    )
+                }
+            >
+                {connection === null && (
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
+                )}
+            </ProviderCard>
+            <FormDialog
+                open={open}
+                onOpenChange={changeOpen}
+                title={
+                    connection === null
+                        ? t('Connect :provider', { provider: card.label })
+                        : t('Replace the URL')
+                }
+                description={help}
+                submitLabel={connection === null ? t('Connect') : t('Save')}
+                onSubmit={submit}
+            >
+                <TextField
+                    id={urlId}
+                    name="url"
+                    type="url"
+                    label={t('Webhook URL')}
+                    required={connection === null}
+                    autoComplete="off"
+                    error={errors.url}
+                />
+                <TextField
+                    id={labelId}
+                    name="channel_label"
+                    label={t('Channel label (optional)')}
+                    maxLength={80}
+                    autoComplete="off"
+                    defaultValue={connection?.settings.channelLabel ?? ''}
+                    description={t(
+                        'Shown on this page only, to remember where messages go.',
+                    )}
+                    error={errors.channel_label}
+                />
+            </FormDialog>
+        </>
     );
 }

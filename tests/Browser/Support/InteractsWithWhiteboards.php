@@ -177,12 +177,12 @@ trait InteractsWithWhiteboards
         return $element;
     }
 
-    protected function addWhiteboardSticky(mixed $page, string $colour = 'Yellow'): mixed
+    protected function addWhiteboardSticky(mixed $page, string $colour = 'Sun'): mixed
     {
         $page->assertPresent('button[aria-label="Sticky note"]')
             ->click('button[aria-label="Sticky note"]')
-            ->click("[aria-label=\"Add a sticky note: {$colour}\"]")
-            ->assertNotPresent('[role="menu"]');
+            ->click("[role=\"radiogroup\"][aria-label=\"Fill colour\"] [role=\"radio\"][aria-label=\"{$colour}\"]")
+            ->assertNotPresent('[data-slot="popover-content"]');
 
         return $page;
     }

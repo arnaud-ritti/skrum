@@ -4,7 +4,12 @@ import {
     type WhisperChannel,
 } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
+import { subscribeToTheme } from '@/lib/whiteboard/appearance';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import {
+    forgetPresenceCursorColors,
+    presenceCursorColor,
+} from '@/lib/whiteboard/presence-slot';
 
 const SendEveryMs = 40;
 const TimeToLiveMs = 3000;
@@ -41,19 +46,6 @@ function isCursorMessage(raw: unknown): raw is CursorMessage {
     );
 }
 
-function colorFor(memberId: string): { background: string; stroke: string } {
-    let hash = 0;
-
-    for (const character of memberId) {
-        hash = (hash * 31 + character.charCodeAt(0)) % 360;
-    }
-
-    return {
-        background: `hsl(${hash} 70% 45%)`,
-        stroke: `hsl(${hash} 70% 30%)`,
-    };
-}
-
 export function useWhiteboardCursors({
     api,
     presence,
@@ -85,6 +77,15 @@ export function useWhiteboardCursors({
 
     const render = useRef<() => void>(() => {});
 
+    useEffect(
+        () =>
+            subscribeToTheme(() => {
+                forgetPresenceCursorColors();
+                render.current();
+            }),
+        [],
+    );
+
     useEffect(() => {
         if (!api) {
             render.current = () => {};
@@ -96,18 +97,27 @@ export function useWhiteboardCursors({
 
         render.current = () => {
             const collaborators = new Map(
-                [...known].map(([memberId, cursor]) => [
-                    memberId,
-                    {
-                        id: memberId,
-                        username:
-                            roster.current.find(
-                                (member) => member.id === memberId,
-                            )?.name ?? '',
-                        color: colorFor(memberId),
-                        pointer: { x: cursor.x, y: cursor.y, tool: 'pointer' },
-                    },
-                ]),
+                [...known].map(([memberId, cursor]) => {
+                    const member = roster.current.find(
+                        (candidate) => candidate.id === memberId,
+                    );
+
+                    return [
+                        memberId,
+                        {
+                            id: memberId,
+                            username: member?.name ?? '',
+                            // The canvas's own list of people is not drawn on the canvas: it shows the picture, not the cursor colour.
+                            avatarUrl: member?.avatarUrl,
+                            color: presenceCursorColor(memberId),
+                            pointer: {
+                                x: cursor.x,
+                                y: cursor.y,
+                                tool: 'pointer',
+                            },
+                        },
+                    ];
+                }),
             );
 
             api.updateScene({ collaborators: collaborators as never });

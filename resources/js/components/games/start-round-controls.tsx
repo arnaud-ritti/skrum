@@ -83,7 +83,7 @@ export function StartRoundControls({ label }: { label: string }) {
     };
 
     return (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex max-w-full flex-col items-center gap-3">
             {needsLeader && !isWaiting && (
                 <LeaderPicker
                     players={onlinePlayers}
@@ -106,9 +106,10 @@ export function StartRoundControls({ label }: { label: string }) {
                     busy || isWaiting || (needsLeader && leaderId === null)
                 }
                 onClick={() => void start()}
+                className="max-w-full"
             >
-                <Play className="size-4" />
-                {label}
+                <Play aria-hidden />
+                <span className="truncate">{label}</span>
             </Button>
         </div>
     );

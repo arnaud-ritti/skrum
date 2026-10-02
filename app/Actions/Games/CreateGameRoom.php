@@ -14,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class CreateGameRoom
 {
-    public function __construct(private GameRulesRegistry $gameRulesRegistry) {}
+    public function __construct(
+        private GameRulesRegistry $gameRulesRegistry,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
+    ) {}
 
     public function handle(Team $team, User $user, string $name, GameKind $game, GameRoomAccess $access): GameRoom
     {
@@ -46,6 +49,8 @@ class CreateGameRoom
             $host = $room->players()->create(['user_id' => $user->id]);
 
             $room->forceFill(['host_player_id' => $host->id])->save();
+
+            $this->announceTeamGameRoom->changed($room);
 
             return $room;
         });

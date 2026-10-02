@@ -1,5 +1,7 @@
 # Feature roadmap after the front-end rewrite
 
+> **Changes by the owner, 2026-10-02 (after this file was written):** plan 28 (whiteboard collaboration: comments, follow, sticky authors, convert to actions) and plan 30 (mentions) are removed and move to the backlog; scheduling ("Schedule…", start time, "starts in 5 min") leaves plan 22 for the backlog; registration that creates a workspace and a team joins plan 25 (onboarding); the whole-word guess of hangman joins plan 27; the four extra games stay in plan 27. The roadmap is plans 19–27 and 29. Rows below are not yet edited.
+
 Date: 2026-10-02. Source: the owner's third round of answers (`owner-answers-2026-10-02.md`, "Features to specify after the rewrite").
 
 Rule (spec §5 rule 13): **rewrite first, features after.** Plans 18e to 18g deliver every existing screen faithful to its mockup with what the server already holds. A mockup element with no data is omitted there and listed in the table "Deviations from the mockup" of plan 18e; its place is left in the screen (the "Places left" line of each task). Each such element is a feature below. Every feature gets its own spec, then its plan: nothing here is a specification.

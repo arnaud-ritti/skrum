@@ -11,7 +11,10 @@ use Illuminate\Http\Request;
 
 class FindGamePlayer
 {
-    public function __construct(private ResolveParticipant $resolveParticipant) {}
+    public function __construct(
+        private ResolveParticipant $resolveParticipant,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
+    ) {}
 
     public function handle(Request $request, GameRoom $room): ?GamePlayer
     {
@@ -22,10 +25,16 @@ class FindGamePlayer
         $user = $request->user();
 
         if ($user !== null && $user->can('view', $room->team)) {
-            return GamePlayer::query()->firstOrCreate([
+            $player = GamePlayer::query()->firstOrCreate([
                 'game_room_id' => $room->id,
                 'user_id' => $user->id,
             ]);
+
+            if ($player->wasRecentlyCreated) {
+                $this->announceTeamGameRoom->changed($room);
+            }
+
+            return $player;
         }
 
         return $this->guest($request, $room);

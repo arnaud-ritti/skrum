@@ -30,7 +30,7 @@ export function CardComposer({ columnId }: { columnId: string }) {
 
         setSending(true);
         const response = await ctx.run(
-            retroRequest<{ card: CardPayload }>(
+            retroRequest<{ card: CardPayload; writersCount: number }>(
                 CardsController.store(ctx.board.retro.id),
                 {
                     column_id: columnId,
@@ -43,6 +43,10 @@ export function CardComposer({ columnId }: { columnId: string }) {
 
         if (response) {
             ctx.apply({ type: 'cards.upsert', cards: [response.card] });
+            ctx.apply({
+                type: 'writers.set',
+                writersCount: response.writersCount,
+            });
             setContent('');
             setGif(null);
         }

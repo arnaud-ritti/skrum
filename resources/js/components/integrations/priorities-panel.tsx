@@ -10,7 +10,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -20,6 +19,7 @@ import type {
     ProviderPriority,
     TeamIntegration,
 } from '@/types';
+import { PanelError, PanelLoading, TrackerPanel } from './tracker-parts';
 
 const Levels: PriorityLevel[] = ['high', 'medium', 'low'];
 
@@ -45,12 +45,15 @@ type Props = {
     connection: TeamIntegration;
 };
 
+type Failure = { error: unknown };
+
 export function PrioritiesPanel({ scope, connection }: Props) {
     const { t } = useTrans();
     const [priorities, setPriorities] = useState<ProviderPriority[] | null>(
         null,
     );
-    const [error, setError] = useState<string | null>(null);
+    const [failure, setFailure] = useState<Failure | null>(null);
+    const [attempt, setAttempt] = useState(0);
     const [busy, setBusy] = useState(false);
     const { workspace, team } = scope;
     const integration = connection.id;
@@ -76,24 +79,24 @@ export function PrioritiesPanel({ scope, connection }: Props) {
             .then((loaded) => {
                 if (!cancelled) {
                     setPriorities(loaded);
-                    setError(null);
+                    setFailure(null);
                 }
             })
-            .catch((failure: unknown) => {
+            .catch((error: unknown) => {
                 if (!cancelled) {
-                    setError(
-                        integrationErrorMessage(
-                            failure,
-                            t('Something went wrong.'),
-                        ),
-                    );
+                    setFailure({ error });
                 }
             });
 
         return () => {
             cancelled = true;
         };
-    }, [workspace, team, integration, t]);
+    }, [workspace, team, integration, attempt]);
+
+    const retry = () => {
+        setFailure(null);
+        setAttempt((previous) => previous + 1);
+    };
 
     const current = (level: PriorityLevel): string => {
         if (!(level in map)) {
@@ -145,9 +148,9 @@ export function PrioritiesPanel({ scope, connection }: Props) {
             );
             toast.success(t('Priority mapping saved.'));
             router.reload({ only: ['providers'] });
-        } catch (failure) {
+        } catch (error) {
             toast.error(
-                integrationErrorMessage(failure, t('Something went wrong.')),
+                integrationErrorMessage(error, t('Something went wrong.')),
             );
         } finally {
             setBusy(false);
@@ -155,24 +158,37 @@ export function PrioritiesPanel({ scope, connection }: Props) {
     };
 
     return (
-        <section className="space-y-3 border-t pt-4">
-            <div>
-                <h3 className="text-sm font-medium">{t('Priorities')}</h3>
-                <p className="text-xs text-muted-foreground">
-                    {t('Priority of the issues created from action items.')}
-                </p>
-            </div>
-            {error !== null && (
-                <p className="text-sm text-destructive">{error}</p>
+        <TrackerPanel
+            slot="tracker-priorities"
+            title={t('Priorities')}
+            description={t('Priority of the issues created from action items.')}
+        >
+            {failure !== null && (
+                <PanelError
+                    message={integrationErrorMessage(
+                        failure.error,
+                        t('Something went wrong.'),
+                    )}
+                    retryLabel={t('Retry')}
+                    onRetry={retry}
+                />
             )}
-            {priorities === null && error === null && <Spinner />}
+            {priorities === null && failure === null && (
+                <PanelLoading rows={2} />
+            )}
             {priorities !== null && (
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
                     {Levels.map((level) => (
-                        <div key={level} className="space-y-1">
-                            <p className="text-xs text-muted-foreground">
+                        <div
+                            key={level}
+                            className="flex min-w-0 flex-col gap-1.5"
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="text-sm font-medium"
+                            >
                                 {levelLabels[level]}
-                            </p>
+                            </span>
                             <Select
                                 value={current(level)}
                                 disabled={busy}
@@ -213,6 +229,6 @@ export function PrioritiesPanel({ scope, connection }: Props) {
                     ))}
                 </div>
             )}
-        </section>
+        </TrackerPanel>
     );
 }

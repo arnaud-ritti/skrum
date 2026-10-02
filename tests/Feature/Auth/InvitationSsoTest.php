@@ -46,7 +46,7 @@ it('offers the providers to a guest with a pending invitation only', function ()
     auth()->logout();
     $invitation->forceFill(['expires_at' => now()->subMinute()])->save();
 
-    $this->get(route('invitations.show', 'secret-token'))->assertInertia(fn (Assert $page) => $page->where('ssoProviders', []));
+    $this->get(route('invitations.show', 'secret-token'))->assertInertia(fn (Assert $page) => $page->missing('ssoProviders'));
     $this->get(route('invitations.show', 'unknown'))->assertNotFound()->assertInertia(fn (Assert $page) => $page->missing('ssoProviders'));
 });
 
@@ -209,3 +209,21 @@ it('gives no right through an expired or already accepted invitation', function 
     'expired' => [['expires_at' => '2020-01-01 00:00:00']],
     'accepted' => [['accepted_at' => '2020-01-01 00:00:00']],
 ]);
+
+it('does not auto-accept for an existing verified account and returns to the invitation page', function () {
+    $user = User::factory()->create(['email' => 'member@example.test']);
+    $invitation = followInvitation($this, 'member@example.test');
+    ssoAnswers(['id' => 'g-10', 'email' => 'member@example.test', 'email_verified' => true]);
+
+    $this->get(route('sso.callback', 'google'))
+        ->assertRedirect(route('invitations.show', 'secret-token'));
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->belongsToWorkspace($invitation->workspace))->toBeFalse()
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
+
+    $this->post(route('invitations.acceptance.store', 'secret-token'))
+        ->assertRedirect(route('workspaces.show', $invitation->workspace));
+
+    expect($user->belongsToWorkspace($invitation->workspace))->toBeTrue();
+});

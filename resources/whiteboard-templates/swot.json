@@ -1,15 +1,15 @@
 {
     "elements": [
-        {"id": "strength-note", "type": "rectangle", "x": 40, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#b2f2bb", "strokeWidth": 1, "frameId": "strengths", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "strength-note", "type": "rectangle", "x": 40, "y": 40, "width": 200, "height": 200, "strokeColor": "#a5d39b", "backgroundColor": "#e1f8dc", "strokeWidth": 1, "frameId": "strengths", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "strength-note-text", "type": "text", "fontSize": 16, "containerId": "strength-note", "text": "strength_note"},
         {"id": "strengths", "type": "frame", "x": 0, "y": 0, "width": 600, "height": 400, "name": "strengths", "locked": true},
-        {"id": "weakness-note", "type": "rectangle", "x": 680, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#ffc9c9", "strokeWidth": 1, "frameId": "weaknesses", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "weakness-note", "type": "rectangle", "x": 680, "y": 40, "width": 200, "height": 200, "strokeColor": "#f9aea4", "backgroundColor": "#ffebe8", "strokeWidth": 1, "frameId": "weaknesses", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "weakness-note-text", "type": "text", "fontSize": 16, "containerId": "weakness-note", "text": "weakness_note"},
         {"id": "weaknesses", "type": "frame", "x": 640, "y": 0, "width": 600, "height": 400, "name": "weaknesses", "locked": true},
-        {"id": "opportunity-note", "type": "rectangle", "x": 40, "y": 500, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#a5d8ff", "strokeWidth": 1, "frameId": "opportunities", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "opportunity-note", "type": "rectangle", "x": 40, "y": 500, "width": 200, "height": 200, "strokeColor": "#8dccf9", "backgroundColor": "#e2f3ff", "strokeWidth": 1, "frameId": "opportunities", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "opportunity-note-text", "type": "text", "fontSize": 16, "containerId": "opportunity-note", "text": "opportunity_note"},
         {"id": "opportunities", "type": "frame", "x": 0, "y": 460, "width": 600, "height": 400, "name": "opportunities", "locked": true},
-        {"id": "threat-note", "type": "rectangle", "x": 680, "y": 500, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#ffd8a8", "strokeWidth": 1, "frameId": "threats", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "threat-note", "type": "rectangle", "x": 680, "y": 500, "width": 200, "height": 200, "strokeColor": "#efb787", "backgroundColor": "#ffecdd", "strokeWidth": 1, "frameId": "threats", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "threat-note-text", "type": "text", "fontSize": 16, "containerId": "threat-note", "text": "threat_note"},
         {"id": "threats", "type": "frame", "x": 640, "y": 460, "width": 600, "height": 400, "name": "threats", "locked": true}
     ]

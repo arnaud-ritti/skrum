@@ -1,13 +1,10 @@
-import { usePage } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { ConnectionBanner } from '@/components/retro/connection-banner';
-import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
-import { TimerDisplay } from '@/components/retro/timer-display';
-import { Button } from '@/components/ui/button';
-import { useLocalPreference } from '@/hooks/use-local-preference';
+import { useHideMyCursor } from '@/components/session/cursor-preference';
+import { SessionShell } from '@/components/session/session-shell';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
@@ -20,12 +17,25 @@ import {
     subscribeToTheme,
 } from '@/lib/whiteboard/appearance';
 import {
+    HiddenColorBar,
+    colorBarState,
+    strokeForTool,
+    type ColorBarState,
+} from '@/lib/whiteboard/canvas-colors';
+import {
+    CaptureUpdateAction,
     Excalidraw,
     HiddenSaveToDiskAction,
     MainMenu,
     closeTextEditor,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
+import {
+    CANVAS_LIGHT,
+    DEFAULT_POSTIT_COLOR,
+    DEFAULT_STROKE,
+    POSTIT,
+} from '@/lib/whiteboard/palette';
 import { restoreScene } from '@/lib/whiteboard/restore';
 import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
 import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
@@ -34,17 +44,37 @@ import type {
     SceneElement,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
+import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
-import { BoardMenu } from './board-menu';
+import {
+    BoardActions,
+    BoardPresence,
+    BoardTitle,
+    boardSelf,
+    useFacilitationInHeader,
+} from './board-header';
+import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
+import { BoardTimer } from './board-timer';
+import { CanvasColors } from './canvas-colors';
+import { ReadModeLayer } from './read-mode-toggle';
 import { SceneExport } from './scene-export';
-import { FacilitatorBar } from './facilitator-bar';
-import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
-import { TopBar } from './top-bar';
+import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
 
-const HideMyCursorKey = 'skrum.hideMyCursor';
 const PollMs = 5000;
+
+/**
+ * Local to this browser, never synced: the paper is the light value of the
+ * canvas token (the library inverts it in the dark theme) and a new shape is
+ * a Sun note. The stroke is left to `strokeForTool`.
+ */
+const InitialAppState = {
+    viewBackgroundColor: CANVAS_LIGHT,
+    currentItemBackgroundColor: POSTIT[DEFAULT_POSTIT_COLOR].bg,
+    currentItemFillStyle: 'solid',
+    currentItemRoughness: 1,
+} as const;
 
 export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
@@ -52,13 +82,17 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const state = useWhiteboard(snapshot);
     const { board, me } = state.snapshot;
     const viewOnly = board.locked && !me.isFacilitator;
+    const isPhone = useIsMobile();
+    const { reading, setReading } = useReadMode(isPhone);
+    const viewMode = isViewMode(viewOnly, reading);
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
-    const [hideMyCursor, setHideMyCursor] = useLocalPreference(
-        HideMyCursorKey,
-        false,
-    );
+    const [colors, setColors] = useState<ColorBarState>(HiddenColorBar);
+    const [stickyOpen, setStickyOpen] = useState(false);
+    const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
+    const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
+    const appliedStroke = useRef<string>(DEFAULT_STROKE);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
     const initial = useRef(snapshot);
@@ -145,7 +179,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }, [api, boardId, fail, listeners, refetch]);
 
     useEffect(() => {
-        if (!api || !viewOnly) {
+        if (!api || !viewMode) {
             return;
         }
 
@@ -154,7 +188,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             closeTextEditor();
             api.updateScene({ appState: { selectedElementIds: {} } });
         });
-    }, [api, viewOnly]);
+    }, [api, viewMode]);
 
     useEffect(() => {
         if (state.connected || state.status !== 'active') {
@@ -168,87 +202,100 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
 
     if (state.status !== 'active') {
         return (
-            <BoardGone
-                reason={state.status}
-                teamUrl={state.snapshot.links.team}
-            />
+            <>
+                <Head title={board.title} />
+                <BoardGone
+                    title={board.title}
+                    reason={state.status}
+                    teamUrl={state.snapshot.links.team}
+                />
+            </>
         );
     }
 
     return (
-        <div
-            ref={root}
-            className="flex h-dvh flex-col"
-            data-realtime={realtimeState(
+        <SessionShell
+            kind="whiteboard"
+            chrome="logo"
+            homeHref={state.snapshot.links.team}
+            self={boardSelf(state.snapshot)}
+            title={<BoardTitle state={state} />}
+            timer={!me.isFacilitator && <BoardTimer state={state} />}
+            presence={<BoardPresence state={state} />}
+            actions={
+                <BoardActions
+                    state={state}
+                    onExport={
+                        api
+                            ? () =>
+                                  api.updateScene({
+                                      appState: {
+                                          openDialog: { name: 'jsonExport' },
+                                      },
+                                  })
+                            : undefined
+                    }
+                    hideMyCursor={hideMyCursor}
+                    onHideMyCursorChange={setHideMyCursor}
+                    sticky={
+                        api &&
+                        !toolbarSlot &&
+                        !viewMode && (
+                            <StickyTool
+                                api={api}
+                                onOpenChange={setStickyOpen}
+                            />
+                        )
+                    }
+                />
+            }
+            realtime={realtimeState(
                 state.connected && api !== null,
                 state.online,
             )}
-            data-scene={initialStamp}
+            connection={{
+                reconnecting: state.reconnecting || offline,
+                expired: state.sessionExpired,
+            }}
+            rootRef={root}
+            rootProps={{ 'data-scene': initialStamp }}
         >
-            {state.sessionExpired && <SessionExpiredBanner />}
-            <div
-                className="flex min-h-0 flex-1 flex-col"
-                inert={state.sessionExpired}
-            >
-                <TopBar state={state}>
-                    <TimerDisplay
-                        endsAt={board.timerEndsAt}
-                        offset={state.serverOffset}
-                    />
-                    {me.isFacilitator && <FacilitatorBar state={state} />}
-                    {api && !toolbarSlot && !viewOnly && (
-                        <StickyTool api={api} />
-                    )}
-                    <BoardMenu
-                        state={state}
-                        hideMyCursor={hideMyCursor}
-                        onHideMyCursorChange={setHideMyCursor}
-                    />
-                </TopBar>
-                <ConnectionBanner
-                    reconnecting={state.reconnecting || offline}
+            <div className="flex h-full min-h-0 flex-col">
+                <Head title={board.title} />
+                {me.isFacilitator && !facilitationInHeader && (
+                    <div className="flex shrink-0 justify-center border-b bg-background p-1.5">
+                        <BoardFacilitation state={state} compact />
+                    </div>
+                )}
+                <BoardNotices
+                    locked={viewOnly}
+                    leading={board.followEnabled && me.isFacilitator}
+                    following={follow.following}
+                    paused={follow.paused}
+                    onResume={follow.resume}
                 />
-                <StatusBar>
-                    {viewOnly && (
-                        <span className="flex items-center gap-1.5">
-                            <Lock className="size-4" aria-hidden="true" />
-                            {t('This board is locked.')}
-                        </span>
-                    )}
-                    {board.followEnabled && me.isFacilitator && (
-                        <span>{t('Everyone follows your view.')}</span>
-                    )}
-                    {follow.following && !follow.paused && (
-                        <span>{t('Following the facilitator')}</span>
-                    )}
-                    {follow.paused && (
-                        <span className="flex items-center gap-2">
-                            {t('Following paused')}
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={follow.resume}
-                            >
-                                {t('Resume')}
-                            </Button>
-                        </span>
-                    )}
-                </StatusBar>
                 {api &&
                     toolbarSlot &&
                     createPortal(
-                        <StickyTool api={api} inToolbar />,
+                        <StickyTool
+                            api={api}
+                            inToolbar
+                            onOpenChange={setStickyOpen}
+                        />,
                         toolbarSlot,
                     )}
                 <div
                     ref={canvas}
-                    className="whiteboard-canvas relative min-h-0 flex-1"
+                    className="whiteboard-canvas skrum-whiteboard--fallback-colors relative min-h-0 flex-1"
                     data-facilitator={me.isFacilitator}
                 >
                     <Excalidraw
-                        viewModeEnabled={viewOnly ? true : undefined}
+                        viewModeEnabled={viewMode ? true : undefined}
                         excalidrawAPI={setApi}
-                        initialData={{ elements: initialElements as never }}
+                        initialData={{
+                            elements: initialElements as never,
+                            appState: InitialAppState,
+                        }}
                         name={board.title}
                         onChange={(elements, appState) => {
                             const reported =
@@ -262,6 +309,35 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 reported,
                                 appState.editingTextElement?.id ?? null,
                             );
+
+                            const bar = colorBarState(elements, appState);
+
+                            setColors((shown) =>
+                                shown.visible === bar.visible &&
+                                shown.value === bar.value
+                                    ? shown
+                                    : bar,
+                            );
+
+                            const stroke = strokeForTool(
+                                appState,
+                                appliedStroke.current,
+                            );
+
+                            if (stroke !== null) {
+                                appliedStroke.current = stroke;
+
+                                // Outside the library's own update, which reports this change.
+                                queueMicrotask(() =>
+                                    api?.updateScene({
+                                        appState: {
+                                            currentItemStrokeColor: stroke,
+                                        },
+                                        captureUpdate:
+                                            CaptureUpdateAction.NEVER,
+                                    }),
+                                );
+                            }
                         }}
                         onPointerUpdate={cursors.onPointerUpdate}
                         langCode={CanvasLocales[locale as string] ?? 'en'}
@@ -302,9 +378,18 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <MainMenu.DefaultItems.ChangeCanvasBackground />
                         </MainMenu>
                     </Excalidraw>
+                    {api && !viewMode && !stickyOpen && (
+                        <CanvasColors api={api} state={colors} />
+                    )}
+                    {api && canSwitchReadMode(isPhone, viewOnly) && (
+                        <ReadModeLayer
+                            reading={reading}
+                            onChange={setReading}
+                        />
+                    )}
                 </div>
                 <BoardReactions state={state} />
             </div>
-        </div>
+        </SessionShell>
     );
 }

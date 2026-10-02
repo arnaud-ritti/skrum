@@ -85,7 +85,7 @@ it('shows expired invitations as expired and keeps registration closed', functio
         ->assertInertia(fn (Assert $page) => $page
             ->component('invitations/show')
             ->where('isExpired', true)
-            ->where('canRegister', false));
+            ->missing('canRegister'));
 
     $this->get(route('register'))->assertForbidden();
 });

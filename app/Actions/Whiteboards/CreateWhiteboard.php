@@ -18,11 +18,12 @@ class CreateWhiteboard
     /**
      * @param  Scene  $scene
      */
-    public function handle(Team $team, User $creator, string $title, array $scene = ['elements' => [], 'files' => []]): Whiteboard
+    public function handle(Team $team, User $creator, string $title, array $scene = ['elements' => [], 'files' => []], bool $guestAccessEnabled = false): Whiteboard
     {
-        return DB::transaction(function () use ($team, $creator, $title, $scene): Whiteboard {
+        return DB::transaction(function () use ($team, $creator, $title, $scene, $guestAccessEnabled): Whiteboard {
             $board = $team->whiteboards()->create([
                 'title' => $title,
+                'guest_access_enabled' => $guestAccessEnabled,
                 'guest_token' => Str::random(40),
             ]);
 

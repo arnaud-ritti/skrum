@@ -129,7 +129,7 @@ describe('AppSidebar', () => {
         renderSidebar({ links: { ...base.links, settings: '/t1/settings' } });
 
         const settingsNav = screen.getByRole('navigation', {
-            name: 'Settings',
+            name: 'Team and administration',
         });
 
         expect(
@@ -139,6 +139,18 @@ describe('AppSidebar', () => {
 
     it('renders no settings landmark when it has no links', () => {
         renderSidebar({ links: { teams: '/w1' } });
+
+        expect(
+            screen.queryByRole('navigation', {
+                name: 'Team and administration',
+            }),
+        ).toBeNull();
+    });
+
+    it('does not name any landmark "Settings", which belongs to the settings sub-navigation', () => {
+        renderSidebar({
+            links: { ...base.links, settings: '/t1/settings', admin: '/admin' },
+        });
 
         expect(
             screen.queryByRole('navigation', { name: 'Settings' }),

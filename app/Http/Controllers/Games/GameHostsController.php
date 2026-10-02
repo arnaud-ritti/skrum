@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Games;
 
+use App\Actions\Games\AnnounceTeamGameRoom;
 use App\Actions\Games\GameGuard;
 use App\Events\Games\GameRoomChanged;
 use App\Http\Controllers\Controller;
@@ -20,7 +21,7 @@ class GameHostsController extends Controller
      * The host hands hosting to a member player; the creator and workspace
      * Owners/Admins can take it at any time, so a room never stays stuck.
      */
-    public function update(Request $request, GameRoom $room): Response
+    public function update(Request $request, GameRoom $room, AnnounceTeamGameRoom $announceTeamGameRoom): Response
     {
         $player = GamePlayer::current($request);
 
@@ -30,7 +31,7 @@ class GameHostsController extends Controller
             'player_id' => ['required', 'string', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
         ]);
 
-        DB::transaction(function () use ($room, $player, $validated): void {
+        DB::transaction(function () use ($room, $player, $validated, $announceTeamGameRoom): void {
             $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
             $target = GamePlayer::query()->with('user')->whereKey($validated['player_id'])->where('game_room_id', $locked->id)->firstOrFail();
 
@@ -47,6 +48,8 @@ class GameHostsController extends Controller
             $locked->update(['host_player_id' => $target->id]);
 
             (new GameRoomChanged($locked))->sendToOthers();
+
+            $announceTeamGameRoom->changed($locked);
         });
 
         return response()->noContent();

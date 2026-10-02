@@ -60,6 +60,32 @@ describe('AuthLayout', () => {
         );
     });
 
+    it('translates a title that is a label and leaves a literal one as it is', () => {
+        withBrand(skrum);
+        page.props.translations = { Settings: 'Paramètres' };
+
+        const { unmount } = renderWithProviders(
+            <AuthLayout title="Settings">
+                <p>form</p>
+            </AuthLayout>,
+        );
+
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Paramètres',
+        );
+        unmount();
+
+        renderWithProviders(
+            <AuthLayout title="Settings" literalTitle>
+                <p>form</p>
+            </AuthLayout>,
+        );
+
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Settings',
+        );
+    });
+
     it('hides the credit when the admin switched it off', () => {
         withBrand({ ...skrum, name: 'Acme', poweredBy: false });
         renderWithProviders(
@@ -69,6 +95,24 @@ describe('AuthLayout', () => {
         );
 
         expect(screen.queryByRole('contentinfo')).toBeNull();
+    });
+});
+
+describe('AuthLayout centred', () => {
+    it('passes the variant to the frame', () => {
+        withBrand(skrum);
+        const { container } = renderWithProviders(
+            <AuthLayout variant="centered" title="Sprint 42 retro">
+                <p>card</p>
+            </AuthLayout>,
+        );
+
+        expect(
+            screen
+                .getByRole('heading', { level: 1, name: 'Sprint 42 retro' })
+                .classList.contains('sr-only'),
+        ).toBe(true);
+        expect(container.querySelector('aside')).toBeNull();
     });
 });
 

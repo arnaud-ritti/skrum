@@ -57,6 +57,14 @@ function p10bJoinAsSpectator(PokerGame $game, string $name): mixed
     return $page;
 }
 
+/**
+ * The values a deck card of the saved decks page shows, in order.
+ */
+function p10bDeckCardValues(string $name): string
+{
+    return 'Array.from(Array.from(document.querySelectorAll(\'[data-slot="deck-card"]\')).find((card) => card.querySelector("h2").textContent === "'.$name.'").querySelectorAll(\'[data-slot="deck-card-values"] li\')).map((chip) => chip.textContent).join(" ")';
+}
+
 function p10bOpenSettings(mixed $page): mixed
 {
     return $page->click('[aria-label="Facilitator menu"]')
@@ -70,39 +78,41 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
     $ada = p10bRenamed(teamMember($team), 'Ada');
     $bob = p10bRenamed(teamMember($team), 'Bob');
     $teamPath = route('teams.show', [$team->workspace, $team], false);
-    $chips = 'Array.from(document.querySelectorAll(\'[role="dialog"] li span.font-mono\')).map((chip) => chip.textContent).join(" ")';
 
     $a = $this->signIn($ada, $teamPath);
 
-    $a->assertSee('Saved decks')
-        ->click('Saved decks')
+    $a->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
+        ->assertPathEndsWith('/poker-decks')
         ->assertSee('No saved decks yet.')
-        ->click('New deck')
+        ->click('Create a deck')
         ->assertAriaAttribute('#deck-new-unknown', 'checked', 'true')
         ->assertAriaAttribute('#deck-new-coffee', 'checked', 'true')
         ->fill('#deck-new-name', 'Team scale')
         ->fill('#deck-new-cards', '1, 2, 3, 5, 8')
         ->click('Save')
-        ->assertSeeIn('[role="dialog"]', 'Team scale')
-        ->assertScript($chips, '1 2 3 5 8 ? ☕')
-        ->assertSee('Edit deck')
-        ->assertSee('New deck')
-        ->click('New deck')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
+        ->assertScript(p10bDeckCardValues('Team scale'), '1 2 3 5 8 ? ☕')
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->assertSee('Create a deck')
+        ->click('Create a deck')
         ->assertVisible('#deck-new-name')
         ->fill('#deck-new-name', 'team scale ')
         ->fill('#deck-new-cards', '1, 2')
         ->click('Save')
-        ->assertSee('A deck with this name already exists.');
+        ->assertSeeIn('[role="dialog"]', 'A deck with this name already exists.');
 
     expect(SavedPokerDeck::query()->count())->toBe(1);
 
     $b = $this->signIn($bob, $teamPath);
 
-    $b->assertSee('Saved decks')
-        ->click('Saved decks')
-        ->assertSeeIn('[role="dialog"]', 'Team scale')
-        ->assertDontSee('Edit deck')
-        ->assertDontSee('Delete deck');
+    $b->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
+        ->assertPathEndsWith('/poker-decks')
+        ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
+        ->assertNotPresent('[aria-label="Edit Team scale"]')
+        ->assertNotPresent('[aria-label="Delete Team scale"]');
 });
 
 it('[P10b-02a] creates a game from a saved deck and keeps its cards when the deck is edited', function () {
@@ -118,14 +128,15 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
 
     $page = $this->signIn($ada, $teamPath);
 
-    $page->assertSee('New game')
-        ->click('New game')
-        ->assertSee("Your team's decks")
+    $page->assertSee('New session')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Planning poker")')
+        ->assertSeeIn('[aria-label="Deck"] [role="radio"]:has-text("Team scale")', 'Saved')
         ->click('[role="radio"]:has-text("Team scale")')
         ->assertAriaAttribute('[role="radio"]:has-text("Team scale")', 'checked', 'true')
-        ->assertAriaAttribute('#new-poker-anonymous', 'checked', 'false')
+        ->assertNotPresent('#new-poker-anonymous')
         ->assertAriaAttribute('#new-poker-auto-reveal', 'checked', 'false')
-        ->click('Create game')
+        ->click('Create & open')
         ->assertPathBeginsWith('/poker/')
         ->assertSee('Team scale');
 
@@ -138,14 +149,16 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
         ->and($game->auto_reveal)->toBeFalse();
 
     $page->navigate($teamPath)
-        ->assertSee('Saved decks')
-        ->click('Saved decks')
-        ->assertSee('Edit deck')
-        ->click('Edit deck')
+        ->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
+        ->assertPathEndsWith('/poker-decks')
+        ->assertPresent('[aria-label="Edit Team scale"]')
+        ->click('[aria-label="Edit Team scale"]')
         ->assertVisible("#deck-{$deck->id}-cards")
-        ->fill("#deck-{$deck->id}-cards", '1, 2, 3, 5, 8, 13')
+        ->fill("#deck-{$deck->id}-cards", '13,')
         ->click('Save')
-        ->assertSeeIn('[role="dialog"] li', '13');
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript(p10bDeckCardValues('Team scale'), '1 2 3 5 8 13 ? ☕');
 
     expect($deck->fresh()->cards)->toContain('13');
 
@@ -170,12 +183,13 @@ it('[P10b-02b] keeps a game unchanged when its saved deck is deleted', function 
 
     $page = $this->signIn($ada, route('teams.show', [$game->team->workspace, $game->team], false));
 
-    $page->assertSee('Saved decks')
-        ->click('Saved decks')
-        ->assertSee('Delete deck')
-        ->click('Delete deck')
-        ->assertSee('Games that use it keep their cards.')
-        ->click('button:has-text("Delete deck") >> nth=1')
+    $page->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
+        ->assertPathEndsWith('/poker-decks')
+        ->assertPresent('[aria-label="Delete Team scale"]')
+        ->click('[aria-label="Delete Team scale"]')
+        ->assertSeeIn('[role="alertdialog"]', 'Games that use it keep their cards.')
+        ->click('[role="alertdialog"] button:has-text("Delete deck")')
         ->assertSee('No saved decks yet.');
 
     expect(SavedPokerDeck::query()->count())->toBe(0);
@@ -197,8 +211,8 @@ it('[P10b-02c] offers saved decks to the facilitator only, never to a guest', fu
     $guest = $this->awaitRealtime($this->joinAsGuest(route('poker.join.show', $game->guest_token, false), 'Casey'));
 
     p10bOpenSettings($a)
-        ->assertSee("Your team's decks")
-        ->assertSee('Team scale');
+        ->assertSeeIn('[aria-label="Deck"] [role="radio"]:has-text("Team scale")', 'Saved')
+        ->assertSee('Manage decks');
 
     $guest->assertPresent('[aria-label="Language"]')
         ->assertNotPresent('[aria-label="Facilitator menu"]')
@@ -211,9 +225,8 @@ it('[P10b-03] lets a guest join as a spectator who watches without a hand', func
 
     $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
-    $a->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+    $a->assertVisible('[aria-label="Share"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('#poker-guest-link-access')
         ->click('#poker-guest-link-access')
         ->assertVisible('input[aria-label="Guest link"]');
@@ -240,8 +253,7 @@ it('[P10b-03] lets a guest join as a spectator who watches without a hand', func
     $c->assertSee("You're watching — switch to Play to vote")
         ->assertNotPresent('[role="group"][aria-label="Your cards"]');
 
-    $a->assertSeeIn('section[aria-label="Watching"]', 'Casey')
-        ->assertPresent("span:has(> img[data-presence-id=\"{$casey->id}\"]) svg[aria-label=\"Watching\"]");
+    $a->assertSeeIn('section[aria-label="Watching"]', 'Casey');
 
     $b->assertSeeIn('section[aria-label="Watching"]', 'Casey')
         ->assertEnabled('button[aria-label="Play 5"]')
@@ -284,14 +296,14 @@ it('[P10b-11a] lets the facilitator switch a player to spectator and back, and f
     $b->click('button[aria-label="Play 5"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Voted"]')
-        ->assertSee('Show votes')
-        ->click('Show votes')
+        ->assertSee('Reveal cards')
+        ->click('Reveal cards')
         ->assertPresent('[role="img"][aria-label="Bob: 5"]')
-        ->assertSee('Save estimate')
-        ->click('Save estimate')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5')
         ->click('Re-vote')
-        ->assertSee('Show votes')
+        ->assertSee('Reveal cards')
         ->assertNotPresent('[role="group"][aria-label="Your cards"]');
 });
 
@@ -316,8 +328,8 @@ it('[P10b-11b] lets a player switch to watching, which withdraws the open vote, 
 
     expect($round->votes()->count())->toBe(0);
 
-    $b->assertSee('Play')
-        ->click('Play')
+    $b->assertSee('Join the vote')
+        ->click('Join the vote')
         ->assertEnabled('button[aria-label="Play 3"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Not voted yet"]');
@@ -338,7 +350,7 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
         ->assertSee("With two voters, each can work out the other's vote from their own.")
         ->click('#poker-anonymous-votes')
         ->assertAriaAttribute('#poker-anonymous-votes', 'checked', 'true')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
 
     $b->assertSee('Anonymous votes');
 
@@ -351,7 +363,7 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
         ->click('button[aria-label="Play 5"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Voted"]')
-        ->click('Show votes');
+        ->click('Reveal cards');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('section[aria-label="Anonymous votes"]')
@@ -363,11 +375,11 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
             ->assertSee('Average');
     }
 
-    $a->assertAriaAttribute('button[aria-label="Play 3"]', 'pressed', 'true')
-        ->assertAriaAttribute('button[aria-label="Play 5"]', 'pressed', 'false');
+    $a->assertSeeIn('[data-slot="poker-dock-status"]', 'Your card · 3')
+        ->assertNotPresent('button[aria-label="Play 3"]');
 
-    $b->assertAriaAttribute('button[aria-label="Play 5"]', 'pressed', 'true')
-        ->assertAriaAttribute('button[aria-label="Play 3"]', 'pressed', 'false');
+    $b->assertSeeIn('[data-slot="poker-dock-status"]', 'Your card · 5')
+        ->assertNotPresent('button[aria-label="Play 5"]');
 });
 
 it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after anonymity is turned off', function () {
@@ -380,7 +392,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
     $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
     $a->assertPresent('section[aria-label="Anonymous votes"]')
-        ->click('button:has-text("Rounds (1)")')
+        ->assertAttribute('button:has-text("Rounds (1)")', 'aria-expanded', 'true')
         ->assertSee('3 × 1')
         ->assertSee('5 × 1')
         ->assertDontSee('Ada: 3')
@@ -389,7 +401,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
     p10bOpenSettings($a)
         ->click('#poker-anonymous-votes')
         ->assertSee('Applies from the next round.')
-        ->click('Save')
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")')
         ->assertScript('document.querySelector("header").textContent.includes("Anonymous votes")', false)
         ->assertPresent('section[aria-label="Anonymous votes"]')
         ->assertSee('3 × 1')
@@ -420,7 +432,7 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
         ->assertSee('Show flying reactions')
         ->click('#poker-cursors')
         ->click('#poker-reactions')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('.lc-overlay')
@@ -433,7 +445,7 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
         ->assertAriaAttribute('#poker-reactions', 'checked', 'false')
         ->click('#poker-cursors')
         ->click('#poker-reactions')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('.lc-overlay')
@@ -459,7 +471,7 @@ it('[P10b-13] removes cursors, reactions and the watch toggle on an ended game a
         ->assertVisible('[role="menuitem"]:has-text("End game")')
         ->click('[role="menuitem"]:has-text("End game")')
         ->assertSee('End this game?')
-        ->click('[role="dialog"] button:has-text("End game")');
+        ->click('[role="alertdialog"] button:has-text("End game")');
 
     foreach ([$a, $b] as $page) {
         $page->assertSee('Game ended')
@@ -548,9 +560,9 @@ it('[P10b-15c] still labels cursors "Participant" and sends unnamed reactions on
 });
 
 dataset('p10bLocales', [
-    'fr' => ['fr', 'Français', 'Révélation automatique', 'Votes anonymes', 'Vous observez — passez en mode Jouer pour voter', 'Observateurs', 'Révélé automatiquement — tout le monde a voté', 'Minuteur', 'Arrêter le minuteur', "Menu de l'animateur", 'Paramètres…', 'Les jeux de cartes de votre équipe', 'Révéler automatiquement quand tout le monde a voté ou à la fin du minuteur'],
-    'es' => ['es', 'Español', 'Revelado automático', 'Votos anónimos', 'Estás observando: cambia a Jugar para votar', 'Observando', 'Revelado automáticamente — todos votaron', 'Temporizador', 'Detener temporizador', 'Menú del facilitador', 'Ajustes…', 'Las barajas de tu equipo', 'Revelar automáticamente cuando todos hayan votado o termine el temporizador'],
-    'de' => ['de', 'Deutsch', 'Automatisch aufdecken', 'Anonyme Stimmen', 'Du schaust zu – wechsle zu Spielen, um abzustimmen', 'Zuschauer', 'Automatisch aufgedeckt — alle haben abgestimmt', 'Timer', 'Timer stoppen', 'Moderationsmenü', 'Einstellungen…', 'Kartensätze deines Teams', 'Automatisch aufdecken, wenn alle abgestimmt haben oder der Timer abläuft'],
+    'fr' => ['fr', 'Français', 'Révélation automatique', 'Votes anonymes', 'Vous observez — passez en mode Jouer pour voter', 'Observateurs', 'Révélé automatiquement — tout le monde a voté', 'Minuteur', 'Arrêter le minuteur', "Menu de l'animateur", 'Paramètres…', 'Enregistré', 'Révéler automatiquement quand tout le monde a voté ou à la fin du minuteur'],
+    'es' => ['es', 'Español', 'Revelado automático', 'Votos anónimos', 'Estás observando: cambia a Jugar para votar', 'Observando', 'Revelado automáticamente — todos votaron', 'Temporizador', 'Detener temporizador', 'Menú del facilitador', 'Ajustes…', 'Guardado', 'Revelar automáticamente cuando todos hayan votado o termine el temporizador'],
+    'de' => ['de', 'Deutsch', 'Automatisch aufdecken', 'Anonyme Stimmen', 'Du schaust zu – wechsle zu Spielen, um abzustimmen', 'Zuschauer', 'Automatisch aufgedeckt — alle haben abgestimmt', 'Timer', 'Timer stoppen', 'Moderationsmenü', 'Einstellungen…', 'Gespeichert', 'Automatisch aufdecken, wenn alle abgestimmt haben oder der Timer abläuft'],
 ]);
 
 it('[P10b-16a] translates the spectator, auto-reveal and anonymous strings after a guest switches language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote) {
@@ -582,7 +594,7 @@ it('[P10b-16a] translates the spectator, auto-reveal and anonymous strings after
         ->assertNotPresent('section[aria-label="Anonymous votes"]');
 })->with('p10bLocales');
 
-it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved decks for a facilitator in their language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote, string $timer, string $stopTimer, string $facilitatorMenu, string $settings, string $teamDecks, string $autoRevealNote) {
+it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved decks for a facilitator in their language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote, string $timer, string $stopTimer, string $facilitatorMenu, string $settings, string $savedDeck, string $autoRevealNote) {
     ['game' => $game, 'ada' => $ada] = p10bTable(['auto_reveal' => true]);
     openPokerRound($game);
     SavedPokerDeck::factory()->create([
@@ -604,10 +616,9 @@ it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved dec
         ->click("[aria-label=\"{$facilitatorMenu}\"]")
         ->assertSee($settings)
         ->click($settings)
-        ->assertSee($teamDecks)
+        ->assertSeeIn('[role="radio"]:has-text("Team scale")', $savedDeck)
         ->assertSee($autoRevealNote)
-        ->assertSee('Team scale')
-        ->assertDontSee("Your team's decks")
+        ->assertDontSeeIn('[role="radio"]:has-text("Team scale")', 'Saved')
         ->assertDontSee('Reveal automatically when everyone has voted or the timer ends');
 })->with('p10bLocales');
 
@@ -698,7 +709,7 @@ it('[P10b-06] reveals by itself when the last online player votes, without waiti
     p10bOpenSettings($a)
         ->click('#poker-auto-reveal')
         ->assertAriaAttribute('#poker-auto-reveal', 'checked', 'true')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
 
     foreach ([$a, $b, $c] as $page) {
         $page->assertSee('Auto-reveal');
@@ -769,8 +780,8 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -782,7 +793,7 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     expect(DB::table('jobs')->count())->toBe(1)
         ->and($round->fresh()->revealed_at)->toBeNull();
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     foreach ([$a, $b] as $page) {
@@ -794,7 +805,7 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::Timer);
 });
 
-it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leaves the round open until "Show votes"', function () {
+it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leaves the round open until "Reveal cards"', function () {
     config(['queue.default' => 'database']);
 
     ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
@@ -808,8 +819,8 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -820,7 +831,7 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
 
     expect(DB::table('jobs')->count())->toBe(1);
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
@@ -830,13 +841,13 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
     $this->awaitRealtime($b->navigate("/poker/{$game->id}"));
 
     foreach ([$a, $b] as $page) {
-        $page->assertSeeIn('[role="timer"]', "Time's up!")
+        $page->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
             ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
             ->assertDontSee('Revealed automatically');
     }
 
-    $a->assertSee('Show votes')
-        ->click('Show votes');
+    $a->assertSee('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('[role="img"][aria-label="Bob: 8"]')
@@ -860,8 +871,8 @@ it('[P10b-09] does not reveal at the original zero of a timer that was stopped',
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -882,13 +893,13 @@ it('[P10b-09] does not reveal at the original zero of a timer that was stopped',
     expect(DB::table('jobs')->count())->toBe(1)
         ->and($round->fresh()->timer_ends_at)->toBeNull();
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
         ->and($round->fresh()->revealed_at)->toBeNull();
 
-    $a->assertSee('Show votes')
+    $a->assertSee('Reveal cards')
         ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
         ->assertDontSee('Revealed automatically');
 

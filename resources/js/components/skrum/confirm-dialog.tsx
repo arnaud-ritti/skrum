@@ -22,6 +22,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 
+/**
+ * A footer button holds its label as its own text, not in a child element:
+ * the browser suite binds these buttons by their exact text. The button is a
+ * block so that the label still truncates.
+ */
+const FooterButtonClass = 'inline-block max-w-full min-w-0 truncate';
+const FooterIconClass = 'mr-2 inline-block align-text-bottom';
+
 export type DialogConsequence = { icon: LucideIcon; label: string };
 
 type DialogShellProps = {
@@ -41,13 +49,28 @@ export type ConfirmDialogProps = DialogShellProps & {
     onConfirm: () => Promise<void>;
 };
 
+type FormDialogSubmit =
+    | {
+          submitLabel: string;
+          onSubmit: (data: FormData) => Promise<void>;
+          /** `data-test` of the submit button. */
+          submitTest?: string;
+          /** The form is not complete yet: the submit button is disabled and Enter does nothing. */
+          submitDisabled?: boolean;
+      }
+    /** No submit button: the body explains why, the only action is Cancel. */
+    | {
+          submitLabel?: undefined;
+          onSubmit?: undefined;
+          submitTest?: undefined;
+          submitDisabled?: undefined;
+      };
+
 export type FormDialogProps = DialogShellProps & {
     description?: string;
-    submitLabel: string;
     tone?: 'default' | 'destructive';
-    onSubmit: (data: FormData) => Promise<void>;
     children: ReactNode;
-};
+} & FormDialogSubmit;
 
 function usePendingGuard(onOpenChange: (open: boolean) => void) {
     const [pending, setPending] = useState(false);
@@ -225,21 +248,31 @@ export function ConfirmDialog({
                         type="button"
                         disabled={pending}
                         onClick={() => guardedOpenChange(false)}
+                        className={FooterButtonClass}
                     >
-                        <span className="truncate">{t('Cancel')}</span>
+                        {t('Cancel')}
                     </Button>
                     <Button
                         type="button"
                         variant={destructive ? 'destructive' : 'default'}
                         disabled={pending}
                         onClick={() => run(onConfirm)}
+                        className={FooterButtonClass}
                     >
                         {pending ? (
-                            <Spinner aria-label={t('Loading')} />
+                            <Spinner
+                                aria-label={t('Loading')}
+                                className={FooterIconClass}
+                            />
                         ) : (
-                            destructive && <Trash2Icon aria-hidden="true" />
+                            destructive && (
+                                <Trash2Icon
+                                    aria-hidden="true"
+                                    className={FooterIconClass}
+                                />
+                            )
                         )}
-                        <span className="truncate">{confirmLabel}</span>
+                        {confirmLabel}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -254,6 +287,8 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    submitTest,
+    submitDisabled = false,
     tone = 'default',
     children,
     unavailableMessage,
@@ -279,7 +314,11 @@ export function FormDialog({
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (pending) {
+        if (onSubmit === undefined) {
+            return;
+        }
+
+        if (pending || submitDisabled) {
             return;
         }
 
@@ -332,21 +371,36 @@ export function FormDialog({
                             variant="outline"
                             disabled={pending}
                             onClick={() => guardedOpenChange(false)}
+                            className={FooterButtonClass}
                         >
-                            <span className="truncate">{t('Cancel')}</span>
+                            {t('Cancel')}
                         </Button>
-                        <Button
-                            type="submit"
-                            variant={destructive ? 'destructive' : 'default'}
-                            disabled={pending}
-                        >
-                            {pending ? (
-                                <Spinner aria-label={t('Loading')} />
-                            ) : (
-                                destructive && <Trash2Icon aria-hidden="true" />
-                            )}
-                            <span className="truncate">{submitLabel}</span>
-                        </Button>
+                        {onSubmit !== undefined && (
+                            <Button
+                                type="submit"
+                                variant={
+                                    destructive ? 'destructive' : 'default'
+                                }
+                                disabled={pending || submitDisabled}
+                                className={FooterButtonClass}
+                                data-test={submitTest}
+                            >
+                                {pending ? (
+                                    <Spinner
+                                        aria-label={t('Loading')}
+                                        className={FooterIconClass}
+                                    />
+                                ) : (
+                                    destructive && (
+                                        <Trash2Icon
+                                            aria-hidden="true"
+                                            className={FooterIconClass}
+                                        />
+                                    )
+                                )}
+                                {submitLabel}
+                            </Button>
+                        )}
                     </DialogFooter>
                 </form>
             </DialogContent>

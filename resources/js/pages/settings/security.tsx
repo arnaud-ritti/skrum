@@ -1,154 +1,79 @@
-import { Form, Head } from '@inertiajs/react';
-import { useRef } from 'react';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/security';
-import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
-import ManagePasskeys from '@/components/manage-passkeys';
-import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
-import ManageTwoFactor from '@/components/manage-two-factor';
+import { Head } from '@inertiajs/react';
+import { PasskeysCard } from '@/components/settings/security/passkeys-card';
+import { PasswordCard } from '@/components/settings/security/password-card';
+import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
+import { SecurityStack } from '@/components/settings/security/security-stack';
+import { TwoFactorCard } from '@/components/settings/security/two-factor-card';
+import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTrans } from '@/hooks/use-trans';
+import type { Passkey, TwoFactorSummary } from '@/types/auth';
 
-// oxfmt-ignore
 type Props = {
     passwordRules: string;
-} & ManagePasskeysProps &
-    ManageTwoFactorProps;
+    /** The server refuses a password found in known data breaches. */
+    checksCompromisedPasswords?: boolean;
+    twoFactor: TwoFactorSummary;
+    canManageTwoFactor?: boolean;
+    requiresConfirmation?: boolean;
+    twoFactorEnabled?: boolean;
+    canManagePasskeys?: boolean;
+    passkeys?: Passkey[];
+};
 
-export default function Security(props: Props) {
-    const passwordInput = useRef<HTMLInputElement>(null);
-    const currentPasswordInput = useRef<HTMLInputElement>(null);
+export default function Security({
+    passwordRules,
+    checksCompromisedPasswords = false,
+    twoFactor,
+    canManageTwoFactor = false,
+    requiresConfirmation = false,
+    twoFactorEnabled = false,
+    canManagePasskeys = false,
+    passkeys = [],
+}: Props) {
     const { t } = useTrans();
 
+    const description = (): string => {
+        if (canManageTwoFactor && canManagePasskeys) {
+            return t('Password, two-factor authentication and passkeys.');
+        }
+
+        if (canManageTwoFactor) {
+            return t('Password and two-factor authentication.');
+        }
+
+        if (canManagePasskeys) {
+            return t('Password and passkeys.');
+        }
+
+        return t('The password of your account.');
+    };
+
     return (
-        <>
+        <SettingsShell
+            active="security"
+            title={t('Security')}
+            description={description()}
+        >
             <Head title={t('Security settings')} />
 
-            <h1 className="sr-only">{t('Security settings')}</h1>
-
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title={t('Update password')}
-                    description={t(
-                        'Ensure your account is using a long, random password to stay secure',
-                    )}
+            <SecurityStack>
+                <PasswordCard
+                    passwordRules={passwordRules}
+                    breachCheck={
+                        checksCompromisedPasswords ? (
+                            <PasswordBreachCheck />
+                        ) : undefined
+                    }
                 />
-
-                <Form
-                    {...SecurityController.update.form()}
-                    options={{
-                        preserveScroll: true,
-                    }}
-                    resetOnError={[
-                        'password',
-                        'password_confirmation',
-                        'current_password',
-                    ]}
-                    resetOnSuccess
-                    onError={(errors) => {
-                        if (errors.password) {
-                            passwordInput.current?.focus();
-                        }
-
-                        if (errors.current_password) {
-                            currentPasswordInput.current?.focus();
-                        }
-                    }}
-                    className="space-y-6"
-                >
-                    {({ errors, processing }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="current_password">
-                                    {t('Current password')}
-                                </Label>
-
-                                <PasswordInput
-                                    id="current_password"
-                                    ref={currentPasswordInput}
-                                    name="current_password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="current-password"
-                                    placeholder={t('Current password')}
-                                />
-
-                                <InputError message={errors.current_password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">
-                                    {t('New password')}
-                                </Label>
-
-                                <PasswordInput
-                                    id="password"
-                                    ref={passwordInput}
-                                    name="password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder={t('New password')}
-                                    passwordrules={props.passwordRules}
-                                />
-
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    {t('Confirm password')}
-                                </Label>
-
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder={t('Confirm password')}
-                                    passwordrules={props.passwordRules}
-                                />
-
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    disabled={processing}
-                                    data-test="update-password-button"
-                                >
-                                    {t('Save')}
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
-            </div>
-
-            <ManageTwoFactor
-                canManageTwoFactor={props.canManageTwoFactor}
-                requiresConfirmation={props.requiresConfirmation}
-                twoFactorEnabled={props.twoFactorEnabled}
-            />
-
-            <ManagePasskeys
-                canManagePasskeys={props.canManagePasskeys}
-                passkeys={props.passkeys}
-            />
-        </>
+                {canManageTwoFactor && (
+                    <TwoFactorCard
+                        enabled={twoFactorEnabled}
+                        requiresConfirmation={requiresConfirmation}
+                        summary={twoFactor}
+                    />
+                )}
+                {canManagePasskeys && <PasskeysCard passkeys={passkeys} />}
+            </SecurityStack>
+        </SettingsShell>
     );
 }
-
-Security.layout = {
-    breadcrumbs: [
-        {
-            title: 'Security settings',
-            href: edit(),
-        },
-    ],
-};

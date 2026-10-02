@@ -2,6 +2,7 @@
 
 use App\Actions\Poker\BuildPokerSnapshot;
 use App\Actions\Poker\PresentPokerRound;
+use App\Actions\Poker\PresentPokerTask;
 use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Models\PokerGame;
@@ -77,6 +78,46 @@ it('shows every value after reveal', function () {
         ->and($snapshot['game']['hasVotes'])->toBeTrue();
 });
 
+it('counts the votes of the last round of every task, without a value before the reveal', function () {
+    $game = PokerGame::factory()->create();
+    [, $facilitator] = pokerFacilitator($game);
+    [, $member] = pokerMember($game);
+    $revoted = PokerTask::factory()->create(['poker_game_id' => $game->id, 'position' => 1]);
+    $first = PokerRound::factory()->create(['poker_task_id' => $revoted->id, 'number' => 1, 'revealed_at' => now()]);
+    pokerVote($first, $facilitator, '3');
+    pokerVote($first, $member, '13');
+    $second = PokerRound::factory()->create(['poker_task_id' => $revoted->id, 'number' => 2, 'revealed_at' => now()]);
+    pokerVote($second, $facilitator, '5');
+    $untouched = PokerTask::factory()->create(['poker_game_id' => $game->id, 'position' => 2]);
+    $current = PokerTask::factory()->create(['poker_game_id' => $game->id, 'position' => 3]);
+    $open = openPokerRound($game, $current);
+    pokerVote($open, $facilitator, '8');
+    pokerVote($open, $member, '21');
+
+    $snapshot = pokerSnapshot($game, $member);
+    $tasks = collect($snapshot['tasks'])->keyBy('id');
+
+    expect($tasks[$revoted->id]['votesCount'])->toBe(1)
+        ->and($tasks[$untouched->id]['votesCount'])->toBe(0)
+        ->and($tasks[$current->id]['votesCount'])->toBe(2)
+        ->and(array_keys($tasks[$current->id]))->toBe([
+            'id', 'title', 'description', 'descriptionHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'votesCount', 'external',
+        ]);
+});
+
+it('counts the votes of a task that was just created without a query', function () {
+    $task = PokerTask::factory()->create();
+    $task->setAttribute('rounds_count', 0);
+
+    DB::enableQueryLog();
+    $presented = resolve(PresentPokerTask::class)->handle($task);
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($presented['votesCount'])->toBe(0)
+        ->and($queries)->toBeEmpty();
+});
+
 it('lists no voters in the history mode of an unrevealed round', function () {
     $game = PokerGame::factory()->create();
     [, $facilitator] = pokerFacilitator($game);
@@ -112,6 +153,15 @@ it('orders voters by join order', function () {
         ->and(array_column($snapshot['players'], 'id'))->toBe([$first->id, $second->id, $third->id]);
 });
 
+it('names the team of the game for a member and not for a guest', function () {
+    $game = PokerGame::factory()->withGuestAccess()->create();
+    [, $facilitator] = pokerFacilitator($game);
+    $guest = pokerGuest($game);
+
+    expect(pokerSnapshot($game, $facilitator)['game']['teamName'])->toBe($game->team->name)
+        ->and(pokerSnapshot($game, $guest)['game']['teamName'])->toBeNull();
+});
+
 it('gives guests no guest url, team link or transfer candidates', function () {
     $game = PokerGame::factory()->withGuestAccess()->create();
     pokerFacilitator($game);
@@ -121,6 +171,7 @@ it('gives guests no guest url, team link or transfer candidates', function () {
 
     expect($snapshot['game']['guestUrl'])->toBeNull()
         ->and($snapshot['links']['team'])->toBeNull()
+        ->and($snapshot['links']['decks'])->toBeNull()
         ->and($snapshot['me'])->toMatchArray([
             'playerId' => $guest->id,
             'userId' => null,
@@ -158,6 +209,7 @@ it('describes what members and workspace admins may do', function () {
         'canDelete' => false,
     ])
         ->and($forMember['links']['team'])->toBe(route('teams.show', [$game->team->workspace, $game->team]))
+        ->and($forMember['links']['decks'])->toBe(route('teams.pokerDecks.index', [$game->team->workspace, $game->team]))
         ->and($forMember['game']['guestUrl'])->toBeNull()
         ->and($forMember['serverTime'])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/')
         ->and($forAdmin['me']['canDelete'])->toBeTrue();

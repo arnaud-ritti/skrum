@@ -91,7 +91,7 @@ function p08bBuiltIns(): string
 
 function p08bTeamStatements(): string
 {
-    return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('div > div').textContent).join(' | ')";
+    return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('p').textContent).join(' | ')";
 }
 
 function p08bBoardStatements(): string
@@ -171,7 +171,7 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->assertAttribute($handle, 'aria-pressed', 'true');
     $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
     $page->keys($handle, 'ArrowDown')
-        ->assertScript($announcement, 'Moved Interaction to position 2.')
+        ->assertScript($announcement, 'Moving: Interaction. Position 2 of 6.')
         ->keys($handle, 'Space')
         ->assertAttributeMissing($handle, 'aria-pressed');
 
@@ -248,12 +248,11 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('New retrospective')
-        ->click('New retrospective')
+    $page->assertSee('New session')
+        ->click('New session')
         ->assertVisible('#new-retro-title')
         ->fill('#new-retro-title', 'Sprint 15 retro')
-        ->assertCount('[role="dialog"] li button[aria-pressed="true"]', 1)
-        ->click('[role="dialog"] button:has-text("Settings")')
+        ->assertCount('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 1)
         ->assertVisible('#new-retro-health-check')
         ->click('#new-retro-health-check')
         ->assertAttribute('#new-retro-health-check', 'aria-checked', 'true')

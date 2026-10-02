@@ -317,6 +317,7 @@ export type Snapshot = {
     exportSources: ExportSource[];
     teamMembers: TeamMember[];
     surveys: SurveyPayload[];
+    writersCount: number;
     roti: RotiState;
     results: Results | null;
     insights: Insights | null;
@@ -351,6 +352,7 @@ export type HealthStatementResult = {
     isBuiltin: boolean;
     average: number | null;
     count: number;
+    previousAverage: number | null;
 };
 
 export type HealthHighlight = { key: string; label: string; average: number };
@@ -389,7 +391,11 @@ export type RotiResults = {
     respondents: number;
 };
 
-export type RotiState = { myScore: number | null; respondents: number };
+export type RotiState = {
+    myScore: number | null;
+    respondents: number;
+    voterIds: string[];
+};
 
 export type GamesPlayedPerson = {
     playerId: string;
@@ -426,6 +432,13 @@ export type GamesPlayed = {
     roundsPlayed: number;
 };
 
+export type ResultsStats = {
+    votesCast: number;
+    votesAvailable: number;
+    participation: { participants: number; teamMembers: number };
+    durationSeconds: number | null;
+};
+
 export type Results = {
     participants: BoardParticipant[];
     health: HealthResults | null;
@@ -436,4 +449,5 @@ export type Results = {
     summary: ResultsSummary | null;
     deliveries: IntegrationDelivery[];
     emailRecipients: { participants: number; team: number } | null;
+    stats: ResultsStats;
 };

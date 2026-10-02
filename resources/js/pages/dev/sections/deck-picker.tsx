@@ -100,16 +100,19 @@ function Picker({
     initial,
     decks,
     withManage = false,
+    variant,
 }: {
     initial: string;
     decks: Deck[];
     withManage?: boolean;
+    variant?: 'default' | 'compact';
 }) {
     const [value, setValue] = useState(initial);
     const [current, setCurrent] = useState(decks);
 
     return (
         <DeckPicker
+            variant={variant}
             value={value}
             onValueChange={setValue}
             decks={current}
@@ -231,6 +234,29 @@ export default function DeckPickerSection() {
             <Example label={t('Picker: narrow container (20rem)')}>
                 <div className="w-80 max-w-full">
                     <Picker initial="tshirt" decks={builtinDecks.slice(0, 3)} />
+                </div>
+            </Example>
+            <Example
+                label={t(
+                    'Picker, compact: small tiles with the values in mono, "New deck" in the header, edit and delete on the selected deck',
+                )}
+            >
+                <div className="max-w-md">
+                    <Picker
+                        variant="compact"
+                        initial="saved-1"
+                        decks={[...builtinDecks, savedDeck, readOnlyDeck]}
+                        withManage
+                    />
+                </div>
+            </Example>
+            <Example label={t('Picker, compact: narrow container (20rem)')}>
+                <div className="w-80 max-w-full">
+                    <Picker
+                        variant="compact"
+                        initial="saved-3"
+                        decks={[...builtinDecks.slice(0, 2), extremeDeck]}
+                    />
                 </div>
             </Example>
             <Example

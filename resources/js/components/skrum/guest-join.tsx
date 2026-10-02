@@ -62,7 +62,14 @@ export type GuestJoinProps = {
     /** Extra controls rendered between the nickname and the join button. */
     children?: ReactNode;
     onRandomName?: () => void;
+    /** Pins the join button to the bottom of the viewport (phone). */
+    stickyAction?: boolean;
     loginUrl: string;
+    /**
+     * The Skrüm logo at the top of the card. Off inside a page frame that
+     * already shows the instance's own logo.
+     */
+    logo?: boolean;
     className?: string;
 };
 
@@ -136,7 +143,9 @@ export function GuestJoin({
     onSubmit,
     children,
     onRandomName,
+    stickyAction = false,
     loginUrl,
+    logo = true,
     className,
 }: GuestJoinProps) {
     const { t } = useTrans();
@@ -164,6 +173,7 @@ export function GuestJoin({
     const trimmedName = name.trim();
     const hasName = trimmedName !== '';
     const previewName = hasName ? trimmedName : (defaultName ?? '');
+    const hasPreview = previewName !== '';
     const previewPresence = showColors && color !== null ? color : undefined;
     const isBlocked = activeError !== null || processing;
 
@@ -286,10 +296,12 @@ export function GuestJoin({
             )}
         >
             <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-                <SkrumLogo
-                    variant="horizontal"
-                    className="h-6 w-auto self-start"
-                />
+                {logo && (
+                    <SkrumLogo
+                        variant="horizontal"
+                        className="h-6 w-auto self-start"
+                    />
+                )}
 
                 <div className="flex flex-col gap-1">
                     <h2 className="text-xl font-title tracking-subheading">
@@ -443,53 +455,55 @@ export function GuestJoin({
                     </div>
                 )}
 
-                <div
-                    data-slot="guest-join-preview"
-                    className="flex items-center gap-3"
-                >
-                    {hasName ? (
-                        <PersonAvatar
-                            decorative
-                            size="xl"
-                            name={trimmedName}
-                            presence={previewPresence}
-                        />
-                    ) : (
-                        <PersonAvatar
-                            decorative
-                            size="xl"
-                            kind="guest"
-                            name={previewName}
-                        />
-                    )}
-                    <span className="flex min-w-0 flex-col gap-1">
+                {hasPreview && (
+                    <div
+                        data-slot="guest-join-preview"
+                        className="flex items-center gap-3"
+                    >
                         {hasName ? (
-                            <>
-                                <span className="truncate font-semibold">
-                                    {trimmedName}
-                                </span>
-                                <Badge
-                                    variant="secondary"
-                                    className="w-fit rounded-full"
-                                >
-                                    <VenetianMask aria-hidden />
-                                    {t('Guest')}
-                                </Badge>
-                            </>
+                            <PersonAvatar
+                                decorative
+                                size="xl"
+                                name={trimmedName}
+                                presence={previewPresence}
+                            />
                         ) : (
-                            <>
-                                <span className="truncate text-muted-foreground">
-                                    {previewName}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {t(
-                                        'Suggested nickname if you leave it empty',
-                                    )}
-                                </span>
-                            </>
+                            <PersonAvatar
+                                decorative
+                                size="xl"
+                                kind="guest"
+                                name={previewName}
+                            />
                         )}
-                    </span>
-                </div>
+                        <span className="flex min-w-0 flex-col gap-1">
+                            {hasName ? (
+                                <>
+                                    <span className="truncate font-semibold">
+                                        {trimmedName}
+                                    </span>
+                                    <Badge
+                                        variant="secondary"
+                                        className="w-fit rounded-full"
+                                    >
+                                        <VenetianMask aria-hidden />
+                                        {t('Guest')}
+                                    </Badge>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="truncate text-muted-foreground">
+                                        {previewName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t(
+                                            'Suggested nickname if you leave it empty',
+                                        )}
+                                    </span>
+                                </>
+                            )}
+                        </span>
+                    </div>
+                )}
 
                 {!hasName && onRandomName && (
                     <Button
@@ -508,21 +522,29 @@ export function GuestJoin({
 
                 {children}
 
-                <LoadingButton
-                    type="submit"
-                    size="lg"
-                    className="w-full"
-                    loading={processing}
-                    loader="trema"
-                    disabled={activeError !== null}
+                <div
+                    data-slot="guest-join-action"
+                    className={cn(
+                        stickyAction &&
+                            'sticky bottom-0 -mx-6 border-t bg-card px-6 py-3',
+                    )}
                 >
-                    <span className="truncate">
-                        {processing
-                            ? t('Connecting to the session…')
-                            : t('Join')}
-                    </span>
-                    {!processing && <ArrowRight aria-hidden />}
-                </LoadingButton>
+                    <LoadingButton
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        loading={processing}
+                        loader="trema"
+                        disabled={activeError !== null}
+                    >
+                        <span className="truncate">
+                            {processing
+                                ? t('Connecting to the session…')
+                                : t('Join')}
+                        </span>
+                        {!processing && <ArrowRight aria-hidden />}
+                    </LoadingButton>
+                </div>
 
                 <p className="flex items-start gap-2 text-xs text-muted-foreground">
                     <ShieldCheck

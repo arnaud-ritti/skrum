@@ -34,7 +34,7 @@ it('lists the standalone rooms of the team', function () {
     $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Lunch']);
     GamePlayer::factory()->count(2)->create(['game_room_id' => $room->id]);
     GameRound::factory()->ended()->create(['game_room_id' => $room->id]);
-    activeGameRound($room);
+    $round = activeGameRound($room);
     GameRoom::factory()->icebreaker(Retro::factory()->inPhase(RetroPhase::Icebreaker)->create(['team_id' => $team->id]))->create();
     GameRoom::factory()->create();
 
@@ -50,8 +50,15 @@ it('lists the standalone rooms of the team', function () {
                 'game' => 'hangman',
                 'gameLabel' => __('Hangman'),
                 'access' => 'team',
+                'status' => 'playing',
+                'players' => $room->players->map(fn (GamePlayer $player): array => [
+                    'id' => $player->id,
+                    'name' => $player->displayName(),
+                    'avatarUrl' => $player->avatarUrl(),
+                ])->all(),
                 'playersCount' => 2,
                 'roundsCount' => 1,
+                'roundStartedAt' => $round->started_at->toIso8601String(),
                 'updatedAt' => $room->fresh()->updated_at?->toIso8601String(),
             ])
             ->where('canCreate', true)
@@ -147,6 +154,39 @@ it('lets the host rename a room and change its access and locale', function () {
         ->locale->toBe('de');
 
     Event::assertDispatched(fn (GameRoomChanged $event) => $event->roomId === $room->id);
+});
+
+it('starts a room with reactions on and lets the host turn them off and on', function () {
+    $room = GameRoom::factory()->create();
+    [$user] = gameRoomHost($room);
+
+    expect($room->fresh()->reactions_enabled)->toBeTrue();
+
+    $this->actingAs($user)->patchJson(route('games.update', $room), ['reactions_enabled' => false])->assertNoContent();
+
+    expect($room->fresh()->reactions_enabled)->toBeFalse();
+    Event::assertDispatched(fn (GameRoomChanged $event) => $event->roomId === $room->id);
+
+    $this->actingAs($user)->patchJson(route('games.update', $room), ['reactions_enabled' => true])->assertNoContent();
+
+    expect($room->fresh()->reactions_enabled)->toBeTrue();
+});
+
+it('keeps the reactions setting to managers', function () {
+    $room = GameRoom::factory()->create();
+    gameRoomHost($room);
+    [$member] = gameRoomMember($room);
+
+    $this->actingAs($member)->patchJson(route('games.update', $room), ['reactions_enabled' => false])->assertForbidden();
+
+    expect($room->fresh()->reactions_enabled)->toBeTrue();
+});
+
+it('refuses a non-boolean reactions setting', function () {
+    $room = GameRoom::factory()->create();
+    [$user] = gameRoomHost($room);
+
+    $this->actingAs($user)->patchJson(route('games.update', $room), ['reactions_enabled' => 'maybe'])->assertUnprocessable();
 });
 
 it('keeps room settings to managers', function () {

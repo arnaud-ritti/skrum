@@ -5,8 +5,8 @@ import type { FlashToast } from '@/types/ui';
 import type {
     CurrentTeam,
     CurrentWorkspace,
+    SwitcherWorkspace,
     TeamSummary,
-    WorkspaceSummary,
 } from '@/types/workspaces';
 
 declare module 'react' {
@@ -26,13 +26,13 @@ declare module '@inertiajs/core' {
             locale: string;
             locales: string[];
             translations: Record<string, string>;
-            workspaces: WorkspaceSummary[];
+            workspaces: SwitcherWorkspace[];
             currentWorkspace: CurrentWorkspace | null;
             teams: TeamSummary[];
             currentTeam: CurrentTeam | null;
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
-            features: { mcp: boolean };
+            features: { mcp: boolean; integrations: boolean };
             [key: string]: unknown;
         };
         flashDataType: {

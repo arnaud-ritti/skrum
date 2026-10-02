@@ -1098,7 +1098,10 @@ function SettingsPanel({
             )}
 
             {!readOnly && (
-                <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t bg-muted py-2 pr-3 pl-4">
+                <div
+                    data-slot="session-settings-footer"
+                    className="sticky bottom-0 z-10 mt-auto flex flex-wrap items-center justify-between gap-2 border-t bg-muted py-2 pr-3 pl-4"
+                >
                     {discardPending ? (
                         <>
                             <p

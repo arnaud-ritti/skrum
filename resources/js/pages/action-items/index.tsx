@@ -55,6 +55,14 @@ type TeamOption = {
     members: Array<{ id: string; name: string; avatarUrl: string }>;
 };
 
+type ActionItemCounts = {
+    open: number;
+    overdue: number;
+    completed: number;
+    mine: number;
+    rituals: number;
+};
+
 type Props = {
     workspace: WorkspaceSummary;
     filters: Filters;
@@ -67,7 +75,8 @@ type Props = {
         nextPageUrl: string | null;
     };
     focusedItem: ActionItem | null;
-    teams: TeamOption[];
+    filterTeams: TeamOption[];
+    counts: ActionItemCounts;
     creatableTeams: TeamOption[];
     assignees: Array<{ id: string; name: string }>;
     realtimeTeamIds: string[];
@@ -313,7 +322,7 @@ export default function ActionItemsIndex({
     filters,
     items,
     focusedItem,
-    teams,
+    filterTeams: teams,
     creatableTeams,
     assignees,
     realtimeTeamIds,

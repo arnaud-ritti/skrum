@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationAuthorizationsController from '@/actions/App/Http/Controllers/Integrations/IntegrationAuthorizationsController';
 import IntegrationTestsController from '@/actions/App/Http/Controllers/Integrations/IntegrationTestsController';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -24,7 +24,8 @@ type ConnectLinkProps = {
 
 /**
  * A plain link: the server answers with a redirect to the provider's
- * consent screen, which Inertia must not follow as a visit.
+ * consent screen, which Inertia must not follow as a visit. The label is the
+ * link's own text: the browser suite finds it with `a:text-is(…)`.
  */
 export function ConnectLink({
     scope,
@@ -39,7 +40,7 @@ export function ConnectLink({
     );
 
     return (
-        <Button variant={variant} size="sm" asChild>
+        <Button variant={variant} size="sm" className="max-w-full" asChild>
             <a href={href}>{label}</a>
         </Button>
     );
@@ -83,14 +84,15 @@ export function TestConnectionButton({
     };
 
     return (
-        <Button
+        <LoadingButton
+            type="button"
             variant="outline"
             size="sm"
-            disabled={busy}
+            className="max-w-full"
+            loading={busy}
             onClick={() => void run()}
         >
-            {busy && <Spinner />}
-            {label}
-        </Button>
+            <span className="truncate">{label}</span>
+        </LoadingButton>
     );
 }

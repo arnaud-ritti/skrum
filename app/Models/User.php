@@ -22,6 +22,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
+use Laravel\Fortify\Events\RecoveryCodeReplaced;
+use Laravel\Fortify\Fortify;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -188,5 +190,25 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
+     * Fortify swaps a used recovery code for a new one, so the stock never shrinks.
+     * Here the used code is removed, so the security page can say how many are left.
+     *
+     * @param  string  $code
+     */
+    public function replaceRecoveryCode($code): void
+    {
+        $remainingCodes = array_values(array_filter(
+            $this->recoveryCodes(),
+            fn (string $storedCode): bool => ! hash_equals($storedCode, $code),
+        ));
+
+        $this->forceFill([
+            'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode($remainingCodes)),
+        ])->save();
+
+        RecoveryCodeReplaced::dispatch($this, $code);
     }
 }

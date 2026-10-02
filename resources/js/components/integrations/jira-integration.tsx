@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { ExternalLink, ListChecks } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
@@ -20,12 +20,16 @@ import type {
 } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
 import { StoryPointsField } from './story-points-field';
+import { TrackerIntro, TrackerLink } from './tracker-parts';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -38,9 +42,8 @@ export function JiraIntegration({ card, scope }: Props) {
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={ListChecks}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, ListChecks, t)}
                 actions={
                     <>
                         <ConnectLink
@@ -59,12 +62,12 @@ export function JiraIntegration({ card, scope }: Props) {
                     </>
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <TrackerIntro>
                     {t(
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
-                </p>
-            </IntegrationCard>
+                </TrackerIntro>
+            </ProviderCard>
         );
     }
 
@@ -81,6 +84,7 @@ function ConnectedJira({
     const { settings } = connection;
     const sites = settings.sites ?? [];
     const target = { ...scope, integration: connection.id };
+    const isSetup = connection.status === 'setup_required';
 
     const send = async (request: Promise<unknown>, successMessage: string) => {
         setBusy(true);
@@ -107,9 +111,34 @@ function ConnectedJira({
         );
 
     return (
-        <IntegrationCard
-            icon={ListChecks}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, ListChecks, t)}
+            details={
+                !isSetup && (
+                    <ProviderDetails
+                        connection={connection}
+                        rows={[
+                            {
+                                label: t('Jira site'),
+                                value: settings.siteUrl ? (
+                                    <TrackerLink href={settings.siteUrl}>
+                                        {settings.siteName}
+                                    </TrackerLink>
+                                ) : (
+                                    settings.siteName
+                                ),
+                            },
+                            {
+                                label: t('Access'),
+                                value:
+                                    connection.access === 'write'
+                                        ? t('Read and write')
+                                        : t('Read only'),
+                            },
+                        ]}
+                    />
+                )
+            }
             actions={
                 <>
                     <ConnectLink
@@ -147,9 +176,12 @@ function ConnectedJira({
                 </>
             }
         >
-            {connection.status === 'setup_required' ? (
-                <div className="space-y-2">
-                    <p className="text-sm">
+            {isSetup && (
+                <div
+                    data-slot="jira-site-choice"
+                    className="flex min-w-0 flex-col gap-1.5"
+                >
+                    <p className="text-sm font-medium">
                         {t('Choose the Jira site this team uses:')}
                     </p>
                     <Select disabled={busy} onValueChange={chooseSite}>
@@ -171,63 +203,31 @@ function ConnectedJira({
                         </SelectContent>
                     </Select>
                 </div>
-            ) : (
-                <>
-                    <IntegrationDetails
-                        connection={connection}
-                        rows={[
-                            {
-                                label: t('Jira site'),
-                                value: settings.siteUrl ? (
-                                    <a
-                                        href={settings.siteUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 underline"
-                                    >
-                                        {settings.siteName}
-                                        <ExternalLink
-                                            className="size-3"
-                                            aria-hidden
-                                        />
-                                    </a>
-                                ) : (
-                                    settings.siteName
-                                ),
-                            },
-                            {
-                                label: t('Access'),
-                                value:
-                                    connection.access === 'write'
-                                        ? t('Read and write')
-                                        : t('Read only'),
-                            },
-                        ]}
-                    />
-                    <StoryPointsField scope={scope} connection={connection} />
-                    {connection.status === 'active' &&
-                        connection.access === 'write' && (
-                            <>
-                                <PeoplePanel
-                                    scope={scope}
-                                    connection={connection}
-                                    providerLabel={card.label}
-                                />
-                                <PrioritiesPanel
-                                    scope={scope}
-                                    connection={connection}
-                                />
-                            </>
-                        )}
-                    {connection.status === 'active' && (
-                        <StatusSyncSection
+            )}
+            {!isSetup && (
+                <StoryPointsField scope={scope} connection={connection} />
+            )}
+            {connection.status === 'active' &&
+                connection.access === 'write' && (
+                    <>
+                        <PeoplePanel
                             scope={scope}
-                            card={card}
+                            connection={connection}
+                            providerLabel={card.label}
+                        />
+                        <PrioritiesPanel
+                            scope={scope}
                             connection={connection}
                         />
-                    )}
-                </>
+                    </>
+                )}
+            {connection.status === 'active' && (
+                <StatusSyncSection
+                    scope={scope}
+                    card={card}
+                    connection={connection}
+                />
             )}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

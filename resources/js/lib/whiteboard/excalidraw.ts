@@ -1,8 +1,5 @@
-import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import '../../../css/excalidraw-theme.css';
-import type { ExcalidrawImperativeAPI as Api } from '@excalidraw/excalidraw/types';
-import type { ComponentProps } from 'react';
 
 export {
     CaptureUpdateAction,
@@ -14,15 +11,9 @@ export {
 } from '@excalidraw/excalidraw';
 export type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 export type {
-    AppState,
-    BinaryFileData,
     BinaryFiles,
-    Collaborator,
     ExcalidrawImperativeAPI,
-    SocketId,
 } from '@excalidraw/excalidraw/types';
-
-type Props = ComponentProps<typeof ExcalidrawComponent>;
 
 /**
  * Excalidraw 0.18.1 hardcodes the file type of its scene export ("Excalidraw
@@ -32,38 +23,6 @@ type Props = ComponentProps<typeof ExcalidrawComponent>;
  * types do not list. Check this when the library is upgraded.
  */
 export const HiddenSaveToDiskAction = { saveFileToDisk: false } as const;
-
-export type RequiredApi = Pick<
-    Api,
-    | 'updateScene'
-    | 'getSceneElementsIncludingDeleted'
-    | 'getAppState'
-    | 'getFiles'
-    | 'addFiles'
->;
-
-export type RequiredProps = Pick<
-    Props,
-    | 'excalidrawAPI'
-    | 'initialData'
-    | 'onChange'
-    | 'onPointerUpdate'
-    | 'onScrollChange'
-    | 'viewModeEnabled'
-    | 'renderTopRightUI'
-    | 'UIOptions'
-    | 'langCode'
-    | 'theme'
->;
-
-/**
- * Excalidraw 0.18.1 draws the canvas of the dark theme through the filter
- * `invert(93%) hue-rotate(180deg)` (its `THEME_FILTER`, not exported), so a
- * colour shown outside the canvas needs the same filter to look as it will
- * on it. Written out in full because Tailwind reads class names from source.
- */
-export const CanvasDarkFilterClass =
-    'dark:[filter:invert(93%)_hue-rotate(180deg)]';
 
 /**
  * Markup of the shapes toolbar in Excalidraw 0.18.1, which has no prop or

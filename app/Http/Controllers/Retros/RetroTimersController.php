@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Retros;
 
 use App\Actions\Games\ScheduleIcebreakerExpiry;
+use App\Actions\Retros\MarkRetroStarted;
 use App\Actions\Retros\RetroGuard;
 use App\Events\Retros\TimerChanged;
 use App\Http\Controllers\Controller;
@@ -14,7 +15,9 @@ use Illuminate\Support\Facades\DB;
 
 class RetroTimersController extends Controller
 {
-    public function update(Request $request, Retro $retro, ScheduleIcebreakerExpiry $scheduleIcebreakerExpiry): JsonResponse
+    public const MaxSeconds = 7200;
+
+    public function update(Request $request, Retro $retro, ScheduleIcebreakerExpiry $scheduleIcebreakerExpiry, MarkRetroStarted $markRetroStarted): JsonResponse
     {
         $participant = Participant::current($request);
 
@@ -22,7 +25,7 @@ class RetroTimersController extends Controller
         RetroGuard::open($retro);
 
         $validated = $request->validate([
-            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:7200'],
+            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:'.self::MaxSeconds],
         ]);
 
         // Whole seconds: a game expiry job compares its end time with the stored one.
@@ -30,13 +33,17 @@ class RetroTimersController extends Controller
             ? null
             : now()->addSeconds((int) $validated['seconds'])->startOfSecond();
 
-        DB::transaction(function () use ($retro, $participant, $endsAt, $scheduleIcebreakerExpiry): void {
+        DB::transaction(function () use ($retro, $participant, $endsAt, $scheduleIcebreakerExpiry, $markRetroStarted): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
             RetroGuard::open($locked);
 
             $locked->update(['timer_ends_at' => $endsAt]);
+
+            if ($endsAt !== null) {
+                $markRetroStarted->handle($locked);
+            }
 
             (new TimerChanged($locked->id, $endsAt?->toIso8601String()))->sendToOthers();
 

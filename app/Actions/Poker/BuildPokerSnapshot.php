@@ -40,7 +40,8 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         autoReveal: bool,
  *         anonymousVotes: bool,
  *         cursorsEnabled: bool,
- *         reactionsEnabled: bool
+ *         reactionsEnabled: bool,
+ *         teamName: ?string
  *     },
  *     me: array{
  *         playerId: string,
@@ -57,7 +58,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
  *     tasks: array<int, Task>,
  *     current: ?array{taskId: string, round: Round},
- *     links: array{team: ?string},
+ *     links: array{team: ?string, decks: ?string},
  *     integrations: ?array<string, array{connected: bool, canWrite: bool}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
@@ -83,6 +84,7 @@ class BuildPokerSnapshot
             'team.workspace',
             'players.user',
             'tasks' => fn ($query) => $query->withCount('rounds'),
+            'tasks.latestRound' => fn ($query) => $query->withCount('votes'),
             'currentTask.latestRound.votes',
         ]);
         $viewer->loadMissing('user');
@@ -117,6 +119,7 @@ class BuildPokerSnapshot
                 'anonymousVotes' => $game->anonymous_votes,
                 'cursorsEnabled' => $game->cursors_enabled,
                 'reactionsEnabled' => $game->reactions_enabled,
+                'teamName' => $isGuest ? null : $team->name,
             ],
             'me' => [
                 'playerId' => $viewer->id,
@@ -144,6 +147,7 @@ class BuildPokerSnapshot
             ],
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$team->workspace, $team]),
+                'decks' => $isGuest ? null : route('teams.pokerDecks.index', [$team->workspace, $team]),
             ],
             'integrations' => $sync?->summary(),
             'share' => $this->shareOptions->pokerGame($game, $viewer),

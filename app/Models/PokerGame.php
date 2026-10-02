@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property PokerDeck $deck
  * @property array<int, string> $cards
  * @property string|null $deck_name
+ * @property string|null $saved_deck_id
  * @property string|null $facilitator_player_id
  * @property string|null $current_task_id
  * @property bool $guest_access_enabled
@@ -38,7 +39,7 @@ use Illuminate\Support\Carbon;
  * @property-read PokerTask|null $currentTask
  */
 #[Fillable([
-    'title', 'deck', 'cards', 'deck_name', 'facilitator_player_id', 'current_task_id',
+    'title', 'deck', 'cards', 'deck_name', 'saved_deck_id', 'facilitator_player_id', 'current_task_id',
     'guest_access_enabled', 'guest_token', 'ended_at',
     'auto_reveal', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled',
 ])]
@@ -55,6 +56,12 @@ class PokerGame extends Model implements DeliverySubject
         static::deleting(function (PokerGame $game): void {
             IntegrationDelivery::query()->whereMorphedTo('subject', $game)->delete();
         });
+    }
+
+    /** @return BelongsTo<SavedPokerDeck, $this> */
+    public function savedDeck(): BelongsTo
+    {
+        return $this->belongsTo(SavedPokerDeck::class, 'saved_deck_id');
     }
 
     /** @return BelongsTo<Team, $this> */

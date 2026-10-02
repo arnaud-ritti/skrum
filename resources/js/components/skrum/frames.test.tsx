@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { User } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 import SessionLayout from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
@@ -64,6 +65,39 @@ describe('SessionFrame', () => {
         expect(screen.getByRole('banner').textContent).toContain('Sprint 42');
         expect(screen.getByRole('banner').textContent).toContain('phases');
         expect(screen.getByRole('banner').textContent).toContain('05:00');
+    });
+});
+
+describe('SessionFrame header order', () => {
+    it('puts the logo first, the connection state before the timer and the viewer last', () => {
+        renderWithProviders(
+            <SessionFrame
+                logo={<span>logo</span>}
+                title="Sprint 42"
+                status={<span>synced</span>}
+                timer={<span>05:00</span>}
+                presence={<span>2 online</span>}
+                actions={<span>share</span>}
+                avatar={<span>me</span>}
+            >
+                <p>board</p>
+            </SessionFrame>,
+        );
+
+        expect(
+            [...screen.getByRole('banner').children].map(
+                (child) => child.textContent,
+            ),
+        ).toEqual([
+            'logo',
+            'Sprint 42',
+            '',
+            'synced',
+            '05:00',
+            '2 online',
+            'share',
+            'me',
+        ]);
     });
 });
 
@@ -154,6 +188,41 @@ describe('SettingsFrame', () => {
             screen
                 .getByRole('link', { name: 'Security' })
                 .getAttribute('aria-current'),
+        ).toBeNull();
+    });
+
+    it('draws the icon of an entry before its label, hidden from assistive technology', () => {
+        renderWithProviders(
+            <SettingsFrame
+                title="Settings"
+                navLabel="Settings"
+                nav={[
+                    {
+                        label: 'Profile',
+                        href: '/settings/profile',
+                        current: true,
+                        icon: User,
+                    },
+                    {
+                        label: 'Security',
+                        href: '/settings/security',
+                        current: false,
+                    },
+                ]}
+            >
+                <p>form</p>
+            </SettingsFrame>,
+        );
+
+        const profile = screen.getByRole('link', { name: 'Profile' });
+        const icon = profile.querySelector('[data-slot="sub-nav-icon"]');
+
+        expect(icon?.getAttribute('aria-hidden')).toBe('true');
+        expect(profile.firstElementChild).toBe(icon);
+        expect(
+            screen
+                .getByRole('link', { name: 'Security' })
+                .querySelector('[data-slot="sub-nav-icon"]'),
         ).toBeNull();
     });
 });
@@ -281,5 +350,24 @@ describe('OnboardingFrame', () => {
 
         expect(screen.getByRole('banner').querySelector('ol')).not.toBeNull();
         expect(screen.getByRole('main').textContent).toContain('step');
+    });
+});
+
+describe('AuthFrame centred', () => {
+    it('has one column, a hidden page heading and no aside', () => {
+        const { container } = renderWithProviders(
+            <AuthFrame variant="centered" title="Sprint 42 retro">
+                <h2>Join as a guest</h2>
+            </AuthFrame>,
+        );
+
+        const heading = screen.getByRole('heading', { level: 1 });
+
+        expect(heading.textContent).toBe('Sprint 42 retro');
+        expect(heading.classList.contains('sr-only')).toBe(true);
+        expect(container.querySelector('aside')).toBeNull();
+        expect(screen.getByRole('main').textContent).toContain(
+            'Join as a guest',
+        );
     });
 });

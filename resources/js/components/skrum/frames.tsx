@@ -74,35 +74,47 @@ export function AppFrame({
 
 export function SessionFrame({
     sidebar,
+    logo,
     title,
     phases,
+    status,
     timer,
     presence,
     actions,
+    avatar,
     children,
 }: {
     /** Absent for a guest: no application sidebar and no trigger. */
     sidebar?: AppSidebarProps;
+    /** Start of the header on a screen without the application rail (whiteboard). */
+    logo?: ReactNode;
     title: ReactNode;
     phases?: ReactNode;
+    /** Connection state, before the timer and the people present. */
+    status?: ReactNode;
     timer?: ReactNode;
     presence?: ReactNode;
     actions?: ReactNode;
+    /** The viewer, at the end of the header. */
+    avatar?: ReactNode;
     children: ReactNode;
 }) {
     const inset = (
         <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
             <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
                 {sidebar && <SidebarTrigger className="-ml-1 md:hidden" />}
+                {logo}
                 <div className="min-w-0 truncate text-base font-semibold">
                     {title}
                 </div>
                 <div className="flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1">
                     {phases}
                 </div>
+                {status}
                 {timer}
                 {presence}
                 {actions}
+                {avatar}
             </header>
             <main className="relative min-h-0 flex-1">{children}</main>
         </Inset>
@@ -172,6 +184,7 @@ export function AuthFrame({
     aside,
     headerEnd,
     footer,
+    variant = 'split',
     children,
 }: {
     brand?: BrandIdentity;
@@ -180,8 +193,34 @@ export function AuthFrame({
     aside?: ReactNode;
     headerEnd?: ReactNode;
     footer?: ReactNode;
+    /** `centered`: one column, the title only for screen readers, no aside. */
+    variant?: 'split' | 'centered';
     children: ReactNode;
 }) {
+    if (variant === 'centered') {
+        return (
+            <div className="flex min-h-svh min-w-0 flex-col gap-8 p-6 md:p-10">
+                <header className="flex items-center justify-between gap-4">
+                    <BrandLogo
+                        brand={brand}
+                        className="h-12"
+                        fallback={<SkrumLogo className="h-7 w-auto" />}
+                    />
+                    {headerEnd}
+                </header>
+                <main className="mx-auto flex w-full max-w-120 flex-1 flex-col justify-center gap-6">
+                    <h1 className="sr-only">{title}</h1>
+                    {children}
+                </main>
+                {footer && (
+                    <footer className="text-center text-xs text-muted-foreground">
+                        {footer}
+                    </footer>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-8 p-6 md:p-10">

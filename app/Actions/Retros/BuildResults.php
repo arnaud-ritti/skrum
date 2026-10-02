@@ -42,7 +42,13 @@ class BuildResults
      *     roti: array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int},
      *     summary: ?array{text: ?string, generatedAt: ?string, status: ?string, provider: string},
      *     deliveries: array<int, array{id: string, channel: string, kind: string, status: string, error: ?string, sentAt: ?string, createdAt: ?string, requestedBy: ?string, recipientCount: ?int}>,
-     *     emailRecipients: ?array{participants: int, team: int}
+     *     emailRecipients: ?array{participants: int, team: int},
+     *     stats: array{
+     *         votesCast: int,
+     *         votesAvailable: int,
+     *         participation: array{participants: int, teamMembers: int},
+     *         durationSeconds: ?int
+     *     }
      * }|null
      */
     public function handle(Retro $retro, Participant $viewer, ?array $surveys = null): ?array
@@ -53,7 +59,7 @@ class BuildResults
 
         $retro->loadMissing('participants.user');
 
-        $health = $this->summarizeHealthCheck->handle($retro);
+        $health = $this->summarizeHealthCheck->handle($retro, $viewer);
         $canShare = $this->sharePermissions->retro($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer);
 
         return [
@@ -68,6 +74,43 @@ class BuildResults
             'emailRecipients' => $canShare && $this->integrationAvailability->emailEnabled()
                 ? $this->retroResultsRecipients->counts($retro)
                 : null,
+            'stats' => $this->stats($retro),
         ];
+    }
+
+    /**
+     * @return array{
+     *     votesCast: int,
+     *     votesAvailable: int,
+     *     participation: array{participants: int, teamMembers: int},
+     *     durationSeconds: ?int
+     * }
+     */
+    private function stats(Retro $retro): array
+    {
+        $participantCount = $retro->participants->count();
+
+        return [
+            'votesCast' => $retro->votes()->count(),
+            'votesAvailable' => $participantCount * $retro->voteLimit(),
+            'participation' => [
+                'participants' => $participantCount,
+                'teamMembers' => $retro->team->members()->count(),
+            ],
+            'durationSeconds' => $this->durationSeconds($retro),
+        ];
+    }
+
+    private function durationSeconds(Retro $retro): ?int
+    {
+        if ($retro->started_at === null) {
+            return null;
+        }
+
+        if ($retro->completed_at === null) {
+            return null;
+        }
+
+        return (int) $retro->started_at->diffInSeconds($retro->completed_at);
     }
 }

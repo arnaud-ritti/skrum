@@ -1,18 +1,20 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { TriangleAlert, Unplug } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
+    DialogIcon,
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -31,6 +33,10 @@ type Props = {
     title?: string;
 };
 
+/**
+ * The confirmation is a plain dialog, not an alert dialog: the browser suite
+ * finds its buttons under `[role="dialog"]`.
+ */
 export function DisconnectIntegrationDialog({
     scope,
     card,
@@ -42,6 +48,16 @@ export function DisconnectIntegrationDialog({
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
+    const cancelRef = useRef<HTMLButtonElement>(null);
+    const action = label ?? t('Disconnect');
+
+    const changeOpen = (next: boolean) => {
+        if (!next && busy) {
+            return;
+        }
+
+        setOpen(next);
+    };
 
     const disconnect = async () => {
         setBusy(true);
@@ -68,30 +84,63 @@ export function DisconnectIntegrationDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={changeOpen}>
             <DialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                    {label ?? t('Disconnect')}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ms-auto max-w-full border-[color-mix(in_oklch,var(--destructive)_45%,var(--input))] text-skrum-destructive-text hover:text-skrum-destructive-text"
+                >
+                    <Unplug aria-hidden="true" />
+                    <span className="truncate">{action}</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent>
-                <DialogTitle>
-                    {title ??
-                        t('Disconnect :provider?', { provider: card.label })}
-                </DialogTitle>
-                <DialogDescription>{description}</DialogDescription>
-                <DialogFooter className="gap-2">
-                    <DialogClose asChild>
-                        <Button variant="secondary">{t('Cancel')}</Button>
-                    </DialogClose>
+            <DialogContent
+                size="sm"
+                showCloseButton={false}
+                onOpenAutoFocus={(event) => {
+                    event.preventDefault();
+                    cancelRef.current?.focus();
+                }}
+                onEscapeKeyDown={(event) => {
+                    if (busy) {
+                        event.preventDefault();
+                    }
+                }}
+                onInteractOutside={(event) => event.preventDefault()}
+            >
+                <DialogHeader>
+                    <DialogIcon className="bg-skrum-destructive-soft text-skrum-destructive-text">
+                        <TriangleAlert />
+                    </DialogIcon>
+                    <DialogTitle>
+                        {title ??
+                            t('Disconnect :provider?', {
+                                provider: card.label,
+                            })}
+                    </DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
                     <Button
-                        variant="destructive"
+                        ref={cancelRef}
+                        type="button"
+                        variant="outline"
                         disabled={busy}
+                        onClick={() => changeOpen(false)}
+                    >
+                        <span className="truncate">{t('Cancel')}</span>
+                    </Button>
+                    <LoadingButton
+                        type="button"
+                        variant="destructive"
+                        loading={busy}
                         onClick={() => void disconnect()}
                     >
-                        {busy && <Spinner />}
-                        {label ?? t('Disconnect')}
-                    </Button>
+                        <Unplug aria-hidden="true" />
+                        <span className="truncate">{action}</span>
+                    </LoadingButton>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

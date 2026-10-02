@@ -2,6 +2,7 @@
 
 namespace App\Actions\HealthCheck;
 
+use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroHealthStatement;
 use Illuminate\Support\Collection;
@@ -14,8 +15,10 @@ class SummarizeHealthCheck
     public function __construct(private PresentHealthStatement $presentHealthStatement) {}
 
     /**
+     * The previous averages come from another retro of the team, which a guest of this one must not see.
+     *
      * @return array{
-     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float}>,
+     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float}>,
      *     score: float,
      *     participation: array{respondents: int, participants: int},
      *     topStrength: ?array{key: string, label: string, average: float},
@@ -24,7 +27,7 @@ class SummarizeHealthCheck
      *     assessment: array{band: string, title: string, sentence: string}
      * }|null
      */
-    public function handle(Retro $retro): ?array
+    public function handle(Retro $retro, ?Participant $viewer = null): ?array
     {
         if (! $retro->health_check_enabled) {
             return null;
@@ -37,7 +40,9 @@ class SummarizeHealthCheck
             ->get()
             ->keyBy('statement');
 
-        $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals): array {
+        $previousAverages = $viewer?->isGuest() ? [] : $this->previousAverages($retro);
+
+        $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals, $previousAverages): array {
             $row = $totals->get($statement->key);
             $count = (int) ($row->answers ?? 0);
             $mean = $count === 0 ? null : (float) $row->total / $count;
@@ -47,6 +52,7 @@ class SummarizeHealthCheck
                 'average' => $mean === null ? null : round($mean, 1),
                 'count' => $count,
                 'consensus' => $mean === null ? null : $this->consensus((float) $row->squares / $count - $mean ** 2),
+                'previousAverage' => $previousAverages[$statement->key] ?? null,
             ];
         });
 
@@ -68,6 +74,7 @@ class SummarizeHealthCheck
                 'average' => $statement['average'],
                 'count' => $statement['count'],
                 'consensus' => $statement['consensus'],
+                'previousAverage' => $statement['previousAverage'],
             ])->values()->all(),
             'score' => $score,
             'participation' => [
@@ -79,6 +86,37 @@ class SummarizeHealthCheck
             'alignment' => $this->alignment((int) round((float) $reported->avg('consensus'))),
             'assessment' => $this->assessment($score),
         ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function previousAverages(Retro $retro): array
+    {
+        if ($retro->completed_at === null) {
+            return [];
+        }
+
+        $previous = Retro::query()
+            ->where('team_id', $retro->team_id)
+            ->whereKeyNot($retro->id)
+            ->where('health_check_enabled', true)
+            ->where('completed_at', '<', $retro->completed_at)
+            ->whereHas('healthCheckAnswers')
+            ->orderByDesc('completed_at')
+            ->first(['id']);
+
+        if ($previous === null) {
+            return [];
+        }
+
+        return $previous->healthCheckAnswers()
+            ->toBase()
+            ->selectRaw('statement, avg(score) as mean')
+            ->groupBy('statement')
+            ->pluck('mean', 'statement')
+            ->map(fn (mixed $mean): float => round((float) $mean, 1))
+            ->all();
     }
 
     /**
@@ -101,7 +139,7 @@ class SummarizeHealthCheck
     }
 
     /**
-     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float}>  $reported
+     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float}>  $reported
      * @return array{
      *     0: ?array{key: string, label: string, average: float},
      *     1: ?array{key: string, label: string, average: float}

@@ -52,6 +52,22 @@ const members: ShareMember[] = [
 ];
 
 describe('ShareDialog', () => {
+    it('counts one person present with the singular key', () => {
+        const props = baseProps();
+
+        renderWithProviders(
+            <ShareDialog
+                {...props}
+                session={{ ...props.session, presentCount: 1 }}
+            />,
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog.textContent).toContain('Atlas · 1 present');
+        expect(dialog.textContent).not.toContain(':count');
+    });
+
     it('shows the link, the code and the QR and focuses the copy button', async () => {
         renderWithProviders(<ShareDialog {...baseProps()} />);
 
@@ -121,6 +137,20 @@ describe('ShareDialog', () => {
         fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
 
         expect(onChange).toHaveBeenCalledWith({ allowGuests: false });
+    });
+
+    it('gives the guest switch the id a page asks for', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({ guestSwitchId: 'poker-guest-link-access' })}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('switch', { name: 'Allow guests' })
+                .getAttribute('id'),
+        ).toBe('poker-guest-link-access');
     });
 
     it('asks for confirmation before regenerating, focusing Cancel first', async () => {
@@ -271,6 +301,36 @@ describe('ShareDialog', () => {
         await waitFor(() =>
             expect(onShareToChannel).toHaveBeenCalledWith('msteams', true),
         );
+    });
+
+    it('keeps the extra block of the channels when no channel is left to post to', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    channels: [],
+                    onShareToChannel: vi.fn(),
+                    channelsExtra: <p>Slack: failed</p>,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { name: 'Post a link' }),
+        ).toBeTruthy();
+        expect(screen.getByText('Slack: failed')).toBeTruthy();
+        expect(screen.queryByLabelText('Include the guest link')).toBeNull();
+    });
+
+    it('shows no channels block without a channel and without an extra block', () => {
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({ channels: [], onShareToChannel: vi.fn() })}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('heading', { name: 'Post a link' }),
+        ).toBeNull();
     });
 
     it('renders the mobile drawer with share action', () => {

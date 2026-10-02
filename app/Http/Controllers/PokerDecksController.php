@@ -4,16 +4,104 @@ namespace App\Http\Controllers;
 
 use App\Actions\Poker\PokerDeckRules;
 use App\Actions\Poker\SavedPokerDeckRules;
+use App\Enums\PokerDeck;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PokerDecksController extends Controller
 {
+    public function index(Request $request, Workspace $workspace, Team $team): Response
+    {
+        Gate::authorize('viewAny', [SavedPokerDeck::class, $team]);
+
+        $user = $request->user();
+
+        return Inertia::render('poker/decks', [
+            'workspace' => $workspace->only(['id', 'name', 'slug']),
+            'team' => $team->only(['id', 'name']),
+            'builtInDecks' => $this->builtInDecks($team),
+            'savedDecks' => $this->savedDecks($user, $workspace, $team),
+            'canCreate' => $user->can('create', [SavedPokerDeck::class, $team]),
+            'canSetDefault' => $user->can('update', $team),
+            'deckLimit' => SavedPokerDeckRules::MaxDecks,
+        ]);
+    }
+
+    /**
+     * @return array<int, array{
+     *     key: string,
+     *     name: string,
+     *     cards: array<int, string>,
+     *     isDefault: bool,
+     *     usageCount: int
+     * }>
+     */
+    private function builtInDecks(Team $team): array
+    {
+        $decks = array_values(array_filter(PokerDeck::cases(), fn (PokerDeck $deck): bool => $deck !== PokerDeck::Custom));
+        $defaultDeck = $team->default_saved_poker_deck_id === null
+            ? ($team->default_poker_deck ?? $decks[0]->value)
+            : null;
+
+        $gamesPerDeck = $team->pokerGames()
+            ->toBase()
+            ->where('deck', '!=', PokerDeck::Custom->value)
+            ->selectRaw('deck, count(*) as games_count')
+            ->groupBy('deck')
+            ->pluck('games_count', 'deck');
+
+        return array_map(fn (PokerDeck $deck): array => [
+            'key' => $deck->value,
+            'name' => $deck->label(),
+            'cards' => $deck->cards(),
+            'isDefault' => $deck->value === $defaultDeck,
+            'usageCount' => (int) ($gamesPerDeck[$deck->value] ?? 0),
+        ], $decks);
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     cards: array<int, string>,
+     *     scope: string,
+     *     isDefault: bool,
+     *     usageCount: int,
+     *     canManage: bool,
+     *     createdBy: string|null
+     * }>
+     */
+    private function savedDecks(User $user, Workspace $workspace, Team $team): array
+    {
+        $isManager = $user->canManage($workspace);
+
+        return $team->availablePokerDecks()
+            ->with('creator:id,name')
+            ->withCount(['games' => fn ($query) => $query->where('team_id', $team->id)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (SavedPokerDeck $deck): array => [
+                'id' => $deck->id,
+                'name' => $deck->name,
+                'cards' => $deck->cards,
+                'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
+                'isDefault' => $deck->id === $team->default_saved_poker_deck_id,
+                'usageCount' => (int) $deck->games_count,
+                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id),
+                'createdBy' => $deck->creator?->name,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function store(Request $request, Workspace $workspace, Team $team): RedirectResponse
     {
         Gate::authorize('create', [SavedPokerDeck::class, $team]);

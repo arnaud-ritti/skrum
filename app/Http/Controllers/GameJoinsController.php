@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Games\AnnounceTeamGameRoom;
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\Sessions\PresentJoinSession;
 use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
 use App\Support\Games\GuestNames;
@@ -14,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class GameJoinsController extends Controller
 {
-    public function show(Request $request, string $guestToken, FindGamePlayer $findGamePlayer): Response
+    public function show(Request $request, string $guestToken, FindGamePlayer $findGamePlayer, PresentJoinSession $presentJoinSession): Response
     {
         $room = $this->findRoom($guestToken);
 
@@ -31,11 +33,12 @@ class GameJoinsController extends Controller
             'guestToken' => $guestToken,
             'roomName' => $room->name,
             'gameLabel' => $room->game->label(),
+            'session' => $presentJoinSession->game($room),
             'suggestedName' => GuestNames::random(app()->getLocale()),
         ])->toResponse($request);
     }
 
-    public function store(Request $request, string $guestToken, FindGamePlayer $findGamePlayer): Response
+    public function store(Request $request, string $guestToken, FindGamePlayer $findGamePlayer, AnnounceTeamGameRoom $announceTeamGameRoom): Response
     {
         $room = $this->findRoom($guestToken);
 
@@ -57,6 +60,8 @@ class GameJoinsController extends Controller
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
         ]);
+
+        $announceTeamGameRoom->changed($room);
 
         return to_route('games.show', $room)
             ->withCookie(GuestCookie::make(GuestCookie::GameScope, $room->id, $player->id, $secret));

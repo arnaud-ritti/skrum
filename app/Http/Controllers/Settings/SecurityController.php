@@ -8,6 +8,7 @@ use App\Enums\EmailCodePurpose;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Models\User;
 use App\Support\Auth\SecondFactors;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,8 @@ use Laravel\Fortify\Features;
 
 class SecurityController extends Controller
 {
+    public const RecoveryCodesTotal = 8;
+
     /**
      * Show the user's security settings page.
      */
@@ -49,6 +52,7 @@ class SecurityController extends Controller
                 'address' => $request->user()->email,
                 'resendIn' => $sendCode->secondsUntilResend($request->user(), EmailCodePurpose::Enable),
             ],
+            'checksCompromisedPasswords' => Password::defaults()->appliedRules()['uncompromised'],
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
@@ -57,6 +61,8 @@ class SecurityController extends Controller
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
+
+        $props['twoFactor'] = $this->twoFactorSummary($request->user());
 
         return Inertia::render('settings/security', $props);
     }
@@ -75,5 +81,25 @@ class SecurityController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
         return back();
+    }
+
+    /**
+     * @return array{
+     *     confirmedAt: ?string,
+     *     recoveryCodesRemaining: ?int,
+     *     recoveryCodesTotal: int
+     * }
+     */
+    private function twoFactorSummary(User $user): array
+    {
+        $confirmedAt = $user->two_factor_confirmed_at;
+
+        return [
+            'confirmedAt' => $confirmedAt?->toIso8601String(),
+            'recoveryCodesRemaining' => $confirmedAt && $user->two_factor_recovery_codes
+                ? count($user->recoveryCodes())
+                : null,
+            'recoveryCodesTotal' => self::RecoveryCodesTotal,
+        ];
     }
 }

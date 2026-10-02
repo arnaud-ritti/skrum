@@ -251,7 +251,7 @@ export function PresenceStack({
                                     )}
                                 />
                             ))}
-                            {hiddenCount > 0 && (
+                            {hiddenCount > 0 && visible.length > 0 && (
                                 <span
                                     data-slot="presence-stack-more"
                                     aria-hidden
@@ -338,7 +338,11 @@ export function PresenceStack({
                 </PopoverContent>
             </Popover>
             {guestCount > 0 && (
-                <Badge variant="secondary" shape="pill">
+                <Badge
+                    variant="secondary"
+                    shape="pill"
+                    data-slot="presence-stack-guests"
+                >
                     {guestCount === 1
                         ? t(':count guest', { count: guestCount })
                         : t(':count guests', { count: guestCount })}

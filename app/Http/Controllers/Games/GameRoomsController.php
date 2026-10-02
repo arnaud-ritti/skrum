@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Games;
 
+use App\Actions\Games\AnnounceTeamGameRoom;
 use App\Actions\Games\BuildGameSnapshot;
 use App\Actions\Games\GameGuard;
 use App\Enums\GameRoomAccess;
@@ -30,7 +31,7 @@ class GameRoomsController extends Controller
         ])->toResponse($request);
     }
 
-    public function update(Request $request, GameRoom $room): HttpResponse
+    public function update(Request $request, GameRoom $room, AnnounceTeamGameRoom $announceTeamGameRoom): HttpResponse
     {
         $player = GamePlayer::current($request);
 
@@ -43,14 +44,16 @@ class GameRoomsController extends Controller
                 'locale' => ['required', 'string', $locales],
                 'name' => ['prohibited'],
                 'access' => ['prohibited'],
+                'reactions_enabled' => ['prohibited'],
             ]
             : [
                 'name' => ['sometimes', 'required', 'string', 'max:60'],
                 'access' => ['sometimes', 'required', Rule::enum(GameRoomAccess::class)],
                 'locale' => ['sometimes', 'required', 'string', $locales],
+                'reactions_enabled' => ['sometimes', 'boolean'],
             ]);
 
-        DB::transaction(function () use ($room, $player, $validated): void {
+        DB::transaction(function () use ($room, $player, $validated, $announceTeamGameRoom): void {
             $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
 
             GameGuard::manager($locked, $player);
@@ -58,19 +61,21 @@ class GameRoomsController extends Controller
             $locked->update($validated);
 
             (new GameRoomChanged($locked))->sendToOthers();
+
+            $announceTeamGameRoom->changed($locked);
         });
 
         return response()->noContent();
     }
 
-    public function destroy(Request $request, GameRoom $room): HttpResponse
+    public function destroy(Request $request, GameRoom $room, AnnounceTeamGameRoom $announceTeamGameRoom): HttpResponse
     {
         $player = GamePlayer::current($request);
 
         GameGuard::standalone($room);
         GameGuard::canDelete($room, $player);
 
-        DB::transaction(function () use ($room, $player): void {
+        DB::transaction(function () use ($room, $player, $announceTeamGameRoom): void {
             $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
 
             GameGuard::canDelete($locked, $player);
@@ -80,6 +85,8 @@ class GameRoomsController extends Controller
             $locked->delete();
 
             $event->sendToOthers();
+
+            $announceTeamGameRoom->deleted($locked);
         });
 
         return response()->noContent();

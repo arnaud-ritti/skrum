@@ -175,10 +175,14 @@ it('[P13b-01] waits for another player when the host switches to Draw & Guess al
 
     $host->assertSee('Ready to play?')
         ->assertButtonEnabled('Start')
-        ->click('button[aria-label="Game"]')
-        ->assertVisible('[role="option"]:has-text("Draw & Guess")')
-        ->click('[role="option"]:has-text("Draw & Guess")')
-        ->assertSeeIn('button[aria-label="Game"]', 'Draw & Guess')
+        ->click('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")')
+        ->assertSeeIn('#game-stage-title', 'Draw & Guess')
+        ->assertNotPresent('[data-slot="game-left"] [role="radiogroup"]')
+        ->click('[data-slot="game-left"] button:has-text("Choose a game")')
+        ->assertAriaAttribute('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'checked', 'true')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'In play')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]')
         ->assertSee('Waiting for another player')
         ->assertButtonDisabled('Start')
         ->assertNotPresent('button[aria-label="Who draws?"]');
@@ -351,8 +355,8 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     p13bPointer($drawer, 'pointerup', [[0.3, 0.3]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 1)
-        ->click('[aria-label="Red"]')
-        ->assertAriaAttribute('[aria-label="Red"]', 'pressed', 'true')
+        ->click('[aria-label="Coral"]')
+        ->assertAriaAttribute('[aria-label="Coral"]', 'pressed', 'true')
         ->click('[aria-label="Fill"]')
         ->assertAriaAttribute('[aria-label="Fill"]', 'pressed', 'true');
 
@@ -361,7 +365,7 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     $drawer->assertScript(p13bDrawingLengthScript($room), 2);
 
     foreach ([[$drawer, 'Your drawing'], [$viewer, 'The drawing']] as [$page, $label]) {
-        $page->assertScript(p13bPixelScript($label, 400, 300), '220 38 38 255')
+        $page->assertScript(p13bPixelScript($label, 400, 300), '122 52 45 255')
             ->assertScript(p13bPixelScript($label, 240, 300), '23 23 23 255')
             ->assertScript(p13bPixelScript($label, 100, 100), '255 255 255 255');
     }
@@ -411,19 +415,19 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
     p13bPointer($drawer, 'pointerup', [[0.75, 0.5]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 1)
-        ->click('[aria-label="Red"]')
+        ->click('[aria-label="Coral"]')
         ->click('[aria-label="Fill"]')
         ->assertAriaAttribute('[aria-label="Fill"]', 'pressed', 'true');
 
     p13bPointer($drawer, 'pointerdown', [[0.5, 0.2]]);
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '220 38 38 255');
+    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '122 52 45 255');
 
     GameRoom::query()->whereKey($room->id)->update(['name' => 'Renamed room']);
     app()->instance('request', Request::create(url('/')));
     broadcast(new GameRoomChanged($room));
 
-    $viewer->assertSeeIn('header > h1', 'Renamed room');
+    $viewer->assertSeeIn('header:has(h1) h1', 'Renamed room');
 
     $drawer->click('button:has-text("Clear")')
         ->assertSee('Click again to clear')
@@ -539,9 +543,9 @@ it('[P13b-09] ends the turn on a correct guess typed with other capitals and acc
             ->assertSeeIn('[aria-label="Points of this round"]', '+5 Bob Leader')
             ->assertDontSee('LÀNTERN')
             ->assertNotPresent('section[aria-labelledby="game-guesses"]')
-            ->click('[role="tab"]:has-text("Scores")')
-            ->assertPresent('[aria-label="10 points"]')
-            ->assertPresent('[aria-label="5 points"]');
+            ->assertNotPresent('[role="tab"]')
+            ->assertPresent('[data-slot="game-left"] section[aria-labelledby="game-players"] li:has-text("Ada Host") [aria-label="10 points"]')
+            ->assertPresent('[data-slot="game-left"] section[aria-labelledby="game-players"] li:has-text("Bob Leader") [aria-label="5 points"]');
     }
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Guessed)

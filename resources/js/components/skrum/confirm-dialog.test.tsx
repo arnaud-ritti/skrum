@@ -346,4 +346,112 @@ describe('FormDialog', () => {
             'destructive',
         );
     });
+
+    it('puts the given test hook on its submit button', () => {
+        render(
+            <FormDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Delete account"
+                submitLabel="Delete account"
+                submitTest="confirm-delete-user-button"
+                onSubmit={vi.fn()}
+            >
+                <input name="password" aria-label="Password" />
+            </FormDialog>,
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Delete account' })
+                .getAttribute('data-test'),
+        ).toBe('confirm-delete-user-button');
+    });
+
+    it("holds the label of a footer button as the button's own text, icon or not", () => {
+        render(
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Delete the template"
+                submitLabel="Delete"
+                tone="destructive"
+                onSubmit={async () => {}}
+            >
+                <input aria-label="Name" name="name" />
+            </FormDialog>,
+        );
+
+        const ownText = (name: string): string[] =>
+            Array.from(screen.getByRole('button', { name }).childNodes)
+                .filter((node) => node.nodeType === Node.TEXT_NODE)
+                .map((node) => node.textContent ?? '');
+
+        expect(ownText('Cancel')).toEqual(['Cancel']);
+        expect(ownText('Delete')).toEqual(['Delete']);
+        expect(
+            screen.getByRole('button', { name: 'Delete' }).className,
+        ).toContain('truncate');
+    });
+
+    it('keeps the submit button disabled, and ignores Enter, until the form is complete', async () => {
+        const onSubmit = vi.fn(async () => {});
+        const form = (complete: boolean) => (
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Hand over facilitation"
+                submitLabel="Hand over"
+                submitDisabled={!complete}
+                onSubmit={onSubmit}
+            >
+                <input aria-label="Name" name="name" />
+            </FormDialog>
+        );
+
+        const { rerender } = render(form(false));
+        const submit = () =>
+            screen.getByRole('button', {
+                name: 'Hand over',
+            }) as HTMLButtonElement;
+
+        expect(submit().disabled).toBe(true);
+
+        await userEvent.type(screen.getByLabelText('Name'), '{Enter}');
+
+        expect(onSubmit).not.toHaveBeenCalled();
+
+        rerender(form(true));
+
+        expect(submit().disabled).toBe(false);
+
+        await userEvent.click(submit());
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    });
+
+    it('has no submit button and closes on Cancel when it cannot be submitted', async () => {
+        const onOpenChange = vi.fn();
+
+        render(
+            <FormDialog
+                open
+                onOpenChange={onOpenChange}
+                title="Hand over facilitation"
+            >
+                <p>No one else can facilitate this board yet.</p>
+            </FormDialog>,
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog.textContent).toContain(
+            'No one else can facilitate this board yet.',
+        );
+        expect(dialog.querySelector('button[type="submit"]')).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
 });

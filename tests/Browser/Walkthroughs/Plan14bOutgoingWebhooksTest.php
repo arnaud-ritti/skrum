@@ -273,7 +273,7 @@ it('[P14b-02b] sends a game room invite to the webhook without players or game s
 
     $page->assertSee('Invite')
         ->click('Invite')
-        ->assertSee('Invite to the room')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Invite to ')
         ->assertSee('Only members of Platform can join.')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.');
@@ -440,9 +440,9 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
 
     $page = $this->awaitRealtime($this->signIn($admin, "/poker/{$game->id}"));
 
-    $page->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate')
+    $page->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5');
 
     $this->workQueue();
@@ -616,7 +616,7 @@ it('[P14b-07] gives a team member no way to the webhook: no Integrations link, 4
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
-        ->assertNotPresent('a[href$="/integrations"]');
+        ->assertNotPresent('main a[href$="/integrations"]');
 
     $status = $page->script(<<<JS
         async () => {

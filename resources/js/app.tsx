@@ -8,6 +8,8 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
+import { usesOwnLayout } from '@/lib/page-layouts';
 import { echoConnection } from '@/lib/reverb-config';
 
 const connection = typeof window !== 'undefined' ? echoConnection() : null;
@@ -38,6 +40,10 @@ if (connection) {
     });
 }
 
+if (typeof window !== 'undefined') {
+    loadDocumentOnMaintenance();
+}
+
 void createInertiaApp({
     title: (title, page) => {
         const appName =
@@ -46,31 +52,23 @@ void createInertiaApp({
         return title ? `${title} - ${appName}` : appName;
     },
     layout: (name) => {
+        if (usesOwnLayout(name)) {
+            return null;
+        }
+
         switch (true) {
-            case name === 'welcome':
-                return null;
             case name === 'retros/join':
             case name === 'retros/session-ended':
             case name === 'poker/join':
             case name === 'games/join':
             case name === 'whiteboards/join':
                 return AuthLayout;
-            case name === 'retros/show':
-            case name === 'poker/show':
-            case name === 'games/show':
-            case name === 'whiteboards/show':
-                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('invitations/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
-            case name.startsWith('dev/'):
-                return null;
-            case name === 'about':
-            case name.startsWith('admin/'):
-                return null;
             default:
                 return AppLayout;
         }

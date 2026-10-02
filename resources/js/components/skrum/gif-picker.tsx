@@ -80,6 +80,13 @@ export type GifPickerProps = {
     onLoadMore?: () => void;
     onNotifyAdmin?: () => void;
     className?: string;
+    /** Replaces the `dialog` role when a modal dialog already wraps the picker. */
+    role?: 'dialog' | 'group';
+    /**
+     * Open in the page, on a stage: a group as wide as its container, which
+     * takes no focus when it appears, gives none back and leaves Escape alone.
+     */
+    inline?: boolean;
 };
 
 const providerNames: Record<GifProvider, string> = {
@@ -104,6 +111,14 @@ const skeletonColumns = [
 ];
 
 const loadMoreThreshold = 48;
+
+/**
+ * The children of a tile never take the pointer. Under reduced motion a press
+ * swaps the still for the picture, and the browser fires no click when the
+ * pressed element has left the page.
+ */
+const tileClass =
+    'group relative w-full cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-popover *:pointer-events-none outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring aria-selected:ring-2 aria-selected:ring-ring aria-selected:ring-offset-2';
 
 export function formatGifDuration(durationMs: number, lang: string): string {
     const seconds = new Intl.NumberFormat(lang, {
@@ -249,6 +264,8 @@ function GifPickerPanel({
     onLoadMore,
     onNotifyAdmin,
     className,
+    inline = false,
+    role = inline ? 'group' : 'dialog',
 }: Omit<GifPickerProps, 'open'>) {
     const { t } = useTrans();
     const bodyId = useId();
@@ -303,12 +320,16 @@ function GifPickerPanel({
     ];
 
     useEffect(() => {
-        if (!isDisabled) {
+        if (!isDisabled && !inline) {
             searchRef.current?.focus();
         }
-    }, [isDisabled]);
+    }, [isDisabled, inline]);
 
     useEffect(() => {
+        if (inline) {
+            return;
+        }
+
         return () => {
             const active = document.activeElement;
 
@@ -320,7 +341,7 @@ function GifPickerPanel({
                 opener.focus();
             }
         };
-    }, [opener]);
+    }, [opener, inline]);
 
     const isPreviewing = previewed !== null;
 
@@ -527,12 +548,13 @@ function GifPickerPanel({
     );
 
     const root = cn(
-        'flex w-full max-w-104 min-w-0 flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-popover',
+        'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-popover',
+        !inline && 'max-w-104',
         className,
     );
 
     const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-        if (event.key === 'Escape') {
+        if (event.key === 'Escape' && !inline) {
             event.stopPropagation();
             onOpenChange(false);
         }
@@ -544,7 +566,7 @@ function GifPickerPanel({
 
         return (
             <div
-                role="dialog"
+                role={role}
                 aria-label={t('Choose a GIF')}
                 data-slot="gif-picker"
                 data-view="preview"
@@ -645,11 +667,12 @@ function GifPickerPanel({
 
     return (
         <div
-            role="dialog"
+            role={role}
             aria-label={t('Choose a GIF')}
             data-slot="gif-picker"
             data-view="grid"
             data-status={status}
+            data-inline={inline || undefined}
             className={root}
             onKeyDown={onRootKeyDown}
         >
@@ -741,7 +764,10 @@ function GifPickerPanel({
                 id={bodyId}
                 data-slot="gif-picker-body"
                 aria-busy={status === 'loading' ? true : undefined}
-                className="h-64 min-w-0 overflow-y-auto p-2"
+                className={cn(
+                    'min-w-0 overflow-y-auto p-2',
+                    inline ? 'h-64 sm:h-86' : 'h-64',
+                )}
                 onScroll={onBodyScroll}
             >
                 {status === 'loading' && (
@@ -773,9 +799,13 @@ function GifPickerPanel({
                 {status === 'empty' && (
                     <StateBlock
                         icon={SearchX}
-                        title={t('No GIF for “:query”', {
-                            query: trimmedQuery,
-                        })}
+                        title={
+                            trimmedQuery === ''
+                                ? t('No GIFs found.')
+                                : t('No GIF for “:query”', {
+                                      query: trimmedQuery,
+                                  })
+                        }
                         description={t(
                             'Check the spelling or try a broader word.',
                         )}
@@ -934,7 +964,10 @@ function GifPickerPanel({
                                                 style={{
                                                     aspectRatio: `${gif.width} / ${gif.height}`,
                                                 }}
-                                                className="group relative w-full cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-popover outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring aria-selected:ring-2 aria-selected:ring-ring aria-selected:ring-offset-2"
+                                                className={cn(
+                                                    tileClass,
+                                                    inline && 'max-h-40',
+                                                )}
                                                 onClick={() => choose(gif)}
                                                 onKeyDown={(event) =>
                                                     onTileKeyDown(

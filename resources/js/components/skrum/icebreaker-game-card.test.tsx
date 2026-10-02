@@ -17,6 +17,23 @@ const base = {
 };
 
 describe('IcebreakerGameCard', () => {
+    it('shows the icon of the game alone when compact', () => {
+        const { container, rerender } = render(
+            <IcebreakerGameCard game="decoded" title="Decoded" />,
+        );
+
+        expect(screen.queryByRole('img', { hidden: true })).toBeTruthy();
+        expect(container.querySelectorAll('svg')).toHaveLength(1);
+
+        rerender(<IcebreakerGameCard game="decoded" title="Decoded" compact />);
+
+        expect(screen.queryByRole('img', { hidden: true })).toBeNull();
+        expect(container.querySelectorAll('svg')).toHaveLength(1);
+        expect(screen.getByRole('radio').getAttribute('data-compact')).toBe(
+            'true',
+        );
+    });
+
     it('renders a server option with only its kind and label', () => {
         const onSelect = vi.fn();
         render(
@@ -105,6 +122,23 @@ describe('IcebreakerGameCard', () => {
         expect(
             document.querySelector('[data-slot="icebreaker-game-check"]'),
         ).not.toBeNull();
+    });
+
+    it('says "In play" on the selected card of a room, in place of the check', () => {
+        const { rerender } = render(<IcebreakerGameCard {...base} inPlay />);
+
+        expect(screen.queryByText('In play')).toBeNull();
+
+        rerender(<IcebreakerGameCard {...base} selected inPlay />);
+
+        const radio = screen.getByRole('radio');
+
+        expect(
+            document.querySelector('[data-slot="icebreaker-game-check"]'),
+        ).toBeNull();
+        expect(radio.getAttribute('aria-describedby')).toContain(
+            screen.getByText('In play').id,
+        );
     });
 
     it('calls onSelect with the game on click', () => {

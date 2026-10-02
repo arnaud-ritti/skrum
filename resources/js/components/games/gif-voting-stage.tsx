@@ -3,6 +3,7 @@ import { useState } from 'react';
 import GameClosuresController from '@/actions/App/Http/Controllers/Games/GameClosuresController';
 import GameVotesController from '@/actions/App/Http/Controllers/Games/GameVotesController';
 import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
 import { useTrans } from '@/hooks/use-trans';
 import { revealedAnswers } from '@/lib/games/gif';
 import type { GameRound, GameRoundEnded } from '@/lib/games/types';
@@ -19,7 +20,7 @@ export function GifVotingStage({ round }: { round: GameRound }) {
     const { room, me, players } = ctx.snapshot;
     const answers = revealedAnswers(round);
     const voters = round.voters ?? [];
-    const names = new Map(players.map((player) => [player.id, player.name]));
+    const byId = new Map(players.map((player) => [player.id, player]));
     const total = Math.max(ctx.online.length, voters.length);
     const target = { room: room.id, round: round.id };
 
@@ -84,73 +85,90 @@ export function GifVotingStage({ round }: { round: GameRound }) {
     };
 
     return (
-        <section className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-                {t('Vote for your favourite GIF.')}
-            </p>
-            <p aria-live="polite" className="text-sm font-medium">
-                {t(':count of :total voted', {
-                    count: voters.length,
-                    total,
-                })}
-            </p>
-            <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {answers.map((answer) => {
-                    const isMine = answer.id === round.myAnswer?.id;
-                    const isChosen = answer.id === round.myVote;
-                    const author =
-                        answer.playerId === null
-                            ? null
-                            : (names.get(answer.playerId) ?? t('Someone'));
-                    const caption = isMine
-                        ? t('Your GIF')
-                        : author === null
-                          ? t('Anonymous GIF')
-                          : t('by :name', { name: author });
-
-                    return (
-                        <li key={answer.id}>
-                            <GifTile
-                                gif={answer.gif}
-                                caption={caption}
-                                highlight={isChosen}
-                            >
-                                {!isMine && (
-                                    <Button
-                                        size="sm"
-                                        variant={
-                                            isChosen ? 'default' : 'outline'
-                                        }
-                                        aria-pressed={isChosen}
-                                        disabled={busy}
-                                        onClick={() => void vote(answer.id)}
-                                    >
-                                        <Heart
-                                            className={cn(
-                                                'size-4',
-                                                isChosen && 'fill-current',
-                                            )}
-                                        />
-                                        {isChosen
-                                            ? t('Your favourite')
-                                            : t('Favourite')}
-                                    </Button>
-                                )}
-                            </GifTile>
-                        </li>
-                    );
-                })}
-            </ul>
-            {answers.length === 0 && (
-                <p className="text-sm text-muted-foreground">
+        <section
+            data-slot="gif-voting-stage"
+            className="flex w-full flex-col gap-4"
+        >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p aria-live="polite" className="text-sm font-medium">
+                    {t(':count of :total voted', {
+                        count: voters.length,
+                        total,
+                    })}
+                </p>
+                {room.isHost && (
+                    <Button disabled={busy} onClick={() => void finish()}>
+                        <Flag aria-hidden />
+                        {t('Finish round')}
+                    </Button>
+                )}
+            </div>
+            {answers.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground">
                     {t('No GIFs yet.')}
                 </p>
-            )}
-            {room.isHost && (
-                <Button disabled={busy} onClick={() => void finish()}>
-                    <Flag className="size-4" />
-                    {t('Finish round')}
-                </Button>
+            ) : (
+                <ul
+                    data-slot="gif-gallery"
+                    className="grid w-full grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] items-start gap-4"
+                >
+                    {answers.map((answer) => {
+                        const isMine = answer.id === round.myAnswer?.id;
+                        const isChosen = answer.id === round.myVote;
+                        const player =
+                            answer.playerId === null
+                                ? null
+                                : (byId.get(answer.playerId) ?? null);
+                        const author =
+                            answer.playerId === null
+                                ? null
+                                : (player?.name ?? t('Someone'));
+                        const caption = isMine
+                            ? t('Your GIF')
+                            : author === null
+                              ? t('Anonymous GIF')
+                              : t('by :name', { name: author });
+
+                        return (
+                            <li key={answer.id} className="min-w-0">
+                                <GifTile
+                                    gif={answer.gif}
+                                    caption={caption}
+                                    author={player}
+                                    highlight={isChosen}
+                                >
+                                    {!isMine && (
+                                        <div className="flex justify-end">
+                                            <Toggle
+                                                variant="outline"
+                                                size="sm"
+                                                pressed={isChosen}
+                                                disabled={busy}
+                                                className="max-w-full rounded-full"
+                                                onPressedChange={() =>
+                                                    void vote(answer.id)
+                                                }
+                                            >
+                                                <Heart
+                                                    aria-hidden
+                                                    className={cn(
+                                                        isChosen &&
+                                                            'fill-current',
+                                                    )}
+                                                />
+                                                <span className="truncate">
+                                                    {isChosen
+                                                        ? t('Your favourite')
+                                                        : t('Favourite')}
+                                                </span>
+                                            </Toggle>
+                                        </div>
+                                    )}
+                                </GifTile>
+                            </li>
+                        );
+                    })}
+                </ul>
             )}
         </section>
     );

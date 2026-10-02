@@ -1,3 +1,4 @@
+import { Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifRevealed, GamePointsAward } from '@/lib/games/types';
@@ -6,11 +7,12 @@ import { useRoom } from './room-context';
 
 type Props = { answers: GameGifRevealed[]; points?: GamePointsAward[] };
 
+/** The gallery of a closed round: the most voted first, with the mark of the winner. */
 export function GifRoundResults({ answers, points = [] }: Props) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
-    const names = new Map(
-        snapshot.players.map((player) => [player.id, player.name]),
+    const players = new Map(
+        snapshot.players.map((player) => [player.id, player]),
     );
     const earned = new Map(
         points.map((award) => [award.playerId, award.points]),
@@ -18,6 +20,7 @@ export function GifRoundResults({ answers, points = [] }: Props) {
     const ranked = [...answers].sort(
         (first, second) => (second.votes ?? 0) - (first.votes ?? 0),
     );
+    const topVotes = ranked[0]?.votes ?? 0;
 
     if (ranked.length === 0) {
         return (
@@ -26,19 +29,26 @@ export function GifRoundResults({ answers, points = [] }: Props) {
     }
 
     return (
-        <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
+        <ul
+            data-slot="gif-results"
+            className="grid w-full grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-4"
+        >
             {ranked.map((answer) => {
+                const player =
+                    answer.playerId === null
+                        ? null
+                        : (players.get(answer.playerId) ?? null);
                 const author =
                     answer.playerId === null
                         ? null
-                        : (names.get(answer.playerId) ?? t('Someone'));
+                        : (player?.name ?? t('Someone'));
                 const gained =
                     answer.playerId === null
                         ? 0
                         : (earned.get(answer.playerId) ?? 0);
 
                 return (
-                    <li key={answer.id}>
+                    <li key={answer.id} className="min-w-0">
                         <GifTile
                             gif={answer.gif}
                             caption={
@@ -46,16 +56,29 @@ export function GifRoundResults({ answers, points = [] }: Props) {
                                     ? t('Anonymous GIF')
                                     : t('by :name', { name: author })
                             }
+                            author={player}
+                            winner={topVotes > 0 && answer.votes === topVotes}
                         >
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                    {typeof answer.votes === 'number' &&
-                                        t('Votes: :count', {
-                                            count: answer.votes,
-                                        })}
+                            <div className="flex min-h-5.5 items-center justify-between gap-2 text-xs">
+                                <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+                                    {typeof answer.votes === 'number' && (
+                                        <>
+                                            <Heart
+                                                aria-hidden
+                                                className="size-3.5 shrink-0"
+                                            />
+                                            <span className="truncate">
+                                                {t('Votes: :count', {
+                                                    count: answer.votes,
+                                                })}
+                                            </span>
+                                        </>
+                                    )}
                                 </span>
                                 {gained > 0 && (
-                                    <Badge variant="secondary">+{gained}</Badge>
+                                    <Badge variant="success" shape="pill">
+                                        +{gained}
+                                    </Badge>
                                 )}
                             </div>
                         </GifTile>

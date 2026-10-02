@@ -366,6 +366,13 @@ describe('GifPicker', () => {
         expect(screen.queryByRole('listbox')).toBeNull();
     });
 
+    it('does not quote an empty search when nothing is trending', () => {
+        setup({ status: 'empty', results: [] });
+
+        expect(screen.getByText('No GIFs found.')).toBeTruthy();
+        expect(screen.queryByText('No GIF for “”')).toBeNull();
+    });
+
     it('offers three suggestions when the search is empty-handed', () => {
         const { onQueryChange } = setup({
             status: 'empty',
@@ -478,6 +485,29 @@ describe('GifPicker', () => {
         );
 
         expect(document.activeElement).toBe(opener);
+        opener.remove();
+    });
+
+    it('stands inline on a stage: a labelled group, no focus taken, Escape left to the page', () => {
+        const opener = document.createElement('button');
+        document.body.append(opener);
+        opener.focus();
+
+        const { onOpenChange, unmount } = setup({ inline: true });
+        const picker = screen.getByRole('group', { name: 'Choose a GIF' });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(picker.getAttribute('data-inline')).toBe('true');
+        expect(document.activeElement).toBe(opener);
+
+        fireEvent.keyDown(picker, { key: 'Escape' });
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+
+        screen.getByRole('searchbox').focus();
+        unmount();
+
+        expect(document.activeElement).not.toBe(opener);
         opener.remove();
     });
 

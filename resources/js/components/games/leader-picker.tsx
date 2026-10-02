@@ -16,10 +16,10 @@ type Props = {
 
 export function LeaderPicker({ players, value, onChange, label }: Props) {
     return (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-2 text-sm">
             <span className="text-muted-foreground">{label}</span>
             <Select value={value ?? undefined} onValueChange={onChange}>
-                <SelectTrigger className="w-48" aria-label={label}>
+                <SelectTrigger className="w-48 max-w-full" aria-label={label}>
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

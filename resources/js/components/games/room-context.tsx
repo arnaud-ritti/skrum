@@ -8,6 +8,7 @@ import type { RoomAction } from '@/lib/games/room-reducer';
 import type { GameRoundEnded, GameSnapshot } from '@/lib/games/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
+import { GifDraftProvider } from './gif-draft';
 
 export type RoomContextValue = {
     snapshot: GameSnapshot;
@@ -33,7 +34,11 @@ export function RoomProvider({
     value: RoomContextValue;
     children: ReactNode;
 }) {
-    return <RoomContext value={value}>{children}</RoomContext>;
+    return (
+        <RoomContext value={value}>
+            <GifDraftProvider>{children}</GifDraftProvider>
+        </RoomContext>
+    );
 }
 
 export function useRoom(): RoomContextValue {

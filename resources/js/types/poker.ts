@@ -61,6 +61,9 @@ export type EstimatedTaskRow = {
     estimate: string;
     roundsCount: number;
     estimatedAt: string;
+    deck: string;
+    voters: { name: string; avatarUrl: string }[];
+    votersCount: number;
     rounds: PokerRound[];
     players: { id: string; name: string }[];
 };
@@ -69,5 +72,21 @@ export type SavedPokerDeck = {
     id: string;
     name: string;
     cards: string[];
+    scope: 'team' | 'workspace';
     canManage?: boolean;
+};
+
+export type BuiltInDeckSummary = {
+    key: string;
+    name: string;
+    cards: string[];
+    isDefault: boolean;
+    usageCount: number;
+};
+
+export type SavedDeckSummary = SavedPokerDeck & {
+    canManage: boolean;
+    isDefault: boolean;
+    usageCount: number;
+    createdBy: string | null;
 };

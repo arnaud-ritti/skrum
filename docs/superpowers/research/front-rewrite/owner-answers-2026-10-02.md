@@ -241,3 +241,89 @@ Not requested (stay backlog): "Team name" on register, terms and privacy pages, 
 ## Approval (same day)
 
 The owner approved the amended spec and the three plans ("Go"), with the recommendations on the open items: spec §15 points 1–4 as written; 18f: invitation notification kept with its link (token stored encrypted in the notification), private user channel kept for live arrival, bell and palette data kept in 18f. Speed levers approved ("ok go"): parallel lanes in worktrees, back-end tasks first in parallel, per-task narrow tests, one review and one full browser run per group, non-blocking visual review, 18f back end in parallel with 18e.
+
+## Fourth round (same day, after the merge of wave 2a) — deviations D-37 to D-63 and open decisions
+
+"REWORK" = code changes; "stays" = deviation approved.
+
+## Deviations decided
+
+| Row | Answer |
+|---|---|
+| D-37, D-38, D-39 | REWORK. Poker deck choice in session creation: the mockup's four small tiles (values in mono) and a "New deck" button in the header of the Deck section; the Tasks block visible without scrolling at 1440. |
+| D-62 | stays (GIFs animated, no still under reduced motion). Accepted accessibility deviation; proxy extension stays backlog. |
+| D-47, D-48, D-69 (+ games header) | REWORK. Session header on every session screen: "team · type" line above the title (server sends the team name), user avatar at the end, visible "Synced" state when connected. Whiteboard: logo and editable breadcrumb "team › Whiteboards › name". On a phone only the title and the essentials remain. |
+| D-57 | REWORK. Game room: each game follows its mockup layout (players on the left for Draw and GIF, one Scores list on the right, "In play" on the selected card). |
+| D-58 | stays: the reaction bar keeps its own strip under the stage (must not cover the keyboard or the guess field). |
+| D-61 | REWORK. Sprint in one GIF: picker open on the stage, draft then "Send my GIF". |
+| D-54 | REWORK (under 18f security rules). Invitation, logged out: inline "Create a password" and "Create my account and join" on the card. The "Ask for a new invitation" button stays backlog. |
+| D-67 | REWORK. Poker past rounds: open by default, names kept ("name: value"). |
+| D-66 | REWORK. Poker on a phone: scrolling row of participants; first names on the seats (first word of the display name). |
+| D-64 | REWORK. Poker result: everything in the oval and the dock (agreement, distribution, extremes join the dock); no panel under the table. |
+| D-65 | REWORK. Poker dock after reveal: final-estimate cards and one button "Validate n pts · Next story". |
+| D-68 | REWORK. Poker queue: "Votes: n" on every row (new back-end prop: votes per task) and the mockup's drop line while dragging. "pts" stays omitted (false on a T-shirt deck). |
+| D-51 | REWORK. Guest join: suggested random nickname on every session type; button "Join the session" (walkthroughs follow). |
+| D-55 (404 search) | Never: no "Search sessions ⌘K" on the 404 page. Other D-55 points stay. |
+| D-52 | "Create your account" stays through the rewrite. Registration creating a workspace and a team (mockup: "Create your workspace", "Team name") is specified with the onboarding (plan 25): add to the feature roadmap. |
+| D-44 | stays: server defaults (auto reveal off, anonymous guests off). |
+| D-40, D-41, D-42, D-43, D-45, D-46, D-50, D-53, D-56, D-59, D-60, D-63 | not asked one by one: approved as proposed in the table (D-42 gets eight colours with R1; D-63 fixed with the header rework). |
+
+## Other decisions
+
+| Topic | Answer |
+|---|---|
+| Recovery codes | Keep "a used code is removed" (dc8e94b2); add a low-count alert and the regenerate button; amend spec B43 / 18f B13. |
+| "Powered by Skrüm" hidden on a default install | Normal, stays. |
+| Maintenance | An Inertia visit during maintenance forces a full reload so the real 503 page shows. REWORK (small). |
+| GIF "Ready" bar | stays (online players only). |
+| Whiteboard read mode | stays (decided when the board opens). |
+| Branding | REWORK (small): a stored radius outside the segments shows its exact value; undo per staged image removal. |
+| Expired invitation | The page shows the workspace name and the inviter (mockup), so the visitor knows whom to ask. Spec criterion 43 aligned. REWORK (small, back end + card). |
+| French "Modifier" / "Lire" everywhere | not asked: kept. |
+
+## Round 4b — the rows first approved in bulk, now answered one by one (these replace the bulk line above)
+
+| Row | Answer |
+|---|---|
+| D-40 | stays: "Automatic" switch on votes per person and the icebreaker switch are kept. |
+| D-41 | REWORK. "Automatic AI summary" (retro) and "Anonymous votes" (poker) leave the creation dialog and live in the session's settings (settable once the session exists; server defaults apply at creation). |
+| D-42 | REWORK. Column colours as swatches alone, as the mockup: no visible name; the name in a tooltip and for screen readers. Eight colours with R1. |
+| D-43 | stays as proposed (full picker in the dialog, read-only preview, catalogue category on a shortcut). |
+| D-45, D-46 | stays as proposed (saved decks page). |
+| D-50 | stays: whiteboard facilitation tools, board menu and reactions bar kept. |
+| D-53 | stays: "Sign in with a passkey" kept. |
+| D-56 | stays as proposed (rounds, "Open by link" / "Team only", "n rounds · n wins", streak badges). |
+| D-59 | Whole-word guess (+50 pts): feature roadmap (games). REWORK now: on a phone the hangman keyboard is a docked panel. |
+| D-60 | REWORK: on a phone the guesses of Draw & Guess are in a drawer. "Fill" kept; pencil tag colour stays. |
+| D-55 | 403 "this page" stays. REWORK: the static 503 reloads by itself every 30 s (small inline script) and shows the mockup's sentence. 404 search: never. |
+| French "Modifier" / "Lire" | agreed, everywhere. |
+| D-63 | fixed with the session header rework. |
+
+## Fifth round (same day, after integration 2b) — D-70 to D-77, roadmap changes, working rules
+
+| Row | Answer |
+|---|---|
+| D-70 | REWORK. Poker room settings: a popover anchored to a header button (mockup), like the retro settings popover; tests follow. |
+| D-71 | stays as proposed (import and source: search field + select, done check, tracker block). |
+| D-72 | REWORK + back end: the ticket key under the task title and "across n games" in the summary (two props; the server holds both). Other points of the row stay. |
+| D-73 | REWORK + back end: gear icon button "Team settings" in the team header; "Join" / "Resume" on an open retro ("Resume" when the viewer has already joined: new prop). Tests follow (P12a `click('Integrations')`). |
+| D-74 | stays ("Open the game", points under the name, "Ended games"). |
+| D-75 | stays (two columns from 80rem of viewport; existing controls kept). |
+| D-76 | REWORK. Health check card: compact list with a "Manage" link (mockup); the sentence uses the real values (actual count, scale 1–10). "Manage" opens a page of its own with the full manager. |
+| D-77 | REWORK. Trend on the team page: mockup strict — the ROTI curve alone, in the main column, filled, with the bubble on the last point. The Mood trend (health score) moves to the health-check management page. Fix the deferred-fetch failure state (use `<Deferred>` or an error state). |
+| "Supprimer" / "Retirer" (member row) | "Retirer" everywhere: a new key for removing a member. |
+| `links.decks` in the poker snapshot | Remove it: the front builds the link itself (Wayfinder). |
+| Translations (es, de, part of fr) | Reviewed by an agent at the end of 18e: one pass per language (term consistency, lengths, register), with a report of doubtful cases. |
+
+Second rework run (after the first one merges): RW-P3 (D-70, links.decks removal), RW-P4 (D-72), RW-T1 (D-73, "Retirer"), RW-T2 (D-76, D-77, health-check management page with the Mood trend), plus the deferred items of the first addendum (D-51 guest join after retro; recovery-code alert after settings).
+
+## Roadmap change (same day)
+Plan 30 (mentions and their notifications, feature MN-1) is removed from the feature roadmap by the owner: move it to the backlog (spec §10) and drop plan 30 from feature-roadmap.md. To apply in docs when the main tree is free.
+Plan 28 (whiteboard collaboration: comments, "follow", sticky authors, convert to actions) is removed from the feature roadmap too: move to the backlog (spec §10). Places left for these elements in the whiteboard screen (task 7.x "Places left" lines) become plain backlog notes. Roadmap = plans 19–27 and 29.
+Plan 22: scheduling is removed ("Schedule…", session start time, "starts in 5 min" notification): move to the backlog (spec §10). Plan 22 keeps the Sessions index page, the advanced creation options and the poker Jira ticket details. The four extra games (GM-4) stay in plan 27 (owner confirmed).
+
+### Working rules decided the same day
+
+- No test runs during the work (feature, Vitest, browser), per task or per merge: types, lint and build only; one full run at the end of each phase. Risk accepted by the owner. Exceptions kept by the controller unless the owner says otherwise: the 18f security tests, and the database-portability plan (its purpose is to prove behaviour per driver).
+- Deviations between mockup and plan are put to the owner before a screen is built.
+- New requirement: the application must run on SQLite, MariaDB/MySQL and any database Eloquent supports. Audit: docs/superpowers/research/database-portability-audit.md.
