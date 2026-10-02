@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { EmailCodeRow } from './email-code-row';
 
@@ -18,6 +18,10 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     usePage: () => page,
     router,
 }));
+
+beforeAll(() => {
+    document.elementFromPoint ??= () => null;
+});
 
 const off = {
     available: true,

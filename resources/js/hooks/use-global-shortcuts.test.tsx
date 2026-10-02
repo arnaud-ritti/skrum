@@ -90,12 +90,12 @@ describe('useGlobalShortcuts', () => {
     it('opens with "?" on a poker deck that has no "?" card to play', () => {
         playsUnknownCard = false;
         render(<Probe />);
-        playsUnknownCard = true;
 
         fireEvent.keyDown(screen.getByTestId('deck'), {
             key: '?',
             shiftKey: true,
         });
+        playsUnknownCard = true;
 
         expect(screen.getByTestId('state').textContent).toContain('true');
     });

@@ -12,7 +12,9 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 describe('ShortcutPreferenceCard', () => {
-    beforeEach(() => patch.mockReset());
+    beforeEach(() => {
+        patch.mockReset();
+    });
 
     it('is the Accessibility region', () => {
         renderWithProviders(<ShortcutPreferenceCard enabled />);

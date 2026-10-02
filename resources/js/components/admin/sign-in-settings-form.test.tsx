@@ -17,7 +17,9 @@ function requireSwitch(): HTMLElement {
 }
 
 describe('SignInSettingsForm', () => {
-    beforeEach(() => put.mockReset());
+    beforeEach(() => {
+        put.mockReset();
+    });
 
     it('saves the switch with the explicit Save button, never on toggle', () => {
         render(
