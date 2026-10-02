@@ -30,6 +30,7 @@ class CreatePokerGame
                 'deck' => $new->deck,
                 'cards' => $new->cards,
                 'deck_name' => $new->deckName,
+                'saved_deck_id' => $new->savedDeckId,
                 'anonymous_votes' => $new->anonymousVotes,
                 'auto_reveal' => $new->autoReveal,
                 'guest_token' => Str::random(40),

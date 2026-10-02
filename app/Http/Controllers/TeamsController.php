@@ -111,6 +111,10 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
+            'defaultPokerDeck' => [
+                'deck' => $team->default_poker_deck,
+                'savedDeckId' => $team->default_saved_poker_deck_id,
+            ],
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
             'whiteboards' => $team->whiteboards()

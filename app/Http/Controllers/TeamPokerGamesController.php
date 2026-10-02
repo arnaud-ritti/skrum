@@ -36,6 +36,8 @@ class TeamPokerGamesController extends Controller
             'auto_reveal' => ['sometimes', 'boolean'],
         ]);
 
+        $savedDeck = null;
+
         if ($usesSavedDeck) {
             $savedDeck = SavedPokerDeckRules::findForTeam($team, (string) $validated['saved_deck_id']);
             [$deck, $cards, $deckName] = [PokerDeck::Custom, $savedDeck->cards, $savedDeck->name];
@@ -52,6 +54,7 @@ class TeamPokerGamesController extends Controller
             anonymousVotes: (bool) ($validated['anonymous_votes'] ?? false),
             autoReveal: (bool) ($validated['auto_reveal'] ?? false),
             saveDeckAs: $validated['save_deck_as'] ?? null,
+            savedDeckId: $savedDeck?->id,
         ));
 
         return to_route('poker.show', $game);

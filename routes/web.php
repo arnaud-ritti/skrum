@@ -89,6 +89,7 @@ use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
 use App\Http\Controllers\Poker\PokerTimersController;
 use App\Http\Controllers\Poker\PokerVotesController;
+use App\Http\Controllers\PokerDeckDuplicatesController;
 use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
@@ -129,6 +130,7 @@ use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
+use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
@@ -246,6 +248,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+            Route::put('teams/{team}/default-poker-deck', [TeamDefaultPokerDecksController::class, 'update'])->name('teams.defaultPokerDeck.update');
+            Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
 

@@ -61,6 +61,7 @@ type Props = {
     canCreateGameRoom: boolean;
     roomLimit: number;
     pokerGames: PokerGameSummary[];
+    defaultPokerDeck: { deck: string | null; savedDeckId: string | null };
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
     canManageIntegrations: boolean;

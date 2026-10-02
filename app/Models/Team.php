@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string|null $default_poker_deck
+ * @property string|null $default_saved_poker_deck_id
  * @property-read Workspace $workspace
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'default_poker_deck', 'default_saved_poker_deck_id'])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
@@ -71,6 +73,12 @@ class Team extends Model
     public function pokerDecks(): HasMany
     {
         return $this->hasMany(SavedPokerDeck::class);
+    }
+
+    /** @return BelongsTo<SavedPokerDeck, $this> */
+    public function defaultSavedPokerDeck(): BelongsTo
+    {
+        return $this->belongsTo(SavedPokerDeck::class, 'default_saved_poker_deck_id');
     }
 
     /** @return HasMany<GameRoom, $this> */

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A team's saved custom deck. Games copy its cards and name, so editing or
@@ -35,6 +36,12 @@ class SavedPokerDeck extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /** @return HasMany<PokerGame, $this> */
+    public function games(): HasMany
+    {
+        return $this->hasMany(PokerGame::class, 'saved_deck_id');
     }
 
     /** @return BelongsTo<User, $this> */
