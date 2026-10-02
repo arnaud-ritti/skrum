@@ -5,16 +5,41 @@ namespace App\Actions\Sessions;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\User;
 use App\Models\Whiteboard;
+use App\Support\Sessions\GuestNames;
+use Inertia\Inertia;
+use Inertia\OptionalProp;
 
 class PresentJoinSession
 {
+    /**
+     * The nickname the join form opens with: the name of a signed-in visitor,
+     * a random one otherwise. `randomName` is only computed when the page asks
+     * for another one.
+     *
+     * @return array{
+     *     suggestedName: string,
+     *     randomName: OptionalProp
+     * }
+     */
+    public function nickname(?User $visitor): array
+    {
+        $locale = app()->getLocale();
+
+        return [
+            'suggestedName' => $visitor?->name ?? GuestNames::random($locale),
+            'randomName' => Inertia::optional(fn (): string => GuestNames::random($locale)),
+        ];
+    }
+
     /**
      * @return array{
      *     title: string,
      *     facilitatorName: ?string,
      *     participantsCount: int,
-     *     isLive: bool
+     *     isLive: bool,
+     *     hasAnonymousCards: bool
      * }
      */
     public function retro(Retro $retro): array
@@ -24,6 +49,7 @@ class PresentJoinSession
             'facilitatorName' => $retro->facilitator?->displayName(),
             'participantsCount' => $retro->participants()->count(),
             'isLive' => $retro->phase->isOpen(),
+            'hasAnonymousCards' => $retro->is_anonymous,
         ];
     }
 

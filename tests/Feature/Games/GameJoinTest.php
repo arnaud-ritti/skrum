@@ -17,7 +17,20 @@ it('shows the join form of a link room with a suggested name', function () {
             ->where('guestToken', $room->guest_token)
             ->where('roomName', 'Coffee games')
             ->where('gameLabel', __('Hangman'))
-            ->where('suggestedName', fn (string $name) => $name !== ''));
+            ->where('suggestedName', fn (string $name) => $name !== '')
+            ->missing('randomName')
+            ->reloadOnly('randomName', fn (Assert $reload) => $reload
+                ->where('randomName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)));
+});
+
+it('prefills the name of a signed-in outsider', function () {
+    $room = GameRoom::factory()->linkAccess()->create();
+    $outsider = User::factory()->create(['name' => 'Olga Outside']);
+
+    $this->actingAs($outsider)
+        ->get(route('games.join.show', $room->guest_token))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('suggestedName', 'Olga Outside'));
 });
 
 it('joins as a guest and resumes with the cookie', function () {

@@ -5,4 +5,6 @@ export type JoinSession = {
     isLive: boolean;
 };
 
+export type RetroJoinSession = JoinSession & { hasAnonymousCards: boolean };
+
 export type GameJoinSession = JoinSession & { gameLabel: string };

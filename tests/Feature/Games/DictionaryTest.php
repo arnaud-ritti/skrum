@@ -1,7 +1,7 @@
 <?php
 
 use App\Support\Games\GameWordBook;
-use App\Support\Games\GuestNames;
+use App\Support\Sessions\GuestNames;
 use Illuminate\Support\Str;
 
 dataset('game locales', ['en', 'fr', 'es', 'de']);

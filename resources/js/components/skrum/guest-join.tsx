@@ -40,10 +40,15 @@ export type GuestJoinProps = {
         status?: 'live' | 'scheduled';
         participants?: number;
         facilitator?: string;
+        /** Retro only: the cards of this retro do not show their author. */
+        anonymousCards?: boolean;
     };
     /** Random nickname proposed when the field is left empty. */
     defaultName?: string;
-    /** Pre-filled nickname; the field starts empty when absent. */
+    /**
+     * Pre-filled nickname; the field starts empty when absent. A new value
+     * (another random nickname was drawn) replaces what the field holds.
+     */
     initialName?: string;
     /** Backlog: the colour picker is only rendered when this list is given. */
     takenColors?: number[];
@@ -61,6 +66,7 @@ export type GuestJoinProps = {
     ) => void;
     /** Extra controls rendered between the nickname and the join button. */
     children?: ReactNode;
+    /** Draws another random nickname; the button is absent without it. */
     onRandomName?: () => void;
     /** Pins the join button to the bottom of the viewport (phone). */
     stickyAction?: boolean;
@@ -157,10 +163,17 @@ export function GuestJoin({
     const swatchRefs = useRef<Partial<Record<number, HTMLButtonElement>>>({});
 
     const [name, setName] = useState(initialName);
+    const [syncedInitialName, setSyncedInitialName] = useState(initialName);
     const [chosenColor, setChosenColor] = useState<AvatarPresence | null>(
         PresenceNumbers.find((n) => n === initialPresence) ?? null,
     );
     const [editedPast, setEditedPast] = useState<typeof error>(null);
+
+    if (initialName !== syncedInitialName) {
+        setSyncedInitialName(initialName);
+        setName(initialName);
+        setEditedPast(error);
+    }
 
     const showColors = takenColors !== undefined;
     const taken = takenColors ?? [];
@@ -507,7 +520,7 @@ export function GuestJoin({
                     </div>
                 )}
 
-                {!hasName && onRandomName && (
+                {onRandomName && (
                     <Button
                         type="button"
                         variant="secondary"
@@ -542,7 +555,7 @@ export function GuestJoin({
                         <span className="truncate">
                             {processing
                                 ? t('Connecting to the session…')
-                                : t('Join')}
+                                : t('Join the session')}
                         </span>
                         {!processing && <ArrowRight aria-hidden />}
                     </LoadingButton>
@@ -553,9 +566,14 @@ export function GuestJoin({
                         className="mt-px size-4 shrink-0 text-skrum-success-text"
                         aria-hidden
                     />
-                    {t(
-                        'No personal data is asked. Your nickname is deleted when the session ends; your cards can stay anonymous.',
-                    )}
+                    <span data-slot="guest-join-privacy">
+                        {t(
+                            'No account and no e-mail needed. The others see your nickname.',
+                        )}
+                        {session.kind === 'retro' && session.anonymousCards && (
+                            <> {t('Cards are anonymous in this retro.')}</>
+                        )}
+                    </span>
                 </p>
             </form>
 
