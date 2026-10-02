@@ -127,6 +127,7 @@ use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
+use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
@@ -175,6 +176,11 @@ Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
+// Outside the web group, like the brand assets below.
+Route::get('avatars/{style}/{seed}.svg', [StyledAvatarsController::class, 'show'])
+    ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
+    ->withoutMiddleware('web')
+    ->name('styledAvatars.show');
 // Outside the web group: a public, immutable response must not carry a session cookie.
 Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', 'logo-light|logo-dark|favicon')
     ->withoutMiddleware('web')

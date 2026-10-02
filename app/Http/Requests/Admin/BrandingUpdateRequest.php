@@ -21,7 +21,7 @@ class BrandingUpdateRequest extends FormRequest
             'brand_radius' => ['nullable', 'integer', 'between:'.InstanceSettings::MinRadius.','.InstanceSettings::MaxRadius],
             'display_name' => ['nullable', 'string', 'max:60'],
             'powered_by' => ['required', 'boolean'],
-            'avatar_style' => ['nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->values())],
+            'avatar_style' => ['nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->selectable())],
             'avatar_member_choice' => ['required', 'boolean'],
             'gif_provider' => ['nullable', 'string', Rule::in(InstanceSettings::GifProviders)],
             'gif_enabled' => ['required', 'boolean'],

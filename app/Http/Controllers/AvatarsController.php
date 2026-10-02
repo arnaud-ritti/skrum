@@ -2,45 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use DiceBear\Avatar;
-use DiceBear\Style;
+use App\Support\Avatars\AvatarSvg;
+use App\Support\Avatars\AvatarUrl;
 use Illuminate\Http\Response;
 
 class AvatarsController extends Controller
 {
-    private const string DefaultStyle = 'thumbs';
+    public const string CacheControl = 'public, max-age=31536000, immutable';
 
-    public function show(string $seed): Response
+    /**
+     * This address has no style in it and is cached for a year, so it only ever draws the style of the environment.
+     */
+    public function show(AvatarUrl $avatarUrl, AvatarSvg $avatarSvg, string $seed): Response
     {
-        $style = $this->style();
-        $definition = Style::fromJson((string) file_get_contents($this->stylePath($style)));
-        $svg = (string) new Avatar($definition, ['seed' => $seed]);
+        $svg = $avatarSvg->render($avatarUrl->environmentStyle(), $seed);
 
-        return response($svg, 200, [
-            'Content-Type' => 'image/svg+xml',
-            'Cache-Control' => 'public, max-age=31536000, immutable',
-            'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
-        ]);
-    }
+        abort_if($svg === null, 404);
 
-    private function style(): string
-    {
-        $configured = (string) config('skrum.avatar_style');
-
-        if (preg_match('/^[a-z0-9-]+$/', $configured) !== 1) {
-            return self::DefaultStyle;
-        }
-
-        if (! is_file($this->stylePath($configured))) {
-            return self::DefaultStyle;
-        }
-
-        return $configured;
-    }
-
-    private function stylePath(string $style): string
-    {
-        return base_path("vendor/dicebear/styles/src/{$style}.json");
+        return $avatarSvg->response($svg, self::CacheControl);
     }
 }

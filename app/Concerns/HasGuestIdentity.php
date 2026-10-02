@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\User;
+use App\Support\Avatars\AvatarUrl;
 
 /**
  * Identity shared by retro participants and poker players: a team member
@@ -38,6 +39,19 @@ trait HasGuestIdentity
 
     public function avatarUrl(): string
     {
-        return route('avatars.show', $this->avatarSeed(), absolute: false);
+        return resolve(AvatarUrl::class)->for(
+            $this->avatarSeed(),
+            fn (): ?string => $this->avatarOwner()?->avatar_style,
+            fn (): string => $this->displayName(),
+        );
+    }
+
+    public function avatarOwner(): ?User
+    {
+        if ($this->user_id === null) {
+            return null;
+        }
+
+        return $this->user;
     }
 }

@@ -17,6 +17,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Policies\PokerDeckPolicy;
+use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
@@ -62,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(VisibleTeams::class);
         $this->app->scoped(McpTrackers::class);
         $this->app->scoped(InstanceSettings::class);
+        $this->app->scoped(AvatarStyleCatalogue::class);
         $this->app->bind(McpGrant::class, fn (): McpGrant => McpGrant::current());
     }
 

@@ -49,6 +49,9 @@ class AvatarStyleCatalogue
         'toon-head' => ['ToonHead', 'Johan Melin', 'CC BY 4.0'],
     ];
 
+    /** @var ?array<int, string> */
+    private ?array $values = null;
+
     /**
      * The styles installed on disk, plus the initials fallback.
      *
@@ -56,11 +59,33 @@ class AvatarStyleCatalogue
      */
     public function values(): array
     {
+        if ($this->values !== null) {
+            return $this->values;
+        }
+
         $files = glob(base_path('vendor/dicebear/styles/src/*.json')) ?: [];
         $values = array_map(fn (string $file): string => basename($file, '.json'), $files);
         $values = array_filter($values, fn (string $value): bool => preg_match('/^[a-z0-9-]+$/D', $value) === 1);
 
-        return array_values(array_unique([...$values, self::Initials]));
+        return $this->values = array_values(array_unique([...$values, self::Initials]));
+    }
+
+    /**
+     * The styles an admin or a member may pick: installed, and with a licence we can state.
+     *
+     * @return array<int, string>
+     */
+    public function selectable(): array
+    {
+        return array_values(array_filter(
+            $this->values(),
+            fn (string $value): bool => array_key_exists($value, self::Licenses),
+        ));
+    }
+
+    public function isSelectable(string $style): bool
+    {
+        return in_array($style, $this->selectable(), true);
     }
 
     public function has(string $style): bool
@@ -93,7 +118,7 @@ class AvatarStyleCatalogue
      */
     public function styles(): array
     {
-        return array_map($this->style(...), $this->values());
+        return array_map($this->style(...), $this->selectable());
     }
 
     /**
@@ -128,5 +153,62 @@ class AvatarStyleCatalogue
             'attribution' => "{$source} by {$author}, {$license}",
             'attributionRequired' => $license === self::AttributionLicense,
         ];
+    }
+
+    /**
+     * Null for a style that does not ask for attribution.
+     *
+     * @return ?array{
+     *     style: string,
+     *     name: string,
+     *     source: string,
+     *     creator: string,
+     *     license: string,
+     *     sourceUrl: ?string
+     * }
+     */
+    public function attribution(string $value): ?array
+    {
+        $known = self::Licenses[$value] ?? null;
+
+        if ($known === null) {
+            return null;
+        }
+
+        [$source, $creator, $license] = $known;
+
+        if ($license !== self::AttributionLicense) {
+            return null;
+        }
+
+        return [
+            'style' => $value,
+            'name' => Str::headline($value),
+            'source' => $source,
+            'creator' => $creator,
+            'license' => $license,
+            'sourceUrl' => $this->sourceUrl($value),
+        ];
+    }
+
+    private function sourceUrl(string $value): ?string
+    {
+        $path = $this->path($value);
+
+        if ($path === null) {
+            return null;
+        }
+
+        $url = data_get(json_decode((string) file_get_contents($path), true), 'meta.source.url');
+
+        if (! is_string($url)) {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $url) !== 1) {
+            return null;
+        }
+
+        return $url;
     }
 }

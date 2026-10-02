@@ -77,7 +77,7 @@ it('shows the defaults when nothing is stored', function () {
             ->where('defaults', ['brandColor' => '#bb4d2a', 'brandRadius' => 10, 'displayName' => 'Configured Name'])
             ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null])
             ->where('palette', null)
-            ->has('avatarStyles', count(resolve(AvatarStyleCatalogue::class)->values()))
+            ->has('avatarStyles', count(resolve(AvatarStyleCatalogue::class)->selectable()))
             ->where('avatarStyles', fn ($styles) => collect($styles)->firstWhere('value', 'fun-emoji') == [
                 'value' => 'fun-emoji',
                 'name' => 'Fun Emoji',
@@ -399,6 +399,7 @@ it('refuses unknown values for the avatar style, the GIF provider and the rating
     'unknown style' => ['avatar_style', 'no-such-style'],
     'style with a path' => ['avatar_style', '../../composer'],
     'camel case style' => ['avatar_style', 'funEmoji'],
+    'style without licence data' => ['avatar_style', 'blobs'],
     'unknown provider' => ['gif_provider', 'imgur'],
     'unknown rating' => ['gif_rating', 'x'],
     'powered by not boolean' => ['powered_by', 'maybe'],

@@ -41,6 +41,7 @@ it('answers 404 for a style name with path characters or an unknown style', func
     'dotted name' => ['thumbs.json'],
     'upper case' => ['Thumbs'],
     'unknown style' => ['no-such-style'],
+    'style without licence data' => ['blobs'],
 ]);
 
 it('answers 404 for a seed that is not 32 hex characters', function () {
@@ -68,13 +69,8 @@ it('lists the styles on disk with their licence and marks those that need attrib
             'attribution' => 'Fun Emoji Set by Davis Uche, CC BY 4.0',
             'attributionRequired' => true,
         ])
-        ->and($styles['blobs'])->toBe([
-            'value' => 'blobs',
-            'name' => 'Blobs',
-            'license' => 'See DiceBear',
-            'attribution' => null,
-            'attributionRequired' => false,
-        ])
+        ->and($styles->has('blobs'))->toBeFalse()
+        ->and($catalogue->values())->toContain('blobs')
         ->and($catalogue->has('../../composer'))->toBeFalse()
         ->and($catalogue->path('../../composer'))->toBeNull();
 });

@@ -39,6 +39,7 @@ class GamePlayer extends Model
         isGuest as private identityIsGuest;
         displayName as private identityDisplayName;
         avatarSeed as private identityAvatarSeed;
+        avatarOwner as private identityAvatarOwner;
     }
     use HasUuids;
 
@@ -94,6 +95,15 @@ class GamePlayer extends Model
         }
 
         return $this->identityAvatarSeed();
+    }
+
+    public function avatarOwner(): ?User
+    {
+        if ($this->participant_id !== null && $this->participant !== null) {
+            return $this->participant->avatarOwner();
+        }
+
+        return $this->identityAvatarOwner();
     }
 
     /**

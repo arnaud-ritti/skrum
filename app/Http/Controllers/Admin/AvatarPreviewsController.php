@@ -12,6 +12,8 @@ class AvatarPreviewsController extends Controller
 {
     public function show(AvatarStyleCatalogue $catalogue, string $style, string $seed): Response
     {
+        abort_unless($catalogue->isSelectable($style), 404);
+
         $path = $catalogue->path($style);
 
         abort_if($path === null, 404);

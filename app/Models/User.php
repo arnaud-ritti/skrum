@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
+use App\Support\Avatars\AvatarUrl;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -33,13 +34,14 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $remember_token
  * @property string|null $locale
  * @property bool $is_instance_admin
+ * @property string|null $avatar_style
  * @property bool $action_item_reminders_by_email
  * @property bool $action_item_reminders_in_app
  * @property string|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'locale', 'action_item_reminders_by_email', 'action_item_reminders_in_app'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
@@ -77,7 +79,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
 
     public function avatarUrl(): string
     {
-        return route('avatars.show', $this->avatarSeed(), absolute: false);
+        return resolve(AvatarUrl::class)->for(
+            $this->avatarSeed(),
+            fn (): ?string => $this->avatar_style,
+            fn (): string => $this->name,
+        );
     }
 
     public function avatarSeed(): string
