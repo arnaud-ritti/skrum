@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` — row 18f of §12; B11, B12, B13, B14, B33, B34, B35 of §9 and §9.2, the security review of B31, and the two paragraphs under the table; §5; §6.3; §6.5 ruling 21; §10; §13 criteria 1, 3, 4, 13, 28, 30, 31, 32; §15 points 11, 12, 17. Owner answers: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` (section "Plan 18f", line 11-D2, and the 18f lines of the second round). Design: `docs/design-system/components/Emails`, `Command`, `KeyboardShortcuts`, `NotificationsPanel`, `ScreenAuth`, `ScreenSecurity`, `ScreenUserSettings` — for each, the `README.md` **and** the `preview.html`, which is the reference a screen is compared with. Research: `18f-research.md` (scratchpad of the planning session; its findings are folded into this plan, with the corrections listed at the end).
 
-**Not in this plan:** geolocation in the code e-mail (owner: browser and time, no location); card text of hidden cards and whiteboard element text in search; trigram indexes (D10); MJML (D13); a scheduled start of a session and its "starts in 5 min" notification, mentions, declining an invitation (Deviations table); device sessions and linked accounts on the Security screen (spec §10); deleting the old `notification-bell.tsx` and old layouts (18g).
+**Not in this plan:** geolocation in the code e-mail (owner: browser and time, no location); card text of hidden cards and whiteboard element text in search; trigram indexes (D10); MJML (D13); everything the Deviations table marks `roadmap` (a scheduled start of a session and its notification, mentions, accepting or declining an invitation inside the bell, team invitations, device sessions and linked accounts); deleting the old `notification-bell.tsx` and old layouts (18g).
 
 ## Autonomous run
 
@@ -22,7 +22,7 @@ Answered by the owner on 2026-10-02, in two rounds (`owner-answers-2026-10-02.md
 
 | # | Question | Answer (2026-10-02) | Where |
 |---|---|---|---|
-| D1 | "Forced SSO" has no setting. Add one, derive it, or drop the clause? | **Add it**: instance setting `sso_required`, which hides password and magic link — and, in this plan, refuses them on the server (spec B33). | Tasks 10, 22; S27–S29 |
+| D1 | "Forced SSO" has no setting. Add one, derive it, or drop the clause? | **Add it** (first round), and (third round) while it is in force **only SSO signs in**: password, magic link, passkey and form registration are refused on the server. Two ways back: instance admins sign in with password **and a second factor**; with no enabled provider the setting is ignored for everyone, with an alert to instance admins. | Tasks 10, 22; rules R1–R16; S27–S29 |
 | D2 | Magic link for every user, or only for users without a usable password? | As planned: every verified account; no link to an unverified account. | Task 6 |
 | D3 | Does the e-mail code count as a second factor for instance admins and workspace owners? | As planned: accepted for everyone, instance admins included. | Tasks 7, 18 |
 | D4 | E-mail-code-only users have no recovery codes. | As planned: none. Recovery is regaining the mailbox; stated on the Security card. | Tasks 7, 18 |
@@ -36,19 +36,21 @@ Answered by the owner on 2026-10-02, in two rounds (`owner-answers-2026-10-02.md
 | D12 | Search scope. | As planned: the current workspace. | Task 9 |
 | D13 | Mail templating. | As planned: plain Blade. | Tasks 1–4, 6, 7, 14 |
 | D14 | Request context in the code e-mail. | Confirmed (second round): the browser and the time of the request, no location. The time was not in the plan: Task 14 adds it. | Tasks 7, 14 |
-| D15 | SSO-only users cannot open Security without a passkey or a password reset. | Not asked again; unchanged: accepted, recorded in the report. While single sign-on is required the password reset is refused too (B33), so such a user reaches Security only with a passkey. | Report |
-| D16 | Shortcuts without a handler (`G`, `F`, `C`, `⇧R`, `⌘→`) and the "disable single-letter shortcuts" setting. | **Build them** (spec B35): handlers in the session containers of 18e, registry, preference and dialog here. | Tasks 13, 24, 25 |
-| 11-D2 | SSO buttons on the invitation page. | **Yes**; accepting an invitation through SSO is authentication work, under this plan's security rules (spec B31: prop and buttons in 18e, review and any change to the sign-in classes here). | Tasks 11, 23; S30, S31 |
+| D15 | SSO-only users cannot open Security without a passkey or a password reset. | Not asked again; unchanged: accepted, recorded in the report. While single sign-on is required, the reset link goes to instance admins only (R13). | Report |
+| D16 | Shortcuts without a handler (`G`, `F`, `C`, `⇧R`, `⌘→`) and the "disable single-letter shortcuts" setting. | **Build them** (spec B35): this plan builds the five handlers and mounts them in the session containers 18e wrote, with the registry, the preference and the dialog. | Tasks 13, 24, 25 |
+| 11-D2 | SSO buttons on the invitation page. | **Yes**; accepting an invitation through SSO is authentication work, under this plan's security rules. Third round: an address the provider does not mark verified is refused **even with a matching invitation** — a change of `ResolveSsoUser`, owned by this plan. | Tasks 11, 23; S30, S31 |
 
 Standing rule of the owner, same day: **the mockup must be faithfully respected.** See Global Constraints and the Deviations table.
 
-Points the amended spec settles and that the security gate (Task 16) must rule on before the front tasks start. The plan builds the spec's choice; the reviewer's recommendation, if it differs, goes to the owner with the gate record and stops nothing else:
+The three points the second version of this plan left to the security gate were answered by the owner in the third round:
 
-| # | Point | Built (spec) | Why the gate looks at it |
+| # | Point | Answer (third round) | Where |
 |---|---|---|---|
-| D17 | With `sso_required` in force and no provider enabled | The setting is ignored and the password form is back (B33: the operator's way back). | A provider configuration lost by mistake silently gives old passwords back to people the identity provider has removed. The alternative — the setting stays in force and instance admins keep a password as the way back — closes that, at the price of a password for admins. |
-| D18 | Passkey while `sso_required` is in force | Still signs in (§15 point 11). | A passkey is a local credential the identity provider cannot revoke: an account removed at the provider keeps its way in. `Passkeys::authorizeLoginUsing` (`vendor/laravel/passkeys/src/Passkeys.php:149`) could refuse it. |
-| D19 | An unverified provider address that matches a pending invitation | Accepted: the account is created (§15 point 17; `ResolveSsoUser`, today's behaviour). | The invitation token is the proof of the mailbox, as for a password registration through the same link. The gate confirms that nothing but the token holder's own new account is reachable that way (S30). |
+| D17 | The way back when `sso_required` locks people out | **Both**: instance admins always sign in with password and second factor; and with no enabled provider the setting is ignored for everyone, with an alert shown to instance admins. | Task 10, R2, R4–R9 |
+| D18 | Passkey while `sso_required` is in force | **Refused**, for everyone: only SSO signs in. | Task 10, R10; S2 amended |
+| D19 | An unverified provider address that matches a pending invitation | **Refused**, even with a matching invitation (it created a verified account before). | Task 11, S30 |
+
+Also from the third round: the invitation notification of the bell links to the existing invitation page, and no route accepts an invitation without its token (Task 15, S33); a mockup element that has no data in the product is left out of the rewrite, listed as a deviation, and becomes a feature of its own afterwards (`docs/superpowers/research/front-rewrite/feature-roadmap.md`).
 
 ## File structure
 
@@ -82,7 +84,7 @@ Back end, created:
 | `app/Http/Controllers/RecapUnsubscribesController.php` | Signed unsubscribe of the recap (page + one-click) |
 | `app/Http/Controllers/Settings/ShortcutPreferencesController.php` | Single-key shortcuts preference |
 | `bin/render-mail-logo.mjs`, `public/brand/skrum-logo-mail-{light,dark}.png`, `resources/views/mail/partials/{avatar,stat}.blade.php` | PNG logo and the blocks of the mail mockup |
-| `app/Actions/Notifications/ListNotifications.php`, `app/Notifications/WorkspaceInvitationReceivedNotification.php`, `app/Events/NotificationReceived.php`, `app/Http/Controllers/ReceivedInvitationAcceptancesController.php` | Bell: kinds, paging, live arrival, accept from the bell |
+| `app/Actions/Notifications/ListNotifications.php`, `app/Notifications/WorkspaceInvitationReceivedNotification.php`, `app/Events/NotificationReceived.php` | Bell: kinds, paging, live arrival |
 | `app/Actions/Search/ListRecentSessions.php`, `app/Http/Controllers/RecentSessionsController.php` | "Recent sessions" of the palette |
 
 Back end, migrations added: `add_recap_emails_to_users_table`, `add_single_key_shortcuts_to_users_table` (with those of Tasks 6 and 7).
@@ -106,19 +108,19 @@ Front end, created: `resources/js/pages/auth/{magic-link,reminder-unsubscribe}.t
 - Translations: `en`, `fr`, `es`, `de` JSON files stay complete; the literal call shape `t('…')` / `__('…')` is kept (`tests/Feature/TranslationKeysTest.php`). Task 1 makes that test scan `resources/views` too.
 - Front rules of spec §5 apply to every front file: tokens only, rem, no arbitrary size, `truncate`, focus ring, lucide, presentational `skrum/` components, no `sk-*`. Containers live in `resources/js/components/<domain>/`; no new base folder.
 - One commit per task. Commit messages follow the repository style (`feat(auth): …`, `feat(mail): …`, `test: …`).
-- **The mockup is respected faithfully** (owner, 2026-10-02). An explicit answer of the owner in `owner-answers-2026-10-02.md` stands as written. Everything else follows the mockups and READMEs of `docs/design-system/` exactly: layout, placement, labels, states. Each front task, and each mail, ends with its screen open beside its `preview.html`, in both themes, at 1440 and 390: every difference is fixed, or is a line of the **Deviations from the mockup** table below. A browser test that contradicts the mockup changes, in the commit of that screen, and the task lists it. When the mockup needs data the back end lacks and the owner has not sent it to the backlog (spec §10), a back-end task adds it; the element is not left out. A deviation is allowed only for something false or unsafe, for an accessibility rule, or for data the product does not have at all. A deviation found at execution is added to the table, with its reason, in the commit that makes it, and listed in the phase report; one that fits none of the three reasons stops the task.
+- **The mockup is respected faithfully** (owner, 2026-10-02). An explicit answer of the owner in `owner-answers-2026-10-02.md` stands as written. Everything else follows the mockups and READMEs of `docs/design-system/` exactly: layout, placement, labels, states. Each front task, and each mail, ends with its screen open beside its `preview.html`, in both themes, at 1440 and 390: every difference is fixed, or is a line of the **Deviations from the mockup** table below. A browser test that contradicts the mockup changes, in the commit of that screen, and the task lists it. Reading given by the owner in the third round: the rewrite builds each screen with what the server already holds; a mockup element whose data or feature the product does not have is left out, its place kept free, and listed in the Deviations table with the reason `roadmap` and its line of `feature-roadmap.md` — it becomes a feature with its own spec and plan after the rewrite. (Tasks 14 and 15 stay in this plan: their data is already on the server — votes, action items, invitations, sessions — or was explicitly kept by the owner's answers on the bell.) Besides `roadmap`, a deviation is allowed only for something false or unsafe, for an accessibility rule, or by an explicit answer of the owner. A deviation found at execution is added to the table, with its reason, in the commit that makes it, and listed in the phase report; one that fits none of the three reasons stops the task.
 - Every new translation key is given in the four languages: the table of Task 26 holds the French, Spanish and German of each key this plan introduces; in `en.json` the value is the key.
 
 ## Deviations from the mockup
 
-The only places where a screen or a mail of this plan differs from its mockup, and why. Reason is one of: **owner** (an explicit answer), **false** (the mockup states something untrue for this product), **unsafe**, **a11y**, **no data** (the product does not have it at all), **backlog** (spec §10, sent there by the owner). Anything not listed here matches the mockup.
+The only places where a screen or a mail of this plan differs from its mockup, and why. Reason is one of: **owner** (an explicit answer), **false** (the mockup states something untrue for this product), **unsafe**, **a11y**, **roadmap** (the element needs data or a feature the product does not have; the owner wants it built after the rewrite, and it is listed in `docs/superpowers/research/front-rewrite/feature-roadmap.md` — approved for later, not an unapproved deviation), **backlog** (not requested by the owner: spec §10). Anything not listed here matches the mockup. Where a roadmap element is left out, the screen keeps its place free, so that the feature is added later without a new layout (owner, third round).
 
 | # | Mockup | Element | What is built instead | Reason |
 |---|---|---|---|---|
 | V1 | Emails · 2FA code | "Strasbourg, France" in the request context | Browser, system and time; no city, no country | owner (second round: "browser and time, no location") |
 | V2 | Emails · 2FA code | "Enter this code to finish signing in." | "Enter this code to continue." — the same mail carries the code that turns the factor on in Security, where "finish signing in" is untrue | false |
-| V3 | Emails · Invitation | Team invitation (`kind: 'team'`), team tile with its colour, "11 members" of a team | Workspace invitation only, with the workspace block (name, teams, members), which the mockup describes as its second variant | no data (the product invites to a workspace; "team invite link" is spec §10) |
-| V4 | Emails · Invitation | The inviter's quoted message | Not rendered | no data (the invitation holds no message, and the invite form of ScreenWorkspace has no field for one) |
+| V3 | Emails · Invitation | Team invitation (`kind: 'team'`), team tile with its colour, "11 members" of a team | Workspace invitation only, with the workspace block (name, teams, members), which the mockup describes as its second variant | roadmap (Invitations: team invitations) |
+| V4 | Emails · Invitation | The inviter's quoted message | Not rendered | roadmap (Invitations: inviter's message) |
 | V5 | Emails · Invitation | "Join with your company SSO or create an account in a minute." | The half that is true for the instance (Task 14) | false |
 | V6 | Emails · Reminder | "Sent on Mondays and the day after a due date." | Left out of the reason line | false (reminders go out daily at the configured time, for items due soon and overdue) |
 | V7 | Emails · Reminder | Overdue items only | A second list, "Due soon", in the same row style | owner goal 2 (feature parity) and B14: the existing reminder covers both, and its triggers do not change |
@@ -128,16 +130,17 @@ The only places where a screen or a mail of this plan differs from its mockup, a
 | V11 | Emails · header | PNG logo always | The display name as text when the instance has a logo mail clients cannot draw (SVG, WebP) and no mail logo was uploaded; the Branding page says so | false otherwise (the Skrüm logo on a rebranded instance) |
 | V12 | ScreenAuth · link sent | "Nous avons envoyé un lien de connexion à …" | "If an account exists for …, a sign-in link is on its way." | unsafe (S8: the answer must not say whether the address has an account) |
 | V13 | ScreenAuth · link sent | "Ouvrir ma messagerie" | Not rendered | false (the application cannot know or open the visitor's mailbox) |
-| V14 | NotificationsPanel | "starts in 5 min" notification and its "Join" | Not produced | backlog (spec §10: Sessions index with scheduling — no session has a start time) |
-| V15 | NotificationsPanel | Mention notification | Not produced | no data (the product has no mention) |
-| V16 | NotificationsPanel | "Decline" on an invitation | "Accept" only | backlog (spec §10: declining an invitation) |
-| V17 | NotificationsPanel | "invited you to join team Atlas" | "invited you to join :workspace" | no data (V3) |
+| V14 | NotificationsPanel | "starts in 5 min" notification and its "Join" | Not produced | roadmap (Sessions: scheduling and the "starts in 5 min" notification) |
+| V15 | NotificationsPanel | Mention notification | Not produced | roadmap (Mentions and their notifications) |
+| V16 | NotificationsPanel | "Accept" and "Decline" inside the invitation item | One action, "View invitation", to the invitation page | owner (third round: the notification links to the existing invitation page, no token-less accept); "Decline" is roadmap (Invitations) |
+| V17 | NotificationsPanel | "invited you to join team Atlas" | "invited you to join :workspace" | roadmap (V3) |
 | V18 | Command | `⌘N`, `⌘P` beside "New retro", "New poker session" | The two actions, without a shortcut | false (the browser keeps ⌘N and ⌘P: new window, print; a page cannot take them) |
-| V19 | Command | "Inviter dans l'équipe Atlas" | "Invite to :workspace", shown to those who may invite | no data (V3) |
+| V19 | Command | "Inviter dans l'équipe Atlas" | "Invite to :workspace", shown to those who may invite | roadmap (V3) |
 | V20 | KeyboardShortcuts | No control in the dialog | A "Single-key shortcuts" switch in the dialog footer of a session | a11y (WCAG 2.1.4: a guest has no settings page and must be able to turn them off) |
 | V21 | KeyboardShortcuts | Whiteboard keys `H`, `N`, `S`, `P`, `C` | The keys Excalidraw answers to | false (spec rulings 5 and 29: the whiteboard keeps Excalidraw's own shortcuts) |
 | V22 | ScreenUserSettings | "Réglages › Accessibilité" as a page | A card "Accessibility" on the Appearance page | spec §15 point 12 |
-| V23 | ScreenSecurity | Active sessions, linked accounts | Not rendered (18e) | backlog (spec §10) |
+| V23 | ScreenSecurity | Active sessions, linked accounts | Not rendered (18e) | roadmap (Account: active sessions, linked accounts) |
+| V24 | ScreenAuth | With SSO forced, "le formulaire e-mail disparaît" | The form is folded under "Administrator sign-in", for every visitor | owner (third round: instance admins sign in with password and second factor) and unsafe otherwise (showing it to admins only would need to know who is asking) |
 
 The two-factor challenge in e-mail mode and the e-mail card of Security have no mockup: they are composed from the library components the Security mockup uses (`InputOTP` 3 + 3, the badge "On" / "Off", the destructive outline button), in the anatomy of its TOTP block.
 
@@ -148,7 +151,7 @@ Every task and every review holds these. Test names are in `tests/Feature/Auth/M
 | # | Rule | Proved by |
 |---|---|---|
 | S1 | **One decision.** Whether a user must pass a second factor is answered only by `SecondFactors::requiredFor()`, and a challenge is opened only by `StartSecondFactorChallenge`. The Fortify pipeline (`RedirectIfSecondFactorRequired`, bound to Fortify's contract), `CompleteLogin` (SSO and magic link) call them. No other file reads `two_factor_secret`, `two_factor_confirmed_at` or `two_factor_email_enabled_at` to decide a challenge. | SF `binds the pipeline step of Fortify to the shared decision`, EC `challenges on every entry` (dataset: password, SSO, magic link × TOTP, e-mail code), SF `lets no other file decide whether a challenge is due` (source scan) |
-| S2 | **A passkey sign-in is not challenged** (unchanged; a passkey is itself strong authentication). `Passkeys::authorizeLoginUsing` stays unset. | Review gate (Task 16) reads `vendor/laravel/passkeys/src/Http/Controllers/PasskeyLoginController.php` and greps the app; no automated test (a WebAuthn assertion cannot be forged in a feature test) |
+| S2 | **A passkey sign-in is not challenged** (unchanged; a passkey is itself strong authentication). `Passkeys::authorizeLoginUsing` is set to one callback, the one of R10, which looks at the instance setting and at nothing else: it refuses every passkey while single sign-on is required and decides nothing about a second factor. | FS `refuses a passkey for everyone while the setting is in force`; review gate (Task 16) reads `vendor/laravel/passkeys/src/Http/Controllers/PasskeyLoginController.php` and greps the app for a second callback; a WebAuthn assertion cannot be forged in a feature test |
 | S3 | **GET never signs in.** `GET` and `HEAD` on a link render a confirmation page and leave the row untouched; only the CSRF-protected `POST` consumes. | ML `GET and HEAD neither sign in nor consume` |
 | S4 | **Single use, atomic.** Consuming is one `UPDATE … WHERE consumed_at IS NULL AND expires_at > now()`; the sign-in proceeds only when one row was changed. | ML `works once`, ML `consumes with one conditional update` |
 | S5 | **Hashed at rest, never exposed.** Only `sha256(token)` is stored. The token is not written to a log, a session flash, an error message or a job payload; the job carries the address only and is encrypted. | ML `stores only a hash and flashes nothing secret`, ML `queued work is encrypted` |
@@ -173,16 +176,16 @@ Every task and every review holds these. Test names are in `tests/Feature/Auth/M
 | S24 | **Unsubscribe.** The route accepts only a valid signature, changes only `action_item_reminders_by_email` of the signed user, does nothing on `GET`, and signs nobody in. | MAIL `unsubscribe` tests |
 | S25 | **User text in mail.** HTML parts escape with `{{ }}` only; no Markdown rendering of user text; subjects are single-line. | MAIL `escapes user text`, existing `ReminderDigestTest`, `WorkspaceInvitationsTest`, `ShareRedactionTest` |
 | S26 | **Hex only in mail**, values from the Emails README table or from `BrandPalette::toHex()`; no user string reaches a style. | MAIL `uses hex colours only`, MM `stays within the hex table` |
-| S27 | **Required single sign-on is enforced by the server, not by the page.** While `SignInPolicy::ssoRequired()` is true, a password sign-in is refused for everyone with the answer of a wrong password and before any challenge starts; no magic link is sent and an outstanding one opens no session; form registration is refused; no password-reset link is sent and the answer stays neutral. Every one of these entry points asks `SignInPolicy`; none reads the setting itself. The second factor after SSO is unchanged (S1). | FS `refuses the right password of anyone and answers as for a wrong password`, FS `refuses a password before any second-factor challenge starts`, FS `sends no magic link and keeps the uniform answer`, FS `refuses a link issued before the setting was turned on`, FS `closes form registration`, FS `sends no password-reset link and answers as if it had`, FS `still asks for the second factor after single sign-on`, FS `tells the login page what is offered` |
-| S28 | **Nobody is locked out.** The setting can be turned on only while a provider is enabled and by an admin who owns an SSO identity of an enabled provider; it can always be turned off; it is ignored while no provider is enabled; an account without an SSO identity is linked on its first SSO sign-in through its verified address; the last instance admin cannot be revoked (existing rule). Passkey sign-in is left as it was (D18). | SS `refuses to turn it on when no provider is configured`, SS `refuses to turn it on when the acting admin has no SSO identity of an enabled provider`, SS `turns it off whatever the state of the providers and of the admin`, FS `is ignored when no provider is enabled`, FS `signs in through single sign-on and links an account that had no SSO identity`, FS `leaves passkey sign-in as it was`, existing `InstanceAdminsTest` `does not offer to revoke the last admin` |
-| S29 | **The setting is an act of an instance admin, and of nothing else.** Read and written only behind `can:manageInstance` and `RequirePassword`; a value that is not a boolean is refused; the Branding reset does not touch it; turning it on deletes the outstanding magic links. | SS `keeps the page away from members and behind password confirmation`, SS `refuses a value that is not a boolean`, SS `keeps the setting when branding is reset`, SS `turns it on and deletes the outstanding magic links` |
-| S30 | **An invitation followed through SSO is bound to the invited address.** The callback learns of the invitation only from the server-side session; the token is never sent to the provider nor read from callback input. Only the invited address (case and surrounding spaces aside) accepts it. Another address neither accepts nor consumes it, is never linked to the account that owns the invited address, and never signs in as it. An expired or accepted invitation gives no right. An unverified provider address never reaches an existing account. | IS `creates the account and joins the workspace when the provider returns the invited address`, IS `never sends the invitation token to the provider and never reads it from the callback`, IS `gives nothing to an identity whose address is not the invited one`, IS `signs a different address in to its own account, outside the workspace, when sign-up is open`, IS `never links or opens the account that owns the invited address to another identity`, IS `refuses an unverified provider address that claims an existing account, invitation or not`, IS `gives no right through an expired or already accepted invitation` |
+| S27 | **While single sign-on is required, only SSO signs in, and the server enforces it** (R1, R3, R10–R13). Magic link, passkey and form registration are refused for everyone; the reset link is mailed to instance admins only and the request answers everyone the same. Every entry point asks `SignInPolicy`; none reads the setting itself. The second factor after SSO is unchanged (S1). | FS `sends no magic link and keeps the uniform answer`, FS `refuses a link issued before the setting was turned on`, FS `refuses a passkey for everyone while the setting is in force`, FS `closes form registration`, FS `mails a reset link to an instance admin only and answers everyone the same`, FS `still asks for the second factor after single sign-on`, FS `tells the login page what is offered` |
+| S28 | **The password is the way back of instance admins, never alone, and its refusal says nothing** (R4–R8). A password opens a session only for an instance admin who has a second factor, and only after that factor; an admin without one, a member, and a wrong password get one identical answer after the same `Timebox`; the role is read when the password is given and again when a password-started challenge ends. | FS `refuses the right password of a member`, FS `refuses the right password of an instance admin who has no second factor`, FS `challenges an instance admin who has a second factor, and signs in after it`, FS `gives one answer to a member, to an admin without a second factor and to a wrong password`, FS `refuses the password of a demoted admin`, FS `refuses to complete a password challenge for an admin demoted meanwhile`, FS `still completes a challenge that single sign-on started for someone who is not an admin`, FS `accepts the password of a newly promoted admin who has a second factor` |
+| S29 | **Nobody is locked out, and the setting is an admin's act** (R2, R9, R14, R15). Ignored for everyone while no provider is enabled, with an alert to instance admins only; turned on only with an enabled provider, by an admin who has an SSO identity and a second factor; always possible to turn off; read and written only behind `can:manageInstance` and `RequirePassword`; untouched by the Branding reset; an account without an SSO identity is linked on its first SSO sign-in; the last admin cannot be revoked. | FS `is ignored for everyone when no provider is enabled`, FS `alerts instance admins, and nobody else, while the setting is ignored`, FS `signs in through single sign-on and links an account that had no SSO identity`, SS `refuses to turn it on when no provider is configured`, SS `refuses to turn it on when the acting admin has no SSO identity of an enabled provider`, SS `refuses to turn it on when the acting admin has no second factor`, SS `turns it off whatever the state of the providers and of the admin`, SS `counts the admins who can use the password way back`, SS `keeps the page away from members and behind password confirmation`, SS `refuses a value that is not a boolean`, SS `keeps the setting when branding is reset`, SS `turns it on and deletes the outstanding magic links`, existing `InstanceAdminsTest` `does not offer to revoke the last admin` |
+| S30 | **An invitation followed through SSO is bound to the invited address, and proves nothing by itself.** The callback learns of the invitation only from the server-side session; the token is never sent to the provider nor read from callback input. An address the provider does not mark verified creates no account and reaches no account, **with or without a matching invitation**. Only the invited address (case and surrounding spaces aside), verified by the provider, accepts the invitation. Another address neither accepts nor consumes it, is never linked to the account that owns the invited address, and never signs in as it. An expired or accepted invitation gives no right. | IS `refuses an address the provider does not mark verified, even with a matching invitation`, IS `creates the account and joins the workspace when the provider returns the invited address`, IS `never sends the invitation token to the provider and never reads it from the callback`, IS `gives nothing to an identity whose address is not the invited one`, IS `signs a different address in to its own account, outside the workspace, when sign-up is open`, IS `never links or opens the account that owns the invited address to another identity`, IS `refuses an unverified provider address that claims an existing account, invitation or not`, IS `gives no right through an expired or already accepted invitation`; `ResolveSsoUserTest` `refuses a matching invitation when the provider did not verify the address` |
 | S31 | **An existing account joins only as itself, after its second factor.** The callback joins only the account it creates. An existing account signs in through `CompleteLogin` (challenge first, S12) and joins by the authenticated `POST invitations/{token}/acceptance`, which checks the address again. | IS `asks an existing account for its second factor before anything is joined`, IS `signs in a linked account whose address differs, and its acceptance is refused` |
 | S32 | **Recap unsubscribe.** As S24 for the column `recap_emails`: a valid signature only, nothing on `GET`, nobody signed in, only the signed user changed; a signature made for the reminder link does not work on the recap link. An unsubscribed user receives no recap and is not counted. | RU `shows a confirmation page and changes nothing on GET`, RU `turns the recap e-mails off on a signed POST without signing anyone in`, RU `refuses a missing, tampered or borrowed signature`, RU `leaves an unsubscribed member out of the recipients and of their count` |
-| S33 | **Accepting from the bell proves what the token proves.** Behind `auth` and `verified`; only a pending invitation whose address is the account's; never verifies an address; the token is never stored in a notification nor sent to the browser; a notification is created only for the single verified account that owns the invited address, and the inviter's answer does not tell whether it exists. | BN `accepts from the bell for the invited account only`, BN `never stores or returns the invitation token`, BN `notifies the one verified account that owns the invited address` |
+| S33 | **The bell never accepts an invitation.** (The token-less accept route of the second version of this plan is withdrawn — owner, third round. The number is kept.) An invitation notification is a link to the existing invitation page, where the existing rules apply. It is created only for the single verified account that owns the invited address, and the inviter's answer does not tell whether that account exists. The invitation token is stored in the notification encrypted, never in plain text, and is given back only to that account. | BN `links an invitation notification to the invitation page and accepts nothing`, BN `stores the invitation link encrypted and gives it to its owner only`, BN `notifies the one verified account that owns the invited address`; `php artisan route:list` has no route named `receivedInvitations.*` (Task 16) |
 | S34 | **A user's channel and list are its own.** `private-user.{id}` is authorised for that signed-in user only; the event carries a count and no content; a notification whose subject the user may no longer see is dropped; recent sessions follow S23. | BN `authorises the user channel for its owner only`, BN `tells the open page that a notification arrived, with a count only`, BN `drops a notification whose subject is out of reach`, RS (all) |
 
-Known limits, written in the phase report and on the Security card where relevant: a magic link followed by an e-mail code proves the same mailbox twice (spec §9); an e-mail-code-only user who loses the mailbox has no recovery path (D4); the token is part of the URL path and therefore of the reverse proxy's access log for 15 minutes (single use limits the value); with `QUEUE_CONNECTION=sync` the job of S8 runs inside the request and timing is no longer equal — production must run a queue worker, as the README of the project already requires for mail; an e-mail change turns the e-mail factor off without a second proof (the profile form has none today); required single sign-on closes no session already open and revokes no API token (B33), so removing a person still means removing the member; while it is in force an account whose provider address differs from its account address, or whose account address was never verified, cannot sign in until an admin intervenes — the Admin › Sign-in page shows how many accounts have never used single sign-on before the switch is turned on; the three points D17–D19.
+Known limits, written in the phase report and on the Security card where relevant: a magic link followed by an e-mail code proves the same mailbox twice (spec §9); an e-mail-code-only user who loses the mailbox has no recovery path (D4); the token is part of the URL path and therefore of the reverse proxy's access log for 15 minutes (single use limits the value); with `QUEUE_CONNECTION=sync` the job of S8 runs inside the request and timing is no longer equal — production must run a queue worker, as the README of the project already requires for mail; an e-mail change turns the e-mail factor off without a second proof (the profile form has none today); required single sign-on closes no session already open and revokes no API token (R16), so removing a person still means removing the member; while it is in force an account whose provider address differs from its account address, or whose account address was never verified, cannot sign in until an admin intervenes — the Admin › Sign-in page shows how many accounts have never used single sign-on before the switch is turned on; nothing forces an instance admin to keep a second factor, so the password way back can be empty (the page counts the admins who have it, R9) and the other way back is then the operator's; a provider configuration lost by mistake gives every password, passkey and magic link back until it is repaired — the alert of R2 is what tells the admins; the password way back of an admin whose only second factor is the e-mail code needs mail to deliver.
 
 ## Review Focus
 
@@ -191,8 +194,8 @@ Known limits, written in the phase report and on the Security card where relevan
 3. **A code typed for another challenge** (a code issued for enabling, used at login; a code of user A in a session challenged for user B; `login.id` pointing to a deleted user) — refused without a 500. Pinned in Task 7 (`a code of another purpose or user is refused`, `a challenge for a deleted user goes back to login`).
 4. **Search text that looks like a pattern or like nothing** (`%`, `_`, `\`, one character, only spaces, 101 characters, an emoji) and a user who belongs to two workspaces with different roles — literal match, validation error, never a row of a team outside the current workspace. Pinned in Task 9.
 5. **Names that look like markup in a mail** (workspace `<script>`, inviter `[x](https://evil.test)`, action text with a newline) in the HTML part, the text part and the subject. Pinned in Tasks 2–4, and again on the blocks Task 14 adds.
-6. **Required single sign-on with one door left open** — a member's right password, an old magic link, a reset link, the register form posted by hand, the setting flipped by a Branding reset, the setting turned on by an admin for whom SSO does not work. Each is one test of Task 10; the gate (Task 16) adds the doors a test cannot see (passkey, D18; an entry point that does not ask `SignInPolicy`).
-7. **An invitation followed by the wrong person** — the provider returns another address, the invited address in another case, an unverified copy of an existing account's address, or the visitor is already linked to another account; and an existing member with a second factor. One session at most, never the account of the invited address, nothing joined before the challenge. Pinned in Task 11.
+6. **Required single sign-on with one door left open, or one answer that talks** — a member's right password, an admin's password without a second factor, an admin demoted between the password and the code, a passkey, an old magic link, a reset link for a member, the register form posted by hand, the setting flipped by a Branding reset, the setting turned on by an admin who has no way back; and any response that differs between an admin and a member before the right password of an admin was given. Each is one test of Task 10 (rules R1–R16); the gate (Task 16) adds what a test cannot see (an entry point that does not ask `SignInPolicy`, the passkey controller).
+7. **An invitation followed by the wrong person** — the provider returns another address, the invited address without marking it verified, the invited address in another case, an unverified copy of an existing account's address, or the visitor is already linked to another account; and an existing member with a second factor. One session at most, never the account of the invited address, nothing joined before the challenge. Pinned in Task 11.
 8. **A screen that resembles its mockup instead of matching it** — a label reworded, a block moved, a state missing, an element dropped because the server did not send its data. Each front task and Task 14 end with the side-by-side comparison of Global Constraints; Task 26 repeats it on the captures; whatever is left is in the Deviations table or is a defect.
 
 ---
@@ -4472,40 +4475,47 @@ git commit -m "feat(search): search route scoped to the teams the user can view"
 
 ### Task 10: Forced SSO — instance setting `sso_required` and server-side enforcement (B33)
 
-Owner's answer to D1 (2026-10-02): the instance gets a setting "SSO required" that hides password and magic link. Spec B33 and criterion 30 define it; this task builds it. Hiding is not enough: every local way in is refused on the server.
+Owner's answers (2026-10-02, first and third rounds): the instance gets a setting "SSO required"; while it is in force **only SSO signs in** — password, magic link, passkey and form registration are refused on the server — with two ways back: instance admins can always sign in with their password **and a second factor**, and when no SSO provider is enabled the setting is ignored for everyone, with an alert shown to instance admins.
 
 **Where the control lives.** Not on the Branding page: sign-in policy is not branding, and "Reset" on that page must never touch it. A third page of the administration area, Admin › Sign-in (`admin/sign-in`), beside Branding and Admins, behind the same `can:manageInstance` and `RequirePassword` middleware as its two siblings (`routes/admin.php`). The value is one more key of `App\Support\InstanceSettings`, read through one class, `App\Support\Auth\SignInPolicy`.
 
-**The rule (S27, S28), as spec B33 states it:**
+**The rules of `sso_required` (R1–R16).** S27, S28 and S29 hold them; each names its test (FS = `ForcedSsoTest`, SS = `SignInSettingsTest`).
 
-| | While `sso_required` is in force |
-|---|---|
-| In force | When the stored value is true **and** at least one `SsoProvider` is enabled. With no enabled provider the setting is ignored: removing the provider configuration is the operator's way back in. |
-| Single sign-on | Allowed. An existing verified account with no SSO identity is linked on its first SSO sign-in, by the verified address the provider returns (`ResolveSsoUser`, unchanged), so an account without an SSO identity is not locked out. |
-| Password | Refused for everyone, instance admins included. A right password gets the answer of a wrong one. |
-| Magic link | Refused. No mail is sent, an outstanding link no longer opens a session, the request keeps its uniform answer (S8). |
-| Form registration | Refused. An account is created by SSO only (sign-up mode and invitations still apply). |
-| Password-reset request | Refused: nothing is sent, the answer stays neutral; the two pages answer 403. |
-| Passkey | Unchanged (spec §15 point 11): a passkey still signs in. See D18. |
-| Second factor | Unchanged: asked after SSO by `SecondFactors` (S1). |
-| Open sessions, guests of a session, API tokens | Not concerned. |
-
-Turning it on needs an enabled provider **and** an acting admin who owns an SSO identity of an enabled provider (proof that SSO works for at least one admin). Turning it off needs nothing but the admin page, which an admin reaches through SSO, through a passkey, through a session already open, or after the operator has removed the provider configuration.
+| # | Rule | Test |
+|---|---|---|
+| R1 | **In force** when the stored value is true and at least one `SsoProvider` is enabled. | FS `is off by default`, FS `is ignored for everyone when no provider is enabled` |
+| R2 | **Ignored without a provider.** Stored true with no enabled provider: every local way in works for everyone as if the setting were off, and every instance admin sees an alert on every page of the application until a provider is back or the setting is turned off. Nobody else sees it. | FS `is ignored for everyone when no provider is enabled`, FS `alerts instance admins, and nobody else, while the setting is ignored` |
+| R3 | **SSO signs in everyone**, with the second factor of S1 after it. An existing verified account with no SSO identity is linked on its first SSO sign-in by the verified address the provider returns (`ResolveSsoUser`). | FS `signs in through single sign-on and links an account that had no SSO identity`, FS `still asks for the second factor after single sign-on` |
+| R4 | **Password: instance admins only, and never alone.** While in force a password opens a session only for a user who is an instance admin **and** has a second factor (TOTP or e-mail code); the session opens after that factor, never before. | FS `challenges an instance admin who has a second factor, and signs in after it`, FS `refuses the right password of a member` |
+| R5 | **An admin without a second factor has no password way in.** The right password is refused like a wrong one. This is the safe reading of "password + second factor": a password alone would make the admin account the weakest door of an instance that asked for SSO. An admin sets up a factor while signed in (through SSO, or before the setting is on). | FS `refuses the right password of an instance admin who has no second factor` |
+| R6 | **The refusal says nothing.** A member with the right password, an admin without a second factor with the right password, and anyone with a wrong password get the same status, redirect, error key and message (`auth.failed`), after the same `Timebox`, with the same limiter increment. The login page is the same for every visitor: it cannot know who is an admin, so it offers the password form to everyone behind "Administrator sign-in". Only someone who already holds an admin's password learns, from the challenge, that the account is an admin's. | FS `gives one answer to a member, to an admin without a second factor and to a wrong password`, FS `tells the login page what is offered` |
+| R7 | **Demotion takes the password away at once.** The policy reads `is_instance_admin` at the moment of the sign-in, and again when a challenge that a password started is completed: an admin demoted between the password and the code is refused. Sessions already open are not closed (as for everyone). | FS `refuses the password of a demoted admin`, FS `refuses to complete a password challenge for an admin demoted meanwhile` |
+| R8 | **Promotion gives it at once**, if the user has a second factor. | FS `accepts the password of a newly promoted admin who has a second factor` |
+| R9 | **The last admin** cannot be revoked (existing rule of `RevokeInstanceAdmin`). Nothing forces an admin to keep a second factor: if no admin has one, the password way back is closed and the other one (R2: the operator removes the provider configuration) is what is left. Admin › Sign-in says how many admins can use the password way back, and warns at zero. | existing `InstanceAdminsTest` `does not offer to revoke the last admin`; SS `counts the admins who can use the password way back` |
+| R10 | **Passkey: refused for everyone**, instance admins included, with the package's one refusal. | FS `refuses a passkey for everyone while the setting is in force` |
+| R11 | **Magic link: refused for everyone**, admins included. Nothing is sent, an outstanding link opens no session, the request keeps its uniform answer (S8); turning the setting on deletes the outstanding links. | FS `sends no magic link and keeps the uniform answer`, FS `refuses a link issued before the setting was turned on`, SS `turns it on and deletes the outstanding magic links` |
+| R12 | **Form registration: refused.** | FS `closes form registration` |
+| R13 | **Password reset: instance admins only, and the request does not say so.** The reset link is mailed only to an instance admin; every request gets the answer Fortify gives for a sent link. The two reset pages stay reachable (a page cannot be shown to admins only). A reset signs nobody in; a password a member sets with an old token opens nothing (R4). | FS `mails a reset link to an instance admin only and answers everyone the same` |
+| R14 | **Turning it on** needs: an enabled provider; an acting admin who owns an SSO identity of an enabled provider (SSO works for at least one admin); an acting admin who has a second factor (the password way back works for at least one admin). **Turning it off** needs nothing but the page. | SS `refuses to turn it on when no provider is configured`, SS `refuses to turn it on when the acting admin has no SSO identity of an enabled provider`, SS `refuses to turn it on when the acting admin has no second factor`, SS `turns it off whatever the state of the providers and of the admin` |
+| R15 | **Only an instance admin, with a confirmed password, reads or writes it**; a value that is not a boolean is refused; the Branding reset does not touch it. | SS `keeps the page away from members and behind password confirmation`, SS `refuses a value that is not a boolean`, SS `keeps the setting when branding is reset` |
+| R16 | **Not concerned:** sessions already open, guests of a session, API tokens, password confirmation of a signed-in user. | Known limits |
 
 **Files:**
 - Create: `app/Support/Auth/SignInPolicy.php`, `app/Http/Controllers/Admin/SignInSettingsController.php`, `app/Http/Requests/Admin/SignInSettingsUpdateRequest.php`, `resources/js/pages/admin/sign-in.tsx` (minimal here, finished in Task 22)
-- Modify: `app/Enums/InstanceSettingKey.php`, `app/Support/InstanceSettings.php`, `app/Http/Controllers/Admin/BrandingController.php:76-87` (`destroy`), `app/Actions/Auth/RedirectIfSecondFactorRequired.php` (Task 5), `app/Jobs/Auth/SendMagicLink.php`, `app/Http/Controllers/MagicLinksController.php`, `app/Http/Controllers/MagicLinkSessionsController.php` (Task 6), `app/Providers/FortifyServiceProvider.php` (login, register, forgot-password and reset-password views), `app/Models/User.php` (`sendPasswordResetNotification`), `app/Actions/Fortify/CreateNewUser.php`, `app/Exceptions/SsoLoginRefused.php`, `routes/admin.php`
+- Modify: `app/Enums/InstanceSettingKey.php`, `app/Support/InstanceSettings.php`, `app/Http/Controllers/Admin/BrandingController.php:76-87` (`destroy`), `app/Actions/Auth/RedirectIfSecondFactorRequired.php`, `app/Actions/Auth/StartSecondFactorChallenge.php`, `app/Actions/Auth/CompleteLogin.php` (Task 5), `app/Http/Requests/Auth/TwoFactorChallengeRequest.php`, `app/Http/Controllers/EmailCodeChallengesController.php` (Task 7), `app/Jobs/Auth/SendMagicLink.php`, `app/Http/Controllers/MagicLinksController.php`, `app/Http/Controllers/MagicLinkSessionsController.php` (Task 6), `app/Providers/FortifyServiceProvider.php` (login and register views), `app/Providers/AppServiceProvider.php:77` (passkeys), `app/Models/User.php` (`sendPasswordResetNotification`), `app/Actions/Fortify/CreateNewUser.php`, `app/Exceptions/SsoLoginRefused.php`, `app/Http/Middleware/HandleInertiaRequests.php` (the alert), `routes/admin.php`
 - Test: `tests/Feature/Auth/ForcedSsoTest.php` (FS), `tests/Feature/Admin/SignInSettingsTest.php` (SS)
 
 **Interfaces:**
-- Consumes: `InstanceSettings`, `SsoProvider::enabled()`, `SsoProvider::options()`, `User::socialAccounts()`, `MagicLink` (Task 6), `RedirectIfSecondFactorRequired` (Task 5).
+- Consumes: `InstanceSettings`, `SsoProvider::enabled()`, `SsoProvider::options()`, `User::socialAccounts()`, `SecondFactors::requiredFor()` (Tasks 5, 7), `MagicLink` (Task 6).
 - Produces:
   - `InstanceSettingKey::SsoRequired = 'sso_required'`; `InstanceSettingKey::branding(): array<int, InstanceSettingKey>` (every key but `SsoRequired`)
   - `InstanceSettings::DefaultSsoRequired = false`, `InstanceSettings::ssoRequired(): bool` (the stored value)
-  - `SignInPolicy::ssoRequired(): bool` (in force), `allowsLocalCredentials(): bool` (password, registration, reset request, magic link), `enablingBlockers(User $admin): array<int, string>` (values `no_provider`, `no_identity`)
+  - `SignInPolicy::ssoRequired(): bool` (in force), `isIgnored(): bool` (stored, no provider), `allowsLocalCredentials(): bool` (magic link, form registration, passkey: `! ssoRequired()`), `allowsPassword(User $user): bool`, `allowsPasswordReset(User $user): bool`, `enablingBlockers(User $admin): array<int, string>` (values `no_provider`, `no_identity`, `no_second_factor`)
+  - Session key `login.local` (boolean), written by `StartSecondFactorChallenge`: true when a password started the challenge
   - Routes `admin.signIn.edit` (`GET admin/sign-in`), `admin.signIn.update` (`PUT admin/sign-in`)
-  - Inertia page `admin/sign-in` with props `ssoRequired: boolean` (stored), `inForce: boolean`, `providers: {key: string, label: string}[]`, `blockers: string[]`, `accountsWithoutSso: number`
-  - Login page prop `ssoRequired: boolean` (in force); `canUseMagicLink`, `canRegister` and `canResetPassword` are false while it is
+  - Inertia page `admin/sign-in` with props `ssoRequired: boolean` (stored), `inForce: boolean`, `providers: {key: string, label: string}[]`, `blockers: string[]`, `accountsWithoutSso: number`, `adminsWithPasswordWayBack: number`
+  - Shared Inertia prop `signInAlert: 'sso_required_ignored' | null`, non-null only for a user who can `manageInstance`
+  - Login page prop `ssoRequired: boolean` (in force); while it is, `canUseMagicLink` and `canRegister` are false and `canResetPassword` stays true (R13)
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4520,6 +4530,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\Auth\SignInPolicy;
 use App\Support\InstanceSettings;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -4554,30 +4565,113 @@ it('is off by default', function () {
     $this->assertAuthenticatedAs($member);
 });
 
-it('refuses the right password of anyone and answers as for a wrong password', function (bool $isAdmin) {
-    requireSso();
-    $user = User::factory()->create(['is_instance_admin' => $isAdmin]);
-
-    $refused = $this->from(route('login'))->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
-    $wrong = $this->from(route('login'))->post(route('login.store'), ['email' => $user->email, 'password' => 'not-the-password']);
-
-    $refused->assertRedirect(route('login'))->assertSessionHasErrors(['email' => __('auth.failed')]);
-    $wrong->assertRedirect(route('login'))->assertSessionHasErrors(['email' => __('auth.failed')]);
-    $this->assertGuest();
-    expect(session('login.id'))->toBeNull();
-})->with(['member' => false, 'instance admin' => true]);
-
-it('refuses a password before any second-factor challenge starts', function () {
+it('refuses the right password of a member', function () {
     requireSso();
     $member = User::factory()->withTwoFactor()->create();
 
-    $this->post(route('login.store'), ['email' => $member->email, 'password' => 'password'])->assertSessionHasErrors('email');
+    $this->from(route('login'))->post(route('login.store'), ['email' => $member->email, 'password' => 'password'])
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => __('auth.failed')]);
 
     $this->assertGuest();
     expect(session('login.id'))->toBeNull();
 });
 
-it('is ignored when no provider is enabled', function () {
+it('refuses the right password of an instance admin who has no second factor', function () {
+    requireSso();
+    $admin = User::factory()->instanceAdmin()->create();
+
+    $this->from(route('login'))->post(route('login.store'), ['email' => $admin->email, 'password' => 'password'])
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => __('auth.failed')]);
+
+    $this->assertGuest();
+    expect(session('login.id'))->toBeNull();
+});
+
+it('challenges an instance admin who has a second factor, and signs in after it', function () {
+    requireSso();
+    $admin = User::factory()->instanceAdmin()->withTwoFactor()->create();
+
+    $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password'])
+        ->assertRedirect(route('two-factor.login'));
+
+    $this->assertGuest();
+    expect(session('login.id'))->toBe($admin->id)->and(session('login.local'))->toBeTrue();
+
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])
+        ->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($admin);
+});
+
+it('gives one answer to a member, to an admin without a second factor and to a wrong password', function () {
+    requireSso();
+    $member = User::factory()->create();
+    $admin = User::factory()->instanceAdmin()->create();
+    $answer = function (string $email, string $password): array {
+        $response = $this->from(route('login'))->post(route('login.store'), ['email' => $email, 'password' => $password]);
+        $answer = [$response->getStatusCode(), $response->headers->get('Location'), $response->getSession()->get('errors')?->getBag('default')->toArray()];
+        $this->flushSession();
+
+        return $answer;
+    };
+
+    $wrong = $answer($member->email, 'not-the-password');
+
+    expect($answer($member->email, 'password'))->toBe($wrong)
+        ->and($answer($admin->email, 'password'))->toBe($wrong)
+        ->and($answer($admin->email, 'not-the-password'))->toBe($wrong)
+        ->and($answer('nobody@example.test', 'password'))->toBe($wrong);
+});
+
+it('refuses the password of a demoted admin', function () {
+    requireSso();
+    $admin = User::factory()->instanceAdmin()->withTwoFactor()->create();
+    User::factory()->instanceAdmin()->create();
+    $admin->forceFill(['is_instance_admin' => false])->save();
+
+    $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password'])->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+    expect(session('login.id'))->toBeNull();
+});
+
+it('refuses to complete a password challenge for an admin demoted meanwhile', function () {
+    requireSso();
+    $admin = User::factory()->instanceAdmin()->withTwoFactor()->create();
+    $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password'])->assertRedirect(route('two-factor.login'));
+
+    $admin->forceFill(['is_instance_admin' => false])->save();
+
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});
+
+it('still completes a challenge that single sign-on started for someone who is not an admin', function () {
+    requireSso();
+    $member = User::factory()->withTwoFactor()->create();
+    SocialAccount::factory()->for($member)->create(['provider' => 'google', 'provider_user_id' => 'g-80']);
+    Socialite::fake('google', SocialiteUser::fake(['id' => 'g-80']));
+    $this->get(route('sso.callback', 'google'))->assertRedirect(route('two-factor.login'));
+
+    expect(session('login.local'))->toBeFalse();
+
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($member);
+});
+
+it('accepts the password of a newly promoted admin who has a second factor', function () {
+    requireSso();
+    $user = User::factory()->withTwoFactor()->create();
+    $user->forceFill(['is_instance_admin' => true])->save();
+
+    $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('two-factor.login'));
+});
+
+it('is ignored for everyone when no provider is enabled', function () {
     requireSso();
     config(['services.google.client_id' => null]);
     $member = User::factory()->create();
@@ -4587,6 +4681,24 @@ it('is ignored when no provider is enabled', function () {
     $this->get(route('login'))->assertInertia(fn (Assert $page) => $page->where('ssoRequired', false)->where('canUseMagicLink', true));
     $this->post(route('login.store'), ['email' => $member->email, 'password' => 'password'])->assertRedirect(route('dashboard'));
     $this->assertAuthenticatedAs($member);
+    expect(Passkeys::allowsLogin(Request::create('/'), (new Passkey)->setRelation('user', $member)))->toBeTrue();
+});
+
+it('alerts instance admins, and nobody else, while the setting is ignored', function () {
+    requireSso();
+    $admin = User::factory()->instanceAdmin()->create();
+    $member = User::factory()->create();
+
+    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
+
+    config(['services.google.client_id' => null]);
+
+    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', 'sso_required_ignored'));
+    $this->actingAs($member)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
+
+    resolve(InstanceSettings::class)->set('sso_required', false);
+
+    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
 });
 
 it('sends no magic link and keeps the uniform answer', function () {
@@ -4626,7 +4738,7 @@ it('tells the login page what is offered', function () {
         ->where('ssoRequired', true)
         ->where('canUseMagicLink', false)
         ->where('canRegister', false)
-        ->where('canResetPassword', false)
+        ->where('canResetPassword', true)
         ->has('ssoProviders', 1));
 });
 
@@ -4646,31 +4758,32 @@ it('closes form registration', function () {
     expect(User::query()->where('email', 'ada@example.test')->exists())->toBeFalse();
 });
 
-it('sends no password-reset link and answers as if it had', function () {
-    Notification::fake();
-    $member = User::factory()->create();
-
-    $open = $this->post(route('password.email'), ['email' => $member->email]);
-    Notification::assertCount(1);
-
+it('mails a reset link to an instance admin only and answers everyone the same', function () {
     requireSso();
+    $member = User::factory()->create();
+    $admin = User::factory()->instanceAdmin()->create();
     Notification::fake();
 
-    $closed = $this->post(route('password.email'), ['email' => $member->email]);
+    $forMember = $this->post(route('password.email'), ['email' => $member->email]);
+    $forAdmin = $this->post(route('password.email'), ['email' => $admin->email]);
 
-    Notification::assertNothingSent();
-    $closed->assertSessionHasNoErrors();
-    expect($closed->getSession()->get('status'))->toBe($open->getSession()->get('status'));
-    $this->get(route('password.request'))->assertForbidden();
-    $this->get(route('password.reset', 'any-token'))->assertForbidden();
+    Notification::assertNotSentTo($member, ResetPassword::class);
+    Notification::assertSentTo($admin, ResetPassword::class);
+    $forMember->assertSessionHasNoErrors();
+    expect($forMember->getStatusCode())->toBe($forAdmin->getStatusCode())
+        ->and($forMember->getSession()->get('status'))->toBe($forAdmin->getSession()->get('status'));
+    $this->get(route('password.request'))->assertOk();
 });
 
-it('leaves passkey sign-in as it was', function () {
-    requireSso();
-    $passkey = (new Passkey)->setRelation('user', User::factory()->create());
+it('refuses a passkey for everyone while the setting is in force', function (bool $isAdmin) {
+    $passkey = (new Passkey)->setRelation('user', User::factory()->withTwoFactor()->create(['is_instance_admin' => $isAdmin]));
 
     expect(Passkeys::allowsLogin(Request::create('/'), $passkey))->toBeTrue();
-});
+
+    requireSso();
+
+    expect(Passkeys::allowsLogin(Request::create('/'), $passkey))->toBeFalse();
+})->with(['member' => false, 'instance admin' => true]);
 
 it('signs in through single sign-on and links an account that had no SSO identity', function () {
     requireSso();
@@ -4728,6 +4841,15 @@ beforeEach(function () {
     ]);
 });
 
+function actingAsInstanceAdminWithSecondFactor(mixed $test): User
+{
+    $admin = User::factory()->instanceAdmin()->withTwoFactor()->create();
+
+    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
+
+    return $admin;
+}
+
 it('shows the setting, the providers and what stands in the way', function () {
     $admin = actingAsInstanceAdmin($this);
     User::factory()->count(2)->create();
@@ -4740,14 +4862,31 @@ it('shows the setting, the providers and what stands in the way', function () {
             ->where('ssoRequired', false)
             ->where('inForce', false)
             ->where('providers', [['key' => 'google', 'label' => 'Google']])
-            ->where('blockers', ['no_identity'])
+            ->where('blockers', ['no_identity', 'no_second_factor'])
             ->where('accountsWithoutSso', 3));
 
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
 
     $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
-        ->where('blockers', [])
+        ->where('blockers', ['no_second_factor'])
         ->where('accountsWithoutSso', 2));
+});
+
+it('counts the admins who can use the password way back', function () {
+    actingAsInstanceAdmin($this);
+    User::factory()->instanceAdmin()->withTwoFactor()->create();
+    User::factory()->withTwoFactor()->create();
+
+    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page->where('adminsWithPasswordWayBack', 1));
+});
+
+it('refuses to turn it on when the acting admin has no second factor', function () {
+    $admin = actingAsInstanceAdmin($this);
+    SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
+
+    $this->put(route('admin.signIn.update'), ['sso_required' => true])->assertSessionHasErrors('sso_required');
+
+    expect(resolve(InstanceSettings::class)->ssoRequired())->toBeFalse();
 });
 
 it('says when the stored setting is not in force', function () {
@@ -4762,7 +4901,7 @@ it('says when the stored setting is not in force', function () {
 });
 
 it('refuses to turn it on when no provider is configured', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsInstanceAdminWithSecondFactor($this);
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
     config(['services.google.client_id' => null]);
 
@@ -4772,7 +4911,7 @@ it('refuses to turn it on when no provider is configured', function () {
 });
 
 it('refuses to turn it on when the acting admin has no SSO identity of an enabled provider', function (?string $provider) {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsInstanceAdminWithSecondFactor($this);
 
     if ($provider !== null) {
         SocialAccount::factory()->for($admin)->create(['provider' => $provider]);
@@ -4784,7 +4923,7 @@ it('refuses to turn it on when the acting admin has no SSO identity of an enable
 })->with(['no identity' => null, 'identity of a provider that is not enabled' => 'github']);
 
 it('turns it on and deletes the outstanding magic links', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsInstanceAdminWithSecondFactor($this);
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
     resolve(IssueMagicLink::class)->handle(User::factory()->create());
 
@@ -4838,6 +4977,8 @@ it('keeps the page away from members and behind password confirmation', function
 
 Run: `vendor/bin/sail artisan test --compact tests/Feature/Auth/ForcedSsoTest.php tests/Feature/Admin/SignInSettingsTest.php`
 Expected: FAIL, `Class "App\Support\Auth\SignInPolicy" not found`.
+
+`SecondFactors` (Task 5, extended by Task 7) is not a singleton and holds no state: `SignInPolicy` may take it in its constructor (Octane).
 
 - [ ] **Step 3: The setting**
 
@@ -4910,11 +5051,12 @@ class SignInPolicy
 
     public const string NoIdentity = 'no_identity';
 
-    public function __construct(private InstanceSettings $settings) {}
+    public const string NoSecondFactor = 'no_second_factor';
+
+    public function __construct(private InstanceSettings $settings, private SecondFactors $secondFactors) {}
 
     /**
-     * In force only while a provider is enabled: without one the stored
-     * value is ignored, which is the operator's way back in.
+     * In force only while a provider is enabled (R1).
      */
     public function ssoRequired(): bool
     {
@@ -4926,7 +5068,19 @@ class SignInPolicy
     }
 
     /**
-     * Password sign-in, form registration, password-reset requests and magic links.
+     * Stored, and ignored because no provider is enabled (R2).
+     */
+    public function isIgnored(): bool
+    {
+        if (! $this->settings->ssoRequired()) {
+            return false;
+        }
+
+        return SsoProvider::enabled() === [];
+    }
+
+    /**
+     * Magic link, form registration and passkey: for nobody while the setting is in force.
      */
     public function allowsLocalCredentials(): bool
     {
@@ -4934,7 +5088,33 @@ class SignInPolicy
     }
 
     /**
-     * What stands in the way of requiring single sign-on, for this admin.
+     * While the setting is in force a password is the way back of instance
+     * admins, and only with a second factor behind it (R4, R5).
+     */
+    public function allowsPassword(User $user): bool
+    {
+        if (! $this->ssoRequired()) {
+            return true;
+        }
+
+        if ($user->is_instance_admin !== true) {
+            return false;
+        }
+
+        return $this->secondFactors->requiredFor($user);
+    }
+
+    public function allowsPasswordReset(User $user): bool
+    {
+        if (! $this->ssoRequired()) {
+            return true;
+        }
+
+        return $user->is_instance_admin === true;
+    }
+
+    /**
+     * What stands in the way of requiring single sign-on, for this admin (R14).
      *
      * @return array<int, string>
      */
@@ -4946,16 +5126,15 @@ class SignInPolicy
             return [self::NoProvider];
         }
 
-        if (! $admin->socialAccounts()->whereIn('provider', $providers)->exists()) {
-            return [self::NoIdentity];
-        }
-
-        return [];
+        return array_values(array_filter([
+            $admin->socialAccounts()->whereIn('provider', $providers)->exists() ? null : self::NoIdentity,
+            $this->secondFactors->requiredFor($admin) ? null : self::NoSecondFactor,
+        ]));
     }
 }
 ```
 
-- [ ] **Step 5: Password, registration, password reset**
+- [ ] **Step 5: Password, challenge, passkey, registration, password reset, the alert**
 
 `app/Actions/Auth/RedirectIfSecondFactorRequired.php` (Task 5): `handle` gains the refusal between the credential check and the second-factor decision (import `App\Support\Auth\SignInPolicy`):
 
@@ -4968,7 +5147,7 @@ class SignInPolicy
             return $next($request);
         }
 
-        if (! resolve(SignInPolicy::class)->allowsLocalCredentials()) {
+        if (! resolve(SignInPolicy::class)->allowsPassword($user)) {
             $this->fireFailedEvent($request, $user);
             $this->throwFailedAuthenticationException($request);
         }
@@ -4981,7 +5160,51 @@ class SignInPolicy
     }
 ```
 
-`throwFailedAuthenticationException` is the parent's (`vendor/laravel/fortify/src/Actions/RedirectIfTwoFactorAuthenticatable.php:118`): it increments the login limiter and answers `auth.failed`, the answer of a wrong password. The refusal sits after `validateCredentials` on purpose: the 200 ms `Timebox` of the parent has already run, so a refused right password and a wrong password take the same time, and nobody learns from the answer that a password was right.
+`throwFailedAuthenticationException` is the parent's (`vendor/laravel/fortify/src/Actions/RedirectIfTwoFactorAuthenticatable.php:118`): it increments the login limiter and answers `auth.failed`, the answer of a wrong password. The refusal sits after `validateCredentials` on purpose: the 200 ms `Timebox` of the parent has already run, so a refused right password and a wrong password take the same time (R6). While the setting is in force, `allowsPassword` is true only for a user for whom `requiredFor` is true: an admin never reaches `$next` — the password alone never opens a session (R4).
+
+A challenge remembers what started it, so that R7 can be checked when it ends. `StartSecondFactorChallenge::handle` gains a fourth parameter, `bool $local`, and writes it:
+
+```php
+    public function handle(Request $request, User $user, bool $remember, bool $local): void
+    {
+        $request->session()->put([
+            'login.id' => $user->getKey(),
+            'login.remember' => $remember,
+            'login.local' => $local,
+        ]);
+    }
+```
+
+`RedirectIfSecondFactorRequired::twoFactorChallengeResponse` passes `local: true`; `CompleteLogin` (SSO, magic link) passes `local: false`. The two callers of Task 5 and the test `completes a login through the shared action` of `SecondFactorDecisionTest` gain the argument and nothing else.
+
+Both ways of ending a challenge — Fortify's controller for the authenticator app and the recovery codes, `EmailCodeChallengesController` for the e-mail code — get their user from `TwoFactorChallengeRequest::challengedUser()` (Task 7). That method gains the check, after the parent found the user (imports `App\Support\Auth\SignInPolicy`, `Illuminate\Http\Exceptions\HttpResponseException`, `Laravel\Fortify\Contracts\FailedTwoFactorLoginResponse`):
+
+```php
+    public function challengedUser()
+    {
+        $user = parent::challengedUser();
+
+        if ($this->session()->get('login.local') === true && ! resolve(SignInPolicy::class)->allowsPassword($user)) {
+            $this->session()->forget(['login.id', 'login.remember', 'login.local']);
+
+            throw new HttpResponseException(resolve(FailedTwoFactorLoginResponse::class)->toResponse($this));
+        }
+
+        return $user;
+    }
+```
+
+If Task 7 already overrides `challengedUser()` in that class, the check goes at the end of that override. A challenge that SSO started is never concerned (`login.local` is false).
+
+`app/Providers/AppServiceProvider.php`, next to `Passkeys::usePasskeyModel` (imports `App\Support\Auth\SignInPolicy`, `Illuminate\Http\Request`) — R10:
+
+```php
+        Passkeys::authorizeLoginUsing(
+            fn (Request $request, User $user): bool => resolve(SignInPolicy::class)->allowsLocalCredentials(),
+        );
+```
+
+`vendor/laravel/passkeys/src/Http/Controllers/PasskeyLoginController.php:58` throws `InvalidPasskeyException` ("Unable to sign in with this account.") when the callback answers false, before `$guard->login`. The callback looks at the instance, never at the user: the refusal is the same for everyone. It decides nothing about a second factor, so S2 holds with one amendment: `authorizeLoginUsing` is set, to this callback and no other.
 
 `app/Actions/Fortify/CreateNewUser.php`, after the validator and before the sign-up gate (import `App\Support\Auth\SignInPolicy`). The first account of an instance is never concerned: the setting cannot be on before an admin exists.
 
@@ -4993,12 +5216,12 @@ class SignInPolicy
         }
 ```
 
-`app/Models/User.php` — the reset link is not sent, and the broker still answers "sent", so the request says nothing about the setting or the account (imports `App\Support\Auth\SignInPolicy`, `Illuminate\Auth\Notifications\ResetPassword`, `SensitiveParameter`). If the model already overrides this method, the guard goes at its top:
+`app/Models/User.php` — R13: the reset link is mailed to an instance admin only, and the broker still answers "sent" to everyone, so the request says nothing about the setting, the account or its role (imports `App\Support\Auth\SignInPolicy`, `Illuminate\Auth\Notifications\ResetPassword`, `SensitiveParameter`). If the model already overrides this method, the guard goes at its top:
 
 ```php
     public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
     {
-        if (! resolve(SignInPolicy::class)->allowsLocalCredentials()) {
+        if (! resolve(SignInPolicy::class)->allowsPasswordReset($this)) {
             return;
         }
 
@@ -5006,15 +5229,15 @@ class SignInPolicy
     }
 ```
 
-A reset token issued before the setting was turned on can still set a password; that password signs nobody in while the setting is in force.
+Fortify's answer for an address without an account is an error on the field, with or without this setting: that difference exists today and is not changed here; it is written in the gate record.
 
-`app/Providers/FortifyServiceProvider.php` (import `App\Support\Auth\SignInPolicy`): the register, forgot-password and reset-password views each start with
+`app/Providers/FortifyServiceProvider.php` (import `App\Support\Auth\SignInPolicy`): the register view starts with
 
 ```php
             abort_unless(resolve(SignInPolicy::class)->allowsLocalCredentials(), 403);
 ```
 
-(the two password views become closures with a body for it), and the login view becomes:
+the two password-reset views do not change (R13), and the login view becomes:
 
 ```php
         Fortify::loginView(function (Request $request) {
@@ -5022,7 +5245,7 @@ A reset token issued before the setting was turned on can still set a password; 
             $local = $policy->allowsLocalCredentials();
 
             return Inertia::render('auth/login', [
-                'canResetPassword' => $local && Features::enabled(Features::resetPasswords()),
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'canRegister' => $local && resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
                 'status' => $request->session()->get('status'),
                 'ssoProviders' => SsoProvider::options(),
@@ -5030,6 +5253,14 @@ A reset token issued before the setting was turned on can still set a password; 
                 'canUseMagicLink' => $local && resolve(IntegrationAvailability::class)->emailEnabled(),
             ]);
         });
+```
+
+`app/Http/Middleware/HandleInertiaRequests.php::share` gains the alert of R2, computed only for a user who can manage the instance (import `App\Support\Auth\SignInPolicy`):
+
+```php
+            'signInAlert' => fn (): ?string => $request->user()?->can('manageInstance') && resolve(SignInPolicy::class)->isIgnored()
+                ? 'sso_required_ignored'
+                : null,
 ```
 
 - [ ] **Step 6: Magic link**
@@ -5042,7 +5273,7 @@ A reset token issued before the setting was turned on can still set a password; 
         }
 ```
 
-`MagicLinksController::store` does not change: it dispatches the same job, which sends nothing, and answers the same way (S8). `MagicLinksController::show` takes `SignInPolicy $policy` and reads the row only when links are allowed:
+(R11: for everyone, instance admins included — they have the password way back.) `MagicLinksController::store` does not change: it dispatches the same job, which sends nothing, and answers the same way (S8). `MagicLinksController::show` takes `SignInPolicy $policy` and reads the row only when links are allowed:
 
 ```php
         $link = $request->hasValidSignature() && $policy->allowsLocalCredentials() ? MagicLink::findUsable($token) : null;
@@ -5097,7 +5328,7 @@ class SignInSettingsUpdateRequest extends FormRequest
     }
 
     /**
-     * Single sign-on can be required only by an admin for whom it already works.
+     * Single sign-on can be required only by an admin for whom it already works, and who keeps a way back.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -5112,6 +5343,7 @@ class SignInSettingsUpdateRequest extends FormRequest
                 foreach (resolve(SignInPolicy::class)->enablingBlockers($this->user()) as $blocker) {
                     $validator->errors()->add('sso_required', match ($blocker) {
                         SignInPolicy::NoProvider => __('Configure a single sign-on provider before requiring it.'),
+                        SignInPolicy::NoSecondFactor => __('Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.'),
                         default => __('Sign in once with single sign-on yourself before requiring it for everyone.'),
                     });
                 }
@@ -5133,6 +5365,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SignInSettingsUpdateRequest;
 use App\Models\MagicLink;
 use App\Models\User;
+use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use App\Support\InstanceSettings;
 use Illuminate\Http\RedirectResponse;
@@ -5143,7 +5376,7 @@ use Inertia\Response;
 
 class SignInSettingsController extends Controller
 {
-    public function edit(Request $request, SignInPolicy $policy, InstanceSettings $settings): Response
+    public function edit(Request $request, SignInPolicy $policy, InstanceSettings $settings, SecondFactors $secondFactors): Response
     {
         return Inertia::render('admin/sign-in', [
             'ssoRequired' => $settings->ssoRequired(),
@@ -5151,6 +5384,9 @@ class SignInSettingsController extends Controller
             'providers' => SsoProvider::options(),
             'blockers' => $policy->enablingBlockers($request->user()),
             'accountsWithoutSso' => User::query()->whereDoesntHave('socialAccounts')->count(),
+            'adminsWithPasswordWayBack' => User::query()->where('is_instance_admin', true)->get()
+                ->filter(fn (User $admin): bool => $secondFactors->requiredFor($admin))
+                ->count(),
         ]);
     }
 
@@ -5192,6 +5428,7 @@ type Props = {
     providers: { key: string; label: string }[];
     blockers: string[];
     accountsWithoutSso: number;
+    adminsWithPasswordWayBack: number;
 };
 
 export default function SignInSettings({ ssoRequired }: Props) {
@@ -5210,35 +5447,35 @@ export default function SignInSettings({ ssoRequired }: Props) {
 - [ ] **Step 9: Run the tests**
 
 Run: `npm run build:front`, then `vendor/bin/sail artisan test --compact tests/Feature/Auth tests/Feature/Admin tests/Feature/TranslationKeysTest.php tests/Arch`
-Expected: PASS once the new keys are in the four language files (values in the translation table of Task 26). Existing tests are expected to pass unchanged: `PasswordResetTest` (the setting is off), `BrandingSettingsTest` `resets every setting and removes the images` (it asserts the branding keys), `SsoButtonsTest` (`where` on `ssoProviders` only). A test that compared the whole list of login props gains the new prop; say so in the report.
+Expected: PASS once the new keys are in the four language files (values in the translation table of Task 26). `SecondFactorDecisionTest` (Task 5) gains the fourth argument of `StartSecondFactorChallenge` and the expectation `session('login.local')`; its source-scan test is unchanged (no new file reads a two-factor column: `SignInPolicy` asks `SecondFactors`). Other existing tests are expected to pass unchanged: `PasswordResetTest` (the setting is off), `BrandingSettingsTest` `resets every setting and removes the images` (it asserts the branding keys), `SsoButtonsTest` (`where` on `ssoProviders` only). A test that compared the whole list of login props gains the new prop; say so in the report.
 
 - [ ] **Step 10: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app routes/admin.php resources/js/pages/admin/sign-in.tsx tests/Feature/Auth/ForcedSsoTest.php tests/Feature/Admin/SignInSettingsTest.php lang
-git commit -m "feat(auth): instance setting that requires single sign-on, refused on the server for password, registration, reset and magic link"
+git commit -m "feat(auth): instance setting that requires single sign-on, with the password and a second factor as the way back of instance admins"
 ```
 
-### Task 11: Accepting an invitation through single sign-on — security pins and forced SSO (B31)
+### Task 11: Accepting an invitation through single sign-on — an unverified address is refused, and the rules are pinned (B31)
 
-Owner's answer 11-D2 (2026-10-02): the invitation page shows the SSO buttons (`ssoProviders` prop), and accepting an invitation through SSO is authentication work, held by this plan's security rules. Spec B31 gives the prop, the buttons and the tests of criterion 28 to plan 18e, and gives this plan the security review and any change to `ResolveSsoUser`, `SsoCallbacksController` or `SignupGate`. This task is written to hold either way: it pins the security rules with its own tests, adds what forced SSO (Task 10) changes on that page, and adds the prop itself only if 18e did not.
+Owner's answers: 11-D2 (the invitation page shows the SSO buttons; accepting an invitation through SSO is authentication work under this plan's rules) and, third round, **an SSO address the provider does not mark verified is refused, even with a matching invitation**. Today such an address creates a verified account when it matches a pending invitation. This task changes that in `ResolveSsoUser`, and pins the whole flow with tests. Spec B31 gives the prop and the buttons to plan 18e and every change of `ResolveSsoUser`, `SsoCallbacksController` and `SignupGate` to this plan; the page props are added here only if 18e did not.
 
-**What exists (read on 2026-10-02).** `InvitationLinksController::show` puts the token in the session (`invitation_token`) and, for a guest, sets the intended URL to the invitation page. `SsoCallbacksController::show` reads the token **from the session only**, finds the invitation and gives it to `ResolveSsoUser::handle`, which: signs in an account already linked to the SSO identity whatever its address; links an existing account only through a verified address on both sides; creates an account and accepts the invitation in one transaction only when the address the provider returns is the invited address (then an unverified provider address is accepted, because holding the token proves the mailbox); otherwise applies the sign-up gate without the invitation. `InvitationAcceptancesController::store` (authenticated) refuses with 403 an account whose address is not the invited one. After Task 5 the callback ends with `CompleteLogin`, so a second factor is asked before `Auth::login`.
+**What exists (read on 2026-10-02).** `InvitationLinksController::show` puts the token in the session (`invitation_token`) and, for a guest, sets the intended URL to the invitation page. `SsoCallbacksController::show` reads the token **from the session only**, finds the invitation and gives it to `ResolveSsoUser::handle`, which: signs in an account already linked to the SSO identity whatever its address; links an existing account only through a verified address on both sides; creates an account and accepts the invitation in one transaction when the address the provider returns is the invited address — **and then accepts an unverified provider address** (`app/Actions/Auth/ResolveSsoUser.php:56-60`, the `$isInvited` exemption), which is what changes; otherwise applies the sign-up gate without the invitation. `InvitationAcceptancesController::store` (authenticated) refuses with 403 an account whose address is not the invited one. After Task 5 the callback ends with `CompleteLogin`, so a second factor is asked before `Auth::login`.
 
-That flow already holds the rules below. This task makes the page offer single sign-on only while it is required, and **pins every rule with a test**, because the SSO button on the invitation page turns a rare path into the main one.
+Why the exemption goes: the invitation link proves that its holder reads the invited mailbox; it does not prove that the identity at the provider is that person. With the exemption, anyone who obtains the link (a forwarded mail, a shared screen) and can make a provider assert the invited address without verifying it gets a verified account under that address. Without it, such a person is refused, and the invited person still has the two other ways: a provider that verifies the address, or the password account of the same link.
 
 **The rules (S30, S31):**
 
 1. The callback learns of the invitation only from the server-side session of the browser that opened the invitation link. The token is never put in the URL sent to the provider, never in OAuth `state`, never read from callback input.
-2. The invitation is honoured only for the invited address: compared case-insensitively after trimming, on the address the provider returns. Any other address neither accepts nor consumes the invitation.
+2. An address the provider does not mark verified creates no account and reaches no account, with or without an invitation. The invitation is honoured only for the invited address, verified by the provider: compared case-insensitively after trimming. Any other address neither accepts nor consumes the invitation.
 3. An SSO identity whose address differs from the invited one signs in to (or creates, if the sign-up gate allows it **without** the invitation) its own account. It is never linked to the account that owns the invited address, and never signed in as it.
 4. An existing account never joins the workspace inside the callback: it signs in (second factor first, S1/S12), lands on the invitation page, and joins through the authenticated `POST invitations/{token}/acceptance`, which checks the address again. Only an account created by the callback is joined in the same transaction that creates it.
 5. An expired or already accepted invitation gives no right: the sign-up gate applies as if there were none.
 
 **Files:**
-- Modify: `app/Http/Controllers/InvitationLinksController.php:35-44` (props)
-- Test: `tests/Feature/Auth/InvitationSsoTest.php` (IS); `SsoLoginTest`, `ResolveSsoUserTest`, `InvitationRegistrationTest` stay green without edits
+- Modify: `app/Actions/Auth/ResolveSsoUser.php:54-60` (the exemption), `app/Http/Controllers/InvitationLinksController.php:35-44` (props)
+- Test: `tests/Feature/Auth/InvitationSsoTest.php` (IS); `tests/Feature/Auth/ResolveSsoUserTest.php:127` (one test reversed); `SsoLoginTest`, `InvitationRegistrationTest` stay green without edits
 
 **Interfaces:**
 - Consumes: `SsoProvider::options()`, `SignInPolicy` (Task 10), `CompleteLogin` (Task 5), `SignupGate`; from plan 18e, when it built B31: the `ssoProviders` prop and its tests.
@@ -5309,6 +5546,20 @@ it('offers no password account on the invitation page when single sign-on is req
         ->where('canRegister', false)
         ->where('ssoRequired', true)
         ->has('ssoProviders', 1));
+});
+
+it('refuses an address the provider does not mark verified, even with a matching invitation', function () {
+    $invitation = followInvitation($this);
+    ssoAnswers(['id' => 'g-0', 'email' => 'guest@example.test', 'email_verified' => false]);
+
+    $this->get(route('sso.callback', 'google'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'Google did not confirm your email address.']);
+
+    $this->assertGuest();
+    expect($invitation->fresh()->accepted_at)->toBeNull()
+        ->and(User::query()->where('email', 'guest@example.test')->exists())->toBeFalse()
+        ->and(session('invitation_token'))->toBe('secret-token');
 });
 
 it('creates the account and joins the workspace when the provider returns the invited address', function (string $spelling) {
@@ -5434,9 +5685,11 @@ it('asks an existing account for its second factor before anything is joined', f
 it('gives no right through an expired or already accepted invitation', function (array $state) {
     WorkspaceInvitation::factory()->withToken('secret-token')->create(['email' => 'guest@example.test', ...$state]);
     $this->get(route('invitations.show', 'secret-token'));
-    ssoAnswers(['id' => 'g-9', 'email' => 'guest@example.test', 'email_verified' => false]);
+    ssoAnswers(['id' => 'g-9', 'email' => 'guest@example.test', 'email_verified' => true]);
 
-    $this->get(route('sso.callback', 'google'))->assertRedirect(route('login'))->assertSessionHasErrors('email');
+    $this->get(route('sso.callback', 'google'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'Signups are restricted on this instance.']);
 
     $this->assertGuest();
     expect(User::query()->where('email', 'guest@example.test')->exists())->toBeFalse();
@@ -5448,12 +5701,32 @@ it('gives no right through an expired or already accepted invitation', function 
 
 `SocialiteUser::fake` and `Socialite::fake` are the helpers `SsoLoginTest.php` already uses; if the provider's redirect cannot be read in a feature test with the fake in place, the first half of `never sends the invitation token…` reads `Socialite::driver('google')->redirect()->getTargetUrl()` instead, as `SsoLoginTest` `redirects to an enabled provider` does.
 
+In `tests/Feature/Auth/ResolveSsoUserTest.php`, the test `creates and joins through a matching invitation even without a verified email` (line 127) states the behaviour the owner reversed. It is rewritten in this commit, same arrangement, opposite expectation, under the name `refuses a matching invitation when the provider did not verify the address`: `ResolveSsoUser::handle` throws `SsoLoginRefused` with the message of `emailNotVerified`, no user is created, the invitation stays pending. This is a change of an existing test imposed by an owner decision, not by a mockup: it is named in the report.
+
 - [ ] **Step 2: Run them to see which fail**
 
-Run: `vendor/bin/sail artisan test --compact tests/Feature/Auth/InvitationSsoTest.php`
-Expected: the test on required single sign-on FAILS (`ssoRequired` is missing and `canRegister` is true); the test on `ssoProviders` fails only if 18e did not build B31. Every other test is expected to PASS on the code as it stands after Task 10: they are the pins of rules 1–5. A pin that fails is a security finding, not a test to adjust: stop, write it in the ledger with the request and the result, fix it with the smallest change in `ResolveSsoUser` or `SsoCallbacksController`, and name the change in the report and for the gate of Task 16.
+Run: `vendor/bin/sail artisan test --compact tests/Feature/Auth/InvitationSsoTest.php tests/Feature/Auth/ResolveSsoUserTest.php`
+Expected: FAIL on `refuses an address the provider does not mark verified, even with a matching invitation` and on the rewritten test of `ResolveSsoUserTest` (an account is created); FAIL on the page test of required single sign-on (`ssoRequired` is missing and `canRegister` is true); the test on `ssoProviders` fails only if 18e did not build B31. Every other test of `InvitationSsoTest` is expected to PASS already: they are the pins of rules 1–5. A pin that fails is a security finding, not a test to adjust: stop, write it in the ledger with the request and the result, fix it with the smallest change in `ResolveSsoUser` or `SsoCallbacksController`, and name the change in the report and for the gate of Task 16.
 
-- [ ] **Step 3: The props**
+- [ ] **Step 3: The rule, then the props**
+
+In `app/Actions/Auth/ResolveSsoUser.php`, the verification check no longer looks at the invitation, and comes before it:
+
+```php
+        if ($verifiedEmail === null) {
+            throw SsoLoginRefused::emailNotVerified($provider);
+        }
+
+        $isInvited = $invitation?->isPending() && $invitation->matchesEmail($email);
+
+        if (! $this->signupGate->allows($email, $invitation)) {
+            throw SsoLoginRefused::signupsRestricted();
+        }
+
+        return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null);
+```
+
+Nothing above these lines changes: a linked identity still signs in its account, and an existing account is still reached only when both sides are verified. An account created here is therefore always created from a verified address; `createUser` keeps marking it verified.
 
 `InvitationLinksController::show` takes `SignInPolicy $signInPolicy` as one more parameter (imports `App\Enums\SsoProvider`, `App\Support\Auth\SignInPolicy`); the render call becomes (the `ssoProviders` line is 18e's when B31 is already there — keep its expression if it gives the same three cases):
 
@@ -5472,19 +5745,19 @@ Expected: the test on required single sign-on FAILS (`ssoRequired` is missing an
         ]);
 ```
 
-Nothing else changes: the buttons link to the existing `sso.redirect` route, which takes the provider and nothing else.
+The buttons link to the existing `sso.redirect` route, which takes the provider and nothing else.
 
 - [ ] **Step 4: Run the tests**
 
 Run: `vendor/bin/sail artisan test --compact tests/Feature/Auth tests/Feature/Workspaces tests/Arch`
-Expected: PASS, with no edit to `SsoLoginTest`, `ResolveSsoUserTest` or `InvitationRegistrationTest`. If `tests/Feature/Workspaces` does not exist, run the file that holds the invitation page tests (`grep -rln "invitations.show" tests/Feature`).
+Expected: PASS, with no edit to `SsoLoginTest` or `InvitationRegistrationTest`, and the one rewritten test of `ResolveSsoUserTest`. If `tests/Feature/Workspaces` does not exist, run the file that holds the invitation page tests (`grep -rln "invitations.show" tests/Feature`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-git add app/Http/Controllers/InvitationLinksController.php tests/Feature/Auth/InvitationSsoTest.php
-git commit -m "feat(invitations): single sign-on from the invitation page, bound to the invited address"
+git add app/Actions/Auth/ResolveSsoUser.php app/Http/Controllers/InvitationLinksController.php tests/Feature/Auth/InvitationSsoTest.php tests/Feature/Auth/ResolveSsoUserTest.php
+git commit -m "fix(auth): refuse an unverified single sign-on address even with a matching invitation, and pin the invitation flow"
 ```
 
 ### Task 12: Recap e-mail preference and signed unsubscribe (B34)
@@ -6115,26 +6388,28 @@ git commit -m "feat(mail): the five mails to the letter of the mockup, with a PN
 
 ### Task 15: Data for the bell and for the command palette
 
-The NotificationsPanel and Command mockups show things the server does not give today, and the owner has not sent them to the backlog: notifications other than action reminders, a list that loads more, an arrival that reaches the open page, and the "Recent sessions" group of the palette. This task adds the back end; Tasks 19 and 20 show it. What stays out, and why, is in the Deviations table: `session_starting` (needs a scheduled start: spec §10, "Sessions index with scheduling"), `mention` (the product has no mention), "Decline" (spec §10, "declining an invitation").
+The NotificationsPanel and Command mockups show things the server does not give today, and the owner has not sent them to the backlog: notifications other than action reminders, a list that loads more, an arrival that reaches the open page, and the "Recent sessions" group of the palette. This task adds the back end; Tasks 19 and 20 show it. What stays out is in the Deviations table, each line pointing to the feature roadmap: `session_starting` (needs a scheduled start), `mention` (the product has no mention), "Accept" and "Decline" inside the bell (owner, third round: the notification links to the invitation page; no route accepts an invitation without its token).
+
+**The private user channel** exists for one thing only: the mockup's live arrival (the count rises and the bell pulses on an open page, README "Temps réel"). Nothing else of this plan uses it. If the owner prefers to leave live arrival to the roadmap, the channel, the event and the branch of `BroadcastAuthorizationsController` are dropped together (the last line of Step 3 and two tests), the bell keeps its refresh on window focus, and the Deviations table gains one line.
 
 **Files:**
-- Create: `app/Actions/Notifications/ListNotifications.php` (takes over `ListActionItemNotifications`, which becomes one of its presenters), `app/Notifications/WorkspaceInvitationReceivedNotification.php`, `app/Events/NotificationReceived.php`, `app/Http/Controllers/ReceivedInvitationAcceptancesController.php`, `app/Actions/Search/ListRecentSessions.php`, `app/Http/Controllers/RecentSessionsController.php`
+- Create: `app/Actions/Notifications/ListNotifications.php` (takes over `ListActionItemNotifications`, which becomes one of its presenters), `app/Notifications/WorkspaceInvitationReceivedNotification.php`, `app/Events/NotificationReceived.php`, `app/Actions/Search/ListRecentSessions.php`, `app/Http/Controllers/RecentSessionsController.php`
 - Modify: `app/Http/Controllers/NotificationsController.php` (`index`), `app/Notifications/RetroResultsNotification.php` (`via`, `toArray`), `app/Http/Controllers/WorkspaceInvitationsController.php:48` (also notifies an existing account), `app/Http/Controllers/BroadcastAuthorizationsController.php` (one more channel), `routes/web.php`
 - Test: `tests/Feature/Notifications/BellNotificationsTest.php` (BN), `tests/Feature/RecentSessionsTest.php` (RS); `tests/Feature/ActionItems/*` notification tests stay green
 
 **Interfaces:**
 - Produces:
-  - `GET notifications?before={notification id}` → `{ notifications: AppNotification[], unreadCount: number, hasMore: boolean }`, 20 per page, newest first. Kinds: `due_soon`, `overdue` (shape unchanged, plus `actionItem.ticket: string|null`), `recap_ready` (`{ id, kind, readAt, createdAt, team: string, session: { id, title }, actionsCount: number, roti: number|null, href }` — the line "4 action items · ROTI 3.8 · yesterday" of the mockup; `roti` is `null` under the rule that hides it), `team_invite` (`{ id, kind, readAt, createdAt, actor: { name, presence, avatarUrl }, team: string` — the workspace name —`, invitationId: string, answer: 'accepted'|null, href }`)
-  - `POST received-invitations/{invitation}/acceptance` → route `receivedInvitations.acceptance.store`, JSON `{ unreadCount }`
+  - `GET notifications?before={notification id}` → `{ notifications: AppNotification[], unreadCount: number, hasMore: boolean }`, 20 per page, newest first. Kinds: `due_soon`, `overdue` (shape unchanged, plus `actionItem.ticket: string|null`), `recap_ready` (`{ id, kind, readAt, createdAt, team: string, session: { id, title }, actionsCount: number, roti: number|null, href }` — the line "4 action items · ROTI 3.8 · yesterday" of the mockup; `roti` is `null` under the rule that hides it), `team_invite` (`{ id, kind, readAt, createdAt, actor: { name, presence, avatarUrl }, team: string` — the workspace name —`, href }`, where `href` is the invitation page, `invitations.show`)
   - Private channel `user.{id}`; event `NotificationReceived` broadcast as `.notification.received` with `{ unreadCount: number }` and nothing else
   - `GET recent-sessions` → route `recentSessions.index`, JSON `{ sessions: RecentSession[] }` with `RecentSession = { kind: 'retro'|'poker'|'whiteboard'|'game', id, title, team: { id, name }, url, updatedAt: string, live: boolean }`, at most 5
 
 **Rules (S33, S34, with S23 for the recent sessions):**
 
-1. **Accepting from the bell needs no token and proves the same thing.** The route is behind `auth` and `verified`; it accepts only a pending invitation whose address is the account's address (`matchesEmail`); it never verifies an address and never signs anyone in. The token of the invitation is never stored in a notification, never sent to the browser.
-2. **A notification is created only for the account that owns the invited address**, and only when exactly one verified account does (`LoginAddress::normalise`, as S11). Nothing in the inviter's answer, timing or page says whether such an account exists: the invitation mail is sent in every case, as today.
-3. **A user reads only its own notifications and its own channel.** `private-user.{id}` is authorised only for the signed-in user whose id it is; the event carries a count, never content.
-4. **A notification whose subject the user may no longer see is dropped**, as `ListActionItemNotifications` does today: a retro of a team the user left, an invitation that was revoked.
+1. **The bell accepts nothing.** An invitation notification is a link to the existing invitation page (`invitations.show`), where the invited person accepts with the existing button under the existing checks. No route accepts an invitation without its token.
+2. **The link is kept encrypted.** The invitation token exists in plain text only in the mail and, from now on, inside this link. The notification stores the link with `Crypt::encryptString`; `ListNotifications` decrypts it only when presenting the notification to its own user; a link that no longer decrypts, or whose invitation is gone, revoked, expired or accepted, drops the notification.
+3. **A notification is created only for the account that owns the invited address**, and only when exactly one verified account does (`LoginAddress::normalise`, as S11). Nothing in the inviter's answer, timing or page says whether such an account exists: the invitation mail is sent in every case, as today.
+4. **A user reads only its own notifications and its own channel.** `private-user.{id}` is authorised only for the signed-in user whose id it is; the event carries a count, never content.
+5. **A notification whose subject the user may no longer see is dropped**, as `ListActionItemNotifications` does today.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -6144,9 +6419,9 @@ The NotificationsPanel and Command mockups show things the server does not give 
 |---|---|
 | `lists a recap for each recipient of the recap mail and for nobody else` | sending the recap stores one `recap_ready` notification per recipient; a member with `recap_emails` off, a guest and a member of another team have none; `href` is the retro |
 | `notifies the one verified account that owns the invited address` | inviting `known@example.test` stores a `team_invite` notification for that user; inviting an unknown address, an unverified account, or an address two accounts share stores none; the inviter's response is identical in the four cases (status, redirect, flash) |
-| `never stores or returns the invitation token` | the `data` column and the JSON of `notifications.index` do not contain the token |
-| `accepts from the bell for the invited account only` | the invited user joins the workspace, the invitation is accepted, the notification is read and carries `answer: accepted`; another user gets 403 and nothing changes; an unverified user is redirected to verification; a revoked or expired invitation answers 410 |
-| `drops a notification whose subject is out of reach` | a recap of a team the user left and a revoked invitation disappear from the list and from the count |
+| `stores the invitation link encrypted and gives it to its owner only` | the raw `data` column does not contain the token nor the URL; the JSON of `notifications.index` for the invited user has `href` equal to `route('invitations.show', $token)`; another user's list does not contain it |
+| `links an invitation notification to the invitation page and accepts nothing` | listing and opening the notification leave the invitation pending and the user outside the workspace; `Route::has('receivedInvitations.acceptance.store')` is false; following `href` shows `invitations/show` with `emailMatches` true, and the existing `POST invitations/{token}/acceptance` joins the workspace |
+| `drops a notification whose subject is out of reach` | a recap of a team the user left, and an invitation that was revoked, expired or accepted, disappear from the list and from the count |
 | `gives the ticket key of an action item that has an external link` | `actionItem.ticket` is the key, `null` without a link |
 | `pages by twenty and says when there is more` | 45 notifications: 20 with `hasMore` true, then 20 with `before`, then 5 with `hasMore` false; `before` of another user's notification answers 404 |
 | `tells the open page that a notification arrived, with a count only` | `Event::fake`: each of the three kinds dispatches `NotificationReceived` on `private-user.{id}` whose payload is `['unreadCount' => n]` |
@@ -6169,8 +6444,7 @@ Expected: FAIL, `Route [recentSessions.index] not defined.`
 - [ ] **Step 3: Build**
 
 - `RetroResultsNotification::via` returns `['mail', 'database']`; `toArray` returns `['kind' => 'recap_ready', 'retroId' => $this->retroId]`. `shouldSend` already applies the recipient rule to every channel.
-- `WorkspaceInvitationsController::store`, after the existing mail: `LoginAddress::normalise` the invited address, `User::query()->whereRaw('lower(email) = ?', …)->whereNotNull('email_verified_at')->limit(2)->get()`, and `notify(new WorkspaceInvitationReceivedNotification($invitation->id))` only when exactly one row comes back. `toArray`: `['kind' => 'team_invite', 'invitationId' => …]`.
-- `ReceivedInvitationAcceptancesController::store(Request $request, WorkspaceInvitation $invitation, AcceptWorkspaceInvitation $accept)`: `abort_unless($invitation->isPending(), 410)`, `abort_unless($invitation->matchesEmail($request->user()->email), 403)`, accept, mark the user's notifications of that invitation read. Route inside the `auth`, `verified` group: `Route::post('received-invitations/{invitation}/acceptance', …)->whereUuid('invitation')->middleware('throttle:20,1')->name('receivedInvitations.acceptance.store')`.
+- `WorkspaceInvitationsController::store`, after the existing mail (it holds `$url`, the invitation link, at that point): `LoginAddress::normalise` the invited address, `User::query()->whereRaw('lower(email) = ?', …)->whereNotNull('email_verified_at')->limit(2)->get()`, and `notify(new WorkspaceInvitationReceivedNotification($invitation->id, $url))` only when exactly one row comes back. The notification's constructor takes the link as a `#[SensitiveParameter]`, implements `ShouldBeEncrypted` if queued, and `toArray` returns `['kind' => 'team_invite', 'invitationId' => …, 'link' => Crypt::encryptString($url)]`. No controller and no route are added for accepting.
 - `ListNotifications::handle(User $user, ?string $before): array` — pages the user's notifications (`created_at`, `id` descending, 20 + 1 to know `hasMore`), presents each by kind, deletes those whose subject is out of reach (rule 4). `NotificationsController::index` validates `before` as a UUID of one of the user's notifications.
 - `NotificationReceived` implements `ShouldBroadcast` on `new PrivateChannel("user.{$userId}")`, `broadcastAs(): 'notification.received'`, `broadcastWith(): ['unreadCount' => …]`; dispatched from a listener on `Illuminate\Notifications\Events\NotificationSent` when the channel is `database`.
 - `BroadcastAuthorizationsController::store` gains the branch `private-user.`: 403 unless `$request->user()?->getKey() === Str::after($channel, 'private-user.')`.
@@ -6195,7 +6469,7 @@ git commit -m "feat(notifications): recap and invitation notifications, paging a
 
 **Interfaces:**
 - Consumes: the diff of Tasks 1–15 (`git diff <branch point>..HEAD -- app routes database bootstrap resources/views tests/Feature`), and, for B31, the invitation page, `SsoCallbacksController`, `ResolveSsoUser` and `SignupGate` as plan 18e left them.
-- Produces: a review record in the phase report: one line per rule S1–S34 (held / broken, with the file and line read), one line per Review Focus item, a ruling on each of D17, D18 and D19 (the spec's choice held, or a recommendation for the owner with its reason), the list of fixes.
+- Produces: a review record in the phase report: one line per rule S1–S34 (held / broken, with the file and line read), one line per Review Focus item, one line per rule R1–R16 of `sso_required`, the list of fixes.
 
 - [ ] **Step 1: One reviewer, read-only, with a security lens**, on the whole back-end diff. The reviewer is given the code and this plan's **Security rules**, not a summary of what was built. Skill: `security-review`, then `superpowers:requesting-code-review`.
 
@@ -6210,13 +6484,13 @@ git commit -m "feat(notifications): recap and invitation notifications, paging a
 7. S23: every query of `SearchWorkspaceContent` has `whereIn('team_id', $teamIds)` and no `orWhere` outside a closure.
 8. S26: no view under `resources/views/mail` prints a variable inside a `style` attribute other than `$colors[…]`, and no HTML view uses `{!!` except `mail/partials/dark.blade.php` for `$prefix`, which only ever receives the three literals of the layout.
 9. Timing limit of S8 with `QUEUE_CONNECTION=sync` is written in the report.
-10. S27: every local way in asks `SignInPolicy`. `git grep -n "SignInPolicy" app` lists `RedirectIfSecondFactorRequired`, `CreateNewUser`, `User` (reset notification), `SendMagicLink`, `MagicLinksController`, `MagicLinkSessionsController`, `FortifyServiceProvider`, `SsoLoginRefused`, `InvitationLinksController`, the admin controller and request, and nothing reads the setting directly: `git grep -n "ssoRequired()\|sso_required" app` shows `InstanceSettings`, `InstanceSettingKey`, `SignInPolicy`, the admin controller and request only. Then the reviewer looks for a way in that the list misses: `php artisan route:list --except-vendor` and `--only-vendor` read for every route that can end in `Auth::login`, `->login(` or a session for a guest (Fortify's `login.store`, `two-factor.login.store`, `register.store`, `password.email`, `password.update`; the passkey routes; `sso.callback`; `magicLinks.sessions.store`; `twoFactor.emailChallenges.store`; guest joins of sessions, which create no account session). The two-factor routes complete a login only for a `login.id` that `StartSecondFactorChallenge` wrote, which a refused password never reaches (FS `refuses a password before any second-factor challenge starts`).
-11. S27: the refusal of a right password is the same response as a wrong one — same status, same error key and message, same redirect — and comes after the `Timebox` of `validateCredentials` (read `RedirectIfSecondFactorRequired::handle`).
-12. S28 and D17, D18: read `SignInPolicy::ssoRequired()` and the passkey login controller (`vendor/laravel/passkeys/src/Http/Controllers/PasskeyLoginController.php:58`). Write, for the owner: what a person removed at the identity provider can still do (an open session, an API token, a passkey; a password if the provider configuration is lost), and the reviewer's recommendation on D17 and D18.
+10. S27: every local way in asks `SignInPolicy`. `git grep -n "SignInPolicy" app` lists `RedirectIfSecondFactorRequired`, `TwoFactorChallengeRequest`, `CreateNewUser`, `User` (reset notification), `SendMagicLink`, `MagicLinksController`, `MagicLinkSessionsController`, `FortifyServiceProvider`, `AppServiceProvider` (passkeys), `HandleInertiaRequests` (alert), `SsoLoginRefused`, `InvitationLinksController`, the admin controller and request, and nothing reads the setting directly: `git grep -n "ssoRequired()\|sso_required" app` shows `InstanceSettings`, `InstanceSettingKey`, `SignInPolicy`, the admin controller and request only. Then the reviewer looks for a way in that the list misses: `php artisan route:list --except-vendor` and `--only-vendor` read for every route that can end in `Auth::login`, `->login(` or a session for a guest (Fortify's `login.store`, `two-factor.login.store`, `register.store`, `password.email`, `password.update`; the passkey routes; `sso.callback`; `magicLinks.sessions.store`; `twoFactor.emailChallenges.store`; guest joins of sessions, which create no account session).
+11. S28, R6: the refusal of a right password — a member's, or an admin's without a second factor — is the same response as a wrong one (status, error key and message, redirect, limiter increment) and comes after the `Timebox` of `validateCredentials` (read `RedirectIfSecondFactorRequired::handle`). Nothing on the login page, in its props or in a response header differs with the address typed. The only thing that differs for an admin is the challenge, reached with the right password only.
+12. S28, R4 and R7: while the setting is in force there is no path from a password to `Auth::login` that does not pass a second factor — `allowsPassword` implies `requiredFor`; `TwoFactorChallengeRequest::challengedUser()` re-checks the policy when `login.local` is true, and both completions (Fortify's controller, `EmailCodeChallengesController`) take their user from it; `login.local` is written only by `StartSecondFactorChallenge`, with `true` only from the password pipeline. S2, R10: `Passkeys::authorizeLoginUsing` is called once in the application, with the callback of R10; `PasskeyLoginController` calls `Passkeys::allowsLogin` before `$guard->login` (line 58).
 13. S29: `BrandingController::destroy` uses `InstanceSettingKey::branding()`; `InstanceSettingKey::branding()` leaves out `SsoRequired` and nothing else; the two `admin.signIn.*` routes are inside the `can:manageInstance` and `RequirePassword` groups of `routes/admin.php`.
-14. S30, S31 (B31): `SsoCallbacksController` reads the invitation token from `$request->session()` only; `SsoRedirectsController` adds nothing to the provider URL; `ResolveSsoUser` returns an existing account only through a linked identity or a verified address on both sides, and calls `AcceptWorkspaceInvitation` only inside `createUser`; `InvitationAcceptancesController::store` still checks `isPending()` and `matchesEmail()`; `CompleteLogin` is the only tail of the callback. Rule on D19.
+14. S30, S31 (B31): `SsoCallbacksController` reads the invitation token from `$request->session()` only; `SsoRedirectsController` adds nothing to the provider URL; `ResolveSsoUser` returns an existing account only through a linked identity or a verified address on both sides, and calls `AcceptWorkspaceInvitation` only inside `createUser`; `ResolveSsoUser` has no path that creates or returns a user from an address the provider did not verify (the `$isInvited` exemption is gone); `InvitationAcceptancesController::store` still checks `isPending()` and `matchesEmail()`; `CompleteLogin` is the only tail of the callback.
 15. S32, S24: both unsubscribe controllers write one column of the bound user with `forceFill`, read nothing else from the request, and are reachable only through the `signed` group; the CSRF exemption lists the two paths and nothing wider.
-16. S33, S34: `ReceivedInvitationAcceptancesController` is inside `auth` and `verified`; no notification `data` holds a token (`git grep -n "token" app/Notifications`); `NotificationReceived::broadcastWith` returns a count only; the `private-user.` branch of `BroadcastAuthorizationsController` compares with `$request->user()`'s key and nothing else; `ListRecentSessions` and the card query of `SearchWorkspaceContent` start from the team ids and keep every `orWhere` inside a closure.
+16. S33, S34: no route accepts an invitation without its token (`php artisan route:list --name=invitation` shows `invitations.show`, `invitations.acceptance.store` and the workspace routes only); the only notification that holds an invitation link holds it through `Crypt::encryptString`, and `ListNotifications` decrypts it only for the notification's own user; `NotificationReceived::broadcastWith` returns a count only; the `private-user.` branch of `BroadcastAuthorizationsController` compares with `$request->user()`'s key and nothing else; `ListRecentSessions` and the card query of `SearchWorkspaceContent` start from the team ids and keep every `orWhere` inside a closure.
 
 - [ ] **Step 3: Manual checks on the running application** (`vendor/bin/sail up -d`, port of the project, never 8097), with `MAIL_MAILER=smtp` pointing at the Mailpit of Sail if present, otherwise the preview routes:
 
@@ -6225,7 +6499,7 @@ git commit -m "feat(notifications): recap and invitation notifications, paging a
 3. Request a link twice within a minute for a real and for an unknown address with `curl -w "%{time_total}\n"` while a queue worker runs: same status, same `Location`, comparable times.
 4. Open `/dev/mail/magic-link`, `/dev/mail/two-factor-code`, `/dev/mail/invitation`, `/dev/mail/action-reminder`, `/dev/mail/retro-recap` with `?locale=fr`: each renders, in French.
 5. `curl -i -X POST "<signed recap-unsubscribe URL>" -d "List-Unsubscribe=One-Click"` with no cookie answers 204; the same request on the URL signed for the reminder, with `reminder-unsubscribe` replaced by `recap-unsubscribe` in its path, answers 403.
-6. With `sso_required` turned on through Admin › Sign-in (an SSO provider configured on the instance under review; if none can be, the step is recorded as not run and the feature tests of Task 10 stand alone): `curl -i -X POST <login URL>` with a right password and with a wrong one give the same status, `Location` and error; `POST magic-link`, `POST forgot-password` and `POST register` create no mail and no user; the login page shows no password field. Then remove the provider configuration and confirm the password form is back (D17), and write that sentence in the record.
+6. With `sso_required` turned on through Admin › Sign-in (an SSO provider configured on the instance under review; if none can be, the step is recorded as not run and the feature tests of Task 10 stand alone): `curl -i -X POST <login URL>` with a right password and with a wrong one give the same status, `Location` and error; `POST magic-link`, `POST forgot-password` and `POST register` create no mail and no user; the login page shows no password field. As an instance admin with an authenticator app, the password then the code open a session; as an admin without a second factor the right password gives the wrong-password answer. Then remove the provider configuration: the password form is back for everyone (R2) and the admin sees the alert on every page.
 
 - [ ] **Step 4: Run every back-end suite**
 
@@ -7476,10 +7750,10 @@ If `NotificationsBell` spreads `{...props}` before its own `aria-label`, the ove
 
 `NotificationsPanel/preview.html` is the reference: bell states (none, count, "9+", open, new arrival), popover with the header and "Mark all as read", the two tabs with their counts, the items (avatar or icon tile, sentence with the names in semibold, meta line, inline actions, unread dot and tint), the footer "Notification settings", the empty state "You're all caught up", and the `Drawer` under 640 px. The library component already draws all of it; the comments `Backlog:` in `components/skrum/notifications-panel.tsx` were written when the server gave action reminders only. Task 15 changed that. Tests first (in `use-notifications.test.ts` and `notifications-menu.test.tsx`), then the code:
 
-1. **Kinds.** The hook passes through the three kinds of Task 15. `recap_ready` renders "The recap of **:title** is ready", the meta `:count action items · ROTI :roti · :when` (without the ROTI part when `roti` is null), the tile `file-text`, and the action "View recap" that opens `href` and marks it read. `team_invite` renders the actor's avatar, "**:name** invited you to join **:workspace**", the meta, and "Accept" — `onInvite(id, 'accept')` posts to `ReceivedInvitationAcceptancesController.store(invitationId)`, then the item shows "Accepted · welcome to :workspace" without its button (state "invitation answered" of the README). The component renders "Decline" only when the container allows it: the container never does (Deviations V16); if the component cannot hide one button of the pair, it gains the prop `inviteAnswers?: ('accept' | 'decline')[]`, with its test, and the container passes `['accept']`.
-2. **Ticket.** An action item notification shows its ticket key in the mono font after the due date, as the mockup ("Due Sep 29 · ATLAS-1287"), when `actionItem.ticket` is not null. The `Backlog:` comments on `ticket`, `onInvite` and the two kinds that now exist are removed from the component file; the type `BacklogNotificationKind` keeps `session_starting` and `mention` only (V14, V15).
+1. **Kinds.** The hook passes through the three kinds of Task 15. `recap_ready` renders "The recap of **:title** is ready", the meta `:count action items · ROTI :roti · :when` (without the ROTI part when `roti` is null), the tile `file-text`, and the action "View recap" that opens `href` and marks it read. `team_invite` renders the actor's avatar, "**:name** invited you to join **:workspace**", the meta, and one action, "View invitation", which marks the notification read and visits `href` — the existing invitation page, where the existing "Accept invitation" button is. Nothing is accepted from the bell (S33): the container gives the component no `onInvite`, so the mockup's inline "Accept" and "Decline" are not rendered (Deviations V16); if the component cannot show a single link-action for this kind, it gains the prop `inviteHref?: (notification) => string` with its test.
+2. **Ticket.** An action item notification shows its ticket key in the mono font after the due date, as the mockup ("Due Sep 29 · ATLAS-1287"), when `actionItem.ticket` is not null. The `Backlog:` comments on `ticket`, `onInvite` and the two kinds that now exist are removed from the component file; the type `BacklogNotificationKind` keeps `session_starting` and `mention` only (V14, V15), and `onInvite` stays an optional prop no container passes.
 3. **Load more.** `useNotifications` keeps `hasMore` and exposes `loadMore()`, which calls `notifications.index` with `before` = the id of the last item and appends; the container passes `hasMore` and `onLoadMore` (README: 20 items then "Load more").
-4. **Arrival.** `useNotifications` listens to `.notification.received` on the private channel `user.{id}` with the Echo hook the session containers use (`@laravel/echo-react`), sets the count from the payload, and, when the panel is open, reloads the first page without moving the item under the pointer (the component's concern: it keys items by id). The bell plays its arrival state once (the component's `bell-ring` and halo, off under reduced motion) and the container's `aria-live="polite"` region says "New notification". No polling is added; the refresh on window focus of Step 3 stays.
+4. **Arrival.** (This is the only user of the private channel of Task 15; if that channel was dropped, this point is dropped with it and the bell keeps the refresh on focus.) `useNotifications` listens to `.notification.received` on the private channel `user.{id}` with the Echo hook the session containers use (`@laravel/echo-react`), sets the count from the payload, and, when the panel is open, reloads the first page without moving the item under the pointer (the component's concern: it keys items by id). The bell plays its arrival state once (the component's `bell-ring` and halo, off under reduced motion) and the container's `aria-live="polite"` region says "New notification". No polling is added; the refresh on window focus of Step 3 stays.
 5. **Mark read on open of the item, not of the panel** (README): already the behaviour of Step 3; one test pins that opening the panel changes no `readAt`.
 6. **Mobile.** Under 640 px the same content is in a `Drawer` (the component switches with `useIsMobile`): one test renders the container with the mobile hook mocked and finds the drawer title.
 
@@ -7959,7 +8233,7 @@ Run:
 grep -rnE "useShortcut\(|addEventListener\(['\"]keydown|onKeyDown=" resources/js --include=*.ts --include=*.tsx | grep -v "\.test\." | grep -v "pages/dev/"
 ```
 
-For each hit, note the key, the screen and whether it is a document listener or an element handler. A shortcut enters `sections.ts` only if this list has its handler. From the reading of 2026-10-02 (before 18e): General `⌘K`, `/`, `?` (after this task), `⌘B`; Retro `N`, `Enter`, `Delete`, `V`, `T`, `+`, arrows of the facilitator bar; Poker `0–9`, `R`, `N`, `⌘Enter`; Reactions `1–6`; ROTI `1–5`; health check and survey digits. `G`, `F`, `C`, `⇧R`, `⌘→` had no handler before 18e; spec B35 has 18e build them and Task 25 checks, completes and lists them. In this task the grep decides what is listed.
+For each hit, note the key, the screen and whether it is a document listener or an element handler. A shortcut enters `sections.ts` only if this list has its handler. From the reading of 2026-10-02 (before 18e): General `⌘K`, `/`, `?` (after this task), `⌘B`; Retro `N`, `Enter`, `Delete`, `V`, `T`, `+`, arrows of the facilitator bar; Poker `0–9`, `R`, `N`, `⌘Enter`; Reactions `1–6`; ROTI `1–5`; health check and survey digits. `G`, `F`, `C`, `⇧R`, `⌘→` have no handler yet: Task 25 builds and lists them (spec B35). In this task the grep decides what is listed.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -8262,13 +8536,13 @@ git commit -m "feat(shortcuts): keyboard shortcuts dialog on ? with the shortcut
 **Read first:** `docs/design-system/components/ScreenAuth/README.md` and `preview.html` ("un admin self-host peut … forcer le SSO seul (le formulaire e-mail disparaît)"); `resources/js/pages/admin/admins.tsx` and `components/admin/admin-shell.tsx` (the page this one mirrors); the login page and the invitation card as plan 18e left them.
 
 **Files:**
-- Create: `resources/js/components/admin/sign-in-settings-form.tsx`, `resources/js/components/admin/sign-in-settings-form.test.tsx`
-- Modify: `resources/js/pages/admin/sign-in.tsx` (Task 10 left it minimal), `resources/js/components/admin/admin-shell.tsx` (third entry), `resources/js/pages/auth/login.tsx`, `resources/js/pages/invitations/show.tsx` or the `invitation-card.tsx` of 18e, `resources/js/pages/dev/sections/` (one section: the form in its four states)
+- Create: `resources/js/components/admin/sign-in-settings-form.tsx`, `resources/js/components/admin/sign-in-settings-form.test.tsx`, `resources/js/components/auth/admin-sign-in-disclosure.tsx`, `resources/js/components/admin/sign-in-alert.tsx`, each with its `.test.tsx`
+- Modify: `resources/js/pages/admin/sign-in.tsx` (Task 10 left it minimal), `resources/js/components/admin/admin-shell.tsx` (third entry), `resources/js/layouts/skrum/app-layout.tsx` (the alert), `resources/js/pages/auth/login.tsx`, `resources/js/pages/invitations/show.tsx` or the `invitation-card.tsx` of 18e, `resources/js/pages/dev/sections/` (one section: the form in its four states)
 - Test: the Vitest file; `resources/js/pages/auth/login.test.tsx` and the invitation card's Vitest file gain the cases below
 
 **Interfaces:**
-- Consumes: page props of Task 10 (`ssoRequired`, `inForce`, `providers`, `blockers`, `accountsWithoutSso`), `SignInSettingsController.update` (Wayfinder), login props `ssoRequired`, `canUseMagicLink`, `canRegister`, `canResetPassword`, invitation props `ssoRequired`, `canRegister`, `ssoProviders` (Task 11).
-- Produces: `AdminSection` becomes `'branding' | 'signIn' | 'admins'`; `<SignInSettingsForm ssoRequired inForce providers blockers accountsWithoutSso />`.
+- Consumes: page props of Task 10 (`ssoRequired`, `inForce`, `providers`, `blockers`, `accountsWithoutSso`, `adminsWithPasswordWayBack`), `SignInSettingsController.update` (Wayfinder), the shared prop `signInAlert`, login props `ssoRequired`, `canUseMagicLink`, `canRegister`, `canResetPassword`, invitation props `ssoRequired`, `canRegister`, `ssoProviders` (Task 11).
+- Produces: `AdminSection` becomes `'branding' | 'signIn' | 'admins'`; `<SignInSettingsForm ssoRequired inForce providers blockers accountsWithoutSso adminsWithPasswordWayBack />`; `<AdminSignInDisclosure>` (the folded password form of the login page); `<SignInAlert />` (the admins' banner of R2).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -8293,7 +8567,7 @@ describe('SignInSettingsForm', () => {
     beforeEach(() => put.mockReset());
 
     it('saves the switch with the explicit Save button, never on toggle', () => {
-        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={0} />);
+        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={0} adminsWithPasswordWayBack={1} />);
 
         fireEvent.click(screen.getByRole('switch', { name: 'Require single sign-on' }));
         expect(put).not.toHaveBeenCalled();
@@ -8304,59 +8578,78 @@ describe('SignInSettingsForm', () => {
 
     it('explains what stands in the way and keeps the switch off', () => {
         const { rerender } = render(
-            <SignInSettingsForm ssoRequired={false} inForce={false} providers={[]} blockers={['no_provider']} accountsWithoutSso={0} />,
+            <SignInSettingsForm ssoRequired={false} inForce={false} providers={[]} blockers={['no_provider']} accountsWithoutSso={0} adminsWithPasswordWayBack={1} />,
         );
 
         expect(screen.getByRole('switch', { name: 'Require single sign-on' })).toBeDisabled();
         expect(screen.getByText('Configure a single sign-on provider before requiring it.')).toBeInTheDocument();
 
-        rerender(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={['no_identity']} accountsWithoutSso={0} />);
+        rerender(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={['no_identity']} accountsWithoutSso={0} adminsWithPasswordWayBack={1} />);
 
         expect(screen.getByRole('switch', { name: 'Require single sign-on' })).toBeDisabled();
         expect(screen.getByText('Sign in once with single sign-on yourself before requiring it for everyone.')).toBeInTheDocument();
     });
 
     it('can always be turned off', () => {
-        render(<SignInSettingsForm ssoRequired inForce={false} providers={[]} blockers={['no_provider']} accountsWithoutSso={0} />);
+        render(<SignInSettingsForm ssoRequired inForce={false} providers={[]} blockers={['no_provider']} accountsWithoutSso={0} adminsWithPasswordWayBack={1} />);
 
         expect(screen.getByRole('switch', { name: 'Require single sign-on' })).toBeEnabled();
         expect(screen.getByRole('status')).toHaveTextContent('The setting is stored but not in force: no single sign-on provider is configured.');
     });
 
     it('warns about the accounts that have never used single sign-on', () => {
-        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={3} />);
+        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={3} adminsWithPasswordWayBack={1} />);
 
         expect(screen.getByText('3 accounts have never signed in with single sign-on. Each is linked on its first single sign-on if its address matches; otherwise it cannot sign in.')).toBeInTheDocument();
     });
 
+    it('explains the second-factor condition and warns when no admin has the password way back', () => {
+        const { rerender } = render(
+            <SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={['no_second_factor']} accountsWithoutSso={0} adminsWithPasswordWayBack={0} />,
+        );
+
+        expect(screen.getByRole('switch', { name: 'Require single sign-on' })).toBeDisabled();
+        expect(screen.getByText('Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.')).toBeInTheDocument();
+
+        rerender(<SignInSettingsForm ssoRequired inForce providers={google} blockers={['no_second_factor']} accountsWithoutSso={0} adminsWithPasswordWayBack={0} />);
+
+        expect(screen.getByRole('alert')).toHaveTextContent('No administrator has a second factor: nobody can sign in with a password if single sign-on fails.');
+    });
+
     it('lists the configured providers', () => {
-        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={0} />);
+        render(<SignInSettingsForm ssoRequired={false} inForce={false} providers={google} blockers={[]} accountsWithoutSso={0} adminsWithPasswordWayBack={1} />);
 
         expect(screen.getByRole('list', { name: 'Single sign-on providers' })).toHaveTextContent('Google');
     });
 });
 ```
 
-Login page, added to its Vitest file: with `ssoRequired`, the page renders the SSO buttons and none of `#email`, `#password`, "Forgot password?", "Remember me", the log-in button, the magic-link button, the register link; it shows the sentence `This instance signs in with single sign-on only.` With `ssoRequired` false nothing changes (the existing cases).
+`admin-sign-in-disclosure.test.tsx`: the children (the password form) are not in the document at first; the button `Administrator sign-in` has `aria-expanded="false"`; pressing it shows the children, sets `aria-expanded="true"` and moves focus to the first field; the sentence `Administrators can sign in with their password and a second factor.` is visible once open; pressing again folds it.
+
+`sign-in-alert.test.tsx`: with the shared prop `signInAlert: 'sso_required_ignored'` it renders a `role="alert"` with `Single sign-on is required on this instance, but no provider is configured: the setting is ignored and every sign-in method works.` and a link `Sign-in settings` to `admin.signIn.edit`; with `null` it renders nothing.
+
+Login page, added to its Vitest file: with `ssoRequired`, the page renders the SSO buttons first, the sentence `This instance signs in with single sign-on only.`, and the folded `Administrator sign-in`; before it is opened there is no `#email`, no `#password`, no log-in button; there is never a magic-link button nor a register link; once opened, `#email`, `#password`, "Forgot password?" and the log-in button are there, posting to the same route as always. With `ssoRequired` false nothing changes (the existing cases).
 
 Invitation card, added to its Vitest file: with `ssoRequired` and a pending invitation for a guest, the card renders the SSO buttons and neither "Log in" nor "Create an account".
 
 - [ ] **Step 2: Run them to verify they fail**
 
-Run: `npm run test -- sign-in-settings-form login invitation`
+Run: `npm run test -- sign-in-settings-form admin-sign-in-disclosure sign-in-alert login invitation`
 Expected: FAIL, module not found; the two page cases fail on the password field and on "Log in".
 
 - [ ] **Step 3: The form**
 
-`SignInSettingsForm` is a `Card` of the admin area with: the title `Single sign-on`; the list of providers (`role="list"`, `aria-label`), or `No single sign-on provider is configured.`; a `Switch` with `id="sso-required"` and its `Label` `Require single sign-on`, described by `Password, magic link and registration by form are refused for everyone. Passkeys and the second factor keep working.`; the blocker sentences (the two of Task 10's request, as literal `t()` keys chosen by the blocker value); the `role="status"` line when `ssoRequired && !inForce`; the warning line when `accountsWithoutSso > 0` (`skrum-warning-soft` / `-text`, with a lucide `TriangleAlert`); the server error of `sso_required` under the switch (`InputError` or its 18e equivalent, never a toast); a `Save` button (10-D6: explicit Save), disabled while the request runs. The switch is disabled only when it is off and a blocker exists. State is `useForm({ sso_required: ssoRequired })`, submitted with `SignInSettingsController.update()`. The count sentence is one `t()` call with `:count`, in its singular and plural keys (`1 account has never…`, `:count accounts have never…`).
+`SignInSettingsForm` is a `Card` of the admin area with: the title `Single sign-on`; the list of providers (`role="list"`, `aria-label`), or `No single sign-on provider is configured.`; a `Switch` with `id="sso-required"` and its `Label` `Require single sign-on`, described by `Password, magic link, passkey and registration by form are refused. Only administrators can still sign in with their password, followed by their second factor.`; the blocker sentences (the three of Task 10's request, as literal `t()` keys chosen by the blocker value); the line `:count administrators can sign in with a password and a second factor if single sign-on fails.` (singular key for 1), replaced at zero by a `role="alert"` with `No administrator has a second factor: nobody can sign in with a password if single sign-on fails.`; the `role="status"` line when `ssoRequired && !inForce`; the warning line when `accountsWithoutSso > 0` (`skrum-warning-soft` / `-text`, with a lucide `TriangleAlert`); the server error of `sso_required` under the switch (`InputError` or its 18e equivalent, never a toast); a `Save` button (10-D6: explicit Save), disabled while the request runs. The switch is disabled only when it is off and a blocker exists. State is `useForm({ sso_required: ssoRequired })`, submitted with `SignInSettingsController.update()`. The count sentence is one `t()` call with `:count`, in its singular and plural keys (`1 account has never…`, `:count accounts have never…`).
 
 - [ ] **Step 4: The page and the shell**
 
 `pages/admin/sign-in.tsx` renders `<AdminShell active="signIn">` around the form, with `<Head title={t('Sign-in')} />`. `AdminShell` gains the section `signIn` (label `t('Sign-in')`, route `SignInSettingsController.edit()`), between Branding and Admins. `AdminShell`'s own test gains the third link.
 
-- [ ] **Step 5: The login page**
+- [ ] **Step 5: The login page, and the alert**
 
-In `pages/auth/login.tsx`, `ssoRequired: boolean` joins `Props`. When it is true the page renders, in the frame 18e built: the title and the SSO buttons first (as the mockup places them), the sentence `This instance signs in with single sign-on only.`, and nothing of the e-mail form — the separator "or with your e-mail", `#email`, `#password`, "Forgot password?", "Remember me", the log-in button, the magic-link button of Task 17 and the register link are not rendered. With no provider the server sends `ssoRequired: false` (Task 10), so the page never shows an empty card. The browser suite signs in through `#email` and `#password`: it runs with the setting off, and is untouched.
+In `pages/auth/login.tsx`, `ssoRequired: boolean` joins `Props`. When it is true the page renders, in the frame 18e built: the title and the SSO buttons first (as the mockup places them), the sentence `This instance signs in with single sign-on only.`, then `<AdminSignInDisclosure>` wrapping the page's own e-mail and password form with "Forgot password?" and the log-in button — the same form, same ids, same route. The separator "or with your e-mail", "Remember me", the magic-link button of Task 17 and the register link are not rendered. The disclosure is offered to every visitor: the page cannot know who is an administrator, and must not (R6). A member who opens it and types the right password gets the answer of a wrong one, from the server. The mockup says the form disappears when SSO is forced; the owner's third-round answer keeps it for administrators (Deviations V24). With no provider the server sends `ssoRequired: false` (R2), so the page is the ordinary login page. The browser suite signs in through `#email` and `#password`: it runs with the setting off, and is untouched.
+
+`<SignInAlert />` reads the shared prop `signInAlert` and is mounted once in `AppLayout`, above the page content, in the library's `Alert` (warning tone, lucide `TriangleAlert`, text and a link, never colour alone). It is rendered for instance admins only because the server sends the prop to them only.
 
 - [ ] **Step 6: The invitation page**
 
@@ -8364,7 +8657,7 @@ When `ssoRequired`, the logged-out pending state of the invitation card shows th
 
 - [ ] **Step 7: Run**
 
-Run: `npm run test -- sign-in-settings-form admin-shell login invitation`, `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/sail artisan test --compact tests/Feature/Admin tests/Feature/Auth tests/Feature/TranslationKeysTest.php`
+Run: `npm run test -- sign-in-settings-form admin-sign-in-disclosure sign-in-alert admin-shell login invitation`, `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/sail artisan test --compact tests/Feature/Admin tests/Feature/Auth tests/Feature/TranslationKeysTest.php`
 Expected: PASS once the new keys are in the four language files (table of Task 26).
 
 - [ ] **Step 8: Commit**
@@ -8503,9 +8796,9 @@ git commit -m "feat(settings): recap e-mail switch and the accessibility switch 
 
 ### Task 25: The five shortcuts, their registry and the single-key switch (B35)
 
-Spec B35: the handlers of `G`, `F`, `⌘→`, `C`, `⇧R` live in the session containers that plan 18e builds; the registry, the preference and the dialog are this plan's. This task writes the registry, makes every shortcut obey the preference, lists the five in the dialog of Task 21, checks each handler of 18e against criterion 32 — and builds any of the five that 18e left out, at the mount point named below.
+Spec B35: the five shortcuts `G`, `F`, `⌘→`, `C`, `⇧R` are built in this plan. Each handler is written here and mounted in the session container plan 18e wrote for that screen (the file named in the table), on a control that already exists there; so are the registry, the preference and the dialog. This task writes the registry, makes every shortcut obey the preference, builds and mounts the five handlers, and lists them in the dialog of Task 21.
 
-| Shortcut | Combo for `useShortcut` | Where, who | Does | Mount point (18e file) | What 18e must expose |
+| Shortcut | Combo for `useShortcut` | Where, who | Does | Mounted in (container written by 18e) | What the handler calls there |
 |---|---|---|---|---|---|
 | `G` | `g` | retro, Grouping phase, anyone who may group, on the focused card | starts the keyboard move of the focused card, exactly as pressing Space on its drag handle (`aria-label="Drag to reorder"` family of @dnd-kit) | `components/retro/board-card.tsx` (container of `RetroCard`; grouping drag set up in `columns-board.tsx`, R7) | the drag-handle element of the card, reachable by ref or by `[data-drag-handle]` inside the card |
 | `F` | `f` | retro, Discussing and Actions phases, facilitator, on the focused card or topic | toggles the highlight, as the card's "focus" button (`RetroCard` `onFocusToggle`, `data-slot="retro-card-discuss"`) | `components/retro/board-card.tsx`, `phase-discussing.tsx` (R9), the Actions phase container (R10) | the callback passed to `onFocusToggle` |
@@ -8517,7 +8810,7 @@ Spec B35: the handlers of `G`, `F`, `⌘→`, `C`, `⇧R` live in the session co
 
 **Files:**
 - Create: `resources/js/lib/shortcuts/preference.ts`, `resources/js/lib/shortcuts/preference.test.ts`, `resources/js/hooks/use-single-key-shortcuts.ts`, `resources/js/hooks/use-single-key-shortcuts.test.tsx`
-- Modify: `resources/js/hooks/use-shortcut.ts` and its test, `resources/js/components/skrum/retro-card.tsx:366` and its test (the `V` key), `resources/js/components/skrum/poker-table.tsx` and its test (`⇧R`), `resources/js/lib/shortcuts/sections.ts` and its test (Task 21), `resources/js/hooks/use-global-shortcuts.ts` (Task 21), `resources/js/components/skrum/keyboard-shortcuts.tsx` and its test (one line of status, one slot), `resources/js/layouts/skrum/{app-layout,session-layout}.tsx`; and, only for a handler 18e did not build, the mount point of the table
+- Modify: `resources/js/hooks/use-shortcut.ts` and its test, `resources/js/components/skrum/retro-card.tsx:366` and its test (the `V` key), `resources/js/components/skrum/poker-table.tsx` and its test (`⇧R`), `resources/js/lib/shortcuts/sections.ts` and its test (Task 21), `resources/js/hooks/use-global-shortcuts.ts` (Task 21), `resources/js/components/skrum/keyboard-shortcuts.tsx` and its test (one line of status, one slot), `resources/js/layouts/skrum/{app-layout,session-layout}.tsx`; the four containers of the table (`board-card.tsx`, `phase-discussing.tsx` and the Actions phase container, `board.tsx` or `facilitator-dock.tsx`, `room-dock.tsx`) and their Vitest files
 - Test: the Vitest files; `tests/Browser/Walkthroughs/Plan18fCrossCuttingTest.php` (Task 26, `[P18f-10]` to `[P18f-12]`)
 
 **Interfaces:**
@@ -8526,14 +8819,14 @@ Spec B35: the handlers of `G`, `F`, `⌘→`, `C`, `⇧R` live in the session co
   - `useSingleKeyShortcuts(): [boolean, (enabled: boolean) => void]` — a member: the value of `auth.user.single_key_shortcuts`, saved through `ShortcutPreferencesController.update`; a guest: `useLocalPreference('skrum.single-key-shortcuts', true)`
   - `KeyboardShortcutsProps` gains `singleKeyDisabled?: boolean` and `footerExtra?: ReactNode`
 
-- [ ] **Step 1: See what 18e wired**
+- [ ] **Step 1: Read the mount points**
 
 ```bash
 grep -rnE "useShortcut\(\s*\[?['\"](g|f|c|shift\+r|mod\+arrowright)['\"]" resources/js --include=*.ts --include=*.tsx | grep -v "\.test\."
 grep -rnE "key === '(g|G|f|F|c|C)'" resources/js/components --include=*.tsx | grep -v "\.test\."
 ```
 
-Write in the ledger, for each of the five: the file and line of its handler, or "not built by 18e". A handler written as an element `onKeyDown` (not through `useShortcut`) is noted: Step 5 gives it the preference check.
+Expected: nothing — the five handlers are this task's. A line printed means a handler of that key already exists in a container (18e wired something on its own): read it, keep one handler per key, and make it the one of Step 8. Then read each mount point of the table and write in the ledger, for each of the five: the file, the control the shortcut stands for, and the function that control calls. A letter handled by an element `onKeyDown` (not through `useShortcut`) is noted: Step 5 gives it the preference check.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -8729,7 +9022,7 @@ Every shortcut registered through `useShortcut` now obeys the preference with no
         }
 ```
 
-`Enter` and `Delete` above it are named keys and stay. Any element handler of a letter that Step 1 found in 18e's containers gets the same guard.
+`Enter` and `Delete` above it are named keys and stay. Any element handler of a letter that Step 1 found in a container gets the same guard.
 
 - [ ] **Step 6: The hook that feeds the switch**
 
@@ -8782,7 +9075,7 @@ export function useSingleKeyShortcuts(): [boolean, (enabled: boolean) => void] {
 
 `KeyboardShortcuts` gains two optional props: `singleKeyDisabled` renders, under the search field, `<p role="status">` with `Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.` (criterion 32: "the help dialog says so"); `footerExtra` renders at the end of the footer. Both layouts pass `singleKeyDisabled={!shortcuts.singleKey}`. `SessionLayout`, where a guest has no settings page, passes as `footerExtra` a `Switch` labelled `Single-key shortcuts` bound to `shortcuts.singleKey` / `shortcuts.setSingleKey`; `AppLayout` passes a link `Keyboard settings` to `appearance.edit`. The switch in the dialog is not in the mockup: it is in the Deviations table (accessibility: a guest must be able to turn the shortcuts off, and has no settings page). With `?` turned off, the dialog stays reachable by `⌘/`, by its entry in the palette and by the keyboard button of the help menu.
 
-- [ ] **Step 8: `⇧R` in the library, and the handlers 18e left out**
+- [ ] **Step 8: The five handlers**
 
 `resources/js/components/skrum/poker-table.tsx`, beside the two shortcuts of the facilitator actions (line 676):
 
@@ -8793,9 +9086,9 @@ export function useSingleKeyShortcuts(): [boolean, (enabled: boolean) => void] {
     });
 ```
 
-The facilitator actions render only after the reveal, so the shortcut exists only then; `r` (reveal) requires no shift (`matchesShortcut` compares shift for letters), so the two never fire together. If 18e already added this line, keep one.
+The facilitator actions render only after the reveal, so the shortcut exists only then; `r` (reveal) requires no shift (`matchesShortcut` compares shift for letters), so the two never fire together.
 
-For each of `G`, `F`, `⌘→`, `C` that Step 1 marked "not built by 18e", add it at its mount point with the combo of the table, calling what the table's last column names, with `enabled` set to the condition of the "Where, who" column, and one Vitest case in the container's test file: the key calls the callback once; it does not in a field; it does not for a non-facilitator (for `F` and `⌘→`); it does not in another phase. `G` calls `focus()` on the card's drag handle and dispatches the same `Space` keydown @dnd-kit's keyboard sensor listens to; the test asserts the handle receives it. Each `FacilitatorAction` that has a shortcut sets `shortcut` (`'⌘→'`), which the bar already shows and announces (`aria-keyshortcuts`).
+Each of `G`, `F`, `⌘→`, `C` is added at its mount point with `useShortcut` and the combo of the table, calling what the table's last column names, with `enabled` set to the condition of the "Where, who" column, and Vitest cases in the container's test file, written first: the key calls the callback once; it does not in a field; it does not for a non-facilitator (for `F` and `⌘→`); it does not in another phase; it does not when the single-key switch is off (`G`, `F`, `C`), and `⌘→` still does. `G` calls `focus()` on the focused card's drag handle and dispatches the same `Space` keydown @dnd-kit's keyboard sensor listens to; the test asserts the handle receives it. `⌘→` goes through the same function as the "Next" button, confirmation dialog included. Each `FacilitatorAction` that has a shortcut sets `shortcut` (`'⌘→'`), which the bar already shows and announces (`aria-keyshortcuts`).
 
 - [ ] **Step 9: The sections**
 
@@ -8825,7 +9118,7 @@ Expected: PASS.
 
 ```bash
 git add resources/js lang
-git commit -m "feat(shortcuts): the five session shortcuts listed and checked, and a switch that turns single-key shortcuts off"
+git commit -m "feat(shortcuts): G, F, C, ⇧R and ⌘→ in the sessions, and a switch that turns single-key shortcuts off"
 ```
 
 ### Task 26: Translations, visual captures compared with the mockups, browser walkthrough
@@ -8956,7 +9249,7 @@ Every key this plan introduces, with its three translations. In `lang/en.json` t
 | `:count action items · ROTI :roti · :when` | `:count actions · ROTI :roti · :when` | `:count acciones · ROTI :roti · :when` | `:count Maßnahmen · ROTI :roti · :when` | 19 |
 | `:count action items · :when` | `:count actions · :when` | `:count acciones · :when` | `:count Maßnahmen · :when` | 19 |
 | `:name invited you to join :workspace` | `:name vous invite à rejoindre :workspace` | `:name le invita a unirse a :workspace` | `:name lädt Sie ein, :workspace beizutreten` | 19 |
-| `Accepted · welcome to :workspace` | `Acceptée · bienvenue dans :workspace` | `Aceptada · le damos la bienvenida a :workspace` | `Angenommen · willkommen bei :workspace` | 19 |
+| `View invitation` | `Voir l'invitation` | `Ver la invitación` | `Einladung ansehen` | 19 |
 | `New notification` | `Nouvelle notification` | `Nueva notificación` | `Neue Benachrichtigung` | 19 |
 | `Search is unavailable. Try again in a moment.` | `La recherche est indisponible. Réessayez dans un instant.` | `La búsqueda no está disponible. Vuelva a intentarlo en un momento.` | `Die Suche ist nicht verfügbar. Versuchen Sie es gleich noch einmal.` | 20 |
 | `Invite to :workspace` | `Inviter dans :workspace` | `Invitar a :workspace` | `In :workspace einladen` | 20 |
@@ -8970,7 +9263,15 @@ Every key this plan introduces, with its three translations. In `lang/en.json` t
 | `The whiteboard uses the shortcuts of its own toolbar.` | `Le tableau blanc utilise les raccourcis de sa propre barre d'outils.` | `La pizarra usa los atajos de su propia barra de herramientas.` | `Das Whiteboard verwendet die Tastenkürzel seiner eigenen Werkzeugleiste.` | 21 |
 | `This instance signs in with single sign-on only.` | `Cette instance n'accepte que l'authentification unique.` | `Esta instancia solo admite el inicio de sesión único.` | `Diese Instanz erlaubt nur die Anmeldung per Single Sign-on.` | 22 |
 | `Require single sign-on` | `Imposer l'authentification unique` | `Exigir el inicio de sesión único` | `Single Sign-on vorschreiben` | 22 |
-| `Password, magic link and registration by form are refused for everyone. Passkeys and the second factor keep working.` | `Le mot de passe, le lien magique et l'inscription par formulaire sont refusés pour tout le monde. Les clés d'accès et le second facteur continuent de fonctionner.` | `La contraseña, el enlace mágico y el registro por formulario se rechazan para todos. Las llaves de acceso y el segundo factor siguen funcionando.` | `Passwort, magischer Link und Registrierung per Formular werden für alle abgelehnt. Passkeys und der zweite Faktor funktionieren weiter.` | 22 |
+| `Password, magic link, passkey and registration by form are refused. Only administrators can still sign in with their password, followed by their second factor.` | `Le mot de passe, le lien magique, la clé d'accès et l'inscription par formulaire sont refusés. Seuls les administrateurs peuvent encore se connecter avec leur mot de passe, suivi de leur second facteur.` | `La contraseña, el enlace mágico, la llave de acceso y el registro por formulario se rechazan. Solo los administradores pueden seguir iniciando sesión con su contraseña, seguida de su segundo factor.` | `Passwort, magischer Link, Passkey und Registrierung per Formular werden abgelehnt. Nur Administratoren können sich weiterhin mit ihrem Passwort und anschließend ihrem zweiten Faktor anmelden.` | 22 |
+| `Turn on a second factor for your account before requiring single sign-on: it is what lets an administrator sign in with a password if single sign-on fails.` | `Activez un second facteur sur votre compte avant d'imposer l'authentification unique : c'est ce qui permet à un administrateur de se connecter par mot de passe si l'authentification unique tombe en panne.` | `Active un segundo factor en su cuenta antes de exigir el inicio de sesión único: es lo que permite a un administrador iniciar sesión con contraseña si el inicio de sesión único falla.` | `Schalten Sie einen zweiten Faktor für Ihr Konto ein, bevor Sie Single Sign-on vorschreiben: Damit kann sich ein Administrator mit Passwort anmelden, wenn Single Sign-on ausfällt.` | 10, 22 |
+| `1 administrator can sign in with a password and a second factor if single sign-on fails.` | `1 administrateur peut se connecter avec mot de passe et second facteur si l'authentification unique tombe en panne.` | `1 administrador puede iniciar sesión con contraseña y segundo factor si el inicio de sesión único falla.` | `1 Administrator kann sich mit Passwort und zweitem Faktor anmelden, wenn Single Sign-on ausfällt.` | 22 |
+| `:count administrators can sign in with a password and a second factor if single sign-on fails.` | `:count administrateurs peuvent se connecter avec mot de passe et second facteur si l'authentification unique tombe en panne.` | `:count administradores pueden iniciar sesión con contraseña y segundo factor si el inicio de sesión único falla.` | `:count Administratoren können sich mit Passwort und zweitem Faktor anmelden, wenn Single Sign-on ausfällt.` | 22 |
+| `No administrator has a second factor: nobody can sign in with a password if single sign-on fails.` | `Aucun administrateur n'a de second facteur : personne ne pourra se connecter par mot de passe si l'authentification unique tombe en panne.` | `Ningún administrador tiene segundo factor: nadie podrá iniciar sesión con contraseña si el inicio de sesión único falla.` | `Kein Administrator hat einen zweiten Faktor: Niemand kann sich mit Passwort anmelden, wenn Single Sign-on ausfällt.` | 22 |
+| `Administrator sign-in` | `Connexion administrateur` | `Inicio de sesión de administrador` | `Administrator-Anmeldung` | 22 |
+| `Administrators can sign in with their password and a second factor.` | `Les administrateurs peuvent se connecter avec leur mot de passe et un second facteur.` | `Los administradores pueden iniciar sesión con su contraseña y un segundo factor.` | `Administratoren können sich mit ihrem Passwort und einem zweiten Faktor anmelden.` | 22 |
+| `Single sign-on is required on this instance, but no provider is configured: the setting is ignored and every sign-in method works.` | `L'authentification unique est imposée sur cette instance, mais aucun fournisseur n'est configuré : le réglage est ignoré et tous les modes de connexion fonctionnent.` | `El inicio de sesión único es obligatorio en esta instancia, pero no hay ningún proveedor configurado: el ajuste se ignora y todos los métodos de inicio de sesión funcionan.` | `Single Sign-on ist auf dieser Instanz vorgeschrieben, aber es ist kein Anbieter eingerichtet: Die Einstellung wird ignoriert und alle Anmeldewege funktionieren.` | 22 |
+| `Sign-in settings` | `Paramètres de connexion` | `Ajustes de inicio de sesión` | `Anmeldeeinstellungen` | 22 |
 | `The setting is stored but not in force: no single sign-on provider is configured.` | `Le réglage est enregistré mais sans effet : aucun fournisseur d'authentification unique n'est configuré.` | `El ajuste está guardado pero no se aplica: no hay ningún proveedor de inicio de sesión único configurado.` | `Die Einstellung ist gespeichert, aber nicht wirksam: Es ist kein Single-Sign-on-Anbieter eingerichtet.` | 22 |
 | `No single sign-on provider is configured.` | `Aucun fournisseur d'authentification unique n'est configuré.` | `No hay ningún proveedor de inicio de sesión único configurado.` | `Es ist kein Single-Sign-on-Anbieter eingerichtet.` | 22 |
 | `Single sign-on providers` | `Fournisseurs d'authentification unique` | `Proveedores de inicio de sesión único` | `Single-Sign-on-Anbieter` | 22 |
@@ -9074,12 +9375,12 @@ Captures added by the owner's answers and the fidelity rule, in the same file: t
 7. `[P18f-07]` Logged out, a signed unsubscribe link shows the confirmation page; `@unsubscribe-button` turns the reminders off; the settings page then shows the e-mail reminder switch off.
 8. `[P18f-08]` The same with the signed link of the recap: the confirmation page, `@unsubscribe-button`, then Settings › Notifications shows `#recap-emails` off; checking it and pressing "Save" turns it back on.
 9. `[P18f-09]` Logged out, the page of a pending invitation shows "Continue with Google" (provider configured in the test, `Socialite::fake`): pressing it, with the provider answering the invited address, lands in the application as a member of the workspace; with another address, on the invitation page saying the account is another one, with nothing joined.
-10. `[P18f-10]` With single sign-on required (set through `InstanceSettings`, a provider configured): `/login` shows the provider button and no `#email`, no `#password`, no `@magic-link-button`; an admin opens Admin › Sign-in, turns "Require single sign-on" off, presses "Save", and `/login` shows the form again.
+10. `[P18f-10]` With single sign-on required (set through `InstanceSettings`, a provider configured): `/login` shows the provider button, no `@magic-link-button`, and no `#email` until "Administrator sign-in" is pressed. A member who opens it and types the right password sees the wrong-credentials error. An instance admin with an authenticator app types the password, then the code, and lands in the application; opens Admin › Sign-in, turns "Require single sign-on" off, presses "Save", and `/login` shows the ordinary form again. With the setting stored and the provider configuration removed, the admin sees the alert on the dashboard and a member does not.
 11. `[P18f-11]` On a retro as facilitator: `⌘→` (`Control+ArrowRight` in the test) moves to the next phase as the "Next" button does; in the Grouping phase `G` on a focused card starts its keyboard move; in Discussing `F` on a focused card highlights it and a second `F` removes the highlight; none of the letters does anything while a card is being edited. As a participant, `⌘→` and `F` do nothing.
 12. `[P18f-12]` On a poker game: `C` plays the coffee card when the deck has one; after the reveal `⇧R` starts a re-vote for the facilitator and does nothing for a player.
 13. `[P18f-13]` In Settings › Appearance a member turns "Single-key shortcuts" off and saves: on a retro `G`, `V` and `?` do nothing, `⌘→` and `⌘K` still work, and the shortcuts dialog (opened with `⌘/`) says single-key shortcuts are off. A guest in a session turns them off with the switch of the dialog, reloads, and they are still off.
 14. `[P18f-14]` The palette, empty: "Actions" with "New retrospective", "Recent sessions" with the retro last opened first, "Go to"; "New retrospective" opens the "New session" dialog on the retrospective type; `G` then `A` from the dashboard opens the action items; `⌘K` typed in a text field does not open the palette.
-15. `[P18f-15]` The bell, with one notification of each kind (seeded with the factories of Task 15): the recap line and "View recap"; the invitation line, "Accept", then "Accepted · welcome to …" and the workspace in the sidebar; an overdue action with its ticket key. A notification created while the page is open raises the count without a reload.
+15. `[P18f-15]` The bell, with one notification of each kind (seeded with the factories of Task 15): the recap line and "View recap"; the invitation line and "View invitation", which opens the invitation page, where "Accept invitation" joins the workspace; an overdue action with its ticket key. A notification created while the page is open raises the count without a reload.
 
 - [ ] **Step 4: Run**
 
@@ -9128,28 +9429,28 @@ Expected: no line outside `resources/views/mail` (mails use hex by rule S26 and 
 | B12 | `MagicLinkTest`; every clause of the row mapped to a test: request by e-mail, signed, single use, 15 minutes, hashed, 60 s cooldown, per e-mail and per IP, same response, second factor still asked. "Not offered, and refused by the server, while `sso_required` is in force": `ForcedSsoTest` |
 | B13 | `EmailSecondFactorTest`: enable in Security, 6 digits, 10 minutes, hashed, 60 s cooldown, five codes an hour, five attempts, browser and time in the mail and no location, TOTP / recovery / passkeys unchanged |
 | B14 | `tests/Feature/Mail/*`: five Mailables, light and dark, `BrandPalette::toHex()`, triggers unchanged, recipients unchanged but for `recap_emails` (`ReminderDigestTest`, `ResultsEmailTest`, `WorkspaceInvitationsTest` green); `MailMockupTest` and the comparison table of Task 26 for "per `components/Emails/README.md`" |
-| B31, criterion 28 | `InvitationSsoTest`; the Task 16 record for S30, S31 and D19; `[P18f-09]`; and who built the buttons (18e, checked in Task 23, or Task 23) |
-| B33, criterion 30 | `ForcedSsoTest`, `SignInSettingsTest`, `[P18f-10]`; the Task 16 record for S27–S29, D17, D18 |
+| B31, criterion 28 | `InvitationSsoTest`, the rewritten test of `ResolveSsoUserTest`; the Task 16 record for S30, S31; `[P18f-09]`; and who built the buttons (18e, checked in Task 23, or Task 23). The spec's criterion 28 and §15 point 17 still describe the behaviour before the third round (an unverified address accepted with a matching invitation): say so, the owner's answer wins |
+| B33, criterion 30 | `ForcedSsoTest`, `SignInSettingsTest`, `[P18f-10]`; the Task 16 record for S27–S29, rule by rule R1–R16. Where the spec text of B33 still says "refuses password login" for everyone and leaves passkeys alone, the third-round answers win: say so |
 | B34, criterion 31 | `RecapUnsubscribeTest`, `NotificationPreferencesTest`, `[P18f-08]` |
-| B35, criterion 32 | `ShortcutPreferencesTest`; the Vitest files of Task 25; `[P18f-11]` to `[P18f-13]`; for each of the five shortcuts, the file and line of its handler and whether 18e or Task 25 wrote it |
+| B35, criterion 32 | `ShortcutPreferencesTest`; the Vitest files of Task 25; `[P18f-11]` to `[P18f-13]`; for each of the five shortcuts, the file and line where Task 25 mounted its handler |
 | Mockup fidelity (owner's rule) | the comparison table of Task 26; the Deviations table as it stands at the end, each line with its reason; the list of browser tests changed because a mockup imposed it |
 | §12 18f | bell (Tasks 15, 19), global shortcuts and `?` (Tasks 21, 25) |
 | §13.1, 13.3, 13.4 | captures of Task 26; `bin/test-browser`; the suites of Step 1 |
 | §13.13 | every §9 item of this phase has feature tests; B12, B13, B31 and B33 passed Task 16 (record attached) |
 
-- [ ] **Step 4: One whole-branch review with a security lens** (`superpowers:requesting-code-review`), one fix wave, one scoped re-review. The front must not have weakened a rule: the reviewer checks that no page prints the `status` flash raw, that the e-mail code is never posted to Fortify's route, that no token or code is kept in `localStorage`, `sessionStorage` or a URL the client builds; that the login page with single sign-on required renders no form the server would refuse, and renders it because the server said so (`ssoRequired` prop), not from a client guess; that the SSO links of the invitation page carry no query string; that the only thing kept in `localStorage` by this phase is the guest's `skrum.single-key-shortcuts` boolean.
+- [ ] **Step 4: One whole-branch review with a security lens** (`superpowers:requesting-code-review`), one fix wave, one scoped re-review. The front must not have weakened a rule: the reviewer checks that no page prints the `status` flash raw, that the e-mail code is never posted to Fortify's route, that no token or code is kept in `localStorage`, `sessionStorage` or a URL the client builds; that the login page with single sign-on required is the same for every visitor (the administrator form is folded, never shown or hidden by a guess about who is asking), and takes that state from the server's `ssoRequired` prop; that the SSO links of the invitation page carry no query string; that the only thing kept in `localStorage` by this phase is the guest's `skrum.single-key-shortcuts` boolean.
 
 - [ ] **Step 5: The report**
 
 Sections, in this order:
 
 1. **What is done**, task by task, with the commit of each.
-2. **The Task 16 record**, rule by rule (S1–S34), with the rulings on D17, D18 and D19 and, where the reviewer recommends something else than the spec built, the recommendation for the owner.
+2. **The Task 16 record**, rule by rule (S1–S34, and R1–R16 for `sso_required`).
 3. **Owner decisions**: the table at the head of this plan, each line with the task that applied it. D6 is flagged as differing from the research file.
 4. **Known limits** (Security rules, last paragraph).
 5. **Mockup fidelity**: the comparison table of Task 26; the Deviations table as it stands, each line with its reason; and the list "gaps of the first version of this plan and what became of them":
-   - turned into work: the Skrüm logo as PNG and a mail logo for a rebranded instance; the recap with its four stats, action rows and ROTI bars; the invitation mail with the inviter's avatar and the workspace block; the reminder rows with days late and ticket key; the code mail with browser and time; the wording of the five mails; the recap unsubscribe; the "Actions" and "Recent sessions" groups of the palette, its key sequences and `⌘K` staying out of fields; the bell's recap and invitation notifications, ticket key, "Load more" and live arrival; the magic-link button and "link sent" state as the mockup draws them; the five shortcuts and the single-key switch;
-   - left as deviations: V1 to V23, each with its reason.
+   - turned into work: the Skrüm logo as PNG and a mail logo for a rebranded instance; the recap with its four stats, action rows and ROTI bars; the invitation mail with the inviter's avatar and the workspace block; the reminder rows with days late and ticket key; the code mail with browser and time; the wording of the five mails; the recap unsubscribe; the "Actions" and "Recent sessions" groups of the palette, its key sequences and `⌘K` staying out of fields; the bell's recap notification and its invitation notification (a link to the invitation page), ticket key, "Load more" and live arrival; the magic-link button and "link sent" state as the mockup draws them; the five shortcuts and the single-key switch;
+   - left as deviations: V1 to V24, each with its reason; those marked `roadmap`, with their line of `feature-roadmap.md`.
 6. **Browser tests changed**, each with the mockup line that imposes the change.
 7. **Parity table** "old bell → new bell" (open, read one, read all, refresh on focus, link to the item).
 8. **Translation keys** added at execution beyond the table of Task 26.
@@ -9168,20 +9469,21 @@ No merge into `main`, no push.
 
 ## Self-review (done while writing; kept for the reader)
 
-**Revised on 2026-10-02** after the owner's answers (two rounds) and the owner's rule on mockup fidelity. Added: Tasks 10–15 and 22–25; card text in Task 9; five codes an hour in Task 7; Task 17 rewritten to the ScreenAuth mockup; steps 5b / 6b in Tasks 18, 19, 20; the translation table and the mockup comparison in Task 26; rules S27–S34; the Deviations table. Old task numbers 10–17 are now 16–21, 26, 27. Totals: **27 tasks** (15 back end, 1 gate, 11 front and closing), **34 security rules**, **23 deviations**.
+**Revised on 2026-10-02** after the owner's answers (two rounds) and the owner's rule on mockup fidelity. Added: Tasks 10–15 and 22–25; card text in Task 9; five codes an hour in Task 7; Task 17 rewritten to the ScreenAuth mockup; steps 5b / 6b in Tasks 18, 19, 20; the translation table and the mockup comparison in Task 26; rules S27–S34; the Deviations table. Old task numbers 10–17 are now 16–21, 26, 27. Totals: **27 tasks** (15 back end, 1 gate, 11 front and closing), **34 security rules** (S33 rewritten, number kept), **16 rules of `sso_required`** (R1–R16), **24 deviations** (8 of them `roadmap`).
 
-**Spec coverage.** B11 → Tasks 9, 15, 20. B12 → Tasks 5, 6, 8, 10 (refused while `sso_required` is in force), 17. B13 → Tasks 5, 7, 8, 18. B14 → Tasks 1–4, 6, 7, 12, 14 (five Mailables; "the three existing notifications keep their triggers": only `toMail`, the recap's recipients and its unsubscribe change). B31 → Tasks 11, 16, 23 (review and pins here; prop and buttons in 18e, built here if absent). B33 → Tasks 10, 16, 22. B34 → Tasks 12, 24. B35 → Tasks 13, 24, 25 (handlers in 18e, checked and completed here). "Their plan includes a security review step before merge" → Task 16 and Task 27 Step 4. "Stated on the Security screen" → Task 18 card. Bell → Tasks 15, 19. Global shortcuts and `?` → Tasks 21, 25. §11 visual captures FR/EN, light/dark, 1440/390 → Task 26. §13.13, criteria 28, 30, 31, 32 → Task 27.
+**Spec coverage.** B11 → Tasks 9, 15, 20. B12 → Tasks 5, 6, 8, 10 (refused while `sso_required` is in force), 17. B13 → Tasks 5, 7, 8, 18. B14 → Tasks 1–4, 6, 7, 12, 14 (five Mailables; "the three existing notifications keep their triggers": only `toMail`, the recap's recipients and its unsubscribe change). B31 → Tasks 11, 16, 23 (the refusal of an unverified address, the pins and the review here; prop and buttons in 18e, built here if absent). B33 → Tasks 10, 16, 22. B34 → Tasks 12, 24. B35 → Tasks 13, 24, 25 (the five handlers are built here and mounted in the containers 18e wrote). "Their plan includes a security review step before merge" → Task 16 and Task 27 Step 4. "Stated on the Security screen" → Task 18 card. Bell → Tasks 15, 19. Global shortcuts and `?` → Tasks 21, 25. §11 visual captures FR/EN, light/dark, 1440/390 → Task 26. §13.13, criteria 28, 30, 31, 32 → Task 27.
 
-**Every owner answer covered.** First round, "Plan 18f": magic link audience → D2, Task 6; forced SSO → Tasks 10, 22; e-mail code for everyone → D3; no recovery codes → D4; search titles + card text, current workspace, `ILIKE` → Task 9 Step 5; plain Blade → D13; recap unsubscribe → Tasks 12, 24; shortcuts and the single-letter switch → Tasks 13, 24, 25. 11-D2 → Tasks 11, 23. Second round: lifetimes → D5, Task 7 (cap changed to five an hour); cross-device → D7 (Task 6 as written: no device binding); normal session → D8 (`CompleteLogin` never remembers); code mail with browser and time, no location → Task 14, V1. The fidelity rule → Global Constraints, Deviations table, Tasks 14, 15, 17–20, 26.
+**Every owner answer covered.** First round, "Plan 18f": magic link audience → D2, Task 6; forced SSO → Tasks 10, 22 (third round: R1–R16); e-mail code for everyone → D3; no recovery codes → D4; search titles + card text, current workspace, `ILIKE` → Task 9 Step 5; plain Blade → D13; recap unsubscribe → Tasks 12, 24; shortcuts and the single-letter switch → Tasks 13, 24, 25. 11-D2 → Tasks 11, 23 (third round: unverified address refused). Third round, bell → Task 15, S33; spec §15 point 12 → Task 24; the reading of the fidelity rule (no data → left out, `roadmap`) → Global Constraints and the Deviations table. Second round: lifetimes → D5, Task 7 (cap changed to five an hour); cross-device → D7 (Task 6 as written: no device binding); normal session → D8 (`CompleteLogin` never remembers); code mail with browser and time, no location → Task 14, V1. The fidelity rule → Global Constraints, Deviations table, Tasks 14, 15, 17–20, 26.
 
 **Not fully covered, and said so:**
 
 - Tasks 14, 15 and the steps 5b / 6b of Tasks 18–20 were added by the fidelity rule after the rest of the plan was written. They give files, interfaces, rules, the copy to the letter and every test by name and assertion, but not the full code of each view and container that the other tasks give: the agent that runs them writes the tests from the tables, first, and the code from the mockup beside it.
-- Three points where this plan builds what the amended spec says although the first brief of this revision asked for more: instance admins have no password way back (the way back is the operator removing the provider configuration, D17); passkeys still sign in (D18); B31's prop and buttons belong to 18e (Tasks 11 and 23 hold either way). The gate rules on each.
-- The mounting points inside pages that plan 18e rewrites (Tasks 17–25 give the units and name the mount point; the surrounding JSX is read at execution). What 18e must expose is listed in Task 20 Step 6b (opening "New session" with a type), Task 23 (the invitation card's prop), Task 25 (the five handlers and what each calls).
+- **Third round (2026-10-02).** `sso_required` is rewritten to the owner's answers: only SSO signs in; passkeys refused; instance admins keep password plus second factor; ignored with an alert when no provider is enabled — rules R1–R16 in Task 10, S27–S29, D17–D19 answered. Task 11 now changes `ResolveSsoUser` (an unverified address is refused even with a matching invitation). The bell accepts nothing (S33 rewritten, its route withdrawn). The five shortcuts are built here. The spec text of B33, criterion 28, criterion 30 and §15 points 11 and 17 still describes the second round on these points when this plan was revised: the spec is another agent's file; where they differ, the owner's third-round answers are what this plan builds, and Task 27 says so in the report.
+- Two safe readings chosen here, each a rule with its test, for the owner to overrule if wanted: an instance admin **without** a second factor has no password way in while SSO is required (R5), and turning the setting on needs an acting admin who has one (R14); the reset link is mailed to instance admins only while every request gets the same answer (R13).
+- The mounting points inside pages that plan 18e rewrites (Tasks 17–25 give the units and name the mount point; the surrounding JSX is read at execution). What 18e must expose is listed in Task 20 Step 6b (opening "New session" with a type), Task 23 (the invitation card's prop), Task 25 (the control each of its five handlers stands for).
 - Ruling 21 on digits is verified against 18e's code rather than rebuilt (Task 21 Step 7); S2 (passkeys) and the CSRF exemption of the two unsubscribe POSTs are checked by reading and by hand in Task 16, not by an automated test; the realtime arrival of a notification is covered by a feature test on the event and by `[P18f-15]`, not by a two-browser smoke test.
 - The code of `bin/render-mail-logo.mjs` and of the new feature tests was not run while writing (no code was touched for this revision). Read on the repository as it is on `plan-18d-branding`: `InstanceSettings`, `InstanceSettingKey`, `BrandingController::destroy` (it clears every key of the enum — the reason for `InstanceSettingKey::branding()`), `SsoCallbacksController`, `ResolveSsoUser`, `SignupGate`, the two invitation controllers, `FortifyServiceProvider`, Fortify's `RedirectIfTwoFactorAuthenticatable`, the passkeys package's `allowsLogin`, `NotificationPreferencesController`, `RetroResultsRecipients`, `BuildRetroRecap`, `ListActionItemNotifications`, `BroadcastAuthorizationsController`, `use-shortcut.ts`, `retro-card.tsx`, `poker-table.tsx`, `resend-code.tsx`, `notifications-panel.tsx`, and the mockups named in the tasks.
 
-**Type consistency.** `SecondFactors::methodsFor` returns `array<int, SecondFactorMethod>` in Tasks 5 and 7 and is consumed as such in `StartSecondFactorChallenge` and the challenge view. `SendEmailTwoFactorCode::handle(User, EmailCodePurpose, ?string): bool` is called with three arguments in `StartSecondFactorChallenge`, `EmailChallengeCodesController`, `EmailSecondFactorCodesController` and the tests. `IssueMagicLink::handle(User): string` and `ConsumeMagicLink::handle(string): ?User` match their callers. `MagicLinkMail(url, email, expiresInMinutes)` has three arguments in the job, the preview and the test. `SignInPolicy::ssoRequired(): bool` and `allowsLocalCredentials(): bool` are the only two questions asked of it, by Tasks 10, 11 and 14; `InstanceSettings::ssoRequired()` is the stored value and is read by `SignInPolicy` and the admin controller only. `RetroResultsMail` keeps its five-argument constructor (Task 4) and gains `unsubscribeVia()` (Task 12); `TwoFactorCodeMail` has three arguments until Task 14 and four after. `SearchWorkspaceContent::handle` has two parameters in Task 9 Step 4 and three from Step 5. The user columns are `recap_emails` and `single_key_shortcuts` everywhere (spec B34, B35), and the instance key is `sso_required`. Route names used by the tests are the ones declared: `admin.signIn.edit`, `admin.signIn.update`, `recapUnsubscribes.show`, `recapUnsubscribes.store`, `shortcutPreferences.update`, `receivedInvitations.acceptance.store`, `recentSessions.index`, `magicLinks.store`, `magicLinks.show`, `magicLinks.sessions.store`, `twoFactor.emailCodes.store`, `twoFactor.emailChallenges.store`, `emailSecondFactor.codes.store`, `emailSecondFactor.store`, `emailSecondFactor.destroy`, `reminderUnsubscribes.show`, `reminderUnsubscribes.store`, `search.index`, `dev.mail.show`. Front: `useSecondsLeft` returns a tuple in Tasks 17 and 18; `SearchResult` is one type shared by the hook and the container; `openCommandMenuEvent` is exported by Task 20 and imported by Task 21.
+**Type consistency.** `SecondFactors::methodsFor` returns `array<int, SecondFactorMethod>` in Tasks 5 and 7 and is consumed as such in `StartSecondFactorChallenge` and the challenge view. `SendEmailTwoFactorCode::handle(User, EmailCodePurpose, ?string): bool` is called with three arguments in `StartSecondFactorChallenge`, `EmailChallengeCodesController`, `EmailSecondFactorCodesController` and the tests. `IssueMagicLink::handle(User): string` and `ConsumeMagicLink::handle(string): ?User` match their callers. `MagicLinkMail(url, email, expiresInMinutes)` has three arguments in the job, the preview and the test. `SignInPolicy` answers five questions — `ssoRequired()`, `isIgnored()`, `allowsLocalCredentials()` (magic link, registration, passkey), `allowsPassword(User)`, `allowsPasswordReset(User)` — asked by Tasks 10, 11 and 14; `StartSecondFactorChallenge::handle` has three parameters in Task 5 and four from Task 10 (`bool $local`); `InstanceSettings::ssoRequired()` is the stored value and is read by `SignInPolicy` and the admin controller only. `RetroResultsMail` keeps its five-argument constructor (Task 4) and gains `unsubscribeVia()` (Task 12); `TwoFactorCodeMail` has three arguments until Task 14 and four after. `SearchWorkspaceContent::handle` has two parameters in Task 9 Step 4 and three from Step 5. The user columns are `recap_emails` and `single_key_shortcuts` everywhere (spec B34, B35), and the instance key is `sso_required`. Route names used by the tests are the ones declared: `admin.signIn.edit`, `admin.signIn.update`, `recapUnsubscribes.show`, `recapUnsubscribes.store`, `shortcutPreferences.update`, `recentSessions.index`, `magicLinks.store`, `magicLinks.show`, `magicLinks.sessions.store`, `twoFactor.emailCodes.store`, `twoFactor.emailChallenges.store`, `emailSecondFactor.codes.store`, `emailSecondFactor.store`, `emailSecondFactor.destroy`, `reminderUnsubscribes.show`, `reminderUnsubscribes.store`, `search.index`, `dev.mail.show`. Front: `useSecondsLeft` returns a tuple in Tasks 17 and 18; `SearchResult` is one type shared by the hook and the container; `openCommandMenuEvent` is exported by Task 20 and imported by Task 21.
 
 **The source-scan test** of Task 5 expects, at the end of Task 8, exactly: `Actions/Auth/RevokeLoginSecrets.php`, `Http/Controllers/Settings/EmailSecondFactorsController.php`, `Http/Controllers/Settings/SecurityController.php`, `Http/Requests/Auth/TwoFactorChallengeRequest.php` (in the order `File::allFiles` returns). `SecurityController` reads the TOTP state through Fortify's method to display it; the three others write or guard, none decides a challenge.

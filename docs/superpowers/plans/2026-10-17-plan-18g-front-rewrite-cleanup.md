@@ -39,7 +39,7 @@ The code blocks of this plan were run against the repository as it was before 18
 - The browser suite runs on the host with `bin/test-browser` (4 shards, ports 8099 to 8102). One browser file alone: `BROWSER_REVERB_PORT=8098 DB_HOST=127.0.0.1 DB_DATABASE=testing_browser_1 php -d memory_limit=2G vendor/bin/pest <file>`. Never port 8097, and never kill what listens there. Never `--tia`, in any gate or inner loop of this plan.
 - Browser tests need built assets and no `public/hot`: run `npm run build:front` before them.
 - The Pest browser suite is a contract. A browser test changes only when a mockup imposes another label or flow; such a change is made in the commit that brings the screen to the mockup (Task 4 or Task 8), and is listed with the mockup line that imposes it. If a deletion breaks a browser test, the deletion is wrong: restore the file.
-- **The mockup is respected faithfully** (owner, 2026-10-02). An explicit answer of the owner in `owner-answers-2026-10-02.md` stands as written. Everything else follows the mockups and READMEs of `docs/design-system/` exactly: layout, placement, labels, states. A deviation is allowed only for something false or unsafe, for an accessibility rule, or for data the product does not have at all; an element the owner sent to the backlog (spec §10) is absent by decision. Every deviation is a line of `docs/superpowers/research/front-rewrite/deviations.md` (Task 8), with its reason. When the mockup needs data the back end lacks and the owner has not sent it to the backlog, this plan does not leave the element out and does not build the back end either: it stops on that page and reports — a back-end task belongs to 18e or 18f, and the owner decides which.
+- **The mockup is respected faithfully** (owner, 2026-10-02). An explicit answer of the owner in `owner-answers-2026-10-02.md` stands as written. Everything else follows the mockups and READMEs of `docs/design-system/` exactly: layout, placement, labels, states. Reading given by the owner in the third round: the rewrite builds each screen with what the server already holds; a mockup element whose data or feature the product does not have is left out, its place kept free so that it can be added without a new layout, and it becomes a feature with its own spec and plan after the rewrite. Those features are listed in `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Every difference with a mockup is a line of `docs/superpowers/research/front-rewrite/deviations.md` (Task 8), of one of two kinds: **approved for later** — reason `roadmap`, with the heading of `feature-roadmap.md` it points to; or a **deviation proper** — reason `owner` (an explicit answer), `backlog` (not requested: spec §10), `false`, `unsafe` or `a11y`. A difference that is neither is unapproved: it is fixed, or the plan stops on it.
 - No test and no test file is deleted without the owner's approval, including a Vitest file whose component has become unreachable. Such files are listed in the final report and left in place.
 - Rules of spec §5 for every line written here: tokens only, rem, no arbitrary size, lucide only, literal `t('…')` keys present in `en`, `fr`, `es`, `de`.
 - The first 475 lines of `resources/css/app.css` are a verbatim copy of `docs/design-system/app.css` (`tests/Feature/DesignTokensTest.php`). They are never edited, even to remove a class nobody uses.
@@ -1311,7 +1311,7 @@ One component, one commit. For the component `<path>`:
 
    Expected: all pass.
 
-6. **Captures, against the mockup.** Run the visual test of each page that mounts the component (`tests/Browser/Visual/*` of 18e for that screen, single file as above). Open every capture that changed beside the mockup's `preview.html`: the component must now match it — layout, placement, labels, states. A difference is fixed, or written in the report file as a deviation with its reason (false or unsafe, accessibility, data the product does not have at all), and carried to the deviations table of Task 8.
+6. **Captures, against the mockup.** Run the visual test of each page that mounts the component (`tests/Browser/Visual/*` of 18e for that screen, single file as above). Open every capture that changed beside the mockup's `preview.html`: the component must now match it — layout, placement, labels, states. A difference is fixed, or written in the report file as a deviation with its reason (`roadmap` with its heading, or false, unsafe, accessibility, owner), and carried to the deviations table of Task 8.
 
 7. **Commit.**
 
@@ -2868,7 +2868,7 @@ The keys are the capture names of `PageCatalogue::Pages` as they stand after 18e
 
 ```php
 /**
- * @return array<int, array{id: string, reason: string, explanation: string}>
+ * @return array<int, array{id: string, reason: string, explanation: string, roadmap: string}>
  */
 function recordedDeviations(string $root): array
 {
@@ -2881,7 +2881,7 @@ function recordedDeviations(string $root): array
 
         $cells = array_map(trim(...), explode('|', trim($line, '| ')));
 
-        $rows[] = ['id' => $cells[0], 'reason' => $cells[5] ?? '', 'explanation' => $cells[6] ?? ''];
+        $rows[] = ['id' => $cells[0], 'reason' => $cells[5] ?? '', 'explanation' => $cells[6] ?? '', 'roadmap' => $cells[7] ?? ''];
     }
 
     return $rows;
@@ -2915,7 +2915,23 @@ it('gives every deviation an allowed reason and an explanation', function () {
     expect($deviations)->not->toBeEmpty()
         ->and(array_values(array_filter(
             $deviations,
-            fn (array $row): bool => ! in_array($row['reason'], ['owner', 'backlog', 'false', 'unsafe', 'a11y', 'no data'], true) || $row['explanation'] === '',
+            fn (array $row): bool => ! in_array($row['reason'], ['owner', 'backlog', 'false', 'unsafe', 'a11y', 'roadmap'], true) || $row['explanation'] === '',
+        )))->toBe([]);
+});
+
+it('points every element approved for later to a heading of the feature roadmap', function () {
+    $root = dirname(__DIR__, 2);
+    $roadmap = "{$root}/docs/superpowers/research/front-rewrite/feature-roadmap.md";
+    $later = array_values(array_filter(recordedDeviations($root), fn (array $row): bool => $row['reason'] === 'roadmap'));
+    $headings = is_file($roadmap)
+        ? array_map(fn (string $line): string => trim(ltrim($line, '# ')), preg_grep('/^#{2,4} /', file($roadmap, FILE_IGNORE_NEW_LINES) ?: []) ?: [])
+        : [];
+
+    expect($later === [] || is_file($roadmap))->toBeTrue()
+        ->and(array_values(array_filter($later, fn (array $row): bool => ! in_array($row['roadmap'], $headings, true))))->toBe([])
+        ->and(array_values(array_filter(
+            recordedDeviations($root),
+            fn (array $row): bool => $row['reason'] !== 'roadmap' && $row['roadmap'] !== '',
         )))->toBe([]);
 });
 
@@ -2969,17 +2985,18 @@ Every zone the mockup's README names has at least one line; every state the READ
 **The deviations table.** `docs/superpowers/research/front-rewrite/deviations.md` — "Deviations from the mockup", one table for the whole application:
 
 ```markdown
-| Id | Page | Mockup | Element | Built instead | Reason | Why |
-|---|---|---|---|---|---|---|
-| D1 | auth-login-page | ScreenAuth | "Nous avons envoyé un lien de connexion à …" | "If an account exists for …" | unsafe | The answer must not say whether the address has an account (18f, S8). |
+| Id | Page | Mockup | Element | Built instead | Reason | Why | Roadmap |
+|---|---|---|---|---|---|---|---|
+| D1 | auth-login-page | ScreenAuth | "Nous avons envoyé un lien de connexion à …" | "If an account exists for …" | unsafe | The answer must not say whether the address has an account (18f, S8). | |
+| D2 | notifications (bell) | NotificationsPanel | "starts in 5 min" notification and "Join" | Not produced | roadmap | No session has a scheduled start. | Sessions |
 ```
 
-Its first lines are copied from what the earlier phases recorded, each re-checked against the page as it is now and against the allowed reasons: the Deviations table of plan 18f (V1–V23, renumbered D1…), the "gaps with the mockups" of the 18e report, the `rewrites/*.md` files of Task 4. `Reason` is one of `owner`, `backlog`, `false`, `unsafe`, `a11y`, `no data` — the last four are the only reasons this plan may give by itself: something false or unsafe, an accessibility rule, data the product does not have at all. A gap that an earlier report recorded with another reason ("out of scope", "later", "not wired") is **not** a deviation: it is an `open` line.
+Its first lines are copied from what the earlier phases recorded, each re-checked against the page as it is now and against the allowed reasons: the Deviations table of plan 18f (V1–V24, renumbered D1…, its `roadmap` lines with their heading), the "gaps with the mockups" of the 18e report, the `rewrites/*.md` files of Task 4. `Reason` is one of `owner`, `backlog`, `false`, `unsafe`, `a11y`, `roadmap`. A `roadmap` line is **approved for later**, not an unapproved deviation: the element needs data or a feature the product does not have, the owner wants it built after the rewrite, and the last column holds the exact text of the heading of `docs/superpowers/research/front-rewrite/feature-roadmap.md` under which it is listed (that file is written with the spec; this plan reads it and never edits it). The column is empty for every other reason. `false`, `unsafe` and `a11y` are the only reasons this plan may give by itself. A gap that an earlier report recorded with another reason ("out of scope", "later", "not wired") is **not** a deviation: it is an `open` line, to fix or to classify.
 
 **Closing every `open` line.** One fix wave per screen group, each fix in its own commit (`fix(<screen>): <element> as the mockup draws it`), with the Vitest case that pins it when it is a label, a state or an order; then the captures of that page are taken again (Step 6) and the line becomes `fixed in <commit>`. A browser test that asserted the old label or flow changes in the same commit, and the commit message names the mockup that imposes it. An `open` line that cannot be fixed here is one of three things:
 
 1. It fits an allowed reason: it becomes a `D<n>` line, with the reason spelled out.
-2. The mockup needs data the back end does not give, and the owner has not sent it to the backlog: this plan does not build back end. The line stays `open`, the page is listed in `progress.md` under "Awaiting the owner: mockup element without data", and the plan stops at the end of this task — the acceptance check "no unapproved deviation remains" cannot pass, and the owner decides between a back-end task (18e or 18f reopened), the backlog, or a deviation.
+2. The mockup needs data or a feature the product does not have. If `feature-roadmap.md` lists it, the line becomes a `D<n>` line with the reason `roadmap` and that heading, and the page is checked for the free place the owner asked for (the zone exists, empty or absent without a hole, so that the feature fits later without a new layout). If the roadmap does not list it and spec §10 does not either, nobody has decided: the line stays `open`, the page is listed in `progress.md` under "Awaiting the owner: mockup element in neither the roadmap nor the backlog", and the acceptance check "no unapproved deviation remains" cannot pass until the owner adds it to one of the two.
 3. The mockup and an owner answer disagree: the answer stands, the line reads `owner <id>`.
 
 ```bash
@@ -2988,7 +3005,7 @@ grep -c "| open |" docs/superpowers/research/front-rewrite/fidelity.md
 grep -c "^| D" docs/superpowers/research/front-rewrite/deviations.md
 ```
 
-Expected: the four fidelity tests pass; `0` open lines; the number of deviations, written in `progress.md`. The owner approves the deviations table by reading it in the final report: until then a deviation is "recorded with an allowed reason", and Task 11 says so in those words.
+Expected: the five fidelity tests pass; `0` open lines; the number of lines approved for later (`roadmap`) and of deviations proper, each written in `progress.md`. The owner approves the deviations table by reading it in the final report: until then a deviation is "recorded with an allowed reason", and Task 11 says so in those words.
 
 - [ ] **Step 8: Commit**
 
@@ -3948,7 +3965,7 @@ Write the table in the final report, with the evidence of this run:
 | 6 `npx knip` reports nothing | Task 5 Step 6: the one run of `npx --yes knip@6.39.0` (not installed), `$LEDGER/reports/knip-classified.txt`: `to resolve: 0`; the findings left are the exports and prop types of `components/ui` and `components/skrum`, reported and kept as the public surface of the library (their count), and the files kept for their test. `bin/front-unused.mjs` exit code and its eleven counts on the final tree are the cross-check. Say plainly that `knip` does not print an empty report: it prints the kept list. |
 | 7 No starter-kit file | Task 5 Step 5, run again now |
 | 7b No import of an old view component remains (owner, 2026-10-02) | `node bin/front-old-components.mjs "$(cat "$LEDGER/base-18e")"` on the final tree: `Old view components a page still reaches (0)`, exit 0; the `notViews` exemptions, each with its reason; the number of components rewritten, replaced and composed (`ls "$LEDGER/reports/rewrites" | wc -l`) |
-| 7c No unapproved deviation from the mockups remains (owner, 2026-10-02) | Task 8: `docs/superpowers/research/front-rewrite/deviations.md`, every line with one of the allowed reasons or "backlog" or "owner"; `docs/superpowers/research/front-rewrite/fidelity.md` with no line left `open`; `tests/Arch/FrontEndPagesTest.php` `has a mockup comparison for every page` passed |
+| 7c No unapproved deviation from the mockups remains (owner, 2026-10-02) | Task 8: `docs/superpowers/research/front-rewrite/deviations.md`: every line is either approved for later (`roadmap`, pointing to a heading of `feature-roadmap.md` that exists) or a deviation proper with one of `owner`, `backlog`, `false`, `unsafe`, `a11y`; the two counts are given apart; `docs/superpowers/research/front-rewrite/fidelity.md` with no line left `open`; `tests/Arch/FrontEndPagesTest.php` `has a mockup comparison for every page` passed |
 | 8 No `sk-*`, no `_preview-bundle.css` | Task 6 Step 4 |
 | 9 A retro runs Writing → Completed with a member and a guest in two browsers, without reload | `grep -rnE "RetroPhase::(Actions|Roti)|'actions'|'roti'" tests/Browser/Walkthroughs | head` shows the walkthrough that 18e extended for B1; name the test and its result in this run. If no browser test walks the nine phases with a guest page open, stop: it is a deliverable of 18e (B1), not written here. |
 | 10 Brand contrast, Branding screen | `tests/Unit/Branding/BrandPaletteTest.php` and `tests/Browser/Walkthroughs/Plan18dBrandingTest.php` passed |
@@ -3958,7 +3975,7 @@ Write the table in the final report, with the evidence of this run:
 
 - [ ] **Step 3: Whole-branch review**
 
-One reviewer on the most capable model, read-only, with the diff `git diff <base of plan-18g-cleanup>..HEAD` and this plan. It checks, in this order: a deleted file or key that something still names (Review Focus 1 and 2); ten rewrites of Task 4 sampled against their old file (`git show <base>:<path>`): every state, callback and browser hook of the old component is in the new one (Review Focus 6); twenty lines of `fidelity.md` marked `same` or `fixed`, at least two per screen group, checked against the capture and the mockup picture, and every line of `deviations.md` checked against the three allowed reasons (Review Focus 7); an exemption in `FrontEndRuleExemptions`, `DynamicTranslationSources`, `PagesWithoutCapture` or `data-focus-mark-ok` whose reason does not hold; a `kept:` ruling of `parity-rulings.tsv` sampled against the code (twenty rows at random, at least two per screen group); a rule or accessibility fix that changed behaviour. It does not run the browser or feature suites.
+One reviewer on the most capable model, read-only, with the diff `git diff <base of plan-18g-cleanup>..HEAD` and this plan. It checks, in this order: a deleted file or key that something still names (Review Focus 1 and 2); ten rewrites of Task 4 sampled against their old file (`git show <base>:<path>`): every state, callback and browser hook of the old component is in the new one (Review Focus 6); twenty lines of `fidelity.md` marked `same` or `fixed`, at least two per screen group, checked against the capture and the mockup picture, and every line of `deviations.md` checked: a `roadmap` line against the heading it names and the free place on the page, a deviation proper against its reason (Review Focus 7); an exemption in `FrontEndRuleExemptions`, `DynamicTranslationSources`, `PagesWithoutCapture` or `data-focus-mark-ok` whose reason does not hold; a `kept:` ruling of `parity-rulings.tsv` sampled against the code (twenty rows at random, at least two per screen group); a rule or accessibility fix that changed behaviour. It does not run the browser or feature suites.
 
 One fix wave for its findings, then Step 1 again, then a re-review limited to the fixes.
 
@@ -3967,7 +3984,7 @@ One fix wave for its findings, then Step 1 again, then a re-review limited to th
 `$LEDGER/reports/final-report.md`, in this order (spec §12, end-of-phase report):
 
 1. **Done** — one line per task, with the commit range and the numbers: files deleted (`wc -l < $LEDGER/reports/deleted-files.txt`), lines removed (`git diff --shortstat <base>..HEAD -- resources/js resources/css lang`), exports removed, translation keys removed, packages removed, tests added (Arch, Feature, Browser), captures taken.
-2. **Mockup fidelity** — the numbers of `fidelity.md` (pages compared, lines `same`, fixed, deviations, owner answers, backlog; `open` must be 0), the deviations table of `deviations.md` in full with the sentence "each line carries one of the allowed reasons; the owner's approval of this table is what turns it from recorded to approved", the browser tests changed because a mockup imposed it (test, old and new assertion, mockup line), and every `gap:` line of `parity.md`, grouped by screen.
+2. **Mockup fidelity** — the numbers of `fidelity.md` (pages compared, lines `same`, fixed, deviations, owner answers, backlog; `open` must be 0), the table of `deviations.md` in full, in two parts — "approved for later (feature roadmap)" and "deviations proper", the second with the sentence "each line carries one of the allowed reasons; the owner's approval of this part is what turns it from recorded to approved" — the browser tests changed because a mockup imposed it (test, old and new assertion, mockup line), and every `gap:` line of `parity.md`, grouped by screen.
 3. **Old features verified** — the parity counts (routes, pages, actions, features), the acceptance table of Step 2, the accessibility checklist report of Task 9 Step 5 (`$LEDGER/reports/accessibility.md`, copied in full), introduced by the sentence that it was run by an agent driving Chrome and that no real screen reader was used.
 4. **Code deleted and rewritten** — the old view components of Task 4, one line each from `rewrites/*.md` (replaced by a library component, rewritten in place, or composed from primitives), with the count and the proof that none is left; the groups of Task 3, the CSS, keys and packages of Task 5; the package declared (`@testing-library/user-event` 14.6.7, Task 1); and what was not deleted: files reached only by a test, old files still in use, each with its reason, and the library exports and prop types that `knip` reports and that stay exported as public surface (count, and the list in `knip-classified.txt`).
 5. **Missing tokens or components** — sizes added to `@theme`, files that needed a rule exemption, components composed from primitives because the design system has none (from the 18e report).
@@ -4004,7 +4021,7 @@ Answered, and applied in the tasks named:
 | Was question | Answer | Where |
 |---|---|---|
 | 9. Old view components still imported after 18e | Second round: they are rewritten in this plan; none remains at the end. | Task 4; acceptance 7b in Task 11. |
-| (standing rule) | The mockup must be faithfully respected; allowed deviations only for something false or unsafe, an accessibility rule, or data the product does not have at all, each listed with its reason. | Global Constraints; Task 4 Step 6; Task 8 Step 7; acceptance 7c in Task 11. |
+| (standing rule) | The mockup must be faithfully respected; third-round reading: an element the product has no data for is left out, its place kept, and listed as approved for later with its line of `feature-roadmap.md`; a deviation proper is allowed only for something false or unsafe, an accessibility rule, or an owner answer, each listed with its reason. | Global Constraints; Task 4 Step 6; Task 8 Step 7; acceptance 7c in Task 11. |
 | 1. `knip` (AC6) | `knip` through a one-off `npx`, not installed. | Task 5 Step 6; the home-made script stays as the cross-check and as the tool of every gate. |
 | 2. `@testing-library/user-event` | Declare it as a dev dependency. | Task 1 Step 4, at 14.6.7, the version already resolved. |
 | 4. Library exports | Follows from the `knip` answer: the exports and prop types of `components/ui` and `components/skrum` that nobody imports (224 before 18e) are reported by `knip` and by the script, and kept exported as the public surface of the library. | Task 3 Step 5 (kept), Task 5 Step 6 (classified), final report point 4. |
@@ -4016,6 +4033,6 @@ Still open:
 1. **Unreachable code kept for its test.** Before 18e the script lists four such files (`layouts/skrum/auth-layout.tsx`, `onboarding-layout.tsx`, `session-layout.tsx`, `lib/brand.ts`); 18e should bring them into use. Whatever is still in that state at the end needs a yes or no to delete the file with its test.
 2. **Does 18e add a capture per screen under the name `<component with dashes>-page`?** This plan works either way, but if 18e uses other names the coverage test will ask for a second set: the 18e plan should use this convention, or this plan's `captureName()` should follow 18e's.
 3. **AC9 walkthrough.** This plan expects 18e to extend the phase walkthrough to Actions and ROTI with a guest page open (B1). If the 18e plan does not include it, it has to be added there, or here once the labels of the rewritten phase controls are known.
-4. **A mockup element that needs data the server does not give.** Task 8 stops on such a page instead of leaving the element out or building back end here. If it happens, the owner chooses: a back-end task (18e or 18f reopened), the backlog, or a deviation.
+4. **A mockup element that is in neither the feature roadmap nor the backlog.** Task 8 leaves such a line `open` instead of deciding for the owner. If one is found, the owner adds it to `feature-roadmap.md` (built later) or to spec §10 (not requested).
 5. **A pass with a real screen reader.** The agent's checklist proves the live regions exist and change once; what VoiceOver or NVDA says is not verified by any plan of the rewrite. A person has to do it, or it stays in the backlog.
 6. **AC6 wording.** The spec says "`npx knip` reports nothing"; with the library's public surface kept, `knip` reports that list and nothing else. Either the spec line is amended to "nothing but the library's exported prop types", or the `export` keywords are removed there too (the bench and the containers that type against them would then import nothing less, but the library would stop documenting its props).
