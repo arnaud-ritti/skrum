@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Auth\SignupGate;
+use App\Http\Controllers\AboutPagesController;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
@@ -210,6 +211,7 @@ Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
+    Route::get('about', [AboutPagesController::class, 'show'])->name('about.show');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
