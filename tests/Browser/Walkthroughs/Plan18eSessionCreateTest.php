@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\ColumnColor;
+use App\Enums\GameKind;
+use App\Enums\GameRoomAccess;
 use App\Enums\RetroPhase;
 use App\Enums\TemplateCategory;
 use App\Enums\WorkspaceRole;
+use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
@@ -21,6 +24,10 @@ const P18eDecks = '[role="dialog"] [role="radiogroup"][aria-label="Deck"]';
 const P18eWhiteboardType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="whiteboard"]';
 
 const P18eGallery = '[role="dialog"] [role="radiogroup"][aria-label="Template"]';
+
+const P18eTypes = '[role="dialog"] [role="radiogroup"][aria-label="Session type"]';
+
+const P18eGames = '[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"]';
 
 const P18ePokerType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="poker"]';
 
@@ -508,4 +515,70 @@ it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in t
         ->assertSeeIn('[role="dialog"]', 'No whiteboard templates yet.');
 
     expect(WhiteboardTemplate::query()->count())->toBe(0);
+});
+
+it('[P18e-01-18] offers four types and no Poll, and opens the room of an icebreaker on the chosen game', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $icebreakerType = P18eTypes.' [role="radio"][data-type="icebreaker"]';
+    $checked = P18eGames.' [role="radio"][aria-checked="true"]';
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->assertCount(P18eTypes.' [role="radio"]', 4)
+        ->assertPresent(P18eTypes.' [role="radio"][data-type="retro"]')
+        ->assertPresent(P18eTypes.' [role="radio"][data-type="poker"]')
+        ->assertPresent(P18eTypes.' [role="radio"][data-type="whiteboard"]')
+        ->assertNotPresent(P18eTypes.' [role="radio"][data-type="survey"]')
+        ->assertDontSeeIn(P18eTypes, 'Poll')
+        ->assertSeeIn($icebreakerType, 'Warm-up games')
+        ->click($icebreakerType)
+        ->assertAttribute($icebreakerType, 'aria-checked', 'true')
+        ->assertVisible('#new-icebreaker-name')
+        ->assertCount(P18eGames.' [role="radio"]', 4)
+        ->assertCount($checked, 1)
+        ->assertAttribute(P18eGames.' [role="radio"][data-game="gif"]', 'aria-disabled', 'true')
+        ->assertSeeIn(P18eGames.' [role="radio"][data-game="gif"]', 'No GIF provider configured')
+        ->click(P18eGames.' [role="radio"][data-game="hangman"]')
+        ->assertCount($checked, 1)
+        ->assertAttribute(P18eGames.' [role="radio"][data-game="hangman"]', 'aria-checked', 'true')
+        ->fill('#new-icebreaker-name', 'Friday warm-up')
+        ->click('#new-icebreaker-access')
+        ->click('[role="option"]:has-text("Anyone with the link")')
+        ->assertSeeIn('#new-icebreaker-access', 'Anyone with the link')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/games/');
+
+    $room = GameRoom::query()->sole();
+
+    $page->assertPathIs("/games/{$room->id}")
+        ->assertSeeIn('header > h1', 'Friday warm-up')
+        ->assertSee('Ready to play?');
+
+    expect($room->name)->toBe('Friday warm-up')
+        ->and($room->team_id)->toBe($team->id)
+        ->and($room->game)->toBe(GameKind::Hangman)
+        ->and($room->access)->toBe(GameRoomAccess::Link)
+        ->and($room->host->user_id)->toBe($alice->id);
+});
+
+it('[P18e-01-18b] shows the Icebreaker type disabled with its reason when the team has reached the room limit', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $icebreakerType = P18eTypes.' [role="radio"][data-type="icebreaker"]';
+
+    GameRoom::factory()->count(GameRoom::MaxRoomsPerTeam)->create(['team_id' => $team->id]);
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->assertCount(P18eTypes.' [role="radio"]', 4)
+        ->assertAttribute($icebreakerType, 'aria-disabled', 'true')
+        ->assertSeeIn($icebreakerType, 'This team already has 10 game rooms.')
+        ->assertAttribute($icebreakerType, 'aria-checked', 'false')
+        ->assertNotPresent('#new-icebreaker-name')
+        ->assertVisible('#new-retro-title');
+
+    expect(GameRoom::query()->count())->toBe(GameRoom::MaxRoomsPerTeam);
 });

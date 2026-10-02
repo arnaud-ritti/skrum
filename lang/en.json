@@ -3733,5 +3733,11 @@
     "New session, whiteboard form: the whole form, not scrolled": "New session, whiteboard form: the whole form, not scrolled",
     "Whiteboard templates manager: the rows, one being edited": "Whiteboard templates manager: the rows, one being edited",
     "Whiteboard templates manager: no template": "Whiteboard templates manager: no template",
-    "New session dialog, open on the whiteboard type": "New session dialog, open on the whiteboard type"
+    "New session dialog, open on the whiteboard type": "New session dialog, open on the whiteboard type",
+    "One draws, the others guess.": "One draws, the others guess.",
+    "Guess the word, letter by letter.": "Guess the word, letter by letter.",
+    "One writes it in emojis, the others guess.": "One writes it in emojis, the others guess.",
+    "New session, icebreaker form: the whole form, not scrolled": "New session, icebreaker form: the whole form, not scrolled",
+    "New session, icebreaker form: no GIF provider": "New session, icebreaker form: no GIF provider",
+    "New session dialog, open on the icebreaker type": "New session dialog, open on the icebreaker type"
 }

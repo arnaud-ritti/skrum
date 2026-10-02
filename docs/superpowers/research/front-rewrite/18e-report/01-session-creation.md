@@ -137,3 +137,39 @@ ScreenSessionCreate draws the retro and the poker variants only: the whiteboard 
 | The preview paper is white in the dark theme (`--color-whiteboard-paper`), and the grey bar of a scene text is `--color-whiteboard-paper-line` | spec ruling 36, 1-D5 |
 | The templates manager is a plain dialog with rows (no mockup); "Save" and "Edit" labels are not wrapped in a truncating span, because the browser suite binds `button:text-is("Save")` and `button:text-is("Edit")` | no row: browser contract |
 | The type row of the bench dialog shows one tile (only the whiteboard form is passed there) | bench only |
+
+## Task 1.4 — Icebreaker form
+
+### Parity (brief 01 §3 has no row for this type: the fields are those of `games/new-room-dialog.tsx`, which G1 rewrites)
+
+| Action | New control | Done |
+|---|---|---|
+| Open the room creation form from the team page | "New session", then the type radio "Icebreaker" ("Warm-up games"); always passed to the dialog | yes |
+| Name, required, max 60, focused, empty | `#new-icebreaker-name`, label "Name" | yes |
+| First game | `IcebreakerGameGrid` (radiogroup "Choose an icebreaker") of `IcebreakerGameCard`s from `gameOptions`; the first available game is preselected; an unavailable game is `aria-disabled` with its reason ("No GIF provider configured" for the GIF game, "Not available" otherwise) | yes |
+| Who can join | block "Access", row "Who can join", `Select #new-icebreaker-access`: "Team members only" (default), "Anyone with the link" | yes |
+| Create the room | "Create & open", POST `teams.games.store` (`name`, `game`, `access`), redirect to the room; "Cancel" beside it | yes |
+| Validation errors | `name` (also the server's room-limit message) under the name, `game` under the cards, `access` in its row | yes |
+| Room limit | the type tile is disabled with "This team already has :count game rooms." (`roomLimitReason`) when `canCreateGameRoom` is false | yes |
+
+The room creation of `games/index` ("New room") is untouched.
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| Poll tile and its form | no `poll` form prop on `NewSessionDialog`; the type options are a list built from the forms passed | SV-1 |
+| "Schedule…" in the footer | `secondaryAction` of `IcebreakerSessionFormProps`, passed to `SessionFormFooter` | SE-2 |
+
+### Differences with the mockup
+
+ScreenSessionCreate draws the Icebreaker tile only, not its form: the form is built from its neighbours (same two columns, same name field, same settings row, same footer) and from `IcebreakerGameCard`.
+
+| Difference | Row |
+|---|---|
+| Four types, no Poll | D-09 |
+| The Icebreaker tile shows the `Sparkles` icon of `SessionTypePicker` (the mockup: `party-popper`) | no row: the component of 18c, not changed here |
+| Game cards have no duration and no player range: the server has no such data (`IcebreakerGameCard` hides the line) | no row: reason N, already the component's documented behaviour |
+| The pitches are new sentences ("One draws, the others guess.", …): the bench's pitches name a 60-second limit and "3 emojis", which the games do not guarantee | no row: reason F |
+| No "Schedule…", no invitation link | D-06, D-08 |
+| The type row of the bench dialog shows one tile (only the icebreaker form is passed there) | bench only |

@@ -37,3 +37,16 @@ it('[P18e-01-08c] renders the whiteboard form of the new session dialog and the 
             ->assertCount('[role="dialog"] button[type="submit"]', 1),
     );
 });
+
+it('[P18e-01-08d] renders the icebreaker form of the new session dialog without overflow', function () {
+    $this->captureVisuals(
+        'session-create-icebreaker',
+        '/dev/design-system/session-create-icebreaker',
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertPresent('[data-bench-section="session-create-icebreaker"]')
+            ->assertCount('[data-slot="session-create-whole"][data-state="games"] [role="radiogroup"] [role="radio"]', 4)
+            ->assertPresent('[data-slot="session-create-whole"][data-state="unavailable"] [role="radio"][data-game="gif"][aria-disabled="true"]')
+            ->assertPresent('[role="dialog"] [data-slot="icebreaker-session-fields"]')
+            ->assertCount('[role="dialog"] button[type="submit"]', 1),
+    );
+});

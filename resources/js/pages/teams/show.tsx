@@ -11,6 +11,10 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { PokerGamesSection } from '@/components/teams/poker-games-section';
+import {
+    icebreakerSessionForm,
+    roomLimitReason,
+} from '@/components/teams/session-create/icebreaker-session-fields';
 import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
 import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
@@ -96,6 +100,9 @@ export default function ShowTeam({
     canManageHealthStatements,
     llm,
     icebreakerGames,
+    gameOptions,
+    canCreateGameRoom,
+    roomLimit,
     pokerGames,
     defaultPokerDeck,
     pokerDeckOptions,
@@ -164,6 +171,15 @@ export default function ShowTeam({
                                   })
                                 : undefined
                         }
+                        icebreaker={icebreakerSessionForm({
+                            workspaceSlug: workspace.slug,
+                            gameOptions,
+                            disabledReason: roomLimitReason(
+                                canCreateGameRoom,
+                                roomLimit,
+                                t,
+                            ),
+                        })}
                     />
                 </div>
 

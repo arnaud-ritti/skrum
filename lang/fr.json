@@ -3957,5 +3957,11 @@
     "New session, whiteboard form: the whole form, not scrolled": "Nouvelle session, formulaire tableau blanc : le formulaire entier, sans défilement",
     "Whiteboard templates manager: the rows, one being edited": "Gestion des modèles de tableau blanc : les lignes, dont une en cours de modification",
     "Whiteboard templates manager: no template": "Gestion des modèles de tableau blanc : aucun modèle",
-    "New session dialog, open on the whiteboard type": "Boîte de dialogue Nouvelle session, ouverte sur le type tableau blanc"
+    "New session dialog, open on the whiteboard type": "Boîte de dialogue Nouvelle session, ouverte sur le type tableau blanc",
+    "One draws, the others guess.": "L'un dessine, les autres devinent.",
+    "Guess the word, letter by letter.": "Devinez le mot, lettre par lettre.",
+    "One writes it in emojis, the others guess.": "L'un l'écrit en emojis, les autres devinent.",
+    "New session, icebreaker form: the whole form, not scrolled": "Nouvelle session, formulaire icebreaker : le formulaire entier, sans défilement",
+    "New session, icebreaker form: no GIF provider": "Nouvelle session, formulaire icebreaker : aucun fournisseur de GIF",
+    "New session dialog, open on the icebreaker type": "Boîte de dialogue Nouvelle session, ouverte sur le type icebreaker"
 }
