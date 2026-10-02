@@ -218,3 +218,53 @@ it('refuses a template that does not exist', function () {
 
     expect(Whiteboard::query()->count())->toBe(0);
 });
+
+/**
+ * @return array<string, string>
+ */
+function stickyPaletteStrokesByFill(): array
+{
+    $palette = file_get_contents(resource_path('js/lib/whiteboard/palette.ts'));
+
+    preg_match_all("/bg:\s*'(#[0-9a-f]{6})',\s*stroke:\s*'(#[0-9a-f]{6})'/i", $palette, $matches);
+
+    return array_combine($matches[1], $matches[2]);
+}
+
+it('colours every filled element of a built-in template with a sticky colour of the palette', function (string $key) {
+    $strokesByFill = stickyPaletteStrokesByFill();
+
+    expect($strokesByFill)->toHaveCount(8);
+
+    $filled = collect(resolve(BuiltInTemplates::class)->elements($key))
+        ->filter(fn (array $element) => ($element['backgroundColor'] ?? 'transparent') !== 'transparent');
+
+    foreach ($filled as $element) {
+        expect($strokesByFill)->toHaveKey($element['backgroundColor'])
+            ->and($element['strokeColor'])->toBe($strokesByFill[$element['backgroundColor']]);
+    }
+})->with(BuiltInTemplates::Keys);
+
+it('keeps none of the former pastel fills in the template files', function () {
+    foreach (BuiltInTemplates::keys() as $key) {
+        $contents = strtolower(File::get(resource_path("whiteboard-templates/{$key}.json")));
+
+        expect($contents)->not->toMatch('/#(a5d8ff|b2f2bb|fff3bf|ffc9c9|d0bfff|ffd8a8)/');
+    }
+});
+
+it('leaves the stored elements of a board made before the change as they were', function () {
+    $element = WhiteboardElement::factory()->create([
+        'data' => [
+            'id' => 'old-note',
+            'type' => 'rectangle',
+            'backgroundColor' => '#fff3bf',
+            'strokeColor' => 'transparent',
+        ],
+    ]);
+
+    expect($element->fresh()->data)->toMatchArray([
+        'backgroundColor' => '#fff3bf',
+        'strokeColor' => 'transparent',
+    ]);
+});
