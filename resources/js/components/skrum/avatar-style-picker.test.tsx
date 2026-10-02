@@ -157,4 +157,21 @@ describe('AvatarStylePicker', () => {
             'true',
         );
     });
+
+    it('renders no member-choice switch in member mode, without the callback', () => {
+        const { container } = renderWithProviders(
+            <AvatarStylePicker
+                value="notionists"
+                onChange={vi.fn()}
+                options={options}
+                sampleNames={names}
+            />,
+        );
+
+        expect(screen.queryByRole('switch')).toBeNull();
+        expect(
+            container.querySelector('[data-slot=avatar-style-member-choice]'),
+        ).toBeNull();
+        expect(screen.getAllByRole('radio')).toHaveLength(3);
+    });
 });

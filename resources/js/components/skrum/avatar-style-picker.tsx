@@ -22,8 +22,9 @@ export type AvatarStylePickerProps = {
     onChange: (style: string) => void;
     options: AvatarStyleOption[];
     sampleNames: string[];
-    allowMemberChoice: boolean;
-    onAllowMemberChoiceChange: (allow: boolean) => void;
+    /** Admin mode only: without the callback the switch is not rendered. */
+    allowMemberChoice?: boolean;
+    onAllowMemberChoiceChange?: (allow: boolean) => void;
     locked?: boolean;
     className?: string;
 };
@@ -62,7 +63,7 @@ export function AvatarStylePicker({
     onChange,
     options,
     sampleNames,
-    allowMemberChoice,
+    allowMemberChoice = false,
     onAllowMemberChoiceChange,
     locked = false,
     className,
@@ -234,7 +235,7 @@ export function AvatarStylePicker({
                     );
                 })}
             </div>
-            {!locked && (
+            {!locked && onAllowMemberChoiceChange !== undefined && (
                 <label
                     data-slot="avatar-style-member-choice"
                     className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium"

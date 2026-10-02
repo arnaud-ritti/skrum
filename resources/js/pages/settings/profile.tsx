@@ -4,6 +4,8 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { AvatarStyleCard } from '@/components/settings/avatar-style-card';
+import type { ProfileAvatarStyle } from '@/components/settings/avatar-style-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,9 +21,17 @@ type PageProps = {
 export default function Profile({
     mustVerifyEmail,
     status,
+    avatarMemberChoice = false,
+    avatarStyle = null,
+    instanceAvatarStyle = '',
+    avatarStyles = [],
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    avatarMemberChoice?: boolean;
+    avatarStyle?: string | null;
+    instanceAvatarStyle?: string;
+    avatarStyles?: ProfileAvatarStyle[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const { t } = useTrans();
@@ -130,6 +140,14 @@ export default function Profile({
                     )}
                 </Form>
             </div>
+
+            <AvatarStyleCard
+                user={auth.user}
+                memberChoice={avatarMemberChoice}
+                style={avatarStyle}
+                instanceStyle={instanceAvatarStyle}
+                styles={avatarStyles}
+            />
 
             <DeleteUser />
         </>
