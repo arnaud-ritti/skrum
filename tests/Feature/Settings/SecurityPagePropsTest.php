@@ -5,6 +5,7 @@ namespace Tests\Feature\Settings;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use Laravel\Fortify\Features;
@@ -134,5 +135,20 @@ class SecurityPagePropsTest extends TestCase
         }
 
         $this->assertStringNotContainsString('SECRETKEYSECRETKEY', $content);
+    }
+
+    public function test_page_says_when_the_password_rule_checks_known_data_breaches(): void
+    {
+        $user = User::factory()->create();
+
+        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
+            ->where('checksCompromisedPasswords', false),
+        );
+
+        Password::defaults(fn (): Password => Password::min(12)->uncompromised());
+
+        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
+            ->where('checksCompromisedPasswords', true),
+        );
     }
 }

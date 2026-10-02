@@ -1,19 +1,25 @@
 import { router, usePage } from '@inertiajs/react';
+import { Clock, Radio, RefreshCw, TriangleAlert } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
+    DialogIcon,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import type {
     IntegrationProviderCard,
     IntegrationScope,
@@ -22,12 +28,41 @@ import type {
 } from '@/types';
 import { JiraDataCenterWebhookPanel } from './jira-data-center-webhook-panel';
 import { StatusMappingPanel } from './status-mapping-panel';
+import { TrackerPanel } from './tracker-parts';
 
 type Props = {
     scope: IntegrationScope;
     card: IntegrationProviderCard;
     connection: TeamIntegration;
 };
+
+type Mode = { icon: LucideIcon; line: string; failing: boolean };
+
+/**
+ * An option of the sync: its name on the left, its switch on the right. The
+ * switch sits inside the label, which the browser suite reads.
+ */
+function OptionSwitch({
+    children,
+    ...props
+}: {
+    children: ReactNode;
+    checked: boolean;
+    disabled: boolean;
+    onCheckedChange: (checked: boolean) => void;
+}) {
+    return (
+        <label
+            className={cn(
+                'flex min-w-0 items-center justify-between gap-3 text-sm font-medium',
+                props.disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+            )}
+        >
+            <span className="min-w-0">{children}</span>
+            <Switch {...props} />
+        </label>
+    );
+}
 
 /**
  * Spec 8 §9: opt-in two-way status sync of a tracker connection.
@@ -71,84 +106,94 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
         }
     };
 
-    const modeLine = (): string => {
-        if (
-            connection.inboundMode === 'webhook' &&
-            connection.webhookStatus === 'failing'
-        ) {
-            return t(
-                "Webhooks aren't reaching skrum; checking every :n minutes.",
-                { n: pollMinutes },
-            );
+    const mode = (): Mode => {
+        const listens = connection.inboundMode === 'webhook';
+
+        if (listens && connection.webhookStatus === 'failing') {
+            return {
+                icon: TriangleAlert,
+                line: t(
+                    "Webhooks aren't reaching skrum; checking every :n minutes.",
+                    { n: pollMinutes },
+                ),
+                failing: true,
+            };
         }
 
-        if (
-            connection.inboundMode === 'webhook' &&
-            connection.webhookStatus === 'active'
-        ) {
-            return t('Live updates (webhooks)');
+        if (listens && connection.webhookStatus === 'active') {
+            return {
+                icon: Radio,
+                line: t('Live updates (webhooks)'),
+                failing: false,
+            };
         }
 
-        if (
-            connection.inboundMode === 'webhook' &&
-            connection.webhookStatus === 'pending'
-        ) {
-            return t('Setting up live updates…');
+        if (listens && connection.webhookStatus === 'pending') {
+            return {
+                icon: Radio,
+                line: t('Setting up live updates…'),
+                failing: false,
+            };
         }
 
-        return t('Checking every :n minutes.', { n: pollMinutes });
+        return {
+            icon: Clock,
+            line: t('Checking every :n minutes.', { n: pollMinutes }),
+            failing: false,
+        };
     };
 
+    const { icon: ModeIcon, line, failing } = mode();
+
     return (
-        <section className="space-y-3 border-t pt-4">
-            <div>
-                <h3 className="text-sm font-medium">{t('Status sync')}</h3>
-                <p className="text-xs text-muted-foreground">
-                    {t(
-                        'Completing an action item moves its :provider issue to done, and closing the issue completes the item. Imported poker tasks follow their issue.',
-                        { provider: card.label },
-                    )}
-                </p>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                    checked={connection.statusSync}
-                    disabled={busy}
-                    onCheckedChange={(checked) => {
-                        if (checked === true) {
-                            setConfirmingOn(true);
+        <TrackerPanel
+            slot="status-sync"
+            title={t('Status sync')}
+            description={t(
+                'Completing an action item moves its :provider issue to done, and closing the issue completes the item. Imported poker tasks follow their issue.',
+                { provider: card.label },
+            )}
+        >
+            <OptionSwitch
+                checked={connection.statusSync}
+                disabled={busy}
+                onCheckedChange={(checked) => {
+                    if (checked) {
+                        setConfirmingOn(true);
 
-                            return;
-                        }
+                        return;
+                    }
 
-                        void save(
-                            { status_sync: false },
-                            t('Status sync is off.'),
-                        );
-                    }}
-                />
+                    void save({ status_sync: false }, t('Status sync is off.'));
+                }}
+            >
                 {t('Sync status')}
-            </label>
+            </OptionSwitch>
             <Dialog open={confirmingOn} onOpenChange={setConfirmingOn}>
-                <DialogContent>
-                    <DialogTitle>
-                        {t('Turn on status sync with :provider?', {
-                            provider: card.label,
-                        })}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {t(
-                            'The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.',
-                            { provider: card.label },
-                        )}
-                    </DialogDescription>
-                    <DialogFooter className="gap-2">
+                <DialogContent size="sm" showCloseButton={false}>
+                    <DialogHeader>
+                        <DialogIcon>
+                            <RefreshCw />
+                        </DialogIcon>
+                        <DialogTitle>
+                            {t('Turn on status sync with :provider?', {
+                                provider: card.label,
+                            })}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t(
+                                'The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.',
+                                { provider: card.label },
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
                         <Button
                             type="button"
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setConfirmingOn(false)}
                         >
-                            {t('Cancel')}
+                            <span className="truncate">{t('Cancel')}</span>
                         </Button>
                         <Button
                             type="button"
@@ -161,33 +206,51 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
                                 );
                             }}
                         >
-                            {t('Turn on status sync')}
+                            <span className="truncate">
+                                {t('Turn on status sync')}
+                            </span>
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
             {connection.statusSync && (
                 <>
-                    <p className="text-sm text-muted-foreground">
-                        {modeLine()}
-                    </p>
-                    {lastSync !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                            {t('Last sync: :time', {
-                                time: new Intl.DateTimeFormat(locale, {
-                                    dateStyle: 'medium',
-                                    timeStyle: 'short',
-                                }).format(new Date(lastSync)),
-                            })}
-                        </p>
-                    )}
-                    {connection.inboundHint === 'reconnect' && (
-                        <p className="text-xs text-muted-foreground">
-                            {t('Reconnect :provider to receive live updates.', {
-                                provider: card.label,
-                            })}
-                        </p>
-                    )}
+                    <div
+                        data-slot="status-sync-mode"
+                        data-failing={failing ? 'true' : undefined}
+                        className="flex min-w-0 items-start gap-2.5 rounded-lg border bg-muted/50 px-3 py-2.5 text-sm"
+                    >
+                        <ModeIcon
+                            aria-hidden="true"
+                            className={cn(
+                                'mt-0.5 size-4 shrink-0',
+                                failing
+                                    ? 'text-skrum-warning-text'
+                                    : 'text-muted-foreground',
+                            )}
+                        />
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                            <p className="font-medium">{line}</p>
+                            {lastSync !== undefined && (
+                                <p className="text-body-sm text-muted-foreground">
+                                    {t('Last sync: :time', {
+                                        time: new Intl.DateTimeFormat(locale, {
+                                            dateStyle: 'medium',
+                                            timeStyle: 'short',
+                                        }).format(new Date(lastSync)),
+                                    })}
+                                </p>
+                            )}
+                            {connection.inboundHint === 'reconnect' && (
+                                <p className="text-body-sm text-muted-foreground">
+                                    {t(
+                                        'Reconnect :provider to receive live updates.',
+                                        { provider: card.label },
+                                    )}
+                                </p>
+                            )}
+                        </div>
+                    </div>
                     {connection.inboundHint === 'manual' && (
                         <JiraDataCenterWebhookPanel
                             scope={scope}
@@ -195,25 +258,21 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
                         />
                     )}
                     {treatsCanceled && (
-                        <label className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                                checked={
-                                    connection.settings.treatCanceledAsDone !==
-                                    false
-                                }
-                                disabled={busy}
-                                onCheckedChange={(checked) =>
-                                    void save(
-                                        {
-                                            treat_canceled_as_done:
-                                                checked === true,
-                                        },
-                                        t('Status sync setting saved.'),
-                                    )
-                                }
-                            />
+                        <OptionSwitch
+                            checked={
+                                connection.settings.treatCanceledAsDone !==
+                                false
+                            }
+                            disabled={busy}
+                            onCheckedChange={(checked) =>
+                                void save(
+                                    { treat_canceled_as_done: checked },
+                                    t('Status sync setting saved.'),
+                                )
+                            }
+                        >
                             {t('Treat canceled as done')}
-                        </label>
+                        </OptionSwitch>
                     )}
                     {mapsStatuses && (
                         <StatusMappingPanel
@@ -223,6 +282,6 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
                     )}
                 </>
             )}
-        </section>
+        </TrackerPanel>
     );
 }

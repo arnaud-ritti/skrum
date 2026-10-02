@@ -53,6 +53,8 @@ type FormDialogSubmit =
     | {
           submitLabel: string;
           onSubmit: (data: FormData) => Promise<void>;
+          /** `data-test` of the submit button. */
+          submitTest?: string;
           /** The form is not complete yet: the submit button is disabled and Enter does nothing. */
           submitDisabled?: boolean;
       }
@@ -60,6 +62,7 @@ type FormDialogSubmit =
     | {
           submitLabel?: undefined;
           onSubmit?: undefined;
+          submitTest?: undefined;
           submitDisabled?: undefined;
       };
 
@@ -284,6 +287,7 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    submitTest,
     submitDisabled = false,
     tone = 'default',
     children,
@@ -379,6 +383,7 @@ export function FormDialog({
                                 }
                                 disabled={pending || submitDisabled}
                                 className={FooterButtonClass}
+                                data-test={submitTest}
                             >
                                 {pending ? (
                                     <Spinner

@@ -78,8 +78,8 @@ it('[P11b-02] creates a token with scopes, a team and an expiry, shows it once a
     $page = p11bConfirmPassword($this->signIn($user, '/settings/api-tokens'));
 
     $page->assertSee('No API tokens yet.')
-        ->click('Create token')
-        ->assertVisible('#token-name')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertVisible('form[aria-label="New API token"] #token-name')
         ->assertAriaAttribute('#scope-read', 'checked', 'true')
         ->assertDisabled('#scope-read')
         ->assertSeeIn('#token-team', 'All my teams')
@@ -97,7 +97,7 @@ it('[P11b-02] creates a token with scopes, a team and an expiry, shows it once a
         ->click('[role="option"]:has-text("30 days")')
         ->assertNotPresent('[role="listbox"]')
         ->assertSeeIn('#token-expiration', '30 days')
-        ->click('[role="dialog"] form button:has-text("Create token")')
+        ->click('form[aria-label="New API token"] button:has-text("Create token")')
         ->assertVisible('input[aria-label="API token"]')
         ->assertSee("Copy your token now. You won't be able to see it again.");
 
@@ -113,12 +113,12 @@ it('[P11b-02] creates a token with scopes, a team and an expiry, shows it once a
         ->and($token->token_hint)->toBe(substr($plainText, -4))
         ->and($token->expires_at->isSameDay(now()->addDays(30)))->toBeTrue();
 
-    $page->assertSeeIn('[role="dialog"] [role="tabpanel"]', 'claude mcp add --transport http skrum')
-        ->assertSeeIn('[role="dialog"] [role="tabpanel"]', "Authorization: Bearer {$plainText}")
+    $page->assertSeeIn('form[aria-label="New API token"] [role="tabpanel"]', 'claude mcp add --transport http skrum')
+        ->assertSeeIn('form[aria-label="New API token"] [role="tabpanel"]', "Authorization: Bearer {$plainText}")
         ->click('[role="tab"]:has-text("Other clients")')
-        ->assertSeeIn('[role="dialog"] [role="tabpanel"]', '"mcpServers"')
+        ->assertSeeIn('form[aria-label="New API token"] [role="tabpanel"]', '"mcpServers"')
         ->click('Done')
-        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent('[data-slot="new-token-panel"]')
         ->assertSeeIn(p11bRow('Walkthrough'), "skrum_…{$token->token_hint}")
         ->assertCount(p11bRow('Walkthrough').' td:nth-child(2) [data-slot="badge"]', 3)
         ->assertSeeIn(p11bRow('Walkthrough'), 'Read')
@@ -161,17 +161,16 @@ it('[P11b-15a] creates a read-only token bound to another team with the default 
 
     $page = p11bConfirmPassword($this->signIn($user, '/settings/api-tokens'));
 
-    $page->click('Create token')
-        ->assertVisible('#token-name')
+    $page->assertVisible('form[aria-label="New API token"] #token-name')
         ->fill('#token-name', 'Read only')
         ->click('#token-team')
         ->click('[role="option"]:has-text("Other Team")')
         ->assertNotPresent('[role="listbox"]')
         ->assertSeeIn('#token-team', 'Other Team')
-        ->click('[role="dialog"] form button:has-text("Create token")')
+        ->click('form[aria-label="New API token"] button:has-text("Create token")')
         ->assertVisible('input[aria-label="API token"]')
         ->click('Done')
-        ->assertNotPresent('[role="dialog"]');
+        ->assertNotPresent('[data-slot="new-token-panel"]');
 
     $token = PersonalAccessToken::query()->sole();
 
@@ -197,7 +196,7 @@ it('[P11b-16] revokes a token, removes its row and refuses the next request made
         ->click(p11bRow('Test client').' button:has-text("Revoke")')
         ->assertSee('Revoke this token?')
         ->assertSee('Clients using "Test client" lose access on their next request.')
-        ->click('[role="dialog"] button:has-text("Revoke")')
+        ->click('[role="alertdialog"] button:has-text("Revoke")')
         ->assertSee('Token revoked.')
         ->assertSee('No API tokens yet.')
         ->assertNotPresent(p11bRow('Test client'));
@@ -219,13 +218,14 @@ it('[P11b-17] hides the API tokens entry and page and answers 404 on the MCP end
         ->assertDontSeeIn('nav[aria-label="Settings"]', 'API tokens')
         ->navigate('/settings/api-tokens')
         ->assertSee("This page doesn't exist (anymore)")
+        ->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404')
         ->assertNotPresent('#mcp-url');
 
     p11bPostMcp($plainText)->assertNotFound();
     p11bPostMcp(null)->assertNotFound();
 });
 
-it('[P11b-18a] translates the API tokens page and its dialogs', function (string $locale, string $serverUrl, string $empty, string $create, string $expiration, string $allTeams, string $copyNow) {
+it('[P11b-18a] translates the API tokens page, its form and its copy-once panel', function (string $locale, string $serverUrl, string $empty, string $create, string $expiration, string $allTeams, string $copyNow) {
     [$user] = p11bOwner($locale);
 
     $page = p11bConfirmPassword($this->signIn($user, '/settings/api-tokens'));
@@ -233,13 +233,12 @@ it('[P11b-18a] translates the API tokens page and its dialogs', function (string
     $page->assertSee($serverUrl)
         ->assertSee($empty)
         ->assertDontSee('No API tokens yet.')
-        ->click($create)
-        ->assertVisible('#token-name')
+        ->assertVisible('[data-slot="create-token-form"] #token-name')
         ->assertSee($expiration)
         ->assertSeeIn('#token-team', $allTeams)
         ->fill('#token-name', 'Walkthrough')
-        ->click("[role=\"dialog\"] form button:has-text(\"{$create}\")")
-        ->assertVisible('[role="dialog"] input[readonly]')
+        ->click("[data-slot=\"create-token-form\"] button:has-text(\"{$create}\")")
+        ->assertVisible('[data-slot="new-token-panel"] input[readonly]')
         ->assertSee($copyNow)
         ->assertDontSee('Copy your token now.');
 })->with([

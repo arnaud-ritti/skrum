@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationStatusesController from '@/actions/App/Http/Controllers/Integrations/IntegrationStatusesController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
@@ -12,11 +12,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import type { IntegrationScope, TeamIntegration, TrackerStatus } from '@/types';
+import { PanelError, PanelLoading, TrackerPanel } from './tracker-parts';
 
 const Automatic = 'automatic';
 
@@ -25,6 +25,8 @@ type Props = {
     connection: TeamIntegration;
 };
 
+type Failure = { error: unknown };
+
 /**
  * Spec 8 §5.2: per project (Jira) or team (Linear) of the tracked issues,
  * which statuses count as done and where a push moves the issue.
@@ -32,7 +34,7 @@ type Props = {
 export function StatusMappingPanel({ scope, connection }: Props) {
     const { t } = useTrans();
     const [containers, setContainers] = useState<string[] | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [failure, setFailure] = useState<Failure | null>(null);
     const [attempt, setAttempt] = useState(0);
     const { workspace, team } = scope;
     const integration = connection.id;
@@ -50,51 +52,49 @@ export function StatusMappingPanel({ scope, connection }: Props) {
             .then((loaded) => {
                 if (!cancelled) {
                     setContainers(loaded.containers);
-                    setError(null);
+                    setFailure(null);
                 }
             })
-            .catch((failure: unknown) => {
+            .catch((error: unknown) => {
                 if (!cancelled) {
-                    setError(
-                        integrationErrorMessage(
-                            failure,
-                            t('Something went wrong.'),
-                        ),
-                    );
+                    setFailure({ error });
                 }
             });
 
         return () => {
             cancelled = true;
         };
-    }, [workspace, team, integration, t, attempt]);
+    }, [workspace, team, integration, attempt]);
 
     const retry = () => {
-        setError(null);
+        setFailure(null);
         setAttempt((previous) => previous + 1);
     };
 
     return (
-        <div className="space-y-2">
-            <div>
-                <h4 className="text-sm font-medium">{t('Status mapping')}</h4>
-                <p className="text-xs text-muted-foreground">
-                    {t(
-                        'Automatic uses the done statuses of each workflow. Choose other statuses per project or team if yours differ.',
-                    )}
-                </p>
-            </div>
-            {error !== null && (
-                <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm text-destructive">{error}</p>
-                    <Button size="sm" variant="outline" onClick={retry}>
-                        {t('Try again')}
-                    </Button>
-                </div>
+        <TrackerPanel
+            nested
+            slot="status-mapping"
+            title={t('Status mapping')}
+            description={t(
+                'Automatic uses the done statuses of each workflow. Choose other statuses per project or team if yours differ.',
             )}
-            {containers === null && error === null && <Spinner />}
+        >
+            {failure !== null && (
+                <PanelError
+                    message={integrationErrorMessage(
+                        failure.error,
+                        t('Something went wrong.'),
+                    )}
+                    retryLabel={t('Try again')}
+                    onRetry={retry}
+                />
+            )}
+            {containers === null && failure === null && (
+                <PanelLoading rows={2} />
+            )}
             {containers !== null && containers.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="rounded-lg border border-dashed px-3 py-4 text-center text-body-sm text-muted-foreground">
                     {t(
                         'Export an action item or import a task to map its statuses.',
                     )}
@@ -108,7 +108,7 @@ export function StatusMappingPanel({ scope, connection }: Props) {
                     container={container}
                 />
             ))}
-        </div>
+        </TrackerPanel>
     );
 }
 
@@ -213,8 +213,10 @@ function ContainerMapping({
             !(statuses ?? []).some((status) => status.id === value);
 
         return (
-            <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{label}</p>
+            <div className="flex min-w-0 flex-col gap-1.5">
+                <span aria-hidden="true" className="text-sm font-medium">
+                    {label}
+                </span>
                 <Select
                     value={value}
                     disabled={busy}
@@ -248,63 +250,59 @@ function ContainerMapping({
     };
 
     return (
-        <div className="space-y-2 rounded-md border p-3">
-            <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-sm">{container}</span>
+        <div
+            data-slot="status-mapping-container"
+            className="flex min-w-0 flex-col gap-3 rounded-lg border p-3"
+        >
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 font-mono text-sm font-medium break-all">
+                    {container}
+                </span>
                 {statuses === null && (
-                    <Button
+                    <LoadingButton
+                        type="button"
                         size="sm"
                         variant="outline"
-                        disabled={busy}
+                        className="max-w-full"
+                        loading={busy}
                         onClick={() => void load()}
                     >
-                        {t('Edit mapping')}
-                    </Button>
+                        <span className="truncate">{t('Edit mapping')}</span>
+                    </LoadingButton>
                 )}
             </div>
             {statuses !== null && (
                 <>
                     {isJira && doneStatuses.length > 0 && (
-                        <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">
+                        <fieldset className="flex min-w-0 flex-col gap-1.5">
+                            <legend className="mb-1.5 text-sm font-medium">
                                 {t('Counts as done')}
-                            </p>
+                            </legend>
                             {doneStatuses.map((status) => (
-                                <label
+                                <Checkbox
                                     key={status.id}
-                                    className="flex items-center gap-2 text-sm"
-                                >
-                                    <Checkbox
-                                        checked={checkedDoneIds.includes(
-                                            status.id,
-                                        )}
-                                        disabled={
-                                            busy ||
-                                            (lastDoneChecked &&
-                                                checkedDoneIds.includes(
-                                                    status.id,
-                                                ))
-                                        }
-                                        onCheckedChange={(checked) =>
-                                            toggleDone(
-                                                status.id,
-                                                checked === true,
-                                            )
-                                        }
-                                    />
-                                    {status.name}
-                                </label>
+                                    label={status.name}
+                                    checked={checkedDoneIds.includes(status.id)}
+                                    disabled={
+                                        busy ||
+                                        (lastDoneChecked &&
+                                            checkedDoneIds.includes(status.id))
+                                    }
+                                    onCheckedChange={(checked) =>
+                                        toggleDone(status.id, checked === true)
+                                    }
+                                />
                             ))}
                             {lastDoneChecked && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-body-sm text-muted-foreground">
                                     {t(
                                         'At least one status must count as done.',
                                     )}
                                 </p>
                             )}
-                        </div>
+                        </fieldset>
                     )}
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
                         {targetSelect(completeKey, t('Complete to'))}
                         {targetSelect(reopenKey, t('Reopen to'))}
                     </div>

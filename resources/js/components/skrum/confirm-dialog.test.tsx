@@ -347,6 +347,27 @@ describe('FormDialog', () => {
         );
     });
 
+    it('puts the given test hook on its submit button', () => {
+        render(
+            <FormDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Delete account"
+                submitLabel="Delete account"
+                submitTest="confirm-delete-user-button"
+                onSubmit={vi.fn()}
+            >
+                <input name="password" aria-label="Password" />
+            </FormDialog>,
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Delete account' })
+                .getAttribute('data-test'),
+        ).toBe('confirm-delete-user-button');
+    });
+
     it("holds the label of a footer button as the button's own text, icon or not", () => {
         render(
             <FormDialog

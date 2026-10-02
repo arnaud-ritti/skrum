@@ -25,6 +25,12 @@ export const ownLayoutPages: readonly string[] = [
     'games/show',
     'whiteboards/show',
     'whiteboards/join',
+    'settings/profile',
+    'settings/security',
+    'settings/appearance',
+    'settings/notifications',
+    'settings/api-tokens',
+    'teams/integrations',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

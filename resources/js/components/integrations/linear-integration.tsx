@@ -3,11 +3,15 @@ import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
-import { IntegrationCard } from './integration-card';
-import { IntegrationDetails } from './integration-details';
+import {
+    ProviderCard,
+    ProviderDetails,
+    providerCardProps,
+} from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
+import { TrackerIntro } from './tracker-parts';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -20,9 +24,8 @@ export function LinearIntegration({ card, scope }: Props) {
 
     if (connection === null) {
         return (
-            <IntegrationCard
-                icon={ListTodo}
-                card={card}
+            <ProviderCard
+                {...providerCardProps(card, ListTodo, t)}
                 actions={
                     <>
                         <ConnectLink
@@ -41,19 +44,36 @@ export function LinearIntegration({ card, scope }: Props) {
                     </>
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <TrackerIntro>
                     {t(
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
-                </p>
-            </IntegrationCard>
+                </TrackerIntro>
+            </ProviderCard>
         );
     }
 
     return (
-        <IntegrationCard
-            icon={ListTodo}
-            card={card}
+        <ProviderCard
+            {...providerCardProps(card, ListTodo, t)}
+            details={
+                <ProviderDetails
+                    connection={connection}
+                    rows={[
+                        {
+                            label: t('Linear workspace'),
+                            value: connection.settings.organizationName,
+                        },
+                        {
+                            label: t('Access'),
+                            value:
+                                connection.access === 'write'
+                                    ? t('Read and write')
+                                    : t('Read only'),
+                        },
+                    ]}
+                />
+            }
             actions={
                 <>
                     <ConnectLink
@@ -91,22 +111,6 @@ export function LinearIntegration({ card, scope }: Props) {
                 </>
             }
         >
-            <IntegrationDetails
-                connection={connection}
-                rows={[
-                    {
-                        label: t('Linear workspace'),
-                        value: connection.settings.organizationName,
-                    },
-                    {
-                        label: t('Access'),
-                        value:
-                            connection.access === 'write'
-                                ? t('Read and write')
-                                : t('Read only'),
-                    },
-                ]}
-            />
             {connection.status === 'active' &&
                 connection.access === 'write' && (
                     <>
@@ -128,6 +132,6 @@ export function LinearIntegration({ card, scope }: Props) {
                     connection={connection}
                 />
             )}
-        </IntegrationCard>
+        </ProviderCard>
     );
 }

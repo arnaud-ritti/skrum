@@ -1,47 +1,16 @@
 import { Head } from '@inertiajs/react';
-import AppearanceTabs from '@/components/appearance-tabs';
-import Heading from '@/components/heading';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { AppearanceCard } from '@/components/settings/appearance/appearance-card';
+import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTrans } from '@/hooks/use-trans';
-import { edit as editAppearance } from '@/routes/appearance';
 
 export default function Appearance() {
     const { t } = useTrans();
 
     return (
-        <>
+        <SettingsShell active="appearance">
             <Head title={t('Appearance settings')} />
 
-            <h1 className="sr-only">{t('Appearance settings')}</h1>
-
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title={t('Appearance settings')}
-                    description={t(
-                        'Update the appearance settings for your account',
-                    )}
-                />
-                <AppearanceTabs />
-            </div>
-
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title={t('Language')}
-                    description={t('Choose the language of the interface')}
-                />
-                <LanguageSwitcher />
-            </div>
-        </>
+            <AppearanceCard />
+        </SettingsShell>
     );
 }
-
-Appearance.layout = {
-    breadcrumbs: [
-        {
-            title: 'Appearance settings',
-            href: editAppearance(),
-        },
-    ],
-};

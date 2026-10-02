@@ -41,6 +41,7 @@ class SecurityController extends Controller
                     ->all()
                 : [],
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'checksCompromisedPasswords' => Password::defaults()->appliedRules()['uncompromised'],
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {

@@ -1,16 +1,12 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Braces } from 'lucide-react';
+import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { CollapsibleBlock } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -57,6 +53,7 @@ type Props = {
 
 export function WebhookEventsPanel({ scope, connection, events }: Props) {
     const { t } = useTrans();
+    const titleId = useId();
     const saved = connection.settings.events ?? [];
     const [selected, setSelected] = useState<WebhookEventName[]>(saved);
     const [busy, setBusy] = useState(false);
@@ -94,23 +91,31 @@ export function WebhookEventsPanel({ scope, connection, events }: Props) {
     };
 
     return (
-        <section className="space-y-3">
-            <div>
-                <h3 className="text-sm font-medium">
+        <section
+            aria-labelledby={titleId}
+            data-slot="webhook-events"
+            className="flex min-w-0 flex-col gap-3 border-t pt-4"
+        >
+            <div className="flex min-w-0 flex-col gap-0.5">
+                <h4 id={titleId} className="text-sm font-semibold">
                     {t('Send automatically')}
-                </h3>
-                <p className="text-xs text-muted-foreground">
+                </h4>
+                <p className="text-body-sm text-muted-foreground">
                     {t('Only the events you tick are sent, as they happen.')}
                 </p>
             </div>
-            <ul className="space-y-2">
+            <ul className="flex min-w-0 flex-col divide-y rounded-lg border">
                 {events.map((event) => {
                     const id = `webhook-event-${event.name}`;
 
                     return (
-                        <li key={event.name} className="flex items-start gap-2">
+                        <li
+                            key={event.name}
+                            className="flex min-w-0 items-start gap-3 px-3 py-2.5"
+                        >
                             <Checkbox
                                 id={id}
+                                className="mt-0.5"
                                 checked={selected.includes(event.name)}
                                 onCheckedChange={(checked) =>
                                     toggle(event.name, checked === true)
@@ -118,10 +123,12 @@ export function WebhookEventsPanel({ scope, connection, events }: Props) {
                             />
                             <Label
                                 htmlFor={id}
-                                className="grid gap-0.5 font-normal"
+                                className="grid min-w-0 flex-1 gap-0.5 font-normal"
                             >
-                                <code className="text-xs">{event.name}</code>
-                                <span className="text-sm text-muted-foreground">
+                                <code className="font-mono text-xs font-medium break-all">
+                                    {event.name}
+                                </code>
+                                <span className="text-body-sm text-muted-foreground">
                                     {event.description}
                                 </span>
                             </Label>
@@ -129,26 +136,23 @@ export function WebhookEventsPanel({ scope, connection, events }: Props) {
                     );
                 })}
             </ul>
-            <Collapsible>
-                <CollapsibleTrigger asChild>
-                    <Button variant="link" size="sm" className="px-0">
-                        {t('Payload reference')}
-                    </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
-                        {PayloadExample}
-                    </pre>
-                </CollapsibleContent>
-            </Collapsible>
-            <Button
+            <CollapsibleBlock
+                trigger={{ icon: Braces, label: t('Payload reference') }}
+            >
+                <pre className="overflow-x-auto font-mono text-xs">
+                    {PayloadExample}
+                </pre>
+            </CollapsibleBlock>
+            <LoadingButton
+                type="button"
                 size="sm"
-                disabled={!changed || busy}
+                className="max-w-full self-start"
+                disabled={!changed}
+                loading={busy}
                 onClick={() => void save()}
             >
-                {busy && <Spinner />}
-                {t('Save events')}
-            </Button>
+                <span className="truncate">{t('Save events')}</span>
+            </LoadingButton>
         </section>
     );
 }
