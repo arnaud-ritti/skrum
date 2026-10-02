@@ -1,6 +1,7 @@
 import { Ellipsis, Timer } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
+import { PokerResultBar } from '@/components/skrum/poker-result-bar';
 import { PokerTable } from '@/components/skrum/poker-table';
 import type {
     PokerResult,
@@ -415,6 +416,68 @@ export default function PokerTableSection() {
                         onRevote={noop}
                         onAccept={noopValue}
                         onNext={noop}
+                    />
+                </div>
+            </Example>
+            <Example
+                label={t(
+                    'Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate',
+                )}
+            >
+                <PokerTable
+                    story={story}
+                    seats={dispersion}
+                    revealed
+                    showResult={false}
+                    result={{
+                        ...dispersionResult,
+                        median: 5,
+                        agreement: 0.43,
+                        outliers: ['u-Yuki', 'u-Lucas'],
+                    }}
+                />
+                <PokerResultBar
+                    story={story}
+                    seats={dispersion}
+                    result={{
+                        ...dispersionResult,
+                        median: 5,
+                        agreement: 0.43,
+                        outliers: ['u-Yuki', 'u-Lucas'],
+                    }}
+                    isFacilitator
+                    estimate="8"
+                    estimateValues={fibonacci}
+                    hasNext
+                    onEstimateChange={noopValue}
+                    onValidate={noopValue}
+                    onRevote={noop}
+                />
+            </Example>
+            <Example
+                label={t(
+                    'Result on a phone: a card in the page, the two buttons at the bottom',
+                )}
+            >
+                <div className="flex w-80 max-w-full flex-col gap-3">
+                    <PokerResultBar
+                        layout="card"
+                        story={story}
+                        seats={agreed}
+                        result={{ ...consensusResult, agreement: 0.83 }}
+                        revealReason="everyone_voted"
+                        isFacilitator
+                        estimate="8"
+                        estimateValues={fibonacci}
+                        onEstimateChange={noopValue}
+                    />
+                    <PokerResultBar
+                        layout="foot"
+                        story={story}
+                        isFacilitator
+                        estimate="8"
+                        onValidate={noopValue}
+                        onRevote={noop}
                     />
                 </div>
             </Example>

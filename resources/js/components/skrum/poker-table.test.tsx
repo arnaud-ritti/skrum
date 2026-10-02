@@ -927,6 +927,57 @@ describe('PokerTable revealed', () => {
     });
 });
 
+describe('PokerTable, the result shown elsewhere', () => {
+    it('keeps the figures of the oval and has no result panel nor actions under the seats', () => {
+        const { container } = renderTable({
+            revealed: true,
+            showResult: false,
+            isFacilitator: true,
+            result: { ...dispersion, median: 5 },
+            onRevote: vi.fn(),
+            onAccept: vi.fn(),
+            onNext: vi.fn(),
+        });
+        const oval = container.querySelector(
+            '[data-slot="poker-oval"]',
+        ) as HTMLElement;
+
+        expect(within(oval).getByText('Average')).toBeTruthy();
+        expect(within(oval).getByText('Median')).toBeTruthy();
+        expect(within(oval).getByText('Spread 3 → 21')).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="poker-result"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Save estimate' }),
+        ).toBeNull();
+    });
+
+    it('leaves focus alone on a reveal: whoever shows the result takes it', () => {
+        const props: Partial<PokerTableProps> = {
+            isFacilitator: true,
+            showResult: false,
+            onReveal: vi.fn(),
+        };
+        const { rerender } = renderTable(props);
+
+        screen.getByRole('button', { name: 'Reveal cards' }).focus();
+
+        rerender(
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', '5', 'Camille')]}
+                revealed
+                result={dispersion}
+                {...props}
+            />,
+        );
+
+        expect(document.activeElement).toBe(document.body);
+    });
+});
+
 describe('suggestedEstimate', () => {
     it('takes the nearest card for numeric decks and the single mode otherwise', () => {
         expect(suggestedEstimate(dispersion, true)).toBe('8');

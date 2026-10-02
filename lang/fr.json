@@ -4154,5 +4154,9 @@
     "Value shown": "Valeur affichée",
     "Mood card, for a team that only has ROTI votes": "Carte du moral, pour une équipe qui n'a que des votes ROTI",
     "Mood card, for a team without results": "Carte du moral, pour une équipe sans résultats",
-    "Mood card, while the trend loads": "Carte du moral, pendant le chargement de la tendance"
+    "Mood card, while the trend loads": "Carte du moral, pendant le chargement de la tendance",
+    "Validate :value · Next story": "Valider :value · Story suivante",
+    "Final estimate": "Estimation finale",
+    "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate": "Résultat dans le dock : l'ovale garde les chiffres, la barre porte l'accord, la distribution et l'estimation finale",
+    "Result on a phone: a card in the page, the two buttons at the bottom": "Résultat sur téléphone : une carte dans la page, les deux boutons en bas"
 }

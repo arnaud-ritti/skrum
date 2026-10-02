@@ -109,6 +109,12 @@ export interface PokerTableProps extends FacilitatorActionProps {
     showStory?: boolean;
     /** Id of the result heading, which names the result section. */
     resultId?: string;
+    /**
+     * false when the result is shown elsewhere (the dock of the room, see
+     * `PokerResultBar`): the oval keeps its figures, no panel follows the
+     * seats, and focus is left to whoever shows the result.
+     */
+    showResult?: boolean;
     onReveal?: () => void;
     className?: string;
 }
@@ -156,7 +162,7 @@ function toPresence(value: number | undefined): AvatarPresence | undefined {
     return value >= 1 && value <= 12 ? (value as AvatarPresence) : undefined;
 }
 
-function hasCountableVotes(result: PokerResult): boolean {
+export function hasCountableVotes(result: PokerResult): boolean {
     return result.average !== null || result.mode.length > 0;
 }
 
@@ -561,7 +567,14 @@ function CenterStory({ story, title }: { story: PokerStory; title: string }) {
     );
 }
 
-function Distribution({ result }: { result: PokerResult }) {
+export function PokerDistribution({
+    result,
+    maxRem = DistributionMaxRem,
+}: {
+    result: PokerResult;
+    /** Height of the tallest bar. */
+    maxRem?: number;
+}) {
     const { t } = useTrans();
     const [asTable, setAsTable] = useState(false);
     const maxCount = Math.max(...result.distribution.map((d) => d.count), 1);
@@ -611,7 +624,7 @@ function Distribution({ result }: { result: PokerResult }) {
                     {result.distribution.map((entry) => {
                         const isMode = result.mode.includes(entry.value);
                         const height = Math.max(
-                            (entry.count / maxCount) * DistributionMaxRem,
+                            (entry.count / maxCount) * maxRem,
                             DistributionMinRem,
                         );
 
@@ -675,7 +688,7 @@ function listOf(names: string[], locale?: string): string {
  * What the team does next. The extremes are named from the outliers the
  * server sends, never on an anonymous round.
  */
-function helpSentence(
+export function discussionSentence(
     t: Translate,
     result: PokerResult,
     seats: PokerSeat[],
@@ -970,7 +983,7 @@ function verdictOf(t: Translate, result: PokerResult, locale?: string): string {
         : t('Needs discussion');
 }
 
-function agreementOf(t: Translate, result: PokerResult): string | null {
+export function agreementOf(t: Translate, result: PokerResult): string | null {
     if (result.agreement === undefined || result.agreement === null) {
         return null;
     }
@@ -1008,7 +1021,7 @@ export function PokerResultPanel({
     const countable = hasCountableVotes(result);
     const agreement = agreementOf(t, result);
     const sentence = countable
-        ? helpSentence(t, result, seats, story, anonymous, locale)
+        ? discussionSentence(t, result, seats, story, anonymous, locale)
         : null;
 
     return (
@@ -1089,7 +1102,7 @@ export function PokerResultPanel({
                         {t('No countable votes')}
                     </p>
                 )}
-                <Distribution result={result} />
+                <PokerDistribution result={result} />
             </div>
             {sentence !== null && (
                 <p
@@ -1208,6 +1221,7 @@ export function PokerTable({
     tableLabel,
     showStory = true,
     resultId,
+    showResult = true,
     onReveal,
     onRevote,
     onAccept,
@@ -1272,12 +1286,16 @@ export function PokerTable({
             return;
         }
 
+        if (revealed && !showResult) {
+            return;
+        }
+
         const target = revealed
             ? (resultRef.current ?? seatsRef.current)
             : seatsRef.current;
 
         target?.focus();
-    }, [revealed]);
+    }, [revealed, showResult]);
 
     const announcement = (): string => {
         if (!revealed) {
@@ -1444,7 +1462,7 @@ export function PokerTable({
             {revealed && anonymous && result && (
                 <AnonymousValues result={result} />
             )}
-            {revealed && result && (
+            {showResult && revealed && result && (
                 <PokerResultPanel
                     key={story.key ?? story.title}
                     sectionRef={resultRef}
@@ -1459,7 +1477,7 @@ export function PokerTable({
                     {...actions}
                 />
             )}
-            {revealed && !result && isFacilitator && (
+            {showResult && revealed && !result && isFacilitator && (
                 <ResultActions key={story.key ?? story.title} {...actions} />
             )}
         </div>
