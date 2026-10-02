@@ -630,6 +630,113 @@ describe('PokerTable revealed', () => {
         expect(onNext).toHaveBeenCalledTimes(2);
     });
 
+    it('does not accept or go next when the key is typed in a dialog that was open while the actions were busy', async () => {
+        const onAccept = vi.fn();
+        const onNext = vi.fn();
+        const table = (busy: boolean) => (
+            <PokerTable
+                story={story}
+                seats={seats}
+                revealed
+                result={dispersion}
+                isFacilitator
+                busy={busy}
+                onAccept={onAccept}
+                onNext={onNext}
+            />
+        );
+        const { rerender } = renderWithProviders(table(true));
+        const dialog = document.createElement('div');
+        const button = document.createElement('button');
+
+        dialog.setAttribute('role', 'dialog');
+        dialog.append(button);
+        document.body.append(dialog);
+
+        rerender(table(false));
+        await Promise.resolve();
+        fireEvent.keyDown(button, { key: 'n' });
+        fireEvent.keyDown(button, { key: 'Enter', ctrlKey: true });
+        dialog.remove();
+
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onAccept).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.body, { key: 'n' });
+        fireEvent.keyDown(document.body, { key: 'Enter', ctrlKey: true });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onAccept).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the focus on the pressed action while busy and ignores further presses', () => {
+        const onRevote = vi.fn();
+        const onAccept = vi.fn();
+        const onNext = vi.fn();
+        const table = (busy: boolean) => (
+            <PokerTable
+                story={story}
+                seats={seats}
+                revealed
+                result={dispersion}
+                isFacilitator
+                busy={busy}
+                onRevote={onRevote}
+                onAccept={onAccept}
+                onNext={onNext}
+            />
+        );
+        const { rerender } = renderWithProviders(table(false));
+
+        for (const name of ['Re-vote', 'Save estimate', 'Next task']) {
+            const action = screen.getByRole('button', {
+                name,
+            }) as HTMLButtonElement;
+
+            action.focus();
+            rerender(table(true));
+
+            expect(action.disabled).toBe(false);
+            expect(action.getAttribute('aria-disabled')).toBe('true');
+            expect(document.activeElement).toBe(action);
+
+            fireEvent.click(action);
+            rerender(table(false));
+
+            expect(action.getAttribute('aria-disabled')).toBeNull();
+        }
+
+        expect(onRevote).not.toHaveBeenCalled();
+        expect(onAccept).not.toHaveBeenCalled();
+        expect(onNext).not.toHaveBeenCalled();
+    });
+
+    it('keeps the focus on next task while busy before the reveal', () => {
+        const onNext = vi.fn();
+        const table = (busy: boolean) => (
+            <PokerTable
+                story={story}
+                seats={[seat(0, 'voted', undefined, 'Camille')]}
+                revealed={false}
+                isFacilitator
+                busy={busy}
+                onNext={onNext}
+            />
+        );
+        const { rerender } = renderWithProviders(table(false));
+        const next = screen.getByRole('button', {
+            name: 'Next task',
+        }) as HTMLButtonElement;
+
+        next.focus();
+        rerender(table(true));
+        fireEvent.click(next);
+
+        expect(next.disabled).toBe(false);
+        expect(document.activeElement).toBe(next);
+        expect(onNext).not.toHaveBeenCalled();
+    });
+
     it('keeps re-vote available on a consensus and prefers the saved estimate', () => {
         const onAccept = vi.fn();
         renderTable({

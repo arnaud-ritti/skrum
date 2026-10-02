@@ -297,6 +297,22 @@ export function PokerDeck({
         buttons.get(card)?.focus();
     }
 
+    function select(card: string): void {
+        setFocusedValue(card);
+
+        if (
+            selection === 'toggle' &&
+            card === value &&
+            onRetract !== undefined
+        ) {
+            onRetract();
+
+            return;
+        }
+
+        onChange(card);
+    }
+
     function handleKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
         if (event.ctrlKey || event.metaKey || event.altKey) {
             return;
@@ -322,8 +338,8 @@ export function PokerDeck({
                 return;
             }
 
-            focusCard(event.key);
-            onChange(event.key);
+            buttons.get(event.key)?.focus();
+            select(event.key);
 
             return;
         }
@@ -376,21 +392,7 @@ export function PokerDeck({
                             buttons.set(card, element);
                         }
                     }}
-                    onSelect={(selectedCard) => {
-                        setFocusedValue(selectedCard);
-
-                        if (
-                            selection === 'toggle' &&
-                            selectedCard === value &&
-                            onRetract !== undefined
-                        ) {
-                            onRetract();
-
-                            return;
-                        }
-
-                        onChange(selectedCard);
-                    }}
+                    onSelect={select}
                 />
             ))}
         </div>

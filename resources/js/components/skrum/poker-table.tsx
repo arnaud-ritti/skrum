@@ -662,6 +662,7 @@ function ResultActions({
 }) {
     const { t } = useTrans();
     const [choice, setChoice] = useState<PokerValue | null>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
     const suggestion = suggestedEstimate(result, isNumeric);
     const value = choice ?? estimate ?? suggestion ?? '';
     const options = estimateOptions(result, estimateValues, [
@@ -673,9 +674,13 @@ function ResultActions({
     const canNext = !!onNext && !nextDisabled && !busy;
 
     useShortcut('mod+enter', () => onAccept?.(value), {
+        scope: actionsRef,
         enabled: shortcuts && canAccept,
     });
-    useShortcut('n', () => onNext?.(), { enabled: shortcuts && canNext });
+    useShortcut('n', () => onNext?.(), {
+        scope: actionsRef,
+        enabled: shortcuts && canNext,
+    });
 
     if (!onRevote && !onAccept && !onNext) {
         return null;
@@ -683,6 +688,7 @@ function ResultActions({
 
     return (
         <div
+            ref={actionsRef}
             role="group"
             aria-label={t('Facilitator tools')}
             data-slot="poker-actions"
@@ -693,9 +699,13 @@ function ResultActions({
                     type="button"
                     size="sm"
                     variant={consensus ? 'outline' : 'default'}
-                    className="max-w-full min-w-0"
-                    disabled={busy}
-                    onClick={onRevote}
+                    className={cn('max-w-full min-w-0', busy && busyAction)}
+                    aria-disabled={busy || undefined}
+                    onClick={() => {
+                        if (!busy) {
+                            onRevote();
+                        }
+                    }}
                 >
                     <RotateCcw aria-hidden />
                     <span className="truncate">{t('Re-vote')}</span>
@@ -725,9 +735,17 @@ function ResultActions({
                                 type="button"
                                 size="sm"
                                 variant={consensus ? 'default' : 'outline'}
-                                className="max-w-full min-w-0"
-                                disabled={!canAccept}
-                                onClick={() => onAccept(value)}
+                                className={cn(
+                                    'max-w-full min-w-0',
+                                    busy && busyAction,
+                                )}
+                                disabled={value === ''}
+                                aria-disabled={busy || undefined}
+                                onClick={() => {
+                                    if (!busy) {
+                                        onAccept(value);
+                                    }
+                                }}
                             >
                                 <Check aria-hidden />
                                 <span className="truncate">
@@ -741,16 +759,30 @@ function ResultActions({
                     </Tooltip>
                 </>
             )}
-            {onNext && <NextTaskButton disabled={!canNext} onNext={onNext} />}
+            {onNext && (
+                <NextTaskButton
+                    disabled={nextDisabled}
+                    busy={busy}
+                    onNext={onNext}
+                />
+            )}
         </div>
     );
 }
 
+/**
+ * A busy action keeps its focus: a native `disabled` would drop the focus of
+ * the button that was just pressed.
+ */
+const busyAction = 'cursor-not-allowed opacity-50';
+
 function NextTaskButton({
     disabled,
+    busy,
     onNext,
 }: {
     disabled: boolean;
+    busy: boolean;
     onNext: () => void;
 }) {
     const { t } = useTrans();
@@ -762,9 +794,14 @@ function NextTaskButton({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="max-w-full min-w-0"
+                    className={cn('max-w-full min-w-0', busy && busyAction)}
                     disabled={disabled}
-                    onClick={onNext}
+                    aria-disabled={busy || undefined}
+                    onClick={() => {
+                        if (!busy) {
+                            onNext();
+                        }
+                    }}
                 >
                     <span className="truncate">{t('Next task')}</span>
                     <ArrowRight aria-hidden />
@@ -1216,7 +1253,8 @@ export function PokerTable({
                     {votingTools}
                     {onNext && (
                         <NextTaskButton
-                            disabled={nextDisabled || busy}
+                            disabled={nextDisabled}
+                            busy={busy}
                             onNext={onNext}
                         />
                     )}

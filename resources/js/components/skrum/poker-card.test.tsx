@@ -233,6 +233,47 @@ describe('PokerDeck', () => {
         expect(screen.getByTestId('current').textContent).toBe('13');
     });
 
+    it('retracts the vote when the digit of the selected card is pressed, like a click on it', () => {
+        const onChange = vi.fn();
+        const onRetract = vi.fn();
+        renderWithProviders(
+            <PokerDeck
+                values={fibonacci}
+                value="5"
+                onChange={onChange}
+                onRetract={onRetract}
+            />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Play 5' }), {
+            key: '5',
+        });
+
+        expect(onRetract).toHaveBeenCalledTimes(1);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps the digit of the selected card a plain choice in radio mode', () => {
+        const onChange = vi.fn();
+        const onRetract = vi.fn();
+        renderWithProviders(
+            <PokerDeck
+                values={fibonacci}
+                value="5"
+                selection="radio"
+                onChange={onChange}
+                onRetract={onRetract}
+            />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('radio', { checked: true }), {
+            key: '5',
+        });
+
+        expect(onChange).toHaveBeenCalledWith('5');
+        expect(onRetract).not.toHaveBeenCalled();
+    });
+
     it('selects a digit directly, only from inside the deck', () => {
         renderWithProviders(<Harness />);
 
