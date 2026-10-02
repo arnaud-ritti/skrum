@@ -939,3 +939,27 @@ What the review changed on the screens, and where each difference marked "No row
 | R12: no reaction bar | D-112 |
 | R13: no finger drag; "Add to group…" in the menu, not a long press | D-113 |
 | R13: header, stepper and vote controls of the phone | D-114 |
+
+## Integration of wave 4 (2026-10-02)
+
+R1 to R13 and the fix pass are merged. No test was run at the integration and no capture was opened.
+
+Built at the integration:
+- The header has the line "team · Retrospective" above the title ("Retrospective" alone for a guest, and on the screen of a board that is gone) and the viewer's avatar at its end, a guest included (`boardSelf`), as poker, games and the whiteboard. The snapshot carries `retro.teamName`, null for a guest. "Synced" comes from the shell.
+- The Share dialog asks "Turn off guest access?" (the shared `ConfirmDialog`) when a guest is on the board, and names the team in its description.
+- `retros/join` already had its own `<Head>`.
+
+The lane's rows D-R01 to D-R19 are **D-97 to D-115** in the plan and in this file. D-100 (header), D-111 (session end) and D-115 (guest join: one logo on this branch) are reworded.
+
+Remaining differences, per phase: the rows D-97 to D-115, plus D-03, D-04, D-10 to D-15 and D-32. Not in a row:
+
+| Screen | Difference | Status |
+|---|---|---|
+| Session end | the subline does not name the team (the snapshot now has it) | small, left: no wording in the mockup was checked |
+| Header | the breadcrumb-free title sits in `header span > h1`; the walkthroughs use `header >> h1` | fine |
+| New files | four arbitrary values (`[scrollbar-width:none]` twice, `[animation-delay:180ms]`, `border-[1.5px]`), review finding 7 | left: the same values exist in 18c components; one utility pass in 18g |
+| Settings popover | closing while "Apply" is pending asks to discard a change being saved (shared component, also on poker) | left |
+| Icebreaker | the old stage, a select for the game, no `GameLayout` | G6 |
+| Discussing, Actions | "Add survey" and "Previous action items" above the board | S1 |
+
+Stale captures: every `retro-board-*` capture (the header gained a line and an avatar; the fix pass changed the ended rail and removed the reaction bar at session end), `retro-join-*`.
