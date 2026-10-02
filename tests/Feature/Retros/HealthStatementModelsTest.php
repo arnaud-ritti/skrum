@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\HealthStatement;
+use App\Exceptions\ModelInvariantViolation;
 use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -8,7 +9,6 @@ use App\Models\RetroHealthStatement;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 
 it('lists the six built-in statements in their default order with translated texts and labels', function () {
     app()->setLocale('fr');
@@ -59,7 +59,7 @@ it('stores one answer per participant and statement', function () {
 
 it('refuses a built-in team statement that also has a text', function () {
     TeamHealthStatement::factory()->create(['builtin' => HealthStatement::Vision, 'text' => 'Reworded', 'label' => 'Vision']);
-})->throws(QueryException::class)->skip(fn () => DB::getDriverName() !== 'pgsql', 'check constraint is PostgreSQL only');
+})->throws(ModelInvariantViolation::class);
 
 it('removes a retro frozen set and its answers with the retro', function () {
     $retro = Retro::factory()->create();

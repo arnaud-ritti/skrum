@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Enums\ActionItemReminderKind;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
@@ -30,7 +31,7 @@ class ActionItemReminder extends Model
     {
         return [
             'kind' => ActionItemReminderKind::class,
-            'due_on' => 'date',
+            'due_on' => DateOnly::class,
             'sent_at' => 'datetime',
         ];
     }

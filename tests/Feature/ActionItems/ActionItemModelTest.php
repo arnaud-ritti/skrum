@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ActionItemPriority;
+use App\Exceptions\ModelInvariantViolation;
 use App\Models\ActionItem;
 use App\Models\ActionItemComment;
 use App\Models\Participant;
@@ -8,8 +9,6 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 
 it('derives the team and the author from the creating participant', function () {
     $item = ActionItem::factory()->create();
@@ -62,25 +61,25 @@ it('decides what today is in the instance time zone', function () {
 it('refuses a member and a guest assignee at once', function () {
     $guest = Participant::factory()->guest()->create();
 
-    expect(fn () => DB::transaction(fn () => ActionItem::factory()->create([
+    expect(fn () => ActionItem::factory()->create([
         'retro_id' => $guest->retro_id,
         'assignee_participant_id' => $guest->id,
         'assignee_user_id' => User::factory()->create()->id,
-    ])))->toThrow(QueryException::class);
+    ]))->toThrow(ModelInvariantViolation::class);
 });
 
 it('refuses a guest assignee on an item without a retro', function () {
     $guest = Participant::factory()->guest()->create();
     $team = $guest->retro->team;
 
-    expect(fn () => DB::transaction(fn () => ActionItem::factory()->withoutRetro($team, teamMember($team))->create([
+    expect(fn () => ActionItem::factory()->withoutRetro($team, teamMember($team))->create([
         'assignee_participant_id' => $guest->id,
-    ])))->toThrow(QueryException::class);
+    ]))->toThrow(ModelInvariantViolation::class);
 });
 
 it('refuses a recurrence without a due date', function () {
-    expect(fn () => DB::transaction(fn () => ActionItem::factory()->create(['recurrence' => 'weekly', 'due_on' => null])))
-        ->toThrow(QueryException::class);
+    expect(fn () => ActionItem::factory()->create(['recurrence' => 'weekly', 'due_on' => null]))
+        ->toThrow(ModelInvariantViolation::class);
 });
 
 it('unassigns items when the assigned user is deleted', function () {
