@@ -1,21 +1,18 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import {
-    ChevronDown,
-    ClipboardList,
-    Lock,
-    Minus,
-    Plus,
-    Settings2,
-    X,
-} from 'lucide-react';
+import { ClipboardList, Lock, Minus, Plus, Settings2, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { ComponentType, KeyboardEvent, ReactNode } from 'react';
+import type { ComponentType, KeyboardEvent, ReactNode, RefObject } from 'react';
 import { toast } from 'sonner';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerTitle,
+    DrawerTrigger,
+} from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
 import {
     Popover,
     PopoverAnchor,
@@ -23,15 +20,6 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
     Select,
     SelectContent,
@@ -41,64 +29,356 @@ import {
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
+import type { RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
 type TitleComponent =
     | 'h2'
-    | ComponentType<{ id: string; className?: string; children?: ReactNode }>;
+    | ComponentType<{ className?: string; children?: ReactNode }>;
 
-export type RetroPhase =
-    | 'icebreaker'
-    | 'writing'
-    | 'grouping'
-    | 'voting'
-    | 'discussing'
-    | 'actions'
-    | 'roti';
+export type { RetroPhase };
 
-export type SessionSettings = {
-    anonymousCards: boolean;
-    boardLocked: boolean;
-    votesPerPerson: number;
-    maxVotesPerCard: number;
-    hideVotesUntilReveal: boolean;
-    phaseTimerMinutes: number | null;
-    showCursors: boolean;
-    reactionsEnabled: boolean;
+/** A back-end phase id. Phases added later are accepted as plain strings. */
+export type SessionPhase = RetroPhase | (string & {});
+
+export type SettingValue = boolean | number | string | null;
+
+export type SessionSettingsValues = Record<string, SettingValue>;
+
+type SettingBase = {
+    /** Key of the value, the draft and the patch: the back-end field name. */
+    key: string;
+    label: string;
+    help?: string;
+    /** DOM id of the control, for labels and browser tests. */
+    id?: string;
+    /** When set, the control is disabled and this sentence says why. */
+    disabledReason?: string;
+    /** The row is rendered only while another setting has this value. */
+    visibleWhen?: { key: string; equals: SettingValue };
 };
 
-export type SurveyChoice =
-    | 'health_check'
-    | 'quick_poll'
-    | { templateId: string };
+export type SwitchSetting = SettingBase & {
+    type: 'switch';
+    onLabel?: string;
+    offLabel?: string;
+};
 
-export type SessionSettingsPopoverProps = {
+export type StepperSetting = SettingBase & {
+    type: 'stepper';
+    min: number;
+    max: number;
+    /** Adds an "automatic" switch: the value is `null` while it is on. */
+    auto?: { label: string; help?: string; id?: string; fallback: number };
+};
+
+export type SelectSetting = SettingBase & {
+    type: 'select';
+    options: { value: string; label: string; disabled?: boolean }[];
+};
+
+export type TextSetting = SettingBase & {
+    type: 'text';
+    maxLength?: number;
+    required?: boolean;
+};
+
+export type SessionSetting =
+    | SwitchSetting
+    | StepperSetting
+    | SelectSetting
+    | TextSetting;
+
+export type SessionSettingGroup = {
+    id: string;
+    label: string;
+    settings: SessionSetting[];
+};
+
+export type SessionSettingsPopoverProps<
+    V extends SessionSettingsValues = SessionSettingsValues,
+> = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Heading of the panel. Defaults to "Session settings". */
+    title?: string;
     sessionTitle: string;
-    phase: RetroPhase;
-    value: SessionSettings;
-    draft?: Partial<SessionSettings>;
-    onDraftChange: (draft: Partial<SessionSettings>) => void;
-    deferred?: { key: keyof SessionSettings; fromPhase: RetroPhase }[];
+    phase?: SessionPhase;
+    /** Labels for phases this component does not know yet. */
+    phaseLabels?: Record<string, string>;
+    groups: SessionSettingGroup[];
+    value: V;
+    draft?: Partial<V>;
+    onDraftChange: (draft: Partial<V>) => void;
+    deferred?: { key: string; fromPhase: SessionPhase }[];
+    /** Server validation messages by setting key. */
+    errors?: Record<string, string | undefined>;
     readOnly?: boolean;
     facilitatorName?: string;
-    surveys?: {
-        healthCheckStatements: number;
-        templates: { id: string; title: string }[];
-    };
-    attachedSurvey?: string;
-    onAddSurvey: (kind: SurveyChoice) => void;
-    onApply: (patch: Partial<SessionSettings>) => Promise<void>;
+    /** Opens the survey dialog. The entry is hidden without it. */
+    onAddSurvey?: () => void;
+    /** Rendered after the groups: deck fields, guest link and the like. */
+    children?: ReactNode;
+    onApply: (patch: Partial<V>) => Promise<void>;
     onReset: () => void;
     variant?: 'popover' | 'sheet' | 'drawer';
     trigger?: ReactNode;
+    /** Without a trigger: the element the popover is anchored to. */
+    anchorRef?: RefObject<HTMLElement | null>;
 };
 
-const timerOptions = [3, 5, 7, 10, 15];
-const timedPhases: RetroPhase[] = ['writing', 'grouping', 'voting'];
-const minVotes = 1;
-const maxVotes = 10;
+type LooseProps = SessionSettingsPopoverProps<SessionSettingsValues>;
+
+export const MinRetroVotes = 1;
+export const MaxRetroVotes = 20;
+export const MaxSessionTitleLength = 120;
+
+const votePhases = ['health_check', 'icebreaker', 'writing', 'grouping'];
+
+export type RetroSettingsValues = {
+    title: string;
+    is_anonymous: boolean;
+    votes_per_participant: number | null;
+    health_check_enabled: boolean;
+    icebreaker_enabled: boolean;
+    icebreaker_game: string;
+    reactions_enabled: boolean;
+    cursors_enabled: boolean;
+    gifs_enabled: boolean;
+    hide_vote_counts: boolean;
+    is_locked: boolean;
+    presentation_mode: boolean;
+    ai_summary_enabled: boolean;
+};
+
+export type RetroSettingsContext = {
+    phase: SessionPhase;
+    /** Applied values: `isAnonymous` and the current icebreaker game. */
+    isAnonymous: boolean;
+    icebreakerGame: string;
+    /** The effective vote limit, shown when "automatic" is turned off. */
+    votesPerParticipant: number;
+    hasCards: boolean;
+    /** Health check answers or survey activity exist. */
+    hasAnswers?: boolean;
+    icebreakerGames?: { value: string; label: string; available: boolean }[];
+    /** The GIF switch exists only when a provider is configured. */
+    gifProvider?: string | null;
+    /** The AI summary switch exists only when a provider is configured. */
+    llmProvider?: string | null;
+};
+
+/**
+ * The retro settings RetroSettingsController accepts, with its rules: which
+ * exist, their ranges and when each one is refused. Keys are the request
+ * fields, so the patch given to `onApply` can be sent as it is.
+ */
+export function useRetroSettingGroups(
+    context: RetroSettingsContext,
+): SessionSettingGroup[] {
+    const { t } = useTrans();
+    const { phase } = context;
+    const completed =
+        phase === 'completed'
+            ? t('This retrospective is completed.')
+            : undefined;
+    const phaseOn = t('Move to another phase before turning this phase off.');
+
+    const anonymityLocked = (): string | undefined => {
+        if (!context.isAnonymous) {
+            return undefined;
+        }
+
+        if (context.hasCards) {
+            return t(
+                'Anonymity can only be turned off before any card is written.',
+            );
+        }
+
+        if (context.hasAnswers) {
+            return t('Anonymity can only be turned off before anyone answers.');
+        }
+
+        return undefined;
+    };
+
+    const games = (context.icebreakerGames ?? []).filter(
+        (game) => game.available || game.value === context.icebreakerGame,
+    );
+
+    const groups: SessionSettingGroup[] = [
+        {
+            id: 'general',
+            label: t('General'),
+            settings: [
+                {
+                    type: 'text',
+                    key: 'title',
+                    id: 'retro-title',
+                    label: t('Title'),
+                    maxLength: MaxSessionTitleLength,
+                    required: true,
+                },
+            ],
+        },
+        {
+            id: 'cards',
+            label: t('Cards'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'is_anonymous',
+                    id: 'retro-anonymous',
+                    label: t('Anonymous cards'),
+                    help: t('Authors hidden from everyone'),
+                    disabledReason: anonymityLocked(),
+                },
+                {
+                    type: 'switch',
+                    key: 'is_locked',
+                    id: 'retro-locked',
+                    label: t('Close for editing'),
+                    help: t('No new cards or edits'),
+                    onLabel: t('Locked'),
+                    offLabel: t('Unlocked'),
+                    disabledReason: completed,
+                },
+            ],
+        },
+        {
+            id: 'voting',
+            label: t('Voting'),
+            settings: [
+                {
+                    type: 'stepper',
+                    key: 'votes_per_participant',
+                    id: 'retro-votes',
+                    label: t('Votes per participant'),
+                    min: MinRetroVotes,
+                    max: MaxRetroVotes,
+                    auto: {
+                        id: 'retro-votes-auto',
+                        label: t('Automatic vote limit'),
+                        help: t(
+                            'Automatic: number of cards plus 3, at most 10.',
+                        ),
+                        fallback: context.votesPerParticipant,
+                    },
+                    disabledReason: votePhases.includes(phase)
+                        ? undefined
+                        : t(
+                              'The vote limit can only change before voting starts.',
+                          ),
+                },
+                {
+                    type: 'switch',
+                    key: 'hide_vote_counts',
+                    id: 'retro-hide-vote-counts',
+                    label: t('Hide vote counts'),
+                    help: t('Counts stay secret while voting'),
+                    disabledReason: completed,
+                },
+            ],
+        },
+        {
+            id: 'phases',
+            label: t('Phases'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'health_check_enabled',
+                    id: 'retro-health-check',
+                    label: t('Health check'),
+                    disabledReason:
+                        completed ??
+                        (phase === 'health_check' ? phaseOn : undefined),
+                },
+                {
+                    type: 'switch',
+                    key: 'icebreaker_enabled',
+                    id: 'retro-icebreaker',
+                    label: t('Icebreaker'),
+                    disabledReason:
+                        completed ??
+                        (phase === 'icebreaker' ? phaseOn : undefined),
+                },
+                {
+                    type: 'select',
+                    key: 'icebreaker_game',
+                    id: 'retro-icebreaker-game',
+                    label: t('Icebreaker game'),
+                    visibleWhen: { key: 'icebreaker_enabled', equals: true },
+                    options: games.map((game) => ({
+                        value: game.value,
+                        label: game.label,
+                        disabled: !game.available,
+                    })),
+                    disabledReason: completed,
+                },
+            ],
+        },
+        {
+            id: 'engagement',
+            label: t('Presence'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'reactions_enabled',
+                    id: 'retro-reactions',
+                    label: t('Show reactions'),
+                    disabledReason: completed,
+                },
+                {
+                    type: 'switch',
+                    key: 'cursors_enabled',
+                    id: 'retro-cursors',
+                    label: t('Show live cursors'),
+                    disabledReason: completed,
+                },
+                ...(context.gifProvider
+                    ? [
+                          {
+                              type: 'switch',
+                              key: 'gifs_enabled',
+                              id: 'retro-gifs',
+                              label: t('Allow GIFs'),
+                              disabledReason: completed,
+                          } satisfies SwitchSetting,
+                      ]
+                    : []),
+                {
+                    type: 'switch',
+                    key: 'presentation_mode',
+                    id: 'retro-presentation',
+                    label: t('Presentation mode'),
+                    disabledReason: completed,
+                },
+            ],
+        },
+    ];
+
+    if (context.llmProvider) {
+        groups.push({
+            id: 'ai',
+            label: t('AI'),
+            settings: [
+                {
+                    type: 'switch',
+                    key: 'ai_summary_enabled',
+                    id: 'retro-ai-summary',
+                    label: t('Automatic AI summary'),
+                    help: t(
+                        'When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.',
+                        { provider: context.llmProvider },
+                    ),
+                    disabledReason: completed,
+                },
+            ],
+        });
+    }
+
+    return groups;
+}
 
 function isMacLike(): boolean {
     return (
@@ -108,7 +388,9 @@ function isMacLike(): boolean {
 }
 
 function Stepper({
+    id,
     labelId,
+    describedBy,
     value,
     min,
     max,
@@ -116,7 +398,9 @@ function Stepper({
     disabled,
     onChange,
 }: {
+    id?: string;
     labelId: string;
+    describedBy?: string;
     value: number;
     min: number;
     max: number;
@@ -125,16 +409,45 @@ function Stepper({
     onChange: (value: number) => void;
 }) {
     const { t } = useTrans();
+    const [text, setText] = useState(String(value));
+    const [lastValue, setLastValue] = useState(value);
 
-    const onKeyDown = (event: KeyboardEvent<HTMLOutputElement>) => {
-        if (event.key === 'ArrowUp' && value < max) {
+    if (lastValue !== value) {
+        setLastValue(value);
+        setText(String(value));
+    }
+
+    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'ArrowUp') {
             event.preventDefault();
-            onChange(value + 1);
+
+            if (value < max) {
+                onChange(value + 1);
+            }
         }
 
-        if (event.key === 'ArrowDown' && value > min) {
+        if (event.key === 'ArrowDown') {
             event.preventDefault();
-            onChange(value - 1);
+
+            if (value > min) {
+                onChange(value - 1);
+            }
+        }
+    };
+
+    const onType = (next: string) => {
+        setText(next);
+
+        const parsed = Number(next);
+
+        if (
+            next.trim() !== '' &&
+            Number.isInteger(parsed) &&
+            parsed >= min &&
+            parsed <= max &&
+            parsed !== value
+        ) {
+            onChange(parsed);
         }
     };
 
@@ -158,14 +471,23 @@ function Stepper({
             >
                 <Minus aria-hidden="true" />
             </Button>
-            <output
-                tabIndex={disabled ? -1 : 0}
-                aria-live="polite"
+            <input
+                id={id}
+                type="text"
+                inputMode="numeric"
+                role="spinbutton"
+                aria-labelledby={labelId}
+                aria-describedby={describedBy}
+                aria-valuenow={value}
+                aria-valuemin={min}
+                aria-valuemax={max}
+                value={text}
+                disabled={disabled}
+                onChange={(event) => onType(event.target.value)}
+                onBlur={() => setText(String(value))}
                 onKeyDown={onKeyDown}
-                className="min-w-8 border-x text-center text-sm font-bold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-                {value}
-            </output>
+                className="h-full w-10 min-w-0 border-x bg-transparent text-center text-sm font-bold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-55"
+            />
             <Button
                 type="button"
                 variant="ghost"
@@ -181,49 +503,46 @@ function Stepper({
     );
 }
 
-function SettingSwitch({
-    labelId,
-    checked,
-    changed,
-    disabled,
-    onChange,
-}: {
-    labelId: string;
-    checked: boolean;
-    changed: boolean;
-    disabled: boolean;
-    onChange: (checked: boolean) => void;
-}) {
-    return (
-        <Switch
-            aria-labelledby={labelId}
-            checked={checked}
-            disabled={disabled}
-            onCheckedChange={onChange}
-            className={cn(changed && 'ring-2 ring-primary/40')}
-        />
-    );
-}
-
 function SettingRow({
-    id,
+    labelId,
     label,
     help,
+    reason,
+    reasonId,
+    error,
     changed,
+    stacked = false,
+    nested = false,
     children,
 }: {
-    id: string;
+    labelId: string;
     label: string;
     help?: string;
+    reason?: string;
+    reasonId?: string;
+    error?: string;
     changed: boolean;
+    stacked?: boolean;
+    nested?: boolean;
     children: ReactNode;
 }) {
     const { t } = useTrans();
 
     return (
-        <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1">
-            <div className="min-w-0 flex-1 basis-36">
-                <div className="flex items-center gap-1.5">
+        <div
+            data-slot="setting-row"
+            className={cn(
+                'flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1',
+                nested && 'pl-4',
+            )}
+        >
+            <div
+                className={cn(
+                    'min-w-0 flex-1',
+                    stacked ? 'basis-full' : 'basis-36',
+                )}
+            >
+                <div className="flex min-w-0 items-center gap-1.5">
                     {changed && (
                         <span
                             aria-hidden="true"
@@ -231,8 +550,8 @@ function SettingRow({
                         />
                     )}
                     <span
-                        id={id}
-                        className="min-w-0 text-body-sm font-semibold"
+                        id={labelId}
+                        className="min-w-0 text-body-sm font-semibold wrap-anywhere"
                     >
                         {label}
                     </span>
@@ -245,15 +564,43 @@ function SettingRow({
                 {help !== undefined && (
                     <p className="text-xs text-muted-foreground">{help}</p>
                 )}
+                {reason !== undefined && (
+                    <p
+                        id={reasonId}
+                        data-slot="setting-reason"
+                        className="flex items-start gap-1 text-xs text-muted-foreground"
+                    >
+                        <Lock
+                            aria-hidden="true"
+                            className="mt-0.5 size-3 shrink-0"
+                        />
+                        <span className="min-w-0">{reason}</span>
+                    </p>
+                )}
+                {error !== undefined && (
+                    <p
+                        role="alert"
+                        className="text-xs text-skrum-destructive-text"
+                    >
+                        {error}
+                    </p>
+                )}
             </div>
-            <div className="shrink-0">{children}</div>
+            <div
+                className={cn(
+                    'max-w-full min-w-0',
+                    stacked ? 'basis-full' : 'shrink-0',
+                )}
+            >
+                {children}
+            </div>
         </div>
     );
 }
 
 function ReadOnlyValue({ children }: { children: ReactNode }) {
     return (
-        <span className="text-body-sm font-semibold text-muted-foreground">
+        <span className="text-body-sm font-semibold wrap-anywhere text-muted-foreground">
             {children}
         </span>
     );
@@ -279,11 +626,13 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function sameValue(
-    first: SessionSettings[keyof SessionSettings],
-    second: SessionSettings[keyof SessionSettings],
-): boolean {
-    return first === second;
+function changedKeysOf(
+    draft: Partial<SessionSettingsValues>,
+    value: SessionSettingsValues,
+): string[] {
+    return Object.keys(draft).filter(
+        (key) => draft[key] !== undefined && draft[key] !== value[key],
+    );
 }
 
 function SettingsPanel({
@@ -295,80 +644,81 @@ function SettingsPanel({
     onDiscard,
     props,
 }: {
-    titleId: string;
+    titleId?: string;
     TitleTag: TitleComponent;
     onRequestClose: () => void;
     discardPending: boolean;
     onKeepEditing: () => void;
     onDiscard: () => void;
-    props: SessionSettingsPopoverProps;
+    props: LooseProps;
 }) {
     const { t } = useTrans();
     const baseId = useId();
     const [pending, setPending] = useState(false);
     const {
+        title,
         sessionTitle,
         phase,
+        phaseLabels,
+        groups,
         value,
         draft = {},
         onDraftChange,
         deferred = [],
+        errors = {},
         readOnly = false,
         facilitatorName,
-        surveys,
-        attachedSurvey,
         onAddSurvey,
+        children,
         onApply,
         onReset,
     } = props;
 
-    const effective: SessionSettings = { ...value, ...draft };
-    const changedKeys = (Object.keys(draft) as (keyof SessionSettings)[])
-        .filter((key) => draft[key] !== undefined)
-        .filter((key) => !sameValue(draft[key]!, value[key]));
+    const effective = { ...value, ...draft } as SessionSettingsValues;
+    const changedKeys = changedKeysOf(draft, value);
     const changeCount = changedKeys.length;
-    const isChanged = (key: keyof SessionSettings): boolean =>
-        changedKeys.includes(key);
+    const isChanged = (key: string): boolean =>
+        !readOnly && changedKeys.includes(key);
 
-    const phaseLabels: Record<RetroPhase, string> = {
+    const knownPhases: Record<string, string> = {
+        health_check: t('Health check'),
         icebreaker: t('Icebreaker'),
         writing: t('Writing'),
         grouping: t('Grouping'),
         voting: t('Voting'),
-        discussing: t('Discussion'),
+        discussing: t('Discussing'),
         actions: t('Actions'),
         roti: t('ROTI'),
+        completed: t('Completed'),
     };
 
-    const settingLabels: Record<keyof SessionSettings, string> = {
-        anonymousCards: t('Anonymous cards'),
-        boardLocked: t('Lock board'),
-        votesPerPerson: t('Votes per person'),
-        maxVotesPerCard: t('Max per card'),
-        hideVotesUntilReveal: t('Hide votes until reveal'),
-        phaseTimerMinutes: t('Timer per phase'),
-        showCursors: t('Show cursors'),
-        reactionsEnabled: t('Reactions'),
-    };
+    const phaseLabel = (id: string | undefined): string | undefined =>
+        id === undefined ? undefined : (phaseLabels?.[id] ?? knownPhases[id]);
 
-    const setValue = <K extends keyof SessionSettings>(
-        key: K,
-        next: SessionSettings[K],
-    ) => {
-        const nextDraft: Partial<SessionSettings> = { ...draft, [key]: next };
+    const isVisible = (setting: SessionSetting): boolean =>
+        setting.visibleWhen === undefined ||
+        effective[setting.visibleWhen.key] === setting.visibleWhen.equals;
 
-        if (key === 'votesPerPerson') {
-            const votes = next as number;
+    const allSettings = groups.flatMap((group) => group.settings);
+    const settingLabel = (key: string): string =>
+        allSettings.find((setting) => setting.key === key)?.label ?? key;
 
-            if (effective.maxVotesPerCard > votes) {
-                nextDraft.maxVotesPerCard = votes;
-            }
-        }
+    const missingRequired = allSettings.some(
+        (setting) =>
+            setting.type === 'text' &&
+            setting.required === true &&
+            String(effective[setting.key] ?? '').trim() === '',
+    );
+    const canApply = changeCount > 0 && !missingRequired;
 
-        for (const draftKey of Object.keys(
-            nextDraft,
-        ) as (keyof SessionSettings)[]) {
-            if (sameValue(nextDraft[draftKey]!, value[draftKey])) {
+    const setValue = (key: string, next: SettingValue) => {
+        const nextDraft: Partial<SessionSettingsValues> = {
+            ...draft,
+            [key]: next,
+        };
+
+        for (const draftKey of Object.keys(nextDraft)) {
+            if (nextDraft[draftKey] === value[draftKey]) {
                 delete nextDraft[draftKey];
             }
         }
@@ -381,16 +731,16 @@ function SettingsPanel({
     );
 
     const apply = async () => {
-        if (changeCount === 0 || pending) {
+        if (!canApply || pending) {
             return;
         }
 
-        const patch: Partial<SessionSettings> = {};
-        const previous: Partial<SessionSettings> = {};
+        const patch: Partial<SessionSettingsValues> = {};
+        const previous: Partial<SessionSettingsValues> = {};
 
         for (const key of changedKeys) {
-            (patch as Record<string, unknown>)[key] = draft[key];
-            (previous as Record<string, unknown>)[key] = value[key];
+            patch[key] = draft[key];
+            previous[key] = value[key];
         }
 
         setPending(true);
@@ -427,59 +777,197 @@ function SettingsPanel({
         }
     };
 
-    const id = (key: string) => `${baseId}-${key}`;
     const onOff = (flag: boolean) => (flag ? t('On') : t('Off'));
-    const disabled = pending;
-    const timerValue =
-        effective.phaseTimerMinutes === null
-            ? 'off'
-            : String(effective.phaseTimerMinutes);
-    const timerText =
-        effective.phaseTimerMinutes === null
-            ? t('Off')
-            : t(':minutes min', { minutes: effective.phaseTimerMinutes });
-    const timerHelp = timedPhases.map((key) => phaseLabels[key]).join(' · ');
 
-    const row = (
-        key: keyof SessionSettings,
-        help: string | undefined,
-        control: ReactNode,
-        readOnlyText: ReactNode,
-    ) => (
-        <SettingRow
-            id={id(key)}
-            label={settingLabels[key]}
-            help={help}
-            changed={!readOnly && isChanged(key)}
-        >
-            {readOnly ? <ReadOnlyValue>{readOnlyText}</ReadOnlyValue> : control}
-        </SettingRow>
-    );
+    const readOnlyText = (setting: SessionSetting): ReactNode => {
+        const current = effective[setting.key];
 
-    const switchRow = (
-        key:
-            | 'anonymousCards'
-            | 'hideVotesUntilReveal'
-            | 'showCursors'
-            | 'reactionsEnabled'
-            | 'boardLocked',
-        help?: string,
-        readOnlyText?: string,
-    ) =>
-        row(
-            key,
-            help,
-            <SettingSwitch
-                labelId={id(key)}
-                checked={effective[key]}
-                changed={isChanged(key)}
-                disabled={disabled}
-                onChange={(next) => setValue(key, next)}
-            />,
-            readOnlyText ?? onOff(effective[key]),
+        if (setting.type === 'switch') {
+            return current === true
+                ? (setting.onLabel ?? onOff(true))
+                : (setting.offLabel ?? onOff(false));
+        }
+
+        if (setting.type === 'stepper') {
+            return current === null ? t('Automatic') : current;
+        }
+
+        if (setting.type === 'select') {
+            return (
+                setting.options.find((option) => option.value === current)
+                    ?.label ?? current
+            );
+        }
+
+        return current;
+    };
+
+    const renderSetting = (setting: SessionSetting) => {
+        const { key } = setting;
+        const labelId = `${baseId}-${key}`;
+        const reasonId = `${baseId}-${key}-reason`;
+        const reason = readOnly ? undefined : setting.disabledReason;
+        const disabled = pending || reason !== undefined;
+        const describedBy = reason === undefined ? undefined : reasonId;
+        const current = effective[key];
+        const changed = isChanged(key);
+        const rowProps = {
+            labelId,
+            label: setting.label,
+            help: setting.help,
+            reason,
+            reasonId,
+            error: readOnly ? undefined : errors[key],
+            changed,
+        };
+
+        if (readOnly) {
+            return (
+                <SettingRow key={key} {...rowProps}>
+                    <ReadOnlyValue>{readOnlyText(setting)}</ReadOnlyValue>
+                </SettingRow>
+            );
+        }
+
+        if (setting.type === 'switch') {
+            return (
+                <SettingRow key={key} {...rowProps}>
+                    <Switch
+                        id={setting.id}
+                        aria-labelledby={labelId}
+                        aria-describedby={describedBy}
+                        checked={current === true}
+                        disabled={disabled}
+                        onCheckedChange={(next) => setValue(key, next)}
+                        className={cn(changed && 'ring-2 ring-primary/40')}
+                    />
+                </SettingRow>
+            );
+        }
+
+        if (setting.type === 'select') {
+            return (
+                <SettingRow key={key} {...rowProps}>
+                    <Select
+                        value={current === null ? '' : String(current)}
+                        disabled={disabled}
+                        onValueChange={(next) => setValue(key, next)}
+                    >
+                        <SelectTrigger
+                            id={setting.id}
+                            aria-labelledby={labelId}
+                            aria-describedby={describedBy}
+                            className={cn(
+                                'h-8 w-40 max-w-full',
+                                changed && 'border-primary',
+                            )}
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {setting.options.map((option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    disabled={option.disabled}
+                                >
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </SettingRow>
+            );
+        }
+
+        if (setting.type === 'text') {
+            const text = String(current ?? '');
+            const empty = setting.required === true && text.trim() === '';
+
+            return (
+                <SettingRow
+                    key={key}
+                    {...rowProps}
+                    stacked
+                    error={
+                        empty ? t('This field is required.') : rowProps.error
+                    }
+                >
+                    <Input
+                        id={setting.id}
+                        aria-labelledby={labelId}
+                        aria-describedby={describedBy}
+                        aria-invalid={empty ? true : undefined}
+                        value={text}
+                        maxLength={setting.maxLength}
+                        disabled={disabled}
+                        onChange={(event) => setValue(key, event.target.value)}
+                        className={cn('h-8', changed && 'border-primary')}
+                    />
+                </SettingRow>
+            );
+        }
+
+        const { auto } = setting;
+        const automatic = current === null;
+        const autoLabelId = `${labelId}-auto`;
+
+        return (
+            <div key={key} className="flex flex-col">
+                <SettingRow {...rowProps}>
+                    {automatic ? (
+                        <ReadOnlyValue>{t('Automatic')}</ReadOnlyValue>
+                    ) : (
+                        <Stepper
+                            id={setting.id}
+                            labelId={labelId}
+                            describedBy={describedBy}
+                            value={Number(current)}
+                            min={setting.min}
+                            max={setting.max}
+                            changed={changed}
+                            disabled={disabled}
+                            onChange={(next) => setValue(key, next)}
+                        />
+                    )}
+                </SettingRow>
+                {auto !== undefined && (
+                    <SettingRow
+                        labelId={autoLabelId}
+                        label={auto.label}
+                        help={automatic ? auto.help : undefined}
+                        changed={false}
+                        nested
+                    >
+                        <Switch
+                            id={auto.id}
+                            aria-labelledby={autoLabelId}
+                            aria-describedby={describedBy}
+                            checked={automatic}
+                            disabled={disabled}
+                            onCheckedChange={(next) =>
+                                setValue(
+                                    key,
+                                    next
+                                        ? null
+                                        : Math.min(
+                                              Math.max(
+                                                  auto.fallback,
+                                                  setting.min,
+                                              ),
+                                              setting.max,
+                                          ),
+                                )
+                            }
+                        />
+                    </SettingRow>
+                )}
+            </div>
         );
+    };
 
-    const attachedLabel = attachedSurvey;
+    const currentPhase = phaseLabel(phase);
+    const titleProps = titleId === undefined ? {} : { id: titleId };
 
     return (
         <div
@@ -500,13 +988,14 @@ function SettingsPanel({
                 )}
                 <div className="min-w-0 flex-1">
                     <TitleTag
-                        id={titleId}
+                        {...titleProps}
                         className="truncate text-ui-lg font-semibold"
                     >
-                        {t('Session settings')}
+                        {title ?? t('Session settings')}
                     </TitleTag>
                     <p className="truncate text-xs text-muted-foreground">
-                        {sessionTitle} · {phaseLabels[phase]}
+                        {sessionTitle}
+                        {currentPhase !== undefined && ` · ${currentPhase}`}
                     </p>
                 </div>
                 <Button
@@ -536,192 +1025,39 @@ function SettingsPanel({
                 </Alert>
             )}
 
-            <Group label={t('Cards')}>
-                {switchRow('anonymousCards', t('Authors hidden from everyone'))}
-                {switchRow(
-                    'boardLocked',
-                    t('No new cards or edits'),
-                    effective.boardLocked ? t('Locked') : t('Unlocked'),
-                )}
-            </Group>
+            {groups.map((group) => {
+                const visible = group.settings.filter(isVisible);
 
-            <Group label={t('Voting')}>
-                {row(
-                    'votesPerPerson',
-                    undefined,
-                    <Stepper
-                        labelId={id('votesPerPerson')}
-                        value={effective.votesPerPerson}
-                        min={minVotes}
-                        max={maxVotes}
-                        changed={isChanged('votesPerPerson')}
-                        disabled={disabled}
-                        onChange={(next) => setValue('votesPerPerson', next)}
-                    />,
-                    effective.votesPerPerson,
-                )}
-                {row(
-                    'maxVotesPerCard',
-                    undefined,
-                    <Stepper
-                        labelId={id('maxVotesPerCard')}
-                        value={effective.maxVotesPerCard}
-                        min={minVotes}
-                        max={effective.votesPerPerson}
-                        changed={isChanged('maxVotesPerCard')}
-                        disabled={disabled}
-                        onChange={(next) => setValue('maxVotesPerCard', next)}
-                    />,
-                    effective.maxVotesPerCard,
-                )}
-                {switchRow(
-                    'hideVotesUntilReveal',
-                    t('Counts stay secret while voting'),
-                )}
-            </Group>
+                if (visible.length === 0) {
+                    return null;
+                }
 
-            <Group label={t('Timer')}>
-                {row(
-                    'phaseTimerMinutes',
-                    timerHelp,
-                    <Select
-                        value={timerValue}
-                        disabled={disabled}
-                        onValueChange={(next) =>
-                            setValue(
-                                'phaseTimerMinutes',
-                                next === 'off' ? null : Number(next),
-                            )
-                        }
-                    >
-                        <SelectTrigger
-                            aria-labelledby={id('phaseTimerMinutes')}
-                            className={cn(
-                                'h-8 w-30',
-                                isChanged('phaseTimerMinutes') &&
-                                    'border-primary',
-                            )}
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="off">{t('Off')}</SelectItem>
-                            {timerOptions.map((minutes) => (
-                                <SelectItem
-                                    key={minutes}
-                                    value={String(minutes)}
-                                >
-                                    {t(':minutes min', { minutes })}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>,
-                    timerText,
-                )}
-            </Group>
+                return (
+                    <Group key={group.id} label={group.label}>
+                        {visible.map(renderSetting)}
+                    </Group>
+                );
+            })}
 
-            <Group label={t('Presence')}>
-                {switchRow('showCursors')}
-                {switchRow('reactionsEnabled')}
-            </Group>
-
-            {!readOnly && surveys !== undefined && (
+            {children !== undefined && (
                 <div className="flex flex-col gap-2 border-t px-4 py-3">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                disabled={disabled}
-                            >
-                                <ClipboardList aria-hidden="true" />
-                                <span className="truncate">
-                                    {attachedLabel === undefined
-                                        ? t('Add survey')
-                                        : t(':survey added · Edit', {
-                                              survey: attachedLabel,
-                                          })}
-                                </span>
-                                <ChevronDown
-                                    aria-hidden="true"
-                                    className="ml-auto"
-                                />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-80">
-                            <DropdownMenuItem
-                                className="h-auto items-start py-1.5"
-                                onSelect={() => onAddSurvey('health_check')}
-                            >
-                                <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="flex items-center gap-2">
-                                        <span className="truncate font-semibold">
-                                            {t('Health check')}
-                                        </span>
-                                        <Badge variant="secondary">
-                                            {t('Built-in')}
-                                        </Badge>
-                                    </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {t(':count statements', {
-                                            count: surveys.healthCheckStatements,
-                                        })}
-                                    </span>
-                                </span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="h-auto items-start py-1.5"
-                                onSelect={() => onAddSurvey('quick_poll')}
-                            >
-                                <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate font-semibold">
-                                        {t('Quick poll')}
-                                    </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {t('One question, answered live')}
-                                    </span>
-                                </span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger
-                                    className="h-auto items-start py-1.5"
-                                    disabled={surveys.templates.length === 0}
-                                >
-                                    <span className="flex min-w-0 flex-1 flex-col">
-                                        <span className="truncate font-semibold">
-                                            {t('From a template…')}
-                                        </span>
-                                        <span className="truncate text-xs text-muted-foreground">
-                                            {t(
-                                                'Surveys shared by the workspace',
-                                            )}
-                                        </span>
-                                    </span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="w-64">
-                                    {surveys.templates.map((template) => (
-                                        <DropdownMenuItem
-                                            key={template.id}
-                                            onSelect={() =>
-                                                onAddSurvey({
-                                                    templateId: template.id,
-                                                })
-                                            }
-                                        >
-                                            <span className="truncate">
-                                                {template.title}
-                                            </span>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <p className="text-xs text-muted-foreground">
-                        {t('Shown after Actions, before the ROTI.')}
-                    </p>
+                    {children}
+                </div>
+            )}
+
+            {!readOnly && onAddSurvey !== undefined && (
+                <div className="flex flex-col gap-2 border-t px-4 py-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={pending}
+                        onClick={onAddSurvey}
+                    >
+                        <ClipboardList aria-hidden="true" />
+                        <span className="truncate">{t('Add survey')}</span>
+                    </Button>
                 </div>
             )}
 
@@ -731,17 +1067,32 @@ function SettingsPanel({
                     className="mx-4 mb-3 w-auto gap-2 px-3 py-2 text-body-sm"
                 >
                     <div className="col-start-2 flex min-w-0 flex-col gap-1">
-                        {deferredWarnings.map((entry) => (
-                            <p key={entry.key}>
-                                {t(
-                                    ':setting applies from the next phase (:phase). The current one keeps running.',
-                                    {
-                                        setting: settingLabels[entry.key],
-                                        phase: phaseLabels[entry.fromPhase],
-                                    },
-                                )}
-                            </p>
-                        ))}
+                        {deferredWarnings.map((entry) => {
+                            const from = phaseLabel(entry.fromPhase);
+
+                            return (
+                                <p key={entry.key}>
+                                    {from === undefined
+                                        ? t(
+                                              ':setting applies from the next phase. The current one keeps running.',
+                                              {
+                                                  setting: settingLabel(
+                                                      entry.key,
+                                                  ),
+                                              },
+                                          )
+                                        : t(
+                                              ':setting applies from the next phase (:phase). The current one keeps running.',
+                                              {
+                                                  setting: settingLabel(
+                                                      entry.key,
+                                                  ),
+                                                  phase: from,
+                                              },
+                                          )}
+                                </p>
+                            );
+                        })}
                     </div>
                 </Alert>
             )}
@@ -765,7 +1116,9 @@ function SettingsPanel({
                                     size="sm"
                                     onClick={onKeepEditing}
                                 >
-                                    {t('Keep editing')}
+                                    <span className="truncate">
+                                        {t('Keep editing')}
+                                    </span>
                                 </Button>
                                 <Button
                                     type="button"
@@ -774,7 +1127,9 @@ function SettingsPanel({
                                     onClick={onDiscard}
                                 >
                                     <X aria-hidden="true" />
-                                    {t('Discard')}
+                                    <span className="truncate">
+                                        {t('Discard')}
+                                    </span>
                                 </Button>
                             </div>
                         </>
@@ -800,14 +1155,16 @@ function SettingsPanel({
                                     disabled={changeCount === 0 || pending}
                                     onClick={onReset}
                                 >
-                                    {t('Reset')}
+                                    <span className="truncate">
+                                        {t('Reset')}
+                                    </span>
                                 </Button>
                                 <LoadingButton
                                     type="button"
                                     size="sm"
                                     loader="trema"
                                     loading={pending}
-                                    disabled={changeCount === 0}
+                                    disabled={!canApply}
                                     title={t('Apply (:shortcut)', {
                                         shortcut: isMacLike() ? '⌘↵' : 'Ctrl ↵',
                                     })}
@@ -828,18 +1185,33 @@ function SettingsPanel({
     );
 }
 
-export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
+export function SessionSettingsPopover<
+    V extends SessionSettingsValues = SessionSettingsValues,
+>(typedProps: SessionSettingsPopoverProps<V>) {
+    const props = typedProps as unknown as LooseProps;
     const { open, onOpenChange, draft = {}, value, trigger, onReset } = props;
+    const { anchorRef } = props;
     const isMobile = useIsMobile();
     const variant = props.variant ?? (isMobile ? 'drawer' : 'popover');
     const titleId = useId();
     const [discardPending, setDiscardPending] = useState(false);
     const wasOpen = useRef(open);
+    const openerRef = useRef<HTMLElement | null>(null);
+    const openerTracked = useRef(false);
 
-    const dirtyCount = (Object.keys(draft) as (keyof SessionSettings)[]).filter(
-        (key) => draft[key] !== undefined && draft[key] !== value[key],
-    ).length;
-    const guarded = !props.readOnly && dirtyCount > 0;
+    // The opener is read while rendering: once the overlay is mounted, focus
+    // has already moved inside it.
+    if (open && !openerTracked.current) {
+        openerRef.current =
+            document.activeElement instanceof HTMLElement &&
+            document.activeElement !== document.body
+                ? document.activeElement
+                : null;
+    }
+
+    openerTracked.current = open;
+
+    const guarded = !props.readOnly && changedKeysOf(draft, value).length > 0;
 
     useEffect(() => {
         if (wasOpen.current && !open) {
@@ -859,9 +1231,26 @@ export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
         onOpenChange(next);
     };
 
-    const panel = (TitleTag: TitleComponent) => (
+    const returnFocus = (event: Event) => {
+        const target = anchorRef?.current ?? openerRef.current;
+        const active = document.activeElement;
+        const focusIsLost = active === null || active === document.body;
+
+        if (target === null || !target.isConnected || !focusIsLost) {
+            return;
+        }
+
+        event.preventDefault();
+        target.focus();
+    };
+
+    const onCloseAutoFocus = trigger === undefined ? returnFocus : undefined;
+    const virtualAnchor =
+        anchorRef ?? (openerRef.current === null ? undefined : openerRef);
+
+    const panel = (TitleTag: TitleComponent, id?: string) => (
         <SettingsPanel
-            titleId={titleId}
+            titleId={id}
             TitleTag={TitleTag}
             onRequestClose={() => requestOpenChange(false)}
             discardPending={discardPending}
@@ -878,9 +1267,13 @@ export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
     if (variant === 'drawer') {
         return (
             <Drawer open={open} onOpenChange={requestOpenChange}>
+                {trigger !== undefined && (
+                    <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+                )}
                 <DrawerContent
                     showCloseButton={false}
                     aria-describedby={undefined}
+                    onCloseAutoFocus={onCloseAutoFocus}
                     className="px-0 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
                 >
                     {panel(DrawerTitle)}
@@ -896,10 +1289,16 @@ export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
                 onOpenChange={requestOpenChange}
                 modal={false}
             >
+                {trigger !== undefined && (
+                    <DialogPrimitive.Trigger asChild>
+                        {trigger}
+                    </DialogPrimitive.Trigger>
+                )}
                 <DialogPrimitive.Portal>
                     <DialogPrimitive.Content
                         aria-describedby={undefined}
                         onInteractOutside={(event) => event.preventDefault()}
+                        onCloseAutoFocus={onCloseAutoFocus}
                         className="fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col gap-0 border-l bg-popover p-0 text-popover-foreground shadow-modal outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:animate-in data-[state=open]:duration-(--duration-slow) data-[state=open]:ease-(--ease-enter) data-[state=open]:slide-in-from-right motion-reduce:data-[state=closed]:slide-out-to-right-0 motion-reduce:data-[state=open]:slide-in-from-right-0 sm:max-w-100"
                     >
                         {panel(DialogPrimitive.Title)}
@@ -914,33 +1313,42 @@ export function SessionSettingsPopover(props: SessionSettingsPopoverProps) {
             {trigger !== undefined ? (
                 <PopoverTrigger asChild>{trigger}</PopoverTrigger>
             ) : (
-                <PopoverAnchor />
+                <PopoverAnchor
+                    virtualRef={virtualAnchor as RefObject<HTMLElement>}
+                />
             )}
             <PopoverContent
                 role="dialog"
                 aria-labelledby={titleId}
                 align="end"
-                sideOffset={6}
-                className="z-50 flex max-h-(--radix-popover-content-available-height) w-92 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border bg-popover p-0 text-popover-foreground shadow-popover outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none"
+                onCloseAutoFocus={onCloseAutoFocus}
+                className="flex max-h-(--radix-popover-content-available-height) w-92 max-w-viewport-gutter flex-col overflow-hidden p-0"
             >
-                {panel('h2')}
+                {panel('h2', titleId)}
             </PopoverContent>
         </Popover>
     );
 }
 
-export function SessionSettingsContent(props: SessionSettingsPopoverProps) {
+export function SessionSettingsContent<
+    V extends SessionSettingsValues = SessionSettingsValues,
+>(props: SessionSettingsPopoverProps<V>) {
     const titleId = useId();
 
     return (
-        <SettingsPanel
-            titleId={titleId}
-            TitleTag="h2"
-            onRequestClose={() => props.onOpenChange(false)}
-            discardPending={false}
-            onKeepEditing={() => {}}
-            onDiscard={() => {}}
-            props={props}
-        />
+        <section
+            aria-labelledby={titleId}
+            className="flex min-h-0 flex-1 flex-col"
+        >
+            <SettingsPanel
+                titleId={titleId}
+                TitleTag="h2"
+                onRequestClose={() => props.onOpenChange(false)}
+                discardPending={false}
+                onKeepEditing={() => {}}
+                onDiscard={() => {}}
+                props={props as unknown as LooseProps}
+            />
+        </section>
     );
 }

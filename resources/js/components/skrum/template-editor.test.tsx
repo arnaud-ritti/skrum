@@ -5,15 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ColumnColorPicker,
     columnColors,
+    serverColumnColors,
 } from '@/components/skrum/column-color-picker';
-import type { ColumnColor } from '@/components/skrum/column-color-picker';
+import type {
+    AnyColumnColor,
+    ColumnColor,
+} from '@/components/skrum/column-color-picker';
 import {
+    MaxTemplateColumns,
     TemplateEditor,
     findColumnProblems,
     firstFreeColor,
     swapColumnColor,
 } from '@/components/skrum/template-editor';
 import type {
+    TemplateColumnDraft,
     TemplateDraft,
     TemplateEditorProps,
 } from '@/components/skrum/template-editor';
@@ -43,6 +49,37 @@ const draft: TemplateDraft = {
         timers: { writing: 5 },
     },
 };
+
+const serverDraft: TemplateDraft = {
+    name: 'Mad Sad Glad',
+    category: 'team_mood',
+    columns: [
+        {
+            id: 'a',
+            title: 'Mad',
+            description: 'What annoyed us?',
+            color: 'red',
+        },
+        { id: 'b', title: 'Sad', description: null, color: 'blue' },
+        { id: 'c', title: 'Glad', color: 'green' },
+    ],
+};
+
+const categories = [
+    { value: 'essentials', label: 'Essentials' },
+    { value: 'team_mood', label: 'Team mood' },
+    { value: 'themed', label: 'Themed' },
+    { value: 'ideas', label: 'Ideas' },
+    { value: 'analysis', label: 'Analysis' },
+];
+
+function manyColumns(count: number, title = 'Column'): TemplateColumnDraft[] {
+    return Array.from({ length: count }, (_, index) => ({
+        id: `c${index}`,
+        title: `${title} ${index}`,
+        color: serverColumnColors[index % serverColumnColors.length],
+    }));
+}
 
 function Harness(
     props: Partial<TemplateEditorProps> & { initial?: TemplateDraft },
@@ -106,7 +143,30 @@ describe('colour helpers', () => {
             'lagoon',
             'moss',
         ]);
-        expect(firstFreeColor(draft.columns)).toBe('sun');
+        expect(firstFreeColor(draft.columns, columnColors)).toBe('sun');
+    });
+
+    it('proposes the colours the server stores by default, then cycles', () => {
+        expect(serverColumnColors).toEqual([
+            'green',
+            'red',
+            'blue',
+            'amber',
+            'purple',
+            'slate',
+        ]);
+        expect(firstFreeColor(serverDraft.columns)).toBe('amber');
+        expect(firstFreeColor(manyColumns(6))).toBe('green');
+        expect(firstFreeColor(manyColumns(7))).toBe('red');
+    });
+
+    it('sets the colour without a swap when several columns already share it', () => {
+        const columns = manyColumns(8);
+        const changed = swapColumnColor(columns, 2, 'green');
+
+        expect(changed[2].color).toBe('green');
+        expect(changed[0].color).toBe('green');
+        expect(changed[6].color).toBe('green');
     });
 
     it('swaps colours when the chosen one is used by another column', () => {
@@ -167,6 +227,35 @@ describe('TemplateEditor validation', () => {
         ).toBeTruthy();
     });
 
+    it('warns about a duplicate title without marking the field invalid or blocking the save', async () => {
+        const onSave = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(<Harness onSave={onSave} />);
+
+        const third = screen.getByLabelText('Column 3 title');
+
+        await user.clear(third);
+        await user.type(third, 'Stop');
+        await user.tab();
+
+        const warning = screen.getByText(
+            'Another column is already called “Stop”.',
+        );
+
+        expect(warning.closest('[role="status"]')).not.toBeNull();
+        expect(warning.closest('[role="alert"]')).toBeNull();
+        expect(third.getAttribute('aria-invalid')).toBeNull();
+        expect(third.getAttribute('aria-describedby')).toBe(
+            warning.closest('[role="status"]')?.id,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(onSave).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('1 field to fix')).toBeNull();
+    });
+
     it('focuses the empty name and does not save', async () => {
         const onSave = vi.fn();
         const user = userEvent.setup();
@@ -220,13 +309,245 @@ describe('TemplateEditor validation', () => {
     });
 });
 
+describe('TemplateEditor server fit', () => {
+    it('edits a template that only has what the server stores', () => {
+        renderWithProviders(
+            <Harness initial={serverDraft} categories={categories} />,
+        );
+
+        expect(screen.queryByText('Visibility')).toBeNull();
+        expect(screen.queryByText('Default settings')).toBeNull();
+        expect(screen.queryByLabelText('Description')).toBeNull();
+        expect(screen.queryByRole('switch')).toBeNull();
+        expect(
+            screen.getByRole('combobox', { name: 'Category' }).textContent,
+        ).toContain('Team mood');
+        expect(
+            (
+                screen.getByLabelText(
+                    'Column 1 help question',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('What annoyed us?');
+        expect(screen.getByRole('button', { name: 'Color: Red' })).toBeTruthy();
+    });
+
+    it('changes the category', async () => {
+        const onChange = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <Harness
+                initial={serverDraft}
+                categories={categories}
+                onChange={onChange}
+            />,
+        );
+
+        await user.click(screen.getByRole('combobox', { name: 'Category' }));
+        await user.click(await screen.findByRole('option', { name: 'Ideas' }));
+
+        expect(lastDraft(onChange).category).toBe('ideas');
+    });
+
+    it('has no category field without the list of categories', () => {
+        renderWithProviders(<Harness initial={serverDraft} />);
+
+        expect(screen.queryByRole('combobox', { name: 'Category' })).toBeNull();
+    });
+
+    it('offers to start from an existing template when creating', async () => {
+        const onStartFrom = vi.fn();
+        const user = userEvent.setup();
+        const startFrom = [
+            { key: 'start_stop_continue', name: 'Start, Stop, Continue' },
+            { key: 'four_ls', name: '4Ls' },
+        ];
+
+        const { unmount } = renderWithProviders(
+            <Harness
+                mode="create"
+                initial={serverDraft}
+                startFrom={startFrom}
+                onStartFrom={onStartFrom}
+            />,
+        );
+
+        await user.click(
+            screen.getByRole('combobox', {
+                name: 'Start from a built-in template',
+            }),
+        );
+        await user.click(await screen.findByRole('option', { name: '4Ls' }));
+
+        expect(onStartFrom).toHaveBeenCalledWith('four_ls');
+
+        unmount();
+        renderWithProviders(
+            <Harness
+                mode="edit"
+                initial={serverDraft}
+                startFrom={startFrom}
+                onStartFrom={onStartFrom}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('combobox', {
+                name: 'Start from a built-in template',
+            }),
+        ).toBeNull();
+    });
+
+    it('replaces the columns when the parent starts from another template', () => {
+        function Starter() {
+            const [value, setValue] = useState(serverDraft);
+
+            return (
+                <>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setValue({
+                                ...value,
+                                columns: manyColumns(2, 'Liked'),
+                            })
+                        }
+                    >
+                        Load
+                    </button>
+                    <TemplateEditor
+                        mode="create"
+                        value={value}
+                        onChange={setValue}
+                        onSave={() => undefined}
+                        onCancel={() => undefined}
+                    />
+                </>
+            );
+        }
+
+        renderWithProviders(<Starter />);
+        fireEvent.click(screen.getByRole('button', { name: 'Load' }));
+
+        expect(
+            (screen.getByLabelText('Column 1 title') as HTMLInputElement).value,
+        ).toBe('Liked 0');
+        expect(screen.queryByLabelText('Column 3 title')).toBeNull();
+        expect(screen.getByText(`2/${MaxTemplateColumns}`)).toBeTruthy();
+    });
+
+    it('uses the server limits for the name, titles and descriptions', () => {
+        renderWithProviders(<Harness initial={serverDraft} />);
+
+        expect(screen.getByLabelText('Name').getAttribute('maxlength')).toBe(
+            '80',
+        );
+        expect(
+            screen.getByLabelText('Column 1 title').getAttribute('maxlength'),
+        ).toBe('100');
+        expect(
+            screen
+                .getByLabelText('Column 1 help question')
+                .getAttribute('maxlength'),
+        ).toBe('200');
+    });
+
+    it('maps every server error key to its field and counts them', () => {
+        renderWithProviders(
+            <Harness
+                initial={serverDraft}
+                categories={categories}
+                errors={{
+                    category: 'The selected category is invalid.',
+                    columns:
+                        'The columns field must not have more than 10 items.',
+                    'columns.0.description': 'The description is too long.',
+                    'columns.2.color': 'The selected color is invalid.',
+                }}
+            />,
+        );
+
+        const category = screen.getByRole('combobox', { name: 'Category' });
+        const description = screen.getByLabelText('Column 1 help question');
+
+        expect(category.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                category.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The selected category is invalid.');
+        expect(description.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                description.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The description is too long.');
+        expect(screen.getByText('The selected color is invalid.')).toBeTruthy();
+        expect(
+            screen.getByText(
+                'The columns field must not have more than 10 items.',
+            ),
+        ).toBeTruthy();
+        expect(screen.getByText('4 fields to fix')).toBeTruthy();
+    });
+
+    it('edits the description of a column', async () => {
+        const onChange = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <Harness initial={serverDraft} onChange={onChange} />,
+        );
+
+        await user.type(screen.getByLabelText('Column 2 help question'), 'W');
+
+        expect(lastDraft(onChange).columns[1].description).toBe('W');
+    });
+});
+
 describe('TemplateEditor columns', () => {
-    it('disables adding at eight columns and explains why', () => {
-        const columns = Array.from({ length: 8 }, (_, index) => ({
-            id: `c${index}`,
-            title: `Column ${index}`,
-            color: columnColors[index],
-        }));
+    it('edits a nine-column template and still allows one more', () => {
+        renderWithProviders(
+            <Harness initial={{ ...serverDraft, columns: manyColumns(9) }} />,
+        );
+
+        expect(screen.getByText('9/10')).toBeTruthy();
+        expect(screen.getByText('1 more available')).toBeTruthy();
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Add a column',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('shows ten columns with 100-character titles', () => {
+        const title = 'Ce que nous devrions absolument continuer de faire '
+            .repeat(2)
+            .slice(0, 98);
+        const columns = manyColumns(10, title);
+
+        renderWithProviders(<Harness initial={{ ...serverDraft, columns }} />);
+
+        expect(columns[9].title).toHaveLength(100);
+        expect(screen.getAllByRole('listitem')).toHaveLength(10);
+        expect(
+            (screen.getByLabelText('Column 10 title') as HTMLInputElement)
+                .value,
+        ).toBe(columns[9].title);
+        expect(
+            within(
+                document.querySelector(
+                    '[data-slot="template-preview"]',
+                ) as HTMLElement,
+            ).getByText(columns[9].title),
+        ).toBeTruthy();
+    });
+
+    it('disables adding at ten columns and explains why', () => {
+        const columns = manyColumns(10);
 
         renderWithProviders(<Harness initial={{ ...draft, columns }} />);
 
@@ -238,16 +559,18 @@ describe('TemplateEditor columns', () => {
             ).disabled,
         ).toBe(true);
         expect(
-            screen.getByText('You reached the limit of 8 columns.'),
+            screen.getByText('You reached the limit of 10 columns.'),
         ).toBeTruthy();
-        expect(screen.getByText('8/8')).toBeTruthy();
+        expect(screen.getByText('10/10')).toBeTruthy();
     });
 
     it('adds a column with a free colour and focuses its title', async () => {
         const onChange = vi.fn();
         const user = userEvent.setup();
 
-        renderWithProviders(<Harness onChange={onChange} />);
+        renderWithProviders(
+            <Harness onChange={onChange} colors={columnColors} />,
+        );
 
         await user.click(screen.getByRole('button', { name: 'Add a column' }));
 
@@ -401,7 +724,8 @@ describe('TemplateEditor header, visibility and defaults', () => {
                 initial={{
                     ...draft,
                     defaults: {
-                        ...draft.defaults,
+                        anonymous: true,
+                        timers: {},
                         votesPerPerson: 2,
                         maxPerCard: 2,
                     },
@@ -415,8 +739,8 @@ describe('TemplateEditor header, visibility and defaults', () => {
 
         const next = lastDraft(onChange);
 
-        expect(next.defaults.votesPerPerson).toBe(1);
-        expect(next.defaults.maxPerCard).toBe(1);
+        expect(next.defaults?.votesPerPerson).toBe(1);
+        expect(next.defaults?.maxPerCard).toBe(1);
     });
 
     it('toggles anonymous cards', async () => {
@@ -429,7 +753,7 @@ describe('TemplateEditor header, visibility and defaults', () => {
             screen.getByRole('switch', { name: 'Anonymous cards' }),
         );
 
-        expect(lastDraft(onChange).defaults.anonymous).toBe(false);
+        expect(lastDraft(onChange).defaults?.anonymous).toBe(false);
     });
 });
 
@@ -575,6 +899,61 @@ describe('ColumnColorPicker', () => {
         expect(
             screen.getByRole('button', { name: 'Color: Lagoon' }),
         ).toBeTruthy();
+    });
+
+    it('offers the six colours the server stores, under their names', async () => {
+        const onValueChange = vi.fn();
+        const user = userEvent.setup();
+
+        function ServerPicker() {
+            const [value, setValue] = useState<AnyColumnColor>('green');
+
+            return (
+                <ColumnColorPicker
+                    value={value}
+                    colors={serverColumnColors}
+                    columnTitle="Glad"
+                    onValueChange={(color) => {
+                        setValue(color);
+                        onValueChange(color);
+                    }}
+                />
+            );
+        }
+
+        renderWithProviders(<ServerPicker />);
+
+        await user.click(screen.getByRole('button', { name: 'Color: Green' }));
+
+        expect(
+            screen.getAllByRole('radio').map((radio) => radio.textContent),
+        ).toEqual(['Green', 'Red', 'Blue', 'Amber', 'Purple', 'Slate']);
+
+        await user.keyboard('{End}{Enter}');
+
+        expect(onValueChange).toHaveBeenCalledWith('slate');
+    });
+
+    it('is open from the start when asked, and keeps a colour outside the list reachable', () => {
+        renderWithProviders(
+            <ColumnColorPicker
+                value={'sky' as AnyColumnColor}
+                colors={serverColumnColors}
+                columnTitle="Ideas"
+                defaultOpen
+                onValueChange={() => undefined}
+            />,
+        );
+
+        const radios = screen.getAllByRole('radio');
+
+        expect(radios).toHaveLength(6);
+        expect(radios[0].tabIndex).toBe(0);
+        expect(
+            radios.filter(
+                (radio) => radio.getAttribute('aria-checked') === 'true',
+            ),
+        ).toHaveLength(0);
     });
 
     it('returns focus to the trigger on Escape', async () => {

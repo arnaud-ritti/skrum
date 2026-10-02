@@ -27,6 +27,7 @@ import {
     Minus,
     Plus,
     Trash2,
+    TriangleAlert,
     User,
     Users,
 } from 'lucide-react';
@@ -36,11 +37,11 @@ import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
 import { toast } from 'sonner';
 import {
     ColumnColorPicker,
-    columnColorClasses,
-    columnColors,
+    serverColumnColors,
 } from '@/components/skrum/column-color-picker';
-import type { ColumnColor } from '@/components/skrum/column-color-picker';
+import type { AnyColumnColor } from '@/components/skrum/column-color-picker';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
+import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +65,10 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type { ColumnColor } from '@/components/skrum/column-color-picker';
+export type {
+    AnyColumnColor,
+    ColumnColor,
+} from '@/components/skrum/column-color-picker';
 
 export type TemplateVisibility = 'personal' | 'team' | 'workspace';
 
@@ -73,32 +77,51 @@ export type TemplatePhase = 'writing' | 'voting' | 'discussing';
 export type TemplateColumnDraft = {
     id: string;
     title: string;
-    help?: string;
-    color: ColumnColor;
+    description?: string | null;
+    color: AnyColumnColor;
 };
 
+export type TemplateDefaults = {
+    votesPerPerson: number;
+    maxPerCard: number;
+    anonymous: boolean;
+    timers: Partial<Record<TemplatePhase, number>>;
+};
+
+/**
+ * `name`, `category` and `columns` are what WorkspaceTemplateRequest stores.
+ * `description`, `visibility` and `defaults` have no back end yet: their
+ * fields are rendered only when the draft carries them.
+ */
 export type TemplateDraft = {
     name: string;
+    category?: string;
     description?: string;
-    visibility: TemplateVisibility;
+    visibility?: TemplateVisibility;
     columns: TemplateColumnDraft[];
-    defaults: {
-        votesPerPerson: number;
-        maxPerCard: number;
-        anonymous: boolean;
-        timers: Partial<Record<TemplatePhase, number>>;
-    };
+    defaults?: TemplateDefaults;
 };
 
-export type TemplateEditorErrors = Partial<
-    Record<'name' | `columns.${number}.title`, string>
->;
+/**
+ * Server validation errors by field, as Laravel returns them: `name`,
+ * `category`, `columns`, `columns.N.title`, `columns.N.description`,
+ * `columns.N.color`.
+ */
+export type TemplateEditorErrors = Record<string, string | undefined>;
+
+export type TemplateCategoryOption = { value: string; label: string };
+
+export type TemplateStartOption = { key: string; name: string };
 
 export type TemplateEditorProps = {
     mode: 'create' | 'edit';
     value: TemplateDraft;
     onChange: (draft: TemplateDraft) => void;
     errors?: TemplateEditorErrors;
+    categories?: TemplateCategoryOption[];
+    colors?: readonly AnyColumnColor[];
+    startFrom?: TemplateStartOption[];
+    onStartFrom?: (key: string) => void;
     canShareWorkspace?: boolean;
     meta?: { editedBy: string; editedAt: string; usedByTeams?: number };
     saving?: boolean;
@@ -109,7 +132,10 @@ export type TemplateEditorProps = {
     className?: string;
 };
 
-export const MaxTemplateColumns = 8;
+export const MaxTemplateColumns = 10;
+export const MaxTemplateNameLength = 80;
+export const MaxColumnTitleLength = 100;
+export const MaxColumnDescriptionLength = 200;
 
 const MaxVotes = 20;
 
@@ -152,19 +178,39 @@ export function findColumnProblems(
     return problems;
 }
 
-export function firstFreeColor(columns: TemplateColumnDraft[]): ColumnColor {
+export function firstFreeColor(
+    columns: TemplateColumnDraft[],
+    colors: readonly AnyColumnColor[] = serverColumnColors,
+): AnyColumnColor {
     const used = new Set(columns.map((column) => column.color));
 
     return (
-        columnColors.find((color) => !used.has(color)) ??
-        columnColors[columns.length % columnColors.length]
+        colors.find((color) => !used.has(color)) ??
+        colors[columns.length % colors.length]
     );
+}
+
+/**
+ * The single other column that holds `color`, when there is exactly one:
+ * only then does picking that colour swap the two. With more columns than
+ * colours several columns share a colour, and picking it just sets it.
+ */
+function soleOwner(
+    columns: TemplateColumnDraft[],
+    index: number,
+    color: AnyColumnColor,
+): number | null {
+    const owners = columns
+        .map((column, position) => (column.color === color ? position : -1))
+        .filter((position) => position >= 0 && position !== index);
+
+    return owners.length === 1 ? owners[0] : null;
 }
 
 export function swapColumnColor(
     columns: TemplateColumnDraft[],
     index: number,
-    color: ColumnColor,
+    color: AnyColumnColor,
 ): TemplateColumnDraft[] {
     const previous = columns[index].color;
 
@@ -172,12 +218,14 @@ export function swapColumnColor(
         return columns;
     }
 
+    const owner = soleOwner(columns, index, color);
+
     return columns.map((column, position) => {
         if (position === index) {
             return { ...column, color };
         }
 
-        if (column.color === color) {
+        if (position === owner) {
             return { ...column, color: previous };
         }
 
@@ -269,6 +317,27 @@ function FieldError({ id, message }: { id: string; message?: string }) {
     return (
         <p id={id} role="alert" className="text-xs text-skrum-destructive-text">
             {message}
+        </p>
+    );
+}
+
+function FieldWarning({ id, message }: { id: string; message?: string }) {
+    if (message === undefined) {
+        return null;
+    }
+
+    return (
+        <p
+            id={id}
+            role="status"
+            data-slot="template-column-warning"
+            className="flex items-start gap-1 text-xs text-skrum-warning-text"
+        >
+            <TriangleAlert
+                aria-hidden="true"
+                className="mt-0.5 size-3 shrink-0"
+            />
+            <span className="min-w-0">{message}</span>
         </p>
     );
 }
@@ -378,21 +447,34 @@ type RowProps = {
     column: TemplateColumnDraft;
     index: number;
     total: number;
-    usedBy: Partial<Record<ColumnColor, string>>;
+    colors: readonly AnyColumnColor[];
+    usedBy: Partial<Record<AnyColumnColor, string>>;
     error?: string;
+    /** Shown under the title without marking the field invalid. */
+    warning?: string;
+    descriptionError?: string;
+    colorError?: string;
     canDelete: boolean;
     registerTitle: (id: string, node: HTMLInputElement | null) => void;
     onTitleChange: (title: string) => void;
     onTitleBlur: () => void;
-    onHelpChange: (help: string) => void;
-    onColorChange: (color: ColumnColor) => void;
+    onDescriptionChange: (description: string) => void;
+    onColorChange: (color: AnyColumnColor) => void;
     onDelete: () => void;
 };
 
 function SortableColumnRow(props: RowProps) {
     const { t } = useTrans();
     const { column, index, total, error, canDelete } = props;
+    const warning = error === undefined ? props.warning : undefined;
+    const { descriptionError, colorError } = props;
     const errorId = useId();
+    const warningId = useId();
+    const descriptionErrorId = useId();
+    const invalid =
+        error !== undefined ||
+        descriptionError !== undefined ||
+        colorError !== undefined;
     const {
         attributes,
         listeners,
@@ -428,7 +510,7 @@ function SortableColumnRow(props: RowProps) {
             ref={setNodeRef}
             data-slot="template-column-row"
             data-dragging={isDragging ? 'true' : undefined}
-            aria-invalid={error === undefined ? undefined : true}
+            aria-invalid={invalid ? true : undefined}
             onKeyDown={handleKeyDown}
             style={{
                 transform: CSS.Transform.toString(transform),
@@ -462,6 +544,7 @@ function SortableColumnRow(props: RowProps) {
             <ColumnColorPicker
                 value={column.color}
                 onValueChange={props.onColorChange}
+                colors={props.colors}
                 usedBy={props.usedBy}
                 columnTitle={column.title}
             />
@@ -472,9 +555,15 @@ function SortableColumnRow(props: RowProps) {
                     position: index + 1,
                 })}
                 aria-invalid={error === undefined ? undefined : true}
-                aria-describedby={error === undefined ? undefined : errorId}
+                aria-describedby={
+                    error === undefined
+                        ? warning === undefined
+                            ? undefined
+                            : warningId
+                        : errorId
+                }
                 placeholder={t('Column title')}
-                maxLength={60}
+                maxLength={MaxColumnTitleLength}
                 onChange={(event) => props.onTitleChange(event.target.value)}
                 onBlur={props.onTitleBlur}
                 className="h-8"
@@ -495,18 +584,32 @@ function SortableColumnRow(props: RowProps) {
                 </Button>
             </IconTip>
             <Input
-                value={column.help ?? ''}
+                value={column.description ?? ''}
                 aria-label={t('Column :position help question', {
                     position: index + 1,
                 })}
                 placeholder={t('Help question (optional)')}
-                maxLength={140}
-                onChange={(event) => props.onHelpChange(event.target.value)}
+                maxLength={MaxColumnDescriptionLength}
+                aria-invalid={descriptionError === undefined ? undefined : true}
+                aria-describedby={
+                    descriptionError === undefined
+                        ? undefined
+                        : descriptionErrorId
+                }
+                onChange={(event) =>
+                    props.onDescriptionChange(event.target.value)
+                }
                 className="col-span-2 col-start-3 h-7 text-xs"
             />
-            {error !== undefined && (
-                <div className="col-span-2 col-start-3">
+            {(invalid || warning !== undefined) && (
+                <div className="col-span-2 col-start-3 flex flex-col gap-1">
                     <FieldError id={errorId} message={error} />
+                    <FieldWarning id={warningId} message={warning} />
+                    <FieldError
+                        id={descriptionErrorId}
+                        message={descriptionError}
+                    />
+                    <FieldError id={`${errorId}-color`} message={colorError} />
                 </div>
             )}
         </li>
@@ -533,8 +636,8 @@ function MiniPreview({ columns }: { columns: TemplateColumnDraft[] }) {
                             <span
                                 aria-hidden="true"
                                 className={cn(
-                                    'size-2.5 shrink-0 rounded-full',
-                                    columnColorClasses[column.color].dot,
+                                    'size-2.5 shrink-0 rounded-full bg-(--col-border)',
+                                    columnColorClass(column.color),
                                 )}
                             />
                             <span
@@ -568,6 +671,10 @@ export function TemplateEditor({
     value,
     onChange,
     errors,
+    categories,
+    colors = serverColumnColors,
+    startFrom,
+    onStartFrom,
     canShareWorkspace = true,
     meta,
     saving = false,
@@ -583,6 +690,9 @@ export function TemplateEditor({
     const nameErrorId = useId();
     const descriptionId = useId();
     const visibilityHelpId = useId();
+    const categoryId = useId();
+    const categoryErrorId = useId();
+    const startFromId = useId();
     const [submitted, setSubmitted] = useState(false);
     const [nameTouched, setNameTouched] = useState(false);
     const [touched, setTouched] = useState<Set<string>>(new Set());
@@ -615,18 +725,22 @@ export function TemplateEditor({
     const update = (patch: Partial<TemplateDraft>) =>
         onChange({ ...latest.current, ...patch });
 
-    const updateDefaults = (patch: Partial<TemplateDraft['defaults']>) =>
-        update({ defaults: { ...latest.current.defaults, ...patch } });
+    const updateDefaults = (patch: Partial<TemplateDefaults>) => {
+        const current = latest.current.defaults;
+
+        if (current === undefined) {
+            return;
+        }
+
+        update({ defaults: { ...current, ...patch } });
+    };
 
     const problems = findColumnProblems(value.columns);
     const nameProblem = value.name.trim() === '';
 
-    const problemMessage = (problem: ColumnProblem): string =>
-        problem.kind === 'empty'
-            ? t('Give this column a title.')
-            : t('Another column is already called “:title”.', {
-                  title: problem.otherTitle,
-              });
+    const hasBlockingProblem = Object.values(problems).some(
+        (problem) => problem.kind === 'empty',
+    );
 
     const nameError =
         errors?.name ??
@@ -643,21 +757,57 @@ export function TemplateEditor({
 
         const problem = problems[index];
 
-        if (problem === undefined) {
+        if (problem?.kind !== 'empty') {
             return undefined;
         }
 
         if (submitted || touched.has(value.columns[index].id)) {
-            return problemMessage(problem);
+            return t('Give this column a title.');
         }
 
         return undefined;
     };
 
+    /** The server accepts two columns with the same title: say it, never block. */
+    const columnWarning = (index: number): string | undefined => {
+        const problem = problems[index];
+
+        if (problem?.kind !== 'duplicate') {
+            return undefined;
+        }
+
+        if (submitted || touched.has(value.columns[index].id)) {
+            return t('Another column is already called “:title”.', {
+                title: problem.otherTitle,
+            });
+        }
+
+        return undefined;
+    };
+
+    const serverColumnError = (
+        index: number,
+        field: 'description' | 'color',
+    ): string | undefined => errors?.[`columns.${index}.${field}`];
+
+    const categoryError =
+        categories === undefined ? undefined : errors?.category;
+    const columnsError = errors?.columns;
+
     const visibleErrorCount =
         (nameError === undefined ? 0 : 1) +
-        value.columns.filter((_, index) => columnError(index) !== undefined)
-            .length;
+        (categoryError === undefined ? 0 : 1) +
+        (columnsError === undefined ? 0 : 1) +
+        value.columns.reduce(
+            (count, _, index) =>
+                count +
+                [
+                    columnError(index),
+                    serverColumnError(index, 'description'),
+                    serverColumnError(index, 'color'),
+                ].filter((message) => message !== undefined).length,
+            0,
+        );
 
     const registerTitle = (id: string, node: HTMLInputElement | null) => {
         if (node === null) {
@@ -678,7 +828,7 @@ export function TemplateEditor({
 
         const index = value.columns.findIndex(
             (_, position) =>
-                problems[position] !== undefined ||
+                problems[position]?.kind === 'empty' ||
                 errors?.[`columns.${position}.title`] !== undefined,
         );
 
@@ -696,7 +846,7 @@ export function TemplateEditor({
 
         setSubmitted(true);
 
-        const hasLocalProblem = nameProblem || Object.keys(problems).length > 0;
+        const hasLocalProblem = nameProblem || hasBlockingProblem;
 
         if (hasLocalProblem) {
             focusFirstInvalid();
@@ -717,7 +867,7 @@ export function TemplateEditor({
         const column: TemplateColumnDraft = {
             id: newColumnId(),
             title: '',
-            color: firstFreeColor(value.columns),
+            color: firstFreeColor(value.columns, colors),
         };
 
         pendingFocus.current = column.id;
@@ -773,16 +923,19 @@ export function TemplateEditor({
         );
 
     const usedByFor = (index: number) => {
-        const used: Partial<Record<ColumnColor, string>> = {};
+        const used: Partial<Record<AnyColumnColor, string>> = {};
 
-        value.columns.forEach((column, position) => {
-            if (position === index) {
-                return;
+        for (const color of colors) {
+            const owner = soleOwner(value.columns, index, color);
+
+            if (owner === null) {
+                continue;
             }
 
-            used[column.color] =
-                column.title.trim() === '' ? t('Untitled') : column.title;
-        });
+            const title = value.columns[owner].title;
+
+            used[color] = title.trim() === '' ? t('Untitled') : title;
+        }
 
         return used;
     };
@@ -886,8 +1039,14 @@ export function TemplateEditor({
     const atLimit = value.columns.length >= MaxTemplateColumns;
     const remaining = MaxTemplateColumns - value.columns.length;
     const activeColumn = value.columns.find((column) => column.id === activeId);
-    const VisibilityIcon = visibilityIcons[value.visibility];
-    const { defaults } = value;
+    const { defaults, visibility } = value;
+    const VisibilityIcon =
+        visibility === undefined ? undefined : visibilityIcons[visibility];
+    const canStartFrom =
+        mode === 'create' &&
+        onStartFrom !== undefined &&
+        startFrom !== undefined &&
+        startFrom.length > 0;
 
     return (
         <form
@@ -910,9 +1069,11 @@ export function TemplateEditor({
                             ? t('New template')
                             : t('Edit template')}
                     </h2>
-                    <Badge variant="muted" icon={VisibilityIcon}>
-                        {visibilityLabels[value.visibility]}
-                    </Badge>
+                    {visibility !== undefined && (
+                        <Badge variant="muted" icon={VisibilityIcon}>
+                            {visibilityLabels[visibility]}
+                        </Badge>
+                    )}
                 </div>
                 <p className="min-w-0 truncate text-xs text-muted-foreground">
                     {t('Retro')}
@@ -930,6 +1091,37 @@ export function TemplateEditor({
 
             <div className="grid gap-5 p-5 @3xl/editor:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                 <div className="flex min-w-0 flex-col gap-5">
+                    {canStartFrom && (
+                        <div className="flex flex-col gap-1.5">
+                            <label
+                                htmlFor={startFromId}
+                                className="text-sm font-medium"
+                            >
+                                {t('Start from a built-in template')}
+                            </label>
+                            <Select onValueChange={onStartFrom}>
+                                <SelectTrigger
+                                    id={startFromId}
+                                    className="w-full"
+                                >
+                                    <SelectValue
+                                        placeholder={t('Choose a template')}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {startFrom.map((option) => (
+                                        <SelectItem
+                                            key={option.key}
+                                            value={option.key}
+                                        >
+                                            {option.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
                     <div className="flex flex-col gap-1.5">
                         <label htmlFor={nameId} className="text-sm font-medium">
                             {t('Name')}
@@ -938,7 +1130,7 @@ export function TemplateEditor({
                             id={nameId}
                             ref={nameRef}
                             value={value.name}
-                            maxLength={80}
+                            maxLength={MaxTemplateNameLength}
                             aria-invalid={
                                 nameError === undefined ? undefined : true
                             }
@@ -955,51 +1147,105 @@ export function TemplateEditor({
                         <FieldError id={nameErrorId} message={nameError} />
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
-                        <label
-                            htmlFor={descriptionId}
-                            className="text-sm font-medium"
-                        >
-                            {t('Description')}
-                        </label>
-                        <Textarea
-                            id={descriptionId}
-                            value={value.description ?? ''}
-                            rows={2}
-                            maxLength={280}
-                            onChange={(event) =>
-                                update({ description: event.target.value })
-                            }
-                        />
-                    </div>
+                    {categories !== undefined && (
+                        <div className="flex flex-col gap-1.5">
+                            <label
+                                htmlFor={categoryId}
+                                className="text-sm font-medium"
+                            >
+                                {t('Category')}
+                            </label>
+                            <Select
+                                value={value.category ?? ''}
+                                onValueChange={(category) =>
+                                    update({ category })
+                                }
+                            >
+                                <SelectTrigger
+                                    id={categoryId}
+                                    className="w-full"
+                                    aria-invalid={
+                                        categoryError === undefined
+                                            ? undefined
+                                            : true
+                                    }
+                                    aria-describedby={
+                                        categoryError === undefined
+                                            ? undefined
+                                            : categoryErrorId
+                                    }
+                                >
+                                    <SelectValue
+                                        placeholder={t('Choose a category')}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((category) => (
+                                        <SelectItem
+                                            key={category.value}
+                                            value={category.value}
+                                        >
+                                            {category.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldError
+                                id={categoryErrorId}
+                                message={categoryError}
+                            />
+                        </div>
+                    )}
 
-                    <div className="flex flex-col gap-1.5">
-                        <span className="text-sm font-medium">
-                            {t('Visibility')}
-                        </span>
-                        <ToggleGroup
-                            type="single"
-                            variant="segmented"
-                            fullWidth
-                            aria-label={t('Visibility')}
-                            value={value.visibility}
-                            options={visibilityOptions}
-                            onValueChange={(next) =>
-                                update({ visibility: next })
-                            }
-                            className="grid grid-cols-3"
-                        />
-                        <p
-                            id={visibilityHelpId}
-                            className="text-xs text-muted-foreground"
-                        >
-                            {canShareWorkspace
-                                ? visibilityHelp[value.visibility]
-                                : t(
-                                      'Only workspace admins can share templates with the whole workspace.',
-                                  )}
-                        </p>
-                    </div>
+                    {value.description !== undefined && (
+                        <div className="flex flex-col gap-1.5">
+                            <label
+                                htmlFor={descriptionId}
+                                className="text-sm font-medium"
+                            >
+                                {t('Description')}
+                            </label>
+                            <Textarea
+                                id={descriptionId}
+                                value={value.description ?? ''}
+                                rows={2}
+                                maxLength={280}
+                                onChange={(event) =>
+                                    update({ description: event.target.value })
+                                }
+                            />
+                        </div>
+                    )}
+
+                    {visibility !== undefined && (
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium">
+                                {t('Visibility')}
+                            </span>
+                            <ToggleGroup
+                                type="single"
+                                variant="segmented"
+                                fullWidth
+                                aria-label={t('Visibility')}
+                                value={visibility}
+                                options={visibilityOptions}
+                                onValueChange={(next) =>
+                                    update({ visibility: next })
+                                }
+                                className="grid grid-cols-3"
+                            />
+                            <p
+                                id={visibilityHelpId}
+                                className="text-xs text-muted-foreground"
+                            >
+                                {canShareWorkspace
+                                    ? visibilityHelp[visibility]
+                                    : t(
+                                          'Only workspace admins can share templates with the whole workspace.',
+                                      )}
+                            </p>
+                        </div>
+                    )}
 
                     <section
                         aria-label={t('Columns')}
@@ -1041,8 +1287,18 @@ export function TemplateEditor({
                                             column={column}
                                             index={index}
                                             total={value.columns.length}
+                                            colors={colors}
                                             usedBy={usedByFor(index)}
                                             error={columnError(index)}
+                                            warning={columnWarning(index)}
+                                            descriptionError={serverColumnError(
+                                                index,
+                                                'description',
+                                            )}
+                                            colorError={serverColumnError(
+                                                index,
+                                                'color',
+                                            )}
                                             canDelete={value.columns.length > 1}
                                             registerTitle={registerTitle}
                                             onTitleChange={(title) =>
@@ -1055,8 +1311,12 @@ export function TemplateEditor({
                                                     ),
                                                 )
                                             }
-                                            onHelpChange={(help) =>
-                                                patchColumn(index, { help })
+                                            onDescriptionChange={(
+                                                description,
+                                            ) =>
+                                                patchColumn(index, {
+                                                    description,
+                                                })
                                             }
                                             onColorChange={(color) =>
                                                 setColumns(
@@ -1085,10 +1345,10 @@ export function TemplateEditor({
                                         <span
                                             aria-hidden="true"
                                             className={cn(
-                                                'size-4.5 shrink-0 rounded-full',
-                                                columnColorClasses[
-                                                    activeColumn.color
-                                                ].dot,
+                                                'size-4.5 shrink-0 rounded-full bg-(--col-border)',
+                                                columnColorClass(
+                                                    activeColumn.color,
+                                                ),
                                             )}
                                         />
                                         <span className="min-w-0 truncate text-sm">
@@ -1103,6 +1363,10 @@ export function TemplateEditor({
                         <span className="sr-only" aria-live="polite">
                             {announcement}
                         </span>
+                        <FieldError
+                            id={`${headingId}-columns-error`}
+                            message={columnsError}
+                        />
                         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                             <Button
                                 type="button"
@@ -1138,72 +1402,77 @@ export function TemplateEditor({
                         <MiniPreview columns={value.columns} />
                     </section>
 
-                    <section className="flex flex-col gap-3">
-                        <SectionLabel>{t('Default settings')}</SectionLabel>
-                        <Stepper
-                            label={t('Votes per person')}
-                            value={defaults.votesPerPerson}
-                            min={0}
-                            max={MaxVotes}
-                            onChange={(votesPerPerson) =>
-                                updateDefaults({
-                                    votesPerPerson,
-                                    maxPerCard: Math.min(
-                                        defaults.maxPerCard,
-                                        Math.max(votesPerPerson, 1),
-                                    ),
-                                })
-                            }
-                        />
-                        <Stepper
-                            label={t('Max votes per card')}
-                            value={defaults.maxPerCard}
-                            min={1}
-                            max={Math.max(defaults.votesPerPerson, 1)}
-                            onChange={(maxPerCard) =>
-                                updateDefaults({ maxPerCard })
-                            }
-                        />
-                        <div className="flex min-w-0 items-center justify-between gap-3">
-                            <span className="min-w-0 text-sm">
-                                {t('Anonymous cards')}
-                            </span>
-                            <Switch
-                                checked={defaults.anonymous}
-                                aria-label={t('Anonymous cards')}
-                                onCheckedChange={(anonymous) =>
-                                    updateDefaults({ anonymous })
+                    {defaults !== undefined && (
+                        <section className="flex flex-col gap-3">
+                            <SectionLabel>{t('Default settings')}</SectionLabel>
+                            <Stepper
+                                label={t('Votes per person')}
+                                value={defaults.votesPerPerson}
+                                min={0}
+                                max={MaxVotes}
+                                onChange={(votesPerPerson) =>
+                                    updateDefaults({
+                                        votesPerPerson,
+                                        maxPerCard: Math.min(
+                                            defaults.maxPerCard,
+                                            Math.max(votesPerPerson, 1),
+                                        ),
+                                    })
                                 }
                             />
-                        </div>
-                        <TimerSelect
-                            label={t('Writing timer')}
-                            value={defaults.timers.writing}
-                            onChange={(writing) =>
-                                updateDefaults({
-                                    timers: { ...defaults.timers, writing },
-                                })
-                            }
-                        />
-                        <TimerSelect
-                            label={t('Voting timer')}
-                            value={defaults.timers.voting}
-                            onChange={(voting) =>
-                                updateDefaults({
-                                    timers: { ...defaults.timers, voting },
-                                })
-                            }
-                        />
-                        <TimerSelect
-                            label={t('Discussion timer')}
-                            value={defaults.timers.discussing}
-                            onChange={(discussing) =>
-                                updateDefaults({
-                                    timers: { ...defaults.timers, discussing },
-                                })
-                            }
-                        />
-                    </section>
+                            <Stepper
+                                label={t('Max votes per card')}
+                                value={defaults.maxPerCard}
+                                min={1}
+                                max={Math.max(defaults.votesPerPerson, 1)}
+                                onChange={(maxPerCard) =>
+                                    updateDefaults({ maxPerCard })
+                                }
+                            />
+                            <div className="flex min-w-0 items-center justify-between gap-3">
+                                <span className="min-w-0 text-sm">
+                                    {t('Anonymous cards')}
+                                </span>
+                                <Switch
+                                    checked={defaults.anonymous}
+                                    aria-label={t('Anonymous cards')}
+                                    onCheckedChange={(anonymous) =>
+                                        updateDefaults({ anonymous })
+                                    }
+                                />
+                            </div>
+                            <TimerSelect
+                                label={t('Writing timer')}
+                                value={defaults.timers.writing}
+                                onChange={(writing) =>
+                                    updateDefaults({
+                                        timers: { ...defaults.timers, writing },
+                                    })
+                                }
+                            />
+                            <TimerSelect
+                                label={t('Voting timer')}
+                                value={defaults.timers.voting}
+                                onChange={(voting) =>
+                                    updateDefaults({
+                                        timers: { ...defaults.timers, voting },
+                                    })
+                                }
+                            />
+                            <TimerSelect
+                                label={t('Discussion timer')}
+                                value={defaults.timers.discussing}
+                                onChange={(discussing) =>
+                                    updateDefaults({
+                                        timers: {
+                                            ...defaults.timers,
+                                            discussing,
+                                        },
+                                    })
+                                }
+                            />
+                        </section>
+                    )}
                 </div>
             </div>
 
