@@ -4896,5 +4896,17 @@
     "Puzzles": "Puzzles",
     "Only writing, grouping, voting, discussing and actions can have a timer.": "Only writing, grouping, voting, discussing and actions can have a timer.",
     ":count people": ":count people",
-    ":count tasks": ":count tasks"
+    ":count tasks": ":count tasks",
+    "Upcoming sessions": "Upcoming",
+    "Live sessions": "Live",
+    "Finished sessions": "Finished",
+    "Session tabs": "Session tabs",
+    "Retros, poker, whiteboards, polls and icebreakers of :team": "Retros, poker, whiteboards, polls and icebreakers of :team",
+    "You're all caught up · :count sessions": "You're all caught up · :count sessions",
+    "No upcoming session": "No upcoming session",
+    "No live session right now": "No live session right now",
+    "No finished session yet": "No finished session yet",
+    "A session you create waits here until it starts.": "A session you create waits here until it starts.",
+    "The sessions in progress show up here.": "The sessions in progress show up here.",
+    "The sessions that ended show up here, newest first.": "The sessions that ended show up here, newest first."
 }

@@ -134,6 +134,9 @@ it('words an english key differently from its text only where that is meant', fu
         'Two-factor on' => 'On',
         'Two-factor off' => 'Off',
         'Survey builder settings' => 'Settings',
+        'Upcoming sessions' => 'Upcoming',
+        'Live sessions' => 'Live',
+        'Finished sessions' => 'Finished',
     ]);
 });
 

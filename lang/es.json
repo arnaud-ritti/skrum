@@ -5116,5 +5116,17 @@
     "Puzzles": "Acertijos",
     "Only writing, grouping, voting, discussing and actions can have a timer.": "Solo las fases de escritura, agrupación, votación, discusión y acciones pueden tener un temporizador.",
     ":count people": ":count personas",
-    ":count tasks": ":count tareas"
+    ":count tasks": ":count tareas",
+    "Upcoming sessions": "Próximas",
+    "Live sessions": "En curso",
+    "Finished sessions": "Terminadas",
+    "Session tabs": "Pestañas de sesiones",
+    "Retros, poker, whiteboards, polls and icebreakers of :team": "Retros, póker, pizarras, encuestas e icebreakers del equipo :team",
+    "You're all caught up · :count sessions": "Estás al día · :count sesiones",
+    "No upcoming session": "Ninguna sesión próxima",
+    "No live session right now": "Ninguna sesión en curso ahora mismo",
+    "No finished session yet": "Todavía ninguna sesión terminada",
+    "A session you create waits here until it starts.": "Una sesión que creas espera aquí hasta que empiece.",
+    "The sessions in progress show up here.": "Las sesiones en curso aparecen aquí.",
+    "The sessions that ended show up here, newest first.": "Las sesiones terminadas aparecen aquí, las más recientes primero."
 }

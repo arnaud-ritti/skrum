@@ -30,6 +30,7 @@ describe('EmptyState', () => {
             survey: 'Surveys',
             icebreaker: 'Icebreakers',
             actions: 'Actions',
+            sessions: 'Sessions',
         } as const;
 
         Object.entries(labels).forEach(([module, label]) => {
@@ -54,6 +55,7 @@ describe('EmptyState', () => {
             'survey',
             'icebreaker',
             'actions',
+            'sessions',
         ] as const;
         const markups = modules.map((module) => {
             const { container, unmount } = render(

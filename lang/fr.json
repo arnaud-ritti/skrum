@@ -5116,5 +5116,17 @@
     "Puzzles": "Énigmes",
     "Only writing, grouping, voting, discussing and actions can have a timer.": "Seules les phases d'écriture, de regroupement, de vote, de discussion et d'actions peuvent avoir un minuteur.",
     ":count people": ":count personnes",
-    ":count tasks": ":count tâches"
+    ":count tasks": ":count tâches",
+    "Upcoming sessions": "À venir",
+    "Live sessions": "En cours",
+    "Finished sessions": "Terminées",
+    "Session tabs": "Onglets des sessions",
+    "Retros, poker, whiteboards, polls and icebreakers of :team": "Rétros, poker, whiteboards, sondages et icebreakers de l’équipe :team",
+    "You're all caught up · :count sessions": "Tu es à jour · :count sessions",
+    "No upcoming session": "Aucune session à venir",
+    "No live session right now": "Aucune session en cours pour le moment",
+    "No finished session yet": "Aucune session terminée pour l’instant",
+    "A session you create waits here until it starts.": "Une session que tu crées attend ici jusqu’à son lancement.",
+    "The sessions in progress show up here.": "Les sessions en cours apparaissent ici.",
+    "The sessions that ended show up here, newest first.": "Les sessions terminées apparaissent ici, les plus récentes d’abord."
 }

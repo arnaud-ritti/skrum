@@ -73,7 +73,9 @@ describe('useSidebarModel', () => {
 
         expect(model.team?.initials).toBe('AT');
         expect(model.links.dashboard).toBeDefined();
-        expect(model.links.sessions).toBeDefined();
+        expect(hrefOf(model.links.sessions)).toBe(
+            '/w/nordlys/teams/t1/sessions',
+        );
         expect(model.links.mood).toBeDefined();
         expect(model.links.members).toBeDefined();
         expect(model.links.games).toBeDefined();

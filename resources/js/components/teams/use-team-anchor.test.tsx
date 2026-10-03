@@ -27,9 +27,9 @@ afterEach(() => {
 });
 
 describe('teamAnchor', () => {
-    it('maps the four section hashes, the surveys block to the sessions, and falls back to the dashboard', () => {
-        expect(teamAnchor('#sessions')).toBe('sessions');
-        expect(teamAnchor('#surveys')).toBe('sessions');
+    it('maps the mood, members and settings hashes, and leaves the sessions to their own page', () => {
+        expect(teamAnchor('#sessions')).toBe('dashboard');
+        expect(teamAnchor('#surveys')).toBe('dashboard');
         expect(teamAnchor('#mood')).toBe('mood');
         expect(teamAnchor('#members')).toBe('members');
         expect(teamAnchor('#settings')).toBe('settings');
@@ -54,11 +54,11 @@ describe('useTeamAnchor', () => {
         expect(result.current).toBe('mood');
 
         act(() => {
-            window.history.replaceState(null, '', '#sessions');
+            window.history.replaceState(null, '', '#members');
             mocks.listeners.forEach((listener) => listener());
         });
 
-        expect(result.current).toBe('sessions');
+        expect(result.current).toBe('members');
 
         unmount();
 
