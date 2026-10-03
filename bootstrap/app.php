@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\ErrorPageResponder;
+use App\Http\Middleware\ApplyInstanceConfiguration;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\HandleAppearance;
@@ -33,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->prepend(AssignRequestId::class);
+        $middleware->prepend([AssignRequestId::class, ApplyInstanceConfiguration::class]);
 
         $middleware->replace(FrameworkTrustProxies::class, TrustProxies::class);
 

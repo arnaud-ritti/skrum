@@ -5,8 +5,10 @@ namespace App\Support\InstanceConfiguration;
 use App\Enums\InstanceSettingKey;
 use App\Support\InstanceSettings;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Crypt;
 use InvalidArgumentException;
+use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use SensitiveParameter;
 
 /**
@@ -16,6 +18,8 @@ use SensitiveParameter;
 class InstanceConfiguration
 {
     public const int ConfirmationSeconds = 300;
+
+    public const string AppliedKeys = 'skrum.instance_configuration.applied';
 
     public function __construct(
         private InstanceSettings $settings,
@@ -151,6 +155,59 @@ class InstanceConfiguration
         sort($cleared);
 
         return ['object' => $object, 'changed' => $changed, 'cleared' => $cleared];
+    }
+
+    /**
+     * Lays the stored fields over config() and puts back the environment value of every key it wrote
+     * before that is no longer stored. Called per request, per job and per command; never at boot.
+     */
+    public function apply(): void
+    {
+        $previous = (array) config(self::AppliedKeys, []);
+        $written = [];
+
+        foreach (InstanceSettingKey::configurationSections() as $section) {
+            foreach ($this->catalogue->fields($section) as $field) {
+                $stored = $this->stored($section, $field->name);
+
+                if (! $stored['stored']) {
+                    continue;
+                }
+
+                foreach ($field->configKeys as $key) {
+                    config([$key => $stored['value']]);
+                    $written[] = $key;
+                }
+
+                foreach ($field->clearsWhenStored as $key) {
+                    config([$key => null]);
+                    $written[] = $key;
+                }
+            }
+        }
+
+        foreach (array_diff($previous, $written) as $key) {
+            config([$key => $this->baseline->get($key)]);
+        }
+
+        config([self::AppliedKeys => $written]);
+
+        if ($written === [] && $previous === []) {
+            return;
+        }
+
+        $this->forgetResolvedClients();
+    }
+
+    private function forgetResolvedClients(): void
+    {
+        if (app()->resolved('mail.manager')) {
+            app(MailManager::class)->forgetMailers();
+        }
+
+        if (app()->resolved(SocialiteFactory::class)) {
+            app(SocialiteFactory::class)->forgetDrivers();
+        }
     }
 
     private function environmentValue(InstanceSettingKey $section, string $name): mixed
