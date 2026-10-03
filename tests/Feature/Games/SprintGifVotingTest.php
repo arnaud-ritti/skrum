@@ -36,7 +36,7 @@ it('reveals the GIFs for the host and opens voting without ending the round', fu
         ->assertOk()
         ->assertJsonPath('id', $round->id)
         ->assertJsonPath('revealedAt', '2026-10-06T10:00:00+00:00')
-        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'playerId' => $member->id]])
+        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null, 'playerId' => $member->id]])
         ->assertJsonPath('voters', []);
 
     expect($round->fresh()->isActive())->toBeTrue()
@@ -45,6 +45,7 @@ it('reveals the GIFs for the host and opens voting without ending the round', fu
     Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['answers'][0] === [
         'id' => $answer->id,
         'gif' => gameGifPayload('party'),
+        'caption' => null,
         'playerId' => $member->id,
     ]);
     Event::assertNotDispatched(GameRoundEnded::class);

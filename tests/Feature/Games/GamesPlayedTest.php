@@ -145,6 +145,7 @@ it('lists GIF answers with their authors and final votes', function () {
 
     expect($answers['memberGif'])->toBe([
         'gif' => gameGifPayload('memberGif'),
+        'caption' => null,
         'playerId' => $memberPlayer->id,
         'votes' => 1,
     ])

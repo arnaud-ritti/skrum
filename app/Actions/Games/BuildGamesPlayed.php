@@ -89,13 +89,14 @@ class BuildGamesPlayed
     }
 
     /**
-     * @return array<int, array{gif: array{id: string, previewUrl: string, url: string}, playerId: ?string, votes: ?int}>
+     * @return array<int, array{gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string, votes: ?int}>
      */
     private function answers(GameRound $round, GameRoom $room): array
     {
         return array_map(
             fn (array $answer): array => [
                 'gif' => $answer['gif'],
+                'caption' => $answer['caption'],
                 'playerId' => $answer['playerId'],
                 'votes' => $answer['votes'],
             ],

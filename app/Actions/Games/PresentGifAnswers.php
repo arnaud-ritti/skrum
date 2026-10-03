@@ -41,7 +41,7 @@ class PresentGifAnswers
      * who answered first.
      *
      * @param  Collection<int, GameGifAnswer>  $answers
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string}>
      */
     public function revealed(Collection $answers, GameRoom $room): array
     {
@@ -52,6 +52,7 @@ class PresentGifAnswers
             ->map(fn (GameGifAnswer $answer): array => [
                 'id' => $answer->id,
                 'gif' => $this->presentGameGif->handle($answer->gif_id),
+                'caption' => $answer->caption,
                 'playerId' => $hidesAuthors ? null : $answer->player_id,
             ])
             ->values()
@@ -62,7 +63,7 @@ class PresentGifAnswers
      * The answers of an ended round with their final vote count. Votes of a
      * round that did not close normally (passed, abandoned) were discarded.
      *
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string, votes: ?int}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string, votes: ?int}>
      */
     public function closed(GameRound $round, GameRoom $room): array
     {
@@ -74,7 +75,7 @@ class PresentGifAnswers
      * so a list of rounds can load every count in one query.
      *
      * @param  Collection<int, GameGifAnswer>  $answers
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string, votes: ?int}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string, votes: ?int}>
      */
     public function closedFrom(Collection $answers, GameRound $round, GameRoom $room): array
     {
@@ -96,13 +97,14 @@ class PresentGifAnswers
     }
 
     /**
-     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}}
+     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string}
      */
     public function mine(GameGifAnswer $answer): array
     {
         return [
             'id' => $answer->id,
             'gif' => $this->presentGameGif->handle($answer->gif_id),
+            'caption' => $answer->caption,
         ];
     }
 }

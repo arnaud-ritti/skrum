@@ -22,7 +22,7 @@ it('sets an answer and tells the others only that the player answered', function
 
     $answer = GameGifAnswer::query()->sole();
 
-    expect($response->json())->toBe(['myAnswer' => ['id' => $answer->id, 'gif' => gameGifPayload('party')]])
+    expect($response->json())->toBe(['myAnswer' => ['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null]])
         ->and($answer->player_id)->toBe($member->id);
 
     Event::assertDispatched(fn (GameAnswerChanged $event) => $event->broadcastWith() === [

@@ -11,6 +11,7 @@ use App\Models\GameRound;
 use App\Support\Gifs\Gif;
 use App\Support\Gifs\GifCatalog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -23,13 +24,16 @@ class SetGifAnswer
 
     /**
      * The GIF is looked up before the locks are taken (a provider call can
-     * take seconds); the round is checked again once locked.
+     * take seconds); the round is checked again once locked. A blank caption
+     * is stored as none.
      *
-     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}}
+     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string}
      */
-    public function handle(GameRoom $room, GameRound $round, GamePlayer $player, string $gifId): array
+    public function handle(GameRoom $room, GameRound $round, GamePlayer $player, string $gifId, ?string $caption = null): array
     {
         self::guard($room, $round);
+
+        $caption = Str::of((string) $caption)->trim()->toString() ?: null;
 
         $gif = $this->gifCatalog->attempt(
             fn (): ?Gif => $this->gifCatalog->resolve($gifId),
@@ -40,14 +44,14 @@ class SetGifAnswer
             throw ValidationException::withMessages(['gif_id' => __('This GIF could not be found.')]);
         }
 
-        return DB::transaction(function () use ($room, $round, $player, $gifId): array {
+        return DB::transaction(function () use ($room, $round, $player, $gifId, $caption): array {
             [$lockedRoom, $lockedRound] = LockGameRound::handle($room, $round);
 
             self::guard($lockedRoom, $lockedRound);
 
             $answer = GameGifAnswer::query()->updateOrCreate(
                 ['game_round_id' => $lockedRound->id, 'player_id' => $player->id],
-                ['gif_id' => $gifId],
+                ['gif_id' => $gifId, 'caption' => $caption],
             );
 
             if ($answer->wasRecentlyCreated) {

@@ -18,10 +18,11 @@ class GameAnswersController extends Controller
     {
         $validated = $request->validate([
             'gif_id' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]{1,64}$/'],
+            'caption' => ['sometimes', 'nullable', 'string', 'max:60'],
         ]);
 
         return response()->json([
-            'myAnswer' => $setGifAnswer->handle($room, $round, GamePlayer::current($request), $validated['gif_id']),
+            'myAnswer' => $setGifAnswer->handle($room, $round, GamePlayer::current($request), $validated['gif_id'], $validated['caption'] ?? null),
         ]);
     }
 
