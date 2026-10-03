@@ -1,0 +1,132 @@
+import type { CanvasView, Point, Rect } from './viewport';
+
+export type SelectableElement = {
+    id: string;
+    type: string;
+    isDeleted?: boolean;
+    locked?: boolean;
+    groupIds: readonly string[];
+    containerId?: string | null;
+    backgroundColor: string;
+};
+
+export type SelectionState = {
+    selectedElementIds: Readonly<Record<string, boolean>>;
+    editingTextElement?: unknown;
+    selectedElementsAreBeingDragged?: boolean;
+    isResizing?: boolean;
+    isRotating?: boolean;
+    newElement?: unknown;
+    openDialog?: unknown;
+};
+
+export type SelectionSummary = {
+    ids: string[];
+    count: number;
+    /** Groups count once: what align and distribute move. */
+    units: number;
+    hasFill: boolean;
+    canGroup: boolean;
+    canUngroup: boolean;
+    hasLocked: boolean;
+    allLocked: boolean;
+};
+
+export type Placement = { left: number; top: number; side: 'below' | 'above' };
+
+/** Pixels on screen: 0.75rem, the count chip's 1.625rem, 1rem. */
+export const BarGap = 12;
+export const ChipHeight = 26;
+export const EdgeMargin = 16;
+
+const Filled: readonly string[] = ['rectangle', 'diamond', 'ellipse'];
+
+export function selectionSummary(
+    elements: readonly SelectableElement[],
+    state: SelectionState,
+): SelectionSummary | null {
+    const counted = elements.filter(
+        (element) =>
+            state.selectedElementIds[element.id] === true &&
+            element.isDeleted !== true &&
+            !(element.type === 'text' && element.containerId),
+    );
+
+    if (counted.length === 0) {
+        return null;
+    }
+
+    const units = new Set(
+        counted.map(
+            (element) => element.groupIds.at(-1) ?? `element:${element.id}`,
+        ),
+    ).size;
+
+    return {
+        ids: counted.map((element) => element.id),
+        count: counted.length,
+        units,
+        hasFill: counted.some((element) => Filled.includes(element.type)),
+        canGroup: units >= 2,
+        canUngroup: counted.some((element) => element.groupIds.length > 0),
+        hasLocked: counted.some((element) => element.locked === true),
+        allLocked: counted.every((element) => element.locked === true),
+    };
+}
+
+export function selectionBarShown(state: SelectionState): boolean {
+    return !(
+        state.editingTextElement ||
+        state.selectedElementsAreBeingDragged ||
+        state.isResizing ||
+        state.isRotating ||
+        state.newElement ||
+        state.openDialog
+    );
+}
+
+function toScreen(point: Point, view: CanvasView): Point {
+    return {
+        x: (point.x + view.scrollX) * view.zoom,
+        y: (point.y + view.scrollY) * view.zoom,
+    };
+}
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
+export function selectionBarPlacement(
+    bounds: Rect,
+    view: CanvasView,
+    bar: { width: number; height: number },
+): Placement {
+    const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
+    const bottomRight = toScreen(
+        { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+        view,
+    );
+    const centre = (topLeft.x + bottomRight.x) / 2;
+    const left = clamp(
+        centre - bar.width / 2,
+        EdgeMargin,
+        view.width - EdgeMargin - bar.width,
+    );
+    const below = bottomRight.y + BarGap;
+
+    if (below + bar.height <= view.height - EdgeMargin) {
+        return { left, top: below, side: 'below' };
+    }
+
+    return {
+        left,
+        top: Math.max(EdgeMargin, topLeft.y - ChipHeight - BarGap - bar.height),
+        side: 'above',
+    };
+}
+
+export function selectionCountPlacement(bounds: Rect, view: CanvasView): Point {
+    const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
+
+    return { x: topLeft.x, y: topLeft.y - ChipHeight };
+}
