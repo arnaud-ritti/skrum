@@ -4,18 +4,17 @@ namespace App\Actions\Games;
 
 use App\Models\GameRoom;
 use App\Models\GameRound;
-use App\Support\Games\GameWordBook;
 use Illuminate\Support\Arr;
 
-class PickGifQuestion
+class PickRoundQuestion
 {
     private const int RecentQuestions = 20;
 
-    public function __construct(private GameWordBook $gameWordBook) {}
-
-    public function handle(GameRoom $room, ?string $current = null): string
+    /**
+     * @param  array<int, string>  $questions
+     */
+    public function handle(GameRoom $room, array $questions, ?string $current = null): string
     {
-        $questions = $this->gameWordBook->questions($room->locale);
         $current = array_filter([$current]);
 
         $recent = GameRound::query()

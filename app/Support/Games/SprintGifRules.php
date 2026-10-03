@@ -2,7 +2,8 @@
 
 namespace App\Support\Games;
 
-use App\Actions\Games\PickGifQuestion;
+use App\Actions\Games\GameGuard;
+use App\Actions\Games\PickRoundQuestion;
 use App\Actions\Games\PresentGifAnswers;
 use App\Actions\Games\RevealGifRound;
 use App\Enums\GameKind;
@@ -13,20 +14,22 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Support\Gifs\GifCatalog;
 use Carbon\CarbonInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Two stages inside one active round: answering until the reveal, then a
  * voting window until the close. Votes stay secret until the round ends.
  */
-class SprintGifRules implements GameRules
+class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsInStages
 {
     public const PointsPerVote = 2;
 
     public function __construct(
         private GifCatalog $gifCatalog,
-        private PickGifQuestion $pickGifQuestion,
+        private PickRoundQuestion $pickRoundQuestion,
         private PresentGifAnswers $presentGifAnswers,
         private RevealGifRound $revealGifRound,
+        private GameWordBook $gameWordBook,
     ) {}
 
     public function kind(): GameKind
@@ -50,7 +53,45 @@ class SprintGifRules implements GameRules
     public function prepare(GameRoom $room, GameRound $round, array $input): void
     {
         $round->word = null;
-        $round->question = $this->pickGifQuestion->handle($room);
+        $round->question = $this->pickRoundQuestion->handle($room, $this->questions($room));
+    }
+
+    public function reveal(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $actor): ?GameRoundOutcome
+    {
+        GameGuard::host($lockedRoom, $actor);
+
+        if ($lockedRound->revealed_at !== null) {
+            throw new ConflictHttpException(__('The GIFs are already revealed.'));
+        }
+
+        $this->revealGifRound->handle($lockedRoom, $lockedRound);
+
+        return null;
+    }
+
+    public function close(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $actor): GameRoundOutcome
+    {
+        GameGuard::host($lockedRoom, $actor);
+
+        if ($lockedRound->revealed_at === null) {
+            throw new ConflictHttpException(__('Voting has not started.'));
+        }
+
+        return GameRoundOutcome::Revealed;
+    }
+
+    public function questions(GameRoom $room): array
+    {
+        return $this->gameWordBook->questions($room->locale);
+    }
+
+    /**
+     * Only until the first answer: afterwards the answers were chosen for
+     * the question as it stands.
+     */
+    public function questionLocked(GameRound $round): bool
+    {
+        return $round->revealed_at !== null || $round->gifAnswers()->exists();
     }
 
     public function presentActive(GameRound $round, GameRoom $room, ?GamePlayer $viewer): array

@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\Games\PickGifQuestion;
+use App\Actions\Games\PickRoundQuestion;
 use App\Actions\Games\PresentGameGif;
 use App\Actions\Games\PresentGifAnswers;
 use App\Enums\GameKind;
@@ -58,7 +58,7 @@ it('picks a question the room did not ask recently', function () {
     gifQuestionRound($room, 'Two?', 2);
     gifQuestionRound($other, 'Three?', 1);
 
-    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('Three?');
+    expect(resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale)))->toBe('Three?');
 });
 
 it('only avoids the last twenty questions', function () {
@@ -70,7 +70,7 @@ it('only avoids the last twenty questions', function () {
         gifQuestionRound($room, 'Two?', $minutesAgo);
     }
 
-    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('One?');
+    expect(resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale)))->toBe('One?');
 });
 
 it('starts over when every question was asked, never repeating the current one', function () {
@@ -79,14 +79,14 @@ it('starts over when every question was asked, never repeating the current one',
     gifQuestionRound($room, 'One?', 2);
     gifQuestionRound($room, 'Two?', 1);
 
-    expect(resolve(PickGifQuestion::class)->handle($room, 'Two?'))->toBe('One?');
+    expect(resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale), 'Two?'))->toBe('One?');
 });
 
 it('uses the room locale', function () {
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['English?'], 'fr' => ['Français ?']]));
     $room = GameRoom::factory()->game(GameKind::SprintGif)->create(['locale' => 'fr']);
 
-    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('Français ?');
+    expect(resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale)))->toBe('Français ?');
 });
 
 it('serves GIFs used by game answers', function () {

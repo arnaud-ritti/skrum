@@ -6,7 +6,7 @@ use App\Enums\GameWordTheme;
 use App\Support\Locales;
 
 /**
- * Word and GIF-question lists per locale, read from resources/games. The
+ * Word, GIF-question and prompt lists per locale, read from resources/games. The
  * files are immutable, so one copy per process is safe under Octane.
  */
 class GameWordBook
@@ -17,10 +17,12 @@ class GameWordBook
     /**
      * @param  array<string, array<int, array{word: string, drawable: bool, theme?: string}>>|null  $words
      * @param  array<string, array<int, string>>|null  $questions
+     * @param  array<string, array<int, string>>|null  $prompts
      */
     public function __construct(
         private ?array $words = null,
         private ?array $questions = null,
+        private ?array $prompts = null,
     ) {}
 
     /**
@@ -64,6 +66,21 @@ class GameWordBook
 
         /** @var array<int, string> */
         return $this->file('gif-questions', $locale);
+    }
+
+    /**
+     * The prompts of Guess who? and Quick question.
+     *
+     * @return array<int, string>
+     */
+    public function prompts(string $locale): array
+    {
+        if ($this->prompts !== null) {
+            return $this->prompts[$locale] ?? $this->prompts['en'] ?? [];
+        }
+
+        /** @var array<int, string> */
+        return $this->file('prompts', $locale);
     }
 
     /**

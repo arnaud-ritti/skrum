@@ -11,6 +11,7 @@ use App\Http\Controllers\EmailCodeChallengesController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameAnswersController;
+use App\Http\Controllers\Games\GameChoicesController;
 use App\Http\Controllers\Games\GameClosuresController;
 use App\Http\Controllers\Games\GameDrawingOpsController;
 use App\Http\Controllers\Games\GameDrawingsController;
@@ -677,7 +678,10 @@ Route::prefix('games/{room}')
         Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy')->whereUuid('round');
         Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store')->whereUuid('round');
         Route::post('rounds/{round}/turn', [GameTurnsController::class, 'store'])->name('games.rounds.turn.store')->whereUuid('round');
+        Route::put('rounds/{round}/choice', [GameChoicesController::class, 'update'])->name('games.rounds.choice.update')->whereUuid('round');
+        Route::delete('rounds/{round}/choice', [GameChoicesController::class, 'destroy'])->name('games.rounds.choice.destroy')->whereUuid('round');
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
+        // Plan 27 lanes
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
