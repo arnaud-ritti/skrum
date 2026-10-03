@@ -4441,5 +4441,9 @@
     "Its settings are copied from that survey.": "Die Einstellungen werden aus dieser Umfrage übernommen.",
     "Survey :date": "Umfrage :date",
     ":template :date": ":template :date",
-    "You cannot create a survey in this team.": "Du kannst in diesem Team keine Umfrage erstellen."
+    "You cannot create a survey in this team.": "Du kannst in diesem Team keine Umfrage erstellen.",
+    "1 answer": "1 Antwort",
+    ":count answers": ":count Antworten",
+    "1 question": "1 Frage",
+    "Its questions and answers are deleted too.": "Die Fragen und Antworten werden ebenfalls gelöscht."
 }

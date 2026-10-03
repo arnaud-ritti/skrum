@@ -27,8 +27,9 @@ afterEach(() => {
 });
 
 describe('teamAnchor', () => {
-    it('maps the four section hashes and falls back to the dashboard', () => {
+    it('maps the four section hashes, the surveys block to the sessions, and falls back to the dashboard', () => {
         expect(teamAnchor('#sessions')).toBe('sessions');
+        expect(teamAnchor('#surveys')).toBe('sessions');
         expect(teamAnchor('#mood')).toBe('mood');
         expect(teamAnchor('#members')).toBe('members');
         expect(teamAnchor('#settings')).toBe('settings');

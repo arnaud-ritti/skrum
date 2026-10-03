@@ -4221,5 +4221,9 @@
     "Its settings are copied from that survey.": "Its settings are copied from that survey.",
     "Survey :date": "Survey :date",
     ":template :date": ":template :date",
-    "You cannot create a survey in this team.": "You cannot create a survey in this team."
+    "You cannot create a survey in this team.": "You cannot create a survey in this team.",
+    "1 answer": "1 answer",
+    ":count answers": ":count answers",
+    "1 question": "1 question",
+    "Its questions and answers are deleted too.": "Its questions and answers are deleted too."
 }

@@ -4441,5 +4441,9 @@
     "Its settings are copied from that survey.": "Ses réglages sont repris de ce sondage.",
     "Survey :date": "Sondage :date",
     ":template :date": ":template :date",
-    "You cannot create a survey in this team.": "Tu ne peux pas créer de sondage dans cette équipe."
+    "You cannot create a survey in this team.": "Tu ne peux pas créer de sondage dans cette équipe.",
+    "1 answer": "1 réponse",
+    ":count answers": ":count réponses",
+    "1 question": "1 question",
+    "Its questions and answers are deleted too.": "Ses questions et réponses sont aussi supprimées."
 }

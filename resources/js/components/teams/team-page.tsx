@@ -19,6 +19,7 @@ import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamSettingsCard } from '@/components/teams/team-settings-card';
+import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
@@ -235,6 +236,12 @@ export function TeamPage({
                             boards={props.whiteboards}
                             templates={props.whiteboardTemplates}
                             thumbnailFor={slots.whiteboardThumbnailFor}
+                        />
+                        <TeamSurveysSection
+                            workspaceSlug={workspace.slug}
+                            teamId={team.id}
+                            surveys={props.surveys}
+                            canCreateSurvey={props.canCreateSurvey}
                         />
                     </div>
                     <div id="mood" className="min-w-0 scroll-mt-20">
