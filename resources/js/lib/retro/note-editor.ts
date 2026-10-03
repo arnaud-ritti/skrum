@@ -4,6 +4,8 @@ export type NoteEditorState = {
     draft: string;
     serverBody: string;
     serverVersion: number;
+    /** The version the draft was written on, sent with the save. */
+    baseVersion: number;
     /** The text of the save in flight. */
     sentBody: string | null;
     status: 'idle' | 'dirty' | 'saving' | 'saved' | 'failed' | 'conflict';
@@ -25,6 +27,7 @@ export function initialNoteEditor(note: TopicNote): NoteEditorState {
         draft: note.body,
         serverBody: note.body,
         serverVersion: note.version,
+        baseVersion: note.version,
         sentBody: null,
         status: 'idle',
         conflictText: null,
@@ -41,8 +44,10 @@ function hasUnsaved(state: NoteEditorState): boolean {
 
 /**
  * The notes of one topic in front of one viewer (spec §6.6): the text typed,
- * the last version the server holds, and the save in flight. A save from an
- * older version comes back as a conflict: the server's text replaces the
+ * the last version the server holds, the version the text was written on,
+ * and the save in flight. A newer note from someone else never moves the
+ * version an unsaved text is sent from, so a save from an older version
+ * comes back as a conflict: the server's text replaces the
  * field and the viewer's own text is kept aside, never lost silently.
  */
 export function noteEditorReducer(
@@ -59,6 +64,7 @@ export function noteEditorReducer(
                 ...state,
                 serverBody: action.note.body,
                 serverVersion: action.note.version,
+                baseVersion: action.note.version,
                 sentBody: null,
                 status: state.draft === state.sentBody ? 'saved' : 'dirty',
             };
@@ -68,6 +74,7 @@ export function noteEditorReducer(
                 draft: action.note.body,
                 serverBody: action.note.body,
                 serverVersion: action.note.version,
+                baseVersion: action.note.version,
                 sentBody: null,
                 status: 'conflict',
                 conflictText: state.draft,
@@ -92,6 +99,7 @@ export function noteEditorReducer(
                 draft: action.note.body,
                 serverBody: action.note.body,
                 serverVersion: action.note.version,
+                baseVersion: action.note.version,
                 status: 'idle',
             };
         case 'dismissConflict':

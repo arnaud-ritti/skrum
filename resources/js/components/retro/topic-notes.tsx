@@ -113,6 +113,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
         initialNoteEditor,
     );
     const latest = useRef(state);
+    const applyLatest = useRef(apply);
     const inFlight = useRef(false);
     const retroId = board.retro.id;
     const isLocked = !isEditable;
@@ -123,6 +124,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
 
     useEffect(() => {
         latest.current = state;
+        applyLatest.current = apply;
     });
 
     useEffect(() => {
@@ -136,7 +138,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
             return;
         }
 
-        const { draft, serverVersion } = latest.current;
+        const { draft, baseVersion } = latest.current;
 
         inFlight.current = true;
         dispatch({ type: 'send' });
@@ -144,7 +146,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
         try {
             const answer = await retroRequest<SavedAnswer>(
                 TopicNotesController.update({ retro: retroId, card: cardId }),
-                { body: draft, version: serverVersion },
+                { body: draft, version: baseVersion },
             );
 
             dispatch({ type: 'saved', note: answer.note });
@@ -183,6 +185,32 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
     }, [isDirty, state.draft, save]);
 
     useEffect(() => () => end('notes', cardId), [end, cardId]);
+
+    // The topic changed under unsaved text: it is sent one last time, and
+    // whatever comes back is left to the board. The editor is keyed by its
+    // topic, so this runs on unmount only.
+    useEffect(
+        () => () => {
+            const { draft, baseVersion, status } = latest.current;
+
+            if (status !== 'dirty' && status !== 'failed') {
+                return;
+            }
+
+            void retroRequest<SavedAnswer>(
+                TopicNotesController.update({ retro: retroId, card: cardId }),
+                { body: draft, version: baseVersion },
+            ).then(
+                (answer) =>
+                    applyLatest.current({
+                        type: 'topicNote.set',
+                        note: answer.note,
+                    }),
+                () => {},
+            );
+        },
+        [retroId, cardId],
+    );
 
     const describedBy = isLocked ? lockedId : activityId;
 

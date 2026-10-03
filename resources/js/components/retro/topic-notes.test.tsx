@@ -294,6 +294,85 @@ describe('TopicNotes', () => {
         expect(saveState(container)).toBe('Saved');
     });
 
+    it('tries again from the version the draft was written on, after a newer note from someone else', async () => {
+        retroRequest.mockRejectedValueOnce(new RetroRequestError(500, 'Down.'));
+
+        const {
+            ctx,
+            activity: value,
+            rerender,
+        } = renderNotes({ notes: [note('Base', 1)] });
+
+        fireEvent.change(field(), { target: { value: 'Mine' } });
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+        await flush();
+
+        rerender(
+            <BoardProvider
+                value={{
+                    ...ctx,
+                    board: { ...ctx.board, topicNotes: [note('Theirs', 2)] },
+                }}
+            >
+                {tree(value)}
+            </BoardProvider>,
+        );
+
+        expect(field().value).toBe('Mine');
+
+        retroRequest.mockRejectedValueOnce(
+            new RetroRequestError(
+                409,
+                'Someone else changed these notes.',
+                {},
+                { note: note('Theirs', 2) },
+            ),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        await flush();
+
+        expect(retroRequest.mock.calls[1][1]).toEqual({
+            body: 'Mine',
+            version: 1,
+        });
+        expect(field().value).toBe('Theirs');
+        expect(
+            screen
+                .getByText('Your text was not saved')
+                .closest('[data-slot="retro-topic-notes-conflict"]')
+                ?.textContent,
+        ).toContain('Mine');
+    });
+
+    it('saves the unsaved text when the topic in front of the viewer changes', async () => {
+        retroRequest.mockResolvedValue({ note: note('Last words', 2) });
+
+        const { container, ctx } = renderNotes({ notes: [note('Base', 1)] });
+
+        fireEvent.change(field(), { target: { value: 'Last words' } });
+        fireEvent.click(
+            container.querySelector(
+                '[data-test="retro-topics"] > li[data-topic-id="b"] button',
+            ) as HTMLElement,
+        );
+        await flush();
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        expect(retroRequest.mock.calls[0][0].url).toContain(
+            '/retros/retro-1/cards/a/notes',
+        );
+        expect(retroRequest.mock.calls[0][1]).toEqual({
+            body: 'Last words',
+            version: 1,
+        });
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'topicNote.set',
+            note: note('Last words', 2),
+        });
+    });
+
     it('is read-only while someone else takes notes on the topic', () => {
         renderNotes({
             entries: [

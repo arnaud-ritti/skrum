@@ -14,6 +14,7 @@ describe('noteEditorReducer', () => {
             draft: 'x',
             serverBody: 'x',
             serverVersion: 2,
+            baseVersion: 2,
             sentBody: null,
             status: 'idle',
             conflictText: null,
@@ -98,11 +99,59 @@ describe('noteEditorReducer', () => {
             serverVersion: 2,
             status: 'idle',
         });
+        expect(clean.baseVersion).toBe(2);
         expect(dirty).toMatchObject({
             draft: 'mine',
             serverVersion: 2,
+            baseVersion: 1,
             status: 'dirty',
         });
+    });
+
+    it('saves an unsaved draft from the version it was written on, after a newer note from someone else', () => {
+        let state = noteEditorReducer(initialNoteEditor(note('a', 1)), {
+            type: 'edit',
+            draft: 'mine',
+        });
+
+        state = noteEditorReducer(state, { type: 'send' });
+        state = noteEditorReducer(state, { type: 'failed' });
+        state = noteEditorReducer(state, {
+            type: 'server',
+            note: note('theirs', 2),
+        });
+        state = noteEditorReducer(state, { type: 'send' });
+
+        expect(state).toMatchObject({
+            draft: 'mine',
+            baseVersion: 1,
+            serverVersion: 2,
+        });
+
+        state = noteEditorReducer(state, {
+            type: 'conflict',
+            note: note('theirs', 2),
+        });
+
+        expect(state).toMatchObject({
+            status: 'conflict',
+            draft: 'theirs',
+            baseVersion: 2,
+            conflictText: 'mine',
+        });
+    });
+
+    it('writes on top of its own save once the answer comes back', () => {
+        let state = noteEditorReducer(initialNoteEditor(note('', 0)), {
+            type: 'edit',
+            draft: 'a',
+        });
+
+        state = noteEditorReducer(state, { type: 'send' });
+        state = noteEditorReducer(state, { type: 'edit', draft: 'ab' });
+        state = noteEditorReducer(state, { type: 'saved', note: note('a', 1) });
+
+        expect(state.baseVersion).toBe(1);
     });
 
     it('ignores a server note no newer than the one it holds', () => {
