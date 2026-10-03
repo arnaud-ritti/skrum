@@ -2,12 +2,19 @@
 
 use App\Actions\Auth\IssueMagicLink;
 use App\Mail\TwoFactorCodeMail;
+use App\Models\Passkey;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Passkeys\Actions\VerifyPasskey;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\Passkey as BasePasskey;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use ParagonIE\ConstantTime\Base64UrlSafe;
+use Webauthn\PublicKeyCredential;
+use Webauthn\PublicKeyCredentialRequestOptions;
 
 it('stamps the time of a password sign-in', function () {
     $this->travelTo(now()->setDateTime(2026, 10, 3, 9, 0, 0));
@@ -60,6 +67,33 @@ it('stamps the time of an SSO sign-in', function () {
     Socialite::fake('google', SocialiteUser::fake(['id' => 'g-1']));
 
     $this->get(route('sso.callback', 'google'))->assertRedirect(route('dashboard'));
+
+    expect($user->fresh()->last_signed_in_at)->not->toBeNull();
+});
+
+it('stamps the time of a passkey sign-in', function () {
+    $user = User::factory()->create();
+    $this->app->instance(VerifyPasskey::class, new class($user) extends VerifyPasskey
+    {
+        public function __construct(private User $user) {}
+
+        public function __invoke(PublicKeyCredential $credential, PublicKeyCredentialRequestOptions $options, ?PasskeyUser $user = null): BasePasskey
+        {
+            return (new Passkey)->setRelation('user', $this->user);
+        }
+    });
+
+    $this->getJson(route('passkey.login-options'))->assertOk();
+    $this->postJson(route('passkey.login'), ['credential' => [
+        'id' => 'AQID',
+        'rawId' => 'AQID',
+        'type' => 'public-key',
+        'response' => [
+            'clientDataJSON' => Base64UrlSafe::encodeUnpadded((string) json_encode(['type' => 'webauthn.get', 'challenge' => 'AAAA', 'origin' => 'http://localhost'])),
+            'authenticatorData' => Base64UrlSafe::encodeUnpadded(str_repeat("\0", 37)),
+            'signature' => 'AQID',
+        ],
+    ]])->assertSuccessful();
 
     expect($user->fresh()->last_signed_in_at)->not->toBeNull();
 });
