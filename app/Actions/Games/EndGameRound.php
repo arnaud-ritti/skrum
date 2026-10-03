@@ -52,6 +52,8 @@ class EndGameRound
             'word' => $round->word,
             'winnerPlayerId' => $round->winner_player_id,
             'leaderPlayerId' => $round->leader_player_id,
+            'number' => $round->number,
+            'roundsTotal' => $round->rounds_total,
             ...($this->gameRulesRegistry->find($round->game)?->endedPayload($round, $room) ?? []),
             'points' => $points,
         ];

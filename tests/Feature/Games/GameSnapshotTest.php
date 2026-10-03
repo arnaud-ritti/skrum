@@ -138,6 +138,8 @@ it('presents the active round for the viewer through the rules', function () {
         'leaderPlayerId' => null,
         'startedAt' => '2026-10-06T10:00:00+00:00',
         'revealedAt' => null,
+        'number' => null,
+        'roundsTotal' => null,
         'fake' => true,
         'viewerPlayerId' => $member->id,
     ])
@@ -167,6 +169,8 @@ it('lists ended rounds newest first with names and without the active one', func
             'winnerPlayerId' => $winner->id,
             'winnerName' => $winnerUser->name,
             'endedAt' => '2026-10-06T10:00:00+00:00',
+            'number' => null,
+            'roundsTotal' => null,
         ])
         ->and(gamePayloadExposesWord($history, 'hidden'))->toBeFalse();
 });

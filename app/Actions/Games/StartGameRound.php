@@ -19,6 +19,7 @@ class StartGameRound
         private PresentGameRound $presentGameRound,
         private ScheduleRoundExpiry $scheduleRoundExpiry,
         private AnnounceTeamGameRoom $announceTeamGameRoom,
+        private NumberGameRound $numberGameRound,
     ) {}
 
     /**
@@ -41,10 +42,14 @@ class StartGameRound
 
             $ended = $this->closeActiveRound($locked);
 
+            $numbering = $this->numberGameRound->handle($locked);
+
             $round = new GameRound([
                 'game_room_id' => $locked->id,
                 'game' => $locked->game,
                 'started_at' => now()->startOfSecond(),
+                'number' => $numbering['number'],
+                'rounds_total' => $numbering['total'],
             ]);
 
             $rules->prepare($locked, $round, $input);

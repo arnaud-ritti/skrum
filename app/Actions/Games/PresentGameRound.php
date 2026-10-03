@@ -26,6 +26,8 @@ class PresentGameRound
             'leaderPlayerId' => $round->leader_player_id,
             'startedAt' => $round->started_at->toIso8601String(),
             'revealedAt' => $round->revealed_at?->toIso8601String(),
+            'number' => $round->number,
+            'roundsTotal' => $round->rounds_total,
             ...($this->gameRulesRegistry->find($round->game)?->presentActive($round, $room, $viewer) ?? []),
         ];
     }

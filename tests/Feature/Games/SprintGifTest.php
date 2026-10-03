@@ -153,7 +153,7 @@ it('gives authors 2 points per favourite vote at close and 0 to the others who t
         ['playerId' => $host->id, 'points' => 0, 'isWin' => false],
         ['playerId' => $voter->id, 'points' => 0, 'isWin' => false],
     ])
-        ->and(array_keys($payload))->toBe(['roundId', 'outcome', 'word', 'winnerPlayerId', 'leaderPlayerId', 'question', 'answers', 'points'])
+        ->and(array_keys($payload))->toBe(['roundId', 'outcome', 'word', 'winnerPlayerId', 'leaderPlayerId', 'number', 'roundsTotal', 'question', 'answers', 'points'])
         ->and($payload['word'])->toBeNull()
         ->and($payload['question'])->toBe('How did the sprint feel?')
         ->and(collect($payload['answers'])->firstWhere('id', $popular->id))->toBe([

@@ -25,7 +25,9 @@ class PresentGameRoundHistory
      *     leaderName: ?string,
      *     winnerPlayerId: ?string,
      *     winnerName: ?string,
-     *     endedAt: string
+     *     endedAt: string,
+     *     number: ?int,
+     *     roundsTotal: ?int
      * }
      */
     public function handle(GameRound $round): array
@@ -43,6 +45,8 @@ class PresentGameRoundHistory
             'winnerPlayerId' => $round->winner_player_id,
             'winnerName' => $round->winner?->displayName(),
             'endedAt' => $round->ended_at->toIso8601String(),
+            'number' => $round->number,
+            'roundsTotal' => $round->rounds_total,
         ];
     }
 
