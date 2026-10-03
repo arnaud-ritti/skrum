@@ -60,10 +60,12 @@ export type GuestJoinProps = {
      * (another random nickname was drawn) replaces what the field holds.
      */
     initialName?: string;
-    /** Backlog: the colour picker is only rendered when this list is given. */
+    /** The colour picker is only rendered when this list is given. */
     takenColors?: number[];
     /** Colour selected first; defaults to the first free one. */
     initialPresence?: number;
+    /** `lg`: the phone's 6 × 2 grid of 48 px targets (MobileAccess). */
+    swatchSize?: 'md' | 'lg';
     error?: { field: 'name'; message: string } | null;
     processing?: boolean;
     /**
@@ -122,6 +124,7 @@ export function GuestJoin({
     initialName = '',
     takenColors,
     initialPresence,
+    swatchSize = 'md',
     error = null,
     processing = false,
     onSubmit,
@@ -364,6 +367,7 @@ export function GuestJoin({
                             onChange={setChosenColor}
                             taken={taken}
                             label={t('Avatar colour')}
+                            size={swatchSize}
                         />
                     </div>
                 )}

@@ -127,6 +127,21 @@ describe('GuestJoin', () => {
         ).toBe('true');
     });
 
+    it('lays the colours out as a 6 × 2 grid of 48 px targets in the phone size', () => {
+        setup({ takenColors: [], swatchSize: 'lg' });
+
+        expect(
+            document
+                .querySelector('[data-slot="presence-swatches"]')
+                ?.classList.contains('grid-cols-6'),
+        ).toBe(true);
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 1' })
+                .classList.contains('size-12'),
+        ).toBe(true);
+    });
+
     it('shows the name error, blocks submit, and releases it when edited', () => {
         const onSubmit = setup({
             initialName: 'Théo',
