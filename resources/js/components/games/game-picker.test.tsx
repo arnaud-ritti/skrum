@@ -158,6 +158,52 @@ describe('GamePicker', () => {
         expect(screen.getByRole('dialog')).toBeTruthy();
         expect(document.activeElement).toBe(gif);
     });
+    it('shows the duration and players of every game, and never disables a card for the players count', () => {
+        const ctx = {
+            snapshot: {
+                room: { id: 'room', game: 'hangman', isHost: true },
+                games: [
+                    { value: 'hangman', label: 'Hangman', available: true },
+                    {
+                        value: 'two_truths',
+                        label: 'Two truths and a lie',
+                        available: true,
+                    },
+                    { value: 'mood', label: 'Mood weather', available: true },
+                    {
+                        value: 'quick_question',
+                        label: 'Quick question',
+                        available: true,
+                    },
+                ],
+                players: [{ id: 'p1', name: 'Alone', online: true }],
+            },
+            run: <T,>(mutation: Promise<T>) => mutation,
+            refetch: async () => undefined,
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GamePicker />
+            </RoomProvider>,
+        );
+
+        const hangman = card('Hangman');
+        const twoTruths = card('Two truths and a lie');
+        const mood = card('Mood weather');
+        const quickQuestion = card('Quick question');
+
+        expect(within(hangman).getByText('5–10 min')).toBeTruthy();
+        expect(within(hangman).getByText('1-30')).toBeTruthy();
+        expect(within(twoTruths).getByText('10 min')).toBeTruthy();
+        expect(within(twoTruths).getByText('3-15')).toBeTruthy();
+        expect(within(twoTruths).getByText('3 to 15 players')).toBeTruthy();
+        expect(twoTruths.getAttribute('aria-disabled')).toBeNull();
+        expect(within(mood).getByText('3 min · anonymous')).toBeTruthy();
+        expect(within(quickQuestion).getByText('2 min / person')).toBeTruthy();
+        expect(within(quickQuestion).getByText('1-12')).toBeTruthy();
+    });
+
     it('says why Guess who? cannot be played in an anonymous retro', () => {
         const ctx = {
             snapshot: {

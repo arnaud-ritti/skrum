@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { GameCatalogue } from '@/lib/games/catalogue';
 import type { GameKind, GameRoomAccess } from '@/lib/games/types';
 import type { GameOption } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
@@ -171,6 +172,7 @@ export function IcebreakerSessionFields({
                         {gameOptions.map((option) => (
                             <IcebreakerGameCard
                                 key={option.value}
+                                {...GameCatalogue[option.value]}
                                 game={option.value}
                                 title={option.label}
                                 pitch={pitches[option.value]}

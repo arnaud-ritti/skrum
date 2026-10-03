@@ -6,6 +6,7 @@ import {
     IcebreakerGameGrid,
 } from '@/components/skrum/icebreaker-game-card';
 import { useTrans } from '@/hooks/use-trans';
+import { GameCatalogue } from '@/lib/games/catalogue';
 import type { GameKind } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useRoom } from './room-context';
@@ -108,6 +109,7 @@ export function GamePicker({
                 {games.map((option) => (
                     <IcebreakerGameCard
                         key={option.value}
+                        {...GameCatalogue[option.value]}
                         game={option.value}
                         title={option.label}
                         compact

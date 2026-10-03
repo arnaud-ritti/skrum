@@ -7,6 +7,7 @@ import {
 } from '@/components/skrum/icebreaker-game-card';
 import type { IcebreakerGame } from '@/components/skrum/icebreaker-game-card';
 import { useTrans } from '@/hooks/use-trans';
+import { GameCatalogue } from '@/lib/games/catalogue';
 
 export const group: BenchGroup = 'skrum';
 
@@ -29,32 +30,28 @@ export default function IcebreakerGameCardSection() {
         game: 'hangman' as const,
         title: t('Hangman'),
         pitch: t("Guess the team's word, letter by letter."),
-        durationMin: 5,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.hangman,
         participants: 8,
     };
     const draw = {
         game: 'draw' as const,
         title: t('Draw & Guess'),
         pitch: t('One draws, the others guess within 60 seconds.'),
-        durationMin: 10,
-        players: { min: 3, max: 12 },
+        ...GameCatalogue.draw,
         participants: 8,
     };
     const gif = {
         game: 'gif' as const,
         title: t('Sprint in one GIF'),
         pitch: t('Sum up the sprint with a single GIF.'),
-        durationMin: 10,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.gif,
         participants: 8,
     };
     const decoded = {
         game: 'decoded' as const,
         title: t('Decoded'),
         pitch: t('A film, a place or a project hidden in 3 emojis.'),
-        durationMin: 5,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.decoded,
         participants: 8,
     };
 
@@ -62,32 +59,28 @@ export default function IcebreakerGameCardSection() {
         game: 'two_truths' as const,
         title: t('Two truths and a lie'),
         pitch: t('Everyone prepares three statements, one lie: find it.'),
-        durationMin: 10,
-        players: { min: 3, max: 30 },
+        ...GameCatalogue.two_truths,
         participants: 8,
     };
     const mood = {
         game: 'mood' as const,
         title: t('Mood weather'),
         pitch: t('Your mood as a weather, anonymously.'),
-        durationMin: 3,
-        players: { min: 1, max: 30 },
+        ...GameCatalogue.mood,
         participants: 8,
     };
     const guessWho = {
         game: 'guess_who' as const,
         title: t('Guess who?'),
         pitch: t('Everyone answers, one answer is drawn: guess who wrote it.'),
-        durationMin: 8,
-        players: { min: 3, max: 15 },
+        ...GameCatalogue.guess_who,
         participants: 8,
     };
     const quickQuestion = {
         game: 'quick_question' as const,
         title: t('Quick question'),
         pitch: t('One question, everyone answers aloud in turn.'),
-        durationMin: 2,
-        players: { min: 1, max: 12 },
+        ...GameCatalogue.quick_question,
         participants: 8,
     };
 
@@ -176,6 +169,7 @@ export default function IcebreakerGameCardSection() {
                     {games.map((game) => (
                         <IcebreakerGameCard
                             key={game.game}
+                            {...GameCatalogue[game.game]}
                             game={game.game}
                             title={game.title}
                             compact
@@ -191,12 +185,6 @@ export default function IcebreakerGameCardSection() {
                         <IcebreakerGameCard
                             key={game.game}
                             {...game}
-                            participants={game.game === 'gif' ? 1 : 8}
-                            players={
-                                game.game === 'gif'
-                                    ? { min: 3, max: 15 }
-                                    : game.players
-                            }
                             selected={chosen === game.game}
                             onSelect={setChosen}
                         />
