@@ -123,6 +123,19 @@ class Team extends Model
         return $this->hasMany(WorkspaceInvitation::class);
     }
 
+    /** @return HasMany<TeamInviteLink, $this> */
+    public function inviteLinks(): HasMany
+    {
+        return $this->hasMany(TeamInviteLink::class);
+    }
+
+    public function usableInviteLink(): ?TeamInviteLink
+    {
+        $link = $this->inviteLinks()->whereNull('revoked_at')->latest()->orderByDesc('id')->first();
+
+        return $link?->isUsable() === true ? $link : null;
+    }
+
     /** @return HasMany<TeamAccessRequest, $this> */
     public function accessRequests(): HasMany
     {
