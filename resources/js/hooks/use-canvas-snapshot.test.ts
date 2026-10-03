@@ -5,6 +5,13 @@ import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
 import type { SceneElement } from '@/lib/whiteboard/types';
 
+vi.mock('@/lib/whiteboard/scene-stamp', async (importOriginal) => {
+    const actual =
+        await importOriginal<typeof import('@/lib/whiteboard/scene-stamp')>();
+
+    return { ...actual, sceneStamp: vi.fn(actual.sceneStamp) };
+});
+
 type ChangeListener = (
     elements: readonly SceneElement[],
     appState: Record<string, unknown>,
@@ -145,6 +152,27 @@ describe('useCanvasSnapshot', () => {
         });
 
         expect(result.current?.stamp).toBe(sceneStamp(next));
+    });
+
+    it('stamps the scene once per frame, not on every change', () => {
+        const fake = fakeApi();
+
+        renderHook(() => useCanvasSnapshot(fake.api));
+        vi.mocked(sceneStamp).mockClear();
+
+        act(() => {
+            fake.emit([element('x')], appState());
+            fake.emit([element('y')], appState());
+            fake.emit([element('z')], appState());
+        });
+
+        expect(sceneStamp).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(16);
+        });
+
+        expect(sceneStamp).toHaveBeenCalledOnce();
     });
 
     it('unsubscribes and cancels a pending frame on unmount', () => {

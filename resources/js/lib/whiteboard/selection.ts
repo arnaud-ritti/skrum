@@ -112,15 +112,24 @@ export function selectionBarPlacement(
         EdgeMargin,
         view.width - EdgeMargin - bar.width,
     );
+    const lowestTop = view.height - EdgeMargin - bar.height;
     const below = bottomRight.y + BarGap;
 
-    if (below + bar.height <= view.height - EdgeMargin) {
-        return { left, top: below, side: 'below' };
+    if (below <= lowestTop) {
+        return {
+            left,
+            top: clamp(below, EdgeMargin, lowestTop),
+            side: 'below',
+        };
     }
 
     return {
         left,
-        top: Math.max(EdgeMargin, topLeft.y - ChipHeight - BarGap - bar.height),
+        top: clamp(
+            topLeft.y - ChipHeight - BarGap - bar.height,
+            EdgeMargin,
+            lowestTop,
+        ),
         side: 'above',
     };
 }

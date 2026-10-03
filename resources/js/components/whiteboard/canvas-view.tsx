@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 import type { ReactElement, RefObject } from 'react';
 import {
     WhiteboardHistoryBar,
@@ -20,7 +26,11 @@ import {
     minimapItems,
     toMinimap,
 } from '@/lib/whiteboard/minimap';
-import type { MinimapElement, MinimapItem } from '@/lib/whiteboard/minimap';
+import type {
+    MinimapElement,
+    MinimapFrame,
+    MinimapItem,
+} from '@/lib/whiteboard/minimap';
 import {
     canZoom,
     centredOn,
@@ -55,6 +65,19 @@ function rootFontSize(): number {
     return (
         parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
     );
+}
+
+/** The library's view now: two presses inside one frame both see the first one's result. */
+function liveView(api: ExcalidrawImperativeAPI): View {
+    const state = api.getAppState();
+
+    return {
+        scrollX: state.scrollX,
+        scrollY: state.scrollY,
+        zoom: state.zoom.value,
+        width: state.width,
+        height: state.height,
+    };
 }
 
 function prefersReducedMotion(): boolean {
@@ -191,6 +214,7 @@ export function CanvasView({
                         elements={snapshot.elements}
                         stamp={snapshot.stamp}
                         view={view}
+                        liveView={() => liveView(api)}
                         onView={applyView}
                     />
                 )}
@@ -199,17 +223,29 @@ export function CanvasView({
                     canZoomIn={canZoom(view.zoom, 1)}
                     canZoomOut={canZoom(view.zoom, -1)}
                     minimapOpen={isWide ? minimapOpen : undefined}
-                    onZoomIn={() =>
+                    onZoomIn={() => {
+                        const current = liveView(api);
+
                         applyView(
-                            zoomAroundCentre(view, steppedZoom(view.zoom, 1)),
-                        )
-                    }
-                    onZoomOut={() =>
+                            zoomAroundCentre(
+                                current,
+                                steppedZoom(current.zoom, 1),
+                            ),
+                        );
+                    }}
+                    onZoomOut={() => {
+                        const current = liveView(api);
+
                         applyView(
-                            zoomAroundCentre(view, steppedZoom(view.zoom, -1)),
-                        )
+                            zoomAroundCentre(
+                                current,
+                                steppedZoom(current.zoom, -1),
+                            ),
+                        );
+                    }}
+                    onReset={() =>
+                        applyView(zoomAroundCentre(liveView(api), 1))
                     }
-                    onReset={() => applyView(zoomAroundCentre(view, 1))}
                     onFit={fit}
                     onMinimapToggle={
                         isWide ? () => setMinimapOpen(!minimapOpen) : undefined
@@ -226,13 +262,18 @@ function CanvasMinimap({
     elements,
     stamp,
     view,
+    liveView,
     onView,
 }: {
     elements: CanvasSnapshot['elements'];
     stamp: string;
     view: View;
+    liveView: () => View;
     onView: (patch: ViewPatch) => void;
 }): ReactElement {
+    /** Held from the press to the release: the frame grows with the view, so a drag through a live one runs away. */
+    const [dragFrame, setDragFrame] = useState<MinimapFrame | null>(null);
+
     const [held, setHeld] = useState<HeldItems>(() => ({
         stamp,
         items: minimapItems(elements as unknown as MinimapElement[]),
@@ -246,10 +287,28 @@ function CanvasMinimap({
 
     const remToPx = rootFontSize();
     const visible = visibleArea(view);
-    const frame = minimapFrame(items, visible, {
-        width: MinimapSizeRem.width * remToPx,
-        height: MinimapSizeRem.height * remToPx,
-    });
+    const frame =
+        dragFrame ??
+        minimapFrame(items, visible, {
+            width: MinimapSizeRem.width * remToPx,
+            height: MinimapSizeRem.height * remToPx,
+        });
+
+    useEffect(() => {
+        if (dragFrame === null) {
+            return;
+        }
+
+        const release = (): void => setDragFrame(null);
+
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
+
+        return () => {
+            window.removeEventListener('pointerup', release);
+            window.removeEventListener('pointercancel', release);
+        };
+    }, [dragFrame]);
 
     return (
         <WhiteboardMinimap
@@ -259,11 +318,15 @@ function CanvasMinimap({
                 color: item.color,
             }))}
             view={toMinimap(visible, frame)}
-            onMoveTo={(point) =>
-                onView(centredOn(view, fromMinimap(point, frame)))
-            }
+            onMoveTo={(point) => {
+                if (dragFrame === null) {
+                    setDragFrame(frame);
+                }
+
+                onView(centredOn(liveView(), fromMinimap(point, frame)));
+            }}
             onPan={(fractionX, fractionY) =>
-                onView(pannedBy(view, fractionX, fractionY))
+                onView(pannedBy(liveView(), fractionX, fractionY))
             }
         />
     );

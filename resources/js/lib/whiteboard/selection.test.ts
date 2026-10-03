@@ -140,6 +140,26 @@ describe('selection', () => {
         });
     });
 
+    it('keeps the bar inside the canvas when the selection is scrolled above it', () => {
+        expect(
+            selectionBarPlacement(
+                { x: 100, y: -500, width: 200, height: 100 },
+                view,
+                { width: 200, height: 44 },
+            ),
+        ).toEqual({ left: 100, top: 16, side: 'below' });
+    });
+
+    it('keeps the bar inside the canvas when the selection is scrolled below it', () => {
+        expect(
+            selectionBarPlacement(
+                { x: 100, y: 2000, width: 200, height: 100 },
+                view,
+                { width: 200, height: 44 },
+            ),
+        ).toEqual({ left: 100, top: 844 - 16 - 44, side: 'above' });
+    });
+
     it('follows the scroll and the zoom of the view', () => {
         expect(
             selectionCountPlacement(

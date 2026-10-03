@@ -96,7 +96,10 @@ export function useCanvasSnapshot(
             return;
         }
 
-        let latest: CanvasSnapshot | null = null;
+        let latest: {
+            elements: readonly SceneElement[];
+            state: LibraryState;
+        } | null = null;
         let frame: number | null = null;
 
         const flush = () => {
@@ -106,14 +109,17 @@ export function useCanvasSnapshot(
                 return;
             }
 
-            setHeld({ api, snapshot: latest });
+            setHeld({
+                api,
+                snapshot: snapshotOf(latest.elements, latest.state),
+            });
         };
 
         const unsubscribe = api.onChange((elements, appState) => {
-            latest = snapshotOf(
-                elements as unknown as SceneElement[],
-                appState,
-            );
+            latest = {
+                elements: elements as unknown as SceneElement[],
+                state: appState,
+            };
 
             if (frame === null) {
                 frame = requestAnimationFrame(flush);

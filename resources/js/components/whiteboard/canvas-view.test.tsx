@@ -23,6 +23,7 @@ import {
     MinZoom,
     centredOn,
     pannedBy,
+    steppedZoom,
     visibleArea,
     zoomAroundCentre,
 } from '@/lib/whiteboard/viewport';
@@ -51,9 +52,12 @@ const DefaultView: View = {
     height: 600,
 };
 
-function fakeApi(elements: unknown[] = [{ id: 'a' }]) {
+function fakeApi(
+    elements: unknown[] = [{ id: 'a' }],
+    initialView: View = DefaultView,
+) {
     const scrollListeners: ScrollListener[] = [];
-    const state = { ...DefaultView };
+    const state = { ...initialView };
 
     return {
         scrollListeners,
@@ -267,8 +271,28 @@ describe('CanvasView', () => {
         fireEvent.click(control('Zoom in'));
         expect(lastViewPatch(api)).toEqual(zoomAroundCentre(DefaultView, 1.1));
 
+        const zoomedIn = { ...DefaultView, ...lastViewPatch(api) };
+
         fireEvent.click(control('Zoom out'));
-        expect(lastViewPatch(api)).toEqual(zoomAroundCentre(DefaultView, 0.9));
+        expect(lastViewPatch(api)).toEqual(
+            zoomAroundCentre(zoomedIn, steppedZoom(zoomedIn.zoom, -1)),
+        );
+    });
+
+    it('zooms two steps on two presses inside one frame', () => {
+        const api = fakeApi();
+
+        renderView(api);
+
+        fireEvent.click(control('Zoom in'));
+        const afterFirst = { ...DefaultView, ...lastViewPatch(api) };
+
+        fireEvent.click(control('Zoom in'));
+
+        expect(afterFirst.zoom).toBeCloseTo(1.1);
+        expect(lastViewPatch(api)).toEqual(
+            zoomAroundCentre(afterFirst, steppedZoom(afterFirst.zoom, 1)),
+        );
     });
 
     it('disables Zoom in at the largest zoom and Zoom out at the smallest', () => {
@@ -293,8 +317,8 @@ describe('CanvasView', () => {
     });
 
     it('resets the zoom to 100 % around the centre from the percentage', () => {
-        const api = fakeApi();
         const view = { ...DefaultView, zoom: 2.5, scrollX: -40, scrollY: 30 };
+        const api = fakeApi([{ id: 'a' }], view);
 
         renderView(api, snapshotWith({ view }));
         fireEvent.click(control('Reset zoom to 100 %'));
@@ -446,9 +470,72 @@ describe('CanvasView', () => {
             centredOn(DefaultView, fromMinimap({ x: 50, y: 30 }, frame)),
         );
 
+        const centred = { ...DefaultView, ...lastViewPatch(api) };
+
+        fireEvent.pointerUp(minimap, { pointerId: 1 });
         fireEvent.keyDown(control('Move the view'), { key: 'ArrowRight' });
 
-        expect(lastViewPatch(api)).toEqual(pannedBy(DefaultView, 0.1, 0));
+        expect(lastViewPatch(api)).toEqual(pannedBy(centred, 0.1, 0));
+    });
+
+    it('keeps the frame of the minimap still while its view is dragged', () => {
+        const api = fakeApi();
+        const elements = [Elements[0]];
+        const { rerender } = renderView(api, snapshotWith({ elements }));
+        const minimap = (): HTMLElement =>
+            document.querySelector<HTMLElement>(
+                '[data-slot="whiteboard-minimap"]',
+            )!;
+        const centreX = (): number => {
+            const patch = lastViewPatch(api);
+
+            return -patch.scrollX + DefaultView.width / patch.zoom / 2;
+        };
+        const followView = (): void => {
+            rerender(
+                <Board
+                    api={api}
+                    snapshot={snapshotWith({
+                        elements,
+                        view: lastViewPatch(api),
+                    })}
+                />,
+            );
+            minimap().getBoundingClientRect = () =>
+                ({ left: 0, top: 0, width: 180, height: 112 }) as DOMRect;
+        };
+        const frame = minimapFrame(
+            minimapItems(elements),
+            visibleArea(DefaultView),
+            { width: 180, height: 112 },
+        );
+
+        minimap().getBoundingClientRect = () =>
+            ({ left: 0, top: 0, width: 180, height: 112 }) as DOMRect;
+        fireEvent.pointerDown(minimap(), {
+            button: 0,
+            pointerId: 1,
+            clientX: 170,
+            clientY: 56,
+        });
+        followView();
+        fireEvent.pointerMove(minimap(), {
+            pointerId: 1,
+            clientX: 171,
+            clientY: 56,
+        });
+        const first = centreX();
+
+        followView();
+        fireEvent.pointerMove(minimap(), {
+            pointerId: 1,
+            clientX: 172,
+            clientY: 56,
+        });
+
+        expect(centreX() - first).toBeCloseTo(1 / frame.scale);
+
+        fireEvent.pointerUp(minimap(), { pointerId: 1 });
     });
 
     it('undoes and redoes through the hidden buttons of the library, enabled as they are', async () => {
