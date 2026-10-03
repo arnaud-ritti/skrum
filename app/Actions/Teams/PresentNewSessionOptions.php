@@ -53,7 +53,7 @@ class PresentNewSessionOptions
         return [
             'templateCategories' => TemplateCategory::options(),
             'topTemplates' => $this->topTeamTemplates->handle($team),
-            'catalogue' => Inertia::optional(fn (): array => $this->buildTemplateCatalogue->handle($workspace)),
+            'catalogue' => Inertia::optional(fn (): array => $this->buildTemplateCatalogue->handle($workspace, $viewer, $team)),
             'llm' => [
                 'enabled' => $this->llm->isConfigured(),
                 'provider' => $this->llm->providerName(),

@@ -2,10 +2,12 @@
 
 namespace App\Actions\Retros;
 
+use App\Enums\TemplateVisibility;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class TopTeamTemplates
@@ -35,6 +37,9 @@ class TopTeamTemplates
     {
         $workspaceTemplateIds = WorkspaceTemplate::query()
             ->where('workspace_id', $team->workspace_id)
+            ->where(fn (Builder $shared) => $shared
+                ->where('visibility', TemplateVisibility::Workspace->value)
+                ->orWhere(fn (Builder $teamTemplates) => $teamTemplates->where('visibility', TemplateVisibility::Team->value)->where('team_id', $team->id)))
             ->pluck('id')
             ->all();
 

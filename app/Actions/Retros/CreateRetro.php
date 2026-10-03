@@ -31,7 +31,7 @@ class CreateRetro
             $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
             $facilitatorUser = $data->facilitatorUserId === null ? $creator : User::query()->findOrFail($data->facilitatorUserId);
             $this->suggestedFacilitator->follow($lockedTeam, $facilitatorUser);
-            $workspaceTemplate = $this->workspaceTemplate($team, $data->template);
+            $workspaceTemplate = $this->workspaceTemplate($team, $creator, $data->template);
 
             $retro = $team->retros()->make([
                 'title' => $data->title,
@@ -67,7 +67,7 @@ class CreateRetro
         });
     }
 
-    private function workspaceTemplate(Team $team, string $template): ?WorkspaceTemplate
+    private function workspaceTemplate(Team $team, User $creator, string $template): ?WorkspaceTemplate
     {
         $id = WorkspaceTemplate::idFromKey($template);
 
@@ -75,7 +75,7 @@ class CreateRetro
             return null;
         }
 
-        return $team->workspace->templates()->with('columns')->findOrFail($id);
+        return $team->workspace->templates()->visibleTo($creator, $team->workspace, $team)->with('columns')->findOrFail($id);
     }
 
     /**

@@ -5,15 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\Retros\CreateRetro;
 use App\Actions\Retros\NewRetro;
+use App\Actions\Retros\TemplateAvailability;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceTemplate;
 use App\Support\Retros\PhaseDurations;
-use App\Support\RetroTemplates\TemplateCatalogue;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,13 +21,13 @@ use Illuminate\Validation\Rule;
 
 class TeamRetrosController extends Controller
 {
-    public function store(Request $request, Workspace $workspace, Team $team, CreateRetro $createRetro, IcebreakerGameOptions $icebreakerGameOptions): RedirectResponse
+    public function store(Request $request, Workspace $workspace, Team $team, CreateRetro $createRetro, IcebreakerGameOptions $icebreakerGameOptions, TemplateAvailability $templateAvailability): RedirectResponse
     {
         Gate::authorize('createRetro', $team);
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'template' => ['required', 'string', $this->availableTemplate($workspace)],
+            'template' => ['required', 'string', $this->availableTemplate($team, $request->user(), $templateAvailability)],
             'is_anonymous' => ['sometimes', 'boolean'],
             'health_check_enabled' => ['sometimes', 'boolean'],
             'icebreaker_enabled' => ['sometimes', 'boolean'],
@@ -97,29 +96,14 @@ class TeamRetrosController extends Controller
         };
     }
 
-    private function availableTemplate(Workspace $workspace): Closure
+    private function availableTemplate(Team $team, User $user, TemplateAvailability $availability): Closure
     {
-        return function (string $attribute, mixed $value, Closure $fail) use ($workspace): void {
-            if ($this->isAvailable($workspace, $value)) {
+        return function (string $attribute, mixed $value, Closure $fail) use ($team, $user, $availability): void {
+            if ($availability->isAvailable($team, $user, $value)) {
                 return;
             }
 
             $fail(__('Choose a template from the list.'));
         };
-    }
-
-    private function isAvailable(Workspace $workspace, mixed $template): bool
-    {
-        if (! is_string($template)) {
-            return false;
-        }
-
-        $workspaceTemplateId = WorkspaceTemplate::idFromKey($template);
-
-        if ($workspaceTemplateId !== null) {
-            return $workspace->templates()->whereKey($workspaceTemplateId)->exists();
-        }
-
-        return TemplateCatalogue::has($template);
     }
 }
