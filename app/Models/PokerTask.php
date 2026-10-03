@@ -16,9 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
- * The external_*, needs_sync, sync_error and synced_at columns are written
- * only by the tracker imports and write-back of spec 6, never from a request,
- * so they are not fillable.
+ * The external_*, needs_sync, sync_error and synced_at columns — ticket details
+ * included — are written only by the tracker imports, refreshes and write-back,
+ * never from a request, so they are not fillable.
  *
  * @property string $id
  * @property string $poker_game_id
@@ -43,6 +43,8 @@ use Illuminate\Support\Carbon;
  * @property ExternalStatusCategory|null $external_status_category
  * @property Carbon|null $external_updated_at
  * @property Carbon|null $external_missing_at
+ * @property string|null $external_type
+ * @property array<int, string>|null $external_labels
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read PokerGame $game
@@ -94,6 +96,7 @@ class PokerTask extends Model
             'external_status_category' => ExternalStatusCategory::class,
             'external_updated_at' => 'datetime',
             'external_missing_at' => 'datetime',
+            'external_labels' => 'array',
         ];
     }
 }
