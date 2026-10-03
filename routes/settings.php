@@ -66,6 +66,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware(RequirePasswordUnlessNoneKnown::class)
         ->name('linkedAccounts.create');
 
+    Route::delete('settings/linked-accounts/{socialAccount}', [LinkedAccountsController::class, 'destroy'])
+        ->whereUuid('socialAccount')
+        ->middleware(RequirePasswordUnlessNoneKnown::class)
+        ->name('linkedAccounts.destroy');
+
     Route::redirect('settings/notifications', '/settings#notifications')->name('notificationPreferences.edit');
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');
 

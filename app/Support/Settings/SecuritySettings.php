@@ -26,6 +26,7 @@ class SecuritySettings
         private SendEmailTwoFactorCode $sendCode,
         private SignInPolicy $policy,
         private BrowserSessions $sessions,
+        private LinkedAccounts $linkedAccounts,
     ) {}
 
     /**
@@ -89,7 +90,21 @@ class SecuritySettings
      *         ipAddress: ?string,
      *         isCurrent: bool,
      *         lastActiveAt: string
-     *     }>|null
+     *     }>|null,
+     *     linkedAccounts: array{
+     *         rows: array<int, array{
+     *             provider: string,
+     *             label: string,
+     *             isEnabled: bool,
+     *             account: ?array{
+     *                 id: string,
+     *                 linkedAt: ?string,
+     *                 isManaged: bool,
+     *                 canUnlink: bool
+     *             }
+     *         }>,
+     *         lastWayIn: bool
+     *     }
      * }
      */
     public function protected(User $user, string $currentSessionId): array
@@ -109,6 +124,7 @@ class SecuritySettings
                 'allowed' => $this->policy->allowsPassword($user),
             ],
             'browserSessions' => $this->sessions->available() ? $this->sessions->of($user, $currentSessionId) : null,
+            'linkedAccounts' => $this->linkedAccounts->of($user),
         ];
     }
 

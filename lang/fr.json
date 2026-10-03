@@ -4563,5 +4563,6 @@
     "Your account is already linked to :provider. Unlink it first.": "Ton compte est déjà lié à :provider. Délie-le d'abord.",
     "You can't unlink your last sign-in method: set a password or link another account first.": "Tu ne peux pas délier ton dernier moyen de connexion : définis d'abord un mot de passe ou lie un autre compte.",
     "This account is managed by your admin.": "Ce compte est géré par ton administrateur.",
-    ":provider is linked.": ":provider est lié."
+    ":provider is linked.": ":provider est lié.",
+    ":provider is unlinked.": ":provider est délié."
 }
