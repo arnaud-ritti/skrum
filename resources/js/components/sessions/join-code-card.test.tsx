@@ -90,6 +90,41 @@ describe('JoinCodeCard', () => {
         expect(screen.queryByText('No session matches this code.')).toBeNull();
     });
 
+    it('shows the same server answer again after a second wrong code', () => {
+        const onSubmit = vi.fn();
+        const error = 'No session matches this code.';
+        const { rerender } = renderWithProviders(
+            <JoinCodeCard
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                error={error}
+            />,
+        );
+        const field = screen.getByLabelText('Session code') as HTMLInputElement;
+
+        fireEvent.change(field, { target: { value: 'k7qp4m2x' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        rerender(
+            <JoinCodeCard
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                error={error}
+                processing
+            />,
+        );
+        rerender(
+            <JoinCodeCard
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                error={error}
+            />,
+        );
+
+        expect(onSubmit).toHaveBeenCalledWith('K7Q-P4M2');
+        expect(screen.getByText(error)).toBeTruthy();
+        expect(field.getAttribute('aria-invalid')).toBe('true');
+    });
+
     it('docks the button at the bottom on a phone', () => {
         renderCard({ stickyAction: true });
 

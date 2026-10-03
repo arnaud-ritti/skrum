@@ -52,8 +52,9 @@ export function JoinCodeCard({
     const { t } = useTrans();
     const [code, setCode] = useState('');
     const [isTooShort, setIsTooShort] = useState(false);
-    const [editedPast, setEditedPast] = useState<string | null>(null);
-    const serverError = error !== null && editedPast !== error ? error : null;
+    const [isServerErrorStale, setIsServerErrorStale] = useState(false);
+    const serverError =
+        error !== null && !isServerErrorStale && !processing ? error : null;
     const fieldError = isTooShort
         ? t('The code has 8 characters')
         : (serverError ?? undefined);
@@ -71,6 +72,7 @@ export function JoinCodeCard({
             return;
         }
 
+        setIsServerErrorStale(false);
         onSubmit(normaliseJoinCode(code) ?? code);
     };
 
@@ -115,7 +117,7 @@ export function JoinCodeCard({
                     onChange={(event) => {
                         setCode(formatAsTyped(event.target.value));
                         setIsTooShort(false);
-                        setEditedPast(error);
+                        setIsServerErrorStale(true);
                     }}
                 />
 
