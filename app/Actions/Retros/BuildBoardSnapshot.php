@@ -131,6 +131,7 @@ class BuildBoardSnapshot
                 'timerEndsAt' => $retro->timer_ends_at?->toIso8601String(),
                 'timerPausedSeconds' => $retro->timer_paused_seconds,
                 'topicSeconds' => $retro->topic_seconds,
+                'phaseDurations' => $retro->phase_durations,
                 'highlightedCardId' => $retro->highlighted_card_id,
                 'completedAt' => $retro->completed_at?->toIso8601String(),
             ],

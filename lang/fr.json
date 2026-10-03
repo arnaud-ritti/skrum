@@ -5111,5 +5111,6 @@
     "Not found": "Pas trouvé",
     "Puzzle :number": "Énigme :number",
     "Puzzle in progress": "Énigme en cours",
-    "Puzzles": "Énigmes"
+    "Puzzles": "Énigmes",
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Seules les phases d'écriture, de regroupement, de vote, de discussion et d'actions peuvent avoir un minuteur."
 }

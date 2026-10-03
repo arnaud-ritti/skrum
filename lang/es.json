@@ -5111,5 +5111,6 @@
     "Not found": "Nadie lo encontró",
     "Puzzle :number": "Acertijo :number",
     "Puzzle in progress": "Acertijo en curso",
-    "Puzzles": "Acertijos"
+    "Puzzles": "Acertijos",
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Solo las fases de escritura, agrupación, votación, discusión y acciones pueden tener un temporizador."
 }

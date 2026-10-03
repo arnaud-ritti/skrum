@@ -15,6 +15,7 @@ use App\Models\SurveyReaction;
 use App\Models\SurveyResponse;
 use App\Models\SurveyTextAnswer;
 use App\Support\Llm\Llm;
+use App\Support\Retros\PhaseDurations;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class RetroSettingsController extends Controller
 {
     private const array OpenPhaseSettings = [
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
-        'icebreaker_enabled', 'ai_summary_enabled', 'icebreaker_game',
+        'icebreaker_enabled', 'ai_summary_enabled', 'icebreaker_game', 'phase_durations',
     ];
 
     public function __construct(
@@ -55,7 +56,12 @@ class RetroSettingsController extends Controller
             'icebreaker_enabled' => ['sometimes', 'boolean'],
             'icebreaker_game' => ['sometimes', Rule::enum(GameKind::class), $this->icebreakerGameOptions->rule()],
             'ai_summary_enabled' => ['sometimes', 'boolean'],
+            ...PhaseDurations::rules(),
         ]);
+
+        if (array_key_exists('phase_durations', $validated)) {
+            $validated['phase_durations'] = PhaseDurations::fromValidated($validated['phase_durations']);
+        }
 
         if (array_key_exists('ai_summary_enabled', $validated) && ! $this->llm->isConfigured()) {
             throw ValidationException::withMessages(['ai_summary_enabled' => __('Not available.')]);

@@ -11,6 +11,7 @@ use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Team;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use App\Support\Retros\PhaseDurations;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +40,7 @@ class TeamRetrosController extends Controller
             'columns.*.title' => ['required', 'string', 'max:100'],
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
+            ...PhaseDurations::rules(),
         ]);
 
         $retro = $createRetro->handle($team, $request->user(), new NewRetro(
@@ -53,6 +55,7 @@ class TeamRetrosController extends Controller
             guestAccessEnabled: (bool) ($validated['guest_access_enabled'] ?? false),
             columns: $this->columns($validated['columns'] ?? null),
             maxVotesPerCard: isset($validated['max_votes_per_card']) ? (int) $validated['max_votes_per_card'] : null,
+            phaseDurations: PhaseDurations::fromValidated($validated['phase_durations'] ?? null),
         ));
 
         return to_route('retros.show', $retro);

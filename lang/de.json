@@ -5111,5 +5111,6 @@
     "Not found": "Nicht gefunden",
     "Puzzle :number": "Rätsel :number",
     "Puzzle in progress": "Rätsel läuft",
-    "Puzzles": "Rätsel"
+    "Puzzles": "Rätsel",
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Nur die Phasen Schreiben, Gruppieren, Abstimmen, Diskutieren und Aktionen können einen Timer haben."
 }
