@@ -19,7 +19,6 @@ use App\Models\WorkspaceInvitation;
 use App\Notifications\ActionItemReminderNotification;
 use App\Notifications\RetroResultsNotification;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
-use App\Support\Mail\MailBrand;
 use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -171,7 +170,7 @@ it('stores no recap for a user who turned recaps off in the bell, and still mail
 });
 
 it('notifies the one verified account that owns the invited address', function () {
-    $admin = User::factory()->create();
+    $admin = User::factory()->create(['presence_color' => 7]);
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create(['name' => 'Acme']);
     $known = User::factory()->create(['email' => 'known@example.test']);
     $unverified = User::factory()->unverified()->create(['email' => 'unverified@example.test']);
@@ -199,7 +198,7 @@ it('notifies the one verified account that owns the invited address', function (
     expect($notification)->toMatchArray([
         'kind' => 'team_invite',
         'readAt' => null,
-        'actor' => ['name' => $admin->name, 'presence' => MailBrand::presence($admin->avatarSeed()), 'avatarUrl' => $admin->avatarUrl()],
+        'actor' => ['name' => $admin->name, 'presence' => 7, 'avatarUrl' => $admin->avatarUrl()],
         'team' => 'Acme',
     ])->and(array_keys($notification))->toBe(['id', 'kind', 'readAt', 'createdAt', 'actor', 'team', 'href']);
 });

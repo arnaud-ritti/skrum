@@ -7,6 +7,7 @@ import { LoadingButton } from '@/components/skrum/loading-button';
 import { TextField } from '@/components/skrum/text-field';
 import { Alert } from '@/components/ui/alert';
 import { PersonAvatar } from '@/components/ui/avatar';
+import type { AvatarPresence } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { send } from '@/routes/verification';
@@ -22,6 +23,8 @@ type ProfileCardProps = {
     user: ProfileUser;
     mustVerifyEmail: boolean;
     status?: string;
+    /** The presence colour the avatar wears, the one chosen before it is saved. */
+    presence?: AvatarPresence;
     /** Place left beside the avatar for the presence colours (AC-4). */
     presenceColours?: ReactNode;
     /** Place left beside the avatar, under the colours, for the photo (AC-1). */
@@ -32,6 +35,7 @@ export function ProfileCard({
     user,
     mustVerifyEmail,
     status,
+    presence,
     presenceColours,
     photo,
 }: ProfileCardProps): ReactElement {
@@ -77,6 +81,7 @@ export function ProfileCard({
                         <PersonAvatar
                             name={user.name}
                             src={user.avatarUrl}
+                            presence={presence}
                             size="xl"
                             decorative
                         />

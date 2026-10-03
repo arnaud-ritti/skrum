@@ -1,5 +1,6 @@
 import { Form, Link } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import JoinCodesController from '@/actions/App/Http/Controllers/JoinCodesController';
 import { AdminSignInDisclosure } from '@/components/auth/admin-sign-in-disclosure';
 import { authLinkClass } from '@/components/auth/auth-link';
 import { AuthSeparator } from '@/components/auth/auth-separator';
@@ -216,6 +217,18 @@ export function LoginForm({
                     </Link>
                 </p>
             )}
+
+            <p
+                data-slot="login-join-code"
+                className="text-center text-sm text-muted-foreground"
+            >
+                <Link
+                    href={JoinCodesController.create.url()}
+                    className={authLinkClass}
+                >
+                    {t('Join a session with a code')}
+                </Link>
+            </p>
         </div>
     );
 }

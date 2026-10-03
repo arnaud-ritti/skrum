@@ -18,6 +18,7 @@ export type WhiteboardSnapshot = {
         facilitatorMemberId: string | null;
         guestAccessEnabled: boolean;
         guestUrl: string | null;
+        joinCode: string | null;
         cursorsEnabled: boolean;
         reactionsEnabled: boolean;
         locked: boolean;

@@ -59,8 +59,8 @@ function guardedAccountActions(): array
  */
 function guardedAccounts(): array
 {
-    $ssoOnly = function (): User {
-        $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64)]);
+    $ssoWithPassword = function (): User {
+        $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64), 'password_set_at' => now()]);
 
         SocialAccount::factory()->for($user)->create();
 
@@ -69,11 +69,11 @@ function guardedAccounts(): array
 
     return [
         'an account with a password' => [fn (): User => User::factory()->withTwoFactor()->create()],
-        'an account that only signs in through SSO' => [$ssoOnly],
-        'an account while SSO is required' => [function () use ($ssoOnly): User {
+        'an SSO account that has set a password' => [$ssoWithPassword],
+        'an SSO account that has set a password, while SSO is required' => [function () use ($ssoWithPassword): User {
             resolve(InstanceSettings::class)->set('sso_required', true);
 
-            return $ssoOnly();
+            return $ssoWithPassword();
         }],
     ];
 }
@@ -188,8 +188,8 @@ it('does what was asked after the password is confirmed', function () {
     expect($user->fresh()->two_factor_secret)->toBeNull();
 });
 
-it('confirms a password only when it is the right one, so an account that knows none stays refused', function () {
-    $user = User::factory()->create(['password' => Str::password(64)]);
+it('confirms a password only when it is the right one', function () {
+    $user = User::factory()->create(['password' => Str::password(64), 'password_set_at' => now()]);
 
     $this->actingAs($user)
         ->from(route('password.confirm'))
@@ -270,17 +270,17 @@ it('does not take the word of the page for how long a confirmation lasts', funct
     expect($user->tokens()->count())->toBe(0);
 });
 
-it('does not confirm an account that knows no password, whatever the dialog sends', function (array $payload) {
-    $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64)]);
+it('records no confirmation for an account that knows no password, which rule S-1 lets through anyway', function (array $payload) {
+    $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64), 'password_set_at' => null]);
     SocialAccount::factory()->for($user)->create();
 
     $this->actingAs($user)->postJson(route('password.confirm.store'), $payload)->assertUnprocessable();
 
     expect(session('auth.password_confirmed_at'))->toBeNull();
 
-    $this->actingAs($user)->getJson(route('two-factor.recovery-codes'))->assertStatus(423);
+    $this->actingAs($user)->getJson(route('two-factor.recovery-codes'))->assertOk();
     $this->actingAs($user)->get(route('settings.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('security.protected', null)->where('apiTokens.protected', null));
+        ->assertInertia(fn (Assert $page) => $page->whereNot('security.protected', null)->whereNot('apiTokens.protected', null));
 })->with([
     'nothing' => [[]],
     'an empty password' => [['password' => '']],
@@ -306,3 +306,66 @@ it('asks a guest to sign in before anything about a confirmation', function (str
     'a confirmation' => ['post', 'password.confirm.store'],
     'the recovery codes' => ['get', 'two-factor.recovery-codes'],
 ]);
+
+function accountWithoutKnownPassword(): User
+{
+    $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64), 'password_set_at' => null]);
+
+    SocialAccount::factory()->for($user)->create();
+
+    return $user;
+}
+
+it('lets an account without a known password through every confirmation of the account settings, the risk the owner accepted (rule S-1)', function (string $method, string $route, array $payload, bool $json) {
+    $response = accountAction(accountWithoutKnownPassword(), $method, $route, $payload, json: $json);
+
+    expect($response->getStatusCode())->not->toBe(423)
+        ->and($response->headers->get('Location'))->not->toBe(route('password.confirm'));
+})->with(guardedAccountActions())->with(['a page visit' => [false], 'a JSON request' => [true]]);
+
+it('sends the protected sections to an account without a known password with no confirmation (rule S-1)', function () {
+    $user = accountWithoutKnownPassword();
+
+    $this->actingAs($user)->get(route('settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.needsPasswordConfirmation', false)
+            ->where('security.locked', false)
+            ->whereNot('security.protected', null)
+            ->where('apiTokens.locked', false)
+            ->whereNot('apiTokens.protected', null));
+});
+
+it('lets an account without a known password read its recovery codes, create a token and turn two-factor off with no confirmation (rule S-1)', function () {
+    $user = accountWithoutKnownPassword();
+
+    $this->actingAs($user)->getJson(route('two-factor.recovery-codes'))->assertOk()->assertJson(['recovery-code-1']);
+
+    $this->actingAs($user)->post(route('apiTokens.store'), ['name' => 'Laptop', 'expiration' => '90_days'])->assertSessionHasNoErrors();
+    expect($user->tokens()->count())->toBe(1);
+
+    $this->actingAs($user)->delete(route('two-factor.disable'))->assertRedirect();
+    expect($user->fresh()->two_factor_secret)->toBeNull();
+});
+
+it('asks for the confirmation again once the account has set a password (rule S-1 ends with a known password)', function () {
+    $user = accountWithoutKnownPassword();
+
+    $this->actingAs($user)
+        ->put(route('user-password.update'), ['password' => 'A-new-pass-2026!', 'password_confirmation' => 'A-new-pass-2026!'])
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($user->fresh())->getJson(route('two-factor.recovery-codes'))->assertStatus(423);
+    $this->actingAs($user->fresh())->get(route('settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.needsPasswordConfirmation', true)
+            ->where('security.protected', null));
+});
+
+it('keeps the admin area and the deletion of the account behind the password for an account without one (rule S-1 stops at the account settings)', function () {
+    $admin = User::factory()->instanceAdmin()->create(['password' => Str::password(64), 'password_set_at' => null]);
+
+    $this->actingAs($admin)->get(route('admin.branding.edit'))->assertRedirect(route('password.confirm'));
+
+    $this->actingAs($admin)->delete(route('profile.destroy'), ['password' => 'password'])->assertSessionHasErrors('password');
+    expect($admin->fresh())->not->toBeNull();
+});

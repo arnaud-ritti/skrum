@@ -40,6 +40,7 @@ function snapshot(overrides: Partial<SurveySnapshot> = {}): SurveySnapshot {
             facilitatorName: 'Fran',
             guestAccessEnabled: false,
             guestUrl: null,
+            joinCode: null,
             oneQuestionAtATime: true,
             showResultsAfterAnswer: true,
             resultsThreshold: 3,

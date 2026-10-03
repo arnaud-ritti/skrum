@@ -9,7 +9,10 @@ const api = vi.hoisted(() => ({ retroRequest: vi.fn() }));
 
 vi.mock('@/lib/retro/api', () => ({ retroRequest: api.retroRequest }));
 
-function renderDialog(players: { id: string; isGuest: boolean }[]) {
+function renderDialog(
+    players: { id: string; isGuest: boolean }[],
+    joinCode: string | null = null,
+) {
     const refetch = vi.fn().mockResolvedValue(undefined);
     const ctx = {
         snapshot: {
@@ -19,6 +22,7 @@ function renderDialog(players: { id: string; isGuest: boolean }[]) {
                 teamName: 'Atlas',
                 access: 'link',
                 guestUrl: 'https://skrum.test/play/token',
+                joinCode,
                 canManage: true,
             },
             share: {},
@@ -45,6 +49,21 @@ beforeEach(() => {
 });
 
 describe('RoomShareDialog', () => {
+    it('shows the session code and where to enter it', () => {
+        renderDialog([], 'K7Q-P4M2');
+
+        expect(screen.getByText('K7Q-P4M2')).toBeTruthy();
+        expect(
+            screen.getByText(`Join at ${window.location.host}/join`),
+        ).toBeTruthy();
+    });
+
+    it('shows no session code without one', () => {
+        renderDialog([]);
+
+        expect(screen.queryByText('Session code')).toBeNull();
+    });
+
     it('asks before turning guests off while a guest is in the room, and sends nothing on Cancel', async () => {
         renderDialog([
             { id: 'p1', isGuest: false },

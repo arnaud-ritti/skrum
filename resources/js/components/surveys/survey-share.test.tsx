@@ -24,6 +24,7 @@ const sharedSnapshot = (
         survey: {
             guestAccessEnabled: true,
             guestUrl: 'https://skrum.test/surveys/join/token-1',
+            joinCode: 'K7Q-P4M2',
         },
         me,
     });
@@ -117,6 +118,7 @@ describe('SurveyShare', () => {
     it('creates a new link only after a confirmation, and shows it', async () => {
         api.newGuestLink.mockResolvedValue({
             guestUrl: 'https://skrum.test/surveys/join/token-2',
+            joinCode: 'H4X-9RTW',
         });
         openShare();
 
@@ -139,9 +141,34 @@ describe('SurveyShare', () => {
             snapshot: {
                 survey: {
                     guestUrl: 'https://skrum.test/surveys/join/token-2',
+                    joinCode: 'H4X-9RTW',
                 },
             },
         });
+    });
+
+    it('shows the session code and where to enter it', () => {
+        openShare();
+
+        expect(screen.getByText('K7Q-P4M2')).toBeTruthy();
+        expect(
+            screen.getByText(`Join at ${window.location.host}/join`),
+        ).toBeTruthy();
+    });
+
+    it('shows no session code without one', () => {
+        openShare(
+            surveySnapshot({
+                survey: {
+                    guestAccessEnabled: true,
+                    guestUrl: 'https://skrum.test/surveys/join/token-1',
+                    joinCode: null,
+                },
+                me: { isEditor: true },
+            }),
+        );
+
+        expect(screen.queryByText('Session code')).toBeNull();
     });
 
     it('shows a member who does not edit the survey the link and no control', () => {

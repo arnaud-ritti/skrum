@@ -114,6 +114,18 @@ it('lists open action items first, by priority, at most ten', function () {
         ->and(collect($recap->actionItems)->pluck('content'))->not->toContain('Done high');
 });
 
+it('gives each assignee the colour they chose', function () {
+    $retro = recapRetro();
+    $member = User::factory()->create(['presence_color' => 7]);
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'presence_color' => 11]);
+    ActionItem::factory()->priority(ActionItemPriority::High)->assignedTo($member)->create(['retro_id' => $retro->id]);
+    ActionItem::factory()->priority(ActionItemPriority::Low)->assignedToGuest($guest)->create();
+
+    $recap = recapOf($retro);
+
+    expect(collect($recap->actionItems)->pluck('assigneePresence')->all())->toBe([7, 11]);
+});
+
 it('lists up to five pending suggestions', function () {
     $retro = recapRetro();
     SuggestedAction::factory()->count(7)->sequence(fn ($sequence) => ['position' => $sequence->index, 'content' => "Idea {$sequence->index}"])->create(['retro_id' => $retro->id]);

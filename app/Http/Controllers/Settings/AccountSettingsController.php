@@ -39,7 +39,7 @@ class AccountSettingsController extends Controller
     {
         $user = $request->user();
         $verified = ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
-        $passwordConfirmed = $verified && $this->passwordConfirmation->isFresh($request);
+        $passwordConfirmed = $verified && $this->passwordConfirmation->isSatisfied($request);
 
         if ($passwordConfirmed && Features::canManageTwoFactorAuthentication() && ! $this->staysOnThePage($request)) {
             $request->ensureStateIsValid();
@@ -47,8 +47,8 @@ class AccountSettingsController extends Controller
 
         return Inertia::render('settings/account', [
             'profile' => $this->profile($request, $user),
-            'security' => $verified ? $this->securitySection($user, $passwordConfirmed) : null,
-            'appearance' => $verified,
+            'security' => $verified ? $this->securitySection($user, $passwordConfirmed, $request->session()->getId()) : null,
+            'appearance' => $verified ? ['reduceMotion' => $user->reduce_motion] : false,
             'notificationPreferences' => $verified ? $this->notificationPreferences($user) : null,
             'apiTokens' => $verified && config('skrum.mcp.enabled') ? $this->apiTokensSection($user, $passwordConfirmed) : null,
         ]);
@@ -76,6 +76,7 @@ class AccountSettingsController extends Controller
     private function profile(TwoFactorAuthenticationRequest $request, User $user): array
     {
         $allowsMemberStyles = $this->settings->avatarMemberChoice();
+        $photosAllowed = $this->settings->profilePhotos();
 
         return [
             'mustVerifyEmail' => Features::enabled(Features::emailVerification()),
@@ -84,18 +85,22 @@ class AccountSettingsController extends Controller
             'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,
             'instanceAvatarStyle' => $this->avatarUrl->instanceStyle(),
             'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($user) : [],
+            'presenceColor' => $user->presenceColor(),
+            'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null,
+            'photosAllowed' => $photosAllowed,
+            'needsPasswordConfirmation' => ! $this->passwordConfirmation->isNotNeeded($user),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function securitySection(User $user, bool $passwordConfirmed): array
+    private function securitySection(User $user, bool $passwordConfirmed, string $currentSessionId): array
     {
         return [
             ...$this->security->offered(),
             'locked' => ! $passwordConfirmed,
-            'protected' => $passwordConfirmed ? $this->security->protected($user) : null,
+            'protected' => $passwordConfirmed ? $this->security->protected($user, $currentSessionId) : null,
         ];
     }
 

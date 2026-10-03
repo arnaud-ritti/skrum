@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AboutPagesController;
+use App\Http\Controllers\AvatarPhotosController;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
@@ -73,6 +74,7 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationLinksController;
+use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\MagicLinksController;
 use App\Http\Controllers\MagicLinkSessionsController;
@@ -205,6 +207,7 @@ use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveSurveyRespondent;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use App\Support\Avatars\AvatarPhotos;
 use App\Support\Branding\BrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -232,6 +235,9 @@ Route::get('avatars/{style}/{seed}.svg', [StyledAvatarsController::class, 'show'
     ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
     ->withoutMiddleware('web')
     ->name('styledAvatars.show');
+Route::get('avatar-photos/{file}', [AvatarPhotosController::class, 'show'])->where('file', AvatarPhotos::FilePattern)
+    ->withoutMiddleware('web')
+    ->name('avatarPhotos.show');
 // Outside the web group: a public, immutable response must not carry a session cookie.
 Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', BrandAssets::RoutePattern)
     ->withoutMiddleware('web')
@@ -250,12 +256,17 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
     ->middleware('auth')
     ->name('invitations.acceptance.store');
 
+/*
+ * Outside the guest group: a signed-in user comes back here after asking to
+ * link a provider (SsoIntent); without that intent the callback does nothing.
+ */
+Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
+
 Route::middleware('guest')->group(function (): void {
     Route::post('invitations/{token}/account', [InvitationAccountsController::class, 'store'])
         ->middleware('throttle:invitationAccounts')
         ->name('invitations.account.store');
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
-    Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
     Route::post('magic-link', [MagicLinksController::class, 'store'])->middleware('throttle:magicLinks')->name('magicLinks.store');
     Route::get('magic-link/{token}', [MagicLinksController::class, 'show'])
         ->where('token', '[A-Za-z0-9]{64}')
@@ -457,6 +468,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->whereUuid(['actionItem', 'externalLink']);
         });
 });
+
+Route::get('join', [JoinCodesController::class, 'create'])->name('joinCodes.create');
+Route::post('join', [JoinCodesController::class, 'store'])->name('joinCodes.store')->middleware('throttle:10,1,joinCodes');
 
 Route::get('join/{guestToken}', [RetroJoinsController::class, 'show'])->name('retros.join.show');
 Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('retros.join.store')->middleware('throttle:10,1');

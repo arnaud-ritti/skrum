@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/skrum/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
+import { prefersReducedMotion, subscribeToMotion } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 export type ChartConfig = Record<
@@ -43,20 +44,9 @@ function useChart(): ChartContextValue {
     return context;
 }
 
-const subscribeToMotionPreference = (onChange: () => void): (() => void) => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-    query.addEventListener('change', onChange);
-
-    return () => query.removeEventListener('change', onChange);
-};
-
-const prefersReducedMotion = (): boolean =>
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 export function useReducedMotion(): boolean {
     return useSyncExternalStore(
-        subscribeToMotionPreference,
+        subscribeToMotion,
         prefersReducedMotion,
         () => false,
     );

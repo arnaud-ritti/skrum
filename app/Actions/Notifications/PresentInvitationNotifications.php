@@ -5,7 +5,6 @@ namespace App\Actions\Notifications;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
-use App\Support\Mail\MailBrand;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
@@ -139,7 +138,7 @@ class PresentInvitationNotifications
 
         return [
             'name' => $inviter->name,
-            'presence' => MailBrand::presence($inviter->avatarSeed()),
+            'presence' => $inviter->presenceColor(),
             'avatarUrl' => $inviter->avatarUrl(),
         ];
     }

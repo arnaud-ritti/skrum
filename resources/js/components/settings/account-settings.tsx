@@ -5,6 +5,7 @@ import { CreateTokenForm } from '@/components/settings/api-tokens/create-token-f
 import { ServerUrl } from '@/components/settings/api-tokens/server-url';
 import { TokenList } from '@/components/settings/api-tokens/token-list';
 import { AppearanceCard } from '@/components/settings/appearance/appearance-card';
+import { ReduceMotionField } from '@/components/settings/appearance/reduce-motion-field';
 import { ShortcutPreferenceCard } from '@/components/settings/appearance/shortcut-preference-card';
 import { AvatarStyleCard } from '@/components/settings/avatar-style-card';
 import type { ProfileAvatarStyle } from '@/components/settings/avatar-style-card';
@@ -12,10 +13,15 @@ import { DeleteAccountCard } from '@/components/settings/delete-account-card';
 import { NotificationsCard } from '@/components/settings/notifications-card';
 import type { NotificationPreferences } from '@/components/settings/notifications-card';
 import { PasswordGateProvider } from '@/components/settings/password-gate';
+import { PresenceColourPicker } from '@/components/settings/presence-colour-picker';
 import { ProfileCard } from '@/components/settings/profile-card';
+import { ProfilePhoto } from '@/components/settings/profile-photo';
+import { ActiveSessionsCard } from '@/components/settings/security/active-sessions-card';
+import type { BrowserSessionRow } from '@/components/settings/security/active-sessions-card';
+import { LinkedAccountsCard } from '@/components/settings/security/linked-accounts-card';
+import type { LinkedAccounts } from '@/components/settings/security/linked-accounts-card';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
-import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
 import { SecurityStack } from '@/components/settings/security/security-stack';
 import {
     TwoFactorCard,
@@ -28,6 +34,7 @@ import {
 } from '@/components/settings/settings-shell';
 import type { SettingsSectionId } from '@/components/settings/settings-shell';
 import { useVisibleSection } from '@/components/settings/use-visible-section';
+import type { AvatarPresence } from '@/components/ui/avatar';
 import type {
     ApiToken,
     ApiTokenExpiration,
@@ -49,6 +56,18 @@ export type ProfileSettings = {
     avatarStyle: string | null;
     instanceAvatarStyle: string;
     avatarStyles: ProfileAvatarStyle[];
+    /** The chosen colour, or the one derived from the avatar seed: 1 to 12. */
+    presenceColor: number;
+    /** A stored photo shows as the avatar; always false while photos are not allowed. */
+    hasPhoto: boolean;
+    /** The admin switch "Profile photos". */
+    photosAllowed: boolean;
+    /** False for an account without a known password: rule S-1, no confirmation in the account settings. */
+    needsPasswordConfirmation: boolean;
+};
+
+export type AppearanceSettings = {
+    reduceMotion: boolean;
 };
 
 /** What the security section says about the account: sent only behind a confirmed password. */
@@ -57,17 +76,33 @@ export type ProtectedSecuritySettings = {
     twoFactor: TwoFactorSummary;
     passkeys: Passkey[];
     emailSecondFactor: EmailSecondFactor;
+    password: {
+        /** False when the account has no password its owner knows: the card sets a first one. */
+        isSet: boolean;
+        /** False when the sign-in policy refuses a password to this account: no password card. */
+        allowed: boolean;
+    };
+    /** Null when the sessions are not kept in the database: no Active sessions card. */
+    browserSessions: BrowserSessionRow[] | null;
+    /** Every provider of the instance, and an identity of a provider turned off. */
+    linkedAccounts: LinkedAccounts;
 };
 
 export type SecuritySettings = {
     passwordRules: string;
     /** The server refuses a password found in known data breaches. */
     checksCompromisedPasswords: boolean;
+    /** The instance answers the breach ranges: the password is checked while typed. */
+    liveBreachCheck: boolean;
     canManageTwoFactor: boolean;
     canManagePasskeys: boolean;
     /** The instance can send the e-mail code. */
     canManageEmailCode: boolean;
     requiresConfirmation: boolean;
+    /** The sessions are kept in the database: the Active sessions card exists. */
+    canListBrowserSessions: boolean;
+    /** The instance has a sign-in provider: the Linked accounts card exists before the confirmation. */
+    canLinkAccounts: boolean;
     locked: boolean;
     protected: ProtectedSecuritySettings | null;
 };
@@ -96,7 +131,8 @@ export type AccountSettingsProps = {
     profile: ProfileSettings;
     /** Absent, like the three sections under it, while the address of the account is not verified. */
     security: SecuritySettings | null;
-    appearance: boolean;
+    /** False, like the sections under it, while the address of the account is not verified. */
+    appearance: AppearanceSettings | false;
     notificationPreferences: NotificationSettings | null;
     /** Absent too when the MCP server is off. */
     apiTokens: ApiTokenSettings | null;
@@ -117,17 +153,41 @@ function SecuritySection({
         account !== null &&
         (account.emailSecondFactor.available ||
             account.emailSecondFactor.enabled);
+    const listsBrowserSessions =
+        security.canListBrowserSessions &&
+        (account === null || account.browserSessions !== null);
+    const listsLinkedAccounts =
+        account === null
+            ? security.canLinkAccounts
+            : account.linkedAccounts.rows.length > 0;
 
     return (
-        <SecurityStack>
-            <PasswordCard
-                passwordRules={security.passwordRules}
-                breachCheck={
-                    security.checksCompromisedPasswords ? (
-                        <PasswordBreachCheck />
-                    ) : undefined
-                }
-            />
+        <SecurityStack
+            activeSessions={
+                listsBrowserSessions && (
+                    <ActiveSessionsCard
+                        sessions={account?.browserSessions ?? null}
+                    />
+                )
+            }
+            linkedAccounts={
+                listsLinkedAccounts && (
+                    <LinkedAccountsCard
+                        accounts={account?.linkedAccounts ?? null}
+                    />
+                )
+            }
+        >
+            {account?.password.allowed !== false && (
+                <PasswordCard
+                    passwordRules={security.passwordRules}
+                    checksCompromisedPasswords={
+                        security.checksCompromisedPasswords
+                    }
+                    liveBreachCheck={security.liveBreachCheck}
+                    isSet={account?.password.isSet ?? true}
+                />
+            )}
             {account === null &&
                 (security.canManageTwoFactor ||
                     security.canManageEmailCode) && (
@@ -208,12 +268,13 @@ export function AccountSettings({
     const held: Record<SettingsSectionId, boolean> = {
         profile: true,
         security: security !== null,
-        appearance,
+        appearance: appearance !== false,
         notifications: notificationPreferences !== null,
         'api-tokens': apiTokens !== null,
     };
     const sections = SettingsSections.filter((section) => held[section]);
     const { current, select } = useVisibleSection(sections, page.url);
+    const [presence, setPresence] = useState(profile.presenceColor);
 
     return (
         <SettingsShell
@@ -224,6 +285,7 @@ export function AccountSettings({
             <PasswordGateProvider
                 locked={security?.locked === true || apiTokens?.locked === true}
                 passkeys={security?.canManagePasskeys === true}
+                needsConfirmation={profile.needsPasswordConfirmation}
             >
                 <SettingsSection id="profile">
                     <div className="flex min-w-0 flex-col gap-4">
@@ -231,11 +293,30 @@ export function AccountSettings({
                             user={auth.user}
                             mustVerifyEmail={profile.mustVerifyEmail}
                             status={profile.status ?? undefined}
+                            presence={presence as AvatarPresence}
+                            presenceColours={
+                                <PresenceColourPicker
+                                    value={presence}
+                                    onChange={setPresence}
+                                />
+                            }
+                            photo={
+                                <ProfilePhoto
+                                    photosAllowed={profile.photosAllowed}
+                                    hasPhoto={profile.hasPhoto}
+                                    memberChoice={profile.avatarMemberChoice}
+                                    style={
+                                        profile.avatarStyle ??
+                                        profile.instanceAvatarStyle
+                                    }
+                                />
+                            }
                         />
                         <DeleteAccountCard />
                     </div>
 
                     <AvatarStyleCard
+                        key={profile.avatarStyle ?? ''}
                         user={auth.user}
                         memberChoice={profile.avatarMemberChoice}
                         style={profile.avatarStyle}
@@ -250,9 +331,14 @@ export function AccountSettings({
                     </SettingsSection>
                 )}
 
-                {appearance && (
+                {appearance !== false && (
                     <SettingsSection id="appearance">
                         <AppearanceCard
+                            reduceAnimations={
+                                <ReduceMotionField
+                                    enabled={appearance.reduceMotion}
+                                />
+                            }
                             accessibility={
                                 <ShortcutPreferenceCard
                                     enabled={

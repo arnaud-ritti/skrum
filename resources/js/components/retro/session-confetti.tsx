@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
+import { prefersReducedMotion } from '@/lib/motion';
 import type { ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
@@ -18,14 +19,6 @@ type Piece = {
     rotation: number;
     delay: number;
 };
-
-export function prefersReducedMotion(): boolean {
-    return (
-        typeof window !== 'undefined' &&
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-}
 
 function between(min: number, max: number): number {
     return min + Math.random() * (max - min);

@@ -241,6 +241,19 @@ describe('GifPicker', () => {
         expect(document.querySelectorAll('video').length).toBe(1);
     });
 
+    it('shows stills when the account asks for fewer animations', () => {
+        document.documentElement.classList.add('reduce-motion');
+
+        setup({ reducedMotion: undefined });
+
+        expect(document.querySelector('video')).toBeNull();
+        expect(
+            screen.getByText('Reduced motion: hover or press to play'),
+        ).toBeTruthy();
+
+        document.documentElement.classList.remove('reduce-motion');
+    });
+
     it('previews before sending and sends the trimmed caption', () => {
         const { onSelect } = setup({ withCaption: true });
 

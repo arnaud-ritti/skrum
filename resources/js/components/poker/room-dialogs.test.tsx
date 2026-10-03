@@ -569,6 +569,26 @@ describe('share', () => {
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
     });
 
+    it('shows the session code and where to enter it', async () => {
+        open(
+            'share',
+            pokerSnapshot({
+                game: {
+                    guestAccessEnabled: true,
+                    guestUrl: 'https://skrum.test/poker/join/abc',
+                    joinCode: 'K7Q-P4M2',
+                },
+            }),
+        );
+
+        const dialog = await screen.findByRole('dialog');
+
+        expect(within(dialog).getByText('K7Q-P4M2')).toBeTruthy();
+        expect(
+            within(dialog).getByText(`Join at ${window.location.host}/join`),
+        ).toBeTruthy();
+    });
+
     it('posts the link to a channel and says the message is on its way', async () => {
         mocks.request.mockResolvedValue({ id: 'delivery-1' });
 

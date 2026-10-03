@@ -46,6 +46,9 @@ export function BoardCursors({ container, hidden }: Props) {
             selfId={board.viewer.participantId}
             online={online}
             labelFor={labelFor}
+            presenceFor={(senderId) =>
+                online.find((member) => member.id === senderId)?.presence
+            }
         />
     );
 }

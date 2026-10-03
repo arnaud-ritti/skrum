@@ -7,6 +7,7 @@ use App\Events\TeamSurveys\TeamSurveyChanged;
 use App\Http\Controllers\Controller;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyRespondent;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class TeamSurveyGuestTokensController extends Controller
 {
-    public function store(Request $request, TeamSurvey $teamSurvey): JsonResponse
+    public function store(Request $request, TeamSurvey $teamSurvey, JoinCodes $joinCodes): JsonResponse
     {
         $respondent = TeamSurveyRespondent::current($request);
 
@@ -37,6 +38,9 @@ class TeamSurveyGuestTokensController extends Controller
             return $locked->guest_token;
         });
 
-        return response()->json(['guestUrl' => route('surveys.join.show', $guestToken)]);
+        return response()->json([
+            'guestUrl' => route('surveys.join.show', $guestToken),
+            'joinCode' => $joinCodes->rotate($teamSurvey),
+        ]);
     }
 }

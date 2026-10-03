@@ -10,6 +10,9 @@ class UserAgentSummary
     /** @var array<string, string> Order matters: iOS devices also say Mac OS X, Android also says Linux. */
     private const array Systems = ['iPhone' => 'iOS', 'iPad' => 'iOS', 'Android' => 'Android', 'Windows' => 'Windows', 'Mac OS X' => 'macOS', 'Linux' => 'Linux'];
 
+    /** @var array<int, string> */
+    private const array PhoneNeedles = ['iPhone', 'iPad', 'Android'];
+
     /**
      * Only labels of this class leave it: no part of the header is copied.
      */
@@ -27,6 +30,25 @@ class UserAgentSummary
         }
 
         return __(':browser on :system', ['browser' => $browser, 'system' => $system]);
+    }
+
+    public static function deviceKind(?string $userAgent): string
+    {
+        if ($userAgent === null) {
+            return 'unknown';
+        }
+
+        if (self::firstLabel(self::Systems, $userAgent) === null) {
+            return 'unknown';
+        }
+
+        foreach (self::PhoneNeedles as $needle) {
+            if (str_contains($userAgent, $needle)) {
+                return 'phone';
+            }
+        }
+
+        return 'desktop';
     }
 
     /**

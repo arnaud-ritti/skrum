@@ -7,6 +7,7 @@ use App\Enums\WorkspaceRole;
 use App\Jobs\Auth\SendPasswordResetLink;
 use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarUrl;
+use App\Support\Avatars\PresenceColor;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -51,14 +52,18 @@ use SensitiveParameter;
  * @property bool $recap_in_app
  * @property bool $single_key_shortcuts
  * @property string|null $current_workspace_id
+ * @property int|null $presence_color
+ * @property string|null $avatar_photo_path
+ * @property bool $reduce_motion
+ * @property Carbon|null $password_set_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int|string|null $total_points
  * @property-read int|null $wins
  * @property-read int|null $rounds_played
  */
-#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
-#[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts', 'presence_color', 'reduce_motion'])]
+#[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token', 'avatar_photo_path', 'password_set_at'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
     use HasApiTokens;
@@ -78,6 +83,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         'recap_emails' => true,
         'recap_in_app' => true,
         'single_key_shortcuts' => true,
+        'reduce_motion' => false,
     ];
 
     /** @return array<string, string> */
@@ -104,6 +110,9 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'recap_emails' => 'boolean',
             'recap_in_app' => 'boolean',
             'single_key_shortcuts' => 'boolean',
+            'presence_color' => 'integer',
+            'reduce_motion' => 'boolean',
+            'password_set_at' => 'datetime',
         ];
     }
 
@@ -141,12 +150,18 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             $this->avatarSeed(),
             fn (): ?string => $this->avatar_style,
             fn (): string => $this->name,
+            fn (): ?string => $this->avatar_photo_path,
         );
     }
 
     public function avatarSeed(): string
     {
         return substr(hash_hmac('sha256', $this->id, (string) config('app.key')), 0, 32);
+    }
+
+    public function presenceColor(): int
+    {
+        return $this->presence_color ?? PresenceColor::forSeed($this->avatarSeed());
     }
 
     /**

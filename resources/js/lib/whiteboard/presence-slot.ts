@@ -1,21 +1,9 @@
+import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
 
-/** The theme has twelve presence colours, `--skrum-presence-1` to `-12`. */
-export const PresenceSlots = 12;
-
-/** The same member has the same colour on every screen: avatar ring and cursor. */
-export function presenceSlot(memberId: string): number {
-    let hash = 0;
-
-    for (const character of memberId) {
-        hash = (hash * 31 + character.charCodeAt(0)) % 360;
-    }
-
-    return 1 + (hash % PresenceSlots);
-}
-
+/** The person's own colour, the same on every board: avatar ring and cursor. */
 export function presenceFor(member: PresenceMember): number {
-    return presenceSlot(member.id);
+    return presenceOf(member);
 }
 
 type CursorColor = { background: string; stroke: string };
@@ -73,13 +61,11 @@ function forCanvas(token: string, dark: boolean): string {
 
 /**
  * The canvas draws cursors itself and needs a colour value, not a class: the
- * presence token of the member's slot, the one of the avatar ring (answer
- * 7-D6). In the dark theme the value is the one the canvas's filter turns back
+ * presence token of the slot, the one of the avatar ring (answer 7-D6). In the dark theme the value is the one the canvas's filter turns back
  * into the token. Resolved once per slot and theme: cursors are drawn again on
  * every pointer message.
  */
-export function presenceCursorColor(memberId: string): CursorColor {
-    const slot = presenceSlot(memberId);
+export function presenceCursorColor(slot: number): CursorColor {
     const dark = document.documentElement.classList.contains('dark');
     const key = `${slot}:${dark}`;
     const known = cursorColors.get(key);

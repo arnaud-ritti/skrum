@@ -148,6 +148,7 @@ function snapshot(
             facilitatorPlayerId: arnaud.id,
             guestAccessEnabled: false,
             guestUrl: null,
+            joinCode: null,
             endedAt: null,
             currentTaskId: 'bench-task-3',
             tasksCount: 6,

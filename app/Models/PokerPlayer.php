@@ -21,11 +21,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $guest_name
  * @property string|null $guest_secret_hash
  * @property bool $is_spectator
+ * @property int|null $presence_color
  * @property Carbon|null $created_at
  * @property-read PokerGame $game
  * @property-read User|null $user
  */
-#[Fillable(['poker_game_id', 'user_id', 'guest_name', 'guest_secret_hash', 'is_spectator'])]
+#[Fillable(['poker_game_id', 'user_id', 'guest_name', 'guest_secret_hash', 'is_spectator', 'presence_color'])]
 #[Hidden(['guest_secret_hash'])]
 class PokerPlayer extends Model
 {
@@ -66,6 +67,7 @@ class PokerPlayer extends Model
     {
         return [
             'is_spectator' => 'boolean',
+            'presence_color' => 'integer',
         ];
     }
 }

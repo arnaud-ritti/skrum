@@ -1,7 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, renderHook, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { TeamChart } from '@/components/ui/chart';
+import { TeamChart, useReducedMotion } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { applyReduceMotion } from '@/lib/motion';
 import { renderWithProviders } from '@/test/render';
 
 const config = {
@@ -176,5 +177,21 @@ describe('TeamChart', () => {
             />,
         );
         expect(screen.getAllByRole('row')).toHaveLength(2);
+    });
+});
+
+describe('useReducedMotion', () => {
+    it('follows the class the account puts on the root element', () => {
+        const { result } = renderHook(() => useReducedMotion());
+
+        expect(result.current).toBe(false);
+
+        act(() => applyReduceMotion(true));
+
+        expect(result.current).toBe(true);
+
+        act(() => applyReduceMotion(false));
+
+        expect(result.current).toBe(false);
     });
 });

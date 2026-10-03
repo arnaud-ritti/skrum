@@ -32,6 +32,9 @@ export function RoomCursors({ container, hidden }: Props) {
             selfId={snapshot.me.playerId}
             online={online}
             labelFor={labelFor}
+            presenceFor={(senderId) =>
+                online.find((member) => member.id === senderId)?.presence
+            }
         />
     );
 }

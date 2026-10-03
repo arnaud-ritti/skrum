@@ -22,10 +22,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $guest_secret_hash
  * @property Carbon|null $voting_finished_at
  * @property Carbon|null $writing_until
+ * @property int|null $presence_color
  * @property-read Retro $retro
  * @property-read User|null $user
  */
-#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash', 'voting_finished_at', 'writing_until'])]
+#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash', 'voting_finished_at', 'writing_until', 'presence_color'])]
 #[Hidden(['guest_secret_hash'])]
 class Participant extends Model
 {
@@ -78,6 +79,7 @@ class Participant extends Model
         return [
             'voting_finished_at' => 'datetime',
             'writing_until' => 'datetime',
+            'presence_color' => 'integer',
         ];
     }
 }

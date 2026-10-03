@@ -108,3 +108,41 @@ it('renders the branding page with a stored radius outside the segments and a st
             ->assertPresent('[data-slot="asset-undo"]'),
     );
 });
+
+it('renders the branding page with profile photos on without overflow', function () {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    $admin = p18dVisualAdmin();
+
+    resolve(InstanceSettings::class)->setMany(['profile_photos' => true]);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'admin-branding-photos',
+        '/admin/branding',
+        function (string $path, array $options) use ($admin) {
+            $page = p18dVisualVisit($admin, $path, $options, '[data-slot="avatar-style-profile-photos"] [role="switch"][aria-checked="true"]');
+
+            $page->script(<<<'JS'
+                () => {
+                    const pin = (text) => text.replaceAll(location.host, 'skrum.example');
+
+                    for (const input of document.querySelectorAll('input')) {
+                        input.value = pin(input.value);
+                    }
+
+                    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+
+                    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+                        node.nodeValue = pin(node.nodeValue);
+                    }
+
+                    return true;
+                }
+                JS);
+
+            return $page;
+        },
+    );
+});

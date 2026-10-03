@@ -14,6 +14,7 @@ enum InstanceSettingKey: string
     case LogoMail = 'logo_mail';
     case AvatarStyle = 'avatar_style';
     case AvatarMemberChoice = 'avatar_member_choice';
+    case ProfilePhotos = 'profile_photos';
     case GifProvider = 'gif_provider';
     case GifEnabled = 'gif_enabled';
     case GifRating = 'gif_rating';

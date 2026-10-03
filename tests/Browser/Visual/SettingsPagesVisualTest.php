@@ -13,21 +13,26 @@ use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
+use App\Models\BrowserSession;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationUserMapping;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\Retro;
+use App\Models\SocialAccount;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\InstanceSettings;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider as TwoFactorAuthenticationProviderContract;
 use Laravel\Fortify\TwoFactorAuthenticationProvider;
 use Laravel\Sanctum\NewAccessToken;
@@ -1210,5 +1215,197 @@ it('renders a tracker that waits for its site, the "Setup required" status, with
             ->click('[data-test="integration-card-jira"] [data-slot="provider-row-configure"]')
             ->assertPresent('[data-test="integration-panel-jira"] button[role="combobox"]')
             ->assertNotPresent('[data-test="integration-panel-jira"] [data-slot="status-sync"]'),
+    );
+});
+
+/**
+ * A 512 px portrait, drawn here: the browser crop sends the same square JPEG or PNG.
+ */
+function p26ProfilePhoto(): string
+{
+    $image = imagecreatetruecolor(512, 512);
+
+    for ($y = 0; $y < 512; $y++) {
+        imageline($image, 0, $y, 511, $y, (int) imagecolorallocate($image, 52 + intdiv($y, 6), 110 + intdiv($y, 8), 150 - intdiv($y, 8)));
+    }
+
+    imagefilledellipse($image, 256, 560, 420, 360, (int) imagecolorallocate($image, 38, 52, 74));
+    imagefilledellipse($image, 256, 220, 210, 240, (int) imagecolorallocate($image, 226, 182, 150));
+    imagefilledarc($image, 256, 170, 230, 170, 180, 360, (int) imagecolorallocate($image, 70, 44, 30), IMG_ARC_PIE);
+
+    ob_start();
+    imagepng($image);
+    $png = (string) ob_get_clean();
+
+    $path = 'avatars/'.str_pad('p26visualprofilephoto', 40, '0').'.png';
+
+    Storage::disk('local')->put($path, $png);
+
+    return $path;
+}
+
+/**
+ * Waits for every image of the page, the photo among them, before the capture.
+ */
+function p26ImagesLoaded(mixed $page): mixed
+{
+    $page->script(<<<'JS'
+        () => Promise.all([...document.images].map((image) => image.complete
+            ? true
+            : new Promise((resolve) => {
+                image.addEventListener('load', resolve, { once: true });
+                image.addEventListener('error', resolve, { once: true });
+            })))
+            .then(() => true)
+        JS);
+
+    return $page;
+}
+
+/**
+ * The settings are one page: a visit to a section scrolls to it, and a
+ * full-page capture of a scrolled page draws the sidebar and the top bar
+ * halfway down. The capture starts from the top, with the address of the
+ * test server pinned in the MCP section.
+ */
+function p26SettingsPicture(mixed $page): mixed
+{
+    $page->script(<<<'JS'
+        () => {
+            window.scrollTo(0, 0);
+
+            return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));
+        }
+        JS);
+
+    if ($page->script("() => document.getElementById('mcp-url') !== null") !== true) {
+        return $page;
+    }
+
+    return p18ePinServerUrl($page);
+}
+
+function p26EnableGoogleAndGitHub(): void
+{
+    config([
+        'services.google.client_id' => 'visual-google-client',
+        'services.google.client_secret' => 'visual-google-secret',
+        'services.github.client_id' => 'visual-github-client',
+        'services.github.client_secret' => 'visual-github-secret',
+    ]);
+}
+
+it('renders the profile with a chosen presence colour and a photo without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+    Storage::fake('local');
+    resolve(InstanceSettings::class)->set('profile_photos', true);
+
+    $member = p18eSettingsMember();
+    $member->forceFill(['presence_color' => 5, 'avatar_photo_path' => p26ProfilePhoto()])->save();
+
+    $this->captureVisuals(
+        'settings-profile-colours',
+        '/settings/profile',
+        fn (string $path, array $options) => p26SettingsPicture(p26ImagesLoaded(p18eSettingsVisit(
+            $member,
+            $path,
+            $options,
+            '[data-slot="settings-shell"] [data-slot="profile-photo"]',
+        )->assertScript(
+            '[...document.querySelectorAll(\'[data-slot="presence-colour-picker"] [role="radio"]\')].findIndex((radio) => radio.getAttribute("aria-checked") === "true")',
+            4,
+        )->assertPresent('[data-slot="settings-shell"] img[src*="/avatar-photos/"]'))),
+    );
+});
+
+it('renders the appearance settings with animations reduced without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+    $member->forceFill(['reduce_motion' => true])->save();
+
+    $this->captureVisuals(
+        'settings-appearance-motion',
+        '/settings/appearance',
+        fn (string $path, array $options) => p26SettingsPicture(p18eSettingsVisit(
+            $member,
+            $path,
+            $options,
+            '[data-slot="settings-shell"] [data-slot="reduce-motion-field"] [role="switch"][aria-checked="true"]',
+        )),
+    );
+});
+
+/**
+ * Two other devices besides the one of the capture: a Windows desktop on an
+ * IPv4 address two hours ago, an iPhone on an IPv6 address three days ago.
+ * The times are relative to the browser's clock: they are not travelled.
+ */
+function p26OtherBrowserSessions(User $member): void
+{
+    BrowserSession::query()->where('user_id', $member->id)->delete();
+
+    $devices = [
+        ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36', '203.0.113.42', now()->subHours(2)],
+        ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', '2001:db8:85a3::8a2e:370:7334', now()->subDays(3)],
+    ];
+
+    foreach ($devices as $index => [$userAgent, $ipAddress, $lastActivity]) {
+        (new BrowserSession)->forceFill([
+            'id' => "p26-visual-other-device-{$index}-".str_repeat('x', 12),
+            'user_id' => $member->id,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'payload' => base64_encode(serialize([])),
+            'last_activity' => $lastActivity->getTimestamp(),
+        ])->save();
+    }
+}
+
+it('renders the security section with the breach line, three devices and the linked accounts without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true, 'session.driver' => 'database']);
+    p26EnableGoogleAndGitHub();
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+    Password::defaults(fn (): Password => Password::min(12)->uncompromised());
+    Http::fake(['api.pwnedpasswords.com/*' => Http::response("0018A45C4D1DEF81644B54AB7F969B88D65:10\r\n011053FD0102E94D6AE2F8B83D76FAF94F6:3")]);
+
+    $member = p18eSettingsMember();
+    SocialAccount::factory()->for($member)->create(['provider' => 'google', 'created_at' => '2026-03-12 09:14:00']);
+
+    $this->captureVisuals(
+        'settings-security-sessions',
+        '/settings/security',
+        function (string $path, array $options) use ($member) {
+            p26OtherBrowserSessions($member);
+
+            return p26SettingsPicture(p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+                ->assertCount('[data-slot="active-sessions"] tbody tr', 3)
+                ->assertPresent('[data-slot="linked-accounts"]')
+                ->fill('#password', 'Marmot-glacier-2026')
+                ->fill('#password_confirmation', 'Marmot-glacier-2026')
+                ->assertPresent('[data-slot="password-breach-line"][data-state="clear"]'));
+        },
+    );
+});
+
+it('renders the security section of an account without a password, opened with no confirmation, without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    p26EnableGoogleAndGitHub();
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+    $member->forceFill(['password_set_at' => null])->save();
+    SocialAccount::factory()->for($member)->create(['provider' => 'google', 'created_at' => '2026-03-12 09:14:00']);
+
+    $this->captureVisuals(
+        'settings-security-sso-only',
+        '/settings/security',
+        fn (string $path, array $options) => p26SettingsPicture(p18eSettingsVisit($member, $path, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+            ->assertPathIs('/settings')
+            ->assertNotPresent('[data-test="confirm-password-button"]')
+            ->assertNotPresent('[data-slot="password-card"] #current_password')
+            ->assertPresent('[data-slot="linked-accounts-note"]')),
     );
 });

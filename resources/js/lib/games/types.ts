@@ -19,6 +19,7 @@ export type GamePlayer = {
     name: string;
     avatarUrl: string;
     isGuest: boolean;
+    presence: number;
 };
 
 export type GameOption = { value: GameKind; label: string; available: boolean };
@@ -37,6 +38,7 @@ type GameRoomInfo = {
     canBecomeHost: boolean;
     hostPlayerId: string | null;
     guestUrl: string | null;
+    joinCode: string | null;
     isIcebreaker: boolean;
     currentRoundId: string | null;
     teamName: string | null;

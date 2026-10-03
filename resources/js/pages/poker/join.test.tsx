@@ -129,4 +129,34 @@ describe('poker join page', () => {
         expect(screen.queryByRole('switch')).toBeNull();
         expect(document.querySelector('#name')).toBeNull();
     });
+    it('offers the colours left free, the suggested one first, and posts the colour', () => {
+        renderWithProviders(
+            <JoinPokerGame
+                {...valid}
+                takenColors={[2, 5]}
+                suggestedPresence={7}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 2 (taken)' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/poker/join/abc',
+            { name: 'Visitor', presence: 7 },
+            expect.anything(),
+        );
+    });
 });

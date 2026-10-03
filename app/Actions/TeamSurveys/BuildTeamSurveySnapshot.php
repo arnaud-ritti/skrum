@@ -7,6 +7,7 @@ use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
 use App\Models\TeamSurveyRespondent;
+use App\Support\Sessions\JoinCodes;
 
 class BuildTeamSurveySnapshot
 {
@@ -15,6 +16,7 @@ class BuildTeamSurveySnapshot
         private PresentSurveyProgress $presentSurveyProgress,
         private BuildSurveyResults $buildSurveyResults,
         private CompareSurveys $compareSurveys,
+        private JoinCodes $joinCodes,
     ) {}
 
     /**
@@ -42,6 +44,7 @@ class BuildTeamSurveySnapshot
                 'facilitatorName' => $survey->facilitator?->displayName(),
                 'guestAccessEnabled' => $survey->guest_access_enabled,
                 'guestUrl' => $isGuest ? null : route('surveys.join.show', $survey->guest_token),
+                'joinCode' => $isGuest ? null : $this->joinCodes->for($survey),
                 'oneQuestionAtATime' => $survey->one_question_at_a_time,
                 'showResultsAfterAnswer' => $survey->show_results_after_answer,
                 'resultsThreshold' => $survey->results_threshold,

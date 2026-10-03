@@ -160,6 +160,39 @@ describe('BoardShare', () => {
         );
     });
 
+    it('shows the session code and where to enter it, and copies the code', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        });
+
+        renderInBoard(
+            <BoardShare open onOpenChange={vi.fn()} />,
+            boardContext(retroSnapshot({ retro: { joinCode: 'K7Q-P4M2' } })),
+        );
+
+        expect(screen.getByText('Session code')).toBeTruthy();
+        expect(screen.getByText('K7Q-P4M2')).toBeTruthy();
+        expect(
+            screen.getByText(`Join at ${window.location.host}/join`),
+        ).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Copy the code' }));
+
+        await waitFor(() => expect(writeText).toHaveBeenCalledWith('K7Q-P4M2'));
+    });
+
+    it('shows no session code without one', () => {
+        renderInBoard(
+            <BoardShare open onOpenChange={vi.fn()} />,
+            boardContext(retroSnapshot({ retro: { joinCode: null } })),
+        );
+
+        expect(screen.queryByText('Session code')).toBeNull();
+    });
+
     it('posts the link to a channel with the guest link option and lists the deliveries', async () => {
         renderInBoard(
             <BoardShare open onOpenChange={vi.fn()} />,

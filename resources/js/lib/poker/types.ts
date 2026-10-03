@@ -145,6 +145,7 @@ type PokerGame = {
     facilitatorPlayerId: string | null;
     guestAccessEnabled: boolean;
     guestUrl: string | null;
+    joinCode: string | null;
     endedAt: string | null;
     currentTaskId: string | null;
     tasksCount: number;

@@ -12,6 +12,7 @@ const FrontEndRuleExemptions = [
         'resources/js/components/ui/chart.tsx' => 'attribute selectors on the strokes Recharts writes, replaced by tokens',
         'resources/js/lib/whiteboard/palette.ts' => 'Excalidraw stores a colour as hex in the scene',
         'resources/js/lib/games/drawing.ts' => 'pixels of the drawing canvas',
+        'resources/js/lib/settings/square-crop.ts' => 'pixels of the profile photo: a JPEG has no transparency, so a transparent PNG is flattened on white',
         'resources/js/lib/whiteboard/presence-slot.ts' => 'the Excalidraw canvas draws the cursors itself: it takes a colour value computed from the presence token, not a class',
         'resources/js/pages/dev/sections/session-create-whiteboard.tsx' => 'scene colours of the template previews on the bench: canvas data, as the server sends them',
     ],

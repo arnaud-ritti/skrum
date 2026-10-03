@@ -474,6 +474,27 @@
   .flip-3d { transition: opacity 120ms linear !important; }
 }
 
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
+
+/* "Reduce animations" on the account (`<html class="reduce-motion">`) counts as the system asking for it. */
+@custom-variant motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  &:where(.reduce-motion, .reduce-motion *) {
+    @slot;
+  }
+}
+
+@custom-variant motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:where(.reduce-motion, .reduce-motion *)) {
+      @slot;
+    }
+  }
+}
+
 /*
  * Excalidraw 0.18.1 has no UIOptions key for the library button, nor for what
  * names the library or links to its sites: the help dialog's header

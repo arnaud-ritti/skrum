@@ -24,6 +24,7 @@ const pieces = () => [
 
 afterEach(() => {
     window.matchMedia = original;
+    document.documentElement.classList.remove('reduce-motion');
 });
 
 describe('SessionConfetti', () => {
@@ -76,6 +77,17 @@ describe('SessionConfetti', () => {
 
     it('renders nothing for a viewer who prefers reduced motion', () => {
         prefersReducedMotion(true);
+
+        render(<SessionConfetti colors={['moss']} />);
+
+        expect(
+            document.querySelector('[data-slot="session-confetti"]'),
+        ).toBeNull();
+    });
+
+    it('renders nothing for a member who reduced animations on the account', () => {
+        prefersReducedMotion(false);
+        document.documentElement.classList.add('reduce-motion');
 
         render(<SessionConfetti colors={['moss']} />);
 

@@ -12,6 +12,8 @@ type Props =
           session: RetroJoinSession;
           retroTitle: string;
           suggestedName: string;
+          takenColors?: number[];
+          suggestedPresence?: number | null;
       };
 
 export default function JoinRetro(props: Props) {
@@ -40,6 +42,8 @@ export default function JoinRetro(props: Props) {
                 session={props.session}
                 storeUrl={RetroJoinsController.store.url(props.guestToken)}
                 suggestedName={props.suggestedName}
+                takenColors={props.takenColors}
+                suggestedPresence={props.suggestedPresence}
             />
         </>
     );

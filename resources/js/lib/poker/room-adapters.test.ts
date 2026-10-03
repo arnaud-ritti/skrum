@@ -69,6 +69,7 @@ function snapshot(overrides: Partial<PokerSnapshot> = {}): PokerSnapshot {
             facilitatorPlayerId: 'ada',
             guestAccessEnabled: false,
             guestUrl: null,
+            joinCode: null,
             endedAt: null,
             currentTaskId: 't1',
             tasksCount: 1,

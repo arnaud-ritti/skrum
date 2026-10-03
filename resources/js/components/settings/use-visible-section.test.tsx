@@ -160,6 +160,19 @@ describe('useVisibleSection', () => {
         ]);
     });
 
+    it('jumps without motion when the account asks for fewer animations', () => {
+        document.documentElement.classList.add('reduce-motion');
+        render(<Page />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'go to security' }));
+
+        document.documentElement.classList.remove('reduce-motion');
+
+        expect(scrolled).toEqual([
+            { id: 'security', options: { behavior: 'auto', block: 'start' } },
+        ]);
+    });
+
     it('keeps the chosen section current while the page scrolls to it, until the reader scrolls', () => {
         render(<Page />);
 

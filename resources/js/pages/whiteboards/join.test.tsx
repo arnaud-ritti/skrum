@@ -153,4 +153,38 @@ describe('whiteboards/join', () => {
         expect(headTitles).toContain('Join a whiteboard');
         expect(post).not.toHaveBeenCalled();
     });
+    it('offers the colours left free, the suggested one first, and posts the colour', () => {
+        renderWithProviders(
+            <JoinWhiteboard
+                isInvalid={false}
+                guestToken="token-abc"
+                boardTitle="Sprint board"
+                session={session}
+                suggestedName="Thoughtful otter"
+                takenColors={[2, 5]}
+                suggestedPresence={7}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 2 (taken)' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/whiteboards/join/token-abc',
+            { name: 'Thoughtful otter', presence: 7 },
+            expect.anything(),
+        );
+    });
 });

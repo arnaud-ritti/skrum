@@ -39,6 +39,7 @@ type BrandingDefaults = {
     poweredBy: boolean;
     avatarStyle: string;
     avatarMemberChoice: boolean;
+    profilePhotos: boolean;
     gifProvider: GifProvider | null;
     gifEnabled: boolean;
     gifRating: GifRating;
@@ -52,6 +53,7 @@ export type BrandingPageProps = {
     poweredBy: boolean | null;
     avatarStyle: string | null;
     avatarMemberChoice: boolean | null;
+    profilePhotos: boolean | null;
     gifProvider: GifProvider | null;
     gifEnabled: boolean | null;
     gifRating: GifRating | null;
@@ -76,6 +78,7 @@ export type BrandingFormData = {
     powered_by: boolean;
     avatar_style: string;
     avatar_member_choice: boolean;
+    profile_photos: boolean;
     gif_provider: GifProvider | '';
     gif_enabled: boolean;
     gif_rating: GifRating;
@@ -90,6 +93,7 @@ type BrandingPayload = {
     powered_by: boolean | null;
     avatar_style: string | null;
     avatar_member_choice: boolean | null;
+    profile_photos: boolean | null;
     gif_provider: GifProvider | null;
     gif_enabled: boolean | null;
     gif_rating: GifRating | null;
@@ -230,6 +234,7 @@ export function initialFormData(props: BrandingPageProps): BrandingFormData {
         avatar_style: props.avatarStyle ?? props.defaults.avatarStyle,
         avatar_member_choice:
             props.avatarMemberChoice ?? props.defaults.avatarMemberChoice,
+        profile_photos: props.profilePhotos ?? props.defaults.profilePhotos,
         gif_provider: props.gifProvider ?? props.defaults.gifProvider ?? '',
         gif_enabled: props.gifEnabled ?? props.defaults.gifEnabled,
         gif_rating: props.gifRating ?? props.defaults.gifRating,
@@ -276,6 +281,7 @@ type StoredBranding = Pick<
     | 'poweredBy'
     | 'avatarStyle'
     | 'avatarMemberChoice'
+    | 'profilePhotos'
     | 'gifProvider'
     | 'gifEnabled'
     | 'gifRating'
@@ -316,6 +322,11 @@ export function toPayload(
             data.avatar_member_choice,
             props.avatarMemberChoice,
             defaults.avatarMemberChoice,
+        ),
+        profile_photos: storable(
+            data.profile_photos,
+            props.profilePhotos,
+            defaults.profilePhotos,
         ),
         gif_provider: storable<GifProvider | null>(
             data.gif_provider === '' ? null : data.gif_provider,
@@ -389,6 +400,7 @@ export function formSignature(props: BrandingPageProps): string {
         props.poweredBy,
         props.avatarStyle,
         props.avatarMemberChoice,
+        props.profilePhotos,
         props.gifProvider,
         props.gifEnabled,
         props.gifRating,

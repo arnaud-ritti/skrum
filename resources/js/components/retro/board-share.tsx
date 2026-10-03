@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { ShareChannels } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
+import { joinPageHost } from '@/lib/sessions/join-code';
 import type { Snapshot } from '@/lib/retro/types';
 import type { IntegrationDelivery, ShareChannel } from '@/types';
 import { useBoard } from './board-context';
@@ -61,14 +62,16 @@ export function BoardShare({ open, onOpenChange }: Props) {
         return true;
     };
 
-    const copy = async (): Promise<boolean> => {
-        if (!retro.guestUrl) {
+    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
+        const text = what === 'code' ? retro.joinCode : retro.guestUrl;
+
+        if (!text) {
             return false;
         }
 
         try {
-            await navigator.clipboard.writeText(retro.guestUrl);
-            toast(t('Link copied'));
+            await navigator.clipboard.writeText(text);
+            toast(what === 'code' ? t('Code copied') : t('Link copied'));
 
             return true;
         } catch {
@@ -128,6 +131,8 @@ export function BoardShare({ open, onOpenChange }: Props) {
                 invite={{
                     url: retro.guestUrl,
                     allowGuests: retro.guestAccessEnabled,
+                    code: retro.joinCode ?? undefined,
+                    joinUrl: joinPageHost(),
                 }}
                 canManage={board.viewer.isFacilitator}
                 guestSwitchId="guest-access"
@@ -151,9 +156,10 @@ export function BoardShare({ open, onOpenChange }: Props) {
                 }}
                 onRegenerate={async () => {
                     await send(
-                        retroRequest<{ guestUrl: string }>(
-                            RetroGuestTokensController.store(retro.id),
-                        ),
+                        retroRequest<{
+                            guestUrl: string;
+                            joinCode: string;
+                        }>(RetroGuestTokensController.store(retro.id)),
                     );
                 }}
                 channels={channels}

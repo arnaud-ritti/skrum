@@ -8,6 +8,7 @@ use App\Events\Games\GameRoomChanged;
 use App\Http\Controllers\Controller;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ class GameGuestTokensController extends Controller
      * A new token revokes the posted link, and clearing the secrets signs
      * every current guest out: they must join again through the new link.
      */
-    public function store(Request $request, GameRoom $room): JsonResponse
+    public function store(Request $request, GameRoom $room, JoinCodes $joinCodes): JsonResponse
     {
         $player = GamePlayer::current($request);
 
@@ -39,8 +40,11 @@ class GameGuestTokensController extends Controller
             return $locked;
         });
 
+        $guestUrl = $locked->access === GameRoomAccess::Link ? $locked->guestUrl() : null;
+
         return response()->json([
-            'guestUrl' => $locked->access === GameRoomAccess::Link ? $locked->guestUrl() : null,
+            'guestUrl' => $guestUrl,
+            'joinCode' => $guestUrl === null ? null : $joinCodes->rotate($locked),
         ]);
     }
 }

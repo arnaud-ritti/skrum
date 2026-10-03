@@ -125,6 +125,7 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $participant->displayName(),
                 'avatarUrl' => $participant->avatarUrl(),
                 'isGuest' => $participant->isGuest(),
+                'presence' => $participant->presenceColor(),
             ],
         );
 
@@ -158,6 +159,7 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $player->displayName(),
                 'avatarUrl' => $player->avatarUrl(),
                 'isGuest' => $player->isGuest(),
+                'presence' => $player->presenceColor(),
             ],
         );
 
@@ -191,6 +193,7 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $member->displayName(),
                 'avatarUrl' => $member->avatarUrl(),
                 'isGuest' => $member->isGuest(),
+                'presence' => $member->presenceColor(),
             ],
         );
 
@@ -237,6 +240,7 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $player->displayName(),
                 'avatarUrl' => $player->avatarUrl(),
                 'isGuest' => $player->isGuest(),
+                'presence' => $player->presenceColor(),
             ],
         );
 
@@ -372,6 +376,7 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $respondent->displayName(),
                 'avatarUrl' => $respondent->avatarUrl(),
                 'isGuest' => $respondent->isGuest(),
+                'presence' => $respondent->presenceColor(),
             ],
         );
 

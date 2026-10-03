@@ -9,6 +9,7 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Auth\LoginAddress;
+use App\Support\Avatars\AvatarPhotos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -47,9 +48,10 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, AvatarPhotos $photos): RedirectResponse
     {
         $user = $request->user();
+        $photoPath = $user->avatar_photo_path;
 
         DB::transaction(function () use ($user): void {
             $this->ensureAnotherInstanceAdminRemains($user);
@@ -65,6 +67,8 @@ class ProfileController extends Controller
 
             $user->delete();
         });
+
+        $photos->delete($photoPath);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

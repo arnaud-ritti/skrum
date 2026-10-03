@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Models\User;
 use App\Support\Avatars\AvatarUrl;
+use App\Support\Avatars\PresenceColor;
 
 /**
  * Identity shared by retro participants and poker players: a team member
@@ -12,6 +13,7 @@ use App\Support\Avatars\AvatarUrl;
  * @property string $id
  * @property string|null $user_id
  * @property string|null $guest_name
+ * @property int|null $presence_color
  * @property-read User|null $user
  */
 trait HasGuestIdentity
@@ -43,7 +45,23 @@ trait HasGuestIdentity
             $this->avatarSeed(),
             fn (): ?string => $this->avatarOwner()?->avatar_style,
             fn (): string => $this->displayName(),
+            fn (): ?string => $this->avatarOwner()?->avatar_photo_path,
         );
+    }
+
+    /**
+     * A member wears the colour of their account on every session; a guest
+     * the one picked when joining, or one derived from their own avatar.
+     */
+    public function presenceColor(): int
+    {
+        $owner = $this->avatarOwner();
+
+        if ($owner !== null) {
+            return $owner->presenceColor();
+        }
+
+        return $this->presence_color ?? PresenceColor::forSeed($this->avatarSeed());
     }
 
     public function avatarOwner(): ?User

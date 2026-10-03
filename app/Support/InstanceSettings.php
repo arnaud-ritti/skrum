@@ -26,6 +26,8 @@ class InstanceSettings
 
     public const bool DefaultAvatarMemberChoice = false;
 
+    public const bool DefaultProfilePhotos = false;
+
     public const bool DefaultSsoRequired = false;
 
     /** Without a provider and a key GIFs stay off whatever this switch says. */
@@ -140,6 +142,16 @@ class InstanceSettings
     public function storedAvatarMemberChoice(): ?bool
     {
         return $this->storedBool(InstanceSettingKey::AvatarMemberChoice);
+    }
+
+    public function profilePhotos(): bool
+    {
+        return $this->storedProfilePhotos() ?? self::DefaultProfilePhotos;
+    }
+
+    public function storedProfilePhotos(): ?bool
+    {
+        return $this->storedBool(InstanceSettingKey::ProfilePhotos);
     }
 
     public function gifProvider(): ?string
@@ -257,6 +269,7 @@ class InstanceSettings
      *     favicon: ?string,
      *     avatar_style: string,
      *     avatar_member_choice: bool,
+     *     profile_photos: bool,
      *     gif_provider: ?string,
      *     gif_enabled: bool,
      *     gif_rating: string,
@@ -276,6 +289,7 @@ class InstanceSettings
             InstanceSettingKey::Favicon->value => $this->favicon(),
             InstanceSettingKey::AvatarStyle->value => $this->avatarStyle(),
             InstanceSettingKey::AvatarMemberChoice->value => $this->avatarMemberChoice(),
+            InstanceSettingKey::ProfilePhotos->value => $this->profilePhotos(),
             InstanceSettingKey::GifProvider->value => $this->gifProvider(),
             InstanceSettingKey::GifEnabled->value => $this->gifEnabled(),
             InstanceSettingKey::GifRating->value => $this->gifRating(),
@@ -314,6 +328,7 @@ class InstanceSettings
         return match ($key) {
             InstanceSettingKey::PoweredBy,
             InstanceSettingKey::AvatarMemberChoice,
+            InstanceSettingKey::ProfilePhotos,
             InstanceSettingKey::GifEnabled,
             InstanceSettingKey::SsoRequired => $this->booleanFrom($key, $value),
             InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),

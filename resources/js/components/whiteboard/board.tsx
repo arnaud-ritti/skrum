@@ -238,7 +238,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             kind="whiteboard"
             chrome="logo"
             homeHref={state.snapshot.links.team}
-            self={boardSelf(state.snapshot)}
+            self={boardSelf(state.snapshot, state.online)}
             title={<BoardTitle state={state} />}
             timer={!me.isFacilitator && <BoardTimer state={state} />}
             presence={<BoardPresence state={state} />}

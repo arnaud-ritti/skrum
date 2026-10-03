@@ -450,6 +450,7 @@ it('lists every setting with its effective value', function () {
         'favicon' => null,
         'avatar_style' => 'thumbs',
         'avatar_member_choice' => false,
+        'profile_photos' => false,
         'gif_provider' => 'giphy',
         'gif_enabled' => true,
         'gif_rating' => 'pg',

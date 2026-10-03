@@ -110,6 +110,12 @@ describe('ShareDialog', () => {
         expect(screen.queryByRole('button', { name: 'Copied' })).toBeNull();
     });
 
+    it('says where the code is entered, as the mockup words it', () => {
+        renderWithProviders(<ShareDialog {...baseProps()} />);
+
+        expect(screen.getByText('Join at skrum.test/join')).toBeTruthy();
+    });
+
     it('copies the code', () => {
         const onCopy = vi.fn();
 

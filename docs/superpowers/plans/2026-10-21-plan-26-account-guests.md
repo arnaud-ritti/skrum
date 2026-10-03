@@ -296,10 +296,11 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 - Create: `database/migrations/2026_10_26_100100_add_presence_color_to_session_participants.php`
 - Modify: `app/Concerns/HasGuestIdentity.php`, `app/Models/{Participant,PokerPlayer,WhiteboardMember,TeamSurveyRespondent,GamePlayer}.php`, `app/Http/Requests/Settings/ProfileUpdateRequest.php`, `app/Http/Controllers/Settings/AccountSettingsController.php` (`profile()`), `app/Http/Controllers/BroadcastAuthorizationsController.php`, `app/Actions/Games/PresentGamePlayer.php` (and the `players` shape in `BuildGameSnapshot`'s docblock)
 - Test: `tests/Feature/Settings/PresenceColorTest.php`, `tests/Feature/Realtime/PresenceMemberColourTest.php`
+- Added in the review fix round (AC-4 "in mail"): `app/Actions/Integrations/BuildRetroRecap.php` (`assigneePresence`), `app/Actions/Notifications/PresentInvitationNotifications.php`, `app/Notifications/WorkspaceInvitationNotification.php` read `presenceColor()` of the person instead of `MailBrand::presence($avatarSeed)`; `MailBrand::presence($inviterName)` stays only for an invitation without an inviter. Tests in `RetroRecapTest`, `WorkspaceInvitationMailTest`, `BellNotificationsTest`.
 
 **Interfaces:**
 - Consumes: `PresenceColor`, `User::presenceColor()` (Task 1).
-- Produces: `HasGuestIdentity::presenceColor(): int`; `GamePlayer::presenceColor()` (the participant's for an icebreaker player); member data `presence: int` on `presence-retro.*`, `presence-poker.*`, `presence-whiteboard.*`, `presence-game.*`, `presence-survey.*`; `PresentGamePlayer` key `presence`; profile props `profile.presenceColor: int`.
+- Produces: `HasGuestIdentity::presenceColor(): int`; `GamePlayer::presenceColor()` (the participant's for an icebreaker player) and `TeamSurveyRespondent::presenceColor()` (the participant's for a respondent answering for a retro participant; added in the review fix round); member data `presence: int` on `presence-retro.*`, `presence-poker.*`, `presence-whiteboard.*`, `presence-game.*`, `presence-survey.*`; `PresentGamePlayer` key `presence`; profile props `profile.presenceColor: int`.
 
 - [ ] **Step 1: Write the failing tests**
 

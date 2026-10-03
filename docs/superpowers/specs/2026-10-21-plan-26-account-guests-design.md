@@ -222,11 +222,11 @@ The rule list gains its breach line: while empty, "Not found in known data breac
 
 ### 8.4 Active sessions card — `ScreenSecurity`
 
-Title "Active sessions", sentence "Devices signed in to your account." (P26-03: the location half goes). Header action "Sign out other sessions" (confirm dialog). Table: Device (icon laptop / smartphone / monitor-off for unknown, label "Firefox on macOS"), IP address (in place of the mockup's "Approximate location": the address in `font-mono`, "Unknown" when null; no map pin, no "Unusual location"; P26-03), Last active (relative, "Active now" under 2 minutes), action "Sign out" (none on the current row, which carries the badge "This device"). Phone: a list of cards, the address under the device label. Empty of others: the current row alone and the header action disabled. Driver not `database`: the card is not rendered; the Security stack closes up (P26-14).
+Title "Active sessions", sentence "Devices signed in to your account." (P26-03: the location half goes). Header action "Sign out other sessions" (confirm dialog). Table: Device (icon laptop / smartphone / monitor-off for unknown, label "Firefox on macOS"), IP address (in place of the mockup's "Approximate location": the address in `font-mono`, broken only between its groups (after a `:` or a `.`), "Unknown" when null; no map pin, no "Unusual location"; P26-03), Last active (relative, "Active now" under 2 minutes, on one line as the mockup's), action "Sign out" (none on the current row, which carries the badge "This device"). Phone: a list of cards, the address under the device label. Empty of others: the current row alone and the header action disabled. Driver not `database`: the card is not rendered; the Security stack closes up (P26-14).
 
 ### 8.5 Linked accounts card — `ScreenSecurity`
 
-Title "Linked accounts", sentence "Sign in with your company SSO or an existing account. Keep at least one way in." One row per enabled provider plus any linked row of a disabled one: logo or letter, provider label, then either "<email or id> · linked <date>" and "Unlink", or "Not linked" and "Link <provider>". The badge "Managed by your admin" replaces "Unlink" under decision 5C. "Used for your last sign-in" is not shown (P26-04: not recorded). The note "You can't unlink your last sign-in method: set a password or link another account first." shows under the list when the guard would refuse every unlink. Unlink asks for confirmation. Errors of the round trip come back as toasts.
+Title "Linked accounts", sentence "Sign in with your company SSO or an existing account. Keep at least one way in." One row per enabled provider plus any linked row of a disabled one: logo or letter, provider label, then either "<email or id> · linked <date>" and "Unlink", or "Not linked" and "Link <provider>". The badge "Managed by your admin" replaces "Unlink" under decision 5C. "Used for your last sign-in" is not shown (P26-04: not recorded). The note "You can't unlink your last sign-in method: set a password or link another account first." shows under the list when the guard would refuse every unlink; otherwise the card has no footer. Unlink asks for confirmation. Errors of the round trip come back as toasts.
 
 ### 8.6 Password-confirmation dialog and page
 
@@ -244,7 +244,7 @@ In the avatar group (`avatar-style-grid.tsx`), under "Members can choose their o
 
 The five share mounts pass `invite.code` and `invite.joinUrl` (`<host>/join`, without scheme). "Copy the code" exists already. Regenerate updates both.
 
-### 8.9 Join with a code — new page `join/code` (no mockup: P26-08)
+### 8.9 Join with a code — new page `/join` (no mockup: P26-08)
 
 Auth layout, card "Join a session", field "Session code" (mono, upper case, placeholder `ABC-1234`, autofocus, `autocomplete="off"`, the `Input` mockup's invalid state "The code has 8 characters" for a wrong length), button "Continue", link "Have an account? Sign in". The login page gains the link "Join a session with a code" under its form (P26-09).
 

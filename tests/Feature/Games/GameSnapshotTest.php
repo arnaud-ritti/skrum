@@ -9,6 +9,7 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Retro;
+use App\Support\Sessions\JoinCodes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\FakeGameRules;
@@ -44,6 +45,7 @@ it('builds the room for its host', function () {
         'canBecomeHost' => false,
         'hostPlayerId' => $host->id,
         'guestUrl' => route('games.join.show', $room->guest_token),
+        'joinCode' => resolve(JoinCodes::class)->for($room),
         'isIcebreaker' => false,
         'currentRoundId' => null,
         'teamName' => $room->team->name,
@@ -55,6 +57,7 @@ it('builds the room for its host', function () {
             'name' => $user->name,
             'avatarUrl' => $host->avatarUrl(),
             'isGuest' => false,
+            'presence' => $user->presenceColor(),
         ]])
         ->and($snapshot['round'])->toBeNull()
         ->and($snapshot['history'])->toBe([])

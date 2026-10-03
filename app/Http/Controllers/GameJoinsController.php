@@ -8,6 +8,7 @@ use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
+use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -34,6 +35,7 @@ class GameJoinsController extends Controller
             'gameLabel' => $room->game->label(),
             'session' => $presentJoinSession->game($room),
             ...$presentJoinSession->nickname($request->user()),
+            ...$presentJoinSession->colours($room->players()->with(['user', 'participant.user'])->get(), $request->user()),
         ])->toResponse($request);
     }
 
@@ -51,6 +53,7 @@ class GameJoinsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
         $secret = Str::random(40);
@@ -58,6 +61,7 @@ class GameJoinsController extends Controller
         $player = $room->players()->create([
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
+            'presence_color' => $validated['presence'] ?? null,
         ]);
 
         $announceTeamGameRoom->changed($room);

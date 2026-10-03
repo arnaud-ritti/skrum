@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { PresenceStack } from '@/components/skrum/presence-stack';
 import type { Participant } from '@/components/skrum/presence-stack';
+import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +29,7 @@ export function toParticipants(
     online: PresenceMember[],
     selfId: string | null,
     facilitatorId?: string | null,
-    presenceFor?: (member: PresenceMember) => number | undefined,
+    presenceFor: (member: PresenceMember) => number = presenceOf,
 ): Participant[] {
     return online.map((member) => ({
         id: member.id,
@@ -42,7 +43,7 @@ export function toParticipants(
                   : 'member',
         status: 'online',
         isMe: member.id === selfId,
-        presence: presenceFor?.(member),
+        presence: presenceFor(member),
     }));
 }
 
@@ -50,7 +51,8 @@ type SessionPresenceProps = {
     online: PresenceMember[];
     selfId: string | null;
     facilitatorId?: string | null;
-    presenceFor?: (member: PresenceMember) => number | undefined;
+    /** The colour of each avatar; by default the one the server sent. */
+    presenceFor?: (member: PresenceMember) => number;
     /** Rings the member's avatar and names them on the typing line. */
     typingFor?: (member: PresenceMember) => boolean;
     /** How many write when nobody may be named (an anonymous retro). */

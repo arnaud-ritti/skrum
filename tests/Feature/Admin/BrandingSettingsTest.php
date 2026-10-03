@@ -32,6 +32,7 @@ function brandingPayload(array $overrides = []): array
         'powered_by' => null,
         'avatar_style' => null,
         'avatar_member_choice' => null,
+        'profile_photos' => null,
         'gif_provider' => null,
         'gif_enabled' => null,
         'gif_rating' => null,
@@ -70,6 +71,7 @@ it('shows no stored value and the effective defaults when nothing is stored', fu
             ->where('poweredBy', null)
             ->where('avatarStyle', null)
             ->where('avatarMemberChoice', null)
+            ->where('profilePhotos', null)
             ->where('gifProvider', null)
             ->where('gifEnabled', null)
             ->where('gifRating', null)
@@ -81,6 +83,7 @@ it('shows no stored value and the effective defaults when nothing is stored', fu
                 'poweredBy' => true,
                 'avatarStyle' => 'thumbs',
                 'avatarMemberChoice' => false,
+                'profilePhotos' => false,
                 'gifProvider' => null,
                 'gifEnabled' => true,
                 'gifRating' => 'g',
@@ -712,4 +715,38 @@ it('words the licence and the attribution of a style in the language of the view
 
     expect($style['license'])->toBe('Gratuit pour un usage personnel et commercial')
         ->and($style['attribution'])->toBe('Avataaars par Pablo Stanley, Gratuit pour un usage personnel et commercial');
+});
+
+it('turns profile photos on and off, and the reset turns them back off', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['profile_photos' => true]))->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->profilePhotos())->toBeTrue();
+
+    $this->get(route('admin.branding.edit'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('profilePhotos', true)
+        ->where('defaults.profilePhotos', false));
+
+    $this->delete(route('admin.branding.destroy'));
+
+    expect(storedBrandingSettings()->storedProfilePhotos())->toBeNull()
+        ->and(storedBrandingSettings()->profilePhotos())->toBeFalse();
+});
+
+it('keeps the profile photos switch when the form does not send it', function () {
+    brandingAdmin($this);
+    resolve(InstanceSettings::class)->set('profile_photos', true);
+    $payload = collect(brandingPayload(['display_name' => 'Acme']))->except('profile_photos')->all();
+
+    $this->put(route('admin.branding.update'), $payload)->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->storedProfilePhotos())->toBeTrue()
+        ->and(storedBrandingSettings()->displayName())->toBe('Acme');
+});
+
+it('refuses a profile photos value that is not a boolean', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['profile_photos' => 'sometimes']))->assertSessionHasErrors('profile_photos');
 });

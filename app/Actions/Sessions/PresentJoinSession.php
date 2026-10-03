@@ -3,12 +3,18 @@
 namespace App\Actions\Sessions;
 
 use App\Enums\TeamSurveyStatus;
+use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Models\Participant;
 use App\Models\PokerGame;
+use App\Models\PokerPlayer;
 use App\Models\Retro;
 use App\Models\TeamSurvey;
+use App\Models\TeamSurveyRespondent;
 use App\Models\User;
 use App\Models\Whiteboard;
+use App\Models\WhiteboardMember;
+use App\Support\Avatars\PresenceColor;
 use App\Support\Sessions\GuestNames;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -38,6 +44,33 @@ class PresentJoinSession
                 ? GuestNames::random($locale)
                 : rtrim(Str::substr($visitor->name, 0, self::MaxNicknameLength)),
             'randomName' => Inertia::optional(fn (): string => GuestNames::random($locale)),
+        ];
+    }
+
+    /**
+     * The colours already worn in the session, which the picker disables
+     * while a free one remains; and the visitor's own colour when it is free.
+     *
+     * @param  iterable<int, Participant|PokerPlayer|WhiteboardMember|TeamSurveyRespondent|GamePlayer>  $participants
+     * @return array{
+     *     takenColors: array<int, int>,
+     *     suggestedPresence: ?int
+     * }
+     */
+    public function colours(iterable $participants, ?User $visitor): array
+    {
+        $taken = collect($participants)
+            ->map(fn (Participant|PokerPlayer|WhiteboardMember|TeamSurveyRespondent|GamePlayer $participant): int => $participant->presenceColor())
+            ->unique()
+            ->sort()
+            ->values();
+
+        $takenColors = $taken->count() >= PresenceColor::Count ? [] : $taken->all();
+        $own = $visitor?->presenceColor();
+
+        return [
+            'takenColors' => $takenColors,
+            'suggestedPresence' => $own !== null && ! in_array($own, $takenColors, true) ? $own : null,
         ];
     }
 

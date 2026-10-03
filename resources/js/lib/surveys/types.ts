@@ -76,6 +76,7 @@ export type SurveySnapshot = {
         facilitatorName: string | null;
         guestAccessEnabled: boolean;
         guestUrl: string | null;
+        joinCode: string | null;
         oneQuestionAtATime: boolean;
         showResultsAfterAnswer: boolean;
         resultsThreshold: number;

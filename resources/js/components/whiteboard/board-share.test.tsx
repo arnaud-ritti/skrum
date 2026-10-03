@@ -41,6 +41,27 @@ describe('BoardShare', () => {
         ).toBe('true');
     });
 
+    it('shows the session code and where to enter it', () => {
+        renderWithProviders(
+            <BoardShare
+                state={boardState({ board: { joinCode: 'K7Q-P4M2' } })}
+            />,
+        );
+
+        const dialog = openShare();
+
+        expect(dialog.getByText('K7Q-P4M2')).toBeTruthy();
+        expect(
+            dialog.getByText(`Join at ${window.location.host}/join`),
+        ).toBeTruthy();
+    });
+
+    it('shows no session code without one', () => {
+        renderWithProviders(<BoardShare state={boardState()} />);
+
+        expect(openShare().queryByText('Session code')).toBeNull();
+    });
+
     it('closes guest access through the settings endpoint and refetches', async () => {
         const state = boardState();
 

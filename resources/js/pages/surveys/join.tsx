@@ -12,6 +12,8 @@ type Props =
           session: JoinSession;
           surveyTitle: string;
           suggestedName: string;
+          takenColors?: number[];
+          suggestedPresence?: number | null;
           randomName?: string;
       };
 
@@ -41,6 +43,8 @@ export default function JoinSurvey(props: Props) {
                 session={props.session}
                 storeUrl={TeamSurveyJoinsController.store.url(props.guestToken)}
                 suggestedName={props.suggestedName}
+                takenColors={props.takenColors}
+                suggestedPresence={props.suggestedPresence}
             />
         </>
     );

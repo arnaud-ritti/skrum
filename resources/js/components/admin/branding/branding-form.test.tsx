@@ -114,6 +114,31 @@ describe('BrandingForm unsaved changes', () => {
     });
 });
 
+describe('BrandingForm profile photos', () => {
+    it('saves the switch "Profile photos" with the other fields', async () => {
+        const visit = vi.spyOn(router, 'visit').mockImplementation(() => {});
+        setup();
+
+        const photos = screen.getByRole('switch', { name: 'Profile photos' });
+
+        expect(photos.getAttribute('aria-checked')).toBe('false');
+
+        fireEvent.click(photos);
+
+        expect(status()).toBe('1 unsaved change');
+
+        await act(async () => {
+            fireEvent.submit(screen.getByRole('form', { name: 'Branding' }));
+        });
+
+        expect(visit.mock.calls[0][1]?.data).toMatchObject({
+            profile_photos: true,
+        });
+
+        visit.mockRestore();
+    });
+});
+
 describe('BrandingForm GIF key', () => {
     it('never renders a stored key and counts a removal as a change', () => {
         const { container } = setup({ hasGifKey: true, gifProvider: 'giphy' });

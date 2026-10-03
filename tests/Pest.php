@@ -1905,3 +1905,43 @@ function closeHealthCheck(Retro $retro): TeamSurvey
 
     return $survey;
 }
+
+function pngChunk(string $type, string $data): string
+{
+    return pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+}
+
+/**
+ * A 1 × 1 PNG, carrying a tEXt chunk per entry when given.
+ *
+ * @param  array<string, string>  $textChunks
+ */
+function pngBytes(array $textChunks = []): string
+{
+    $header = pngChunk('IHDR', pack('NNCCCCC', 1, 1, 8, 2, 0, 0, 0));
+    $text = implode('', array_map(fn (string $key, string $value): string => pngChunk('tEXt', "{$key}\0{$value}"), array_keys($textChunks), $textChunks));
+    $pixels = pngChunk('IDAT', (string) gzcompress("\0\xFF\x00\x00"));
+
+    return "\x89PNG\r\n\x1A\n".$header.$text.$pixels.pngChunk('IEND', '');
+}
+
+function jpegSegment(int $marker, string $data): string
+{
+    return "\xFF".chr($marker).pack('n', strlen($data) + 2).$data;
+}
+
+/**
+ * A 1 × 1 JPEG; with Exif, it also carries an APP1 Exif segment holding a
+ * GPS position, an APP13 and a comment.
+ */
+function jpegBytes(bool $withExif = true): string
+{
+    $jfif = jpegSegment(0xE0, "JFIF\0\x01\x01\0\0\x01\0\x01\0\0");
+    $exif = $withExif ? jpegSegment(0xE1, "Exif\0\0GPS 48.58N 7.75E") : '';
+    $iptc = $withExif ? jpegSegment(0xED, 'Photoshop 3.0 caption') : '';
+    $comment = $withExif ? jpegSegment(0xFE, 'taken at home') : '';
+    $frame = jpegSegment(0xC0, "\x08\0\x01\0\x01\x01\x01\x11\0");
+    $scan = jpegSegment(0xDA, "\x01\x01\0\0\x3F\0")."\x12\x34";
+
+    return "\xFF\xD8".$jfif.$exif.$iptc.$comment.$frame.$scan."\xFF\xD9";
+}

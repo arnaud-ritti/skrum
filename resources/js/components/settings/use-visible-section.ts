@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { prefersReducedMotion } from '@/lib/motion';
 
 /** How far under the top of the viewport a section starts to count as the one in view, in rem. */
 const ReadingLineRem = 7;
@@ -13,13 +14,6 @@ function sectionOfHash(ids: readonly string[]): string | undefined {
     const hash = window.location.hash.slice(1);
 
     return ids.find((id) => id === hash);
-}
-
-function prefersReducedMotion(): boolean {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
 }
 
 function readingLine(): number {

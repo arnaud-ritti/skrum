@@ -86,6 +86,7 @@ export function pokerSnapshot(
             facilitatorPlayerId: 'ada',
             guestAccessEnabled: false,
             guestUrl: null,
+            joinCode: null,
             endedAt: null,
             currentTaskId: 't1',
             tasksCount: 2,

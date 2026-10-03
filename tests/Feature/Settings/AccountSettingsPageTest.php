@@ -50,7 +50,7 @@ it('shows every section on one page, and nothing the account settings protect, b
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/account')
             ->where('profile.mustVerifyEmail', true)
-            ->where('appearance', true)
+            ->where('appearance.reduceMotion', false)
             ->has('notificationPreferences.preferences')
             ->where('security.locked', true)
             ->where('security.protected', null)
@@ -64,8 +64,8 @@ it('shows every section on one page, and nothing the account settings protect, b
             ->has('apiTokens.expirationOptions', 4));
 
     expect(array_keys($response->viewData('page')['props']['security']))->toEqualCanonicalizing([
-        'passwordRules', 'checksCompromisedPasswords', 'canManageTwoFactor', 'canManagePasskeys',
-        'canManageEmailCode', 'requiresConfirmation', 'locked', 'protected',
+        'passwordRules', 'checksCompromisedPasswords', 'liveBreachCheck', 'canManageTwoFactor', 'canManagePasskeys',
+        'canManageEmailCode', 'requiresConfirmation', 'canListBrowserSessions', 'canLinkAccounts', 'locked', 'protected',
     ])->and(array_keys($response->viewData('page')['props']['apiTokens']))->toEqualCanonicalizing([
         'expirationOptions', 'defaultExpiration', 'locked', 'protected',
     ]);

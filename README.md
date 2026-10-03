@@ -54,6 +54,14 @@ Migrations run automatically when the container starts. Prefer pinning `SKRUM_IM
 
 Upgrading to the release with team surveys: the retro's health-check phase is gone and every health check becomes a team survey. Health scores are now read on 1 to 5; scores given on the old 1-to-10 scale are kept as given and read halved. Right after the migrations of this release, run `php artisan surveys:verify-health-import` (in the application container: `docker compose -f compose.production.yaml exec app php artisan surveys:verify-health-import`): it compares the old and the new health tables retro by retro and fails on any difference. The old tables are kept for one release.
 
+Upgrading to the release with account photos, active sessions and linked accounts:
+
+- `SKRUM_PASSWORD_BREACH_CHECK` (default `true`) checks a new password against known data breaches, while it is typed and when it is saved, by k-anonymity (only the first five characters of its SHA-1 hash leave the server, to `api.pwnedpasswords.com`). Set it to `false` on an instance without outbound access. `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT` (seconds, default `5`) bounds the call; a check that fails or times out lets the password through.
+- The single sign-on callback now also serves signed-in users, who link an identity from Settings › Security. The callback URL is the same: no change at the provider.
+- Profile photos are **off** until an admin turns on "Profile photos" in Administration › Branding. Photos are stored on the `local` disk under `avatars/`: back them up with the rest of `storage/app`.
+- Active sessions show each device's IP address as the framework stored it. Behind a reverse proxy, set `TRUSTED_PROXIES`, or every row shows the proxy's address. With `SESSION_DRIVER` other than `database` the Active sessions card is not shown.
+- An account created by single sign-on, without a password of its own, is asked no password confirmation in the account settings until it sets one (an accepted risk, rule S-1 of `docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md` §5.12). The administration area still asks.
+
 ### SERVER_NAME
 
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:

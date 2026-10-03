@@ -101,7 +101,7 @@ class CreateNewUser implements CreatesNewUsers
                 'locale' => app()->getLocale(),
             ]);
 
-            $user->forceFill(['is_instance_admin' => $isFirstUser])->save();
+            $user->forceFill(['is_instance_admin' => $isFirstUser, 'password_set_at' => now()])->save();
 
             if ($invitation?->isPending() && $invitation->matchesEmail($user->email)) {
                 $user->forceFill(['email_verified_at' => now()])->save();

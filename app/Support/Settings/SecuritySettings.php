@@ -4,8 +4,10 @@ namespace App\Support\Settings;
 
 use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Enums\EmailCodePurpose;
+use App\Enums\SsoProvider;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Features;
@@ -23,6 +25,9 @@ class SecuritySettings
         private IntegrationAvailability $availability,
         private SecondFactors $secondFactors,
         private SendEmailTwoFactorCode $sendCode,
+        private SignInPolicy $policy,
+        private BrowserSessions $sessions,
+        private LinkedAccounts $linkedAccounts,
     ) {}
 
     /**
@@ -32,10 +37,13 @@ class SecuritySettings
      * @return array{
      *     passwordRules: string,
      *     checksCompromisedPasswords: bool,
+     *     liveBreachCheck: bool,
      *     canManageTwoFactor: bool,
      *     canManagePasskeys: bool,
      *     canManageEmailCode: bool,
-     *     requiresConfirmation: bool
+     *     requiresConfirmation: bool,
+     *     canListBrowserSessions: bool,
+     *     canLinkAccounts: bool
      * }
      */
     public function offered(): array
@@ -45,10 +53,13 @@ class SecuritySettings
         return [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'checksCompromisedPasswords' => Password::defaults()->appliedRules()['uncompromised'],
+            'liveBreachCheck' => Password::defaults()->appliedRules()['uncompromised'],
             'canManageTwoFactor' => $canManageTwoFactor,
             'canManagePasskeys' => Features::canManagePasskeys(),
             'canManageEmailCode' => $this->availability->emailEnabled(),
             'requiresConfirmation' => $canManageTwoFactor && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
+            'canListBrowserSessions' => $this->sessions->available(),
+            'canLinkAccounts' => SsoProvider::enabled() !== [],
         ];
     }
 
@@ -72,10 +83,36 @@ class SecuritySettings
      *         enabled: bool,
      *         address: string,
      *         resendIn: int
+     *     },
+     *     password: array{
+     *         isSet: bool,
+     *         allowed: bool
+     *     },
+     *     browserSessions: array<int, array{
+     *         key: string,
+     *         device: string,
+     *         deviceKind: string,
+     *         ipAddress: ?string,
+     *         isCurrent: bool,
+     *         lastActiveAt: string
+     *     }>|null,
+     *     linkedAccounts: array{
+     *         rows: array<int, array{
+     *             provider: string,
+     *             label: string,
+     *             isEnabled: bool,
+     *             account: ?array{
+     *                 id: string,
+     *                 linkedAt: ?string,
+     *                 isManaged: bool,
+     *                 canUnlink: bool
+     *             }
+     *         }>,
+     *         lastWayIn: bool
      *     }
      * }
      */
-    public function protected(User $user): array
+    public function protected(User $user, string $currentSessionId): array
     {
         return [
             'twoFactorEnabled' => Features::canManageTwoFactorAuthentication() && $user->hasEnabledTwoFactorAuthentication(),
@@ -87,6 +124,12 @@ class SecuritySettings
                 'address' => $user->email,
                 'resendIn' => $this->sendCode->secondsUntilResend($user, EmailCodePurpose::Enable),
             ],
+            'password' => [
+                'isSet' => $user->password_set_at !== null,
+                'allowed' => $this->policy->allowsPassword($user),
+            ],
+            'browserSessions' => $this->sessions->available() ? $this->sessions->of($user, $currentSessionId) : null,
+            'linkedAccounts' => $this->linkedAccounts->of($user),
         ];
     }
 

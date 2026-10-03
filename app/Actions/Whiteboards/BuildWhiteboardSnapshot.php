@@ -8,6 +8,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
 use App\Support\Alphabetical;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Contracts\Database\Query\Builder;
 
 /**
@@ -19,6 +20,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         facilitatorMemberId: ?string,
  *         guestAccessEnabled: bool,
  *         guestUrl: ?string,
+ *         joinCode: ?string,
  *         cursorsEnabled: bool,
  *         reactionsEnabled: bool,
  *         locked: bool,
@@ -51,6 +53,7 @@ class BuildWhiteboardSnapshot
     public function __construct(
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
+        private JoinCodes $joinCodes,
     ) {}
 
     /**
@@ -73,6 +76,7 @@ class BuildWhiteboardSnapshot
                 'facilitatorMemberId' => $board->facilitator_member_id,
                 'guestAccessEnabled' => $board->guest_access_enabled,
                 'guestUrl' => $isGuest ? null : route('whiteboards.join.show', $board->guest_token),
+                'joinCode' => $isGuest ? null : $this->joinCodes->for($board),
                 'cursorsEnabled' => $board->cursors_enabled,
                 'reactionsEnabled' => $board->reactions_enabled,
                 'locked' => $board->locked,

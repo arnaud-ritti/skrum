@@ -4,6 +4,7 @@ import {
     type WhisperChannel,
 } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
+import { presenceOf } from '@/lib/presence/presence-color';
 import { subscribeToTheme } from '@/lib/whiteboard/appearance';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 import {
@@ -109,7 +110,9 @@ export function useWhiteboardCursors({
                             username: member?.name ?? '',
                             // The canvas's own list of people is not drawn on the canvas: it shows the picture, not the cursor colour.
                             avatarUrl: member?.avatarUrl,
-                            color: presenceCursorColor(memberId),
+                            color: presenceCursorColor(
+                                presenceOf(member ?? { id: memberId }),
+                            ),
                             pointer: {
                                 x: cursor.x,
                                 y: cursor.y,

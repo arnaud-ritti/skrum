@@ -1,4 +1,5 @@
 import {
+    cursorColor,
     elementSpace,
     leaveMessage,
     moveMessage,
@@ -7,6 +8,7 @@ import {
 import { LiveCursors as CursorLayer, useCursors } from 'live-cursors/react';
 import { MousePointer2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { presenceVar } from '@/lib/presence/presence-color';
 import {
     whisperTransport,
     type WhisperChannel,
@@ -22,6 +24,8 @@ type Props = {
     selfId: string;
     online: PresenceMember[];
     labelFor: (senderId: string) => string;
+    /** The sender's presence colour; the library's own colour when there is none. */
+    presenceFor: (senderId: string) => number | undefined;
 };
 
 type CursorSender = { send(message: unknown): void };
@@ -38,6 +42,7 @@ export function LiveCursors({
     selfId,
     online,
     labelFor,
+    presenceFor,
 }: Props) {
     const rosterKey = online.map((member) => member.id).join(',');
     const roster = useRef(new Set<string>());
@@ -80,9 +85,14 @@ export function LiveCursors({
     useTouchSender(container, selfId, hidden, transport);
 
     const label = (cursor: RemoteCursor) => labelFor(cursor.id);
+    const tint = (cursor: RemoteCursor) => {
+        const slot = presenceFor(cursor.id);
+
+        return slot === undefined ? cursorColor(cursor.id) : presenceVar(slot);
+    };
 
     return (
-        <CursorLayer cursors={cursors}>
+        <CursorLayer cursors={cursors} color={tint}>
             {(cursor, color) =>
                 cursor.meta?.p === 'touch' || cursor.meta?.p === 'pen' ? (
                     <span className="flex items-center gap-1">

@@ -2,6 +2,7 @@
 
 namespace App\Support\Mail;
 
+use App\Support\Avatars\PresenceColor;
 use App\Support\Branding\BrandAssets;
 use App\Support\Branding\BrandPalette;
 use App\Support\InstanceSettings;
@@ -188,7 +189,7 @@ class MailBrand
      */
     public static function presence(string $avatarSeed): int
     {
-        return (hexdec(substr(hash('sha256', $avatarSeed), 0, 7)) % self::PresenceColors) + 1;
+        return PresenceColor::forSeed($avatarSeed);
     }
 
     /**

@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { ShareChannels } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
+import { joinPageHost } from '@/lib/sessions/join-code';
 import type { IntegrationDelivery, ShareChannel } from '@/types';
 import { useRoom } from './room-context';
 
@@ -29,14 +30,16 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
     const isLinkRoom = room.access === 'link';
     const channels = ShareChannels.filter((channel) => share[channel]);
 
-    const copy = async (): Promise<boolean> => {
-        if (room.guestUrl === null) {
+    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
+        const text = what === 'code' ? room.joinCode : room.guestUrl;
+
+        if (text === null) {
             return false;
         }
 
         try {
-            await navigator.clipboard.writeText(room.guestUrl);
-            toast(t('Link copied'));
+            await navigator.clipboard.writeText(text);
+            toast(what === 'code' ? t('Code copied') : t('Link copied'));
 
             return true;
         } catch {
@@ -84,7 +87,7 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
 
     const regenerate = async () => {
         const result = await ctx.run(
-            retroRequest<{ guestUrl: string | null }>(
+            retroRequest<{ guestUrl: string | null; joinCode: string | null }>(
                 GameGuestTokensController.store(room.id),
             ),
         );
@@ -133,7 +136,12 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
                     teamName: room.teamName ?? undefined,
                     presentCount: ctx.online.length,
                 }}
-                invite={{ url: room.guestUrl, allowGuests: isLinkRoom }}
+                invite={{
+                    url: room.guestUrl,
+                    allowGuests: isLinkRoom,
+                    code: room.joinCode ?? undefined,
+                    joinUrl: joinPageHost(),
+                }}
                 canManage={room.canManage}
                 guestSwitchId="room-guests"
                 onCopy={copy}

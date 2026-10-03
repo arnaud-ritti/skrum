@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $participant_id
  * @property string|null $guest_name
  * @property string|null $guest_secret_hash
+ * @property int|null $presence_color
  * @property Carbon|null $created_at
  * @property-read GameRoom $room
  * @property-read User|null $user
@@ -32,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $wins
  * @property-read int|null $rounds_played
  */
-#[Fillable(['game_room_id', 'user_id', 'participant_id', 'guest_name', 'guest_secret_hash'])]
+#[Fillable(['game_room_id', 'user_id', 'participant_id', 'guest_name', 'guest_secret_hash', 'presence_color'])]
 #[Hidden(['guest_secret_hash'])]
 class GamePlayer extends Model
 {
@@ -44,6 +45,7 @@ class GamePlayer extends Model
         displayName as private identityDisplayName;
         avatarSeed as private identityAvatarSeed;
         avatarOwner as private identityAvatarOwner;
+        presenceColor as private identityPresenceColor;
     }
     use HasUuids;
 
@@ -116,6 +118,15 @@ class GamePlayer extends Model
         return $this->identityAvatarOwner();
     }
 
+    public function presenceColor(): int
+    {
+        if ($this->participant_id !== null && $this->participant !== null) {
+            return $this->participant->presenceColor();
+        }
+
+        return $this->identityPresenceColor();
+    }
+
     /**
      * Reverb stamps whispers with this id: icebreaker players share the
      * retro presence channel, where members are participants.
@@ -141,5 +152,12 @@ class GamePlayer extends Model
         }
 
         return $this->user;
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'presence_color' => 'integer',
+        ];
     }
 }

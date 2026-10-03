@@ -322,6 +322,7 @@ export type Snapshot = {
         highlightedCardId: string | null;
         completedAt: string | null;
         guestUrl: string | null;
+        joinCode: string | null;
         aiSummaryEnabled: boolean;
     };
     viewer: {
@@ -389,6 +390,8 @@ export type PresenceMember = {
     name: string;
     avatarUrl: string;
     isGuest: boolean;
+    /** The person's colour, 1 to 12, sent with the channel's member data. */
+    presence?: number;
 };
 
 export type HealthStatementResult = {
