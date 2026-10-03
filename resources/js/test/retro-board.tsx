@@ -36,6 +36,7 @@ export function retroSnapshot({
                 'completed',
             ],
             healthCheckEnabled: false,
+            healthCheckStatements: 6,
             icebreakerEnabled: false,
             icebreakerGame: 'hangman',
             votesAuto: true,

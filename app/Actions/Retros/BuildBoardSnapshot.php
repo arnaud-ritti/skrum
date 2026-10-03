@@ -9,6 +9,7 @@ use App\Actions\Games\EnsureIcebreakerRoom;
 use App\Actions\Games\ExpireGameRound;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\HealthCheck\PresentHealthCheck;
+use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Integrations\LatestDeliveries;
 use App\Actions\Integrations\ListExportSources;
 use App\Actions\Integrations\ShareOptions;
@@ -42,6 +43,7 @@ class BuildBoardSnapshot
         private PresentComment $presentComment,
         private GifCatalog $gifCatalog,
         private PresentHealthCheck $presentHealthCheck,
+        private TeamHealthStatements $teamHealthStatements,
         private PresentSurvey $presentSurvey,
         private PresentParticipant $presentParticipant,
         private BuildResults $buildResults,
@@ -98,6 +100,7 @@ class BuildBoardSnapshot
                 'phase' => $retro->phase->value,
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
                 'healthCheckEnabled' => $retro->health_check_enabled,
+                'healthCheckStatements' => $this->teamHealthStatements->active($retro->team)->count(),
                 'icebreakerEnabled' => $retro->icebreaker_enabled,
                 'icebreakerGame' => $retro->icebreaker_game->value,
                 'isAnonymous' => $retro->is_anonymous,

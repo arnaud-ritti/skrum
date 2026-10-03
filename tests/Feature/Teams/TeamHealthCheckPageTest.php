@@ -1,11 +1,9 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -65,14 +63,8 @@ it('defers the mood trend of the health check page', function () {
     $retro = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
         'completed_at' => '2026-01-01 10:00:00',
     ]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
-    $participant = Participant::factory()->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create([
-        'retro_id' => $retro->id,
-        'participant_id' => $participant->id,
-        'statement' => 'vision',
-        'score' => 7,
-    ]);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 4]);
+    closeHealthCheck($retro);
 
     $this->actingAs($member)
         ->get(route('teams.healthCheck.show', [$workspace, $team]))
@@ -80,7 +72,7 @@ it('defers the mood trend of the health check page', function () {
             ->missing('moodTrend')
             ->loadDeferredProps('trend', fn (Assert $reload) => $reload
                 ->where('moodTrend.0.retroId', $retro->id)
-                ->where('moodTrend.0.mood', 7)
+                ->where('moodTrend.0.mood', 4)
                 ->where('moodTrend.0.moodVoters', 1)));
 });
 

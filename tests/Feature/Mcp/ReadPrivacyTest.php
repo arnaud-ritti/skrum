@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
@@ -18,7 +17,6 @@ use App\Mcp\Tools\Retro\ListTeams;
 use App\Mcp\Tools\Retro\SearchBoards;
 use App\Models\ActionItem;
 use App\Models\Card;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
@@ -40,13 +38,13 @@ it('never returns emails, guest secrets or guest links', function (string $tool,
         'summary_generated_at' => now(),
         'completed_at' => now(),
     ]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
     [$user, $participant] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Zorgon Guestname']);
     $memberCard = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Privacy member card']);
     $guestCard = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $guest->id, 'content' => 'Privacy card']);
     ActionItem::factory()->create(['retro_id' => $retro->id, 'content' => 'Privacy action', 'assignee_user_id' => $user->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => HealthStatement::Vision->value, 'score' => 8]);
+    answerHealthCheck($retro, $participant, [HealthStatement::Vision->value => 4]);
+    closeHealthCheck($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4]);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Privacy theme']);
     $theme->cards()->attach([$memberCard->id, $guestCard->id]);
@@ -79,7 +77,7 @@ it('never returns emails, guest secrets or guest links', function (string $tool,
     'messages' => [ListMessages::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy card', true],
     'summary' => [GetSummary::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy summary', true],
     'insights' => [ListInsights::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy theme'],
-    'health' => [GetHealth::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => ['"status":"completed"', '"key":"vision","label":"Vision","average":8', '"score":8'], false],
+    'health' => [GetHealth::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => ['"status":"completed"', '"key":"vision","label":"Vision","average":4', '"score":4'], false],
     'roti' => [GetRoti::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => ['"average":4', '"myScore":4', '"respondents":1'], false],
 ]);
 

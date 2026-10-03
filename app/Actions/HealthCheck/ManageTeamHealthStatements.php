@@ -2,12 +2,15 @@
 
 namespace App\Actions\HealthCheck;
 
+use App\Actions\TeamSurveys\WriteSurveyQuestions;
 use App\Enums\HealthStatement;
-use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
+use App\Enums\TeamSurveyTemplate;
 use App\Events\Retros\RetroSettingsChanged;
-use App\Models\Retro;
+use App\Events\TeamSurveys\TeamSurveyChanged;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
+use App\Models\TeamSurvey;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,7 +26,8 @@ class ManageTeamHealthStatements
 
     public function __construct(
         private TeamHealthStatements $teamHealthStatements,
-        private FreezeHealthStatements $freezeHealthStatements,
+        private HealthCheckQuestions $healthCheckQuestions,
+        private WriteSurveyQuestions $writeSurveyQuestions,
     ) {}
 
     public function add(Team $team, string $text, string $label): TeamHealthStatement
@@ -133,30 +137,42 @@ class ManageTeamHealthStatements
 
             $result = $change($locked);
 
-            $this->refreezeUnansweredRetros($locked);
+            $this->refreshUnansweredHealthChecks($locked);
 
             return $result;
         });
     }
 
-    private function refreezeUnansweredRetros(Team $team): void
+    /**
+     * Statements follow the team until the first answer: answers refer to
+     * the questions they were given to. The team is locked first by
+     * `change()`; each survey is locked after it.
+     */
+    private function refreshUnansweredHealthChecks(Team $team): void
     {
-        $retroIds = Retro::query()
+        $surveyIds = TeamSurvey::query()
             ->where('team_id', $team->id)
-            ->where('health_check_enabled', true)
-            ->where('phase', '!=', RetroPhase::Completed)
+            ->where('template', TeamSurveyTemplate::HealthCheck)
+            ->where('status', '!=', TeamSurveyStatus::Closed)
+            ->orderBy('id')
             ->pluck('id');
 
-        foreach ($retroIds as $retroId) {
-            $retro = Retro::query()->whereKey($retroId)->lockForUpdate()->first();
+        foreach ($surveyIds as $surveyId) {
+            $survey = TeamSurvey::query()->whereKey($surveyId)->lockForUpdate()->first();
 
-            if ($retro === null || $retro->healthCheckAnswers()->exists()) {
+            if ($survey === null || $survey->status === TeamSurveyStatus::Closed || $survey->hasAnswers()) {
                 continue;
             }
 
-            $this->freezeHealthStatements->handle($retro);
+            $this->writeSurveyQuestions->handle($survey, $this->healthCheckQuestions->handle($team));
 
-            (new RetroSettingsChanged($retro->id))->sendToOthers();
+            $survey->increment('version');
+
+            TeamSurveyChanged::for($survey)->sendToOthers();
+
+            if ($survey->retro_id !== null) {
+                (new RetroSettingsChanged($survey->retro_id))->sendToOthers();
+            }
         }
     }
 

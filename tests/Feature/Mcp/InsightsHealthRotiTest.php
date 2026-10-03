@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Enums\CardSentiment;
 use App\Enums\HealthStatement;
 use App\Enums\McpScope;
@@ -11,13 +11,13 @@ use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
 use App\Mcp\Tools\Retro\ListInsights;
 use App\Models\Card;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
 use App\Models\RotiVote;
 use App\Models\SuggestedAction;
 use App\Models\Team;
+use App\Models\TeamSurveyRespondent;
 use App\Models\User;
 
 it('offers insights only with an AI provider', function () {
@@ -89,7 +89,6 @@ it('reports never-requested insights as not available with empty lists', functio
 function mcpHealthBoard(RetroPhase $phase, bool $anonymous = false): array
 {
     $retro = Retro::factory()->withHealthCheck()->inPhase($phase)->create(['is_anonymous' => $anonymous]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
     [$user, $participant] = retroMember($retro);
 
     return [$retro, $user, $participant];
@@ -103,52 +102,62 @@ it('reports a health check that never ran', function () {
 });
 
 it('shows progress and only the viewer own scores while collecting', function () {
-    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::HealthCheck);
+    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Writing);
     $other = Participant::factory()->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => HealthStatement::Interaction->value, 'score' => 7]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id, 'statement' => HealthStatement::Interaction->value, 'score' => 2]);
+    answerHealthCheck($retro, $participant, [HealthStatement::Interaction->value => 4]);
+    answerHealthCheck($retro, $other, [HealthStatement::Interaction->value => 2]);
 
     $result = mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]));
     $interaction = collect($result['categories'])->firstWhere('key', HealthStatement::Interaction->value);
 
     expect($result['status'])->toBe('in_progress')
+        ->and($result['scale'])->toBe(5)
+        ->and($result['respondents'])->toBe(2)
         ->and($interaction['answers'])->toBe(2)
         ->and($interaction['answeredBy'])->toEqualCanonicalizing([$user->name, $other->displayName()])
         ->and($interaction)->not->toHaveKey('average')
-        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 7])
+        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 4])
         ->and(json_encode($result))->not->toContain('"score":2');
 });
 
 it('names no one who answered on anonymous boards', function () {
-    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::HealthCheck, anonymous: true);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Writing, anonymous: true);
+    answerHealthCheck($retro, $participant, [HealthStatement::Interaction->value => 3]);
 
     $categories = mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories'];
 
     expect(collect($categories)->pluck('answeredBy')->flatten()->all())->toBeEmpty();
 });
 
-it('shows only respondents between the health check and completion', function () {
+it('shows the results of a health check closed before the retro is completed', function () {
     [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Voting);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+    answerHealthCheck($retro, $participant, [HealthStatement::Vision->value => 4]);
+    closeHealthCheck($retro);
 
-    expect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id])))->toBe(['status' => 'collected', 'respondents' => 1]);
+    $result = mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]));
+
+    expect($result['status'])->toBe('completed')
+        ->and($result['scale'])->toBe(5)
+        ->and(collect($result['categories'])->firstWhere('key', HealthStatement::Vision->value)['average'])->toEqual(4.0);
 });
 
 it('reports averages, alignment and trend once completed, even with one answer', function () {
     [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Completed);
     $retro->update(['completed_at' => now()]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => HealthStatement::Vision->value, 'score' => 8]);
+    answerHealthCheck($retro, $participant, [HealthStatement::Vision->value => 4]);
+    closeHealthCheck($retro);
 
     $result = mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]));
     $vision = collect($result['categories'])->firstWhere('key', HealthStatement::Vision->value);
 
     expect($result['status'])->toBe('completed')
-        ->and($vision['average'])->toEqual(8.0)
+        ->and($result['scale'])->toBe(5)
+        ->and($vision['average'])->toEqual(4.0)
+        ->and($vision['distribution'])->toBe([0, 0, 0, 1, 0])
         ->and($vision['answers'])->toBe(1)
         ->and($result)->toHaveKeys(['score', 'alignment', 'alignmentLevel', 'turnout', 'topStrength', 'growthArea', 'assessment', 'trend'])
         ->and($result['turnout'])->toBe(['respondents' => 1, 'participants' => 1])
-        ->and($result['trend'][0])->toMatchArray(['boardId' => $retro->id, 'sameStatements' => true])
+        ->and($result['trend'][0])->toMatchArray(['boardId' => $retro->id, 'surveyId' => resolve(HealthCheckSurvey::class)->forRetro($retro)->id, 'sameStatements' => true])
         ->and($result['trend'][0])->toHaveKeys(['title', 'completedAt', 'score', 'delta', 'url']);
 });
 
@@ -219,7 +228,8 @@ it('keeps handled suggestions in the insights list', function () {
 it('reports a completed category nobody answered without an average or alignment', function () {
     [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Completed);
     $retro->update(['completed_at' => now()]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => HealthStatement::Vision->value, 'score' => 8]);
+    answerHealthCheck($retro, $participant, [HealthStatement::Vision->value => 4]);
+    closeHealthCheck($retro);
 
     $categories = collect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories']);
     $unanswered = $categories->firstWhere('key', HealthStatement::Interaction->value);
@@ -233,8 +243,10 @@ it('reports the alignment of a category from its scores', function () {
     $other = Participant::factory()->create(['retro_id' => $retro->id]);
 
     foreach ([$participant, $other] as $answerer) {
-        HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $answerer->id, 'statement' => HealthStatement::Vision->value, 'score' => 6]);
+        answerHealthCheck($retro, $answerer, [HealthStatement::Vision->value => 3]);
     }
+
+    closeHealthCheck($retro);
 
     $vision = collect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories'])->firstWhere('key', HealthStatement::Vision->value);
 
@@ -248,5 +260,6 @@ it('never creates a participant when reading ROTI or health', function (string $
 
     actingAsMcp($user)->tool($tool, ['board_id' => $retro->id])->assertOk();
 
-    expect(Participant::query()->where('retro_id', $retro->id)->where('user_id', $user->id)->exists())->toBeFalse();
+    expect(Participant::query()->where('retro_id', $retro->id)->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(TeamSurveyRespondent::query()->where('user_id', $user->id)->exists())->toBeFalse();
 })->with([GetRoti::class, GetHealth::class]);

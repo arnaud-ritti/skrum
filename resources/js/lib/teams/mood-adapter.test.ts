@@ -108,7 +108,7 @@ describe('deltaSincePrevious', () => {
 });
 
 describe('healthScale', () => {
-    it('starts at 0 so that the ticks of a score out of 10 are whole numbers', () => {
-        expect(healthScale).toEqual({ min: 0, max: 10 });
+    it('runs from 0 to 5, so that an old score read halved below 1 still fits', () => {
+        expect(healthScale).toEqual({ min: 0, max: 5 });
     });
 });

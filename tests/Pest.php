@@ -1,6 +1,9 @@
 <?php
 
+use App\Actions\HealthCheck\AttachHealthCheck;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\TeamSurveys\RespondentForParticipant;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\GameKind;
@@ -10,6 +13,7 @@ use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\TeamSurveyQuestionKind;
+use App\Enums\TeamSurveyStatus;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Integrations\DeliverToChannel;
 use App\Jobs\Integrations\PushActionItemState;
@@ -54,6 +58,7 @@ use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\TrackerIssue;
+use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
@@ -61,6 +66,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -1709,4 +1715,176 @@ function sceneElement(array $overrides = []): array
 function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
 {
     return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Lane H: the health checks of before plan 19
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Rows of the tables the health check lived in before plan 19, written
+ * without the models, which Task 29 deletes.
+ *
+ * @param  array<int, array{key: string, builtin?: ?string, text?: ?string, label?: ?string}>  $statements
+ */
+function oldHealthStatements(Retro $retro, array $statements): void
+{
+    foreach (array_values($statements) as $position => $statement) {
+        DB::table('retro_health_statements')->insert([
+            'id' => (string) Str::uuid7(),
+            'retro_id' => $retro->id,
+            'key' => $statement['key'],
+            'team_health_statement_id' => null,
+            'builtin' => $statement['builtin'] ?? null,
+            'text' => $statement['text'] ?? null,
+            'label' => $statement['label'] ?? null,
+            'position' => $position,
+            'created_at' => '2026-08-01 09:00:00',
+            'updated_at' => '2026-08-01 09:00:00',
+        ]);
+    }
+}
+
+function oldHealthAnswer(Retro $retro, Participant $participant, string $statement, int $score, string $at = '2026-09-01 10:00:00'): void
+{
+    DB::table('health_check_answers')->insert([
+        'id' => (string) Str::uuid7(),
+        'retro_id' => $retro->id,
+        'participant_id' => $participant->id,
+        'statement' => $statement,
+        'score' => $score,
+        'created_at' => $at,
+        'updated_at' => $at,
+    ]);
+}
+
+/**
+ * Changes only `health_check_enabled` and `phase`, never a source column of
+ * the retro's derived search columns (docs/database.md, rule 9).
+ */
+function oldHealthFlag(Retro $retro, bool $enabled, ?string $phase = null): void
+{
+    DB::table('retros')->where('id', $retro->id)->update(array_filter([
+        'health_check_enabled' => $enabled,
+        'phase' => $phase,
+    ], fn (mixed $value): bool => $value !== null));
+}
+
+/**
+ * One team with the situations of spec §14. Scores are chosen so that every
+ * expected value of Tasks 14 and 16 can be checked by hand. The retro left in
+ * the `health_check` phase is never reloaded through Eloquent.
+ *
+ * @return array<string, mixed>
+ */
+function healthHistory(): array
+{
+    $team = Team::factory()->create();
+    $custom = (string) Str::uuid7();
+    $builtIns = [
+        ['key' => 'interaction', 'builtin' => 'interaction'],
+        ['key' => 'vision', 'builtin' => 'vision'],
+    ];
+
+    $sprint40 = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 40', 'completed_at' => '2026-08-10 10:00:00']);
+    oldHealthFlag($sprint40, true);
+    oldHealthStatements($sprint40, $builtIns);
+    [$alice, $aliceIn40] = retroFacilitator($sprint40);
+    oldHealthAnswer($sprint40, $aliceIn40, 'interaction', 5, '2026-08-10 09:00:00');
+    oldHealthAnswer($sprint40, $aliceIn40, 'vision', 5, '2026-08-10 09:01:00');
+
+    $sprint41 = Retro::factory()->for($team)->anonymous()->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 41', 'completed_at' => '2026-09-10 10:00:00']);
+    oldHealthFlag($sprint41, true);
+    oldHealthStatements($sprint41, [...$builtIns, ['key' => $custom, 'text' => 'We ship without fear', 'label' => 'Shipping']]);
+    $aliceIn41 = Participant::factory()->create(['retro_id' => $sprint41->id, 'user_id' => $alice->id]);
+    $sprint41->forceFill(['facilitator_participant_id' => $aliceIn41->id])->save();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $sprint41->id, 'guest_name' => 'Gus']);
+    $former = Participant::factory()->create(['retro_id' => $sprint41->id]);
+    DB::table('participants')->where('id', $former->id)->update(['user_id' => null]);
+    oldHealthAnswer($sprint41, $aliceIn41, 'interaction', 8, '2026-09-10 09:00:00');
+    oldHealthAnswer($sprint41, $aliceIn41, 'vision', 6, '2026-09-10 09:01:00');
+    oldHealthAnswer($sprint41, $aliceIn41, $custom, 4, '2026-09-10 09:02:00');
+    oldHealthAnswer($sprint41, $aliceIn41, 'motivation', 9, '2026-09-10 09:03:00');
+    oldHealthAnswer($sprint41, $guest, 'interaction', 6, '2026-09-10 09:04:00');
+    oldHealthAnswer($sprint41, $guest, 'vision', 10, '2026-09-10 09:05:00');
+    oldHealthAnswer($sprint41, $former, 'interaction', 7, '2026-09-10 09:06:00');
+
+    $inHealthPhase = Retro::factory()->for($team)->create(['title' => 'Sprint 42']);
+    oldHealthStatements($inHealthPhase, $builtIns);
+    [, $bobIn42] = retroMember($inHealthPhase);
+    oldHealthAnswer($inHealthPhase, $bobIn42, 'interaction', 3, '2026-10-01 09:00:00');
+    oldHealthFlag($inHealthPhase, true, 'health_check');
+
+    $completedUnanswered = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Unanswered', 'completed_at' => '2026-07-10 10:00:00']);
+    oldHealthFlag($completedUnanswered, true);
+    oldHealthStatements($completedUnanswered, $builtIns);
+
+    $turnedOff = Retro::factory()->for($team)->create(['title' => 'Turned off']);
+    oldHealthFlag($turnedOff, false);
+    oldHealthStatements($turnedOff, $builtIns);
+    [, $carolInTurnedOff] = retroMember($turnedOff);
+    oldHealthAnswer($turnedOff, $carolInTurnedOff, 'vision', 2);
+
+    $openUnanswered = Retro::factory()->for($team)->create(['title' => 'Open, unanswered']);
+    oldHealthFlag($openUnanswered, true);
+    oldHealthStatements($openUnanswered, $builtIns);
+
+    $never = Retro::factory()->for($team)->create(['title' => 'Never had one']);
+
+    return compact('team', 'custom', 'sprint40', 'sprint41', 'inHealthPhase', 'completedUnanswered', 'turnedOff', 'openUnanswered', 'never', 'alice', 'aliceIn41', 'guest', 'former', 'bobIn42');
+}
+
+function importedSurvey(string $retroId): ?object
+{
+    return DB::table('team_surveys')->where('retro_id', $retroId)->where('template', 'health_check')->first();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Lane H: the retro's health check as a team survey
+|--------------------------------------------------------------------------
+*/
+
+function attachHealthCheck(Retro $retro): TeamSurvey
+{
+    return resolve(AttachHealthCheck::class)->handle($retro);
+}
+
+/**
+ * Sends the scores of one participant, as "Submit answers" does. A fixture
+ * that reproduces an old health check passes the scale of ten: the
+ * questions take it while nobody has answered them.
+ *
+ * @param  array<string, int>  $scores  statement key => score, as given
+ */
+function answerHealthCheck(Retro $retro, Participant $participant, array $scores, int $scaleMax = HealthScale::Max): void
+{
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
+
+    if (! $survey->hasAnswers()) {
+        $survey->questions()->update(['scale_max' => $scaleMax]);
+    }
+
+    $respondent = resolve(RespondentForParticipant::class)->handle($survey, $participant);
+    $questions = $survey->questions()->get()->keyBy('match_key');
+
+    foreach ($scores as $key => $score) {
+        answerSurveyQuestion($questions[$key], $respondent, $score);
+    }
+
+    $respondent->update(['completed_at' => now()]);
+}
+
+/**
+ * Closes the health check of a retro at the retro's completion time, as
+ * completing the retro does.
+ */
+function closeHealthCheck(Retro $retro): TeamSurvey
+{
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro);
+    $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
+
+    return $survey;
 }

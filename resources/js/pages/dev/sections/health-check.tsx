@@ -70,10 +70,10 @@ export default function HealthCheckSection() {
     const [answers, setAnswers] = useState<
         Record<string, HealthScore | null | undefined>
     >({
-        'built-in-0': 8,
-        'built-in-1': 6,
-        'built-in-3': 10,
-        'built-in-4': 3,
+        'built-in-0': 4,
+        'built-in-1': 3,
+        'built-in-3': 5,
+        'built-in-4': 2,
     });
     const [submitted, setSubmitted] = useState(false);
     const people = [
@@ -102,16 +102,16 @@ export default function HealthCheckSection() {
         answeredBy: index === 5 ? [] : people.slice(0, people.length - index),
     }));
     const complete = Object.fromEntries(
-        formStatements.map((s, index) => [s.key, ((index * 3) % 10) + 1]),
+        formStatements.map((s, index) => [s.key, ((index * 3) % 5) + 1]),
     );
     const retro = t('Sprint 42');
     const previous = t('sprint 41');
     const serverResults: HealthCheckResult[] = [
-        8.25,
-        7.5,
-        8.8,
-        6.4,
+        4.1,
+        3.8,
         4.4,
+        3.2,
+        2.2,
         null,
     ].map((average, index) => ({
         key: `built-in-${index}`,
@@ -120,20 +120,20 @@ export default function HealthCheckSection() {
         count: average === null ? 0 : 8,
     }));
     const distributions = [
-        [0, 0, 0, 0, 0, 1, 1, 4, 1, 1],
-        [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-        [0, 0, 0, 0, 0, 0, 1, 3, 2, 2],
-        [0, 0, 1, 1, 2, 2, 1, 1, 0, 0],
-        [1, 1, 2, 2, 1, 1, 0, 0, 0, 0],
-        [0, 0, 0, 1, 2, 2, 2, 1, 0, 0],
+        [0, 0, 1, 4, 3],
+        [0, 1, 2, 3, 2],
+        [0, 0, 0, 3, 5],
+        [0, 2, 3, 2, 1],
+        [2, 2, 3, 1, 0],
+        [0, 1, 3, 3, 1],
     ];
     const results: HealthCheckResult[] = [
-        [8.0, 7.7],
-        [7.5, 7.4],
-        [8.8, 8.8],
-        [6.4, 6.8],
-        [4.4, 5.6],
-        [7.0, 6.2],
+        [4.0, 3.9],
+        [3.8, 3.7],
+        [4.4, 4.4],
+        [3.2, 3.4],
+        [2.2, 2.8],
+        [3.5, 3.1],
     ].map(([average, previousAverage], index) => ({
         key: `built-in-${index}`,
         label: base[index].label,
@@ -142,9 +142,9 @@ export default function HealthCheckSection() {
         previousAverage,
     }));
     const summary = {
-        score: 7.1,
-        topStrength: { label: base[2].label, average: 8.8 },
-        growthArea: { label: base[4].label, average: 4.4 },
+        score: 3.5,
+        topStrength: { label: base[2].label, average: 4.4 },
+        growthArea: { label: base[4].label, average: 2.2 },
         alignment: { value: 6, label: t('Moderate alignment') },
         assessment: {
             title: t('Good health.'),
@@ -265,7 +265,7 @@ export default function HealthCheckSection() {
             </State>
             <State
                 label={t(
-                    'Answer view as the app saves it: 1 to 10, each answer on its own, clear, live progress',
+                    'Answer view on the health scale, 1 to 5, each answer on its own, clear, live progress',
                 )}
             >
                 <HealthCheckForm
@@ -323,21 +323,23 @@ export default function HealthCheckSection() {
                 />
             </State>
             <State
-                label={t('Answer view, 1 to 5 scale, narrow container (20rem)')}
+                label={t(
+                    'Answer view, 1 to 10 scale of an imported health check, narrow container (20rem)',
+                )}
                 width="w-80 max-w-full"
             >
                 <HealthCheckForm
                     retroTitle={retro}
                     statements={liveStatements.slice(0, 2)}
-                    answers={{ 'built-in-0': 4 }}
-                    scale={5}
+                    answers={{ 'built-in-0': 8 }}
+                    scale={10}
                     onAnswer={noop}
                     onClear={noop}
                 />
             </State>
             <State
                 label={t(
-                    'Results as the server sends them: averages out of 10, summary, no distribution',
+                    'Results as the server sends them: averages out of 5, summary, no distribution',
                 )}
             >
                 <HealthCheckResults
@@ -355,7 +357,7 @@ export default function HealthCheckSection() {
             </State>
             <State
                 label={t(
-                    'Results with distribution, trend up, down and unchanged, one alert below 6',
+                    'Results with distribution, trend up, down and unchanged, one alert below 3',
                 )}
             >
                 <HealthCheckResults

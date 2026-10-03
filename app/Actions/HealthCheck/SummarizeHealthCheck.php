@@ -2,24 +2,26 @@
 
 namespace App\Actions\HealthCheck;
 
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
-use App\Models\RetroHealthStatement;
+use App\Models\TeamSurvey;
+use App\Models\TeamSurveyAnswer;
+use App\Models\TeamSurveyQuestion;
+use App\Support\Surveys\HealthScale;
 use Illuminate\Support\Collection;
 
 class SummarizeHealthCheck
 {
-    /** The largest population standard deviation on a 1–10 scale. */
-    private const float MaximumSpread = 4.5;
-
-    public function __construct(private PresentHealthStatement $presentHealthStatement) {}
+    public function __construct(
+        private HealthCheckSurvey $healthCheckSurvey,
+        private BuildHealthTrend $buildHealthTrend,
+    ) {}
 
     /**
-     * The previous averages come from another retro of the team, which a guest of this one must not see.
+     * The previous averages come from another session of the team, which a guest of this one must not see.
      *
      * @return array{
-     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float}>,
+     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>,
      *     score: float,
      *     participation: array{respondents: int, participants: int},
      *     topStrength: ?array{key: string, label: string, average: float},
@@ -30,32 +32,58 @@ class SummarizeHealthCheck
      */
     public function handle(Retro $retro, ?Participant $viewer = null): ?array
     {
-        if (! $retro->health_check_enabled) {
+        $survey = $this->healthCheckSurvey->forRetro($retro);
+
+        if ($survey === null) {
             return null;
         }
 
-        $totals = $retro->healthCheckAnswers()
-            ->get(['statement', 'score'])
-            ->groupBy('statement')
-            ->map(fn (Collection $answers): object => (object) [
-                'answers' => $answers->count(),
-                'total' => $answers->sum('score'),
-                'squares' => $answers->sum(fn (HealthCheckAnswer $answer): int => $answer->score ** 2),
-            ]);
+        return $this->forSurvey($survey, $retro->participants()->count(), ! ($viewer?->isGuest() ?? false));
+    }
 
-        $previousAverages = $viewer?->isGuest() ? [] : $this->previousAverages($retro);
+    /**
+     * Averages on the health scale (spec §11.9): each statement's mean on the
+     * scale it was asked on, normalised, rounded once.
+     *
+     * @return array{
+     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>,
+     *     score: float,
+     *     participation: array{respondents: int, participants: int},
+     *     topStrength: ?array{key: string, label: string, average: float},
+     *     growthArea: ?array{key: string, label: string, average: float},
+     *     alignment: array{value: int, level: string, label: string},
+     *     assessment: array{band: string, title: string, sentence: string}
+     * }|null
+     */
+    public function forSurvey(TeamSurvey $survey, int $participants, bool $withPrevious = true): ?array
+    {
+        $questions = $survey->questions()->get();
 
-        $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals, $previousAverages): array {
-            $row = $totals->get($statement->key);
-            $count = (int) ($row->answers ?? 0);
-            $mean = $count === 0 ? null : (float) $row->total / $count;
+        $answers = TeamSurveyAnswer::query()
+            ->whereIn('team_survey_question_id', $questions->pluck('id'))
+            ->whereNotNull('value')
+            ->get(['team_survey_question_id', 'team_survey_respondent_id', 'value']);
+
+        $valuesByQuestion = $answers->groupBy('team_survey_question_id');
+        $previousAverages = $withPrevious ? $this->previousAverages($survey) : [];
+
+        $statements = $questions->map(function (TeamSurveyQuestion $question) use ($valuesByQuestion, $previousAverages): array {
+            $scaleMax = (int) $question->scale_max;
+            $values = $valuesByQuestion->get($question->id, collect())->map(fn (TeamSurveyAnswer $answer): int => (int) $answer->value)->values();
+            $count = $values->count();
+            $mean = $count === 0 ? null : $values->sum() / $count;
+            $squares = $values->sum(fn (int $value): int => $value * $value);
 
             return [
-                ...$this->presentHealthStatement->handle($statement),
-                'average' => $mean === null ? null : round($mean, 1),
+                'key' => (string) $question->match_key,
+                'label' => (string) $question->displayShortLabel(),
+                'text' => $question->displayLabel(),
+                'isBuiltin' => $question->builtin !== null,
+                'average' => $mean === null ? null : HealthScale::average($mean, $scaleMax),
                 'count' => $count,
-                'consensus' => $mean === null ? null : $this->consensus((float) $row->squares / $count - $mean ** 2),
-                'previousAverage' => $previousAverages[$statement->key] ?? null,
+                'consensus' => $mean === null ? null : $this->consensus($squares / $count - $mean ** 2, $scaleMax),
+                'previousAverage' => $previousAverages[(string) $question->match_key] ?? null,
+                'distribution' => HealthScale::distribution($values->all(), $scaleMax),
             ];
         });
 
@@ -69,20 +97,11 @@ class SummarizeHealthCheck
         [$topStrength, $growthArea] = $this->extremes($reported);
 
         return [
-            'statements' => $statements->map(fn (array $statement): array => [
-                'key' => $statement['key'],
-                'label' => $statement['label'],
-                'text' => $statement['text'],
-                'isBuiltin' => $statement['isBuiltin'],
-                'average' => $statement['average'],
-                'count' => $statement['count'],
-                'consensus' => $statement['consensus'],
-                'previousAverage' => $statement['previousAverage'],
-            ])->values()->all(),
+            'statements' => $statements->values()->all(),
             'score' => $score,
             'participation' => [
-                'respondents' => $retro->healthCheckAnswers()->distinct()->count('participant_id'),
-                'participants' => $retro->participants()->count(),
+                'respondents' => $answers->pluck('team_survey_respondent_id')->unique()->count(),
+                'participants' => $participants,
             ],
             'topStrength' => $topStrength,
             'growthArea' => $growthArea,
@@ -92,31 +111,36 @@ class SummarizeHealthCheck
     }
 
     /**
-     * @return array<string, float>
+     * @return array<string, float> average on the health scale by statement key, in the team's previous closed health check
      */
-    private function previousAverages(Retro $retro): array
+    private function previousAverages(TeamSurvey $survey): array
     {
-        if ($retro->completed_at === null) {
+        if ($survey->closed_at === null) {
             return [];
         }
 
-        $previous = Retro::query()
-            ->where('team_id', $retro->team_id)
-            ->whereKeyNot($retro->id)
-            ->where('health_check_enabled', true)
-            ->where('completed_at', '<', $retro->completed_at)
-            ->whereHas('healthCheckAnswers')
-            ->latest('completed_at')
-            ->first(['id']);
+        $previous = $this->buildHealthTrend->closedHealthChecks($survey->team_id)
+            ->whereKeyNot($survey->id)
+            ->where('closed_at', '<', $survey->closed_at)
+            ->first();
 
         if ($previous === null) {
             return [];
         }
 
-        return $previous->healthCheckAnswers()
-            ->get(['statement', 'score'])
-            ->groupBy('statement')
-            ->map(fn (Collection $answers): float => round((float) $answers->avg('score'), 1))
+        $questions = $previous->questions()->get(['id', 'match_key', 'scale_max'])->keyBy('id');
+
+        return TeamSurveyAnswer::query()
+            ->whereIn('team_survey_question_id', $questions->keys())
+            ->whereNotNull('value')
+            ->get(['team_survey_question_id', 'value'])
+            ->groupBy('team_survey_question_id')
+            ->mapWithKeys(function (Collection $own, string $questionId) use ($questions): array {
+                $question = $questions[$questionId];
+                $mean = $own->sum(fn (TeamSurveyAnswer $answer): int => (int) $answer->value) / $own->count();
+
+                return [(string) $question->match_key => HealthScale::average($mean, (int) $question->scale_max)];
+            })
             ->all();
     }
 
@@ -132,15 +156,15 @@ class SummarizeHealthCheck
         return round(array_sum($averages) / count($averages), 1);
     }
 
-    private function consensus(float $variance): float
+    private function consensus(float $variance, int $scaleMax): float
     {
         $spread = sqrt(max(0.0, $variance));
 
-        return max(0.0, min(10.0, 10 * (1 - $spread / self::MaximumSpread)));
+        return max(0.0, min(10.0, 10 * (1 - $spread / HealthScale::maximumSpread($scaleMax))));
     }
 
     /**
-     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int<0, max>, consensus: ?float, previousAverage: ?float}>  $reported
+     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int<0, max>, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>  $reported
      * @return array{
      *     0: ?array{key: string, label: string, average: float},
      *     1: ?array{key: string, label: string, average: float}
@@ -190,10 +214,10 @@ class SummarizeHealthCheck
      */
     private function assessment(float $score): array
     {
-        return match (true) {
-            $score >= 8 => ['band' => 'excellent', 'title' => __('Excellent'), 'sentence' => __('The team is thriving. Keep doing what works.')],
-            $score >= 6 => ['band' => 'good', 'title' => __('Good'), 'sentence' => __('Most health scores are above average. Keep the momentum going.')],
-            $score >= 4 => ['band' => 'needs_attention', 'title' => __('Needs attention'), 'sentence' => __('Several areas need attention. Pick one to improve next.')],
+        return match (HealthScale::band($score)) {
+            'excellent' => ['band' => 'excellent', 'title' => __('Excellent'), 'sentence' => __('The team is thriving. Keep doing what works.')],
+            'good' => ['band' => 'good', 'title' => __('Good'), 'sentence' => __('Most health scores are above average. Keep the momentum going.')],
+            'needs_attention' => ['band' => 'needs_attention', 'title' => __('Needs attention'), 'sentence' => __('Several areas need attention. Pick one to improve next.')],
             default => ['band' => 'critical', 'title' => __('Critical'), 'sentence' => __('The team is struggling. Talk about what would help most.')],
         };
     }

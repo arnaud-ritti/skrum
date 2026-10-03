@@ -1,16 +1,20 @@
 <?php
 
 use App\Actions\HealthCheck\BuildHealthTrend;
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Enums\RetroPhase;
-use App\Models\HealthCheckAnswer;
+use App\Enums\TeamSurveyStatus;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Support\Surveys\HealthScale;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * One participant's scores on ten, as before plan 19, read on the health
+ * scale; the health check is closed at the retro's completion time.
+ *
  * @param  array<string, int>  $scores  statement key => one participant's score
  */
 function trendRetro(Team $team, array $scores, string $completedAt, array $attributes = []): Retro
@@ -20,18 +24,11 @@ function trendRetro(Team $team, array $scores, string $completedAt, array $attri
         ...$attributes,
     ]);
 
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
-    $participant = Participant::factory()->create(['retro_id' => $retro->id]);
-
-    foreach ($scores as $statement => $score) {
-        HealthCheckAnswer::factory()->create([
-            'retro_id' => $retro->id,
-            'participant_id' => $participant->id,
-            'statement' => $statement,
-            'score' => $score,
-        ]);
+    if ($scores !== []) {
+        answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores, HealthScale::LegacyMax);
     }
+
+    closeHealthCheck($retro);
 
     return $retro;
 }
@@ -42,15 +39,17 @@ it('lists the last six scored completed retros of the team, oldest first, with d
 
     trendRetro(Team::factory()->create(), ['vision' => 10], '2026-08-15 10:00:00');
     trendRetro($team, ['vision' => 10], '2026-08-20 10:00:00', ['phase' => RetroPhase::Discussing]);
-    trendRetro($team, ['vision' => 10], '2026-08-21 10:00:00', ['health_check_enabled' => false]);
+    $removed = trendRetro($team, ['vision' => 10], '2026-08-21 10:00:00');
+    resolve(HealthCheckSurvey::class)->forRetro($removed)->update(['status' => TeamSurveyStatus::Draft]);
     trendRetro($team, [], '2026-08-22 10:00:00');
 
     $trend = resolve(BuildHealthTrend::class)->handle($retros->last());
 
     expect(collect($trend)->pluck('retroId')->all())->toBe($retros->slice(2)->pluck('id')->values()->all())
-        ->and(collect($trend)->pluck('score')->all())->toBe([3.5, 4.5, 5.5, 6.5, 7.5, 8.5])
-        ->and(collect($trend)->pluck('delta')->all())->toBe([null, 1.0, 1.0, 1.0, 1.0, 1.0])
+        ->and(collect($trend)->pluck('score')->all())->toBe([1.8, 2.3, 2.8, 3.3, 3.8, 4.3])
+        ->and(collect($trend)->pluck('delta')->all())->toBe([null, 0.5, 0.5, 0.5, 0.5, 0.5])
         ->and($trend[0])->toMatchArray([
+            'surveyId' => resolve(HealthCheckSurvey::class)->forRetro($retros[2])->id,
             'title' => $retros[2]->title,
             'completedAt' => $retros[2]->completed_at->toIso8601String(),
             'url' => route('retros.show', $retros[2]),
@@ -82,24 +81,28 @@ it('keeps a reworded custom statement comparable across retros', function () {
     $second = trendRetro($team, [$custom->id => 7], '2026-06-01 10:00:00');
 
     expect(collect(resolve(BuildHealthTrend::class)->handle($second))->pluck('sameStatements')->all())->toBe([true, true])
-        ->and($first->healthStatements()->where('key', $custom->id)->sole()->text)->toBe('We shipped on time')
-        ->and($second->healthStatements()->where('key', $custom->id)->sole()->text)->toBe('We shipped what we promised');
+        ->and(resolve(HealthCheckSurvey::class)->forRetro($first)->questions()->where('match_key', $custom->id)->sole()->label)->toBe('We shipped on time')
+        ->and(resolve(HealthCheckSurvey::class)->forRetro($second)->questions()->where('match_key', $custom->id)->sole()->label)->toBe('We shipped what we promised');
 });
 
-it('scores a retro from the answers to its own frozen statements only', function () {
+it('scores each health check from the answers to its own questions, on the health scale', function () {
     $team = Team::factory()->create();
-    $retro = trendRetro($team, ['vision' => 4, 'motivation' => 8, 'a_key_never_frozen' => 1], '2026-05-01 10:00:00');
+    $retro = trendRetro($team, ['vision' => 4, 'motivation' => 8], '2026-05-01 10:00:00');
     $other = trendRetro($team, ['vision' => 10, 'motivation' => 10], '2026-06-01 10:00:00');
-    HealthCheckAnswer::factory()->create([
-        'retro_id' => $retro->id,
-        'participant_id' => Participant::factory()->create(['retro_id' => $retro->id])->id,
-        'statement' => 'vision',
-        'score' => 7,
-    ]);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 7]);
+    $surveys = collect([$retro, $other])->map(fn (Retro $own) => resolve(HealthCheckSurvey::class)->forRetro($own));
 
-    $scores = resolve(BuildHealthTrend::class)->scores(collect([$retro->id, $other->id]));
+    $scores = resolve(BuildHealthTrend::class)->scoresOf($surveys);
 
-    expect($scores->all())->toBe([$retro->id => 6.8, $other->id => 10.0]);
+    expect($scores->all())->toBe([$surveys[0]->id => 3.4, $surveys[1]->id => 5.0]);
+});
+
+it('leaves out a health check closed by hand while its retro is still running', function () {
+    $team = Team::factory()->create();
+    $completed = trendRetro($team, ['vision' => 6], '2026-05-01 10:00:00');
+    trendRetro($team, ['vision' => 8], '2026-05-02 10:00:00', ['phase' => RetroPhase::Discussing]);
+
+    expect(collect(resolve(BuildHealthTrend::class)->forTeam($team->id))->pluck('retroId')->all())->toBe([$completed->id]);
 });
 
 it('builds the trend with a constant number of queries', function () {
@@ -138,5 +141,5 @@ it('includes the viewed retro when it is not the latest', function () {
     $trend = resolve(BuildHealthTrend::class)->handle($retros[4]);
 
     expect(collect($trend)->pluck('retroId')->all())->toBe($retros->slice(0, 5)->pluck('id')->values()->all())
-        ->and(collect($trend)->last()['score'])->toBe(5.0);
+        ->and(collect($trend)->last()['score'])->toBe(2.5);
 });

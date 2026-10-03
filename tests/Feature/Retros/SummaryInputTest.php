@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\BuildSummaryInput;
 use App\Actions\Retros\ParseSummaryOutput;
 use App\Actions\Retros\SummaryInput;
@@ -12,7 +11,6 @@ use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\CardReaction;
 use App\Models\Column;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
@@ -100,15 +98,17 @@ it('sends at most fifty text answers per survey', function () {
 });
 
 it('sends health aggregates labelled by statement and the roti aggregate', function () {
-    [$retro, $alice, $bob] = completedRetroWithContent(['health_check_enabled' => true]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bob->id, 'statement' => 'interaction', 'score' => 8]);
+    [$retro, $alice, $bob] = completedRetroWithContent();
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $bob, ['interaction' => 4]);
+    closeHealthCheck($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bob->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $alice->id, 'score' => 5]);
 
     $payload = json_decode(resolve(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
 
-    expect($payload['health']['statements'])->toContain(['label' => 'Interaction', 'average' => 8.0])
+    expect($payload['health']['statements'])->toContain(['label' => 'Interaction', 'average' => 4.0])
+        ->and($payload['health']['scale'])->toBe(5)
         ->and($payload['roti'])->toBe(['respondents' => 2, 'average' => 4.5]);
 });
 

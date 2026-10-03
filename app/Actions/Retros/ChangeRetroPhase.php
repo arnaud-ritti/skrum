@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Actions\Games\AbandonIcebreakerRound;
 use App\Actions\Games\EnsureIcebreakerRoom;
+use App\Actions\HealthCheck\CloseAttachedSurveys;
 use App\Actions\Surveys\CloseOpenSurveys;
 use App\Enums\RetroPhase;
 use App\Events\RetroCompleted;
@@ -16,6 +17,7 @@ class ChangeRetroPhase
 {
     public function __construct(
         private CloseOpenSurveys $closeOpenSurveys,
+        private CloseAttachedSurveys $closeAttachedSurveys,
         private Llm $llm,
         private QueueRetroSummary $queueRetroSummary,
         private ClearRetroInsights $clearRetroInsights,
@@ -111,6 +113,7 @@ class ChangeRetroPhase
         }
 
         $this->closeOpenSurveys->handle($locked);
+        $this->closeAttachedSurveys->handle($locked);
     }
 
     private function broadcast(Retro $locked, RetroPhase $phase): void

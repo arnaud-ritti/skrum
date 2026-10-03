@@ -3,10 +3,10 @@ import type { RotiTrendPoint } from '@/components/skrum/roti-trend-card';
 import type { TeamMoodPoint } from '@/types';
 
 /**
- * A health check answer goes from 1 to 10; the axis starts at 0 so that its
- * ticks are whole numbers.
+ * Health is read on 1 to 5; the axis starts at 0 because an old score on ten,
+ * read halved, can be under 1.
  */
-export const healthScale: MoodScale = { min: 0, max: 10 };
+export const healthScale: MoodScale = { min: 0, max: 5 };
 
 /** One point per retro that has a health score, in the order received (oldest first). */
 export function toMoodPoints(trend: TeamMoodPoint[]): MoodPoint[] {

@@ -1,12 +1,10 @@
 <?php
 
 use App\Actions\HealthCheck\BuildHealthTrend;
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Models\Card;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
@@ -118,34 +116,27 @@ it('has no health section or trend without health answers', function () {
 
 it('summarises real health answers into statement averages and a score', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
     $other = Participant::factory()->create(['retro_id' => $retro->id]);
-
-    foreach ([$viewer->id => 8, $other->id => 6] as $participantId => $score) {
-        HealthCheckAnswer::factory()->create([
-            'retro_id' => $retro->id,
-            'participant_id' => $participantId,
-            'statement' => 'interaction',
-            'score' => $score,
-        ]);
-    }
+    answerHealthCheck($retro, $viewer, ['interaction' => 4]);
+    answerHealthCheck($retro, $other, ['interaction' => 3]);
+    closeHealthCheck($retro);
 
     $health = resultsOf($retro, $viewer)['health'];
     $interaction = collect($health['statements'])->firstWhere('key', 'interaction');
 
-    expect($interaction)->toMatchArray(['average' => 7.0, 'count' => 2])
-        ->and($health['score'])->toBe(7.0)
+    expect($interaction)->toMatchArray(['average' => 3.5, 'count' => 2, 'distribution' => [0, 0, 1, 1, 0]])
+        ->and($health['score'])->toBe(3.5)
         ->and($health['participation'])->toBe(['respondents' => 2, 'participants' => 2]);
 });
 
 it('keeps the query count constant as ratings, participants, surveys and health answers grow', function () {
     warmInstanceSettings();
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id]);
+    answerHealthCheck($retro, $viewer, ['vision' => 4]);
+    closeHealthCheck($retro);
     Survey::factory()->closed()->withOptions()->create(['retro_id' => $retro->id]);
 
     $count = function () use ($retro, $viewer): int {
@@ -160,7 +151,8 @@ it('keeps the query count constant as ratings, participants, surveys and health 
     $few = $count();
 
     RotiVote::factory()->count(6)->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->count(4)->create(['retro_id' => $retro->id]);
+    Participant::factory()->count(4)->create(['retro_id' => $retro->id])
+        ->each(fn (Participant $participant) => answerHealthCheck($retro, $participant, ['vision' => 3, 'motivation' => 5]));
     Survey::factory()->count(2)->closed()->withOptions()->create(['retro_id' => $retro->id])
         ->each(function (Survey $survey) use ($retro): void {
             $participant = Participant::factory()->create(['retro_id' => $retro->id]);
@@ -233,25 +225,20 @@ it('carries the statistics to a guest without the health trend', function () {
 
 it('hides the previous retro averages and the health trend from a guest', function () {
     $previous = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeek()]);
-    resolve(FreezeHealthStatements::class)->handle($previous);
-    HealthCheckAnswer::factory()->create([
-        'retro_id' => $previous->id,
-        'participant_id' => Participant::factory()->create(['retro_id' => $previous->id])->id,
-        'statement' => 'vision',
-        'score' => 6,
-    ]);
+    answerHealthCheck($previous, Participant::factory()->create(['retro_id' => $previous->id]), ['vision' => 3]);
+    closeHealthCheck($previous);
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['team_id' => $previous->team_id, 'completed_at' => now()]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $member] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $member->id, 'statement' => 'vision', 'score' => 8]);
+    answerHealthCheck($retro, $member, ['vision' => 4]);
+    closeHealthCheck($retro);
 
     $memberResults = resultsOf($retro, $member);
     $guestResults = resultsOf($retro, $guest);
 
-    expect(collect($memberResults['health']['statements'])->firstWhere('key', 'vision')['previousAverage'])->toBe(6.0)
+    expect(collect($memberResults['health']['statements'])->firstWhere('key', 'vision')['previousAverage'])->toBe(3.0)
         ->and($memberResults['healthTrend'])->toHaveCount(2)
-        ->and(collect($guestResults['health']['statements'])->firstWhere('key', 'vision'))->toMatchArray(['average' => 8.0, 'previousAverage' => null])
+        ->and(collect($guestResults['health']['statements'])->firstWhere('key', 'vision'))->toMatchArray(['average' => 4.0, 'previousAverage' => null])
         ->and(collect($guestResults['health']['statements'])->pluck('previousAverage')->unique()->all())->toBe([null])
         ->and($guestResults['healthTrend'])->toBeNull();
 });

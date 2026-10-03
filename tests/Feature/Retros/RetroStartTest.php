@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\MarkRetroStarted;
 use App\Enums\RetroPhase;
 use App\Models\Column;
@@ -25,14 +24,15 @@ it('is started by the first card', function () {
     expect($retro->fresh()->started_at->timestamp)->toBe(now()->timestamp);
 });
 
-it('is started by the first health check answer', function () {
+it('is started by the first health-check submission', function () {
     $this->freezeTime();
-    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::HealthCheck)->create();
-    resolve(FreezeHealthStatements::class)->handle($retro);
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Writing)->create();
     [$user] = retroMember($retro);
 
     $this->actingAs($user)
-        ->putJson(route('retros.health-check.update', ['retro' => $retro, 'statement' => 'vision']), ['score' => 7])
+        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => [
+            'interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => 4, 'processes' => 2, 'motivation' => 4,
+        ]])
         ->assertOk();
 
     expect($retro->fresh()->started_at->timestamp)->toBe(now()->timestamp);

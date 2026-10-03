@@ -14,7 +14,7 @@ export interface HealthCheckCompactProps {
     results: HealthCheckResult[];
     /** Names what each move is compared with, for a screen reader. */
     previousRetroTitle?: string;
-    /** Highest score; the server stores 1..10. */
+    /** Highest score: the health scale, 1 to 5. */
     scale?: number;
     /** Defaults to 60 % of the scale. */
     alertThreshold?: number;

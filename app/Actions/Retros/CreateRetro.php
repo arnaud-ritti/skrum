@@ -2,7 +2,7 @@
 
 namespace App\Actions\Retros;
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Models\Retro;
@@ -19,7 +19,7 @@ use InvalidArgumentException;
 class CreateRetro
 {
     public function __construct(
-        private FreezeHealthStatements $freezeHealthStatements,
+        private AttachHealthCheck $attachHealthCheck,
         private Llm $llm,
     ) {}
 
@@ -33,7 +33,6 @@ class CreateRetro
                 'template' => $workspaceTemplate === null ? $data->template : TemplateCatalogue::Workspace,
                 'workspace_template_id' => $workspaceTemplate?->id,
                 'is_anonymous' => $data->isAnonymous,
-                'health_check_enabled' => $data->healthCheckEnabled,
                 'icebreaker_enabled' => $data->icebreakerEnabled,
                 'icebreaker_game' => $data->icebreakerGame ?? GameKind::DrawAndGuess,
                 'votes_per_participant' => $data->votesPerParticipant,
@@ -49,13 +48,13 @@ class CreateRetro
                 $retro->columns()->create([...$column, 'position' => $position]);
             }
 
-            if ($data->healthCheckEnabled) {
-                $this->freezeHealthStatements->handle($retro);
-            }
-
             $facilitator = $retro->participants()->create(['user_id' => $creator->id]);
 
             $retro->update(['facilitator_participant_id' => $facilitator->id]);
+
+            if ($data->healthCheckEnabled) {
+                $this->attachHealthCheck->handle($retro->setRelation('facilitator', $facilitator));
+            }
 
             return $retro->fresh(['columns', 'facilitator']);
         });

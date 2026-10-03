@@ -54,7 +54,7 @@ describe('HealthCheckSummary', () => {
 
         expect(
             within(region).getByText(
-                '3 statements asked at the end of each retro, scored 1–10.',
+                '3 statements, scored 1–5, asked in every health check',
             ),
         ).toBeTruthy();
     });
@@ -66,7 +66,7 @@ describe('HealthCheckSummary', () => {
 
         expect(
             screen.getByText(
-                '1 statement asked at the end of each retro, scored 1–10.',
+                '1 statement, scored 1–5, asked in every health check',
             ),
         ).toBeTruthy();
     });

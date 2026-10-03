@@ -18,23 +18,23 @@ const results: HealthCheckResult[] = [
     {
         key: 'interaction',
         label: 'Interaction',
-        average: 8.4,
-        previousAverage: 8.3,
+        average: 4.2,
+        previousAverage: 4.1,
     },
     {
         key: 'support',
         label: 'Manager support',
-        average: 8.8,
-        previousAverage: 8.8,
+        average: 4.4,
+        previousAverage: 4.4,
     },
-    { key: 'tasks', label: 'Clear tasks', average: 7.2, previousAverage: 7.4 },
+    { key: 'tasks', label: 'Clear tasks', average: 3.6, previousAverage: 3.8 },
     {
         key: 'processes',
         label: 'Processes',
-        average: 5.2,
-        previousAverage: 6.2,
+        average: 2.6,
+        previousAverage: 3.1,
     },
-    { key: 'vision', label: 'Vision', average: 6.5, previousAverage: null },
+    { key: 'vision', label: 'Vision', average: 3.3, previousAverage: null },
     { key: 'motivation', label: 'Motivation', average: null },
 ];
 
@@ -48,7 +48,7 @@ function show(props: Partial<Parameters<typeof HealthCheckCompact>[0]> = {}) {
     return renderWithProviders(
         <HealthCheckCompact
             respondents={8}
-            score={7.2}
+            score={3.6}
             results={results}
             previousRetroTitle="Sprint 41"
             {...props}
@@ -68,7 +68,7 @@ describe('HealthCheckCompact', () => {
                 level: 2,
             }).parentElement,
         ).toBe(card);
-        expect(card.textContent).toContain('8 answers · avg 7.2');
+        expect(card.textContent).toContain('8 answers · avg 3.6');
     });
 
     it('counts a single answer in the singular', () => {
@@ -76,7 +76,7 @@ describe('HealthCheckCompact', () => {
 
         expect(
             screen.getByRole('region', { name: 'Health check' }).textContent,
-        ).toContain('1 answer · avg 7.2');
+        ).toContain('1 answer · avg 3.6');
     });
 
     it('has one row per statement: label, bar as wide as the score, score', () => {
@@ -88,7 +88,7 @@ describe('HealthCheckCompact', () => {
             row('interaction').querySelector(
                 '[data-slot="health-compact-mean"]',
             )?.textContent,
-        ).toBe('8.4');
+        ).toBe('4.2');
         expect(
             (
                 row('interaction').querySelector(
@@ -134,7 +134,7 @@ describe('HealthCheckCompact', () => {
         expect(
             document.querySelector('[data-slot="health-compact-note"]')
                 ?.textContent,
-        ).toBe('Processes dropped 1.0 — worth a topic next retro.');
+        ).toBe('Processes dropped 0.5 — worth a topic next retro.');
     });
 
     it('has no such note when nothing dropped', () => {

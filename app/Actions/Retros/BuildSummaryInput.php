@@ -11,6 +11,7 @@ use App\Models\SurveyOption;
 use App\Models\SurveyTextAnswer;
 use App\Support\Alphabetical;
 use App\Support\Llm\LlmLanguages;
+use App\Support\Surveys\HealthScale;
 use Illuminate\Support\Collection;
 
 class BuildSummaryInput
@@ -192,7 +193,7 @@ class BuildSummaryInput
     }
 
     /**
-     * @return array{score: ?float, participation: array<string, int>, alignment: mixed, statements: array<int, array{label: string, average: ?float}>}|null
+     * @return array{score: ?float, scale: int, participation: array<string, int>, alignment: mixed, statements: array<int, array{label: string, average: ?float}>}|null
      */
     private function health(Retro $retro): ?array
     {
@@ -204,6 +205,7 @@ class BuildSummaryInput
 
         return [
             'score' => $summary['score'],
+            'scale' => HealthScale::Max,
             'participation' => $summary['participation'],
             'alignment' => $summary['alignment'],
             'statements' => array_map(

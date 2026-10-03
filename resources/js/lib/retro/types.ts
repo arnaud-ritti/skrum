@@ -259,16 +259,27 @@ type HealthStatementPayload = {
     isBuiltin: boolean;
 };
 
+/** `health.answered`: how many have sent their answers, out of how many joined. */
 export type HealthProgress = {
-    key: string;
-    count: number;
-    answeredBy: string[];
+    respondents: number;
+    participants: number;
 };
 
-export type HealthCheckStatement = HealthStatementPayload &
-    HealthProgress & { myScore: number | null };
+export type HealthCheckStatement = HealthStatementPayload & {
+    myScore: number | null;
+};
 
-type HealthCheckState = { statements: HealthCheckStatement[] };
+/** The retro's health check, a team survey answered from the board. */
+export type HealthCheckState = HealthProgress & {
+    surveyId: string;
+    isClosed: boolean;
+    /** 5, or 10 for a health check imported open on the old scale. */
+    scale: number;
+    hasSubmitted: boolean;
+    statements: HealthCheckStatement[];
+    /** The summary on the health scale once the health check is closed. */
+    results: HealthResults | null;
+};
 
 export type Snapshot = {
     retro: {
@@ -281,6 +292,8 @@ export type Snapshot = {
         phase: RetroPhase;
         phases: RetroPhase[];
         healthCheckEnabled: boolean;
+        /** How many statements the team asks, for the "Add survey" menu. */
+        healthCheckStatements: number;
         icebreakerEnabled: boolean;
         icebreakerGame: GameKind;
         votesAuto: boolean;
@@ -359,6 +372,8 @@ export type HealthStatementResult = {
     average: number | null;
     count: number;
     previousAverage: number | null;
+    /** Answers per score of the health scale, 1 to 5. */
+    distribution: number[];
 };
 
 type HealthHighlight = { key: string; label: string; average: number };
@@ -382,7 +397,9 @@ export type HealthResults = {
 };
 
 export type HealthTrendPoint = {
-    retroId: string;
+    /** Null for a health check run as a survey of its own. */
+    retroId: string | null;
+    surveyId: string;
     title: string;
     completedAt: string;
     score: number;

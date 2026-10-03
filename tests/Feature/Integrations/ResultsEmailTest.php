@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationDeliveryStatus;
@@ -8,7 +7,6 @@ use App\Enums\RetroPhase;
 use App\Events\Retros\ResultsChanged;
 use App\Models\Card;
 use App\Models\Column;
-use App\Models\HealthCheckAnswer;
 use App\Models\IntegrationDelivery;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -92,15 +90,16 @@ it('sends each mail in the recipient\'s locale', function () {
 });
 
 it('writes the recap, the health score and the link in the mail', function () {
-    [$retro, $facilitator] = emailableRetro(attributes: ['health_check_enabled' => true]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'statement' => 'vision', 'score' => 7]);
+    [$retro, $facilitator] = emailableRetro();
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 4]);
+    closeHealthCheck($retro);
 
     $mail = (new RetroResultsNotification($retro->id))->toMail($facilitator);
     $html = (string) $mail->render();
 
     expect($mail->subject)->toBe("Sprint 42 · {$retro->team->name} — no action")
-        ->and($html)->toContain('Health check: 7.0/10')
+        ->and($html)->toContain('Health check: 4.0/5')
         ->and($html)->toContain(route('retros.show', $retro))
         ->and($html)->toContain('Participants (');
 });

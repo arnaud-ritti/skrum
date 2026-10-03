@@ -400,7 +400,7 @@ it('keeps the product content the mockup does not show', function () {
         topCards: [['column' => 'Went well', 'content' => 'Good demo', 'votes' => 3, 'groupedCount' => 0]],
     );
 
-    $mail = resolve(RetroRecapMail::class)->build($recap, ['score' => 7.5, 'participation' => ['respondents' => 6, 'participants' => 9]]);
+    $mail = resolve(RetroRecapMail::class)->build($recap, ['score' => 3.8, 'participation' => ['respondents' => 6, 'participants' => 9]]);
     $html = (string) $mail->render();
     $positionOf = fn (string $text): int => (int) strpos($html, $text);
 
@@ -411,7 +411,7 @@ it('keeps the product content the mockup does not show', function () {
         ->toContain('>Reviews were slow.</p>')
         ->toContain('>Pair on reviews</td>')
         ->toContain('Went well — Good demo (votes: 3)')
-        ->toContain('Health check: 7.5/10 (6 of 9 participants answered)')
+        ->toContain('Health check: 3.8/5 (6 of 9 participants answered)')
         ->toContain('✓ Ship &lt;b&gt;it&lt;/b&gt;')
         ->toContain('>Unassigned</span>')
         ->toContain('+ 2 more')

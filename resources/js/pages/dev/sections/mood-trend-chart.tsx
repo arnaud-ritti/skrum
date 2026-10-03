@@ -3,6 +3,7 @@ import type { BenchGroup } from '@/components/dev/bench';
 import { MoodTrendChart } from '@/components/skrum/mood-trend-chart';
 import type { MoodPoint } from '@/components/skrum/mood-trend-chart';
 import { useTrans } from '@/hooks/use-trans';
+import { healthScale } from '@/lib/teams/mood-adapter';
 
 export const group: BenchGroup = 'skrum';
 
@@ -47,7 +48,7 @@ export default function MoodTrendChartSection() {
     const { t } = useTrans();
     const longHistory = buildPoints(31, 12);
     const eightSprints = buildPoints(35, 8);
-    const healthTrend: MoodPoint[] = [6.2, 5.8, 7.1, 7.4, 8.0].map(
+    const healthTrend: MoodPoint[] = [3.1, 2.9, 3.6, 3.7, 4.0].map(
         (score, index) => ({
             id: `retro-${index}`,
             sprint: t('Sprint :number retro', { number: 38 + index }),
@@ -115,16 +116,16 @@ export default function MoodTrendChartSection() {
             </State>
             <State
                 label={t(
-                    'Health trend of the app today · score out of 10, links, no quartiles',
+                    'Health trend of the app today · score out of 5, links, no quartiles',
                 )}
             >
                 <MoodTrendChart
                     points={healthTrend}
                     title={t('Trend across retros')}
                     metricLabel={t('Health score')}
-                    scale={{ min: 0, max: 10 }}
+                    scale={healthScale}
                     period="retro"
-                    deltaSincePrevious={0.6}
+                    deltaSincePrevious={0.3}
                     noteLegend={t('Statements changed')}
                     defaultActiveSprint="retro-3"
                 />
@@ -134,7 +135,7 @@ export default function MoodTrendChartSection() {
                     points={healthTrend}
                     title={t('Trend across retros')}
                     metricLabel={t('Health score')}
-                    scale={{ min: 0, max: 10 }}
+                    scale={healthScale}
                     period="retro"
                     deltaSincePrevious={null}
                     defaultView="table"
@@ -148,11 +149,11 @@ export default function MoodTrendChartSection() {
                     points={Array.from({ length: 200 }, (_, index) => ({
                         id: `long-${index}`,
                         sprint: `${t('Quarterly platform reliability retrospective, EMEA guild')} ${index + 1}`,
-                        mean: means[index % means.length] * 2,
+                        mean: means[index % means.length],
                     }))}
                     title={t('Trend across retros')}
                     metricLabel={t('Health score')}
-                    scale={{ min: 0, max: 10 }}
+                    scale={healthScale}
                     period="retro"
                     range="all"
                     onRangeChange={() => {}}

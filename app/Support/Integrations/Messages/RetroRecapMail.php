@@ -55,7 +55,7 @@ class RetroRecapMail
             return null;
         }
 
-        return __('Health check: :score/10 (:respondents of :participants participants answered)', [
+        return __('Health check: :score/5 (:respondents of :participants participants answered)', [
             'score' => number_format($health['score'], 1),
             'respondents' => $health['participation']['respondents'],
             'participants' => $health['participation']['participants'],

@@ -3,16 +3,20 @@
 namespace App\Mcp\Tools\Retro;
 
 use App\Actions\HealthCheck\BuildHealthTrend;
+use App\Actions\HealthCheck\HealthCheckSurvey;
+use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Actions\HealthCheck\PresentHealthProgress;
-use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
 use App\Mcp\McpContext;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\Participant;
 use App\Models\Retro;
-use App\Models\RetroHealthStatement;
+use App\Models\TeamSurvey;
+use App\Models\TeamSurveyAnswer;
+use App\Models\TeamSurveyQuestion;
+use App\Support\Surveys\HealthScale;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -26,12 +30,13 @@ class GetHealth extends SkrumTool
 {
     protected string $name = 'retro.board.health.get';
 
-    protected string $description = 'Get the team health check of a board: while collecting, who answered and your own scores; once the board is finished, the average per category (0–10), the overall score, alignment, strongest and weakest categories and the trend over the team\'s last boards. Individual scores of others are never returned.';
+    protected string $description = 'Get the team health check of a board: while the health check is open, who has answered and your own scores; once it is closed, the average per category (1–5), the overall score, alignment, strongest and weakest categories and the trend over the team\'s last health checks. Individual scores of others are never returned.';
 
     public function __construct(
         private McpContext $context,
+        private HealthCheckSurvey $healthCheckSurvey,
         private PresentHealthProgress $presentHealthProgress,
-        private PresentHealthStatement $presentHealthStatement,
+        private PresentHealthCheck $presentHealthCheck,
         private SummarizeHealthCheck $summarizeHealthCheck,
         private BuildHealthTrend $buildHealthTrend,
     ) {}
@@ -52,20 +57,14 @@ class GetHealth extends SkrumTool
     {
         $validated = $request->validate(['board_id' => ['required', 'uuid']]);
         $retro = $this->context->retro($validated['board_id']);
+        $survey = $this->healthCheckSurvey->forRetro($retro);
 
-        if ($retro->phase === RetroPhase::HealthCheck) {
-            return Response::structured($this->inProgress($retro));
-        }
-
-        if (! $retro->healthCheckAnswers()->exists()) {
+        if ($survey === null) {
             return Response::structured(['status' => 'not_run']);
         }
 
-        if ($retro->phase !== RetroPhase::Completed) {
-            return Response::structured([
-                'status' => 'collected',
-                'respondents' => $retro->healthCheckAnswers()->distinct()->count('participant_id'),
-            ]);
+        if ($survey->status === TeamSurveyStatus::Open) {
+            return Response::structured($this->inProgress($retro, $survey));
         }
 
         $summary = $this->summarizeHealthCheck->handle($retro);
@@ -76,12 +75,14 @@ class GetHealth extends SkrumTool
 
         return Response::structured([
             'status' => 'completed',
+            'scale' => HealthScale::Max,
             'categories' => collect($summary['statements'])->map(fn (array $statement): array => [
                 'key' => $statement['key'],
                 'label' => $statement['label'],
                 'average' => $statement['average'],
                 'answers' => $statement['count'],
                 'alignment' => $statement['consensus'],
+                'distribution' => $statement['distribution'],
             ])->values()->all(),
             'score' => $summary['score'],
             'alignment' => $summary['alignment']['value'],
@@ -92,6 +93,7 @@ class GetHealth extends SkrumTool
             'assessment' => $summary['assessment'],
             'trend' => collect($this->buildHealthTrend->handle($retro))->map(fn (array $point): array => [
                 'boardId' => $point['retroId'],
+                'surveyId' => $point['surveyId'],
                 'title' => $point['title'],
                 'completedAt' => $point['completedAt'],
                 'score' => $point['score'],
@@ -105,31 +107,36 @@ class GetHealth extends SkrumTool
     /**
      * @return array<string, mixed>
      */
-    private function inProgress(Retro $retro): array
+    private function inProgress(Retro $retro, TeamSurvey $survey): array
     {
         $names = $retro->participants()->with('user')->get()->mapWithKeys(fn (Participant $participant): array => [$participant->id => $participant->displayName()]);
-        $progress = collect($this->presentHealthProgress->handle($retro))->keyBy('key');
+        $progress = $this->presentHealthProgress->forSurvey($survey, $retro);
+        $answersByKey = collect($progress['statements'])->keyBy('key');
+        $questions = $survey->questions()->get();
         $viewer = $this->context->participant($retro);
-        $myScores = $viewer === null
-            ? collect()
-            : $retro->healthCheckAnswers()->where('participant_id', $viewer->id)->pluck('score', 'statement');
+        $respondent = $viewer === null ? null : $this->presentHealthCheck->respondentOf($survey, $viewer);
+        $myValues = $respondent === null ? collect() : TeamSurveyAnswer::query()
+            ->where('team_survey_respondent_id', $respondent->id)
+            ->whereNotNull('value')
+            ->pluck('value', 'team_survey_question_id');
 
         return [
             'status' => 'in_progress',
-            'categories' => $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($progress, $names): array {
-                $presented = $this->presentHealthStatement->handle($statement);
-
-                return [
-                    'key' => $presented['key'],
-                    'label' => $presented['label'],
-                    'answers' => $progress[$statement->key]['count'] ?? 0,
-                    'answeredBy' => collect($progress[$statement->key]['answeredBy'] ?? [])
-                        ->map(fn (string $participantId) => $names->get($participantId, __('Former member')))
-                        ->values()
-                        ->all(),
-                ];
-            })->values()->all(),
-            'myScores' => $myScores->map(fn (mixed $score): int => (int) $score)->all(),
+            'scale' => (int) ($questions->first()->scale_max ?? HealthScale::Max),
+            'respondents' => $progress['respondents'],
+            'categories' => $questions->map(fn (TeamSurveyQuestion $question): array => [
+                'key' => (string) $question->match_key,
+                'label' => (string) $question->displayShortLabel(),
+                'answers' => $answersByKey[$question->match_key]['count'] ?? 0,
+                'answeredBy' => collect($answersByKey[$question->match_key]['answeredBy'] ?? [])
+                    ->map(fn (string $participantId) => $names->get($participantId, __('Former member')))
+                    ->values()
+                    ->all(),
+            ])->values()->all(),
+            'myScores' => $questions
+                ->filter(fn (TeamSurveyQuestion $question): bool => $myValues->has($question->id))
+                ->mapWithKeys(fn (TeamSurveyQuestion $question): array => [(string) $question->match_key => (int) $myValues[$question->id]])
+                ->all(),
         ];
     }
 }

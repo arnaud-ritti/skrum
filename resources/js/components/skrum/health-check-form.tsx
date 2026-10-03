@@ -10,10 +10,13 @@ import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
-/** An integer from 1 to the scale; the server stores 1..10. */
+/**
+ * An integer from 1 to the scale; the server stores 1..5 (1..10 on an
+ * imported health check left open at the upgrade).
+ */
 export type HealthScore = number;
 
-export const healthCheckScale = 10;
+export const healthCheckScale = 5;
 
 export interface HealthCheckRespondent {
     id: string;
@@ -39,7 +42,7 @@ export interface HealthCheckFormProps {
     statements: HealthCheckFormStatement[];
     /** Scores by statement key. */
     answers?: Record<string, HealthScore | null | undefined>;
-    /** Highest score; the server validates 1..10. */
+    /** Highest score: 5, or 10 on an imported health check left open. */
     scale?: number;
     /** Each answer is saved on its own (PUT). */
     onAnswer: (statementKey: string, value: HealthScore) => void;
@@ -48,6 +51,8 @@ export interface HealthCheckFormProps {
     /** Backlog: no submit endpoint; the button is rendered only when given. */
     onSubmit?: () => void;
     submitted?: boolean;
+    /** The answers are on their way: submit waits for the answer. */
+    submitting?: boolean;
     /** The board is closed for editing: every score is disabled. */
     disabled?: boolean;
     className?: string;
@@ -304,6 +309,7 @@ export function HealthCheckForm({
     onClear,
     onSubmit,
     submitted = false,
+    submitting = false,
     disabled = false,
     className,
 }: HealthCheckFormProps) {
@@ -359,9 +365,9 @@ export function HealthCheckForm({
                     id={endsId}
                     className="flex justify-between gap-3 text-xs text-muted-foreground"
                 >
-                    <span>{t(':score · Awful', { score: 1 })}</span>
+                    <span>{t(':score · Strongly disagree', { score: 1 })}</span>
                     <span className="text-right">
-                        {t(':score · Great', { score: scale })}
+                        {t(':score · Strongly agree', { score: scale })}
                     </span>
                 </p>
             </div>
@@ -428,7 +434,8 @@ export function HealthCheckForm({
                             <Button
                                 type="button"
                                 className="max-w-full"
-                                disabled={!complete || disabled}
+                                disabled={!complete || disabled || submitting}
+                                aria-busy={submitting || undefined}
                                 onClick={onSubmit}
                             >
                                 <span className="truncate">

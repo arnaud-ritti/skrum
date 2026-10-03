@@ -3,7 +3,6 @@
 namespace App\Actions\HealthCheck;
 
 use App\Enums\HealthStatement;
-use App\Models\RetroHealthStatement;
 use App\Models\TeamHealthStatement;
 
 class PresentHealthStatement
@@ -16,7 +15,7 @@ class PresentHealthStatement
      *     isBuiltin: bool
      * }
      */
-    public function handle(RetroHealthStatement|TeamHealthStatement|HealthStatement $statement): array
+    public function handle(TeamHealthStatement|HealthStatement $statement): array
     {
         if ($statement instanceof HealthStatement) {
             return [
@@ -32,7 +31,7 @@ class PresentHealthStatement
         }
 
         return [
-            'key' => $statement instanceof RetroHealthStatement ? $statement->key : $statement->key(),
+            'key' => $statement->key(),
             'label' => (string) $statement->label,
             'text' => (string) $statement->text,
             'isBuiltin' => false,

@@ -42,24 +42,26 @@ const health: HealthResults = {
             label: 'Vision',
             text: 'We know where we go',
             isBuiltin: true,
-            average: 7,
+            average: 3.5,
             count: 2,
-            previousAverage: 6.5,
+            previousAverage: 3,
+            distribution: [0, 0, 1, 1, 0],
         },
         {
             key: 'processes',
             label: 'Processes',
             text: 'Nothing blocks me',
             isBuiltin: true,
-            average: 4,
+            average: 2,
             count: 2,
             previousAverage: null,
+            distribution: [0, 1, 1, 0, 0],
         },
     ],
-    score: 5.5,
+    score: 2.8,
     participation: { respondents: 2, participants: 3 },
-    topStrength: { key: 'vision', label: 'Vision', average: 7 },
-    growthArea: { key: 'processes', label: 'Processes', average: 4 },
+    topStrength: { key: 'vision', label: 'Vision', average: 3.5 },
+    growthArea: { key: 'processes', label: 'Processes', average: 2 },
     alignment: { value: 9, level: 'high', label: 'High team consensus' },
     assessment: { band: 'good', title: 'Good', sentence: 'Keep going.' },
 };
@@ -623,18 +625,20 @@ describe('SessionEnd', () => {
         const trend = [
             {
                 retroId: 'r-41',
+                surveyId: 's-41',
                 title: 'Sprint 41',
                 completedAt: '2026-09-18T10:00:00Z',
-                score: 6,
+                score: 3.3,
                 url: '/retros/r-41',
                 delta: null,
                 sameStatements: true,
             },
             {
                 retroId: 'retro-1',
+                surveyId: 's-42',
                 title: 'Sprint 42',
                 completedAt: '2026-10-02T10:00:00Z',
-                score: 5.5,
+                score: 2.8,
                 url: '/retros/retro-1',
                 delta: -0.5,
                 sameStatements: true,
@@ -658,7 +662,7 @@ describe('SessionEnd', () => {
             const row = (key: string) =>
                 card.querySelector(`[data-statement-key="${key}"]`);
 
-            expect(card.textContent).toContain('2 answers · avg 5.5');
+            expect(card.textContent).toContain('2 answers · avg 2.8');
             expect(within(card).getAllByRole('listitem')).toHaveLength(2);
             expect(
                 row('vision')?.querySelector(
