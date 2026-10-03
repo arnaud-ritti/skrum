@@ -30,8 +30,8 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Writes the item's current open/done state to its linked issue (spec 8
- * §5.6). It reads the item when it runs, so quick toggles coalesce and the
+ * Writes the item's current state (open, started where the tracker has it,
+ * done) to its linked issue (spec 8 §5.6, spec 24 §6.2). It reads the item when it runs, so quick toggles coalesce and the
  * last state wins; pushes of one link never overlap. Waiting for another
  * push or a rate limit releases the job: the five tries are counted as
  * exceptions within an hour, as for estimate write-backs. Write failures
@@ -106,7 +106,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
             return;
         }
 
-        $target = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+        $target = DoneMapping::itemState($item, $integration->provider);
 
         try {
             $issue = $trackers->syncing($integration->provider)->transition($integration, $link->external_id, $target);

@@ -395,3 +395,81 @@ it('answers the requested GitHub state when the update response cannot be read',
     expect($issue?->status)->toBe('closed')
         ->and($issue?->issueStatus?->kind)->toBe('completed');
 });
+
+it('starts a Jira issue through the configured start status, else the first in-progress one', function (array $mapping, array $transitions, string $expected) {
+    $integration = jiraSyncIntegration(['statusMapping' => ['projects' => ['PROJ' => $mapping]]]);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($this->jiraOpen, $started, $transitions);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started);
+
+    expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => $expected]]);
+})->with([
+    'first in progress' => [[], [jiraTransition('31', '10002', 'Done', 'done'), jiraTransition('41', '3', 'In Progress', 'indeterminate'), jiraTransition('42', '4', 'In Review', 'indeterminate')], '41'],
+    'configured' => [['startStatusId' => '4'], [jiraTransition('41', '3', 'In Progress', 'indeterminate'), jiraTransition('42', '4', 'In Review', 'indeterminate')], '42'],
+    'configured but not reachable' => [['startStatusId' => '9'], [jiraTransition('41', '3', 'In Progress', 'indeterminate')], '41'],
+]);
+
+it('explains when no transition reaches an in-progress status', function () {
+    $integration = jiraSyncIntegration();
+    fakeJiraTransitions($this->jiraOpen, $this->jiraOpen, [jiraTransition('31', '10002', 'Done', 'done')]);
+
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started))
+        ->toThrow(StatusPushRejected::class, 'No transition to an in-progress status is available for PROJ-1.');
+});
+
+it('refuses a start transition that needs other fields', function () {
+    $integration = jiraSyncIntegration();
+    fakeJiraTransitions($this->jiraOpen, $this->jiraOpen, [jiraTransition('41', '3', 'In Progress', 'indeterminate', [
+        'customfield_10050' => ['required' => true, 'hasDefaultValue' => false],
+    ])]);
+
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started))
+        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to start PROJ-1. Start it in Jira.')
+        ->and(jiraTransitionRequest())->toBeNull();
+});
+
+it('skips the start when the Jira issue is already in progress', function () {
+    $integration = jiraSyncIntegration();
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $started, []);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started);
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/transitions'));
+});
+
+it('moves Linear issues to the configured start state, else the first started one', function (array $settings, string $expected) {
+    enableIntegrations(IntegrationProvider::Linear);
+    $integration = TeamIntegration::factory()->linear()->create();
+    $integration->forceFill(['settings' => [...$integration->settings, 'statusSync' => true, ...$settings]])->save();
+    $current = 'unstarted';
+    $mutations = [];
+    fakeLinearGraphql([
+        'issueUpdate' => function (array $variables) use (&$mutations, &$current): array {
+            $mutations[] = $variables;
+            $current = 'started';
+
+            return ['issueUpdate' => ['success' => true]];
+        },
+        'states(first' => ['issue' => ['team' => ['states' => ['nodes' => [
+            ['id' => 'st-review', 'name' => 'In Review', 'type' => 'started', 'position' => 4],
+            ['id' => 'st-done', 'name' => 'Done', 'type' => 'completed', 'position' => 5],
+            ['id' => 'st-started', 'name' => 'In Progress', 'type' => 'started', 'position' => 3],
+            ['id' => 'st-todo', 'name' => 'Todo', 'type' => 'unstarted', 'position' => 1],
+        ]]]]],
+        'issues(' => function () use (&$current): array {
+            return ['issues' => ['nodes' => [linearTrackerIssue('lin-1', 'ENG-1', [
+                'state' => ['id' => "st-{$current}", 'name' => $current, 'type' => $current],
+                'team' => ['key' => 'ENG'],
+            ])]]];
+        },
+    ]);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Started);
+
+    expect($mutations)->toBe([['id' => 'lin-1', 'stateId' => $expected]]);
+})->with([
+    'first started in workflow order' => [[], 'st-started'],
+    'configured' => [['statusMapping' => ['teams' => ['ENG' => ['startStateId' => 'st-review']]]], 'st-review'],
+]);

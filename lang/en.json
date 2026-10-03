@@ -1381,6 +1381,8 @@
     "No transition to an open status is available for :key.": "No transition to an open status is available for :key.",
     "Jira requires more fields to close :key. Close it in Jira.": "Jira requires more fields to close :key. Close it in Jira.",
     "Jira requires more fields to reopen :key. Reopen it in Jira.": "Jira requires more fields to reopen :key. Reopen it in Jira.",
+    "Jira requires more fields to start :key. Start it in Jira.": "Jira requires more fields to start :key. Start it in Jira.",
+    "No transition to an in-progress status is available for :key.": "No transition to an in-progress status is available for :key.",
     "Linear did not accept this status change.": "Linear did not accept this status change.",
     "The status could not be written. Try again.": "The status could not be written. Try again.",
     "Turn on status sync for :provider first.": "Turn on status sync for :provider first.",

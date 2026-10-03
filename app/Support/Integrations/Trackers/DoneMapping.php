@@ -99,8 +99,9 @@ class DoneMapping
     }
 
     /**
-     * A configured target (`completeStatusId`, `reopenStatusId`,
-     * `completeStateId`, `reopenStateId`) of a project or team.
+     * A configured target (`completeStatusId`, `startStatusId`,
+     * `reopenStatusId`, `completeStateId`, `startStateId`, `reopenStateId`)
+     * of a project or team.
      */
     public static function configured(TeamIntegration $integration, ?string $container, string $key): ?string
     {

@@ -1624,6 +1624,8 @@
     "No transition to an open status is available for :key.": "No hay ninguna transición a un estado abierto disponible para :key.",
     "Jira requires more fields to close :key. Close it in Jira.": "Jira necesita más campos para cerrar :key. Ciérralo en Jira.",
     "Jira requires more fields to reopen :key. Reopen it in Jira.": "Jira necesita más campos para reabrir :key. Reábrelo en Jira.",
+    "Jira requires more fields to start :key. Start it in Jira.": "Jira necesita más campos para empezar :key. Empiézalo en Jira.",
+    "No transition to an in-progress status is available for :key.": "No hay ninguna transición a un estado en curso disponible para :key.",
     "Linear did not accept this status change.": "Linear no aceptó este cambio de estado.",
     "The status could not be written. Try again.": "No se pudo escribir el estado. Inténtalo de nuevo.",
     "Turn on status sync for :provider first.": "Activa primero la sincronización de estados para :provider.",

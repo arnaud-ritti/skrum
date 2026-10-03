@@ -241,15 +241,19 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
 
     /**
      * The configured state when the team still has it, else the first
-     * `completed` state, or for a reopen the first `unstarted`, then
-     * `backlog` state, in workflow order.
+     * `completed` state, for a start the first `started` state, or for a
+     * reopen the first `unstarted`, then `backlog` state, in workflow order.
      *
      * @param  array<int, array{id: string, name: string, type: string, position: float}>  $states
      * @return array{id: string, name: string, type: string, position: float}|null
      */
     private function targetState(TeamIntegration $integration, ?string $team, array $states, ExternalIssueState $target): ?array
     {
-        $configured = DoneMapping::configured($integration, $team, $target === ExternalIssueState::Done ? 'completeStateId' : 'reopenStateId');
+        $configured = DoneMapping::configured($integration, $team, match ($target) {
+            ExternalIssueState::Done => 'completeStateId',
+            ExternalIssueState::Started => 'startStateId',
+            ExternalIssueState::Open => 'reopenStateId',
+        });
 
         foreach ($states as $state) {
             if ($configured !== null && $state['id'] === $configured) {
@@ -257,7 +261,13 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             }
         }
 
-        foreach ($target === ExternalIssueState::Done ? ['completed'] : ['unstarted', 'backlog'] as $type) {
+        $types = match ($target) {
+            ExternalIssueState::Done => ['completed'],
+            ExternalIssueState::Started => ['started'],
+            ExternalIssueState::Open => ['unstarted', 'backlog'],
+        };
+
+        foreach ($types as $type) {
             foreach ($states as $state) {
                 if ($state['type'] === $type) {
                     return $state;
