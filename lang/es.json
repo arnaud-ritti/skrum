@@ -4552,5 +4552,7 @@
     "Results, scale 1-5 as a histogram with its ends": "Resultados, escala 1-5 en histograma con sus extremos",
     "Share with the team": "Compartir con el equipo",
     "Survey builder settings": "Ajustes",
-    "Option": "Opción"
+    "Option": "Opción",
+    "Someone is writing…": "Alguien está escribiendo…",
+    ":count people are writing…": ":count personas están escribiendo…"
 }

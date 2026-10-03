@@ -260,6 +260,39 @@ describe('PresenceStack', () => {
         expect(region?.textContent).toContain('Inès and Yuki are writing…');
     });
 
+    it('says how many people are writing, without a name or a ring', () => {
+        const typingLine = () =>
+            document.querySelector('[data-slot="presence-stack-typing"]');
+        const { rerender } = renderWithProviders(
+            <PresenceStack participants={twelve} typingCount={1} />,
+        );
+
+        expect(typingLine()?.textContent).toBe('Someone is writing…');
+        expect(document.querySelector('[data-typing]')).toBeNull();
+
+        rerender(<PresenceStack participants={twelve} typingCount={3} />);
+        expect(typingLine()?.textContent).toBe('3 people are writing…');
+
+        rerender(<PresenceStack participants={twelve} typingCount={0} />);
+        expect(typingLine()?.textContent).toBe('');
+    });
+
+    it('names the typing participants rather than the count', () => {
+        renderWithProviders(
+            <PresenceStack
+                participants={[
+                    person(0, { name: 'Inès Benali', typing: true }),
+                ]}
+                typingCount={2}
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="presence-stack-typing"]')
+                ?.textContent,
+        ).toBe('Inès is writing…');
+    });
+
     it('renders no typing text when nobody types', () => {
         renderWithProviders(<PresenceStack participants={twelve} />);
 

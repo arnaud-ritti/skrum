@@ -33,6 +33,12 @@ export interface PresenceStackProps {
     max?: number;
     size?: 'sm' | 'md';
     onInvite?: () => void;
+    /**
+     * How many people are writing when their names may not be shown (an
+     * anonymous retro): the line says so with no name and no ring. Named
+     * `typing` participants win over it.
+     */
+    typingCount?: number;
     /** Accessible names; the defaults are the ones existing pages expose. */
     labels?: { group?: string; trigger?: string };
     className?: string;
@@ -160,6 +166,7 @@ export function PresenceStack({
     max = 5,
     size = 'md',
     onInvite,
+    typingCount = 0,
     labels,
     className,
 }: PresenceStackProps) {
@@ -180,6 +187,29 @@ export function PresenceStack({
         (participant) => participant.role === 'guest',
     ).length;
     const listed = sortForList(participants);
+    const typingText = typingLine();
+
+    function typingLine(): string | null {
+        if (typingNames.length === 1) {
+            return t(':names is writing…', { names: typingNames[0] });
+        }
+
+        if (typingNames.length > 1) {
+            return t(':names are writing…', {
+                names: joinNames(typingNames),
+            });
+        }
+
+        if (typingCount === 1) {
+            return t('Someone is writing…');
+        }
+
+        if (typingCount > 1) {
+            return t(':count people are writing…', { count: typingCount });
+        }
+
+        return null;
+    }
 
     function statusText(participant: Participant): string {
         if (participant.status === 'offline') {
@@ -353,21 +383,13 @@ export function PresenceStack({
                 aria-live="polite"
                 className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground empty:hidden"
             >
-                {typingNames.length > 0 && (
+                {typingText !== null && (
                     <>
                         <span aria-hidden className="flex items-center gap-px">
                             <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
                             <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
                         </span>
-                        <span className="truncate">
-                            {typingNames.length === 1
-                                ? t(':names is writing…', {
-                                      names: typingNames[0],
-                                  })
-                                : t(':names are writing…', {
-                                      names: joinNames(typingNames),
-                                  })}
-                        </span>
+                        <span className="truncate">{typingText}</span>
                     </>
                 )}
             </span>
