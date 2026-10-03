@@ -9,6 +9,7 @@ import type { GameRoundDetail } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { ClueRow } from './clue-row';
 import { DrawingCanvas } from './drawing-canvas';
+import { MoodWeatherResult } from './mood-weather-board';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
 import { TwoTruthsResult } from './two-truths-board';
@@ -144,7 +145,12 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 />
             );
         case 'mood':
-            return null;
+            return (
+                <MoodWeatherResult
+                    answered={detail.answered ?? 0}
+                    weather={detail.weather ?? null}
+                />
+            );
         case 'guess_who':
             return null;
         case 'quick_question':

@@ -4648,5 +4648,8 @@
     "Waiting for players (:count needed)": "En attente de joueurs (:count nécessaires)",
     "Write new ones": "En écrire de nouvelles",
     "Your statements": "Tes affirmations",
-    "telling": "raconte"
+    "telling": "raconte",
+    "Not enough answers to show the weather (:count needed).": "Pas assez de réponses pour afficher la météo (:count nécessaires).",
+    "Show the weather": "Afficher la météo",
+    "What's the weather of your mood?": "Quelle est la météo de ton humeur ?"
 }

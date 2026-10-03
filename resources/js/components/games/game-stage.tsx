@@ -8,6 +8,7 @@ import { DrawBoard } from './draw-board';
 import { GifStepLine, useGifStep } from './gif-steps';
 import { HangmanBoard } from './hangman-board';
 import { HistoryDrawer } from './history-drawer';
+import { MoodWeatherBoard } from './mood-weather-board';
 import { PassRoundButton } from './pass-round-button';
 import { useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
@@ -32,7 +33,7 @@ function RoundBoard({ round }: { round: GameRound }) {
         case 'two_truths':
             return <TwoTruthsBoard key={round.id} round={round} />;
         case 'mood':
-            return null;
+            return <MoodWeatherBoard key={round.id} round={round} />;
         case 'guess_who':
             return null;
         case 'quick_question':

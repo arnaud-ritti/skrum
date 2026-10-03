@@ -6,6 +6,7 @@ import { outcomeLabel } from '@/lib/games/outcomes';
 import type { GamePointsAward } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
+import { MoodWeatherResult } from './mood-weather-board';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
 import { TwoTruthsResult } from './two-truths-board';
@@ -120,6 +121,11 @@ export function RoundEndCard() {
         Boolean(lastEnded?.statements),
     );
     const truths = lastEnded?.statements ? lastEnded : fetchedTruths;
+    const fetchedMood = useEndedRoundDetail(
+        'mood',
+        lastEnded?.answered !== undefined,
+    );
+    const mood = lastEnded?.answered !== undefined ? lastEnded : fetchedMood;
     /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
     const setForm = snapshot.room.game === 'two_truths' && (
         <TwoTruthsSetForm className="max-w-2xl" />
@@ -181,6 +187,12 @@ export function RoundEndCard() {
                         lieIndex={truths.lieIndex ?? null}
                         votes={truths.votes ?? []}
                         points={lastEnded?.statements ? lastEnded.points : []}
+                    />
+                )}
+                {mood?.answered !== undefined && (
+                    <MoodWeatherResult
+                        answered={mood.answered}
+                        weather={mood.weather ?? null}
                     />
                 )}
                 {winner && (

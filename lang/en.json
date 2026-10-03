@@ -4428,5 +4428,8 @@
     "Waiting for players (:count needed)": "Waiting for players (:count needed)",
     "Write new ones": "Write new ones",
     "Your statements": "Your statements",
-    "telling": "telling"
+    "telling": "telling",
+    "Not enough answers to show the weather (:count needed).": "Not enough answers to show the weather (:count needed).",
+    "Show the weather": "Show the weather",
+    "What's the weather of your mood?": "What's the weather of your mood?"
 }

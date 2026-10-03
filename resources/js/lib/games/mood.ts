@@ -7,6 +7,9 @@ type Translate = (
     replacements?: Record<string, string | number>,
 ) => string;
 
+/** The fewest picks that show the weather (`MoodWeatherRules::Threshold`, decision 8). */
+export const MoodThreshold = 3;
+
 /** In the order of `GameWeather` on the server, from the brightest. */
 export const MoodWeathers: { value: GameWeather; icon: LucideIcon }[] = [
     { value: 'sunny', icon: Sun },

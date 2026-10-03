@@ -202,4 +202,56 @@ describe('RoundEndCard', () => {
         expect(screen.getByText('Ready to play?')).toBeTruthy();
         expect(screen.getByText('My statements')).toBeTruthy();
     });
+
+    it('shows the weather of a Mood weather round as it ends', () => {
+        renderCard(
+            {
+                ...ended(1, null),
+                outcome: 'revealed',
+                word: null,
+                answered: 3,
+                weather: [
+                    { weather: 'sunny', count: 2 },
+                    { weather: 'partly_cloudy', count: 0 },
+                    { weather: 'cloudy', count: 0 },
+                    { weather: 'rainy', count: 1 },
+                    { weather: 'stormy', count: 0 },
+                ],
+            },
+            false,
+            'mood',
+        );
+
+        expect(screen.getAllByRole('progressbar')).toHaveLength(5);
+        expect(screen.getByText('3 answered')).toBeTruthy();
+    });
+
+    it('fetches the weather of a Mood weather round seen only in the history', async () => {
+        const revealed: GameRoundDetail = {
+            id: 'round',
+            game: 'mood',
+            outcome: 'revealed',
+            word: null,
+            question: null,
+            leaderPlayerId: null,
+            leaderName: null,
+            winnerPlayerId: null,
+            winnerName: null,
+            endedAt: '2026-10-03T10:00:00Z',
+        };
+
+        vi.mocked(retroRequest).mockResolvedValueOnce({
+            ...revealed,
+            answered: 2,
+            weather: null,
+        });
+
+        renderCard(null, false, 'mood', [revealed]);
+
+        expect(
+            await screen.findByText(
+                'Not enough answers to show the weather (3 needed).',
+            ),
+        ).toBeTruthy();
+    });
 });
