@@ -73,6 +73,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Tests\BrowserTestCase;
+use Tests\Support\UnreachableDatabase;
 use Tests\TestCase;
 
 /*
@@ -1887,4 +1888,25 @@ function closeHealthCheck(Retro $retro): TeamSurvey
     $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
 
     return $survey;
+}
+
+/**
+ * Runs the callback while the default connection points at a closed port, then
+ * gives the test its own connection back.
+ */
+function withUnreachableDatabase(Closure $callback): void
+{
+    $default = config('database.default');
+
+    config([
+        'database.connections.unreachable' => UnreachableDatabase::config(),
+        'database.default' => 'unreachable',
+    ]);
+
+    try {
+        $callback();
+    } finally {
+        config(['database.default' => $default]);
+        DB::purge('unreachable');
+    }
 }

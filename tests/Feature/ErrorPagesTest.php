@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
-use Tests\Support\UnreachableDatabase;
 
 function brokenSharedPropsRoute(): void
 {
@@ -25,27 +24,6 @@ function brokenSharedPropsRoute(): void
 function useProcessLocalMaintenanceMode(): void
 {
     config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
-}
-
-/**
- * Runs the callback while the default connection points at a closed port, then
- * gives the test its own connection back.
- */
-function withUnreachableDatabase(Closure $callback): void
-{
-    $default = config('database.default');
-
-    config([
-        'database.connections.unreachable' => UnreachableDatabase::config(),
-        'database.default' => 'unreachable',
-    ]);
-
-    try {
-        $callback();
-    } finally {
-        config(['database.default' => $default]);
-        DB::purge('unreachable');
-    }
 }
 
 it('renders the 404 page for an unknown url', function (bool $signedIn) {

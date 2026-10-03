@@ -52,3 +52,7 @@ Schedule::command('skrum:prune-whiteboards')
     ->daily()
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('skrum:heartbeat')
+    ->everyMinute()
+    ->onOneServer();
