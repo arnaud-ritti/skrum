@@ -57,7 +57,7 @@ return [
     "Qu'est-ce que tu préfères faire en plein air ?",
     'Quel est le meilleur nom pour un animal de compagnie ?',
     'Quelle habitude aimerais-tu prendre ?',
-    'Quelle est la plus belle vue que tu aies vue ?',
+    'Quel est le plus beau paysage que tu aies vu ?',
     'Quel rituel de réunion inventerais-tu ?',
     'Quel serait le titre de ton autobiographie ?',
     "Qu'as-tu fêté en dernier ?",

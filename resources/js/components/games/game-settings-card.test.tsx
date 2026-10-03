@@ -113,28 +113,32 @@ describe('GameSettingsCard', () => {
                 'Word theme',
                 'Time per turn',
                 'Take turns',
-                'Rounds',
+                'Rounds per game',
                 'Guests allowed',
             ],
         ],
         [
             'draw',
             'Round settings',
-            ['Word list', 'Time per turn', 'Auto hints', 'Rounds'],
+            ['Word list', 'Time per turn', 'Auto hints', 'Rounds per game'],
         ],
         [
             'decoded',
             'Game settings',
-            ['Categories', 'Time per round', 'Auto hints', 'Rounds'],
+            ['Categories', 'Time per round', 'Auto hints', 'Rounds per game'],
         ],
         [
             'gif',
             'Game settings',
-            ['Votes', 'Hide authors until the votes close', 'Rounds'],
+            ['Votes', 'Hide authors until the votes close', 'Rounds per game'],
         ],
-        ['two_truths', 'Game settings', ['Time per turn', 'Rounds']],
-        ['guess_who', 'Game settings', ['Rounds']],
-        ['quick_question', 'Game settings', ['Time per person', 'Rounds']],
+        ['two_truths', 'Game settings', ['Time per turn', 'Rounds per game']],
+        ['guess_who', 'Game settings', ['Rounds per game']],
+        [
+            'quick_question',
+            'Game settings',
+            ['Time per person', 'Rounds per game'],
+        ],
     ])('shows the rows of %s', (game, title, rows) => {
         renderCard({ game });
 
@@ -309,7 +313,9 @@ describe('GameSettingsCard', () => {
     it('offers endless rounds or a number of rounds', async () => {
         renderCard({ game: 'guess_who', settings: { roundsPerGame: 5 } });
 
-        const rounds = screen.getByRole('combobox', { name: 'Rounds' });
+        const rounds = screen.getByRole('combobox', {
+            name: 'Rounds per game',
+        });
 
         expect(rounds.textContent).toBe('5');
 

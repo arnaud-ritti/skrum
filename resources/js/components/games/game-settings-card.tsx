@@ -71,7 +71,7 @@ function settingLabel(key: GameSettingKey, game: GameKind, t: Translate) {
         case 'takesTurns':
             return t('Take turns');
         case 'roundsPerGame':
-            return t('Rounds');
+            return t('Rounds per game');
         case 'gifVotes':
             return t('Votes');
         case 'gifAuthorsHidden':

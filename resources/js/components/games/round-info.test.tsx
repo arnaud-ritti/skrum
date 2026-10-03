@@ -37,7 +37,7 @@ describe('RoundInfo', () => {
             'food',
         ]);
 
-        expect(screen.getByText('Round 7')).toBeTruthy();
+        expect(screen.getByText('Round 7 · endless')).toBeTruthy();
     });
 
     it('names no theme for a game without words', () => {

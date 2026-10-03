@@ -1313,7 +1313,7 @@
     "Guests cannot do this.": "Gäste können das nicht tun.",
     "This round is over.": "Diese Runde ist vorbei.",
     "This action does not apply to this game.": "Diese Aktion gilt nicht für dieses Spiel.",
-    "This choice is not offered.": "Diese Wahl steht nicht zur Auswahl.",
+    "This choice is not offered.": "Diese Option steht nicht zur Wahl.",
     "Only the leader or the host can do this.": "Nur die Rundenleitung oder der Host kann das tun.",
     "This room is full.": "Dieser Raum ist voll.",
     "This team already has 10 game rooms.": "Dieses Team hat bereits 10 Spielräume.",
@@ -4561,7 +4561,7 @@
     "Choose who plays.": "Wähle aus, wer spielt.",
     "This game is not played in turns.": "Dieses Spiel wird nicht reihum gespielt.",
     "Only the host or the player whose turn it is can do this.": "Nur der Host oder die Person, die an der Reihe ist, kann das tun.",
-    "The turn has already moved on.": "Der Zug ist schon weitergegangen.",
+    "The turn has already moved on.": "Dieser Zug ist schon vorbei.",
     "It's not your turn.": "Du bist nicht an der Reihe.",
     "Choose who tells this round.": "Wähle, wer in dieser Runde erzählt.",
     "This player has no statements ready.": "Diese Person hat keine Aussagen bereit.",
@@ -4603,7 +4603,7 @@
     "Theme: :theme": "Thema: :theme",
     ":name's turn": ":name ist dran",
     "left this turn": "übrig in diesem Zug",
-    "Speaking order": "Reihenfolge",
+    "Speaking order": "Redereihenfolge",
     "Drawing order": "Zeichenreihenfolge",
     "Order of tellers": "Reihenfolge der Erzählenden",
     "Next: :name": "Als Nächstes: :name",
@@ -4667,6 +4667,8 @@
     "Your vote": "Deine Stimme",
     ":name is speaking": ":name spricht",
     "Another question": "Andere Frage",
-    "Answer aloud, one after the other.": "Antworte laut, einer nach dem anderen.",
-    "Your turn to speak": "Du bist dran"
+    "Answer aloud, one after the other.": "Antworte laut, wenn du an der Reihe bist.",
+    "Your turn to speak": "Du bist dran",
+    "Rounds per game": "Runden pro Spiel",
+    "Round :number · endless": "Runde :number · endlos"
 }

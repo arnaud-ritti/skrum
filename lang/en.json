@@ -4448,5 +4448,7 @@
     ":name is speaking": ":name is speaking",
     "Another question": "Another question",
     "Answer aloud, one after the other.": "Answer aloud, one after the other.",
-    "Your turn to speak": "Your turn to speak"
+    "Your turn to speak": "Your turn to speak",
+    "Rounds per game": "Rounds per game",
+    "Round :number · endless": "Round :number · endless"
 }

@@ -3,7 +3,10 @@ import { WordGames, wordThemeLabel } from '@/lib/games/settings';
 import type { GameRound } from '@/lib/games/types';
 import { useRoom } from './room-context';
 
-/** "Round 2 of 3 · Theme: Team & tech" above the stage title (spec §9.3). */
+/**
+ * "Round 2 of 3 · Theme: Team & tech" above the stage title (spec §9.3). An
+ * endless game has its own key: "Round :number" is the planning poker's "Tour".
+ */
 export function RoundInfo({ round }: { round: GameRound }) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
@@ -15,7 +18,7 @@ export function RoundInfo({ round }: { round: GameRound }) {
     const { wordThemes } = snapshot.room.settings;
     const parts = [
         round.roundsTotal === null || round.roundsTotal === undefined
-            ? t('Round :number', { number: round.number })
+            ? t('Round :number · endless', { number: round.number })
             : t('Round :number of :total', {
                   number: round.number,
                   total: round.roundsTotal,

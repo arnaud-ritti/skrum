@@ -17,7 +17,7 @@ return [
     'Welchen Sport hast du in der Schule gemacht?',
     'Was ist der beste Rat, den du je bekommen hast?',
     'Was ist dein Lieblingswort in einer anderen Sprache?',
-    'Welches Hobby würde deine Kollegen überraschen?',
+    'Welches Hobby würde dein Team überraschen?',
     'Was ist dein Karaoke-Lied?',
     'Von wo würdest du gern einen Monat remote arbeiten?',
     'Welches Buch hat dir zuletzt gefallen?',
