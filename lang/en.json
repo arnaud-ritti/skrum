@@ -2567,6 +2567,7 @@
     ":count votes left": ":count votes left",
     ":count votes left of :total": ":count votes left of :total",
     "You have used all your votes": "You have used all your votes",
+    "You have used all your votes.": "You have used all your votes.",
     "You reached the limit of :max votes on this card": "You reached the limit of :max votes on this card",
     "Total hidden": "Total hidden",
     "Fill colour": "Fill colour",

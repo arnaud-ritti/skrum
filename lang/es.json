@@ -2796,6 +2796,7 @@
     ":count votes left": ":count votos restantes",
     ":count votes left of :total": ":count votos restantes de :total",
     "You have used all your votes": "Has usado todos tus votos",
+    "You have used all your votes.": "Has usado todos tus votos.",
     "You reached the limit of :max votes on this card": "Has alcanzado el límite de :max votos en esta tarjeta",
     "Total hidden": "Total oculto",
     "Fill colour": "Color de relleno",

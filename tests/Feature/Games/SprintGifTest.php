@@ -150,7 +150,7 @@ it('gives authors 2 points per favourite vote at close and 0 to the others who t
     $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
 
     expect($payload['points'])->toEqualCanonicalizing([
-        ['playerId' => $author->id, 'points' => 4, 'isWin' => false],
+        ['playerId' => $author->id, 'points' => 4, 'isWin' => true],
         ['playerId' => $host->id, 'points' => 0, 'isWin' => false],
         ['playerId' => $voter->id, 'points' => 0, 'isWin' => false],
     ])
@@ -163,10 +163,11 @@ it('gives authors 2 points per favourite vote at close and 0 to the others who t
             'caption' => null,
             'playerId' => $author->id,
             'votes' => 2,
+            'rank' => 1,
         ])
         ->and(collect($payload['answers'])->firstWhere('id', $unloved->id)['votes'])->toBe(0)
         ->and(GamePoint::query()->where('player_id', $watcher->id)->exists())->toBeFalse()
-        ->and(GamePoint::query()->where('is_win', true)->exists())->toBeFalse()
+        ->and(GamePoint::query()->where('is_win', true)->sole()->player_id)->toBe($author->id)
         ->and(GamePoint::query()->where('player_id', $author->id)->sole()->game)->toBe(GameKind::SprintGif);
 });
 
@@ -245,7 +246,7 @@ it('shows the closed answers in the round detail', function () {
         ->assertOk()
         ->assertJsonPath('question', 'How did the sprint feel?')
         ->assertJsonPath('outcome', 'revealed')
-        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null, 'playerId' => $member->id, 'votes' => 1]]);
+        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null, 'playerId' => $member->id, 'votes' => 1, 'rank' => 1]]);
 });
 
 it('reveals instead of closing when the timer runs out before the reveal', function () {

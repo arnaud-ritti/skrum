@@ -185,7 +185,7 @@ it('closes the round for the host with the votes and the points', function () {
         ->assertJsonPath('ended.answers.0.playerId', $author->id);
 
     expect($response->json('ended.points'))->toEqualCanonicalizing([
-        ['playerId' => $author->id, 'points' => 2, 'isWin' => false],
+        ['playerId' => $author->id, 'points' => 2, 'isWin' => true],
         ['playerId' => $host->id, 'points' => 0, 'isWin' => false],
     ])
         ->and($round->fresh()->outcome)->toBe(GameRoundOutcome::Revealed);

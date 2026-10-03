@@ -25,7 +25,7 @@ class RevealGifRound
         $payload = [
             'roundId' => $lockedRound->id,
             'revealedAt' => $lockedRound->revealed_at?->toIso8601String() ?? '',
-            'answers' => $this->presentGifAnswers->revealed($lockedRound->gifAnswers()->get(), $lockedRoom),
+            'answers' => $this->presentGifAnswers->revealed($lockedRound->gifAnswers()->get(), $lockedRoom, $lockedRound->authors_hidden),
         ];
 
         (new GameRoundRevealed($lockedRoom, $payload))->sendToOthers();

@@ -2796,6 +2796,7 @@
     ":count votes left": ":count Stimmen übrig",
     ":count votes left of :total": ":count von :total Stimmen übrig",
     "You have used all your votes": "Du hast alle deine Stimmen verbraucht",
+    "You have used all your votes.": "Du hast alle deine Stimmen verbraucht.",
     "You reached the limit of :max votes on this card": "Du hast das Limit von :max Stimmen für diese Karte erreicht",
     "Total hidden": "Summe verborgen",
     "Fill colour": "Füllfarbe",

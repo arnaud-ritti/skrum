@@ -54,6 +54,8 @@ class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsI
     {
         $round->word = null;
         $round->question = $this->pickRoundQuestion->handle($room, $this->questions($room));
+        $round->votes_allowed = $room->gif_votes;
+        $round->authors_hidden = $room->gif_authors_hidden;
     }
 
     public function reveal(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $actor): ?GameRoundOutcome
@@ -111,16 +113,21 @@ class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsI
                 'answers' => $this->presentGifAnswers->pending($answers),
                 'voters' => [],
                 'myVote' => null,
+                'myVotes' => [],
+                'votesAllowed' => $round->votes_allowed,
             ];
         }
 
         $votes = $round->gifVotes()->get(['voter_player_id', 'answer_id']);
+        $myVotes = $viewer === null ? [] : $votes->where('voter_player_id', $viewer->id)->pluck('answer_id')->sort()->values()->all();
 
         return [
             ...$state,
-            'answers' => $this->presentGifAnswers->revealed($answers, $room),
-            'voters' => $votes->pluck('voter_player_id')->sort()->values()->all(),
-            'myVote' => $viewer === null ? null : $votes->firstWhere('voter_player_id', $viewer->id)?->answer_id,
+            'answers' => $this->presentGifAnswers->revealed($answers, $room, $round->authors_hidden),
+            'voters' => $votes->pluck('voter_player_id')->unique()->sort()->values()->all(),
+            'myVote' => $myVotes[0] ?? null,
+            'myVotes' => $myVotes,
+            'votesAllowed' => $round->votes_allowed,
         ];
     }
 
@@ -183,9 +190,10 @@ class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsI
     }
 
     /**
-     * Every author earns 2 points per favourite vote received; everyone who
-     * answered or voted gets a row. On anonymous retros a vote would tie a GIF
-     * to its author through the points, so every row is 0 there.
+     * Every author earns 2 points per favourite vote received, and the authors
+     * of the most-voted GIF (one vote at least) win; everyone who answered or
+     * voted gets a row. On anonymous retros a vote would tie a GIF to its
+     * author through the points, so every row is 0 there and no one wins.
      */
     public function points(GameRound $round, GameRoom $room): array
     {
@@ -195,13 +203,14 @@ class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsI
 
         $awardsPoints = ! PresentGifAnswers::hidesAuthors($room);
         $rows = [];
+        $votesByAuthor = $round->gifAnswers()->withCount('votes')->get()
+            ->mapWithKeys(fn (GameGifAnswer $answer): array => [$answer->player_id => (int) $answer->getAttribute('votes_count')]);
+        $topVotes = (int) $votesByAuthor->max();
 
-        foreach ($round->gifAnswers()->withCount('votes')->get() as $answer) {
-            $votes = (int) $answer->getAttribute('votes_count');
-
-            $rows[$answer->player_id] = [
+        foreach ($votesByAuthor as $authorId => $votes) {
+            $rows[$authorId] = [
                 'points' => $awardsPoints ? $votes * self::PointsPerVote : 0,
-                'isWin' => false,
+                'isWin' => $awardsPoints && $topVotes > 0 && $votes === $topVotes,
             ];
         }
 
