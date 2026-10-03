@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -39,8 +40,15 @@ class TeamMembersController extends Controller
     {
         Gate::authorize('manageMembers', $team);
 
-        $team->defaultFacilitators()->detach($member);
-        $team->members()->detach($member);
+        DB::transaction(function () use ($team, $member): void {
+            $locked = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->defaultFacilitators()->detach($member->id) > 0) {
+                $locked->update(['rotation_position' => 0]);
+            }
+
+            $locked->members()->detach($member->id);
+        });
 
         return back();
     }

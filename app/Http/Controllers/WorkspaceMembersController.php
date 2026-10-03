@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\WorkspaceRole;
+use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
@@ -95,7 +96,7 @@ class WorkspaceMembersController extends Controller
                 throw ValidationException::withMessages(['member' => __('A workspace needs at least one owner.')]);
             }
 
-            $member->defaultFacilitatorOf()->detach($workspace->teams()->pluck('id'));
+            $this->leaveFacilitatorLists($workspace, $member);
             $member->teams()->detach($workspace->teams()->pluck('id'));
             $workspace->members()->detach($member);
 
@@ -109,6 +110,24 @@ class WorkspaceMembersController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * A list that changes starts its rotation over, as a role change does.
+     */
+    private function leaveFacilitatorLists(Workspace $workspace, User $member): void
+    {
+        $teamIds = $member->defaultFacilitatorOf()->where('teams.workspace_id', $workspace->id)->pluck('teams.id');
+
+        if ($teamIds->isEmpty()) {
+            return;
+        }
+
+        Team::query()->whereKey($teamIds)->orderBy('id')->lockForUpdate()->get(['id']);
+
+        $member->defaultFacilitatorOf()->detach($teamIds);
+
+        Team::query()->whereKey($teamIds)->update(['rotation_position' => 0]);
     }
 
     private function lockWorkspace(Workspace $workspace): void
