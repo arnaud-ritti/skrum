@@ -9,5 +9,5 @@ it('keeps ten clean labels in the source order', function () {
 });
 
 it('reads no labels from something that is not a list', function (mixed $value) {
-    expect(TrackerIssue::labels($value))->toBe([]);
+    expect(TrackerIssue::labels($value))->toBeEmpty();
 })->with([[null], ['ui'], [['name' => 'ui']]]);

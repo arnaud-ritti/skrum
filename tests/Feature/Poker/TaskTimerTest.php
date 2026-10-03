@@ -26,10 +26,7 @@ it('starts the first round of a selected task with the task timer', function () 
 
     expect($round->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:03:00+00:00');
 
-    Bus::assertDispatched(
-        RevealPokerRoundOnTimer::class,
-        fn (RevealPokerRoundOnTimer $job): bool => $job->roundId === $round->id && $job->timerEndsAt === '2026-10-05T10:03:00+00:00',
-    );
+    Bus::assertDispatched(fn (RevealPokerRoundOnTimer $job): bool => $job->roundId === $round->id && $job->timerEndsAt === '2026-10-05T10:03:00+00:00');
 });
 
 it('starts a re-vote round with the task timer', function () {
@@ -47,7 +44,7 @@ it('starts a re-vote round with the task timer', function () {
     expect($round->number)->toBe(2)
         ->and($round->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
 
-    Bus::assertDispatched(RevealPokerRoundOnTimer::class, fn (RevealPokerRoundOnTimer $job): bool => $job->roundId === $round->id);
+    Bus::assertDispatched(fn (RevealPokerRoundOnTimer $job): bool => $job->roundId === $round->id);
 });
 
 it('starts no timer without the setting', function () {

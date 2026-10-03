@@ -33,6 +33,6 @@ it('never changes a card after the estimate is saved', function () {
         ->and($vote->value)->toBe($changeStatus === 200 ? '8' : '3');
 
     if ($changeStatus === 200) {
-        expect($changeEnded <= $saveEnded)->toBeTrue();
+        expect($changeEnded)->toBeLessThanOrEqual($saveEnded);
     }
 });

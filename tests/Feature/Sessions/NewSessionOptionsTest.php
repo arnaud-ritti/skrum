@@ -7,7 +7,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 it('gives the team page the options of the dialog from one place', function () {
     $team = Team::factory()->create();
     $member = teamMember($team);
-    $options = app(PresentNewSessionOptions::class)->handle($member, $team->workspace, $team);
+    $options = resolve(PresentNewSessionOptions::class)->handle($member, $team->workspace, $team);
 
     expect(array_keys($options))->toEqualCanonicalizing([
         'templateCategories', 'topTemplates', 'catalogue', 'llm', 'canCreateRetro', 'icebreakerGames', 'gameOptions',

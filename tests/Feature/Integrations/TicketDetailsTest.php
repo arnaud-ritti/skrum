@@ -91,7 +91,7 @@ it('reads the type and labels of a GitHub issue listed from a milestone', functi
         ]),
     ]);
 
-    app(ImportPokerTasks::class)->fromSource($table['game'], $table['memberPlayer'], $table['integration'], PreviewPokerImport::ModeIteration, '9001/2', null);
+    resolve(ImportPokerTasks::class)->fromSource($table['game'], $table['memberPlayer'], $table['integration'], PreviewPokerImport::ModeIteration, '9001/2', null);
 
     $task = PokerTask::query()->where('poker_game_id', $table['game']->id)->sole();
 

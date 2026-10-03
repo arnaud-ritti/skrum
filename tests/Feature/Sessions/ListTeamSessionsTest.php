@@ -18,7 +18,7 @@ use App\Support\Sessions\SessionCursor;
 
 function sessionsOf(Team $team, User $viewer, SessionState $state, ?string $before = null): array
 {
-    return app(ListTeamSessions::class)->handle($team, $viewer, $state, SessionCursor::parse($before));
+    return resolve(ListTeamSessions::class)->handle($team, $viewer, $state, SessionCursor::parse($before));
 }
 
 function titlesIn(array $page): array
@@ -85,7 +85,7 @@ it('lists a draft poll to its editors only', function () {
 
     expect(titlesIn(sessionsOf($team, $editor, SessionState::Upcoming)))->toBe(['poll draft'])
         ->and(sessionsOf($team, $editor, SessionState::Upcoming)['sessions'][0]['isDraft'])->toBeTrue()
-        ->and(titlesIn(sessionsOf($team, $other, SessionState::Upcoming)))->toBe([])
+        ->and(titlesIn(sessionsOf($team, $other, SessionState::Upcoming)))->toBeEmpty()
         ->and(titlesIn(sessionsOf($team, workspaceManager($team->workspace), SessionState::Upcoming)))->toBe(['poll draft']);
 });
 

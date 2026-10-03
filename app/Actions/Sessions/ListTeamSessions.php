@@ -98,7 +98,7 @@ class ListTeamSessions
         $total = (clone $query)->count();
 
         $sessions = $this->after($query, $before)
-            ->orderByDesc('updated_at')
+            ->latest('updated_at')
             ->orderByDesc('id')
             ->limit($limit + 1)
             ->get();
