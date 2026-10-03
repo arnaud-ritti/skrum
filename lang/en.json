@@ -4560,6 +4560,7 @@
     "Message to the admins (optional)": "Message to the admins (optional)",
     "Request access": "Request access",
     "Request sent": "Request sent",
+    "Too many access requests. Try again later.": "Too many access requests. Try again later.",
     "Request sent. You'll see the answer in your notifications.": "Request sent. You'll see the answer in your notifications.",
     "Team admins: :names": "Team admins: :names",
     "Team admins: :names and :count others": "Team admins: :names and :count others",

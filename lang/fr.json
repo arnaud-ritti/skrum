@@ -4780,6 +4780,7 @@
     "Message to the admins (optional)": "Message aux admins (facultatif)",
     "Request access": "Demander l'accès",
     "Request sent": "Demande envoyée",
+    "Too many access requests. Try again later.": "Trop de demandes d'accès. Réessaie plus tard.",
     "Request sent. You'll see the answer in your notifications.": "Demande envoyée. Tu verras la réponse dans tes notifications.",
     "Team admins: :names": "Admins de l'équipe : :names",
     "Team admins: :names and :count others": "Admins de l'équipe : :names et :count autres",

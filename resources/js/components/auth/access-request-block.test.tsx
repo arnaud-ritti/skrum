@@ -1,4 +1,5 @@
 import { act, fireEvent, screen } from '@testing-library/react';
+import { HttpResponseError } from '@inertiajs/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccessRequestBlock } from '@/components/auth/access-request-block';
 import type { AccessRequestOffer } from '@/components/auth/access-request-block';
@@ -10,7 +11,12 @@ type PostOptions = {
 };
 
 const server = vi.hoisted(() => ({
-    answer: 'created' as 'created' | 'invalid' | 'failed',
+    answer: 'created' as
+        | 'created'
+        | 'invalid'
+        | 'alreadyMember'
+        | 'throttled'
+        | 'failed',
     post: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn() }));
@@ -43,6 +49,25 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
                     if (server.answer === 'failed') {
                         throw new Error('Request failed with status 429');
+                    }
+
+                    if (server.answer === 'throttled') {
+                        throw new HttpResponseError(
+                            'Request failed with status 429',
+                            { status: 429, data: '', headers: {} },
+                            url,
+                        );
+                    }
+
+                    if (server.answer === 'alreadyMember') {
+                        const refused = {
+                            team: 'You are already in this team.',
+                        };
+
+                        setErrors(refused);
+                        options.onError?.(refused);
+
+                        return undefined;
                     }
 
                     if (server.answer === 'invalid') {
@@ -148,7 +173,8 @@ describe('AccessRequestBlock', () => {
 
         const sent = screen.getByRole('button', { name: 'Request sent' });
 
-        expect(sent.hasAttribute('disabled')).toBe(true);
+        expect(sent.getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).not.toBe(sent);
         expect(
             screen.queryByRole('button', { name: 'Request access' }),
         ).toBeNull();
@@ -173,11 +199,10 @@ describe('AccessRequestBlock', () => {
         expect(toast.success).toHaveBeenCalledWith(
             "Request sent. You'll see the answer in your notifications.",
         );
-        expect(
-            screen
-                .getByRole('button', { name: 'Request sent' })
-                .hasAttribute('disabled'),
-        ).toBe(true);
+        const sent = screen.getByRole('button', { name: 'Request sent' });
+
+        expect(sent.getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).toBe(sent);
         expect(screen.getByRole('status').textContent).toBe(
             "Request sent. You'll see the answer in your notifications.",
         );
@@ -220,5 +245,56 @@ describe('AccessRequestBlock', () => {
             screen.getByRole('button', { name: 'Request access' }),
         ).toBeTruthy();
         expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it('shows a refusal about the team itself', async () => {
+        server.answer = 'alreadyMember';
+
+        renderWithProviders(<AccessRequestBlock offer={offer()} />);
+
+        await requestAccess();
+
+        expect(screen.getByText('You are already in this team.')).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Request access' }),
+        ).toBeTruthy();
+        expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it('asks to wait rather than retry when too many requests were sent', async () => {
+        server.answer = 'throttled';
+
+        renderWithProviders(<AccessRequestBlock offer={offer()} />);
+
+        await requestAccess();
+
+        expect(
+            screen.getByText('Too many access requests. Try again later.'),
+        ).toBeTruthy();
+        expect(
+            screen.queryByText('Something went wrong. Please try again.'),
+        ).toBeNull();
+    });
+
+    it('keeps one avatar for each of two admins with the same name', () => {
+        const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        renderWithProviders(
+            <AccessRequestBlock
+                offer={offer({
+                    managers: [
+                        { name: 'Camille Roux', avatarUrl: '' },
+                        { name: 'Camille Roux', avatarUrl: '' },
+                    ],
+                })}
+            />,
+        );
+
+        expect(
+            errors.mock.calls.some((call) =>
+                String(call[0]).includes('same key'),
+            ),
+        ).toBe(false);
+        errors.mockRestore();
     });
 });

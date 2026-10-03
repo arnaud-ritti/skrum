@@ -1,6 +1,7 @@
+import { HttpResponseError } from '@inertiajs/core';
 import { Link, useHttp, usePage } from '@inertiajs/react';
 import { Check, LogOut, Send } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
@@ -51,9 +52,9 @@ function TeamManagers({
                 aria-hidden="true"
                 className="flex shrink-0 items-center -space-x-1.5 *:rounded-full *:ring-2 *:ring-background"
             >
-                {managers.map((manager) => (
+                {managers.map((manager, index) => (
                     <PersonAvatar
-                        key={manager.name}
+                        key={`${index}-${manager.name}`}
                         name={manager.name}
                         src={manager.avatarUrl || undefined}
                         size="sm"
@@ -90,6 +91,8 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
     const [sent, setSent] = useState(offer.pending);
     const [announcement, setAnnouncement] = useState('');
     const [failure, setFailure] = useState<string>();
+    const sentButton = useRef<HTMLButtonElement>(null);
+    const focusSentButton = useRef(false);
     const sentSentence = t(
         "Request sent. You'll see the answer in your notifications.",
     );
@@ -107,6 +110,15 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
               });
     const error = request.errors.message ?? failure;
 
+    useEffect(() => {
+        if (!sent || !focusSentButton.current) {
+            return;
+        }
+
+        focusSentButton.current = false;
+        sentButton.current?.focus();
+    }, [sent]);
+
     const send = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault();
         setFailure(undefined);
@@ -118,9 +130,23 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
                 onSuccess: () => {
                     accepted = true;
                 },
+                onError: (errors) => {
+                    const refusal = Object.entries(errors).find(
+                        ([field]) => field !== 'message',
+                    )?.[1];
+
+                    if (refusal !== undefined) {
+                        setFailure(refusal);
+                    }
+                },
             });
-        } catch {
-            setFailure(t('Something went wrong. Please try again.'));
+        } catch (thrown) {
+            setFailure(
+                thrown instanceof HttpResponseError &&
+                    thrown.response.status === 429
+                    ? t('Too many access requests. Try again later.')
+                    : t('Something went wrong. Please try again.'),
+            );
 
             return;
         }
@@ -129,6 +155,7 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
             return;
         }
 
+        focusSentButton.current = true;
         setSent(true);
         setAnnouncement(sentSentence);
         toast.success(sentSentence);
@@ -191,7 +218,12 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
                 className="mt-1 flex flex-wrap items-center justify-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch"
             >
                 {sent ? (
-                    <Button type="button" disabled>
+                    <Button
+                        ref={sentButton}
+                        type="button"
+                        aria-disabled="true"
+                        className="opacity-50"
+                    >
                         <Check />
                         <span className="truncate">{t('Request sent')}</span>
                     </Button>
