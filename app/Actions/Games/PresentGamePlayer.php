@@ -12,7 +12,8 @@ class PresentGamePlayer
      *     presenceId: string,
      *     name: string,
      *     avatarUrl: string,
-     *     isGuest: bool
+     *     isGuest: bool,
+     *     presence: int
      * }
      */
     public function handle(GamePlayer $player): array
@@ -23,6 +24,7 @@ class PresentGamePlayer
             'name' => $player->displayName(),
             'avatarUrl' => $player->avatarUrl(),
             'isGuest' => $player->isGuest(),
+            'presence' => $player->presenceColor(),
         ];
     }
 }

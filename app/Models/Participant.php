@@ -19,10 +19,11 @@ use Illuminate\Http\Request;
  * @property string|null $user_id
  * @property string|null $guest_name
  * @property string|null $guest_secret_hash
+ * @property int|null $presence_color
  * @property-read Retro $retro
  * @property-read User|null $user
  */
-#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash'])]
+#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash', 'presence_color'])]
 #[Hidden(['guest_secret_hash'])]
 class Participant extends Model
 {
@@ -63,5 +64,12 @@ class Participant extends Model
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'presence_color' => 'integer',
+        ];
     }
 }

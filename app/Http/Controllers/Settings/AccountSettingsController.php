@@ -84,6 +84,7 @@ class AccountSettingsController extends Controller
             'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,
             'instanceAvatarStyle' => $this->avatarUrl->instanceStyle(),
             'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($user) : [],
+            'presenceColor' => $user->presenceColor(),
         ];
     }
 

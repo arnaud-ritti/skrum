@@ -35,6 +35,7 @@ it('signs presence data for a member', function () {
             'name' => $user->name,
             'avatarUrl' => $respondent->avatarUrl(),
             'isGuest' => false,
+            'presence' => $user->presenceColor(),
         ]);
 });
 

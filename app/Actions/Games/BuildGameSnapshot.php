@@ -28,7 +28,7 @@ use App\Support\Games\GameRulesRegistry;
  *         teamName: ?string
  *     },
  *     me: array{playerId: string, userId: ?string, isGuest: bool},
- *     players: array<int, array{id: string, presenceId: string, name: string, avatarUrl: string, isGuest: bool}>,
+ *     players: array<int, array{id: string, presenceId: string, name: string, avatarUrl: string, isGuest: bool, presence: int}>,
  *     games: array<int, array{value: string, label: string, available: bool}>,
  *     round: ?array<string, mixed>,
  *     history: array<int, array<string, mixed>>,

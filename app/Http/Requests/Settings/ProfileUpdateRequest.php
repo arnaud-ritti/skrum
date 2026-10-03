@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Concerns\ProfileValidationRules;
 use App\Support\Avatars\AvatarStyleCatalogue;
+use App\Support\Avatars\PresenceColor;
 use App\Support\InstanceSettings;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,7 +21,10 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = $this->profileRules($this->user());
+        $rules = [
+            ...$this->profileRules($this->user()),
+            'presence_color' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
+        ];
 
         if (! resolve(InstanceSettings::class)->avatarMemberChoice()) {
             return $rules;

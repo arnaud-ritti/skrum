@@ -55,6 +55,7 @@ it('builds the room for its host', function () {
             'name' => $user->name,
             'avatarUrl' => $host->avatarUrl(),
             'isGuest' => false,
+            'presence' => $user->presenceColor(),
         ]])
         ->and($snapshot['round'])->toBeNull()
         ->and($snapshot['history'])->toBe([])

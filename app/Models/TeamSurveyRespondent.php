@@ -22,10 +22,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $guest_name
  * @property string|null $guest_secret_hash
  * @property Carbon|null $completed_at
+ * @property int|null $presence_color
  * @property-read TeamSurvey $survey
  * @property-read User|null $user
  */
-#[Fillable(['team_survey_id', 'user_id', 'participant_id', 'guest_name', 'guest_secret_hash', 'completed_at'])]
+#[Fillable(['team_survey_id', 'user_id', 'participant_id', 'guest_name', 'guest_secret_hash', 'completed_at', 'presence_color'])]
 #[Hidden(['guest_secret_hash'])]
 class TeamSurveyRespondent extends Model
 {
@@ -75,6 +76,9 @@ class TeamSurveyRespondent extends Model
 
     protected function casts(): array
     {
-        return ['completed_at' => 'datetime'];
+        return [
+            'completed_at' => 'datetime',
+            'presence_color' => 'integer',
+        ];
     }
 }
