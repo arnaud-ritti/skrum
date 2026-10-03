@@ -7,6 +7,7 @@ use App\Models\GameUsedWord;
 use App\Support\Games\GameWordBook;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class DrawGameWord
 {
@@ -14,13 +15,19 @@ class DrawGameWord
 
     public function handle(GameRoom $room, bool $drawableOnly): string
     {
-        $pool = $this->gameWordBook->words($room->locale, $drawableOnly);
-        $available = array_values(array_diff($pool, $this->history($room)->pluck('word')->all()));
+        $pool = $this->gameWordBook->words($room->locale, $drawableOnly, $room->wordThemes());
+
+        if ($pool === []) {
+            throw ValidationException::withMessages(['game' => __('No word fits these themes.')]);
+        }
+
+        $used = $this->history($room)->whereIn('word', $pool)->pluck('word')->all();
+        $available = array_values(array_diff($pool, $used));
 
         if ($available === []) {
-            $previous = $this->history($room)->latest()->value('word');
+            $previous = $this->history($room)->whereIn('word', $pool)->latest()->orderByDesc('word')->value('word');
 
-            $this->history($room)->delete();
+            $this->history($room)->whereIn('word', $pool)->delete();
 
             $available = array_values(array_diff($pool, [$previous])) ?: $pool;
         }
