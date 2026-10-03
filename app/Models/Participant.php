@@ -64,10 +64,4 @@ class Participant extends Model
     {
         return $this->hasMany(Vote::class);
     }
-
-    /** @return HasMany<HealthCheckAnswer, $this> */
-    public function healthCheckAnswers(): HasMany
-    {
-        return $this->hasMany(HealthCheckAnswer::class);
-    }
 }

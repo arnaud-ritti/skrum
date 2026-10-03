@@ -239,18 +239,6 @@ class Retro extends Model implements DeliverySubject
         return $this->hasMany(SuggestedAction::class)->orderBy('position');
     }
 
-    /** @return HasMany<RetroHealthStatement, $this> */
-    public function healthStatements(): HasMany
-    {
-        return $this->hasMany(RetroHealthStatement::class)->orderBy('position');
-    }
-
-    /** @return HasMany<HealthCheckAnswer, $this> */
-    public function healthCheckAnswers(): HasMany
-    {
-        return $this->hasMany(HealthCheckAnswer::class);
-    }
-
     /** @return BelongsTo<Participant, $this> */
     public function facilitator(): BelongsTo
     {
