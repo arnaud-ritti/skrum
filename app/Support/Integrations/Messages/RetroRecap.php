@@ -15,6 +15,7 @@ class RetroRecap
      * @param  array<int, array{column: string, content: string, votes: int, groupedCount: int}>  $topCards
      * @param  array{1: int, 2: int, 3: int, 4: int, 5: int}|null  $rotiCounts  null under three votes
      * @param  ?string  $facilitatorName  null on anonymous retros
+     * @param  array<int, array{title: string, note: string}>  $topicNotes
      */
     public function __construct(
         public string $title,
@@ -35,5 +36,6 @@ class RetroRecap
         public ?string $facilitatorName = null,
         public ?array $rotiCounts = null,
         public ?string $completedDay = null,
+        public array $topicNotes = [],
     ) {}
 }

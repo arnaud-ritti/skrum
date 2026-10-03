@@ -27,6 +27,7 @@ class RetroRecapMail
         $sections = array_filter([
             $this->section(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions),
             $this->section(__('Top card per column'), array_map(RecapText::topCard(...), $recap->topCards), 0),
+            $this->section(__('Discussion notes'), array_map(RecapText::topicNote(...), $recap->topicNotes), 0),
         ]);
 
         return (new RetroResultsMail(
