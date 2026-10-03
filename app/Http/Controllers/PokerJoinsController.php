@@ -6,6 +6,7 @@ use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Models\PokerGame;
+use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -31,6 +32,7 @@ class PokerJoinsController extends Controller
             'gameTitle' => $game->title,
             'session' => $presentJoinSession->poker($game),
             ...$presentJoinSession->nickname($request->user()),
+            ...$presentJoinSession->colours($game->players()->with('user')->get(), $request->user()),
         ])->toResponse($request);
     }
 
@@ -48,6 +50,7 @@ class PokerJoinsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
             'spectator' => ['sometimes', 'boolean'],
         ]);
 
@@ -57,6 +60,7 @@ class PokerJoinsController extends Controller
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
             'is_spectator' => (bool) ($validated['spectator'] ?? false),
+            'presence_color' => $validated['presence'] ?? null,
         ]);
 
         return to_route('poker.show', $game)

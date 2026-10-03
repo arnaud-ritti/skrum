@@ -7,6 +7,7 @@ use App\Actions\Sessions\PresentJoinSession;
 use App\Actions\TeamSurveys\ResolveRespondent;
 use App\Enums\TeamSurveyStatus;
 use App\Models\TeamSurvey;
+use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -32,6 +33,7 @@ class TeamSurveyJoinsController extends Controller
             'surveyTitle' => $survey->title,
             'session' => $presentJoinSession->survey($survey),
             ...$presentJoinSession->nickname($request->user()),
+            ...$presentJoinSession->colours($survey->respondents()->with('user')->get(), $request->user()),
         ])->toResponse($request);
     }
 
@@ -49,6 +51,7 @@ class TeamSurveyJoinsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
         $secret = Str::random(40);
@@ -56,6 +59,7 @@ class TeamSurveyJoinsController extends Controller
         $respondent = $survey->respondents()->create([
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
+            'presence_color' => $validated['presence'] ?? null,
         ]);
 
         return to_route('surveys.show', $survey)

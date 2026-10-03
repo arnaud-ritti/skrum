@@ -6,6 +6,7 @@ use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Actions\Whiteboards\ResolveMember;
 use App\Models\Whiteboard;
+use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -31,6 +32,7 @@ class WhiteboardJoinsController extends Controller
             'boardTitle' => $board->title,
             'session' => $presentJoinSession->whiteboard($board),
             ...$presentJoinSession->nickname($request->user()),
+            ...$presentJoinSession->colours($board->members()->with('user')->get(), $request->user()),
         ])->toResponse($request);
     }
 
@@ -48,6 +50,7 @@ class WhiteboardJoinsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
         $secret = Str::random(40);
@@ -55,6 +58,7 @@ class WhiteboardJoinsController extends Controller
         $member = $board->members()->create([
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
+            'presence_color' => $validated['presence'] ?? null,
         ]);
 
         return to_route('whiteboards.show', $board)
