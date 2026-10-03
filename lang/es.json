@@ -5149,5 +5149,6 @@
     "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Las estimaciones se escriben en :source cuando el facilitador pulsa «Guardar estimación». Los tickets no seleccionados se quedan en el backlog.",
     "you can still change it until the estimate is saved.": "aún puedes cambiarla hasta que se guarde la estimación.",
     ":selected of :total selected": ":selected de :total seleccionados",
-    "Pick at least one ticket, or choose “Later”.": "Elige al menos un ticket, o «Más tarde»."
+    "Pick at least one ticket, or choose “Later”.": "Elige al menos un ticket, o «Más tarde».",
+    "Role changed.": "Rol cambiado."
 }

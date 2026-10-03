@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
@@ -22,9 +23,14 @@ class TeamMembersController extends Controller
                 'uuid',
                 Rule::exists('workspace_user', 'user_id')->where('workspace_id', $workspace->id),
             ],
+            'role' => ['nullable', Rule::enum(TeamRole::class)],
         ]);
 
-        $team->members()->syncWithoutDetaching([$validated['user_id']]);
+        if ($team->members()->whereKey($validated['user_id'])->exists()) {
+            return back();
+        }
+
+        $team->members()->attach($validated['user_id'], ['role' => $validated['role'] ?? TeamRole::Member->value]);
 
         return back();
     }

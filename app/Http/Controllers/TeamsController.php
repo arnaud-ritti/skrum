@@ -10,6 +10,7 @@ use App\Actions\Teams\PresentNewSessionOptions;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
@@ -64,7 +65,11 @@ class TeamsController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
-                ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()]),
+                ->map(fn (User $member): array => [
+                    ...$member->only(['id', 'name', 'email']),
+                    'avatarUrl' => $member->avatarUrl(),
+                    'role' => $member->teamMembership->role->value,
+                ]),
             'availableMembers' => $canManage
                 ? Alphabetical::sort(
                     $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('users.id')->get(),
@@ -106,6 +111,9 @@ class TeamsController extends Controller
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
             ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
+            'roleOptions' => $canManage ? TeamRole::options() : [],
+            'viewerRole' => $team->roleOf($request->user())?->value,
+            'canManageRituals' => $request->user()->can('manageRituals', $team),
         ]);
     }
 

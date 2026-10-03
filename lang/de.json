@@ -5149,5 +5149,6 @@
     "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Die Schätzungen werden in :source geschrieben, wenn die Moderation auf „Schätzung speichern“ klickt. Nicht ausgewählte Tickets bleiben im Backlog.",
     "you can still change it until the estimate is saved.": "du kannst sie noch ändern, bis die Schätzung gespeichert ist.",
     ":selected of :total selected": ":selected von :total ausgewählt",
-    "Pick at least one ticket, or choose “Later”.": "Wähle mindestens ein Ticket oder „Später“."
+    "Pick at least one ticket, or choose “Later”.": "Wähle mindestens ein Ticket oder „Später“.",
+    "Role changed.": "Rolle geändert."
 }

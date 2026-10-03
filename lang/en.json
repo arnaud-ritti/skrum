@@ -4929,5 +4929,6 @@
     "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.",
     "you can still change it until the estimate is saved.": "you can still change it until the estimate is saved.",
     ":selected of :total selected": ":selected of :total selected",
-    "Pick at least one ticket, or choose “Later”.": "Pick at least one ticket, or choose “Later”."
+    "Pick at least one ticket, or choose “Later”.": "Pick at least one ticket, or choose “Later”.",
+    "Role changed.": "Role changed."
 }

@@ -170,6 +170,7 @@ use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
+use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
@@ -440,6 +441,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->name('teams.accessRequests.update');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
+            Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update')->whereUuid('member');
 
             Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');

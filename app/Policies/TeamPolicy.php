@@ -24,7 +24,7 @@ class TeamPolicy
 
     public function update(User $user, Team $team): bool
     {
-        return $user->canManage($team->workspace);
+        return $user->managesTeam($team);
     }
 
     public function delete(User $user, Team $team): bool
@@ -34,36 +34,58 @@ class TeamPolicy
 
     public function manageMembers(User $user, Team $team): bool
     {
-        return $user->canManage($team->workspace);
+        return $user->managesTeam($team);
+    }
+
+    public function manageRituals(User $user, Team $team): bool
+    {
+        return $user->managesRitualsOf($team);
+    }
+
+    /**
+     * Make oneself the facilitator of an open session of the team (owner's decision 2 B).
+     */
+    public function takeControl(User $user, Team $team): bool
+    {
+        return $user->managesRitualsOf($team);
     }
 
     public function createRetro(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $this->takesPart($user, $team);
     }
 
     public function createPokerGame(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $this->takesPart($user, $team);
     }
 
     public function createWhiteboard(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $this->takesPart($user, $team);
     }
 
     public function createGameRoom(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $this->takesPart($user, $team);
     }
 
     public function createSurvey(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $this->takesPart($user, $team);
     }
 
     public function manageIntegrations(User $user, Team $team): bool
     {
-        return $user->canManage($team->workspace);
+        return $user->managesTeam($team);
+    }
+
+    private function takesPart(User $user, Team $team): bool
+    {
+        if (! $this->view($user, $team)) {
+            return false;
+        }
+
+        return ! $user->isObserverOf($team);
     }
 }
