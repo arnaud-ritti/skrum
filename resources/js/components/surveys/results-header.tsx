@@ -11,6 +11,8 @@ import type { SurveyStatus } from '@/lib/surveys/types';
 export type ResultsHeaderProps = {
     status: SurveyStatus;
     isEditor: boolean;
+    /** An editor of a closed survey at or above its threshold. */
+    canExport: boolean;
     /** The CSV export, a plain link: the server answers with the file. */
     exportUrl: string;
     onSetStatus: (status: SurveyStatus) => Promise<void>;
@@ -22,6 +24,7 @@ export type ResultsHeaderProps = {
 export function ResultsHeader({
     status,
     isEditor,
+    canExport,
     exportUrl,
     onSetStatus,
     share,
@@ -70,7 +73,7 @@ export function ResultsHeader({
                     <span className="truncate">{t('Open')}</span>
                 </Badge>
             )}
-            {isEditor && isClosed && (
+            {canExport && (
                 <Button asChild variant="outline" size="sm">
                     <a href={exportUrl}>
                         <FileDown aria-hidden="true" />

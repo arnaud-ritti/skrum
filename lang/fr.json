@@ -4440,5 +4440,18 @@
     "Results appear from :threshold answers. :responses so far.": "Les résultats apparaissent à partir de :threshold réponses. :responses pour l'instant.",
     "Results will show when the survey is closed.": "Les résultats s'afficheront à la clôture du sondage.",
     "See the :count answers": "Voir les :count réponses",
-    "closed on :date": "clôturé le :date"
+    "closed on :date": "clôturé le :date",
+    ":count answers": ":count réponses",
+    ":value percentage points": ":value points de pourcentage",
+    ":value, :trend": ":value, :trend",
+    "Before": "Avant",
+    "Compare with": "Comparer avec",
+    "Difference": "Écart",
+    "No answers to compare.": "Aucune réponse à comparer.",
+    "Only in :title": "Seulement dans :title",
+    "Only in this survey": "Seulement dans ce sondage",
+    "The comparison could not be loaded.": "La comparaison n'a pas pu être chargée.",
+    "The other survey does not have enough answers.": "L'autre sondage n'a pas assez de réponses.",
+    "higher": "en hausse",
+    "lower": "en baisse"
 }

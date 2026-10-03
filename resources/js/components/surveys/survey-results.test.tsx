@@ -9,6 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SurveyEvent } from '@/hooks/use-survey-channel';
 import { renderWithProviders } from '@/test/render';
 import {
+    mockupComparable,
+    mockupComparison,
     mockupQuestions,
     mockupResults,
     surveySnapshot,
@@ -21,7 +23,11 @@ type Handlers = {
 };
 
 const channel = vi.hoisted(() => ({ listeners: new Set<Handlers>() }));
-const api = vi.hoisted(() => ({ snapshot: vi.fn(), setStatus: vi.fn() }));
+const api = vi.hoisted(() => ({
+    snapshot: vi.fn(),
+    setStatus: vi.fn(),
+    comparison: vi.fn(),
+}));
 const inertia = vi.hoisted(() => ({ replace: vi.fn() }));
 
 vi.mock('@/hooks/use-survey-channel', async () => {
@@ -80,6 +86,7 @@ beforeEach(() => {
     channel.listeners.clear();
     api.snapshot.mockReset();
     api.setStatus.mockReset();
+    api.comparison.mockReset();
     inertia.replace.mockReset();
     window.history.replaceState(null, '', '/surveys/survey-1/results');
 });
@@ -416,5 +423,124 @@ describe('SurveyResults live', () => {
         );
         expect(within(editor).getByText('Closed')).not.toBeNull();
         expect(within(editor).queryByText('Open')).toBeNull();
+    });
+});
+
+describe('SurveyResults compared', () => {
+    it('loads the default comparison once and puts its differences on the cards', async () => {
+        api.comparison.mockResolvedValue({ comparison: mockupComparison });
+
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({ comparable: mockupComparable })}
+            />,
+        );
+
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByRole('article', {
+                        name: 'Would you recommend the team?',
+                    })
+                    .querySelector('[data-slot="survey-delta"]')?.textContent,
+            ).toContain('+11 vs Sprint 41'),
+        );
+        expect(
+            screen
+                .getByRole('article', { name: 'Which ritual must we keep?' })
+                .querySelector('[data-slot="survey-delta"]'),
+        ).toBeNull();
+        expect(api.comparison).toHaveBeenCalledTimes(1);
+        expect(api.comparison).toHaveBeenCalledWith('survey-1', 'survey-41');
+    });
+
+    it('asks for nothing when there is no default to compare with', () => {
+        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+
+        expect(api.comparison).not.toHaveBeenCalled();
+        expect(document.querySelector('[data-slot="survey-delta"]')).toBeNull();
+    });
+
+    it('shows the default comparison in the Compare tab without asking again', async () => {
+        window.history.replaceState(
+            null,
+            '',
+            '/surveys/survey-1/results?tab=compare',
+        );
+        api.comparison.mockResolvedValue({ comparison: mockupComparison });
+
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({ comparable: mockupComparable })}
+            />,
+        );
+
+        expect(
+            await screen.findByRole('listitem', {
+                name: 'Workload of the sprint',
+            }),
+        ).not.toBeNull();
+        expect(api.comparison).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('SurveyResults export', () => {
+    const closed = {
+        status: 'closed',
+        closedAt: '2026-10-03T16:00:00+00:00',
+    } as const;
+
+    it('links an editor of a closed survey to the export route, the server naming the file', () => {
+        renderWithProviders(
+            <SurveyResults initial={surveySnapshot({ survey: closed })} />,
+        );
+
+        const link = screen.getByRole('link', { name: 'Export CSV' });
+
+        expect(link.getAttribute('href')).toBe('/surveys/survey-1/export');
+        expect(link.hasAttribute('download')).toBe(false);
+    });
+
+    it('offers no export below the threshold', () => {
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    survey: closed,
+                    progress: { responses: 2, completed: 2 },
+                    results: {
+                        belowThreshold: true,
+                        responses: 2,
+                        questions: {},
+                    },
+                })}
+            />,
+        );
+
+        expect(screen.queryByRole('link', { name: 'Export CSV' })).toBeNull();
+    });
+
+    it('offers no export to a member who does not edit, nor while open', () => {
+        const member = renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    survey: closed,
+                    me: { isEditor: false },
+                })}
+            />,
+        );
+
+        expect(
+            within(member.container).queryByRole('link', {
+                name: 'Export CSV',
+            }),
+        ).toBeNull();
+
+        const open = renderWithProviders(
+            <SurveyResults initial={surveySnapshot()} />,
+        );
+
+        expect(
+            within(open.container).queryByRole('link', { name: 'Export CSV' }),
+        ).toBeNull();
     });
 });

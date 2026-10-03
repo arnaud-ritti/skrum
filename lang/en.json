@@ -4220,5 +4220,18 @@
     "Results appear from :threshold answers. :responses so far.": "Results appear from :threshold answers. :responses so far.",
     "Results will show when the survey is closed.": "Results will show when the survey is closed.",
     "See the :count answers": "See the :count answers",
-    "closed on :date": "closed on :date"
+    "closed on :date": "closed on :date",
+    ":count answers": ":count answers",
+    ":value percentage points": ":value percentage points",
+    ":value, :trend": ":value, :trend",
+    "Before": "Before",
+    "Compare with": "Compare with",
+    "Difference": "Difference",
+    "No answers to compare.": "No answers to compare.",
+    "Only in :title": "Only in :title",
+    "Only in this survey": "Only in this survey",
+    "The comparison could not be loaded.": "The comparison could not be loaded.",
+    "The other survey does not have enough answers.": "The other survey does not have enough answers.",
+    "higher": "higher",
+    "lower": "lower"
 }

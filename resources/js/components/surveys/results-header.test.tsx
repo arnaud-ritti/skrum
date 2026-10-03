@@ -13,6 +13,7 @@ describe('ResultsHeader', () => {
             <ResultsHeader
                 status="open"
                 isEditor
+                canExport={false}
                 exportUrl={exportUrl}
                 onSetStatus={onSetStatus}
             />,
@@ -48,6 +49,7 @@ describe('ResultsHeader', () => {
             <ResultsHeader
                 status="open"
                 isEditor
+                canExport={false}
                 exportUrl={exportUrl}
                 onSetStatus={onSetStatus}
             />,
@@ -70,6 +72,7 @@ describe('ResultsHeader', () => {
             <ResultsHeader
                 status="closed"
                 isEditor
+                canExport
                 exportUrl={exportUrl}
                 onSetStatus={onSetStatus}
             />,
@@ -95,6 +98,7 @@ describe('ResultsHeader', () => {
             <ResultsHeader
                 status="closed"
                 isEditor={false}
+                canExport={false}
                 exportUrl={exportUrl}
                 onSetStatus={vi.fn()}
             />,
@@ -110,6 +114,7 @@ describe('ResultsHeader', () => {
             <ResultsHeader
                 status="open"
                 isEditor={false}
+                canExport={false}
                 exportUrl={exportUrl}
                 onSetStatus={vi.fn()}
                 share={<button type="button">Share</button>}

@@ -1,4 +1,5 @@
 import type {
+    SurveyComparison,
     SurveyQuestionPayload,
     SurveyResults,
     SurveySnapshot,
@@ -215,3 +216,93 @@ export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
         serverTime: '2026-10-03T08:00:00.000Z',
     };
 }
+
+/** The closed surveys of the team Atlas that the results may compare with, Sprint 41 by default. */
+export const mockupComparable: NonNullable<SurveySnapshot['comparable']> = {
+    defaultId: 'survey-41',
+    surveys: [
+        {
+            id: 'survey-41',
+            title: 'Sprint 41',
+            closedAt: '2026-09-19T16:00:00+00:00',
+        },
+        {
+            id: 'survey-40',
+            title: 'Sprint 40',
+            closedAt: '2026-09-05T16:00:00+00:00',
+        },
+    ],
+};
+
+/** The mockup's survey against Sprint 41: +0.4 on the scale, +11 on NPS. */
+export const mockupComparison: SurveyComparison = {
+    other: {
+        id: 'survey-41',
+        title: 'Sprint 41',
+        closedAt: '2026-09-19T16:00:00+00:00',
+    },
+    belowThreshold: false,
+    pairs: [
+        {
+            questionId: 'q-scale',
+            otherQuestionId: 'q41-scale',
+            kind: 'scale',
+            label: 'Workload of the sprint',
+            current: { mean: 3.8, responses: 9 },
+            other: { mean: 3.4, responses: 8 },
+            delta: 0.4,
+        },
+        {
+            questionId: 'q-nps',
+            otherQuestionId: 'q41-nps',
+            kind: 'nps',
+            label: 'Would you recommend the team?',
+            current: { nps: 22, responses: 9 },
+            other: { nps: 11, responses: 8 },
+            delta: 11,
+        },
+        {
+            questionId: 'q-single',
+            otherQuestionId: 'q41-single',
+            kind: 'single',
+            label: 'Which ritual must we keep?',
+            current: {
+                responses: 9,
+                options: [
+                    { label: 'Retrospective', percent: 56 },
+                    { label: 'Daily', percent: 22 },
+                ],
+            },
+            other: {
+                responses: 8,
+                options: [
+                    { label: 'Retrospective', percent: 56 },
+                    { label: 'Daily', percent: 32 },
+                ],
+            },
+            delta: [
+                { label: 'Retrospective', delta: 0 },
+                { label: 'Daily', delta: -10 },
+            ],
+        },
+        {
+            questionId: 'q-text',
+            otherQuestionId: 'q41-text',
+            kind: 'text',
+            label: 'A word for the team?',
+            current: { responses: 7 },
+            other: { responses: 5 },
+            delta: 2,
+        },
+    ],
+    onlyHere: [
+        {
+            questionId: 'q-multiple',
+            label: 'What slowed you down?',
+            kind: 'multiple',
+        },
+    ],
+    onlyThere: [
+        { questionId: 'q41-mood', label: 'Mood of the week', kind: 'scale' },
+    ],
+};

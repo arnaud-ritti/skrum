@@ -2,12 +2,14 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useId, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import TeamSurveyExportsController from '@/actions/App/Http/Controllers/TeamSurveys/TeamSurveyExportsController';
-import type { SurveyQuestionDelta } from '@/components/skrum/survey-question';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSurveyComparison } from '@/hooks/use-survey-comparison';
 import { useTeamSurvey } from '@/hooks/use-team-survey';
 import { useTrans } from '@/hooks/use-trans';
 import { surveyApi } from '@/lib/surveys/api';
+import { deltasByQuestion } from '@/lib/surveys/compare';
 import type { SurveySnapshot, SurveyStatus } from '@/lib/surveys/types';
+import { ResultsCompare } from './results-compare';
 import { ResultsFreeText, takesFreeText } from './results-free-text';
 import { ResultsHeader } from './results-header';
 import { ResultsState, resultsStateOf } from './results-states';
@@ -28,9 +30,6 @@ type SurveyResultsProps = {
     layout?: ComponentType<ResultsLayoutProps>;
     /** The Share trigger of the header. */
     share?: ReactNode;
-    /** The content of the Compare tab. */
-    compare?: (snapshot: SurveySnapshot) => ReactNode;
-    deltas?: Record<string, SurveyQuestionDelta>;
 };
 
 const TabParameter = 'tab';
@@ -97,26 +96,10 @@ function useClosedOn(closedAt: string | null): string | null {
     }).format(new Date(closedAt));
 }
 
-function NothingToCompare({ snapshot }: { snapshot: SurveySnapshot }) {
-    const { t } = useTrans();
-
-    if ((snapshot.comparable?.surveys.length ?? 0) > 0) {
-        return null;
-    }
-
-    return (
-        <p role="status" className="text-sm text-muted-foreground">
-            {t('Nothing to compare with yet.')}
-        </p>
-    );
-}
-
 export function SurveyResults({
     initial,
     layout: Layout = BareLayout,
     share,
-    compare,
-    deltas,
 }: SurveyResultsProps) {
     const { t } = useTrans();
     const headingId = useId();
@@ -135,6 +118,19 @@ export function SurveyResults({
     ];
     const [tab, selectTab] = useResultsTab(available);
     const showsCards = resultsStateOf(snapshot) === 'summary';
+    const defaultComparison = useSurveyComparison(
+        survey.id,
+        me.isGuest ? null : (snapshot.comparable?.defaultId ?? null),
+    );
+    const deltas =
+        defaultComparison.load.status === 'ready'
+            ? deltasByQuestion(defaultComparison.load.comparison)
+            : undefined;
+    const canExport =
+        me.isEditor &&
+        !me.isGuest &&
+        survey.status === 'closed' &&
+        progress.responses >= survey.resultsThreshold;
 
     const setStatus = async (status: SurveyStatus): Promise<void> => {
         await surveyApi.setStatus(survey.id, status);
@@ -145,6 +141,7 @@ export function SurveyResults({
         <ResultsHeader
             status={survey.status}
             isEditor={me.isEditor && !me.isGuest}
+            canExport={canExport}
             exportUrl={TeamSurveyExportsController.show(survey.id).url}
             onSetStatus={setStatus}
             share={share}
@@ -218,11 +215,12 @@ export function SurveyResults({
             )}
             {available.includes('compare') && (
                 <TabsContent value="compare">
-                    {compare === undefined ? (
-                        <NothingToCompare snapshot={snapshot} />
-                    ) : (
-                        compare(snapshot)
-                    )}
+                    <ResultsCompare
+                        surveyId={survey.id}
+                        comparable={snapshot.comparable}
+                        defaultLoad={defaultComparison.load}
+                        onRetryDefault={defaultComparison.retry}
+                    />
                 </TabsContent>
             )}
         </Tabs>
