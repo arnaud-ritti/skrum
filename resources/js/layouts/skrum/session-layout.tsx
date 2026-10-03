@@ -50,7 +50,8 @@ type FrameSlots = Omit<
     avatar?: ReactNode;
 };
 
-function SelfAvatar({ self }: { self: SessionSelf }) {
+/** The viewer at the end of a session header; also used by the survey's own header. */
+export function SelfAvatar({ self }: { self: SessionSelf }) {
     const presence =
         self.presence !== undefined && self.presence >= 1 && self.presence <= 12
             ? (self.presence as AvatarPresence)
@@ -71,7 +72,8 @@ function SelfAvatar({ self }: { self: SessionSelf }) {
     );
 }
 
-function HeaderLogo({
+/** The logo that opens a header without the application rail; also used by the survey's own header. */
+export function HeaderLogo({
     homeHref,
     isGuest,
 }: {
