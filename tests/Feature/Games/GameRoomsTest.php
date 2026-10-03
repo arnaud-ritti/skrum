@@ -63,7 +63,7 @@ it('lists the standalone rooms of the team', function () {
             ])
             ->where('canCreate', true)
             ->where('roomLimit', 10)
-            ->where('gameOptions.2', ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true]));
+            ->where('gameOptions', [['value' => 'hangman', 'label' => __('Hangman'), 'available' => true]]));
 });
 
 it('keeps the games page to team viewers', function () {

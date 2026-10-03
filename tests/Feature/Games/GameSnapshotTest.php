@@ -107,20 +107,14 @@ it('lets workspace admins delete and take hosting', function () {
         ->and($snapshot['room']['isHost'])->toBeFalse();
 });
 
-it('lists the games with their availability', function () {
+it('lists the games with registered rules, with their availability, in the order of the kinds', function () {
     bindGameRules(new FakeGameRules(kind: GameKind::Hangman), new FakeGameRules(kind: GameKind::SprintGif, available: false));
     $room = GameRoom::factory()->create();
     [, $host] = gameRoomHost($room);
 
     expect(gameSnapshotFor($room, $host)['games'])->toBe([
-        ['value' => 'draw', 'label' => __('Draw & Guess'), 'available' => false],
         ['value' => 'gif', 'label' => __('Sprint in one GIF'), 'available' => false],
         ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true],
-        ['value' => 'decoded', 'label' => __('Decoded'), 'available' => false],
-        ['value' => 'two_truths', 'label' => __('Two truths and a lie'), 'available' => false],
-        ['value' => 'mood', 'label' => __('Mood weather'), 'available' => false],
-        ['value' => 'guess_who', 'label' => __('Guess who?'), 'available' => false],
-        ['value' => 'quick_question', 'label' => __('Quick question'), 'available' => false],
     ]);
 });
 
