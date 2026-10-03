@@ -204,6 +204,7 @@ it('sends the open retro, the open poker games and the open and overdue action i
                 'openPokerGames' => 0,
                 'openActionItems' => 0,
                 'overdueActionItems' => 0,
+                'whiteboardsEditedToday' => 0,
             ]));
 });
 

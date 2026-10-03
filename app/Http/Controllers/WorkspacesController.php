@@ -53,6 +53,8 @@ class WorkspacesController extends Controller
                 'actionItems as overdue_action_items_count' => fn ($items) => $items
                     ->whereNull('completed_at')
                     ->where('due_on', '<', $today),
+                'whiteboards as whiteboards_edited_today_count' => fn ($boards) => $boards
+                    ->where('updated_at', '>=', ActionItem::today()->startOfDay()),
             ])
             ->loadMax(
                 ['retros as last_retro_at' => fn ($retros) => $retros->where('phase', RetroPhase::Completed->value)],
@@ -119,6 +121,7 @@ class WorkspacesController extends Controller
                     'openPokerGames' => $team->open_poker_games_count,
                     'openActionItems' => $team->open_action_items_count,
                     'overdueActionItems' => $team->overdue_action_items_count,
+                    'whiteboardsEditedToday' => (int) $team->whiteboards_edited_today_count,
                 ],
             ])->values(),
             'canManage' => $canManage,

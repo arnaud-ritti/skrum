@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $open_poker_games_count
  * @property-read int|null $open_action_items_count
  * @property-read int|null $overdue_action_items_count
+ * @property-read int|null $whiteboards_edited_today_count
  */
 #[Fillable([
     'name',

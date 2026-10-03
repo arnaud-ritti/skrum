@@ -18,7 +18,13 @@ class PresentTeamRetro
      *     templateName: string,
      *     facilitator: ?array{name: string, avatarUrl: string},
      *     rotiAverage: ?float,
-     *     viewerHasJoined: bool
+     *     viewerHasJoined: bool,
+     *     stats: array{
+     *         participants: int,
+     *         cards: int,
+     *         groups: int,
+     *         actionItems: int
+     *     }
      * }
      */
     public function handle(Retro $retro): array
@@ -36,6 +42,12 @@ class PresentTeamRetro
             ],
             'rotiAverage' => $this->rotiAverage($retro),
             'viewerHasJoined' => $this->viewerHasJoined($retro),
+            'stats' => [
+                'participants' => (int) $retro->getAttribute('participants_count'),
+                'cards' => (int) $retro->getAttribute('cards_count'),
+                'groups' => (int) $retro->getAttribute('groups_count'),
+                'actionItems' => (int) $retro->getAttribute('action_items_count'),
+            ],
         ];
     }
 

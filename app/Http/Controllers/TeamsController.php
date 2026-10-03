@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ActionItems\ActionItemActor;
+use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
+use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\PresentTeamRetro;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Teams\ListRecentTeamSessions;
@@ -13,6 +16,7 @@ use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
+use App\Models\ActionItem;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
@@ -60,6 +64,7 @@ class TeamsController extends Controller
         PresentNewSessionOptions $presentNewSessionOptions,
         ListTeamActivity $listTeamActivity,
         ListRecentTeamSessions $listRecentTeamSessions,
+        PresentActionItem $presentActionItem,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -87,6 +92,12 @@ class TeamsController extends Controller
             'retros' => $team->retros()
                 ->with(['workspaceTemplate', 'facilitator.user'])
                 ->withAvg('rotiVotes', 'score')
+                ->withCount([
+                    'participants',
+                    'cards',
+                    'cards as groups_count' => fn (Builder $cards) => $cards->whereNull('parent_card_id')->whereHas('children'),
+                    'actionItems',
+                ])
                 ->withExists(['participants as viewer_has_joined' => fn (Builder $participants) => $participants->where('user_id', $request->user()->id)])
                 ->latest()
                 ->get()
@@ -123,6 +134,12 @@ class TeamsController extends Controller
             'hasSprints' => $team->sprints()->exists(),
             'activity' => $listTeamActivity->handle($team),
             'recentSessions' => $listRecentTeamSessions->handle($team, $request->user()),
+            'openActionItems' => $this->openActionItems($team, $request->user(), $presentActionItem),
+            'overdueActionItemCount' => $team->actionItems()
+                ->whereNull('completed_at')
+                ->whereNotNull('due_on')
+                ->where('due_on', '<', ActionItem::today()->toDateString())
+                ->count(),
         ]);
     }
 
@@ -184,5 +201,24 @@ class TeamsController extends Controller
         }
 
         return ['sprint' => $sprint, 'nextRetro' => $nextRetro];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function openActionItems(Team $team, User $viewer, PresentActionItem $presentActionItem): array
+    {
+        $query = $team->actionItems()->getQuery()
+            ->whereNull('completed_at')
+            ->with(ActionItem::presentationRelations())
+            ->withCount('comments');
+        $actor = ActionItemActor::forUser($viewer);
+        $today = ActionItem::today();
+
+        return ActionItemQuery::order($query)
+            ->limit(5)
+            ->get()
+            ->map(fn (ActionItem $item): array => $presentActionItem->handle($item, $actor, $today))
+            ->all();
     }
 }
