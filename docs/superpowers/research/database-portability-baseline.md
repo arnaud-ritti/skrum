@@ -122,3 +122,41 @@ Run on 2026-10-03 with `TEST_DB_PROCESSES=4`, database `testing_l9`, one engine 
 | Key order of an array read back from a `json` column | `Integrations/TelegramConnectTest` 4, `Whiteboards/WhiteboardElementWritesTest` 4, `Integrations/ConnectLinearTest` 1, `Integrations/StatusSyncSettingsTest` 1, `Whiteboards/WhiteboardTemplatesTest` 1, `Notifications/BellNotificationsTest` 1 | 12 | 12 |
 
 PostgreSQL, SQLite and MariaDB are green. The arch baseline is empty. `bin/check-pg-upgrade` passes on the merged tree.
+
+## Tasks 12 and 15 — plan-18g-cleanup re-merged, triage, the guard rail closed
+
+Run on 2026-10-03 with `TEST_DB_PROCESSES=4`, database `testing_l9`, one engine at a time, after the merge of
+`plan-18g-cleanup` (`c984b963`: informal register, rework 3). The suite has 5 939 tests.
+
+| Driver | Result | Time |
+|---|---|---|
+| pgsql | `test-db pgsql: PASS, Tests: 2 skipped, 5937 passed (54506 assertions)` | 3 min 39 |
+| sqlite | `test-db sqlite: PASS, Tests: 8 skipped, 5931 passed (54493 assertions)` | 1 min 02 |
+| mariadb | `test-db mariadb: PASS, Tests: 1 skipped, 5938 passed (54508 assertions)` | 4 min 10 |
+| mysql | `test-db mysql: PASS, Tests: 1 skipped, 5938 passed (54508 assertions)` | about 14 min |
+
+Triage (Task 12). Before the fix: pgsql 0, sqlite 0, mariadb 0, mysql 12 failures; none common to SQLite and MariaDB.
+The merge brought no new failure on PostgreSQL or SQLite.
+
+| Test | Cause (table of Task 12) | Fix |
+|---|---|---|
+| `Integrations/TelegramConnectTest` "connects a group that sends the command" (4 data sets) | 6: MySQL returns a `json` column with its keys reordered | test: `toBeIgnoringKeyOrder` |
+| `Whiteboards/WhiteboardElementWritesTest` "returns the server copy with an invalid rejection of an element it already holds" and "rejects a guest who deletes, moves or unlocks a locked element" (3 data sets) | 6, the rejected element is read back from `whiteboard_elements.data` | test: `toBeIgnoringKeyOrder` on the response's element |
+| `Integrations/ConnectLinearTest` "connects the Linear workspace" | 6 | test: `toBeIgnoringKeyOrder` |
+| `Integrations/StatusSyncSettingsTest` "saves and resets a status mapping per project" | 6 | test: `toBeIgnoringKeyOrder` |
+| `Whiteboards/WhiteboardTemplatesTest` "saves the live scene of a board, with its images, as a workspace template" | 6 | test: `toBeIgnoringKeyOrder` |
+| `Notifications/BellNotificationsTest` "stores the invitation token encrypted, never a link, and gives the link to its owner only" | 6, the key list of the stored notification | test: the key set, `toEqualCanonicalizing` |
+
+No application code depends on that order: the values are rendered as JSON or read by key, and none is compared
+with `===`, hashed or encoded for comparison. `toBeIgnoringKeyOrder` (`tests/Pest.php`) sorts the keys of maps on
+both sides, keeps lists in their order and compares strictly. Unexplained failures: none.
+
+Skips, all capability skips: SQLite 8 (the cache lock test, the three lock-order tests, the probe's two tests,
+the isolation-level check test and the one skip of every engine); PostgreSQL 2 (the isolation-level check test and
+the one skip of every engine); MariaDB and MySQL 1.
+
+Task 15: the baseline file and its mechanism are gone; a test asserts that no baseline and no allowed list exist.
+Rules: `upsert` removed; `sql string on a connection`, `engine-specific operator` and a wider `reads sql text`
+(the query log read through `collect(DB::getQueryLog())`, `pluck('query')`, `DB::listen`) added.
+`SharedPropsTest` counts its statements through `SqlProbe::readsFrom()` and `SqlProbe::statementsOn()`.
+`bin/check-pg-upgrade` passes.
