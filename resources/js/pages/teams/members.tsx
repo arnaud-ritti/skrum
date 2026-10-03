@@ -1,9 +1,9 @@
 import { Head } from '@inertiajs/react';
-import type { ReactNode } from 'react';
 import { DefaultColumnsCard } from '@/components/team-settings/default-columns-card';
 import { DefaultFacilitatorsCard } from '@/components/team-settings/default-facilitators-card';
 import { MembersTable } from '@/components/team-settings/members-table';
 import { RetroTemplatesCard } from '@/components/team-settings/retro-templates-card';
+import { SprintsCard } from '@/components/team-settings/sprints-card';
 import { TeamSettingsShell } from '@/components/team-settings/team-settings-shell';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -54,6 +54,7 @@ export default function TeamMembersPage({
     canManageMembers,
     roleOptions,
     sprints,
+    rituals,
     facilitators,
     templates,
     defaultRetroTemplate,
@@ -63,8 +64,6 @@ export default function TeamMembersPage({
 }: Props) {
     const { t } = useTrans();
     const defaultTemplate = templates.find((template) => template.isDefault);
-    /** The Sprints card (plan 23, Task 21) goes here, under the members. */
-    const sprintsCard: ReactNode = null;
 
     return (
         <TeamSettingsShell
@@ -85,7 +84,12 @@ export default function TeamMembersPage({
                         canManageMembers={canManageMembers}
                         roleOptions={roleOptions}
                     />
-                    {sprintsCard}
+                    <SprintsCard
+                        workspaceSlug={workspace.slug}
+                        team={team}
+                        sprints={sprints}
+                        rituals={rituals}
+                    />
                 </div>
                 <div className="flex min-w-0 flex-col gap-5">
                     <DefaultFacilitatorsCard

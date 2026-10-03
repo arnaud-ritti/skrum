@@ -102,6 +102,9 @@ describe('the Members & rituals tab of the team settings', () => {
                 ?.textContent,
         ).toBe('Product squad · 1 member · created in March 2025');
         expect(document.querySelector('section#members')).not.toBeNull();
+        expect(
+            document.querySelector('section#members + section#sprints'),
+        ).not.toBeNull();
         expect(document.querySelector('section#facilitators')).not.toBeNull();
         expect(
             document.querySelector('section#retro-templates'),
