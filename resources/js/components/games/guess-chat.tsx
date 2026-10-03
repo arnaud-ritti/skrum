@@ -97,7 +97,6 @@ function FinderLine({ finder }: { finder: GameFinder }) {
 
     return (
         <li
-            role="status"
             data-slot="finder-line"
             className="flex min-w-0 items-center gap-2 rounded-md bg-skrum-success-soft px-2 py-1.5 text-body-sm font-medium text-skrum-success-text"
         >

@@ -93,7 +93,8 @@ describe('GuessChat, Draw & Guess finders', () => {
             'MMalikmug',
             'Malik found it!+8',
         ]);
-        expect(within(log).getAllByRole('status')).toHaveLength(2);
+        expect(within(log).getAllByRole('listitem')).toHaveLength(4);
+        expect(within(log).queryAllByRole('status')).toHaveLength(0);
         expect(screen.getByText('Found by · 2 / 5')).toBeTruthy();
     });
 
