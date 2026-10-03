@@ -33,6 +33,8 @@ export type NewActionItem = {
     dueDate: string | null;
     recurrence: ActionItemRecurrence | null;
     owner: ActionItemOwner | null;
+    /** The lead card of the topic the item is created for (RT-8). */
+    cardId?: string;
 };
 
 export function toActionItemOwner(
@@ -164,6 +166,7 @@ export function newItemToPayload(
         due_on: values.dueDate,
         recurrence: values.dueDate === null ? null : values.recurrence,
         ...assigneePayload(actionOwnerValue(values.owner)),
+        ...(values.cardId === undefined ? {} : { card_id: values.cardId }),
     };
 }
 

@@ -234,6 +234,83 @@ describe('Board', () => {
         });
     });
 
+    describe('in the Discussing phase', () => {
+        const discussingSnapshot = () =>
+            retroSnapshot({
+                retro: {
+                    phase: 'discussing',
+                    highlightedCardId: 'c1',
+                    topicSeconds: 300,
+                    timerEndsAt: new Date(Date.now() + 252_000).toISOString(),
+                },
+                cards: [
+                    {
+                        id: 'c1',
+                        columnId: 'col-1',
+                        parentCardId: null,
+                        position: 0,
+                        isMine: false,
+                        hidden: false,
+                        content: 'Slow CI',
+                        gif: null,
+                        author: null,
+                        groupName: null,
+                        discussedAt: null,
+                        votes: 2,
+                        myVotes: 0,
+                        reactions: [],
+                        commentCount: 0,
+                        comments: [],
+                        sentiment: null,
+                        category: null,
+                    },
+                ],
+            });
+
+        beforeEach(() => {
+            Element.prototype.scrollIntoView = vi.fn();
+        });
+
+        it('has the timer of the topic on the stage, and none in the topbar', () => {
+            const { container } = given({}, discussingSnapshot());
+            const header = container.querySelector('header') as HTMLElement;
+
+            expect(header.querySelector('[data-slot="timer"]')).toBeNull();
+            expect(
+                screen.getAllByRole('button', { name: 'Timer' }),
+            ).toHaveLength(1);
+            expect(
+                container.querySelector(
+                    '[data-slot="retro-topic-stage"] [data-slot="retro-topic-timer"]',
+                ),
+            ).not.toBeNull();
+        });
+
+        it('fills the topics list with the time left', () => {
+            const { container } = given({}, discussingSnapshot());
+
+            expect(
+                container.querySelector('[data-slot="retro-topic-meta"]')
+                    ?.textContent,
+            ).toMatch(/^Now · 04:1\d left$/);
+            expect(
+                container.querySelector('[data-slot="retro-topics-summary"]')
+                    ?.textContent,
+            ).toBe('5 min per topic · 0 actions so far');
+        });
+
+        it('opens the right column on the discussion notes of the topic', () => {
+            const { container } = given({}, discussingSnapshot());
+            const panels = container.querySelector(
+                '[data-slot="retro-discussion-panels"]',
+            );
+
+            expect(panels?.firstElementChild?.getAttribute('data-slot')).toBe(
+                'retro-topic-notes',
+            );
+        });
+    });
+
     describe('in the ROTI phase', () => {
         const rotiSnapshot = () =>
             retroSnapshot({
@@ -243,6 +320,8 @@ describe('Board', () => {
                     respondents: 0,
                     voterIds: [],
                     canVote: true,
+                    revealed: false,
+                    results: null,
                 },
             });
 
@@ -269,6 +348,20 @@ describe('Board', () => {
                 ).getByRole('button', { name: 'End session' }),
             ).toBeTruthy();
             expect(screen.queryByText('Suggest group names')).toBeNull();
+        });
+
+        it('puts "Nudge the last" and "Reveal ROTI" in the facilitator bar', () => {
+            given({}, rotiSnapshot());
+            const bar = screen.getByRole('toolbar', {
+                name: 'Facilitation tools',
+            });
+
+            expect(
+                within(bar).getByRole('button', { name: 'Nudge the last one' }),
+            ).toBeTruthy();
+            expect(
+                within(bar).getByRole('button', { name: 'Reveal ROTI' }),
+            ).toBeTruthy();
         });
     });
 

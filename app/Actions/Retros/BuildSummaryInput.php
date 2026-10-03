@@ -3,6 +3,7 @@
 namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\SummarizeHealthCheck;
+use App\Actions\Integrations\BuildRetroRecap;
 use App\Enums\SurveyKind;
 use App\Models\Card;
 use App\Models\Retro;
@@ -13,6 +14,7 @@ use App\Support\Alphabetical;
 use App\Support\Llm\LlmLanguages;
 use App\Support\Surveys\HealthScale;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class BuildSummaryInput
 {
@@ -30,7 +32,7 @@ class BuildSummaryInput
 
     public function handle(Retro $retro): SummaryInput
     {
-        $retro->loadMissing(['columns', 'cards', 'actionItems']);
+        $retro->loadMissing(['columns', 'cards', 'actionItems', 'topicNotes']);
 
         $surveys = $this->surveys($retro);
 
@@ -152,6 +154,7 @@ class BuildSummaryInput
     {
         $voteTotals = $retro->voteCountsByCard();
         $columnTitles = $retro->columns->pluck('title', 'id');
+        $notes = $retro->topicNotes->pluck('body', 'card_id');
         $childrenByParent = $retro->cards->whereNotNull('parent_card_id')->sortBy('position')->groupBy('parent_card_id');
         $leads = $retro->cards
             ->whereNull('parent_card_id')
@@ -175,6 +178,7 @@ class BuildSummaryInput
                 'groupName' => $lead->group_name,
                 'votes' => (int) ($voteTotals[$lead->id] ?? 0),
                 'grouped' => $children->map(fn (Card $child, int $offset): array => ['id' => $nextIndex + 1 + $offset, 'text' => $child->content])->all(),
+                ...$this->leadNotes($notes->get($lead->id)),
             ];
 
             if (! $this->fits([...$data, 'cards' => [...$cards, $entry]])) {
@@ -190,6 +194,18 @@ class BuildSummaryInput
         }
 
         return [$cards, $cardIds];
+    }
+
+    /**
+     * @return array{notes?: string}
+     */
+    private function leadNotes(?string $note): array
+    {
+        if (trim((string) $note) === '') {
+            return [];
+        }
+
+        return ['notes' => Str::limit(Str::squish((string) $note), BuildRetroRecap::TopicNoteLength * 2, '…')];
     }
 
     /**

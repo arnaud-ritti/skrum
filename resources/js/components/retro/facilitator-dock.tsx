@@ -6,6 +6,8 @@ import {
     Flag,
     Lock,
     LockOpen,
+    Pause,
+    Play,
     ScanEye,
     SkipBack,
     SkipForward,
@@ -19,6 +21,7 @@ import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/Retro
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
 import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
+import { useCountdown, useServerOffset } from '@/hooks/use-countdown';
 import { useHeightInRem } from '@/hooks/use-height-in-rem';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useShortcut } from '@/hooks/use-shortcut';
@@ -30,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { BoardReactions, showsRetroReactions } from './board-reactions';
 import { useOptionalDiscussion } from './phase-discussing';
+import { useTimerPause } from './use-timer-pause';
 
 type Translate = (key: string) => string;
 
@@ -52,13 +56,20 @@ export type FacilitatorTools = {
     };
     /** The places of the ROTI phase a later plan fills (RT-9). */
     roti?: RotiTools;
+    /** The retro's timer: "Pause" while it runs, "Resume" while paused (RT-2). */
+    timer?: {
+        paused: boolean;
+        running: boolean;
+        onPause: () => void;
+        onResume: () => void;
+    };
 };
 
 /**
- * "Nudge the last voters" and "Reveal ROTI" of the ROTI mockup: nothing
- * today, the distribution shows when the session ends.
+ * "Nudge the last voters" and "Reveal ROTI" of the ROTI mockup (RT-9),
+ * filled by `useRotiFacilitation`.
  */
-type RotiTools = {
+export type RotiTools = {
     nudge?: FacilitatorAction;
     reveal?: FacilitatorAction;
 };
@@ -74,12 +85,49 @@ type DockBoard = Pick<Snapshot, 'retro'>;
 export function facilitatorActions(
     phase: RetroPhase,
     board: DockBoard,
-    { t, onSetting, topics, roti }: FacilitatorTools,
+    tools: FacilitatorTools,
 ): FacilitatorAction[] {
     if (phase === 'completed') {
         return [];
     }
 
+    const pause = pauseAction(phase, tools);
+    const actions = phaseActions(phase, board, tools);
+
+    return pause ? [pause, ...actions] : actions;
+}
+
+/**
+ * "Pause" first, before "+2 min" (mockup order). The icebreaker's timer is
+ * the game's round clock, never paused (spec §6.2).
+ */
+function pauseAction(
+    phase: RetroPhase,
+    { t, timer }: FacilitatorTools,
+): FacilitatorAction | undefined {
+    if (phase === 'icebreaker' || phase === 'completed') {
+        return undefined;
+    }
+
+    if (!timer || (!timer.running && !timer.paused)) {
+        return undefined;
+    }
+
+    return {
+        id: 'pause',
+        kind: 'toggle',
+        label: timer.paused ? t('Resume') : t('Pause'),
+        icon: timer.paused ? Play : Pause,
+        pressed: timer.paused,
+        onSelect: timer.paused ? timer.onResume : timer.onPause,
+    };
+}
+
+function phaseActions(
+    phase: RetroPhase,
+    board: DockBoard,
+    { t, onSetting, topics, roti }: FacilitatorTools,
+): FacilitatorAction[] {
     const { retro } = board;
 
     const lock: FacilitatorAction = {
@@ -306,8 +354,13 @@ export function FacilitatorDock({
     const [platform] = useState(detectPlatform);
     const [barRef, barHeight] = useHeightInRem();
     const discussion = useOptionalDiscussion();
+    const timerPause = useTimerPause();
     const { board } = ctx;
     const { phase } = board.retro;
+    const remaining = useCountdown(
+        board.retro.timerEndsAt,
+        useServerOffset(board.serverTime),
+    );
     const hasBar = board.viewer.isFacilitator && phase !== 'completed';
 
     const send = async (request: Promise<unknown>) => {
@@ -335,6 +388,12 @@ export function FacilitatorDock({
         phaseKeyShortcuts:
             platform === 'mac' ? 'Meta+ArrowRight' : 'Control+ArrowRight',
         roti,
+        timer: {
+            paused: board.retro.timerPausedSeconds !== null,
+            running: remaining !== null && remaining > 0,
+            onPause: () => void timerPause.pause(),
+            onResume: () => void timerPause.resume(),
+        },
         topics:
             discussion && (phase === 'discussing' || phase === 'actions')
                 ? {

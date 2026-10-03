@@ -98,8 +98,17 @@ export type StepperSetting = SettingBase & {
     type: 'stepper';
     min: number;
     max: number;
-    /** Adds an "automatic" switch: the value is `null` while it is on. */
-    auto?: { label: string; help?: string; id?: string; fallback: number };
+    /**
+     * Adds an "automatic" switch: the value is `null` while it is on, and
+     * reads `valueLabel` ("Automatic" by default).
+     */
+    auto?: {
+        label: string;
+        help?: string;
+        id?: string;
+        fallback: number;
+        valueLabel?: string;
+    };
 };
 
 export type SelectSetting = SettingBase & {
@@ -171,6 +180,7 @@ export type RetroSettingsValues = {
     title: string;
     is_anonymous: boolean;
     votes_per_participant: number | null;
+    max_votes_per_card: number | null;
     icebreaker_enabled: boolean;
     icebreaker_game: string;
     reactions_enabled: boolean;
@@ -232,6 +242,10 @@ export function useRetroSettingGroups(
 
         return undefined;
     };
+
+    const voteLimitLocked = votePhases.includes(phase)
+        ? undefined
+        : t('The vote limit can only change before voting starts.');
 
     const games = (context.icebreakerGames ?? []).filter(
         (game) => game.available || game.value === context.icebreakerGame,
@@ -295,11 +309,23 @@ export function useRetroSettingGroups(
                         ),
                         fallback: context.votesPerParticipant,
                     },
-                    disabledReason: votePhases.includes(phase)
-                        ? undefined
-                        : t(
-                              'The vote limit can only change before voting starts.',
-                          ),
+                    disabledReason: voteLimitLocked,
+                },
+                {
+                    type: 'stepper',
+                    key: 'max_votes_per_card',
+                    id: 'retro-max-votes-per-card',
+                    label: t('Max per card'),
+                    help: t('Votes one person can stack'),
+                    min: MinRetroVotes,
+                    max: context.votesPerParticipant,
+                    auto: {
+                        id: 'retro-max-votes-per-card-auto',
+                        label: t('No limit per card'),
+                        valueLabel: t('No limit'),
+                        fallback: Math.min(2, context.votesPerParticipant),
+                    },
+                    disabledReason: voteLimitLocked,
                 },
                 {
                     type: 'switch',
@@ -935,7 +961,9 @@ function SettingsPanel({
         }
 
         if (setting.type === 'stepper') {
-            return current === null ? t('Automatic') : current;
+            return current === null
+                ? (setting.auto?.valueLabel ?? t('Automatic'))
+                : current;
         }
 
         if (setting.type === 'select') {
@@ -1062,7 +1090,9 @@ function SettingsPanel({
             <div key={key} className="flex flex-col">
                 <SettingRow {...rowProps}>
                     {automatic ? (
-                        <ReadOnlyValue>{t('Automatic')}</ReadOnlyValue>
+                        <ReadOnlyValue>
+                            {auto?.valueLabel ?? t('Automatic')}
+                        </ReadOnlyValue>
                     ) : (
                         <Stepper
                             id={setting.id}

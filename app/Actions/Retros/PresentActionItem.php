@@ -21,6 +21,7 @@ class PresentActionItem
      * @return array{
      *     id: string,
      *     retroId: ?string,
+     *     cardId: ?string,
      *     teamId: string,
      *     content: string,
      *     priority: string,
@@ -48,6 +49,7 @@ class PresentActionItem
         return [
             'id' => $item->id,
             'retroId' => $item->retro_id,
+            'cardId' => $item->card_id,
             'teamId' => $item->team_id,
             'content' => $item->content,
             'priority' => $item->priority->value,

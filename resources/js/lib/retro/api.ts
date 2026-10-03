@@ -14,6 +14,8 @@ export class RetroRequestError extends Error {
         public status: number,
         message: string,
         public errors: Record<string, string[]> = {},
+        /** The whole answer, for an error that carries data (a 409 conflict). */
+        public payload: unknown = null,
     ) {
         super(message);
     }
@@ -66,6 +68,7 @@ export async function retroRequest<T = null>(
                 error.response.status,
                 firstError ?? payload?.message ?? error.message,
                 payload?.errors ?? {},
+                payload,
             );
         }
 

@@ -51,6 +51,10 @@ type SessionPresenceProps = {
     selfId: string | null;
     facilitatorId?: string | null;
     presenceFor?: (member: PresenceMember) => number | undefined;
+    /** Rings the member's avatar and names them on the typing line. */
+    typingFor?: (member: PresenceMember) => boolean;
+    /** How many write when nobody may be named (an anonymous retro). */
+    typingCount?: number;
     className?: string;
 };
 
@@ -59,18 +63,26 @@ export function SessionPresence({
     selfId,
     facilitatorId,
     presenceFor,
+    typingFor,
+    typingCount,
     className,
 }: SessionPresenceProps) {
     const isBelowSm = useIsBelowSm();
+    const participants = toParticipants(
+        online,
+        selfId,
+        facilitatorId,
+        presenceFor,
+    ).map((participant, index) =>
+        typingFor?.(online[index])
+            ? { ...participant, typing: true }
+            : participant,
+    );
 
     return (
         <PresenceStack
-            participants={toParticipants(
-                online,
-                selfId,
-                facilitatorId,
-                presenceFor,
-            )}
+            participants={participants}
+            typingCount={typingCount}
             max={isBelowSm ? VisibleOnPhone : undefined}
             className={cn(
                 'max-sm:[&_[data-slot=presence-stack-guests]]:hidden',

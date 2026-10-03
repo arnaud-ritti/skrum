@@ -119,6 +119,7 @@ const base: ActionItem = {
     id: 'a1',
     retroId: 'retro-42',
     teamId: 'atlas',
+    cardId: null,
     content: 'Limit pull requests to 400 lines and add a review template',
     priority: 'high',
     dueOn: '2026-10-10',

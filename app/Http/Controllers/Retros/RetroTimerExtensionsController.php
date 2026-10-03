@@ -8,7 +8,6 @@ use App\Events\Retros\TimerChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
-use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,11 +24,25 @@ class RetroTimerExtensionsController extends Controller
         RetroGuard::facilitator($retro, $participant);
         RetroGuard::open($retro);
 
-        $endsAt = DB::transaction(function () use ($retro, $participant, $scheduleIcebreakerExpiry): CarbonInterface {
+        $extended = DB::transaction(function () use ($retro, $participant, $scheduleIcebreakerExpiry): Retro {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
             RetroGuard::open($locked);
+
+            if ($locked->timer_paused_seconds !== null) {
+                $paused = $locked->timer_paused_seconds + self::ExtensionSeconds;
+
+                if ($paused > RetroTimersController::MaxSeconds) {
+                    throw ValidationException::withMessages(['timer' => __('A timer cannot run longer than two hours.')]);
+                }
+
+                $locked->update(['timer_paused_seconds' => $paused]);
+
+                TimerChanged::of($locked)->sendToOthers();
+
+                return $locked;
+            }
 
             if ($locked->timer_ends_at === null || $locked->timer_ends_at->isPast()) {
                 throw ValidationException::withMessages(['timer' => __('No timer is running.')]);
@@ -43,13 +56,13 @@ class RetroTimerExtensionsController extends Controller
 
             $locked->update(['timer_ends_at' => $endsAt]);
 
-            (new TimerChanged($locked->id, $endsAt->toIso8601String()))->sendToOthers();
+            TimerChanged::of($locked)->sendToOthers();
 
             $scheduleIcebreakerExpiry->handle($locked);
 
-            return $endsAt;
+            return $locked;
         });
 
-        return response()->json(['timerEndsAt' => $endsAt->toIso8601String()]);
+        return response()->json(TimerChanged::of($extended)->broadcastWith());
     }
 }

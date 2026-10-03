@@ -131,4 +131,34 @@ describe('SessionPresence', () => {
             3,
         );
     });
+
+    it('rings who is typing and names them on the typing line', () => {
+        const { container } = renderWithProviders(
+            <SessionPresence
+                online={online}
+                selfId="p1"
+                typingFor={(member) => member.id === 'p2'}
+            />,
+        );
+
+        expect(container.querySelectorAll('[data-typing="true"]')).toHaveLength(
+            1,
+        );
+        expect(
+            container.querySelector('[data-slot="presence-stack-typing"]')
+                ?.textContent,
+        ).toBe('Bob is writing…');
+    });
+
+    it('forwards a count of people writing, with no ring', () => {
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" typingCount={2} />,
+        );
+
+        expect(container.querySelector('[data-typing]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="presence-stack-typing"]')
+                ?.textContent,
+        ).toBe('2 people are writing…');
+    });
 });

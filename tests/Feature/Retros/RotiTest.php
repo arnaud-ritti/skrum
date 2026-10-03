@@ -220,7 +220,7 @@ it('lists the voters in the event and the snapshot, and drops a voter who retrac
 
     $roti = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti'];
 
-    expect(array_keys($roti))->toBe(['myScore', 'respondents', 'voterIds', 'canVote'])
+    expect(array_keys($roti))->toBe(['myScore', 'respondents', 'voterIds', 'canVote', 'revealed', 'results'])
         ->and($roti['voterIds'])->toContain($participant->id, $other->id);
 
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertOk();

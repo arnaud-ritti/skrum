@@ -95,6 +95,22 @@ describe('ConfirmDialog', () => {
         );
     });
 
+    it('names the cancel button on request', () => {
+        render(
+            <ConfirmDialog
+                {...base}
+                cancelLabel="Keep exporting"
+                onOpenChange={() => {}}
+                onConfirm={async () => {}}
+            />,
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Keep exporting' }),
+        ).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    });
+
     it('renders the consequences', () => {
         render(
             <ConfirmDialog

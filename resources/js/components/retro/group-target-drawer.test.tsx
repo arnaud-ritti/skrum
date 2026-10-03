@@ -43,6 +43,7 @@ function card(overrides: Partial<BoardCard> = {}): BoardCard {
         gif: null,
         author: { id: 'me', name: 'Alice Martin' },
         groupName: null,
+        discussedAt: null,
         votes: null,
         myVotes: 0,
         reactions: [],

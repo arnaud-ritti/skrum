@@ -29,6 +29,8 @@ describe('retroSettingsValues', () => {
                     isLocked: true,
                     votesAuto: false,
                     votesPerParticipant: 7,
+                    maxVotesPerCard: 2,
+                    maxVotesPerCardSetting: 3,
                 },
             }).retro,
         );
@@ -37,6 +39,7 @@ describe('retroSettingsValues', () => {
             title: 'Sprint 42',
             is_locked: true,
             votes_per_participant: 7,
+            max_votes_per_card: 3,
             reactions_enabled: true,
         });
     });

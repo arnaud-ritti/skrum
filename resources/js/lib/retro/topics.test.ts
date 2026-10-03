@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { stepTopic, topicOfCard, topicsFrom } from '@/lib/retro/topics';
+import {
+    actionCountByTopic,
+    stepTopic,
+    topicLabel,
+    topicOfCard,
+    topicsFrom,
+} from '@/lib/retro/topics';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
 
 function column(overrides: Partial<BoardColumn> = {}): BoardColumn {
@@ -25,6 +31,7 @@ function card(overrides: Partial<BoardCard> = {}): BoardCard {
         gif: null,
         author: null,
         groupName: null,
+        discussedAt: null,
         votes: 0,
         myVotes: 0,
         reactions: [],
@@ -196,5 +203,47 @@ describe('stepTopic', () => {
 
     it('has no neighbour for an unknown topic', () => {
         expect(stepTopic(topics, 'gone', 1)).toBeNull();
+    });
+});
+
+describe('actionCountByTopic', () => {
+    it('counts the action items of each topic, and leaves out those without one', () => {
+        expect(
+            actionCountByTopic([
+                { cardId: 'a' },
+                { cardId: 'b' },
+                { cardId: 'a' },
+                { cardId: null },
+            ]),
+        ).toEqual(
+            new Map([
+                ['a', 2],
+                ['b', 1],
+            ]),
+        );
+    });
+});
+
+describe('topicLabel', () => {
+    const topics = topicsFrom({
+        columns,
+        cards: [
+            card({ id: 'a', votes: 3, content: 'Slow CI' }),
+            card({ id: 'b', votes: 2, content: 'Scope changes mid-sprint' }),
+            card({ id: 'b-child', parentCardId: 'b' }),
+        ],
+    });
+
+    it('gives the rank and the title of the topic an item is linked to', () => {
+        expect(topicLabel({ cardId: 'b' }, topics)).toEqual({
+            rank: 2,
+            title: 'Scope changes mid-sprint',
+        });
+    });
+
+    it('gives nothing for an item without a card, or on a card that is not a topic of the board', () => {
+        expect(topicLabel({ cardId: null }, topics)).toBeNull();
+        expect(topicLabel({ cardId: 'b-child' }, topics)).toBeNull();
+        expect(topicLabel({ cardId: 'gone' }, topics)).toBeNull();
     });
 });

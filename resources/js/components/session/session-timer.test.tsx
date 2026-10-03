@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionTimer, TimeUpBadge } from '@/components/session/session-timer';
@@ -190,6 +190,116 @@ describe('SessionTimer', () => {
         );
 
         expect(screen.getByRole('button', { name: '+2 min' })).toBeTruthy();
+    });
+
+    it('shows a paused timer: its seconds, the paused state and the screen reader label', () => {
+        renderWithProviders(
+            <SessionTimer endsAt={null} offset={0} pausedSeconds={240} />,
+        );
+
+        const timer = screen.getByRole('timer');
+
+        expect(timer.textContent).toContain('4:00');
+        expect(timer.getAttribute('data-state')).toBe('paused');
+        expect(timer.getAttribute('aria-label')).toBe('Paused, 4 minutes left');
+
+        act(() => {
+            vi.advanceTimersByTime(5_000);
+        });
+
+        expect(screen.getByRole('timer').textContent).toContain('4:00');
+    });
+
+    it('resumes from the toggle of a paused timer', () => {
+        const onResume = vi.fn();
+        const onPause = vi.fn();
+
+        renderWithProviders(
+            <SessionTimer
+                endsAt={null}
+                offset={0}
+                pausedSeconds={90}
+                onPause={onPause}
+                onResume={onResume}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Resume timer' }));
+
+        expect(onResume).toHaveBeenCalledTimes(1);
+        expect(onPause).not.toHaveBeenCalled();
+    });
+
+    it('pauses from the toggle of a running timer', () => {
+        const onPause = vi.fn();
+
+        renderWithProviders(
+            <SessionTimer endsAt={inTenSeconds} offset={0} onPause={onPause} />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Pause timer' }));
+
+        expect(onPause).toHaveBeenCalledTimes(1);
+    });
+
+    it('rings no alarm while paused', () => {
+        const { rerender } = renderWithProviders(
+            <SessionTimer endsAt={inTenSeconds} offset={0} />,
+        );
+
+        rerender(
+            <SessionTimer endsAt={inTenSeconds} offset={0} pausedSeconds={9} />,
+        );
+
+        act(() => {
+            vi.advanceTimersByTime(11_000);
+        });
+
+        expect(toast).not.toHaveBeenCalled();
+        expect(screen.getByRole('timer').getAttribute('data-state')).toBe(
+            'paused',
+        );
+    });
+
+    it('draws the large timer when asked', () => {
+        const { container } = renderWithProviders(
+            <SessionTimer endsAt={inTenSeconds} offset={0} size="lg" />,
+        );
+
+        expect(
+            container
+                .querySelector('[data-slot="timer"]')
+                ?.getAttribute('data-size'),
+        ).toBe('lg');
+    });
+
+    it('passes its caption to the timer', () => {
+        renderWithProviders(
+            <SessionTimer
+                endsAt={inTenSeconds}
+                offset={0}
+                caption="of 5:00 · this topic"
+            />,
+        );
+
+        expect(screen.getByText('of 5:00 · this topic')).toBeTruthy();
+    });
+
+    it('offers "+2 min" on a paused timer', () => {
+        const onExtend = vi.fn();
+
+        renderWithProviders(
+            <SessionTimer
+                endsAt={null}
+                offset={0}
+                pausedSeconds={60}
+                onExtend={onExtend}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: '+2 min' }));
+
+        expect(onExtend).toHaveBeenCalledTimes(1);
     });
 });
 

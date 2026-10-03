@@ -33,6 +33,16 @@ class ActionItemRules
     }
 
     /**
+     * The topic of an item, on the board's endpoints only: the workspace endpoints leave it as it is.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public static function topic(): array
+    {
+        return ['card_id' => ['sometimes', 'nullable', 'uuid']];
+    }
+
+    /**
      * @return array<string, string>
      */
     public static function messages(): array
@@ -44,14 +54,15 @@ class ActionItemRules
 
     /**
      * The plain item fields of a validated request; assignee and status go
-     * through ResolveActionItemAssignee and SetActionItemStatus.
+     * through ResolveActionItemAssignee and SetActionItemStatus. card_id only
+     * reaches it from the board's endpoints, which validate topic().
      *
      * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
     public static function attributes(array $validated): array
     {
-        return array_intersect_key($validated, array_flip(['content', 'priority', 'due_on', 'recurrence']));
+        return array_intersect_key($validated, array_flip(['content', 'priority', 'due_on', 'recurrence', 'card_id']));
     }
 
     /**

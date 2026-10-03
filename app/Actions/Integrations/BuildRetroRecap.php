@@ -10,6 +10,7 @@ use App\Models\Card;
 use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\TopicNote;
 use App\Support\Alphabetical;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\Integrations\Messages\RetroRecap;
@@ -32,6 +33,10 @@ class BuildRetroRecap
     public const CardContentLimit = 300;
 
     public const RotiBarsMinimumVotes = 3;
+
+    public const TopicNoteLimit = 5;
+
+    public const TopicNoteLength = 300;
 
     private const string MachineGuestSuffix = '(guest)';
 
@@ -67,6 +72,7 @@ class BuildRetroRecap
             facilitatorName: $retro->is_anonymous ? null : $retro->facilitator?->displayName(),
             rotiCounts: $this->rotiCounts($roti),
             completedDay: ($retro->completed_at ?? now())->copy()->settings(['locale' => app()->getLocale()])->isoFormat('dddd D MMMM'),
+            topicNotes: $this->topicNotes($retro),
         );
     }
 
@@ -274,6 +280,33 @@ class BuildRetroRecap
                 ];
             })
             ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The notes of the most voted topics, without their writers.
+     *
+     * @return array<int, array{title: string, note: string}>
+     */
+    private function topicNotes(Retro $retro): array
+    {
+        $votes = $retro->voteCountsByCard();
+
+        return $retro->topicNotes()
+            ->with('card')
+            ->get()
+            ->filter(fn (TopicNote $note): bool => trim($note->body) !== '' && $note->card->isTopLevel())
+            ->sortBy([
+                fn (TopicNote $a, TopicNote $b): int => (int) ($votes[$b->card_id] ?? 0) <=> (int) ($votes[$a->card_id] ?? 0),
+                fn (TopicNote $a, TopicNote $b): int => $a->card->position <=> $b->card->position,
+                fn (TopicNote $a, TopicNote $b): int => $a->card_id <=> $b->card_id,
+            ])
+            ->take(self::TopicNoteLimit)
+            ->map(fn (TopicNote $note): array => [
+                'title' => Str::limit(Str::squish($note->card->group_name ?? $note->card->content ?? __('GIF')), 80),
+                'note' => Str::limit(Str::squish($note->body), self::TopicNoteLength, '…'),
+            ])
             ->values()
             ->all();
     }

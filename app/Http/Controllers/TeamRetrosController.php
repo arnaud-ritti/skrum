@@ -32,6 +32,7 @@ class TeamRetrosController extends Controller
             'icebreaker_enabled' => ['sometimes', 'boolean'],
             'icebreaker_game' => ['sometimes', Rule::enum(GameKind::class), $icebreakerGameOptions->rule()],
             'votes_per_participant' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'max_votes_per_card' => ['nullable', 'integer', 'min:1', 'max:20'],
             'ai_summary_enabled' => ['sometimes', 'boolean'],
             'guest_access_enabled' => ['sometimes', 'boolean'],
             'columns' => ['sometimes', 'array', 'min:1', 'max:'.WorkspaceTemplateRequest::MaxColumns],
@@ -51,6 +52,7 @@ class TeamRetrosController extends Controller
             icebreakerGame: isset($validated['icebreaker_game']) ? GameKind::from($validated['icebreaker_game']) : null,
             guestAccessEnabled: (bool) ($validated['guest_access_enabled'] ?? false),
             columns: $this->columns($validated['columns'] ?? null),
+            maxVotesPerCard: isset($validated['max_votes_per_card']) ? (int) $validated['max_votes_per_card'] : null,
         ));
 
         return to_route('retros.show', $retro);

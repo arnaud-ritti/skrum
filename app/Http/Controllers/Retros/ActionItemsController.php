@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ActionItemsController extends Controller
 {
@@ -37,10 +38,12 @@ class ActionItemsController extends Controller
 
         $this->guardDiscussing($retro);
 
-        $validated = $request->validate(ActionItemRules::create(allowsGuests: true), ActionItemRules::messages());
+        $validated = $request->validate([...ActionItemRules::create(allowsGuests: true), ...ActionItemRules::topic()], ActionItemRules::messages());
 
         $actionItem = DB::transaction(function () use ($retro, $actor, $validated): ActionItem {
             $locked = $this->lockDiscussingRetro($retro);
+
+            $this->ensureTopic($locked, $validated);
 
             return $this->createActionItem->handle($locked->team, $locked, $actor, [
                 ...ActionItemRules::attributes($validated),
@@ -57,9 +60,15 @@ class ActionItemsController extends Controller
 
         $this->guardDiscussing($retro);
 
-        $validated = $request->validate(ActionItemRules::update(allowsGuests: true), ActionItemRules::messages());
+        $validated = $request->validate([...ActionItemRules::update(allowsGuests: true), ...ActionItemRules::topic()], ActionItemRules::messages());
 
-        $updated = DB::transaction(fn (): ActionItem => $this->applyActionItemChanges->handle($this->lockActionItem($retro, $actionItem), $actor, $validated));
+        $updated = DB::transaction(function () use ($retro, $actionItem, $actor, $validated): ActionItem {
+            $item = $this->lockActionItem($retro, $actionItem);
+
+            $this->ensureTopic($item->retro, $validated);
+
+            return $this->applyActionItemChanges->handle($item, $actor, $validated);
+        });
 
         return response()->json(['actionItem' => $this->presentActionItem->handle($updated, $actor)]);
     }
@@ -75,5 +84,23 @@ class ActionItemsController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function ensureTopic(Retro $locked, array $validated): void
+    {
+        $cardId = $validated['card_id'] ?? null;
+
+        if ($cardId === null) {
+            return;
+        }
+
+        if ($locked->cards()->whereKey($cardId)->whereNull('parent_card_id')->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['card_id' => __('Choose a topic of this retrospective.')]);
     }
 }

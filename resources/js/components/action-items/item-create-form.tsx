@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import type { NewActionItem } from '@/components/action-items/action-item-adapters';
@@ -76,6 +76,10 @@ type Props = {
     showAnonymousNotice?: boolean;
     /** What the item is attached to, such as the topic in focus. */
     linkedTo?: ReactNode;
+    /** The lead card of the topic a new item is linked to (RT-8). */
+    cardId?: string;
+    /** The link to `cardId` can be removed, for the next item only. */
+    unlinkable?: boolean;
     onCancel?: () => void;
     /**
      * `stacked` is the form of a phone drawer: one field per line with its
@@ -93,6 +97,8 @@ export function ItemCreateForm({
     disabled = false,
     showAnonymousNotice = false,
     linkedTo,
+    cardId,
+    unlinkable = false,
     onCancel,
     layout = 'inline',
 }: Props): ReactElement {
@@ -100,6 +106,9 @@ export function ItemCreateForm({
     const labels = useActionItemLabels();
     const [draft, setDraft] = useState<Draft>(emptyDraft);
     const [sending, setSending] = useState(false);
+    const [unlinkedCardId, setUnlinkedCardId] = useState<string | null>(null);
+    const isUnlinked = cardId !== undefined && unlinkedCardId === cardId;
+    const linkedCardId = isUnlinked ? undefined : cardId;
     const titleField = useRef<HTMLInputElement>(null);
     const locked = disabled || sending;
     const stacked = layout === 'stacked';
@@ -131,6 +140,7 @@ export function ItemCreateForm({
                     members.find(
                         (member) => actionOwnerValue(member) === draft.owner,
                     ) ?? null,
+                ...(linkedCardId === undefined ? {} : { cardId: linkedCardId }),
             });
 
             if (created === false) {
@@ -138,6 +148,7 @@ export function ItemCreateForm({
             }
 
             setDraft(emptyDraft);
+            setUnlinkedCardId(null);
             titleField.current?.focus();
 
             if (ticketSource && typeof created === 'object') {
@@ -342,9 +353,25 @@ export function ItemCreateForm({
                 void submit();
             }}
         >
-            {linkedTo && (
-                <div className="flex min-w-0 items-center gap-1 text-xs font-semibold text-muted-foreground">
+            {linkedTo && !isUnlinked && (
+                <div
+                    data-slot="item-create-link"
+                    className="flex min-w-0 items-center gap-1 text-xs font-semibold text-muted-foreground"
+                >
                     {linkedTo}
+                    {unlinkable && cardId !== undefined && (
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="ml-auto size-6 shrink-0"
+                            aria-label={t('Remove the link to the topic')}
+                            disabled={locked}
+                            onClick={() => setUnlinkedCardId(cardId)}
+                        >
+                            <X aria-hidden />
+                        </Button>
+                    )}
                 </div>
             )}
             {showAnonymousNotice && <AnonymousNote />}

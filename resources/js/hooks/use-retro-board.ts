@@ -23,6 +23,7 @@ import type {
     ReactionSummary,
     Snapshot,
     SurveyComment,
+    TopicNote,
 } from '@/lib/retro/types';
 import type { ExternalLink } from '@/types/integrations';
 import { GameEvents, type GameEvent } from './use-game-channel';
@@ -49,6 +50,8 @@ export function useRetroBoard(initial: Snapshot) {
     const latestBoard = useRef(board);
     const surveyRefetcher = useRef<SurveyRefetcher | null>(null);
     const gameListeners = useRef(new Set<(event: GameEvent) => void>());
+    const rotiNudgeListeners = useRef(new Set<() => void>());
+    const writingCountListeners = useRef(new Set<(count: number) => void>());
     const retroId = initial.retro.id;
 
     latestBoard.current = board;
@@ -232,7 +235,43 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({
                         type: 'timer.set',
                         timerEndsAt: payload.timerEndsAt as string | null,
+                        timerPausedSeconds: payload.timerPausedSeconds as
+                            | number
+                            | null,
+                        topicSeconds: payload.topicSeconds as number | null,
                     });
+                    break;
+                case 'voting.finished':
+                    apply({
+                        type: 'voting.finished',
+                        finishedIds: payload.finishedIds as string[],
+                    });
+                    break;
+                case 'topic.discussed':
+                    apply({
+                        type: 'topic.discussed',
+                        cardId: payload.cardId as string,
+                        discussedAt: payload.discussedAt as string | null,
+                    });
+                    break;
+                case 'topic.note.saved':
+                    apply({
+                        type: 'topicNote.set',
+                        note: payload.note as TopicNote,
+                    });
+                    break;
+                case 'roti.revealed':
+                    void refetch();
+                    break;
+                case 'roti.nudged':
+                    for (const listener of rotiNudgeListeners.current) {
+                        listener();
+                    }
+                    break;
+                case 'writing.count':
+                    for (const listener of writingCountListeners.current) {
+                        listener(payload.count as number);
+                    }
                     break;
                 case 'card.highlighted':
                     apply({
@@ -443,6 +482,30 @@ export function useRetroBoard(initial: Snapshot) {
         [],
     );
 
+    /** The ROTI screen pulses for the voters left while it is mounted. */
+    const subscribeRotiNudges = useCallback((listener: () => void) => {
+        rotiNudgeListeners.current.add(listener);
+
+        return () => {
+            rotiNudgeListeners.current.delete(listener);
+        };
+    }, []);
+
+    /**
+     * How many write on an anonymous retro: transient, so it never enters
+     * the snapshot.
+     */
+    const subscribeWritingCount = useCallback(
+        (listener: (count: number) => void) => {
+            writingCountListeners.current.add(listener);
+
+            return () => {
+                writingCountListeners.current.delete(listener);
+            };
+        },
+        [],
+    );
+
     const onGameEvent = useCallback((event: GameEvent) => {
         for (const listener of gameListeners.current) {
             listener(event);
@@ -580,5 +643,7 @@ export function useRetroBoard(initial: Snapshot) {
         hasActiveCard,
         sessionExpired,
         subscribeGameEvents,
+        subscribeRotiNudges,
+        subscribeWritingCount,
     };
 }

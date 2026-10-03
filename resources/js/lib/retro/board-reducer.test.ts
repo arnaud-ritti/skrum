@@ -143,3 +143,93 @@ describe('boardReducer health check', () => {
         ).toBe(withoutHealth);
     });
 });
+
+describe('boardReducer facilitation', () => {
+    const base = {
+        retro: {
+            timerEndsAt: '2026-10-21T10:00:00Z',
+            timerPausedSeconds: null,
+            topicSeconds: 300,
+        },
+        voting: { finishedIds: [] },
+        cards: [
+            { id: 'a', discussedAt: null },
+            { id: 'b', discussedAt: null },
+        ],
+        topicNotes: [{ cardId: 'a', body: 'old', version: 2, updatedAt: null }],
+    } as unknown as Snapshot;
+
+    it('pauses the timer and keeps the time per topic when the event does not say it', () => {
+        const next = boardReducer(base, {
+            type: 'timer.set',
+            timerEndsAt: null,
+            timerPausedSeconds: 42,
+        });
+
+        expect(next.retro).toMatchObject({
+            timerEndsAt: null,
+            timerPausedSeconds: 42,
+            topicSeconds: 300,
+        });
+    });
+
+    it('keeps the paused seconds when an older caller sends the end only', () => {
+        const paused = boardReducer(base, {
+            type: 'timer.set',
+            timerEndsAt: null,
+            timerPausedSeconds: 42,
+        });
+        const next = boardReducer(paused, {
+            type: 'timer.set',
+            timerEndsAt: '2026-10-21T10:05:00Z',
+        });
+
+        expect(next.retro.timerPausedSeconds).toBe(42);
+    });
+
+    it('sets who has finished voting', () => {
+        const next = boardReducer(base, {
+            type: 'voting.finished',
+            finishedIds: ['p1', 'p2'],
+        });
+
+        expect(next.voting.finishedIds).toEqual(['p1', 'p2']);
+    });
+
+    it('marks and unmarks a topic discussed', () => {
+        const marked = boardReducer(base, {
+            type: 'topic.discussed',
+            cardId: 'b',
+            discussedAt: '2026-10-21T10:01:00Z',
+        });
+        const unmarked = boardReducer(marked, {
+            type: 'topic.discussed',
+            cardId: 'b',
+            discussedAt: null,
+        });
+
+        expect(marked.cards[1].discussedAt).toBe('2026-10-21T10:01:00Z');
+        expect(unmarked.cards[1].discussedAt).toBeNull();
+    });
+
+    it('adds a note, replaces it with a newer version, and ignores an older one', () => {
+        const added = boardReducer(base, {
+            type: 'topicNote.set',
+            note: { cardId: 'b', body: 'new', version: 1, updatedAt: null },
+        });
+        const newer = boardReducer(added, {
+            type: 'topicNote.set',
+            note: { cardId: 'a', body: 'newer', version: 3, updatedAt: null },
+        });
+        const older = boardReducer(newer, {
+            type: 'topicNote.set',
+            note: { cardId: 'a', body: 'stale', version: 2, updatedAt: null },
+        });
+
+        expect(added.topicNotes).toHaveLength(2);
+        expect(newer.topicNotes.find((n) => n.cardId === 'a')?.body).toBe(
+            'newer',
+        );
+        expect(older).toBe(newer);
+    });
+});

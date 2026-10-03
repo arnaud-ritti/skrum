@@ -23,7 +23,8 @@ class PresentCard
      *     content: ?string,
      *     gif: ?array{id: string, previewUrl: string, url: string},
      *     author: ?array{id: string, name: string},
-     *     groupName: ?string
+     *     groupName: ?string,
+     *     discussedAt: ?string
      * }
      */
     public function handle(Card $card, Retro $retro, ?Participant $viewer): array
@@ -49,6 +50,7 @@ class PresentCard
                 ? ['id' => $card->participant_id, 'name' => $card->participant->displayName()]
                 : null,
             'groupName' => $isHidden ? null : $card->group_name,
+            'discussedAt' => $card->discussed_at?->toIso8601String(),
         ];
     }
 

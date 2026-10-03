@@ -44,6 +44,7 @@ class RetroSettingsController extends Controller
             'title' => ['sometimes', 'required', 'string', 'max:120'],
             'is_anonymous' => ['sometimes', 'boolean'],
             'votes_per_participant' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:20'],
+            'max_votes_per_card' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:20'],
             'guest_access_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
             'cursors_enabled' => ['sometimes', 'boolean'],
@@ -69,7 +70,7 @@ class RetroSettingsController extends Controller
                 RetroGuard::open($locked);
             }
 
-            if (array_key_exists('votes_per_participant', $validated)) {
+            if (array_key_exists('votes_per_participant', $validated) || array_key_exists('max_votes_per_card', $validated)) {
                 RetroGuard::phase($locked, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping);
             }
 

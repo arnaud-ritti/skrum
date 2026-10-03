@@ -6,7 +6,9 @@ import { useTrans } from '@/hooks/use-trans';
 import { boardActionItemViewer } from '@/lib/action-items/permissions';
 import { TrackerLabels } from '@/lib/poker/types';
 import { linkedItemsSummary } from '@/lib/retro/session-end';
+import { topicLabel, topicsFrom } from '@/lib/retro/topics';
 import { useBoard } from '../board-context';
+import { ItemTopicName } from '../topic-actions';
 import { ResultsCard } from './results-card';
 
 /**
@@ -18,6 +20,7 @@ export function ActionsCreated() {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const items = board.actionItems;
+    const topics = topicsFrom(board);
     const viewer = boardActionItemViewer(board);
     const { linked, tracker, allOwnedAndDated } = linkedItemsSummary(items);
     const notes = [
@@ -76,6 +79,11 @@ export function ActionsCreated() {
                                 id={`action-item-${item.id}`}
                                 {...data}
                                 showOwnerName
+                                meta={
+                                    <ItemTopicName
+                                        topic={topicLabel(item, topics)}
+                                    />
+                                }
                                 canComplete={false}
                             />
                         );

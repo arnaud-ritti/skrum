@@ -25,6 +25,8 @@ type Props = {
     topic: Topic;
     /** Its place in the list, from 1. */
     rank: number;
+    /** Place of the facilitator's "discussed" mark, beside the votes (RT-7). */
+    mark?: ReactNode;
     className?: string;
 };
 
@@ -32,7 +34,7 @@ type Props = {
  * The topic in front of the viewer: its group or its card, with every
  * control it had on the board and the same ids.
  */
-export function TopicFocus({ topic, rank, className }: Props) {
+export function TopicFocus({ topic, rank, mark, className }: Props) {
     const { board } = useBoard();
     const { t } = useTrans();
     const lead = board.cards.find((card) => card.id === topic.leadCardId);
@@ -91,6 +93,7 @@ export function TopicFocus({ topic, rank, className }: Props) {
                             : t('Column “:column”', { column: columnTitle })}
                     </span>
                 </span>
+                {mark}
                 <span
                     data-slot="retro-topic-total"
                     className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-(--col-border) bg-card px-3 text-sm font-bold whitespace-nowrap"

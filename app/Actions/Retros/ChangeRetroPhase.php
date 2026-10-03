@@ -35,6 +35,7 @@ class ChangeRetroPhase
         $this->abandonSummary($locked, $phase);
         $this->leaveIcebreaker($locked, $phase);
         $this->move($locked, $phase);
+        $this->resetVotingCompletion($locked, $phase);
         $this->markRetroStarted->handle($locked);
         $this->enterIcebreaker($locked, $phase);
         $this->closeSurveys($locked, $phase);
@@ -103,7 +104,22 @@ class ChangeRetroPhase
             'highlighted_card_id' => $keepsHighlight ? $locked->highlighted_card_id : null,
             'completed_at' => $isCompleting ? now() : null,
             'timer_ends_at' => $isCompleting ? null : $locked->timer_ends_at,
+            'timer_paused_seconds' => $isCompleting ? null : $locked->timer_paused_seconds,
+            'topic_seconds' => $isCompleting ? null : $locked->topic_seconds,
+            'roti_revealed_at' => $isCompleting ? $locked->roti_revealed_at : null,
         ]);
+    }
+
+    /**
+     * A voting round starts with nobody finished; going back to Voting is a new round.
+     */
+    private function resetVotingCompletion(Retro $locked, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Voting) {
+            return;
+        }
+
+        $locked->participants()->whereNotNull('voting_finished_at')->update(['voting_finished_at' => null]);
     }
 
     private function closeSurveys(Retro $locked, RetroPhase $phase): void

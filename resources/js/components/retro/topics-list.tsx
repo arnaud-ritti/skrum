@@ -71,10 +71,16 @@ type Props = {
     /** How many action items the retro has so far. */
     actionCount: number;
     onSelect: (topic: Topic) => void;
-    /** Place of the "discussed" mark and of the action count of a topic (RT-7, RT-8). */
+    /**
+     * The second line of a topic: the "discussed" mark, the action count and,
+     * on the shared topic, "Now" and its time left (RT-5, RT-7, RT-8). Given,
+     * it draws "Now" itself.
+     */
     rowMeta?: (topic: Topic) => ReactNode;
     /** Place of the time left for the topics to come (RT-5). */
     estimate?: ReactNode;
+    /** Replaces the last line, the action items so far: "5 min per topic · 3 actions so far" (RT-5). */
+    summary?: ReactNode;
     className?: string;
 };
 
@@ -88,6 +94,7 @@ export function TopicsList({
     onSelect,
     rowMeta,
     estimate,
+    summary,
     className,
 }: Props) {
     const { t } = useTrans();
@@ -164,8 +171,8 @@ export function TopicsList({
                                 </span>
                                 <TopicVotes votes={topic.votes} />
                                 {(isShared || meta) && (
-                                    <span className="col-span-2 col-start-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                        {isShared && (
+                                    <span className="col-span-2 col-start-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground empty:hidden">
+                                        {isShared && rowMeta === undefined && (
                                             <span className="inline-flex min-w-0 items-center gap-1 font-medium text-skrum-primary-text">
                                                 <Crosshair
                                                     className="size-3 shrink-0"
@@ -209,12 +216,16 @@ export function TopicsList({
                             total: topics.length,
                         })}
                     />
-                    <span className="truncate text-xs text-muted-foreground">
-                        {actionCount === 1
-                            ? t('1 action so far')
-                            : t(':count actions so far', {
-                                  count: actionCount,
-                              })}
+                    <span
+                        data-slot="retro-topics-summary"
+                        className="truncate text-xs text-muted-foreground"
+                    >
+                        {summary ??
+                            (actionCount === 1
+                                ? t('1 action so far')
+                                : t(':count actions so far', {
+                                      count: actionCount,
+                                  }))}
                     </span>
                 </div>
             )}

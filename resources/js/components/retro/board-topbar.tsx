@@ -38,11 +38,17 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useServerOffset } from '@/hooks/use-countdown';
+import { useActivity } from '@/hooks/use-retro-activity';
 import { useTrans } from '@/hooks/use-trans';
 import type { SessionSelf } from '@/layouts/skrum/session-layout';
 import { retroRequest } from '@/lib/retro/api';
 import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
-import type { RetroPhase, Snapshot } from '@/lib/retro/types';
+import type {
+    PresenceMember,
+    RetroPhase,
+    Snapshot,
+    TimerState,
+} from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { showsRetroCursors } from './board-cursors';
 import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
@@ -54,6 +60,7 @@ import {
     showsHealthCheck,
 } from './health-check-button';
 import { HealthCheckDialog } from './health-check-dialog';
+import { useTimerPause } from './use-timer-pause';
 
 /** Seconds "+2 min" adds, as RetroTimerExtensionsController does. */
 const ExtensionSeconds = 120;
@@ -240,24 +247,40 @@ function PhaseMenuItems() {
  * The countdown, for everyone. `controls` adds what only the facilitator of
  * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
  */
-export function BoardTimer({ controls = true }: { controls?: boolean }) {
+export function BoardTimer({
+    controls = true,
+    size,
+    caption,
+    totalSeconds,
+}: {
+    controls?: boolean;
+    size?: 'md' | 'lg';
+    caption?: ReactNode;
+    /** The seconds of the ring when the timer was not started from here. */
+    totalSeconds?: number;
+}) {
     const ctx = useBoard();
     const { board } = ctx;
     const { retro } = board;
     const offset = useServerOffset(board.serverTime);
+    const timerPause = useTimerPause();
+    // The seconds chosen at start, for the ring. `endsAt` is null while the
+    // timer is paused: the ring comes back with the end the resume sets.
     const [started, setStarted] = useState<{
-        endsAt: string;
+        endsAt: string | null;
         seconds: number;
     } | null>(null);
     const canControl =
         controls && board.viewer.isFacilitator && retro.phase !== 'completed';
+    const canPause = canControl && retro.phase !== 'icebreaker';
+    const startedHere =
+        started !== null && started.endsAt === retro.timerEndsAt;
 
     const set = async (seconds: number | null) => {
         const response = await ctx.run(
-            retroRequest<{ timerEndsAt: string | null }>(
-                RetroTimersController.update(retro.id),
-                { seconds },
-            ),
+            retroRequest<TimerState>(RetroTimersController.update(retro.id), {
+                seconds,
+            }),
         );
 
         if (!response) {
@@ -269,12 +292,12 @@ export function BoardTimer({ controls = true }: { controls?: boolean }) {
                 ? { endsAt: response.timerEndsAt, seconds }
                 : null,
         );
-        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
+        ctx.apply({ type: 'timer.set', ...response });
     };
 
     const extend = async () => {
         const response = await ctx.run(
-            retroRequest<{ timerEndsAt: string }>(
+            retroRequest<TimerState>(
                 RetroTimerExtensionsController.store(retro.id),
             ),
         );
@@ -291,21 +314,50 @@ export function BoardTimer({ controls = true }: { controls?: boolean }) {
                   }
                 : null,
         );
-        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
+        ctx.apply({ type: 'timer.set', ...response });
+    };
+
+    const pause = async () => {
+        const response = await timerPause.pause();
+
+        if (!response) {
+            return;
+        }
+
+        setStarted((current) =>
+            current !== null && current.endsAt === retro.timerEndsAt
+                ? { endsAt: null, seconds: current.seconds }
+                : null,
+        );
+    };
+
+    const resume = async () => {
+        const response = await timerPause.resume();
+
+        if (!response) {
+            return;
+        }
+
+        setStarted((current) =>
+            current !== null && current.endsAt === null
+                ? { endsAt: response.timerEndsAt, seconds: current.seconds }
+                : null,
+        );
     };
 
     return (
         <SessionTimer
             endsAt={retro.timerEndsAt}
             offset={offset}
-            totalSeconds={
-                started !== null && started.endsAt === retro.timerEndsAt
-                    ? started.seconds
-                    : undefined
-            }
+            pausedSeconds={retro.timerPausedSeconds}
+            totalSeconds={startedHere ? started.seconds : totalSeconds}
             onStart={canControl ? (seconds) => void set(seconds) : undefined}
             onStop={canControl ? () => void set(null) : undefined}
             onExtend={canControl ? () => void extend() : undefined}
+            onPause={canPause ? () => void pause() : undefined}
+            onResume={canControl ? () => void resume() : undefined}
+            size={size}
+            caption={caption}
             className="shrink-0"
         />
     );
@@ -313,12 +365,24 @@ export function BoardTimer({ controls = true }: { controls?: boolean }) {
 
 export function BoardPresence() {
     const { board, online } = useBoard();
+    const { entries, writingCount } = useActivity();
+    const isAnonymous = board.retro.isAnonymous;
 
     return (
         <SessionPresence
             online={online}
             selfId={board.viewer.participantId}
             facilitatorId={board.retro.facilitatorParticipantId}
+            {...(isAnonymous
+                ? { typingCount: writingCount }
+                : {
+                      typingFor: (member: PresenceMember) =>
+                          entries.some(
+                              (entry) =>
+                                  entry.kind === 'writing' &&
+                                  entry.senderId === member.id,
+                          ),
+                  })}
             className="shrink-0 flex-nowrap"
         />
     );

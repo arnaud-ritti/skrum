@@ -45,6 +45,7 @@ function actionItem(overrides: Partial<ActionItem> = {}): ActionItem {
         ],
         createdAt: '2026-10-02T10:00:00Z',
         externalLinks: null,
+        cardId: null,
         ...overrides,
     };
 }
@@ -377,6 +378,21 @@ describe('newItemToPayload', () => {
             assignee_user_id: null,
             assignee_participant_id: null,
         });
+    });
+
+    it('sends the card of the topic only when the item is linked to one', () => {
+        const values = {
+            title: 'One in, one out',
+            priority: 'medium' as const,
+            dueDate: null,
+            recurrence: null,
+            owner: null,
+        };
+
+        expect(newItemToPayload({ ...values, cardId: 'card-2' })).toMatchObject(
+            { card_id: 'card-2' },
+        );
+        expect(newItemToPayload(values)).not.toHaveProperty('card_id');
     });
 });
 

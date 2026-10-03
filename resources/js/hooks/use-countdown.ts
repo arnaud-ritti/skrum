@@ -1,10 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+function offsetOf(serverTime: string): number {
+    return new Date(serverTime).getTime() - Date.now();
+}
+
+/**
+ * The server clock minus this one, taken once for each server time. Kept in
+ * state, not in a memo: the React Compiler moves `Date.now()` out of a memo,
+ * which made the offset follow the clock and froze every countdown.
+ */
 export function useServerOffset(serverTime: string): number {
-    return useMemo(
-        () => new Date(serverTime).getTime() - Date.now(),
-        [serverTime],
-    );
+    const [taken, setTaken] = useState(() => ({
+        serverTime,
+        offset: offsetOf(serverTime),
+    }));
+
+    if (taken.serverTime === serverTime) {
+        return taken.offset;
+    }
+
+    const next = { serverTime, offset: offsetOf(serverTime) };
+
+    setTaken(next);
+
+    return next.offset;
 }
 
 export function useCountdown(

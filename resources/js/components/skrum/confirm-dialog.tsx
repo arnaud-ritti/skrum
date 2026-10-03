@@ -45,6 +45,8 @@ export type ConfirmDialogProps = DialogShellProps & {
     description: string;
     consequences?: DialogConsequence[];
     confirmLabel: string;
+    /** "Cancel" by default. */
+    cancelLabel?: string;
     tone?: 'default' | 'destructive';
     onConfirm: () => Promise<void>;
 };
@@ -172,6 +174,7 @@ export function ConfirmDialog({
     description,
     consequences,
     confirmLabel,
+    cancelLabel,
     tone = 'default',
     onConfirm,
     unavailableMessage,
@@ -253,7 +256,7 @@ export function ConfirmDialog({
                         onClick={() => guardedOpenChange(false)}
                         className={FooterButtonClass}
                     >
-                        {t('Cancel')}
+                        {cancelLabel ?? t('Cancel')}
                     </Button>
                     <Button
                         type="button"

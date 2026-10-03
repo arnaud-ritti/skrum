@@ -456,6 +456,7 @@ describe('the retro form', () => {
             icebreaker_enabled: false,
             icebreaker_game: 'draw',
             votes_per_participant: null,
+            max_votes_per_card: null,
             guest_access_enabled: true,
         });
     });
@@ -516,6 +517,77 @@ describe('the retro form', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
 
         expect(lastPost()[1].votes_per_participant).toBe(6);
+    });
+
+    it('has no limit per card by default, and caps it within the votes per person', () => {
+        open();
+
+        const noLimit = document.getElementById(
+            'new-retro-max-votes-per-card-auto',
+        ) as HTMLElement;
+
+        expect(screen.getByText('Max per card')).toBeTruthy();
+        expect(screen.getByText('Votes one person can stack')).toBeTruthy();
+        expect(noLimit.getAttribute('aria-checked')).toBe('true');
+        expect(noLimit.getAttribute('aria-label')).toBe('No limit per card');
+
+        fireEvent.click(noLimit);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Increase Max per card' }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1].max_votes_per_card).toBe(3);
+
+        fireEvent.click(
+            document.getElementById('new-retro-votes-auto') as HTMLElement,
+        );
+
+        for (let press = 0; press < 3; press++) {
+            fireEvent.click(
+                screen.getByRole('button', {
+                    name: 'Decrease Votes per participant',
+                }),
+            );
+        }
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Increase Max per card',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1]).toMatchObject({
+            votes_per_participant: 2,
+            max_votes_per_card: 2,
+        });
+
+        fireEvent.click(noLimit);
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1].max_votes_per_card).toBeNull();
+    });
+
+    it('shows the error of the cap per card under its row', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+        act(() =>
+            lastPost()[2].onError?.({
+                max_votes_per_card:
+                    'The max votes per card field must be at least 1.',
+            }),
+        );
+
+        expect(
+            screen.getByText(
+                'The max votes per card field must be at least 1.',
+            ),
+        ).toBeTruthy();
     });
 
     it('opens the full picker with "Browse" and returns with "Back"', () => {

@@ -79,6 +79,14 @@ class RecapText
         return "{$card['column']} — {$card['content']} ({$counts})";
     }
 
+    /**
+     * @param  array{title: string, note: string}  $note
+     */
+    public static function topicNote(array $note): string
+    {
+        return "{$note['title']} — {$note['note']}";
+    }
+
     public static function more(int $count): string
     {
         return __('+ :count more', ['count' => $count]);

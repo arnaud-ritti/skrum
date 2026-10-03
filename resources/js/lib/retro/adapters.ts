@@ -9,6 +9,7 @@ import type {
     BoardCard,
     BoardColumn,
     ColumnColor,
+    PresenceMember,
     ReactionSummary,
     RetroPhase,
     Snapshot,
@@ -115,8 +116,13 @@ export type CardVoting = {
     canVote: boolean;
     /** A spent budget adds no vote and still takes one back. */
     canUnvote: boolean;
-    /** Why no vote can be added, when none can. */
-    blocked: 'locked' | 'spent' | null;
+    /**
+     * Why no vote can be added, when none can; the first reason that
+     * applies. Having finished voting never blocks (decision 10, B).
+     */
+    blocked: 'locked' | 'spent' | 'cap' | null;
+    /** The cap in force, for the dots of a group; null without one. */
+    maxPerCard: number | null;
 };
 
 function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
@@ -232,16 +238,36 @@ export function cardVoting(
         return null;
     }
 
-    const editable = isBoardEditable(board);
-    const hasBudget = board.viewer.remainingVotes > 0;
-    const spent = hasBudget ? null : 'spent';
+    const blocked = voteBlock(card, board);
 
     return {
         votes: { total: card.votes, mine: card.myVotes },
-        canVote: editable && hasBudget,
-        canUnvote: editable && card.myVotes > 0,
-        blocked: editable ? spent : 'locked',
+        canVote: blocked === null,
+        canUnvote: blocked !== 'locked' && card.myVotes > 0,
+        blocked,
+        maxPerCard: board.retro.maxVotesPerCard,
     };
+}
+
+function voteBlock(
+    card: BoardCard,
+    board: Pick<Snapshot, 'retro' | 'viewer'>,
+): CardVoting['blocked'] {
+    if (!isBoardEditable(board)) {
+        return 'locked';
+    }
+
+    if (board.viewer.remainingVotes <= 0) {
+        return 'spent';
+    }
+
+    const cap = board.retro.maxVotesPerCard;
+
+    if (cap !== null && card.myVotes >= cap) {
+        return 'cap';
+    }
+
+    return null;
 }
 
 /** The progress of the vote bar: the votes cast, over the votes of everyone. */
@@ -251,6 +277,30 @@ export function votingProgress(
     return {
         cast: board.votesCast ?? 0,
         total: board.participants.length * board.retro.votesPerParticipant,
+    };
+}
+
+/**
+ * "x/y have finished": the people online, guests and the facilitator
+ * included, and those of them who said they have finished voting. Before
+ * the presence channel answers, the viewer alone.
+ */
+export function finishedCount(
+    board: Pick<Snapshot, 'viewer' | 'voting'>,
+    online: PresenceMember[],
+): { finished: number; total: number } {
+    const finishedIds = new Set(board.voting.finishedIds);
+
+    if (online.length === 0) {
+        return {
+            finished: finishedIds.has(board.viewer.participantId) ? 1 : 0,
+            total: 1,
+        };
+    }
+
+    return {
+        finished: online.filter((member) => finishedIds.has(member.id)).length,
+        total: online.length,
     };
 }
 

@@ -17,6 +17,7 @@ import {
 import type { ActionItemOwner } from '@/components/skrum/action-item';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CollapsibleBlock } from '@/components/ui/collapsible';
 import {
     Drawer,
     DrawerContent,
@@ -77,9 +78,24 @@ export function boardOwnerOptions(
     ];
 }
 
+/** The topic a new item is linked to, and the line of the form that says so (RT-8). */
+export type ActionItemLink = {
+    cardId: string;
+    label: ReactNode;
+    /** The link can be removed before creating, for that item only. */
+    unlinkable?: boolean;
+};
+
 type Props = {
     /** What a new item is attached to, such as the topic in focus (RT-8). */
-    linkedTo?: ReactNode;
+    linkedTo?: ActionItemLink;
+    /** The title of the panel; "Action items" by default. */
+    title?: string;
+    /**
+     * Lists only the items it keeps; the others of the retro go, folded,
+     * under "Other action items (n)", so that none disappears (RT-8).
+     */
+    filter?: (item: ActionItemPayload) => boolean;
     /**
      * `phase` is the card of the Actions phase: the count, what the list is
      * for, the form first and always open, "Action created" with its Undo.
@@ -97,6 +113,8 @@ type Props = {
 /** The action items of the retro, with the form that creates one. */
 export function ActionItemsList({
     linkedTo,
+    title,
+    filter,
     variant = 'panel',
     headerActions,
     itemMeta,
@@ -196,6 +214,14 @@ export function ActionItemsList({
             : (board.actionItems.find((item) => item.id === ticket.item.id) ??
               ticket.item);
     const count = board.actionItems.length + (more?.count ?? 0);
+    const listed =
+        filter === undefined
+            ? board.actionItems
+            : board.actionItems.filter((item) => filter(item));
+    const others =
+        filter === undefined
+            ? []
+            : board.actionItems.filter((item) => !filter(item));
 
     const form = (isMobile || isPhase || creating) && (
         <ItemCreateForm
@@ -204,15 +230,19 @@ export function ActionItemsList({
             disabled={!editable}
             showAnonymousNotice={board.retro.isAnonymous}
             linkedTo={
-                isPhase && !isMobile ? (
-                    <>
+                linkedTo === undefined ? (
+                    isPhase &&
+                    !isMobile && (
                         <span className="truncate">{t('Quick add')}</span>
-                        {linkedTo}
-                    </>
+                    )
                 ) : (
-                    linkedTo
+                    <span className="flex min-w-0 items-center gap-1 truncate">
+                        {linkedTo.label}
+                    </span>
                 )
             }
+            cardId={linkedTo?.cardId}
+            unlinkable={linkedTo?.unlinkable}
             exportSources={scope === null ? [] : board.exportSources}
             onCreate={
                 isMobile
@@ -269,39 +299,53 @@ export function ActionItemsList({
         form
     );
 
+    const rows = (shown: ActionItemPayload[]) => (
+        <ActionItemRows
+            items={shown}
+            endpoints={endpoints}
+            mutations={mutations}
+            viewer={viewer}
+            editable={editable}
+            members={members}
+            scope={scope}
+            exportSources={board.exportSources}
+            locale={locale}
+            showAnonymousNotice={board.retro.isAnonymous}
+            sourceLabel={null}
+            idFor={(item) => `action-item-${item.id}`}
+            classNameFor={(item) =>
+                item.id === createdId ? 'ring-2 ring-skrum-success' : undefined
+            }
+            metaFor={itemMeta}
+            onDelete={setDeleting}
+        />
+    );
+
     const items =
-        count === 0 ? (
+        listed.length + (more?.count ?? 0) === 0 ? (
             <p className="text-body-sm text-muted-foreground">
                 {t('No action items yet.')}
             </p>
         ) : (
             <>
-                {board.actionItems.length > 0 && (
-                    <ActionItemRows
-                        items={board.actionItems}
-                        endpoints={endpoints}
-                        mutations={mutations}
-                        viewer={viewer}
-                        editable={editable}
-                        members={members}
-                        scope={scope}
-                        exportSources={board.exportSources}
-                        locale={locale}
-                        showAnonymousNotice={board.retro.isAnonymous}
-                        sourceLabel={null}
-                        idFor={(item) => `action-item-${item.id}`}
-                        classNameFor={(item) =>
-                            item.id === createdId
-                                ? 'ring-2 ring-skrum-success'
-                                : undefined
-                        }
-                        metaFor={itemMeta}
-                        onDelete={setDeleting}
-                    />
-                )}
+                {listed.length > 0 && rows(listed)}
                 {more?.node}
             </>
         );
+
+    const otherItems = others.length > 0 && (
+        <div data-slot="retro-other-action-items" className="min-w-0">
+            <CollapsibleBlock
+                trigger={{
+                    label: t('Other action items (:count)', {
+                        count: others.length,
+                    }),
+                }}
+            >
+                {rows(others)}
+            </CollapsibleBlock>
+        </div>
+    );
 
     return (
         <aside
@@ -324,7 +368,10 @@ export function ActionItemsList({
                         )}
                     >
                         <span className="truncate">
-                            {isPhase ? t('Retro actions') : t('Action items')}
+                            {title ??
+                                (isPhase
+                                    ? t('Retro actions')
+                                    : t('Action items'))}
                         </span>
                         {isPhase && (
                             <Badge variant="muted" shape="pill">
@@ -372,6 +419,7 @@ export function ActionItemsList({
                 {isPhase && formPlace}
                 {items}
                 {!isPhase && formPlace}
+                {otherItems}
                 {ticket !== null && ticketItem !== null && scope !== null && (
                     <ItemExportDialog
                         item={ticketItem}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ActivityProvider } from '@/hooks/use-retro-activity';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
@@ -22,6 +24,7 @@ import {
     BoardTitle,
     boardSelf,
 } from './board-topbar';
+import { BulkExport } from './bulk-export-dialog';
 import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
@@ -33,7 +36,22 @@ import {
 } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
 import { PhaseRoti } from './phase-roti';
+import { useRotiFacilitation } from './roti-facilitation';
 import { SessionEnd, type CompletedView } from './session-end';
+import {
+    DiscussionEstimate,
+    DiscussionPace,
+    TopicMeta,
+    TopicTime,
+} from './topic-meta';
+import {
+    ItemTopic,
+    LinkedActionCount,
+    QuickAddLink,
+    TopicActions,
+} from './topic-actions';
+import { TopicNotes } from './topic-notes';
+import { TopicTimer } from './topic-timer';
 
 /**
  * Grouping has its own banner for the suggestions; in Actions and ROTI the
@@ -96,11 +114,30 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     if (phase === 'discussing') {
-        return <PhaseDiscussing hideMyCursor={hideMyCursor} />;
+        return (
+            <PhaseDiscussing
+                hideMyCursor={hideMyCursor}
+                timer={<TopicTimer />}
+                notes={<TopicNotes />}
+                actions={<TopicActions />}
+                topicMeta={(topic) => <TopicMeta topic={topic} />}
+                estimate={<DiscussionEstimate />}
+                summary={<DiscussionPace />}
+                upNextEstimate={<TopicTime />}
+            />
+        );
     }
 
     if (phase === 'actions') {
-        return <PhaseActions hideMyCursor={hideMyCursor} />;
+        return (
+            <PhaseActions
+                hideMyCursor={hideMyCursor}
+                exportAll={<BulkExport />}
+                topicMeta={(topic) => <LinkedActionCount topic={topic} />}
+                linkedTo={(topic) => <QuickAddLink topic={topic} />}
+                itemTopic={(item) => <ItemTopic item={item} />}
+            />
+        );
     }
 
     if (phase === 'roti') {
@@ -112,6 +149,11 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
             <ColumnsBoard hideMyCursor={hideMyCursor} />
         </div>
     );
+}
+
+/** The facilitator's bar, with the ROTI phase's nudge and reveal (RT-9). */
+function BoardDock({ start }: { start?: ReactNode }) {
+    return <FacilitatorDock start={start} roti={useRotiFacilitation()} />;
 }
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
@@ -133,6 +175,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         reconnecting,
         sessionExpired,
         subscribeGameEvents,
+        subscribeRotiNudges,
+        subscribeWritingCount,
     } = useRetroBoard(snapshot);
     const isMobile = useIsMobile();
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
@@ -176,75 +220,86 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         unreadCardIds,
         markCommentsRead,
         subscribeGameEvents,
+        subscribeRotiNudges,
+        subscribeWritingCount,
     };
 
     const isCompleted = board.retro.phase === 'completed';
+    // In Discussing the timer is the topic's, on the stage, and nowhere else
+    // (P21-07).
+    const timerOnStage = board.retro.phase === 'discussing';
     // Below md the header has no room for the facilitator's timer controls:
     // the whole timer sits in the facilitator bar.
-    const timerInDock = isMobile && board.viewer.isFacilitator && !isCompleted;
+    const timerInDock =
+        isMobile && board.viewer.isFacilitator && !isCompleted && !timerOnStage;
 
     return (
         <BoardProvider value={ctx}>
-            <GroupNameSuggestionsProvider>
-                <DiscussionProvider>
-                    <SessionShell
-                        kind="retro"
-                        self={boardSelf(board)}
-                        title={<BoardTitle />}
-                        phases={isMobile ? undefined : <BoardPhases />}
-                        timer={
-                            timerInDock ? undefined : (
-                                <BoardTimer controls={!isMobile} />
-                            )
-                        }
-                        presence={<BoardPresence />}
-                        actions={
-                            <BoardActions
-                                hideMyCursor={hideMyCursor}
-                                onHideMyCursorChange={setHideMyCursor}
-                                mobile={isMobile}
-                            />
-                        }
-                        realtime={realtimeState(connected, online)}
-                        connection={{ reconnecting, expired: sessionExpired }}
-                    >
-                        <div className="flex h-full min-h-0 flex-col">
-                            {isMobile && (
-                                <div
-                                    data-slot="retro-subheader"
-                                    className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2 *:min-w-0"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <BoardPhases mobile />
+            <ActivityProvider>
+                <GroupNameSuggestionsProvider>
+                    <DiscussionProvider>
+                        <SessionShell
+                            kind="retro"
+                            self={boardSelf(board)}
+                            title={<BoardTitle />}
+                            phases={isMobile ? undefined : <BoardPhases />}
+                            timer={
+                                timerInDock || timerOnStage ? undefined : (
+                                    <BoardTimer controls={!isMobile} />
+                                )
+                            }
+                            presence={<BoardPresence />}
+                            actions={
+                                <BoardActions
+                                    hideMyCursor={hideMyCursor}
+                                    onHideMyCursorChange={setHideMyCursor}
+                                    mobile={isMobile}
+                                />
+                            }
+                            realtime={realtimeState(connected, online)}
+                            connection={{
+                                reconnecting,
+                                expired: sessionExpired,
+                            }}
+                        >
+                            <div className="flex h-full min-h-0 flex-col">
+                                {isMobile && (
+                                    <div
+                                        data-slot="retro-subheader"
+                                        className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2 *:min-w-0"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <BoardPhases mobile />
+                                        </div>
+                                        {board.viewer.isGuest && (
+                                            <LanguageSwitcher />
+                                        )}
                                     </div>
-                                    {board.viewer.isGuest && (
-                                        <LanguageSwitcher />
-                                    )}
-                                </div>
-                            )}
-                            <div
-                                data-slot="retro-body"
-                                className={cn(
-                                    'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
-                                    !isCompleted && 'pb-32',
-                                    // Wide, the columns of the discussion
-                                    // scroll on their own and clear the dock
-                                    // themselves.
-                                    board.retro.phase === 'discussing' &&
-                                        'xl:pb-0',
                                 )}
-                            >
-                                <PhaseTools />
-                                <BoardBody hideMyCursor={hideMyCursor} />
+                                <div
+                                    data-slot="retro-body"
+                                    className={cn(
+                                        'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
+                                        !isCompleted && 'pb-32',
+                                        // Wide, the columns of the discussion
+                                        // scroll on their own and clear the dock
+                                        // themselves.
+                                        board.retro.phase === 'discussing' &&
+                                            'xl:pb-0',
+                                    )}
+                                >
+                                    <PhaseTools />
+                                    <BoardBody hideMyCursor={hideMyCursor} />
+                                </div>
                             </div>
-                        </div>
-                        <FacilitatorDock
-                            start={timerInDock ? <BoardTimer /> : undefined}
-                        />
-                    </SessionShell>
-                    <PresentationOverlay />
-                </DiscussionProvider>
-            </GroupNameSuggestionsProvider>
+                            <BoardDock
+                                start={timerInDock ? <BoardTimer /> : undefined}
+                            />
+                        </SessionShell>
+                        <PresentationOverlay />
+                    </DiscussionProvider>
+                </GroupNameSuggestionsProvider>
+            </ActivityProvider>
         </BoardProvider>
     );
 }

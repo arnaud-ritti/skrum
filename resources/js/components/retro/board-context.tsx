@@ -25,6 +25,10 @@ export type BoardContextValue = {
     unreadCardIds: Set<string>;
     markCommentsRead: (cardId: string) => void;
     subscribeGameEvents: (listener: (event: GameEvent) => void) => () => void;
+    /** Called on each nudge of the facilitator in the ROTI phase. */
+    subscribeRotiNudges: (listener: () => void) => () => void;
+    /** Called with how many write on an anonymous retro. */
+    subscribeWritingCount: (listener: (count: number) => void) => () => void;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);

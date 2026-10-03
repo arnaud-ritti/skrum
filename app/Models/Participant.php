@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -19,10 +20,12 @@ use Illuminate\Http\Request;
  * @property string|null $user_id
  * @property string|null $guest_name
  * @property string|null $guest_secret_hash
+ * @property Carbon|null $voting_finished_at
+ * @property Carbon|null $writing_until
  * @property-read Retro $retro
  * @property-read User|null $user
  */
-#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash'])]
+#[Fillable(['retro_id', 'user_id', 'guest_name', 'guest_secret_hash', 'voting_finished_at', 'writing_until'])]
 #[Hidden(['guest_secret_hash'])]
 class Participant extends Model
 {
@@ -63,5 +66,18 @@ class Participant extends Model
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
+    }
+
+    public function hasFinishedVoting(): bool
+    {
+        return $this->voting_finished_at !== null;
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'voting_finished_at' => 'datetime',
+            'writing_until' => 'datetime',
+        ];
     }
 }

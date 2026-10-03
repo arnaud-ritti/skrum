@@ -21,5 +21,6 @@ class NewRetro
         public ?GameKind $icebreakerGame = null,
         public bool $guestAccessEnabled = false,
         public ?array $columns = null,
+        public ?int $maxVotesPerCard = null,
     ) {}
 }

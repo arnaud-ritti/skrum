@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useActivity } from '@/hooks/use-retro-activity';
 import { useSwipe } from '@/hooks/use-swipe';
 import { useTrans } from '@/hooks/use-trans';
 import {
@@ -37,6 +38,7 @@ import {
     toColumnProps,
     writingProgress,
 } from '@/lib/retro/adapters';
+import { ActivityRefreshMs } from '@/lib/retro/activity';
 import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import { SurveyPhases } from '@/lib/retro/survey-api';
@@ -52,8 +54,8 @@ import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
-import { PhaseVotingBar } from './phase-voting-bar';
 import { SurveysColumn } from './surveys/surveys-column';
+import { BoardVotingBar } from './voting-finished';
 
 const DefaultColor: ColumnColor = 'moss';
 
@@ -279,7 +281,7 @@ function PhoneColumns({
                     data-slot="retro-phone-columns-head"
                     className="sticky top-0 z-10 flex min-w-0 shrink-0 flex-col gap-2 border-b bg-background py-2"
                 >
-                    {phase === 'voting' && <PhaseVotingBar part="budget" />}
+                    {phase === 'voting' && <BoardVotingBar part="budget" />}
                     <ColumnTabs
                         aria-label={t('Columns')}
                         tabs={tabs}
@@ -426,6 +428,22 @@ export function ColumnsBoard({
         }),
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+    const { announce, end } = useActivity();
+
+    // Others forget a move after a few seconds: a card held longer, often
+    // from the keyboard, is announced again until it is dropped.
+    useEffect(() => {
+        if (activeCardId === null) {
+            return;
+        }
+
+        const interval = window.setInterval(
+            () => announce('moving', activeCardId),
+            ActivityRefreshMs,
+        );
+
+        return () => window.clearInterval(interval);
+    }, [announce, activeCardId]);
 
     useGroupShortcut();
 
@@ -446,6 +464,10 @@ export function ColumnsBoard({
 
         const dragged = parseDndId(active.id);
         const target = parseDndId(over?.id);
+
+        if (dragged?.kind === 'card') {
+            end('moving', dragged.id);
+        }
 
         if (!dragged || !target || dragged.kind !== 'card') {
             return;
@@ -537,8 +559,20 @@ export function ColumnsBoard({
 
                 setActiveCardId(cardId);
                 setActiveCardWidth(cardElement?.getBoundingClientRect().width);
+
+                if (cardId !== null) {
+                    announce('moving', cardId);
+                }
             }}
-            onDragCancel={() => setActiveCardId(null)}
+            onDragCancel={({ active }) => {
+                const dragged = parseDndId(active.id);
+
+                setActiveCardId(null);
+
+                if (dragged?.kind === 'card') {
+                    end('moving', dragged.id);
+                }
+            }}
             onDragEnd={(event) => void handleDragEnd(event)}
         >
             {isMobile ? (
@@ -550,7 +584,7 @@ export function ColumnsBoard({
                             )}
                             {phase === 'grouping' && <GroupingBanner />}
                             {phase === 'voting' && (
-                                <PhaseVotingBar part="progress" />
+                                <BoardVotingBar part="progress" />
                             )}
                         </>
                     }
@@ -562,7 +596,7 @@ export function ColumnsBoard({
                 <div className="flex min-w-0 flex-1 flex-col">
                     {phase === 'writing' && <WritingBanner typing={typing} />}
                     {phase === 'grouping' && <GroupingBanner />}
-                    {phase === 'voting' && <PhaseVotingBar />}
+                    {phase === 'voting' && <BoardVotingBar />}
                     <div
                         ref={setBoardElement}
                         data-slot="retro-columns"

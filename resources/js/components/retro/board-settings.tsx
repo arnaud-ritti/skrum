@@ -31,6 +31,7 @@ export function retroSettingsValues(
         votes_per_participant: retro.votesAuto
             ? null
             : retro.votesPerParticipant,
+        max_votes_per_card: retro.maxVotesPerCardSetting,
         icebreaker_enabled: retro.icebreakerEnabled,
         icebreaker_game: retro.icebreakerGame,
         reactions_enabled: retro.reactionsEnabled,
