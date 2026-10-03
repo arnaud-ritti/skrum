@@ -37,6 +37,14 @@ declare module '@inertiajs/core' {
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
             features: { mcp: boolean; integrations: boolean };
+            /** Null when signed out. */
+            instanceVersion: string | null;
+            /** Sent to instance admins only. */
+            instanceVersionStatus: {
+                state: 'unknown' | 'current' | 'outdated';
+                latest: string | null;
+                checkedAt: string | null;
+            } | null;
             [key: string]: unknown;
         };
         flashDataType: {

@@ -51,6 +51,8 @@ use SensitiveParameter;
  * @property bool $recap_in_app
  * @property bool $single_key_shortcuts
  * @property string|null $current_workspace_id
+ * @property Carbon|null $deactivated_at
+ * @property Carbon|null $last_signed_in_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int|string|null $total_points
@@ -58,7 +60,7 @@ use SensitiveParameter;
  * @property-read int|null $rounds_played
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
-#[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token'])]
+#[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token', 'deactivated_at', 'last_signed_in_at'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
     use HasApiTokens;
@@ -98,6 +100,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_email_enabled_at' => 'datetime',
+            'deactivated_at' => 'datetime',
+            'last_signed_in_at' => 'datetime',
             'is_instance_admin' => 'boolean',
             'action_item_reminders_by_email' => 'boolean',
             'action_item_reminders_in_app' => 'boolean',
@@ -133,6 +137,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function scopeWhereAddress(Builder $query, string $email): void
     {
         $query->where($query->qualifyColumn('email_key'), LoginAddress::normalise($email));
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
     }
 
     public function avatarUrl(): string
