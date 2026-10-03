@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 type UnsavedBarProps = {
     count: number;
     saving?: boolean;
+    /** False while the changes cannot be sent as they stand (an invalid field). */
+    canSave?: boolean;
     onCancel: () => void;
     /** Id of the form that "Save" submits: the bar sits in the topbar, outside it. */
     form?: string;
@@ -15,6 +17,7 @@ type UnsavedBarProps = {
 export function UnsavedBar({
     count,
     saving = false,
+    canSave = true,
     onCancel,
     form,
     className,
@@ -55,7 +58,7 @@ export function UnsavedBar({
                 type="submit"
                 form={form}
                 loading={saving}
-                disabled={!dirty}
+                disabled={!dirty || !canSave}
                 className="max-w-full min-w-0"
             >
                 <span className="truncate">{t('Save')}</span>
