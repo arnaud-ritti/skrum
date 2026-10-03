@@ -26,6 +26,8 @@ function adminAccessCall(mixed $test, string $method, string $url, array $payloa
 
 dataset('adminRoutes', [
     'admin home' => ['get', fn () => '/admin', fn () => [], 302, false],
+    'general page' => ['get', fn () => route('admin.general.edit'), fn () => [], 200, true],
+    'general update' => ['put', fn () => route('admin.general.update'), fn () => ['update_check_enabled' => false], 302, true],
     'branding page' => ['get', fn () => route('admin.branding.edit'), fn () => [], 200, true],
     'branding update' => ['put', fn () => route('admin.branding.update'), fn () => AdminAccessBrandingPayload, 302, true],
     'branding reset' => ['delete', fn () => route('admin.branding.destroy'), fn () => [], 302, true],
@@ -100,10 +102,10 @@ it('changes nothing when a non-admin posts to the admin area', function () {
         ->and($admin->fresh()->is_instance_admin)->toBeTrue();
 });
 
-it('redirects the admin home to the branding page', function () {
+it('redirects the admin home to the general page', function () {
     $this->actingAs(User::factory()->instanceAdmin()->create())
         ->get('/admin')
-        ->assertRedirect(route('admin.branding.edit'));
+        ->assertRedirect(route('admin.general.edit'));
 
     $this->post('/admin')->assertMethodNotAllowed();
 });

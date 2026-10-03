@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AvatarPreviewsController;
 use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
+use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Middleware\KeepFlashedSessionData;
 use App\Support\Branding\BrandAssets;
@@ -13,7 +14,7 @@ use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function (): void {
-    Route::get('admin', fn () => to_route('admin.branding.edit'))->name('admin.index');
+    Route::get('admin', fn () => to_route('admin.general.edit'))->name('admin.index');
 
     Route::get('admin/branding/preview', [BrandingPreviewsController::class, 'show'])
         ->middleware(['throttle:120,1,brandingPreviews', KeepFlashedSessionData::class])
@@ -25,6 +26,9 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         ->name('admin.avatarPreviews.show');
 
     Route::middleware(RequirePassword::class)->group(function (): void {
+        Route::get('admin/general', [GeneralSettingsController::class, 'edit'])->name('admin.general.edit');
+        Route::put('admin/general', [GeneralSettingsController::class, 'update'])->name('admin.general.update');
+
         Route::get('admin/branding', [BrandingController::class, 'edit'])->name('admin.branding.edit');
         Route::put('admin/branding', [BrandingController::class, 'update'])->name('admin.branding.update');
         Route::delete('admin/branding', [BrandingController::class, 'destroy'])->name('admin.branding.destroy');
