@@ -1,4 +1,5 @@
 import {
+    ListOrdered,
     MessagesSquare,
     Shapes,
     SlidersHorizontal,
@@ -6,10 +7,13 @@ import {
     Users,
 } from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
+import { decodedPuzzles } from '@/lib/games/decoded';
 import type { GameRoundEnded, GameSnapshot } from '@/lib/games/types';
+import { DecodedPuzzles } from './decoded-puzzles';
 import {
     useHasLeftColumn,
     useHasRightColumn,
+    useIsPhone,
     type GameLayoutPanel,
     type GameLayoutProps,
 } from './game-layout';
@@ -46,6 +50,7 @@ export function useRoomPanels({
     const { t } = useTrans();
     const hasLeftColumn = useHasLeftColumn();
     const hasRightColumn = useHasRightColumn();
+    const isPhone = useIsPhone();
     const { room, round } = snapshot;
     const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
     const playersOnLeft = hasPlayersOnLeft(room.game);
@@ -102,6 +107,41 @@ export function useRoomPanels({
             },
             right: isDraw ? guesses : scores,
             chooser: choice,
+        };
+    }
+
+    /**
+     * Decoded's puzzles hold the left column, above the settings card, as in
+     * its mockup; the host's game cards wait behind the chooser. On a phone
+     * the round line of the stage stands for them.
+     */
+    if (!isPhone && decodedPuzzles(snapshot.history, round).length > 0) {
+        return {
+            variant: 'choice',
+            left: {
+                id: 'puzzles',
+                label: t('Puzzles'),
+                icon: ListOrdered,
+                content: (
+                    <>
+                        <DecodedPuzzles />
+                        <span className="flex-1" />
+                        {settingsCard}
+                    </>
+                ),
+            },
+            right: {
+                id: 'players',
+                label: t('Players and scores'),
+                icon: Users,
+                content: side,
+            },
+            chooser: choice
+                ? {
+                      ...choice,
+                      content: <GamePicker inRetro={watchChoice} />,
+                  }
+                : undefined,
         };
     }
 

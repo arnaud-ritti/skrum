@@ -176,6 +176,67 @@ describe('useRoomPanels', () => {
         ).not.toBeNull();
     });
 
+    it('puts the puzzles of Decoded above the settings card, the game cards behind the chooser', async () => {
+        viewport(100);
+        renderRoom(snapshot('decoded', { number: 1, roundsTotal: 3 }));
+
+        const left = document.querySelector<HTMLElement>(
+            '[data-slot="game-left"]',
+        );
+        const puzzles = left?.querySelector('[data-slot="decoded-puzzles"]');
+        const settings = left?.querySelector(
+            '[data-slot="game-settings-card"]',
+        );
+
+        expect(left?.getAttribute('aria-label')).toBe('Puzzles');
+        expect(puzzles).not.toBeNull();
+        expect(
+            puzzles!.compareDocumentPosition(settings!) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(left?.querySelector('[data-slot="game-picker"]')).toBeNull();
+
+        await userEvent.click(
+            within(left!).getByRole('button', { name: 'Choose a game' }),
+        );
+
+        const sheet = await screen.findByRole('dialog');
+
+        expect(sheet.querySelector('[data-slot="game-picker"]')).not.toBeNull();
+    });
+
+    it('shows the puzzles of Decoded to a player who does not manage the room', () => {
+        viewport(100);
+        renderRoom(
+            snapshot(
+                'decoded',
+                { number: 2, roundsTotal: null },
+                { isHost: false, canManage: false },
+            ),
+        );
+
+        const left = document.querySelector<HTMLElement>(
+            '[data-slot="game-left"]',
+        );
+
+        expect(
+            left?.querySelector('[data-slot="decoded-puzzles"]'),
+        ).not.toBeNull();
+        expect(
+            left?.querySelector('[data-slot="game-settings-card"]'),
+        ).toBeNull();
+    });
+
+    it('keeps the puzzles of Decoded off a phone, where the round line stands for them', () => {
+        viewport(30);
+        renderRoom(snapshot('decoded', { number: 4, roundsTotal: 8 }));
+
+        expect(
+            document.querySelector('[data-slot="decoded-puzzles"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Puzzles' })).toBeNull();
+    });
+
     it('puts the players of Two truths on the left, marked ready, with the order of tellers and my statements while another tells', () => {
         viewport(100);
         renderRoom(

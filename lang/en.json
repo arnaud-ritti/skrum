@@ -4462,5 +4462,10 @@
     "found · :time": "found · :time",
     "New word (:count)": "New word (:count)",
     "You earn +:points per finder": "You earn +:points per finder",
-    "You found it: :word": "You found it: :word"
+    "You found it: :word": "You found it: :word",
+    "Found by :name": "Found by :name",
+    "Not found": "Not found",
+    "Puzzle :number": "Puzzle :number",
+    "Puzzle in progress": "Puzzle in progress",
+    "Puzzles": "Puzzles"
 }

@@ -4682,5 +4682,10 @@
     "found · :time": "trouvé · :time",
     "New word (:count)": "Autre mot (:count)",
     "You earn +:points per finder": "Tu gagnes +:points par joueur qui trouve",
-    "You found it: :word": "Tu l'as trouvé : :word"
+    "You found it: :word": "Tu l'as trouvé : :word",
+    "Found by :name": "Trouvé par :name",
+    "Not found": "Pas trouvé",
+    "Puzzle :number": "Énigme :number",
+    "Puzzle in progress": "Énigme en cours",
+    "Puzzles": "Énigmes"
 }

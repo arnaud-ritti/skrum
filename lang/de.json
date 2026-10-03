@@ -4682,5 +4682,10 @@
     "found · :time": "gefunden · :time",
     "New word (:count)": "Anderes Wort (:count)",
     "You earn +:points per finder": "Du bekommst +:points pro Person, die es findet",
-    "You found it: :word": "Du hast es gefunden: :word"
+    "You found it: :word": "Du hast es gefunden: :word",
+    "Found by :name": "Gefunden von :name",
+    "Not found": "Nicht gefunden",
+    "Puzzle :number": "Rätsel :number",
+    "Puzzle in progress": "Rätsel läuft",
+    "Puzzles": "Rätsel"
 }

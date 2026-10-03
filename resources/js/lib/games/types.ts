@@ -271,7 +271,7 @@ export type GameRound = {
     wordChangesLeft?: number;
 };
 
-type GameHistoryRound = {
+export type GameHistoryRound = {
     id: string;
     game: GameKind;
     outcome: GameRoundOutcome;
@@ -284,6 +284,8 @@ type GameHistoryRound = {
     endedAt: string;
     number?: number | null;
     roundsTotal?: number | null;
+    /** Decoded only: the clue, public once the round ended. */
+    clue?: string[] | null;
 };
 
 export type GameRoundDetail = GameHistoryRound & {
