@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\InstanceSettingKey;
 use App\Support\InstanceSettings;
+use App\Support\InstanceVersion;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -14,8 +15,6 @@ use Illuminate\Support\Facades\Log;
 #[Signature('skrum:check-for-update')]
 class CheckForUpdateCommand extends Command
 {
-    private const string VersionPattern = '/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/D';
-
     private const int TimeoutSeconds = 5;
 
     public function handle(InstanceSettings $settings): int
@@ -65,7 +64,7 @@ class CheckForUpdateCommand extends Command
 
         $version = ltrim(trim($tag), 'vV');
 
-        if (preg_match(self::VersionPattern, $version) !== 1) {
+        if (! InstanceVersion::isRelease($version)) {
             return null;
         }
 

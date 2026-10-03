@@ -39,3 +39,14 @@ it('compares the stored latest version once the check is on', function (string $
     ['1.8.2', 'current'],
     ['1.8.1', 'current'],
 ]);
+
+it('says unknown when the running build is not a release', function (string $running) {
+    config(['skrum.version' => $running]);
+    resolve(InstanceSettings::class)->setMany([
+        InstanceSettingKey::UpdateCheckEnabled->value => true,
+        InstanceSettingKey::LatestVersion->value => '1.9.0',
+        InstanceSettingKey::UpdateCheckedAt->value => '2026-10-03T08:00:00+00:00',
+    ]);
+
+    expect(resolve(InstanceVersion::class)->status()['state'])->toBe('unknown');
+})->with(['main', 'dev', 'pr-12', '']);
