@@ -158,17 +158,36 @@ class TeamSurvey extends Model
     }
 
     /**
-     * Everyone expected to answer: the team's members, plus the respondents who
-     * are not members (guests, people outside the team), so that the share of
-     * people who answered never exceeds 100 %. An attached health check counts
-     * the retro's participants instead (`PresentHealthProgress`).
+     * Everyone expected to answer: the team's members, plus the guests and
+     * the people outside the team who answered, so that the share of people
+     * who answered never exceeds 100 %. Someone outside the team who only
+     * opened the page is not counted. An attached health check counts the
+     * retro's participants instead (`PresentHealthProgress`).
      */
     public function audienceCount(): int
     {
         $memberIds = $this->team->members()->pluck('users.id');
 
         return $memberIds->count() + $this->respondents()
-            ->where(fn (Builder $respondents) => $respondents->whereNull('user_id')->orWhereNotIn('user_id', $memberIds))
+            ->where(fn (Builder $respondents) => $respondents
+                ->whereNull('user_id')
+                ->orWhere(fn (Builder $outsiders) => $outsiders->whereNotIn('user_id', $memberIds)->whereHas('answers')))
+            ->count();
+    }
+
+    /**
+     * The people who joined: the members and guests who opened the survey,
+     * and the people outside the team once they answered.
+     */
+    public function participantCount(): int
+    {
+        $memberIds = $this->team->members()->pluck('users.id');
+
+        return $this->respondents()
+            ->where(fn (Builder $respondents) => $respondents
+                ->whereNull('user_id')
+                ->orWhereIn('user_id', $memberIds)
+                ->orWhereHas('answers'))
             ->count();
     }
 

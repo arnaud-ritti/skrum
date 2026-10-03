@@ -118,13 +118,16 @@ it('counts respondents who answered, not the ones who only opened the page', fun
         ->and($survey->hasAnswers())->toBeTrue();
 });
 
-it('counts as its audience the team\'s members and the respondents who are not members, guests included', function () {
+it('counts as its audience the team\'s members, the guests, and the people outside the team who answered', function () {
     $survey = TeamSurvey::factory()->open()->withGuestAccess()->create();
     surveyMember($survey);
     teamMember($survey->team);
     surveyGuest($survey);
-    $manager = workspaceManager($survey->team->workspace);
-    TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $manager->id]);
+    $question = surveyQuestion($survey);
+    $answering = TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => workspaceManager($survey->team->workspace)->id]);
+    answerSurveyQuestion($question, $answering, 3);
+    TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => workspaceManager($survey->team->workspace)->id]);
 
-    expect($survey->fresh()->audienceCount())->toBe(4);
+    expect($survey->fresh()->audienceCount())->toBe(4)
+        ->and($survey->fresh()->participantCount())->toBe(3);
 });

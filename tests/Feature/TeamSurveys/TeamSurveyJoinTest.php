@@ -4,12 +4,14 @@ use App\Actions\Retros\GuestCookie;
 use App\Events\TeamSurveys\TeamSurveyChanged;
 use App\Models\Retro;
 use App\Models\TeamSurvey;
+use App\Models\TeamSurveyRespondent;
 use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('shows the join page of an open survey with its summary', function () {
     $survey = TeamSurvey::factory()->open()->withGuestAccess()->create(['title' => 'Team pulse']);
     [$facilitator] = surveyFacilitator($survey);
+    TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => workspaceManager($survey->team->workspace)->id]);
 
     $this->get(route('surveys.join.show', $survey->guest_token))
         ->assertOk()

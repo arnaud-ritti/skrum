@@ -132,7 +132,7 @@ class PresentJoinSession
         return [
             'title' => $survey->title,
             'facilitatorName' => $survey->facilitator?->displayName(),
-            'participantsCount' => $survey->respondents()->count(),
+            'participantsCount' => $survey->participantCount(),
             'isLive' => $survey->status === TeamSurveyStatus::Open,
         ];
     }
