@@ -9,8 +9,15 @@ namespace App\Support\Avatars;
  */
 class ImageMetadata
 {
-    /** @var array<int, int> JFIF, ICC profile, Adobe colour transform: needed to draw the image. */
-    private const array KeptJpegApplicationSegments = [0xE0, 0xE2, 0xEE];
+    /** @var array<int, int> JFIF and Adobe colour transform: needed to draw the image. */
+    private const array KeptJpegApplicationSegments = [0xE0, 0xEE];
+
+    /** APP2 also carries the multi-picture index of phone photos; only its ICC profile is kept. */
+    private const int JpegColourProfile = 0xE2;
+
+    private const int JpegTemporary = 0x01;
+
+    private const int JpegEndOfImage = 0xD9;
 
     private const int JpegComment = 0xFE;
 
@@ -40,15 +47,32 @@ class ImageMetadata
         $offset = 2;
         $length = strlen($bytes);
 
-        while ($offset + 4 <= $length) {
+        while ($offset + 2 <= $length) {
             if ($bytes[$offset] !== "\xFF") {
+                return null;
+            }
+
+            $offset = self::skipJpegFillBytes($bytes, $offset);
+
+            if ($offset + 2 > $length) {
                 return null;
             }
 
             $marker = ord($bytes[$offset + 1]);
 
-            if ($marker === self::JpegStartOfScan) {
-                return $clean.substr($bytes, $offset);
+            if ($marker === self::JpegEndOfImage) {
+                return "{$clean}\xFF\xD9";
+            }
+
+            if (self::isStandaloneJpegMarker($marker)) {
+                $clean .= substr($bytes, $offset, 2);
+                $offset += 2;
+
+                continue;
+            }
+
+            if ($offset + 4 > $length) {
+                return null;
             }
 
             $segmentLength = self::unsignedInteger('n', substr($bytes, $offset + 2, 2));
@@ -58,17 +82,84 @@ class ImageMetadata
                 return null;
             }
 
-            if (! self::isDroppedJpegSegment($marker)) {
-                $clean .= substr($bytes, $offset, $end - $offset);
+            $segment = substr($bytes, $offset, $end - $offset);
+
+            if (! self::isDroppedJpegSegment($marker, $segment)) {
+                $clean .= $segment;
             }
 
             $offset = $end;
+
+            if ($marker === self::JpegStartOfScan) {
+                $nextMarker = self::nextJpegMarker($bytes, $offset);
+
+                if ($nextMarker === null) {
+                    return null;
+                }
+
+                $clean .= substr($bytes, $offset, $nextMarker - $offset);
+                $offset = $nextMarker;
+            }
         }
 
         return null;
     }
 
-    private static function isDroppedJpegSegment(int $marker): bool
+    private static function skipJpegFillBytes(string $bytes, int $offset): int
+    {
+        $length = strlen($bytes);
+
+        while ($offset + 1 < $length && $bytes[$offset + 1] === "\xFF") {
+            $offset++;
+        }
+
+        return $offset;
+    }
+
+    /**
+     * Entropy-coded data runs until the first 0xFF that is neither a stuffed
+     * zero nor a restart marker; whatever follows the image is never copied.
+     */
+    private static function nextJpegMarker(string $bytes, int $offset): ?int
+    {
+        $length = strlen($bytes);
+
+        while (($position = strpos($bytes, "\xFF", $offset)) !== false) {
+            if ($position + 1 >= $length) {
+                return null;
+            }
+
+            $following = ord($bytes[$position + 1]);
+
+            if ($following === 0x00) {
+                $offset = $position + 2;
+
+                continue;
+            }
+
+            if (self::isRestartMarker($following)) {
+                $offset = $position + 2;
+
+                continue;
+            }
+
+            return $position;
+        }
+
+        return null;
+    }
+
+    private static function isStandaloneJpegMarker(int $marker): bool
+    {
+        return $marker === self::JpegTemporary || self::isRestartMarker($marker);
+    }
+
+    private static function isRestartMarker(int $marker): bool
+    {
+        return $marker >= 0xD0 && $marker <= 0xD7;
+    }
+
+    private static function isDroppedJpegSegment(int $marker, string $segment): bool
     {
         if ($marker === self::JpegComment) {
             return true;
@@ -76,6 +167,10 @@ class ImageMetadata
 
         if ($marker < 0xE0 || $marker > 0xEF) {
             return false;
+        }
+
+        if ($marker === self::JpegColourProfile) {
+            return ! str_starts_with(substr($segment, 4), "ICC_PROFILE\0");
         }
 
         return ! in_array($marker, self::KeptJpegApplicationSegments, true);
