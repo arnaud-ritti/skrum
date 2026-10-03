@@ -57,11 +57,11 @@ it('keeps a caption from the other players until the reveal, then shows it to ev
     $this->actingAs($memberUser)->putJson(route('games.rounds.answer.update', [$room, $round]), ['gif_id' => 'gifB', 'caption' => 'Three days of refinement'])->assertOk();
 
     expect(gamePayloadExposesWord(gameSnapshotFor($room, $host), 'Three days of refinement'))->toBeFalse();
-    Event::assertDispatched(GameAnswerChanged::class, fn (GameAnswerChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'Three days of refinement'));
+    Event::assertDispatched(fn (GameAnswerChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'Three days of refinement'));
 
     $this->actingAs($user)->postJson(route('games.rounds.reveal.store', [$room, $round]))->assertOk();
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['answers'][0]['caption'] === 'Three days of refinement');
+    Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['answers'][0]['caption'] === 'Three days of refinement');
 
     $this->actingAs($user)->postJson(route('games.rounds.close.store', [$room, $round]))
         ->assertOk()

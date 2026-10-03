@@ -32,7 +32,7 @@ function hangmanTurnTable(string $word = 'zanzibar', array $roomAttributes = [])
         'turn_ends_at' => isset($roomAttributes['turn_seconds']) ? now()->addSeconds($roomAttributes['turn_seconds']) : null,
     ]);
 
-    return compact('room', 'round', 'hostUser', 'aUser', 'a', 'bUser', 'b');
+    return ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'aUser' => $aUser, 'a' => $a, 'bUser' => $bUser, 'b' => $b];
 }
 
 it('starts a room that takes turns only with an order', function () {

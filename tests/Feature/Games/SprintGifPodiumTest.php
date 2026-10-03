@@ -23,7 +23,7 @@ it('hides the authors of revealed GIFs until the close when the round says so', 
         ->assertOk()
         ->assertJsonPath('answers.0.playerId', null);
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['answers'][0]['playerId'] === null);
+    Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['answers'][0]['playerId'] === null);
 
     $this->actingAs($user)->getJson(route('games.snapshot.show', $room))
         ->assertJsonPath('round.answers.0.playerId', null);
@@ -42,7 +42,7 @@ it('tells whether the authors of revealed GIFs come at the close, never in an an
         ->assertOk()
         ->assertJsonPath('authorsHidden', true);
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['authorsHidden'] === true);
+    Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['authorsHidden'] === true);
 
     $this->actingAs($user)->getJson(route('games.snapshot.show', $room))
         ->assertJsonPath('round.authorsHidden', true);

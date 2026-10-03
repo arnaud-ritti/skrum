@@ -22,7 +22,7 @@ it('gives a set to its author only before its round, the lie to the teller only,
         expect(gamePayloadExposesWord(gameSnapshotFor($room, $viewer), 'I sing'))->toBeFalse();
     }
 
-    Event::assertDispatched(GameStatementsChanged::class, fn (GameStatementsChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'I sing') && ! array_key_exists('lieIndex', $event->broadcastWith()));
+    Event::assertDispatched(fn (GameStatementsChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'I sing') && ! array_key_exists('lieIndex', $event->broadcastWith()));
 
     $round = $this->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['leader_player_id' => $teller->id])->json('round');
     $this->actingAs($aUser)->putJson(route('games.rounds.choice.update', [$room, $round['id']]), ['choice' => '1']);
@@ -38,6 +38,6 @@ it('gives a set to its author only before its round, the lie to the teller only,
             ->and($snapshot['truthSets']['mine'])->toBeNull();
     }
 
-    Event::assertDispatched(GameRoundStarted::class, fn (GameRoundStarted $event) => ! array_key_exists('lieIndex', $event->round));
-    Event::assertDispatched(GameVoteChanged::class, fn (GameVoteChanged $event) => ! array_key_exists('choice', $event->broadcastWith()));
+    Event::assertDispatched(fn (GameRoundStarted $event) => ! array_key_exists('lieIndex', $event->round));
+    Event::assertDispatched(fn (GameVoteChanged $event) => ! array_key_exists('choice', $event->broadcastWith()));
 });

@@ -65,7 +65,7 @@ it('withdraws one vote, or every vote, and says so when none is left', function 
     $this->actingAs($voterUser)->deleteJson(route('games.rounds.vote.destroy', [$room, $round]))->assertNoContent();
 
     expect(GameGifVote::query()->count())->toBe(0);
-    Event::assertDispatched(GameVoteChanged::class, fn (GameVoteChanged $event) => $event->voted === false);
+    Event::assertDispatched(fn (GameVoteChanged $event) => $event->voted === false);
 });
 
 it('replaces the vote with a budget of one, as before', function () {

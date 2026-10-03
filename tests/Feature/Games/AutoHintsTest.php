@@ -71,5 +71,5 @@ it('reveals nothing once the round ended', function () {
 
     (new RevealAutoHint($table['round']->id, 1))->handle(resolve(RevealHintLetter::class));
 
-    expect($table['round']->fresh()->revealed_positions)->toBe([]);
+    expect($table['round']->fresh()->revealed_positions)->toBeEmpty();
 });

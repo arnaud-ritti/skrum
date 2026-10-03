@@ -31,7 +31,7 @@ function turnTable(array $roomAttributes = [], ?FakeGameRules $rules = null): ar
     [$aUser, $a] = gameRoomMember($room);
     [$bUser, $b] = gameRoomMember($room);
 
-    return compact('room', 'hostUser', 'host', 'aUser', 'a', 'bUser', 'b');
+    return ['room' => $room, 'hostUser' => $hostUser, 'host' => $host, 'aUser' => $aUser, 'a' => $a, 'bUser' => $bUser, 'b' => $b];
 }
 
 function runTurnExpiryJob(string $roundId, string $turnEndsAt): void
@@ -136,7 +136,7 @@ it('ends an expired turn on the next request of anyone, as the room timer does',
         ->assertOk()
         ->assertJsonPath('round.turnPlayerId', $b->id);
 
-    Event::assertDispatched(GameTurnChanged::class, fn (GameTurnChanged $event): bool => $event->payload['turnPlayerId'] === $b->id && $event->socket === null);
+    Event::assertDispatched(fn (GameTurnChanged $event): bool => $event->payload['turnPlayerId'] === $b->id && $event->socket === null);
 });
 
 it('ends a round that is its own turn when its deadline passes', function () {

@@ -33,7 +33,7 @@ function guessWhoTable(array $roundAttributes = []): array
     [$bUser, $b] = gameRoomMember($room);
     $round = activeGameRound($room, ['word' => null, 'question' => 'What was your first job?', ...$roundAttributes]);
 
-    return compact('room', 'round', 'hostUser', 'host', 'aUser', 'a', 'bUser', 'b');
+    return ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'host' => $host, 'aUser' => $aUser, 'a' => $a, 'bUser' => $bUser, 'b' => $b];
 }
 
 function guessWhoAnswer(GameRound $round, mixed $player, string $text, bool $drawn = false): GameTextAnswer
@@ -108,7 +108,7 @@ it('draws one answer among at least two, for the host only, and shows it without
     expect($drawn)->toBe(['id' => $stored->id, 'text' => $stored->text])
         ->and(GameTextAnswer::query()->where('is_drawn', true)->count())->toBe(1);
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => count($event->payload['answers']) === 1
+    Event::assertDispatched(fn (GameRoundRevealed $event) => count($event->payload['answers']) === 1
         && array_keys($event->payload['answers'][0]) === ['id', 'text']
         && $event->payload['answers'][0]['id'] === $stored->id);
 
@@ -129,13 +129,13 @@ it('takes one vote for a candidate from everyone but the author, and announces o
     $this->actingAs($hostUser)->putJson($uri, ['choice' => $a->id])->assertNoContent();
 
     Event::assertDispatchedTimes(GameVotesCounted::class, 2);
-    Event::assertDispatched(GameVotesCounted::class, fn (GameVotesCounted $event) => $event->broadcastWith() === ['roundId' => $round->id, 'voted' => 2]);
+    Event::assertDispatched(fn (GameVotesCounted $event) => $event->broadcastWith() === ['roundId' => $round->id, 'voted' => 2]);
     Event::assertNotDispatched(GameVoteChanged::class);
 
     $this->actingAs($hostUser)->deleteJson(route('games.rounds.choice.destroy', [$room, $round]))->assertNoContent();
 
     expect(GameChoice::query()->count())->toBe(1);
-    Event::assertDispatched(GameVotesCounted::class, fn (GameVotesCounted $event) => $event->voted === 1);
+    Event::assertDispatched(fn (GameVotesCounted $event) => $event->voted === 1);
 });
 
 it('refuses a vote before the draw', function () {

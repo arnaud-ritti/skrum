@@ -39,7 +39,7 @@ function twoTruthsTable(array $roundAttributes = []): array
         ...$roundAttributes,
     ]);
 
-    return compact('room', 'round', 'hostUser', 'tellerUser', 'teller', 'aUser', 'a', 'bUser', 'b');
+    return ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'tellerUser' => $tellerUser, 'teller' => $teller, 'aUser' => $aUser, 'a' => $a, 'bUser' => $bUser, 'b' => $b];
 }
 
 it('starts with a teller whose set is ready, copies the set onto the round and plays it once', function () {
@@ -128,5 +128,5 @@ it('plays in a retro\'s icebreaker, on the retro\'s channel', function () {
     $this->actingAs($facilitatorUser)->putJson(route('games.statements.update', $room), ['statements' => ['A', 'B', 'C'], 'lie_index' => 1])->assertOk();
     $this->actingAs($facilitatorUser)->postJson(route('games.rounds.store', $room), ['leader_player_id' => $host->id])->assertCreated();
 
-    Event::assertDispatched(GameRoundStarted::class, fn (GameRoundStarted $event) => $event->channelName === "retro.{$retro->id}");
+    Event::assertDispatched(fn (GameRoundStarted $event) => $event->channelName === "retro.{$retro->id}");
 });

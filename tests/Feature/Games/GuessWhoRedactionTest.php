@@ -25,7 +25,7 @@ it('never shows an answer that was not drawn, the drawn author before the close,
         ->and(gamePayloadExposesWord(gameSnapshotFor($room, $host), 'Lifeguard'))->toBeFalse()
         ->and(gameSnapshotFor($room, $a)['round']['myAnswer']['text'])->toBe('Lifeguard');
 
-    Event::assertDispatched(GameAnswerChanged::class, fn (GameAnswerChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'Lifeguard'));
+    Event::assertDispatched(fn (GameAnswerChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'Lifeguard'));
 
     $this->actingAs($hostUser)->postJson(route('games.rounds.reveal.store', [$room, $round]))->assertOk();
 
@@ -45,14 +45,14 @@ it('never shows an answer that was not drawn, the drawn author before the close,
             ->and(gamePayloadExposesWord($present, $hidden->text))->toBe($isHiddenAuthor);
     }
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => ! gamePayloadExposesWord($event->payload, $hidden->text)
+    Event::assertDispatched(fn (GameRoundRevealed $event) => ! gamePayloadExposesWord($event->payload, $hidden->text)
         && ! array_key_exists('playerId', $event->payload['answers'][0]));
 
     $this->actingAs($hostUser)->postJson(route('games.rounds.close.store', [$room, $round]))
         ->assertOk()
         ->assertJsonPath('ended.drawn.playerId', $drawn->player_id);
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => ! gamePayloadExposesWord($event->broadcastWith(), $hidden->text));
+    Event::assertDispatched(fn (GameRoundEnded $event) => ! gamePayloadExposesWord($event->broadcastWith(), $hidden->text));
 
     $this->actingAs($aUser)->getJson(route('games.rounds.show', [$room, $round]))->assertJsonMissingPath('answers');
     expect(gamePayloadExposesWord($this->actingAs($aUser)->getJson(route('games.rounds.show', [$room, $round]))->json(), $hidden->text))->toBeFalse();

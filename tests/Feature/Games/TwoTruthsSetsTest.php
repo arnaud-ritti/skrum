@@ -33,7 +33,7 @@ it('lets every player, guests included, write and replace their own set, and tel
         ->and(GameStatementSet::query()->count())->toBe(2);
 
     Event::assertDispatchedTimes(GameStatementsChanged::class, 2);
-    Event::assertDispatched(GameStatementsChanged::class, fn (GameStatementsChanged $event) => $event->broadcastWith() === ['playerId' => $a->id, 'ready' => true]);
+    Event::assertDispatched(fn (GameStatementsChanged $event) => $event->broadcastWith() === ['playerId' => $a->id, 'ready' => true]);
 });
 
 it('removes a ready set, refuses to remove a played one, and makes a played set ready again when rewritten', function () {
@@ -49,7 +49,7 @@ it('removes a ready set, refuses to remove a played one, and makes a played set 
     $this->actingAs($aUser)->deleteJson(route('games.statements.destroy', $room))->assertNoContent();
 
     expect(GameStatementSet::query()->count())->toBe(0);
-    Event::assertDispatched(GameStatementsChanged::class, fn (GameStatementsChanged $event) => $event->ready === false);
+    Event::assertDispatched(fn (GameStatementsChanged $event) => $event->ready === false);
 });
 
 it('counts refused sets against the rate limit', function () {

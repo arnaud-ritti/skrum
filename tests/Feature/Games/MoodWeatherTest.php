@@ -23,7 +23,7 @@ function moodTable(): array
     [$bUser, $b] = gameRoomMember($room);
     $round = activeGameRound($room, ['word' => null]);
 
-    return compact('room', 'round', 'hostUser', 'host', 'aUser', 'a', 'bUser', 'b');
+    return ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'host' => $host, 'aUser' => $aUser, 'a' => $a, 'bUser' => $bUser, 'b' => $b];
 }
 
 it('takes one weather per player, host included, changeable until the reveal', function () {

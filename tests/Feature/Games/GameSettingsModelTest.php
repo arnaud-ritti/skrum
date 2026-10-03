@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 it('gives a room created without settings the behaviour rooms had before', function () {
     $room = GameRoom::factory()->create()->fresh();
 
-    expect($room->wordThemes())->toBe([])
+    expect($room->wordThemes())->toBeEmpty()
         ->and($room->turn_seconds)->toBeNull()
         ->and($room->auto_hints)->toBeFalse()
         ->and($room->takes_turns)->toBeFalse()
@@ -36,12 +36,12 @@ it('gives a round no number, no turn, one vote and visible authors by default', 
 
     expect($round->number)->toBeNull()
         ->and($round->rounds_total)->toBeNull()
-        ->and($round->turnOrder())->toBe([])
+        ->and($round->turnOrder())->toBeEmpty()
         ->and($round->takesTurns())->toBeFalse()
         ->and($round->turn_ends_at)->toBeNull()
         ->and($round->votes_allowed)->toBe(1)
         ->and($round->authors_hidden)->toBeFalse()
-        ->and($round->statementsList())->toBe([]);
+        ->and($round->statementsList())->toBeEmpty();
 });
 
 it('never serialises the lie, and serialises the statements and the turn', function () {

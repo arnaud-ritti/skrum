@@ -7,7 +7,7 @@ it('has at least 60 distinct prompts of at most 200 characters in every locale',
     $prompts = (new GameWordBook)->prompts($locale);
 
     expect(count($prompts))->toBeGreaterThanOrEqual(60)
-        ->and(array_unique($prompts))->toHaveCount(count($prompts))
+        ->and(array_unique($prompts))->toHaveSameSize($prompts)
         ->and(collect($prompts)->every(fn (string $prompt): bool => Str::length($prompt) <= 200 && Str::length($prompt) >= 10))->toBeTrue();
 })->with(['en', 'fr', 'es', 'de']);
 

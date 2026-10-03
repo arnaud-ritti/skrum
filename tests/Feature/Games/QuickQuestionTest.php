@@ -27,7 +27,7 @@ function quickQuestionTable(array $roomAttributes = []): array
     [, $b] = gameRoomMember($room);
     $round = test()->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['turn_order' => [$a->id, $b->id, $host->id]])->assertCreated()->json('round');
 
-    return compact('room', 'round', 'hostUser', 'host', 'aUser', 'a', 'b');
+    return ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'host' => $host, 'aUser' => $aUser, 'a' => $a, 'b' => $b];
 }
 
 it('needs a speaking order and draws a prompt', function () {

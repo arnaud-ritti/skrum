@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Context;
  */
 class BroadcastToEveryone
 {
-    private const ContextKey = 'broadcastsToEveryone';
+    private const string ContextKey = 'broadcastsToEveryone';
 
     /**
      * @template TResult
