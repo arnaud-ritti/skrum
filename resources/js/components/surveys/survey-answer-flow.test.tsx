@@ -322,6 +322,73 @@ describe('SurveyAnswerFlow', () => {
         );
     });
 
+    it('waits for a pick still being saved before sending the response', async () => {
+        let resolveSave: () => void = () => {};
+        const onSave = vi.fn(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveSave = resolve;
+                }),
+        );
+        const { onFinish } = renderFlow([surveyQuestion('a', 'scale')], {
+            onSave,
+        });
+
+        fireEvent.click(screen.getByRole('radio', { name: '4' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+        await act(async () => {});
+        expect(onFinish).not.toHaveBeenCalled();
+
+        await act(async () => resolveSave());
+
+        await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(1));
+    });
+
+    it('retries an answer whose save failed before sending the response', async () => {
+        const onSave = vi
+            .fn()
+            .mockRejectedValueOnce(new RetroRequestError(500, 'Server error'))
+            .mockResolvedValue(undefined);
+        const { onFinish } = renderFlow([surveyQuestion('a', 'scale')], {
+            onSave,
+        });
+
+        fireEvent.click(screen.getByRole('radio', { name: '2' }));
+        expect(await screen.findByText('Not saved')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(1));
+        expect(onSave).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not send the response while an answer is not saved, and goes back to it', async () => {
+        const onSave = vi.fn(async (question: SurveyQuestionPayload) => {
+            if (question.id === 'a') {
+                throw new RetroRequestError(500, 'Server error');
+            }
+        });
+        const { onFinish } = renderFlow(fiveKinds, { onSave });
+
+        fireEvent.click(screen.getByRole('radio', { name: '2' }));
+        expect(await screen.findByText('Not saved')).toBeTruthy();
+
+        for (let next = 0; next < 4; next++) {
+            fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+        }
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await waitFor(() => expect(step().getAttribute('data-step')).toBe('0'));
+        expect(onFinish).not.toHaveBeenCalled();
+        expect(screen.getByText('Not saved')).toBeTruthy();
+        expect(
+            screen.getByText('Your answers could not be sent. Try again.'),
+        ).toBeTruthy();
+    });
+
     it('goes back to the question a refused submission names', async () => {
         const onFinish = vi.fn().mockRejectedValue(
             new RetroRequestError(422, 'Invalid', {

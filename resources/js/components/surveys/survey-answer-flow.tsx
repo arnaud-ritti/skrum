@@ -201,7 +201,8 @@ function KeyHint({ question }: { question: SurveyQuestionPayload }) {
                     <span aria-hidden="true">·</span>
                 </>
             )}
-            <Kbd aria-label={t('Enter')}>↵</Kbd>
+            <Kbd aria-hidden>↵</Kbd>
+            <span className="sr-only">{t('Enter')}</span>
             <span>{t('to go on')}</span>
         </span>
     );
@@ -271,7 +272,22 @@ export function SurveyAnswerFlow({
         setFinishError(null);
 
         try {
-            await answers.flushAll();
+            const unsaved = await answers.flushAll();
+
+            if (unsaved.length > 0) {
+                const target = questions.findIndex(
+                    (known) => known.id === unsaved[0],
+                );
+
+                if (target >= 0 && target !== step) {
+                    moveTo(target);
+                }
+
+                setFinishError(t('Your answers could not be sent. Try again.'));
+
+                return;
+            }
+
             await onFinish();
         } catch (error) {
             const target =

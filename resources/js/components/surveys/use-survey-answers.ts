@@ -32,7 +32,9 @@ function savesAtOnce(question: SurveyQuestionPayload): boolean {
 /**
  * The answers on screen, kept apart from the server's so that typing is never
  * overwritten, and their saving: at once for a pick, after a pause for what is
- * typed or ticked, and on demand (leaving a step, finishing). A failed save
+ * typed or ticked, and on demand (leaving a step, finishing). The saves of one
+ * question run one after the other, so each sends what is on screen when it
+ * starts and a withdrawal never overtakes the save it undoes. A failed save
  * keeps the value and is marked until it is retried. In preview nothing is sent.
  */
 export function useSurveyAnswers(
@@ -42,6 +44,8 @@ export function useSurveyAnswers(
 ) {
     const [drafts, setDrafts] = useState<Record<string, Draft>>({});
     const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
+    const failedNow = useRef<ReadonlySet<string>>(new Set());
+    const inFlight = useRef(new Map<string, Promise<boolean>>());
     const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
     const latest = useRef<Record<string, Draft>>({});
     const byId = useRef(new Map<string, SurveyQuestionPayload>());
@@ -67,11 +71,31 @@ export function useSurveyAnswers(
         [drafts],
     );
 
-    const save = useCallback(
+    const markFailed = useCallback(
+        (questionId: string, hasFailed: boolean): void => {
+            if (failedNow.current.has(questionId) === hasFailed) {
+                return;
+            }
+
+            const next = new Set(failedNow.current);
+
+            if (hasFailed) {
+                next.add(questionId);
+            } else {
+                next.delete(questionId);
+            }
+
+            failedNow.current = next;
+            setFailed(next);
+        },
+        [],
+    );
+
+    const send = useCallback(
         async (questionId: string): Promise<boolean> => {
             const question = byId.current.get(questionId);
 
-            if (question === undefined || preview) {
+            if (question === undefined) {
                 return true;
             }
 
@@ -80,26 +104,39 @@ export function useSurveyAnswers(
             try {
                 await saver.current(question, current.value, current.comment);
             } catch {
-                setFailed((known) => new Set(known).add(questionId));
+                markFailed(questionId, true);
 
                 return false;
             }
 
-            setFailed((known) => {
-                if (!known.has(questionId)) {
-                    return known;
-                }
-
-                const next = new Set(known);
-
-                next.delete(questionId);
-
-                return next;
-            });
+            markFailed(questionId, false);
 
             return true;
         },
-        [preview],
+        [markFailed],
+    );
+
+    const save = useCallback(
+        (questionId: string): Promise<boolean> => {
+            if (preview) {
+                return Promise.resolve(true);
+            }
+
+            const previous = inFlight.current.get(questionId);
+            const run = (previous ?? Promise.resolve(true)).then(() =>
+                send(questionId),
+            );
+
+            inFlight.current.set(questionId, run);
+            void run.finally(() => {
+                if (inFlight.current.get(questionId) === run) {
+                    inFlight.current.delete(questionId);
+                }
+            });
+
+            return run;
+        },
+        [preview, send],
     );
 
     const cancel = (questionId: string): boolean => {
@@ -168,12 +205,29 @@ export function useSurveyAnswers(
         return save(questionId);
     };
 
-    const flushAll = async (): Promise<boolean> => {
+    /**
+     * Sends what waits, retries what failed and waits for what is on its way,
+     * for every question. Resolves with the ids still not saved.
+     */
+    const flushAll = async (): Promise<string[]> => {
+        const questionIds = new Set([
+            ...timers.current.keys(),
+            ...failedNow.current,
+            ...inFlight.current.keys(),
+        ]);
         const results = await Promise.all(
-            [...timers.current.keys()].map((questionId) => flush(questionId)),
+            [...questionIds].map(async (questionId) => {
+                const mustSend =
+                    cancel(questionId) || failedNow.current.has(questionId);
+                const saved = mustSend
+                    ? await save(questionId)
+                    : await (inFlight.current.get(questionId) ?? true);
+
+                return saved ? null : questionId;
+            }),
         );
 
-        return results.every(Boolean);
+        return results.filter((questionId) => questionId !== null);
     };
 
     const isAnswered = (question: SurveyQuestionPayload): boolean => {

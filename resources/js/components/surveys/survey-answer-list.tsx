@@ -74,7 +74,17 @@ export function SurveyAnswerList({
         setFinishing(true);
 
         try {
-            await answers.flushAll();
+            const unsaved = await answers.flushAll();
+
+            if (unsaved.length > 0) {
+                cards.current
+                    .get(unsaved[0])
+                    ?.scrollIntoView({ block: 'center' });
+                setFinishError(t('Your answers could not be sent. Try again.'));
+
+                return;
+            }
+
             await onFinish();
         } catch (error) {
             const named = namedQuestions(error, questions);

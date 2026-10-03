@@ -126,6 +126,50 @@ describe('SurveyAnswerList', () => {
         );
     });
 
+    it('waits for a pick still being saved before sending the response', async () => {
+        let resolveSave: () => void = () => {};
+        const onSave = vi.fn(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveSave = resolve;
+                }),
+        );
+        const { onFinish } = renderList(questions, { onSave });
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Daily' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await act(async () => {});
+        expect(onFinish).not.toHaveBeenCalled();
+
+        await act(async () => resolveSave());
+
+        await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(1));
+    });
+
+    it('does not send the response while an answer is not saved', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+
+        const onSave = vi
+            .fn()
+            .mockRejectedValue(new RetroRequestError(500, 'Server error'));
+        const { onFinish } = renderList(questions, { onSave });
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Daily' }));
+        expect(await screen.findByText('Not saved')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(
+            await screen.findByText(
+                'Your answers could not be sent. Try again.',
+            ),
+        ).toBeTruthy();
+        expect(onSave).toHaveBeenCalledTimes(2);
+        expect(onFinish).not.toHaveBeenCalled();
+        expect(screen.getByText('Not saved')).toBeTruthy();
+    });
+
     it('keeps a failed answer on screen with "Not saved"', async () => {
         const onSave = vi
             .fn()
