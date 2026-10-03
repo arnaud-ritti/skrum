@@ -11,6 +11,27 @@ function state(container: HTMLElement): string | null | undefined {
 }
 
 describe('Timer', () => {
+    it('says its size on the root, medium by default', () => {
+        const medium = renderWithProviders(<Timer remainingSeconds={30} />);
+
+        expect(
+            medium.container
+                .querySelector('[data-slot="timer"]')
+                ?.getAttribute('data-size'),
+        ).toBe('md');
+        medium.unmount();
+
+        const large = renderWithProviders(
+            <Timer remainingSeconds={30} size="lg" />,
+        );
+
+        expect(
+            large.container
+                .querySelector('[data-slot="timer"]')
+                ?.getAttribute('data-size'),
+        ).toBe('lg');
+    });
+
     it('renders nothing without a timer and without controls', () => {
         const { container } = renderWithProviders(
             <Timer remainingSeconds={null} />,

@@ -231,6 +231,7 @@ export function Timer({
     return (
         <div
             data-slot="timer"
+            data-size={size}
             onKeyDown={hasControls ? handleKeyDown : undefined}
             className={cn(
                 'inline-flex max-w-full items-center gap-2',
