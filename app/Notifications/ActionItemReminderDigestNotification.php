@@ -77,7 +77,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
             'content' => Str::squish($item->content),
             'url' => route('workspaces.actionItems.index', ['workspace' => $item->team->workspace, 'item' => $item->id]),
             'team' => Str::squish($item->team->name),
-            'due' => $dueOn->locale(app()->getLocale())->isoFormat('D MMM'),
+            'due' => $dueOn->settings(['locale' => app()->getLocale()])->isoFormat('D MMM'),
             'daysLate' => max(0, (int) $dueOn->diffInDays(ActionItem::today()->startOfDay())),
             'ticket' => $this->ticket($item),
         ];

@@ -78,7 +78,7 @@ class SendEmailTwoFactorCode
      */
     private function requestTime(): string
     {
-        $now = now()->setTimezone((string) config('app.timezone'))->locale(app()->getLocale());
+        $now = now()->setTimezone((string) config('app.timezone'))->settings(['locale' => app()->getLocale()]);
 
         return "{$now->isoFormat('D MMM')}, ".mb_strtolower($now->isoFormat('LT'))." ({$now->format('T')})";
     }

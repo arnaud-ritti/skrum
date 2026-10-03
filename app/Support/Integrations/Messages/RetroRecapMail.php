@@ -38,16 +38,28 @@ class RetroRecapMail
             moreActions: $recap->hiddenActionItems > 0 ? RecapText::more($recap->hiddenActionItems) : null,
             roti: $roti === null ? null : $this->roti($recap),
             participantsLine: $recap->participantNames === null ? null : Str::squish(RecapText::participants($recap)),
-            summary: $recap->summary === null ? [] : array_values(array_map(Str::squish(...), preg_split('/\R{2,}/u', $recap->summary) ?: [])),
+            summary: $recap->summary === null ? [] : array_map(Str::squish(...), preg_split('/\R{2,}/u', $recap->summary) ?: []),
             sections: array_values($sections),
-            healthLine: $health === null ? null : __('Health check: :score/10 (:respondents of :participants participants answered)', [
-                'score' => number_format($health['score'], 1),
-                'respondents' => $health['participation']['respondents'],
-                'participants' => $health['participation']['participants'],
-            ]),
+            healthLine: $this->healthLine($health),
             url: $recap->url,
             settingsUrl: route('notificationPreferences.edit'),
         ))->subject($this->subject($recap, $title, $actionsCount, $roti));
+    }
+
+    /**
+     * @param  array{score: float, participation: array{respondents: int, participants: int}}|null  $health
+     */
+    private function healthLine(?array $health): ?string
+    {
+        if ($health === null) {
+            return null;
+        }
+
+        return __('Health check: :score/10 (:respondents of :participants participants answered)', [
+            'score' => number_format($health['score'], 1),
+            'respondents' => $health['participation']['respondents'],
+            'participants' => $health['participation']['participants'],
+        ]);
     }
 
     private function subject(RetroRecap $recap, string $title, int $actionsCount, ?string $roti): string
@@ -139,19 +151,24 @@ class RetroRecapMail
     /**
      * Widths are percentages of the widest bar: no calc, no CSS variable.
      *
-     * @return array{label: string, rows: array<int, array{score: int, count: int, width: int}>}
+     * @return array{label: string, rows: array<int, array{score: int, count: int, width: int}>}|null
      */
-    private function roti(RetroRecap $recap): array
+    private function roti(RetroRecap $recap): ?array
     {
-        $counts = $recap->rotiCounts ?? [];
+        $counts = $recap->rotiCounts;
+
+        if ($counts === null) {
+            return null;
+        }
+
         $widest = max(1, ...array_values($counts));
 
         return [
             'label' => __('Return on time invested · :count votes', ['count' => $recap->rotiRespondents]),
             'rows' => array_map(fn (int $score): array => [
                 'score' => $score,
-                'count' => $counts[$score] ?? 0,
-                'width' => (int) round(($counts[$score] ?? 0) * 100 / $widest),
+                'count' => $counts[$score],
+                'width' => (int) round($counts[$score] * 100 / $widest),
             ], range(1, 5)),
         ];
     }

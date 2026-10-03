@@ -66,7 +66,7 @@ class BuildRetroRecap
             topCards: $this->topCards($retro),
             facilitatorName: $retro->is_anonymous ? null : $retro->facilitator?->displayName(),
             rotiCounts: $this->rotiCounts($roti),
-            completedDay: ($retro->completed_at ?? now())->copy()->locale(app()->getLocale())->isoFormat('dddd D MMMM'),
+            completedDay: ($retro->completed_at ?? now())->copy()->settings(['locale' => app()->getLocale()])->isoFormat('dddd D MMMM'),
         );
     }
 
@@ -150,7 +150,7 @@ class BuildRetroRecap
                     'isCompleted' => $item->isCompleted(),
                     'assigneeInitials' => $this->assigneeInitials($item),
                     'assigneePresence' => $this->assigneePresence($item),
-                    'dueDay' => $item->due_on?->copy()->locale(app()->getLocale())->isoFormat('D MMM'),
+                    'dueDay' => $item->due_on?->copy()->settings(['locale' => app()->getLocale()])->isoFormat('D MMM'),
                 ];
             })
             ->values();
@@ -158,7 +158,7 @@ class BuildRetroRecap
 
     private function assigneeInitials(ActionItem $item): ?string
     {
-        $name = $item->assigneeUser?->name ?? $item->assigneeParticipant?->displayName();
+        $name = $item->assigneeUser->name ?? $item->assigneeParticipant?->displayName();
 
         return $name === null ? null : $this->avatarUrl->initials($name);
     }
