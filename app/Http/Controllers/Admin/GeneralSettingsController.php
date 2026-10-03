@@ -50,7 +50,7 @@ class GeneralSettingsController extends Controller
 
     public function update(GeneralSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
-        $values = $this->submittedValues($request);
+        $values = $this->submittedValues($request, $settings);
 
         $updateCheckTurnedOn = DB::transaction(function () use ($request, $settings, $recordAuditEvent, $values): bool {
             $before = $this->current($settings);
@@ -77,7 +77,7 @@ class GeneralSettingsController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function submittedValues(GeneralSettingsUpdateRequest $request): array
+    private function submittedValues(GeneralSettingsUpdateRequest $request, InstanceSettings $settings): array
     {
         $values = $request->safe()->only([
             InstanceSettingKey::SignupMode->value,
@@ -89,8 +89,13 @@ class GeneralSettingsController extends Controller
             return $values;
         }
 
-        $message = $request->validated(InstanceSettingKey::MaintenanceMessage->value);
-        $hasMessage = is_string($message) && trim($message) !== '';
+        $submittedMessage = $request->validated(InstanceSettingKey::MaintenanceMessage->value);
+        $message = is_string($submittedMessage) ? trim($submittedMessage) : '';
+        $hasMessage = $message !== '';
+
+        if ($hasMessage && $message === trim($settings->maintenanceMessage() ?? '')) {
+            return $values;
+        }
 
         return [
             ...$values,

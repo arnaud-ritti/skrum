@@ -146,6 +146,25 @@ it('lets an admin revoke themselves when another admin exists', function () {
     $this->actingAs($admin->fresh())->get(route('admin.admins.index'))->assertForbidden();
 });
 
+it('refuses to revoke the last active admin while a deactivated admin remains', function () {
+    $admin = actingAsInstanceAdmin($this);
+    User::factory()->instanceAdmin()->deactivated()->create();
+
+    $this->deleteJson(route('admin.admins.destroy', $admin))->assertUnprocessable();
+
+    expect($admin->fresh()->is_instance_admin)->toBeTrue();
+});
+
+it('lets a deactivated admin lose the role while one active admin remains', function () {
+    $admin = actingAsInstanceAdmin($this);
+    $deactivatedAdmin = User::factory()->instanceAdmin()->deactivated()->create();
+
+    $this->deleteJson(route('admin.admins.destroy', $deactivatedAdmin))->assertRedirect();
+
+    expect($deactivatedAdmin->fresh()->is_instance_admin)->toBeFalse()
+        ->and($admin->fresh()->is_instance_admin)->toBeTrue();
+});
+
 it('keeps one admin when two revocations follow each other', function () {
     $admin = actingAsInstanceAdmin($this);
     $other = User::factory()->instanceAdmin()->create();

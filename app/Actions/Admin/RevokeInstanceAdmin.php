@@ -12,25 +12,30 @@ class RevokeInstanceAdmin
     public function __construct(private RecordAuditEvent $recordAuditEvent) {}
 
     /**
-     * False when the user is the last admin: the instance keeps them.
+     * False when the user is the last active admin: the instance keeps them.
      *
-     * Every admin row is locked before the count, so two revocations at the same time cannot both see a second admin.
-     * The audit event is written only when the user was an admin and is one no more.
+     * Every admin row is locked before the count, so two revocations, or a revocation and a deactivation,
+     * at the same time cannot both see a second active admin. A deactivated admin cannot sign in, so only
+     * active admins count. The audit event is written only when the user was an admin and is one no more.
      */
     public function handle(User $user, ?User $actor = null): bool
     {
         return DB::transaction(function () use ($user, $actor): bool {
-            $adminIds = User::query()
+            $admins = User::query()
                 ->where('is_instance_admin', true)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->pluck('id');
+                ->get(['id', 'deactivated_at']);
 
-            if ($adminIds->doesntContain($user->id)) {
+            $revokedAdmin = $admins->firstWhere('id', $user->id);
+
+            if ($revokedAdmin === null) {
                 return true;
             }
 
-            if ($adminIds->count() === 1) {
+            $activeAdminCount = $admins->whereNull('deactivated_at')->count();
+
+            if ($revokedAdmin->deactivated_at === null && $activeAdminCount === 1) {
                 return false;
             }
 
