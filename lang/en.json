@@ -966,6 +966,7 @@
     "This game can hold 200 tasks at most.": "This game can hold 200 tasks at most.",
     "This issue has no story points field on its edit screen.": "This issue has no story points field on its edit screen.",
     "Estimates are turned off for this Linear team.": "Estimates are turned off for this Linear team.",
+    "Estimates are not written back in this game.": "Estimates are not written back in this game.",
     "Linear only accepts whole-number estimates.": "Linear only accepts whole-number estimates.",
     "Linear accepts estimates from 0 to 64.": "Linear accepts estimates from 0 to 64.",
     "Linear rejected this estimate: :message": "Linear rejected this estimate: :message",

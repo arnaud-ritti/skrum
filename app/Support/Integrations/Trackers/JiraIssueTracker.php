@@ -109,7 +109,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
         return $this->issuesMatching($integration, $externalIds, null);
     }
 
-    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
+    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate, ?string $preferredFieldId = null): void
     {
         $source = $integration->provider->label();
         $value = $estimate === null ? null : PokerDeck::numericValue($estimate);
@@ -124,8 +124,8 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 
         $issuePath = $this->api()->apiPath('issue/'.rawurlencode($externalId));
         $editable = (array) ($this->api()->get($integration, "{$issuePath}/editmeta")['fields'] ?? []);
-        $fieldId = collect(self::storyPointFieldIds($integration))
-            ->first(fn (string $id): bool => array_key_exists($id, $editable));
+        $candidates = array_values(array_unique(array_filter([$preferredFieldId, ...self::storyPointFieldIds($integration)])));
+        $fieldId = collect($candidates)->first(fn (string $id): bool => array_key_exists($id, $editable));
 
         if ($fieldId === null) {
             throw new EstimateRejected(__('This issue has no story points field on its edit screen.'));

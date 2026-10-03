@@ -182,7 +182,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
      * back with exactly the new block and the text that was read around it,
      * otherwise an edit landed in between and the write starts over.
      */
-    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
+    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate, ?string $preferredFieldId = null): void
     {
         $reference = self::issueReference($externalId);
 

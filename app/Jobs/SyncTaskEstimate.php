@@ -86,7 +86,7 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $estimate = $task->estimate;
 
         try {
-            $trackers->for($integration->provider)->writeEstimate($integration, $task->external_id, $estimate);
+            $trackers->for($integration->provider)->writeEstimate($integration, $task->external_id, $estimate, $task->game->estimate_field_id);
         } catch (RateLimited $exception) {
             $this->release($exception->retryAfter);
 

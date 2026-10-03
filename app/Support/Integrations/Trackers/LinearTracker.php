@@ -117,7 +117,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
         return $issues;
     }
 
-    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
+    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate, ?string $preferredFieldId = null): void
     {
         $data = $this->client->query(
             $integration,

@@ -41,7 +41,10 @@ interface IssueTracker
     public function issues(TeamIntegration $integration, array $externalIds): array;
 
     /**
+     * The preferred field is the game's choice of Jira number field (plan 22);
+     * a tracker without fields ignores it.
+     *
      * @throws EstimateRejected when the source cannot hold this estimate
      */
-    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void;
+    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate, ?string $preferredFieldId = null): void;
 }

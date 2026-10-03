@@ -1211,6 +1211,7 @@
     "This game can hold 200 tasks at most.": "Esta partida puede tener 200 tareas como máximo.",
     "This issue has no story points field on its edit screen.": "Esta incidencia no tiene campo de story points en su pantalla de edición.",
     "Estimates are turned off for this Linear team.": "Las estimaciones están desactivadas para este equipo de Linear.",
+    "Estimates are not written back in this game.": "Las estimaciones no se escriben de vuelta en esta partida.",
     "Linear only accepts whole-number estimates.": "Linear solo acepta estimaciones con números enteros.",
     "Linear accepts estimates from 0 to 64.": "Linear acepta estimaciones de 0 a 64.",
     "Linear rejected this estimate: :message": "Linear rechazó esta estimación: :message",
