@@ -2,35 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
-use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\PresentTeamRetro;
-use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Teams\BuildTeamMoodTrend;
-use App\Actions\TeamSurveys\PresentTeamSurveySummary;
-use App\Actions\Whiteboards\BuildWhiteboardGallery;
+use App\Actions\Teams\PresentNewSessionOptions;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
-use App\Enums\PokerDeck;
-use App\Enums\TeamSurveyStatus;
-use App\Enums\TemplateCategory;
-use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
-use App\Models\SavedPokerDeck;
 use App\Models\Team;
-use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
-use App\Support\Games\GameRulesRegistry;
-use App\Support\Llm\Llm;
-use App\Support\Surveys\SurveyTemplateCatalogue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +32,6 @@ class TeamsController extends Controller
         private PresentTeamRetro $presentTeamRetro,
         private PokerPresenceRoster $pokerPresenceRoster,
         private PresentWhiteboardSummary $presentWhiteboardSummary,
-        private PresentTeamSurveySummary $presentTeamSurveySummary,
     ) {}
 
     public function store(Request $request, Workspace $workspace): RedirectResponse
@@ -65,15 +51,9 @@ class TeamsController extends Controller
         Request $request,
         Workspace $workspace,
         Team $team,
-        Llm $llm,
-        BuildTemplateCatalogue $buildTemplateCatalogue,
-        IcebreakerGameOptions $icebreakerGameOptions,
-        BuildWhiteboardGallery $buildWhiteboardGallery,
-        TopTeamTemplates $topTeamTemplates,
-        GameRulesRegistry $gameRulesRegistry,
         BuildTeamMoodTrend $buildTeamMoodTrend,
         PresentTeamHealthStatements $presentTeamHealthStatements,
-        SurveyTemplateCatalogue $surveyTemplateCatalogue,
+        PresentNewSessionOptions $presentNewSessionOptions,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -101,19 +81,6 @@ class TeamsController extends Controller
                 ->latest()
                 ->get()
                 ->map(fn (Retro $retro): array => $this->presentTeamRetro->handle($retro)),
-            'templateCategories' => TemplateCategory::options(),
-            'topTemplates' => $topTeamTemplates->handle($team),
-            'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
-            'llm' => [
-                'enabled' => $llm->isConfigured(),
-                'provider' => $llm->providerName(),
-            ],
-            'canCreateRetro' => $request->user()->can('createRetro', $team),
-            'icebreakerGames' => $icebreakerGameOptions->options(),
-            'gameOptions' => $gameRulesRegistry->options(new GameRoom(['team_id' => $team->id])),
-            'canCreateGameRoom' => $request->user()->can('createGameRoom', $team)
-                && $team->gameRooms()->whereNull('retro_id')->count() < GameRoom::MaxRoomsPerTeam,
-            'roomLimit' => GameRoom::MaxRoomsPerTeam,
             'healthStatements' => $presentTeamHealthStatements->handle($team),
             'canManageHealthStatements' => $request->user()->can('update', $team),
             'pokerGames' => PresentPokerGameSummary::withCounts($team->pokerGames())
@@ -121,19 +88,11 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
-            'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
-            'defaultPokerDeck' => [
-                'deck' => $team->default_poker_deck,
-                'savedDeckId' => $team->default_saved_poker_deck_id,
-            ],
-            'pokerDeckOptions' => PokerDeck::options(),
-            'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
             'whiteboards' => $team->whiteboards()
                 ->with('facilitator.user')
                 ->latest('updated_at')
                 ->get()
                 ->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
-            'canCreateWhiteboard' => $request->user()->can('createWhiteboard', $team),
             'whiteboardTemplates' => Alphabetical::sort(
                 $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']),
                 fn (WhiteboardTemplate $template): string => $template->name,
@@ -144,18 +103,8 @@ class TeamsController extends Controller
                     'description' => $template->description,
                     'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
                 ]),
-            'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
-            'surveys' => PresentTeamSurveySummary::withCounts($team->teamSurveys())
-                ->whereNull('retro_id')
-                ->latest('updated_at')
-                ->orderByDesc('id')
-                ->get()
-                ->map(fn (TeamSurvey $survey): array => $this->presentTeamSurveySummary->handle($survey, $request->user(), $managesWorkspace))
-                ->reject(fn (array $survey): bool => $survey['status'] === TeamSurveyStatus::Draft->value && ! $survey['canManage'])
-                ->values(),
-            'canCreateSurvey' => $request->user()->can('createSurvey', $team),
-            'surveyTemplates' => $surveyTemplateCatalogue->options($team),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
+            ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }
@@ -178,25 +127,6 @@ class TeamsController extends Controller
         }
 
         return $presence;
-    }
-
-    /**
-     * @return array<int, array{id: string, name: string, cards: array<int, string>, canManage: bool}>
-     */
-    private function pokerDecks(User $user, Workspace $workspace, Team $team): array
-    {
-        $isManager = $user->canManage($workspace);
-
-        return Alphabetical::sort($team->availablePokerDecks()->orderBy('id')->get(), fn (SavedPokerDeck $deck): string => $deck->name)
-            ->map(fn (SavedPokerDeck $deck): array => [
-                'id' => $deck->id,
-                'name' => $deck->name,
-                'cards' => $deck->cards,
-                'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
-                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id),
-            ])
-            ->values()
-            ->all();
     }
 
     public function update(Request $request, Workspace $workspace, Team $team): RedirectResponse
