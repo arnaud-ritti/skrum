@@ -4395,5 +4395,7 @@
     "Guess the whole word (+5 pts, −1 life if wrong)": "Guess the whole word (+5 pts, −1 life if wrong)",
     "Last moves": "Last moves",
     "Missed: −1 life": "Missed: −1 life",
-    "Your turn, :name — pick a letter": "Your turn, :name — pick a letter"
+    "Your turn, :name — pick a letter": "Your turn, :name — pick a letter",
+    "next letter in :time": "next letter in :time",
+    "next letter now": "next letter now"
 }

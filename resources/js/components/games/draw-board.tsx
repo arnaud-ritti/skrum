@@ -33,6 +33,7 @@ import {
 import { DrawingToolbar } from './drawing-toolbar';
 import { useHasRightColumn, useStageFooter } from './game-layout';
 import { GuessChat, GuessDock } from './guess-chat';
+import { AutoHintCountdown } from './auto-hint-countdown';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
 import { useRoom } from './room-context';
@@ -232,9 +233,14 @@ export function DrawBoard({ round }: { round: GameRound }) {
                     word={word}
                     label={t('Your word to draw')}
                     action={<HintButton round={round} />}
+                    footnote={<AutoHintCountdown round={round} />}
                 />
             ) : (
-                <MaskedWord mask={mask} maxHints={round.maxHints ?? 0} />
+                <MaskedWord
+                    mask={mask}
+                    maxHints={round.maxHints ?? 0}
+                    footnote={<AutoHintCountdown round={round} />}
+                />
             )}
             <div
                 className={cn(

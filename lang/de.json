@@ -4615,5 +4615,7 @@
     "Guess the whole word (+5 pts, −1 life if wrong)": "Rate das ganze Wort (+5 Pkt., −1 Leben, wenn falsch)",
     "Last moves": "Letzte Züge",
     "Missed: −1 life": "Daneben: −1 Leben",
-    "Your turn, :name — pick a letter": "Du bist dran, :name — wähl einen Buchstaben"
+    "Your turn, :name — pick a letter": "Du bist dran, :name — wähl einen Buchstaben",
+    "next letter in :time": "nächster Buchstabe in :time",
+    "next letter now": "nächster Buchstabe jetzt"
 }

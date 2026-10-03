@@ -28,9 +28,11 @@ type Props = {
     label: string;
     /** Right end of the card: what the leader can do about the word. */
     action?: ReactNode;
+    /** Under the word: when the next hint comes on its own. */
+    footnote?: ReactNode;
 };
 
-export function LeaderWord({ word, label, action }: Props) {
+export function LeaderWord({ word, label, action, footnote }: Props) {
     const { t } = useTrans();
 
     return (
@@ -49,16 +51,22 @@ export function LeaderWord({ word, label, action }: Props) {
                 <span className="font-display text-2xl font-bold tracking-wider break-words">
                     {word ?? '…'}
                 </span>
+                {footnote}
             </div>
             {action}
         </WordCard>
     );
 }
 
-type MaskedWordProps = { mask: GameMask; maxHints: number };
+type MaskedWordProps = {
+    mask: GameMask;
+    maxHints: number;
+    /** Under the hint line: when the next hint comes on its own. */
+    footnote?: ReactNode;
+};
 
 /** The word as its guessers see it: its blanks, and how many letters the leader gave away. */
-export function MaskedWord({ mask, maxHints }: MaskedWordProps) {
+export function MaskedWord({ mask, maxHints, footnote }: MaskedWordProps) {
     const { t } = useTrans();
 
     return (
@@ -79,6 +87,7 @@ export function MaskedWord({ mask, maxHints }: MaskedWordProps) {
                         max: maxHints,
                     })}
                 </span>
+                {footnote}
             </div>
         </WordCard>
     );

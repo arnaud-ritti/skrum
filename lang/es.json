@@ -4615,5 +4615,7 @@
     "Guess the whole word (+5 pts, −1 life if wrong)": "Adivina la palabra entera (+5 pts, −1 vida si fallas)",
     "Last moves": "Últimas jugadas",
     "Missed: −1 life": "Fallado: −1 vida",
-    "Your turn, :name — pick a letter": "Te toca, :name — elige una letra"
+    "Your turn, :name — pick a letter": "Te toca, :name — elige una letra",
+    "next letter in :time": "siguiente letra en :time",
+    "next letter now": "siguiente letra ahora"
 }
