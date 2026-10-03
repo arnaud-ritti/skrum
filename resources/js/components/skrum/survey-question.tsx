@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
+import { signed } from '@/lib/surveys/compare';
 import { cn } from '@/lib/utils';
 
 export type SurveyQuestionKind =
@@ -584,7 +585,7 @@ function Results({
                                 <span className="sr-only">
                                     {t('NPS score')}:{' '}
                                 </span>
-                                {results.nps}
+                                {signed(results.nps)}
                             </p>
                         )}
                         {results.delta && <DeltaBadge delta={results.delta} />}

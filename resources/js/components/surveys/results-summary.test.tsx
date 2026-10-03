@@ -30,7 +30,7 @@ describe('ResultsSummary', () => {
             within(card('Workload of the sprint')).getByText('3.8'),
         ).not.toBeNull();
         expect(
-            within(card('Would you recommend the team?')).getByText('22'),
+            within(card('Would you recommend the team?')).getByText('+22'),
         ).not.toBeNull();
         expect(
             within(card('Which ritual must we keep?')).getByText('5 · 56%'),
