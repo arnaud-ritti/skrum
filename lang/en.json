@@ -4378,5 +4378,16 @@
     "Nudge the last :count": "Nudge the last :count",
     "Your ROTI vote is awaited": "Your ROTI vote is awaited",
     "Votes are closed.": "Votes are closed.",
-    "Results appear for everyone when the facilitator reveals them or ends the session.": "Results appear for everyone when the facilitator reveals them or ends the session."
+    "Results appear for everyone when the facilitator reveals them or ends the session.": "Results appear for everyone when the facilitator reveals them or ends the session.",
+    "Export 1 item": "Export 1 item",
+    "Export :count items": "Export :count items",
+    "Exporting…": "Exporting…",
+    "Exporting :current of :total…": "Exporting :current of :total…",
+    ":exported exported, :failed failed": ":exported exported, :failed failed",
+    "Retry the failed ones": "Retry the failed ones",
+    "Already exported": "Already exported",
+    "Stop the export?": "Stop the export?",
+    "The items already exported stay in :provider. The others are not sent.": "The items already exported stay in :provider. The others are not sent.",
+    "Keep exporting": "Keep exporting",
+    "Creates one issue per action item, with a link back to skrum. Later changes are not synced.": "Creates one issue per action item, with a link back to skrum. Later changes are not synced."
 }

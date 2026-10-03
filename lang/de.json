@@ -4598,5 +4598,16 @@
     "Nudge the last :count": "Die letzten :count erinnern",
     "Your ROTI vote is awaited": "Deine ROTI-Stimme wird erwartet",
     "Votes are closed.": "Die Abstimmung ist geschlossen.",
-    "Results appear for everyone when the facilitator reveals them or ends the session.": "Die Ergebnisse erscheinen für alle, wenn der Moderator sie aufdeckt oder die Sitzung beendet."
+    "Results appear for everyone when the facilitator reveals them or ends the session.": "Die Ergebnisse erscheinen für alle, wenn der Moderator sie aufdeckt oder die Sitzung beendet.",
+    "Export 1 item": "1 Aktion exportieren",
+    "Export :count items": ":count Aktionen exportieren",
+    "Exporting…": "Wird exportiert…",
+    "Exporting :current of :total…": "Exportiere :current von :total…",
+    ":exported exported, :failed failed": ":exported exportiert, :failed fehlgeschlagen",
+    "Retry the failed ones": "Fehlgeschlagene erneut versuchen",
+    "Already exported": "Bereits exportiert",
+    "Stop the export?": "Export stoppen?",
+    "The items already exported stay in :provider. The others are not sent.": "Bereits exportierte Aktionen bleiben in :provider. Die anderen werden nicht gesendet.",
+    "Keep exporting": "Weiter exportieren",
+    "Creates one issue per action item, with a link back to skrum. Later changes are not synced.": "Erstellt ein Issue pro Aktion, mit einem Link zurück zu skrum. Spätere Änderungen werden nicht synchronisiert."
 }

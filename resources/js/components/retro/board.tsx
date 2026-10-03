@@ -24,6 +24,7 @@ import {
     BoardTitle,
     boardSelf,
 } from './board-topbar';
+import { BulkExport } from './bulk-export-dialog';
 import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
@@ -131,6 +132,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
         return (
             <PhaseActions
                 hideMyCursor={hideMyCursor}
+                exportAll={<BulkExport />}
                 topicMeta={(topic) => <LinkedActionCount topic={topic} />}
                 linkedTo={(topic) => <QuickAddLink topic={topic} />}
                 itemTopic={(item) => <ItemTopic item={item} />}
