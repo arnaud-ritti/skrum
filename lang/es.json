@@ -4585,5 +4585,18 @@
     "Sign out this device?": "¿Cerrar la sesión de este dispositivo?",
     ":device will need to sign in again.": ":device tendrá que volver a iniciar sesión.",
     "Sign out every other device?": "¿Cerrar la sesión de todos los demás dispositivos?",
-    "They will need to sign in again. \"Remember me\" ends on every device.": "Tendrán que volver a iniciar sesión. «Recuérdame» termina en todos los dispositivos."
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Tendrán que volver a iniciar sesión. «Recuérdame» termina en todos los dispositivos.",
+    "Linked accounts": "Cuentas vinculadas",
+    "Sign in with your company SSO or an existing account. Keep at least one way in.": "Inicia sesión con el SSO de tu empresa o una cuenta existente. Conserva al menos una forma de entrar.",
+    "Not linked": "No vinculada",
+    "Linked": "Vinculada",
+    "Linked :date": "Vinculada el :date",
+    "Not available on this instance": "No disponible en esta instancia",
+    "Managed by your admin": "Gestionada por tu admin",
+    "Link :provider": "Vincular :provider",
+    "Unlink": "Desvincular",
+    "Unlink :provider?": "¿Desvincular :provider?",
+    "You will no longer sign in with :provider. You can link it again later.": "Ya no podrás iniciar sesión con :provider. Puedes volver a vincularla más tarde.",
+    "Confirm your password to see your linked accounts.": "Confirma tu contraseña para ver tus cuentas vinculadas.",
+    "Show my linked accounts": "Mostrar mis cuentas vinculadas"
 }

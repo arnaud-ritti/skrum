@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type { SsoProviderKey, SsoProviderOption } from '@/types';
 
-const marks: Record<SsoProviderKey, ReactNode> = {
+/** The mark of each provider, also beside its row in the Linked accounts card. */
+export const SsoProviderMarks: Record<SsoProviderKey, ReactNode> = {
     oidc: <KeyRound aria-hidden />,
     entra: <Building2 aria-hidden />,
     github: <Github aria-hidden />,
@@ -49,7 +50,7 @@ export function SsoButtons({
         <div data-slot="sso-buttons" className="flex min-w-0 flex-col gap-4">
             <Button variant="outline" size="lg" className="w-full" asChild>
                 <a href={redirectUrl(first)}>
-                    {marks[first.key]}
+                    {SsoProviderMarks[first.key]}
                     <span className="truncate">
                         {t('Continue with :provider', {
                             provider: first.label,
@@ -75,7 +76,7 @@ export function SsoButtons({
                                     provider: provider.label,
                                 })}
                             >
-                                {marks[provider.key]}
+                                {SsoProviderMarks[provider.key]}
                                 <span className="truncate">
                                     {provider.label}
                                 </span>

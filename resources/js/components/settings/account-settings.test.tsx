@@ -14,6 +14,7 @@ const seen = vi.hoisted(() => ({
     twoFactor: undefined as Record<string, unknown> | undefined,
     passkeys: undefined as unknown,
     browserSessions: undefined as unknown,
+    linkedAccounts: undefined as unknown,
     tokens: undefined as unknown,
     createToken: undefined as Record<string, unknown> | undefined,
     concealed: undefined as Record<string, unknown> | undefined,
@@ -101,6 +102,13 @@ vi.mock('@/components/settings/security/active-sessions-card', () => ({
         return <p>active sessions card</p>;
     },
 }));
+vi.mock('@/components/settings/security/linked-accounts-card', () => ({
+    LinkedAccountsCard: ({ accounts }: { accounts: unknown }) => {
+        seen.linkedAccounts = accounts;
+
+        return <p>linked accounts card</p>;
+    },
+}));
 vi.mock('@/components/settings/appearance/appearance-card', () => ({
     AppearanceCard: ({
         reduceAnimations,
@@ -163,6 +171,23 @@ const passkey = {
 
 const token = { id: 't1', name: 'Claude Code' };
 
+const linkedAccounts = {
+    rows: [
+        {
+            provider: 'google',
+            label: 'Google',
+            isEnabled: true,
+            account: {
+                id: '0199a000-0000-7000-8000-000000000001',
+                linkedAt: '2025-11-18T10:00:00+00:00',
+                isManaged: false,
+                canUnlink: true,
+            },
+        },
+    ],
+    lastWayIn: false,
+};
+
 const browserSession = {
     key: 'a'.repeat(64),
     device: 'Firefox on macOS',
@@ -195,6 +220,7 @@ function unlocked(): AccountSettingsProps {
             canManageEmailCode: true,
             requiresConfirmation: true,
             canListBrowserSessions: true,
+            canLinkAccounts: true,
             locked: false,
             protected: {
                 twoFactorEnabled: true,
@@ -212,6 +238,7 @@ function unlocked(): AccountSettingsProps {
                 },
                 password: { isSet: true, allowed: true },
                 browserSessions: [browserSession],
+                linkedAccounts,
             },
         },
         appearance: { reduceMotion: true },
@@ -286,6 +313,7 @@ beforeEach(() => {
     seen.twoFactor = undefined;
     seen.passkeys = undefined;
     seen.browserSessions = undefined;
+    seen.linkedAccounts = undefined;
     seen.tokens = undefined;
     seen.createToken = undefined;
     seen.concealed = undefined;
@@ -329,7 +357,7 @@ describe('AccountSettings', () => {
             'profile carddelete account cardavatar style card',
         );
         expect(cards('Security')).toBe(
-            'password card with breach checktwo-factor cardpasskeys cardactive sessions card',
+            'password card with breach checktwo-factor cardpasskeys cardactive sessions cardlinked accounts card',
         );
         expect(cards('Appearance')).toBe(
             'appearance cardreduce motion onshortcuts on',
@@ -395,6 +423,7 @@ describe('AccountSettings', () => {
         });
         expect(seen.passkeys).toEqual([passkey]);
         expect(seen.browserSessions).toEqual([browserSession]);
+        expect(seen.linkedAccounts).toEqual(linkedAccounts);
         expect(seen.tokens).toEqual([token]);
         expect(seen.createToken).toMatchObject({
             mcpUrl: 'https://skrum.test/mcp',
@@ -417,7 +446,7 @@ describe('AccountSettings', () => {
         renderWithProviders(<AccountSettings {...locked()} />);
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach checkconcealed two-factor cardpasskeys cardactive sessions card',
+            'password card with breach checkconcealed two-factor cardpasskeys cardactive sessions cardlinked accounts card',
         );
         expect(sectionNamed('API tokens').textContent).toBe(
             'create token formtoken listserver ',
@@ -429,6 +458,7 @@ describe('AccountSettings', () => {
         });
         expect(seen.passkeys).toBeNull();
         expect(seen.browserSessions).toBeNull();
+        expect(seen.linkedAccounts).toBeNull();
         expect(seen.tokens).toBeNull();
         expect(seen.serverUrl).toBeNull();
         expect(seen.createToken).toMatchObject({
@@ -551,7 +581,7 @@ describe('AccountSettings', () => {
         );
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach checkactive sessions card',
+            'password card with breach checkactive sessions cardlinked accounts card',
         );
     });
 
@@ -595,7 +625,7 @@ describe('AccountSettings', () => {
         );
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach checkactive sessions card',
+            'password card with breach checkactive sessions cardlinked accounts card',
         );
     });
 
@@ -658,6 +688,50 @@ describe('AccountSettings', () => {
         );
 
         expect(seen.browserSessions).toBeUndefined();
+    });
+
+    it('mounts no Linked accounts card when the instance has no provider, locked, or no row once unlocked', () => {
+        const closed = locked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...closed}
+                security={{ ...closed.security!, canLinkAccounts: false }}
+            />,
+        );
+
+        expect(seen.linkedAccounts).toBeUndefined();
+
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{
+                    ...props.security!,
+                    canLinkAccounts: false,
+                    protected: {
+                        ...props.security!.protected!,
+                        linkedAccounts: { rows: [], lastWayIn: false },
+                    },
+                }}
+            />,
+        );
+
+        expect(seen.linkedAccounts).toBeUndefined();
+    });
+
+    it('keeps the identity of a provider turned off listed once unlocked, even with no provider left', () => {
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{ ...props.security!, canLinkAccounts: false }}
+            />,
+        );
+
+        expect(seen.linkedAccounts).toEqual(linkedAccounts);
     });
 
     it('gives an account whose address is not verified its profile only', () => {

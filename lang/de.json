@@ -4585,5 +4585,18 @@
     "Sign out this device?": "Dieses Gerät abmelden?",
     ":device will need to sign in again.": ":device muss sich erneut anmelden.",
     "Sign out every other device?": "Alle anderen Geräte abmelden?",
-    "They will need to sign in again. \"Remember me\" ends on every device.": "Dort ist eine erneute Anmeldung nötig. „Angemeldet bleiben“ endet auf allen Geräten."
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Dort ist eine erneute Anmeldung nötig. „Angemeldet bleiben“ endet auf allen Geräten.",
+    "Linked accounts": "Verknüpfte Konten",
+    "Sign in with your company SSO or an existing account. Keep at least one way in.": "Melde dich mit dem SSO deines Unternehmens oder einem bestehenden Konto an. Behalte mindestens einen Weg zur Anmeldung.",
+    "Not linked": "Nicht verknüpft",
+    "Linked": "Verknüpft",
+    "Linked :date": "Verknüpft am :date",
+    "Not available on this instance": "Auf dieser Instanz nicht verfügbar",
+    "Managed by your admin": "Von deinem Admin verwaltet",
+    "Link :provider": ":provider verknüpfen",
+    "Unlink": "Trennen",
+    "Unlink :provider?": ":provider trennen?",
+    "You will no longer sign in with :provider. You can link it again later.": "Du kannst dich nicht mehr mit :provider anmelden. Du kannst es später erneut verknüpfen.",
+    "Confirm your password to see your linked accounts.": "Bestätige dein Passwort, um deine verknüpften Konten zu sehen.",
+    "Show my linked accounts": "Meine verknüpften Konten anzeigen"
 }

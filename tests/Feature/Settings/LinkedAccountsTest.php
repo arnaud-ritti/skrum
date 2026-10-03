@@ -4,6 +4,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\InstanceSettings;
 use App\Support\Settings\LinkedAccounts;
+use App\Support\Settings\SecuritySettings;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 
@@ -126,4 +127,21 @@ it('sends the linked accounts with the protected security props', function () {
             ->where('security.protected.linkedAccounts.rows.0.provider', 'google')
             ->where('security.protected.linkedAccounts.rows.0.account.canUnlink', true)
             ->where('security.protected.linkedAccounts.lastWayIn', false));
+});
+
+it('tells the locked section whether the card exists, before any confirmation', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('settings.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('security.protected', null)
+            ->where('security.canLinkAccounts', true));
+
+    config([
+        'services.google.client_id' => null,
+        'services.github.client_id' => null,
+        'oidc.connections.entra.client_id' => null,
+        'oidc.connections.generic.client_id' => null,
+    ]);
+
+    expect(resolve(SecuritySettings::class)->offered()['canLinkAccounts'])->toBeFalse();
 });

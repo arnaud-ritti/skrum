@@ -4,6 +4,7 @@ namespace App\Support\Settings;
 
 use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Enums\EmailCodePurpose;
+use App\Enums\SsoProvider;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
@@ -41,7 +42,8 @@ class SecuritySettings
      *     canManagePasskeys: bool,
      *     canManageEmailCode: bool,
      *     requiresConfirmation: bool,
-     *     canListBrowserSessions: bool
+     *     canListBrowserSessions: bool,
+     *     canLinkAccounts: bool
      * }
      */
     public function offered(): array
@@ -57,6 +59,7 @@ class SecuritySettings
             'canManageEmailCode' => $this->availability->emailEnabled(),
             'requiresConfirmation' => $canManageTwoFactor && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
             'canListBrowserSessions' => $this->sessions->available(),
+            'canLinkAccounts' => SsoProvider::enabled() !== [],
         ];
     }
 

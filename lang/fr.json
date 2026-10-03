@@ -4585,5 +4585,18 @@
     "Sign out this device?": "Déconnecter cet appareil ?",
     ":device will need to sign in again.": ":device devra se reconnecter.",
     "Sign out every other device?": "Déconnecter tous les autres appareils ?",
-    "They will need to sign in again. \"Remember me\" ends on every device.": "Ils devront se reconnecter. « Rester connecté » prend fin sur tous les appareils."
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Ils devront se reconnecter. « Rester connecté » prend fin sur tous les appareils.",
+    "Linked accounts": "Comptes liés",
+    "Sign in with your company SSO or an existing account. Keep at least one way in.": "Connecte-toi avec le SSO de ton entreprise ou un compte existant. Garde au moins un moyen de te connecter.",
+    "Not linked": "Non lié",
+    "Linked": "Lié",
+    "Linked :date": "Lié le :date",
+    "Not available on this instance": "Indisponible sur cette instance",
+    "Managed by your admin": "Géré par ton admin",
+    "Link :provider": "Lier :provider",
+    "Unlink": "Délier",
+    "Unlink :provider?": "Délier :provider ?",
+    "You will no longer sign in with :provider. You can link it again later.": "Tu ne pourras plus te connecter avec :provider. Tu pourras le lier à nouveau plus tard.",
+    "Confirm your password to see your linked accounts.": "Confirme ton mot de passe pour voir tes comptes liés.",
+    "Show my linked accounts": "Afficher mes comptes liés"
 }

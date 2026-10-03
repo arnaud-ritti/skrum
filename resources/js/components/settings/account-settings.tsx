@@ -18,6 +18,8 @@ import { ProfileCard } from '@/components/settings/profile-card';
 import { ProfilePhoto } from '@/components/settings/profile-photo';
 import { ActiveSessionsCard } from '@/components/settings/security/active-sessions-card';
 import type { BrowserSessionRow } from '@/components/settings/security/active-sessions-card';
+import { LinkedAccountsCard } from '@/components/settings/security/linked-accounts-card';
+import type { LinkedAccounts } from '@/components/settings/security/linked-accounts-card';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
 import { SecurityStack } from '@/components/settings/security/security-stack';
@@ -82,6 +84,8 @@ export type ProtectedSecuritySettings = {
     };
     /** Null when the sessions are not kept in the database: no Active sessions card. */
     browserSessions: BrowserSessionRow[] | null;
+    /** Every provider of the instance, and an identity of a provider turned off. */
+    linkedAccounts: LinkedAccounts;
 };
 
 export type SecuritySettings = {
@@ -97,6 +101,8 @@ export type SecuritySettings = {
     requiresConfirmation: boolean;
     /** The sessions are kept in the database: the Active sessions card exists. */
     canListBrowserSessions: boolean;
+    /** The instance has a sign-in provider: the Linked accounts card exists before the confirmation. */
+    canLinkAccounts: boolean;
     locked: boolean;
     protected: ProtectedSecuritySettings | null;
 };
@@ -150,6 +156,10 @@ function SecuritySection({
     const listsBrowserSessions =
         security.canListBrowserSessions &&
         (account === null || account.browserSessions !== null);
+    const listsLinkedAccounts =
+        account === null
+            ? security.canLinkAccounts
+            : account.linkedAccounts.rows.length > 0;
 
     return (
         <SecurityStack
@@ -157,6 +167,13 @@ function SecuritySection({
                 listsBrowserSessions && (
                     <ActiveSessionsCard
                         sessions={account?.browserSessions ?? null}
+                    />
+                )
+            }
+            linkedAccounts={
+                listsLinkedAccounts && (
+                    <LinkedAccountsCard
+                        accounts={account?.linkedAccounts ?? null}
                     />
                 )
             }

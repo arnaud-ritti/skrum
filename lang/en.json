@@ -4365,5 +4365,18 @@
     "Sign out this device?": "Sign out this device?",
     ":device will need to sign in again.": ":device will need to sign in again.",
     "Sign out every other device?": "Sign out every other device?",
-    "They will need to sign in again. \"Remember me\" ends on every device.": "They will need to sign in again. \"Remember me\" ends on every device."
+    "They will need to sign in again. \"Remember me\" ends on every device.": "They will need to sign in again. \"Remember me\" ends on every device.",
+    "Linked accounts": "Linked accounts",
+    "Sign in with your company SSO or an existing account. Keep at least one way in.": "Sign in with your company SSO or an existing account. Keep at least one way in.",
+    "Not linked": "Not linked",
+    "Linked": "Linked",
+    "Linked :date": "Linked :date",
+    "Not available on this instance": "Not available on this instance",
+    "Managed by your admin": "Managed by your admin",
+    "Link :provider": "Link :provider",
+    "Unlink": "Unlink",
+    "Unlink :provider?": "Unlink :provider?",
+    "You will no longer sign in with :provider. You can link it again later.": "You will no longer sign in with :provider. You can link it again later.",
+    "Confirm your password to see your linked accounts.": "Confirm your password to see your linked accounts.",
+    "Show my linked accounts": "Show my linked accounts"
 }
