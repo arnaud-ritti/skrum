@@ -8,6 +8,7 @@ use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\PresentTeamRetro;
+use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
@@ -67,6 +68,7 @@ class TeamsController extends Controller
         ListRecentTeamSessions $listRecentTeamSessions,
         PresentActionItem $presentActionItem,
         RefreshStaleWhiteboardPreviews $refreshStaleWhiteboardPreviews,
+        AvailableTeamMembers $availableTeamMembers,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -89,13 +91,7 @@ class TeamsController extends Controller
                     'avatarUrl' => $member->avatarUrl(),
                     'role' => $member->teamMembership->role->value,
                 ]),
-            'availableMembers' => $canManage
-                ? Alphabetical::sort(
-                    $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('users.id')->get(),
-                    fn (User $member): string => $member->name,
-                )
-                    ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()])
-                : [],
+            'availableMembers' => $canManage ? $availableTeamMembers->handle($team) : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
             'retros' => $team->retros()

@@ -163,6 +163,7 @@ use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
+use App\Http\Controllers\TeamDataController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamDefaultRetroTemplatesController;
 use App\Http\Controllers\TeamEstimatesController;
@@ -179,6 +180,7 @@ use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamRitualsController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamSessionsController;
+use App\Http\Controllers\TeamSettingsController;
 use App\Http\Controllers\TeamSprintsController;
 use App\Http\Controllers\TeamSprintStartsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
@@ -364,6 +366,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
             Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
             Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');
+            Route::get('teams/{team}/settings', [TeamSettingsController::class, 'show'])->name('teams.settings.show');
+            Route::get('teams/{team}/members', [TeamMembersController::class, 'index'])->name('teams.members.index');
+            Route::get('teams/{team}/data', [TeamDataController::class, 'show'])->name('teams.data.show');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');

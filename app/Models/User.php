@@ -280,6 +280,36 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return $this->hasMany(SocialAccount::class);
     }
 
+    /** @return HasMany<Participant, $this> */
+    public function retroParticipations(): HasMany
+    {
+        return $this->hasMany(Participant::class);
+    }
+
+    /** @return HasMany<PokerPlayer, $this> */
+    public function pokerPlayers(): HasMany
+    {
+        return $this->hasMany(PokerPlayer::class);
+    }
+
+    /** @return HasMany<WhiteboardMember, $this> */
+    public function whiteboardMemberships(): HasMany
+    {
+        return $this->hasMany(WhiteboardMember::class);
+    }
+
+    /** @return HasMany<GamePlayer, $this> */
+    public function gamePlayers(): HasMany
+    {
+        return $this->hasMany(GamePlayer::class);
+    }
+
+    /** @return HasMany<TeamSurveyRespondent, $this> */
+    public function surveyRespondents(): HasMany
+    {
+        return $this->hasMany(TeamSurveyRespondent::class);
+    }
+
     /**
      * Fortify swaps a used recovery code for a new one, so the stock never shrinks.
      * Here the used code is removed, so the security page can say how many are left.
