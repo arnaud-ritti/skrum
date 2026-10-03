@@ -32,6 +32,7 @@ class PresentGameRound
             'turnPlayerId' => $round->turn_player_id,
             'turnEndsAt' => $round->turn_ends_at?->toIso8601String(),
             'turnSeconds' => $round->turn_seconds,
+            'hintSeconds' => $round->hint_seconds,
             ...($this->gameRulesRegistry->find($round->game)?->presentActive($round, $room, $viewer) ?? []),
         ];
     }

@@ -144,6 +144,7 @@ it('presents the active round for the viewer through the rules', function () {
         'turnPlayerId' => null,
         'turnEndsAt' => null,
         'turnSeconds' => null,
+        'hintSeconds' => null,
         'fake' => true,
         'viewerPlayerId' => $member->id,
     ])

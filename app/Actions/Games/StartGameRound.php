@@ -22,6 +22,7 @@ class StartGameRound
         private AnnounceTeamGameRoom $announceTeamGameRoom,
         private NumberGameRound $numberGameRound,
         private ScheduleTurnExpiry $scheduleTurnExpiry,
+        private ScheduleAutoHints $scheduleAutoHints,
     ) {}
 
     /**
@@ -56,6 +57,7 @@ class StartGameRound
 
             $rules->prepare($locked, $round, $input);
             $this->prepareTurns($locked, $round, $rules, $input);
+            $this->scheduleAutoHints->prepare($locked, $round);
             $round->save();
 
             $locked->forceFill(['current_round_id' => $round->id])->save();
@@ -64,6 +66,7 @@ class StartGameRound
 
             $this->scheduleRoundExpiry->handle($locked, $round);
             $this->scheduleTurnExpiry->handle($round);
+            $this->scheduleAutoHints->dispatch($round);
 
             (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
 
