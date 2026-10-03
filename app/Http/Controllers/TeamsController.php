@@ -19,6 +19,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
+use App\Support\Teams\SprintCalendar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -114,6 +115,8 @@ class TeamsController extends Controller
             'roleOptions' => $canManage ? TeamRole::options() : [],
             'viewerRole' => $team->roleOf($request->user())?->value,
             'canManageRituals' => $request->user()->can('manageRituals', $team),
+            'schedule' => $this->schedule($team),
+            'hasSprints' => $team->sprints()->exists(),
         ]);
     }
 
@@ -155,5 +158,24 @@ class TeamsController extends Controller
         $team->delete();
 
         return to_route('workspaces.show', $workspace);
+    }
+
+    /**
+     * @return array{
+     *     sprint: array{id: string, number: int, startsOn: string, endsOn: string}|null,
+     *     nextRetro: array{date: string, time: ?string}|null
+     * }|null
+     */
+    private function schedule(Team $team): ?array
+    {
+        $calendar = SprintCalendar::fromToday($team, now());
+        $sprint = $calendar->sprintOn(now());
+        $nextRetro = $calendar->nextRetro(now());
+
+        if ($sprint === null && $nextRetro === null) {
+            return null;
+        }
+
+        return ['sprint' => $sprint, 'nextRetro' => $nextRetro];
     }
 }

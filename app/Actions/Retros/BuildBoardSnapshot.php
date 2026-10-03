@@ -30,6 +30,7 @@ use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
 use App\Support\Sessions\JoinCodes;
+use App\Support\Teams\SprintCalendar;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +106,7 @@ class BuildBoardSnapshot
                 'teamId' => $retro->team_id,
                 'teamName' => $viewer->isGuest() ? null : $retro->team->name,
                 'title' => $retro->title,
+                'sprintNumber' => SprintCalendar::forTeam($retro->team, $retro->created_at)->numberOn($retro->created_at),
                 'template' => $retro->template,
                 'phase' => $retro->phase->value,
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),

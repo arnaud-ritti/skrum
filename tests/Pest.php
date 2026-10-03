@@ -42,6 +42,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Models\TeamSprint;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyOption;
@@ -1999,4 +2000,9 @@ function withEnvironmentConfiguration(array $config): void
     }
 
     app()->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
+}
+
+function teamSprint(Team $team, int $number, string $startsOn, string $endsOn): TeamSprint
+{
+    return $team->sprints()->create(['number' => $number, 'starts_on' => $startsOn, 'ends_on' => $endsOn]);
 }

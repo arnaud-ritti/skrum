@@ -22,6 +22,7 @@ use App\Support\Alphabetical;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
 use App\Support\Surveys\SurveyTemplateCatalogue;
+use App\Support\Teams\SprintCalendar;
 use Inertia\Inertia;
 
 class PresentNewSessionOptions
@@ -83,6 +84,7 @@ class PresentNewSessionOptions
                 ->values(),
             'canCreateSurvey' => $viewer->can('createSurvey', $team),
             'surveyTemplates' => $this->surveyTemplateCatalogue->options($team),
+            'currentSprintNumber' => SprintCalendar::forTeam($team, now())->numberOn(now()),
         ];
     }
 

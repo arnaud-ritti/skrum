@@ -20,19 +20,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string|null $default_poker_deck
  * @property string|null $default_saved_poker_deck_id
+ * @property int|null $sprint_length_weeks
+ * @property int|null $retro_weekday
+ * @property string|null $retro_time
+ * @property bool $facilitator_rotation_enabled
+ * @property int $rotation_position
  * @property-read Workspace $workspace
  * @property-read string|null $last_retro_at
  * @property-read int|null $open_poker_games_count
  * @property-read int|null $open_action_items_count
  * @property-read int|null $overdue_action_items_count
  */
-#[Fillable(['name', 'default_poker_deck', 'default_saved_poker_deck_id'])]
+#[Fillable([
+    'name',
+    'default_poker_deck',
+    'default_saved_poker_deck_id',
+    'sprint_length_weeks',
+    'retro_weekday',
+    'retro_time',
+    'facilitator_rotation_enabled',
+    'rotation_position',
+])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
     use HasFactory;
 
     use HasUuids;
+
+    public const int DefaultSprintLengthWeeks = 2;
 
     /** @return BelongsTo<Workspace, $this> */
     public function workspace(): BelongsTo
@@ -145,5 +161,21 @@ class Team extends Model
     public function healthStatements(): HasMany
     {
         return $this->hasMany(TeamHealthStatement::class)->orderBy('position')->oldest();
+    }
+
+    /** @return HasMany<TeamSprint, $this> */
+    public function sprints(): HasMany
+    {
+        return $this->hasMany(TeamSprint::class)->orderBy('starts_on')->orderBy('id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'sprint_length_weeks' => 'integer',
+            'retro_weekday' => 'integer',
+            'facilitator_rotation_enabled' => 'boolean',
+            'rotation_position' => 'integer',
+        ];
     }
 }

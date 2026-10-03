@@ -8,11 +8,14 @@ use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSprint;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
+use App\Support\Teams\SprintCalendar;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -57,14 +60,24 @@ class WorkspacesController extends Controller
             )
             ->load(['members' => fn ($members) => $members->orderBy('users.name')->orderBy('users.id')->limit(5)]);
 
-        $openRetroTitles = Retro::query()
+        $openRetros = Retro::query()
             ->whereIn('team_id', $teams->modelKeys())
             ->where('phase', '!=', RetroPhase::Completed->value)
             ->latest()
             ->orderByDesc('id')
-            ->get(['id', 'team_id', 'title'])
+            ->get(['id', 'team_id', 'title', 'created_at'])
             ->unique('team_id')
-            ->pluck('title', 'team_id');
+            ->keyBy('team_id');
+
+        $openRetroDays = $openRetros->map(fn (Retro $retro): string => SprintCalendar::dayOf($retro->created_at));
+        $sprintsByTeam = $openRetros->isEmpty()
+            ? collect()
+            : TeamSprint::query()
+                ->whereIn('team_id', $openRetros->keys())
+                ->where('starts_on', '<=', $openRetroDays->max())
+                ->where('ends_on', '>=', $openRetroDays->min())
+                ->get()
+                ->groupBy('team_id');
 
         $joinedTeamIds = $user->teams()
             ->whereIn('teams.id', $teams->modelKeys())
@@ -97,7 +110,8 @@ class WorkspacesController extends Controller
                 ])->all(),
                 'isMember' => $joinedTeamIds->contains($team->id),
                 'activity' => [
-                    'openRetroTitle' => $openRetroTitles->get($team->id),
+                    'openRetroTitle' => $openRetros->get($team->id)?->title,
+                    'openRetroSprint' => $this->openRetroSprint($openRetros->get($team->id), $sprintsByTeam->get($team->id, collect())),
                     'lastRetroAt' => $team->last_retro_at === null
                         ? null
                         : Date::parse($team->last_retro_at)->toIso8601String(),
@@ -117,5 +131,17 @@ class WorkspacesController extends Controller
         $workspace->delete();
 
         return to_route('dashboard');
+    }
+
+    /**
+     * @param  Collection<int, TeamSprint>  $sprints
+     */
+    private function openRetroSprint(?Retro $openRetro, Collection $sprints): ?int
+    {
+        if ($openRetro === null) {
+            return null;
+        }
+
+        return SprintCalendar::ofRows($sprints)->numberOn($openRetro->created_at);
     }
 }

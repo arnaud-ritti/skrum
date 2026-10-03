@@ -9,6 +9,8 @@ use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
+use App\Support\Teams\SprintCalendar;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class BuildTeamMoodTrend
@@ -31,7 +33,8 @@ class BuildTeamMoodTrend
      *     mood: ?float,
      *     moodVoters: int,
      *     roti: ?float,
-     *     rotiVoters: int
+     *     rotiVoters: int,
+     *     sprintLabel: ?string
      * }>
      */
     public function handle(Team $team): array
@@ -51,12 +54,12 @@ class BuildTeamMoodTrend
             ->where(fn ($query) => $query->whereIn('id', $attached->keys())->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
-            ->get(['id', 'title', 'completed_at']);
+            ->get(['id', 'title', 'completed_at', 'created_at']);
 
         $points = $retros->map(function (Retro $retro) use ($attached, $scores, $voters): array {
             $survey = $attached->get($retro->id);
 
-            return ['at' => $retro->completed_at->getTimestamp(), 'id' => $retro->id, 'point' => [
+            return ['at' => $retro->completed_at->getTimestamp(), 'id' => $retro->id, 'createdAt' => $retro->created_at, 'point' => [
                 'retroId' => $retro->id,
                 'surveyId' => $survey?->id,
                 'title' => $retro->title,
@@ -70,7 +73,7 @@ class BuildTeamMoodTrend
         })->concat(
             $surveys
                 ->filter(fn (TeamSurvey $survey): bool => $survey->retro_id === null && $scores->get($survey->id) !== null)
-                ->map(fn (TeamSurvey $survey): array => ['at' => $survey->closed_at->getTimestamp(), 'id' => $survey->id, 'point' => [
+                ->map(fn (TeamSurvey $survey): array => ['at' => $survey->closed_at->getTimestamp(), 'id' => $survey->id, 'createdAt' => $survey->created_at, 'point' => [
                     'retroId' => null,
                     'surveyId' => $survey->id,
                     'title' => $survey->title,
@@ -83,11 +86,21 @@ class BuildTeamMoodTrend
                 ]]),
         );
 
-        return array_values($points
+        $shown = $points
             ->sort(fn (array $first, array $second): int => [$second['at'], $second['id']] <=> [$first['at'], $first['id']])
             ->take(self::Points)
             ->reverse()
-            ->map(fn (array $entry): array => $entry['point'])
+            ->values();
+
+        if ($shown->isEmpty()) {
+            return [];
+        }
+
+        $createdDays = $shown->map(fn (array $entry): CarbonInterface => $entry['createdAt']);
+        $calendar = SprintCalendar::forTeam($team, $createdDays->min(), $createdDays->max());
+
+        return array_values($shown
+            ->map(fn (array $entry): array => [...$entry['point'], 'sprintLabel' => $calendar->shortLabelOn($entry['createdAt'])])
             ->all());
     }
 
