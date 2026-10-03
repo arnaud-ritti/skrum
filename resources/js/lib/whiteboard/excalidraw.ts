@@ -4,6 +4,7 @@ import '../../../css/excalidraw-theme.css';
 export {
     CaptureUpdateAction,
     Excalidraw,
+    getCommonBounds,
     MainMenu,
     reconcileElements,
     restoreElements,
