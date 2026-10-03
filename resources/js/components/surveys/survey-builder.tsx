@@ -64,6 +64,10 @@ function without<T>(record: Record<string, T>, key: string): Record<string, T> {
     return rest;
 }
 
+function pick<T>(record: Record<string, T>, key: string): Record<string, T> {
+    return key in record ? { [key]: record[key] } : {};
+}
+
 /** The camel-cased survey fields a settings patch changes, for the optimistic update. */
 function settingsOf(
     patch: SurveySettingsPatch,
@@ -111,22 +115,26 @@ export function SurveyBuilder({
     const [settingsOpen, setSettingsOpen] = useState(false);
     const labelInputs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocus = useRef<string | null>(null);
+    const settingsInFlight = useRef(new Map<number, SurveySettingsPatch>());
+    const settingsRequests = useRef(0);
 
     const { survey, links } = snapshot;
     const isDraft = survey.status === 'draft';
     const isLocked = survey.hasLockedQuestions;
     const isEditable = isDraft && !isLocked;
-    const questions = snapshot.questions.map(
-        (question) => drafts[question.id] ?? question,
-    );
+    const questions = isDraft
+        ? snapshot.questions.map((question) => drafts[question.id] ?? question)
+        : snapshot.questions;
     const title = titleDraft ?? survey.title;
     const isTitleInvalid = title.trim() === '';
     const hasUnsavable =
         isTitleInvalid ||
         Object.values(drafts).some((draft) => !isSavable(draft));
-    const saveState = hasUnsavable
-        ? ({ status: 'error', message: '' } as const)
-        : autosave.state;
+    const hasFailed = Object.keys(errors).length > 0;
+    const saveState =
+        hasUnsavable || hasFailed
+            ? ({ status: 'error', message: '' } as const)
+            : autosave.state;
     const cardMode: QuestionCardMode = isLocked
         ? 'locked'
         : isDraft
@@ -153,8 +161,9 @@ export function SurveyBuilder({
         function warnBeforeLeaving(event: BeforeUnloadEvent): void {
             if (
                 !autosave.hasPending() &&
-                autosave.state.status !== 'error' &&
-                !hasUnsavable
+                !autosave.hasFailed() &&
+                !hasUnsavable &&
+                !hasFailed
             ) {
                 return;
             }
@@ -166,13 +175,13 @@ export function SurveyBuilder({
 
         return () =>
             window.removeEventListener('beforeunload', warnBeforeLeaving);
-    }, [autosave, hasUnsavable]);
+    }, [autosave, hasUnsavable, hasFailed]);
 
     const editQuestion = (next: SurveyQuestionPayload): void => {
         setDrafts((known) => ({ ...known, [next.id]: next }));
 
         if (!isSavable(next)) {
-            autosave.cancel(next.id);
+            void autosave.cancel(next.id);
 
             return;
         }
@@ -205,7 +214,7 @@ export function SurveyBuilder({
         setTitleDraft(value);
 
         if (value.trim() === '') {
-            autosave.cancel('survey');
+            void autosave.cancel('survey');
 
             return;
         }
@@ -227,7 +236,17 @@ export function SurveyBuilder({
         });
     };
 
+    /** The settings of the requests still running, laid over an answer so that a slower one cannot undo a later switch. */
+    const settingsStillSent = (): Partial<SurveySnapshot['survey']> =>
+        [...settingsInFlight.current.values()].reduce(
+            (known, patch) => ({ ...known, ...settingsOf(patch) }),
+            {},
+        );
+
     const changeSettings = (patch: SurveySettingsPatch): void => {
+        const request = ++settingsRequests.current;
+
+        settingsInFlight.current.set(request, patch);
         dispatch({
             type: 'snapshot.replace',
             snapshot: {
@@ -238,9 +257,20 @@ export function SurveyBuilder({
 
         autosave
             .saveNow(`settings.${Object.keys(patch).join()}`, async () => {
+                let next: SurveySnapshot;
+
+                try {
+                    next = await surveyApi.update(survey.id, patch);
+                } finally {
+                    settingsInFlight.current.delete(request);
+                }
+
                 dispatch({
                     type: 'snapshot.replace',
-                    snapshot: await surveyApi.update(survey.id, patch),
+                    snapshot: {
+                        ...next,
+                        survey: { ...next.survey, ...settingsStillSent() },
+                    },
                 });
             })
             .catch((error: unknown) => {
@@ -275,7 +305,7 @@ export function SurveyBuilder({
     const removeQuestion = async (
         question: SurveyQuestionPayload,
     ): Promise<void> => {
-        autosave.cancel(question.id);
+        await autosave.cancel(question.id);
 
         try {
             await surveyApi.removeQuestion(survey.id, question.id);
@@ -338,12 +368,22 @@ export function SurveyBuilder({
         }
     };
 
+    const cannotPublish = hasUnsavable || hasFailed;
+
     const changeStatus = async (status: 'open' | 'draft'): Promise<void> => {
+        if (status === 'open' && cannotPublish) {
+            toast.error(t('Some changes are not saved yet.'));
+
+            return;
+        }
+
         setBusy(true);
 
         try {
             await autosave.flush();
             await surveyApi.setStatus(survey.id, status);
+            setDrafts({});
+            setErrors((known) => pick(known, 'title'));
             await refetch();
         } catch (error) {
             toast.error(messageOf(error));
@@ -385,6 +425,11 @@ export function SurveyBuilder({
                     hasAnswers={snapshot.progress.responses > 0}
                     resultsHref={links.results}
                     busy={busy}
+                    publishBlockedReason={
+                        cannotPublish
+                            ? t('Some changes are not saved yet.')
+                            : undefined
+                    }
                     onPreview={
                         preview === undefined
                             ? undefined
@@ -403,7 +448,10 @@ export function SurveyBuilder({
                 <div className="flex min-w-0 flex-col gap-3">
                     <div className="mb-2 flex min-w-0 items-start gap-3">
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <h1 className="min-w-0 font-display text-2xl font-bold tracking-heading">
+                            <h1
+                                aria-label={title}
+                                className="min-w-0 font-display text-2xl font-bold tracking-heading"
+                            >
                                 <input
                                     id="survey-title"
                                     aria-label={t('Title')}
@@ -457,11 +505,9 @@ export function SurveyBuilder({
                                 "The questions of a health check come from the team's statements.",
                             )}
                             action={
-                                links.team === null ? undefined : (
+                                links.healthCheck === null ? undefined : (
                                     <Button asChild variant="outline" size="sm">
-                                        <Link
-                                            href={`${links.team}/health-check`}
-                                        >
+                                        <Link href={links.healthCheck}>
                                             {t('Manage statements')}
                                         </Link>
                                     </Button>
@@ -553,9 +599,9 @@ export function SurveyBuilder({
                 {settingsBeside ? (
                     <aside
                         aria-label={t('Survey settings')}
-                        className="min-w-0 rounded-xl border bg-card p-5 shadow-card lg:sticky lg:top-20"
+                        className="min-w-0 border-l bg-card p-5 lg:-my-6 lg:-mr-10 lg:min-h-[calc(100svh-3.5rem)] lg:self-stretch"
                     >
-                        {settings}
+                        <div className="lg:sticky lg:top-20">{settings}</div>
                     </aside>
                 ) : (
                     <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>

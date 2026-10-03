@@ -25,6 +25,8 @@ export type BuilderTopbarProps = {
     hasAnswers: boolean;
     resultsHref: string;
     busy: boolean;
+    /** Why "Publish" is disabled while the screen holds changes the server does not have. */
+    publishBlockedReason?: string;
     /** Absent until the participant view can be shown here: the button is then disabled. */
     onPreview: (() => void) | undefined;
     onPublish: () => void;
@@ -138,6 +140,7 @@ export function BuilderTopbar({
     hasAnswers,
     resultsHref,
     busy,
+    publishBlockedReason,
     onPreview,
     onPublish,
     onBackToDraft,
@@ -179,16 +182,23 @@ export function BuilderTopbar({
                 </Button>
             )}
             {isDraft ? (
-                <Button
-                    type="button"
-                    size="sm"
-                    disabled={busy || questionCount === 0}
-                    onClick={onPublish}
-                    aria-label={t('Publish')}
-                >
-                    <Send aria-hidden />
-                    <span className="max-md:sr-only">{t('Publish')}</span>
-                </Button>
+                <span title={publishBlockedReason} className="inline-flex">
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                            busy ||
+                            questionCount === 0 ||
+                            publishBlockedReason !== undefined
+                        }
+                        onClick={onPublish}
+                        aria-label={t('Publish')}
+                        aria-description={publishBlockedReason}
+                    >
+                        <Send aria-hidden />
+                        <span className="max-md:sr-only">{t('Publish')}</span>
+                    </Button>
+                </span>
             ) : (
                 <Button asChild size="sm">
                     <Link href={resultsHref} aria-label={t('View results')}>

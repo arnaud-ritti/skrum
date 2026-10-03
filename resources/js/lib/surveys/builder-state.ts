@@ -98,58 +98,76 @@ type Run = () => Promise<unknown>;
 
 type Pending = { run: Run; timer: ReturnType<typeof setTimeout> };
 
+type Flight = { key: string; done: Promise<void> };
+
 function messageOf(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
 /**
  * Saves that wait for the typing to stop: one pending save per key (a
- * question id, or `survey`), the latest wins. `flush` runs every pending save
- * at once and resolves when all have answered, or rejects with the first
- * failure; `saveNow` runs one at once (a switch), `cancel` drops one (a
- * deleted question).
+ * question id, or `survey`), the latest wins. A failed key stays in error until
+ * it saves again or is cancelled. `flush` runs every pending save at once and
+ * resolves when every save, in flight included, has answered, or rejects with
+ * the first failure; `saveNow` runs one at once (a switch), `cancel` drops one
+ * and waits for its save in flight (a deleted question). Leaving the page
+ * sends the pending saves instead of dropping them.
  */
 export function useAutosave(delayMs = 600) {
     const [state, setState] = useState<SaveState>({ status: 'idle' });
     const pending = useRef(new Map<string, Pending>());
-    const inFlight = useRef(0);
-    const failure = useRef<string | null>(null);
+    const inFlight = useRef(new Set<Flight>());
+    const failures = useRef(new Map<string, string>());
 
-    const start = useCallback(async (key: string): Promise<void> => {
-        const entry = pending.current.get(key);
-
-        if (entry === undefined) {
+    const settle = useCallback((): void => {
+        if (inFlight.current.size > 0 || pending.current.size > 0) {
             return;
         }
 
-        clearTimeout(entry.timer);
-        pending.current.delete(key);
-        inFlight.current++;
-        setState({ status: 'saving' });
+        const [failure] = failures.current.values();
 
-        try {
-            await entry.run();
-        } catch (error) {
-            failure.current = messageOf(error);
-            setState({ status: 'error', message: failure.current });
-
-            throw error;
-        } finally {
-            inFlight.current--;
-        }
-
-        if (inFlight.current > 0 || pending.current.size > 0) {
-            return;
-        }
-
-        if (failure.current !== null) {
-            setState({ status: 'error', message: failure.current });
+        if (failure !== undefined) {
+            setState({ status: 'error', message: failure });
 
             return;
         }
 
         setState({ status: 'saved', at: Date.now() });
     }, []);
+
+    const start = useCallback(
+        (key: string): Promise<void> => {
+            const entry = pending.current.get(key);
+
+            if (entry === undefined) {
+                return Promise.resolve();
+            }
+
+            clearTimeout(entry.timer);
+            pending.current.delete(key);
+            setState({ status: 'saving' });
+
+            const flight: Flight = { key, done: Promise.resolve() };
+
+            inFlight.current.add(flight);
+            flight.done = (async () => {
+                try {
+                    await entry.run();
+                    failures.current.delete(key);
+                } catch (error) {
+                    failures.current.set(key, messageOf(error));
+
+                    throw error;
+                } finally {
+                    inFlight.current.delete(flight);
+                    settle();
+                }
+            })();
+
+            return flight.done;
+        },
+        [settle],
+    );
 
     const schedule = useCallback(
         (key: string, run: Run): void => {
@@ -158,8 +176,6 @@ export function useAutosave(delayMs = 600) {
             if (known !== undefined) {
                 clearTimeout(known.timer);
             }
-
-            failure.current = null;
 
             pending.current.set(key, {
                 run,
@@ -172,8 +188,12 @@ export function useAutosave(delayMs = 600) {
     );
 
     const flush = useCallback(async (): Promise<void> => {
+        for (const key of pending.current.keys()) {
+            start(key).catch(() => {});
+        }
+
         const results = await Promise.allSettled(
-            [...pending.current.keys()].map((key) => start(key)),
+            [...inFlight.current].map((flight) => flight.done),
         );
         const rejected = results.find(
             (result): result is PromiseRejectedResult =>
@@ -183,18 +203,35 @@ export function useAutosave(delayMs = 600) {
         if (rejected !== undefined) {
             throw rejected.reason;
         }
+
+        const [failure] = failures.current.values();
+
+        if (failure !== undefined) {
+            throw new Error(failure);
+        }
     }, [start]);
 
-    const cancel = useCallback((key: string): void => {
-        const entry = pending.current.get(key);
+    const cancel = useCallback(
+        async (key: string): Promise<void> => {
+            const entry = pending.current.get(key);
 
-        if (entry === undefined) {
-            return;
-        }
+            if (entry !== undefined) {
+                clearTimeout(entry.timer);
+                pending.current.delete(key);
+            }
 
-        clearTimeout(entry.timer);
-        pending.current.delete(key);
-    }, []);
+            if (failures.current.delete(key)) {
+                settle();
+            }
+
+            await Promise.allSettled(
+                [...inFlight.current]
+                    .filter((flight) => flight.key === key)
+                    .map((flight) => flight.done),
+            );
+        },
+        [settle],
+    );
 
     const saveNow = useCallback(
         (key: string, run: Run): Promise<void> => {
@@ -206,19 +243,21 @@ export function useAutosave(delayMs = 600) {
     );
 
     const hasPending = useCallback(
-        (): boolean => pending.current.size > 0 || inFlight.current > 0,
+        (): boolean => pending.current.size > 0 || inFlight.current.size > 0,
         [],
     );
+
+    const hasFailed = useCallback((): boolean => failures.current.size > 0, []);
 
     useEffect(() => {
         const entries = pending.current;
 
         return () => {
-            for (const entry of entries.values()) {
-                clearTimeout(entry.timer);
+            for (const key of entries.keys()) {
+                start(key).catch(() => {});
             }
         };
-    }, []);
+    }, [start]);
 
-    return { schedule, saveNow, cancel, flush, hasPending, state };
+    return { schedule, saveNow, cancel, flush, hasPending, hasFailed, state };
 }

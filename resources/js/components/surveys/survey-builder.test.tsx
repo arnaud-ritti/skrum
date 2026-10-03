@@ -119,6 +119,7 @@ function snapshot(
         survey?: Partial<SurveySnapshot['survey']>;
         questions?: SurveyQuestionPayload[];
         progress?: Partial<SurveySnapshot['progress']>;
+        links?: Partial<SurveySnapshot['links']>;
     } = {},
 ): SurveySnapshot {
     return {
@@ -166,6 +167,8 @@ function snapshot(
             show: '/surveys/s-1',
             results: '/surveys/s-1/results',
             edit: '/surveys/s-1/edit',
+            healthCheck: null,
+            ...overrides.links,
         },
         serverTime: '2026-10-03T08:00:00Z',
     };
@@ -228,6 +231,13 @@ describe('SurveyBuilder', () => {
         expect(
             (document.getElementById('survey-title') as HTMLInputElement).value,
         ).toBe('Team pulse — sprint 42');
+        expect(
+            screen.getByRole('heading', {
+                level: 1,
+                name: 'Team pulse — sprint 42',
+            }),
+        ).toBeTruthy();
+        expect(within(card(2)).getByText('NPS 0 – 10')).toBeTruthy();
         expect(
             screen.getByText(
                 'A result is shown from 3 answers, and free answers are sorted before they are shown.',
@@ -554,6 +564,9 @@ describe('SurveyBuilder', () => {
                         hasLockedQuestions: true,
                         resultsThreshold: 0,
                     },
+                    links: {
+                        healthCheck: '/w/nordlys/teams/team-1/health-check',
+                    },
                     questions: [
                         question('h1', 'scale', 'We deliver value', {
                             isBuiltin: true,
@@ -757,5 +770,225 @@ describe('SurveyBuilder', () => {
         window.dispatchEvent(leaving);
 
         expect(leaving.defaultPrevented).toBe(true);
+    });
+    it('sends a pending edit when the builder leaves the page within the delay', async () => {
+        vi.useFakeTimers();
+        api.updateQuestion.mockImplementation(() => new Promise(() => {}));
+
+        const { unmount } = renderWithProviders(
+            <SurveyBuilder snapshot={snapshot()} />,
+        );
+
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: 'Workload' },
+        });
+        unmount();
+
+        expect(api.updateQuestion).toHaveBeenCalledWith(
+            's-1',
+            'q1',
+            expect.objectContaining({ label: 'Workload' }),
+        );
+    });
+
+    it('keeps saying not saved while a failed question is unsaved, after a setting saves', async () => {
+        vi.useFakeTimers();
+        api.updateQuestion.mockRejectedValue(
+            new RetroRequestError(422, 'The label is invalid.'),
+        );
+        api.update.mockResolvedValue(
+            snapshot({ survey: { guestAccessEnabled: true, version: 5 } }),
+        );
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: 'Workload' },
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(api.update).toHaveBeenCalledTimes(1);
+        expect(saveStatus()).toBe('Not saved');
+        expect(button('Publish').disabled).toBe(true);
+
+        const leaving = new Event('beforeunload', { cancelable: true });
+
+        window.dispatchEvent(leaving);
+
+        expect(leaving.defaultPrevented).toBe(true);
+    });
+
+    it('publishes only once a save already in flight has answered', async () => {
+        vi.useFakeTimers();
+
+        const calls: string[] = [];
+        let answer: () => void = () => {};
+
+        api.updateQuestion.mockImplementation(
+            (_id, questionId, body) =>
+                new Promise((resolve) => {
+                    answer = () => {
+                        calls.push('save');
+                        resolve({
+                            question: {
+                                ...pulse[0],
+                                id: questionId,
+                                label: body.label,
+                            },
+                        });
+                    };
+                }),
+        );
+        api.setStatus.mockImplementation(async () => {
+            calls.push('publish');
+
+            return null;
+        });
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: 'Workload' },
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        fireEvent.click(button('Publish'));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(api.setStatus).not.toHaveBeenCalled();
+
+        await act(async () => {
+            answer();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(calls).toEqual(['save', 'publish']);
+    });
+
+    it('keeps Publish disabled while a question cannot be saved', () => {
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: '  ' },
+        });
+
+        expect(button('Publish').disabled).toBe(true);
+    });
+
+    it('does not bring back a question deleted while its save was in flight', async () => {
+        vi.useFakeTimers();
+
+        let answer: () => void = () => {};
+
+        api.updateQuestion.mockImplementation(
+            (_id, questionId, body) =>
+                new Promise((resolve) => {
+                    answer = () =>
+                        resolve({
+                            question: {
+                                ...pulse[0],
+                                id: questionId,
+                                label: body.label,
+                            },
+                        });
+                }),
+        );
+        api.removeQuestion.mockResolvedValue(null);
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: 'Workload' },
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        fireEvent.click(button('Delete'));
+        fireEvent.click(
+            within(
+                screen.getByRole('alertdialog', {
+                    name: 'Delete this question?',
+                }),
+            ).getByRole('button', { name: 'Delete' }),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(api.removeQuestion).not.toHaveBeenCalled();
+
+        await act(async () => {
+            answer();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(api.removeQuestion).toHaveBeenCalledWith('s-1', 'q1');
+        expect(screen.getAllByRole('region')).toHaveLength(4);
+        expect(screen.queryByDisplayValue('Workload')).toBeNull();
+    });
+
+    it('keeps the second of two quick settings while the first answers', async () => {
+        vi.useFakeTimers();
+
+        const answers: (() => void)[] = [];
+
+        api.update.mockImplementation(
+            (_id, patch) =>
+                new Promise((resolve) => {
+                    answers.push(() =>
+                        resolve(
+                            snapshot({
+                                survey:
+                                    'guest_access_enabled' in patch
+                                        ? {
+                                              guestAccessEnabled: true,
+                                              version: 5,
+                                          }
+                                        : {
+                                              guestAccessEnabled: true,
+                                              oneQuestionAtATime: false,
+                                              version: 6,
+                                          },
+                            }),
+                        ),
+                    );
+                }),
+        );
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+
+        const guests = (): HTMLElement =>
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            });
+        const oneAtATime = (): HTMLElement =>
+            screen.getByRole('switch', { name: 'One question at a time' });
+
+        fireEvent.click(guests());
+        fireEvent.click(oneAtATime());
+        await act(async () => {
+            answers[0]();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(guests().getAttribute('aria-checked')).toBe('true');
+        expect(oneAtATime().getAttribute('aria-checked')).toBe('false');
+
+        await act(async () => {
+            answers[1]();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(guests().getAttribute('aria-checked')).toBe('true');
+        expect(oneAtATime().getAttribute('aria-checked')).toBe('false');
     });
 });

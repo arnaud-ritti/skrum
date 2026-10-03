@@ -101,6 +101,8 @@ export type SurveySnapshot = {
         show: string;
         results: string;
         edit: string | null;
+        /** The team's statements, for a survey whose questions come from them. */
+        healthCheck: string | null;
     };
     serverTime: string;
 };

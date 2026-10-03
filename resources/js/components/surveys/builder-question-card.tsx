@@ -86,7 +86,9 @@ function QuestionMeta({ question }: { question: SurveyQuestionPayload }) {
     return null;
 }
 
+/** The kind as the collapsed card shows it: the NPS with its range, as in the mockup (the "Add" bar keeps "NPS"). */
 function KindBadge({ kind }: { kind: SurveyKind }) {
+    const { t } = useTrans();
     const kindLabel = useKindLabel();
 
     return (
@@ -95,7 +97,7 @@ function KindBadge({ kind }: { kind: SurveyKind }) {
             icon={KindIcons[kind]}
             className="max-sm:hidden"
         >
-            {kindLabel(kind)}
+            {kind === 'nps' ? t('NPS 0 – 10') : kindLabel(kind)}
         </Badge>
     );
 }

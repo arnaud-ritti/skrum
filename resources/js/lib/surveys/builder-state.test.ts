@@ -302,7 +302,9 @@ describe('useAutosave', () => {
         const { result } = renderHook(() => useAutosave(600));
 
         act(() => result.current.schedule('q-1', run));
-        act(() => result.current.cancel('q-1'));
+        await act(async () => {
+            await result.current.cancel('q-1');
+        });
         await act(async () => {
             await vi.advanceTimersByTimeAsync(1000);
         });
@@ -324,5 +326,126 @@ describe('useAutosave', () => {
         expect(now).toHaveBeenCalledTimes(1);
         expect(pending).not.toHaveBeenCalled();
         expect(result.current.state.status).toBe('saved');
+    });
+
+    it('stays in error while a failed key is unsaved, even after another key saves', async () => {
+        const { result } = renderHook(() => useAutosave(600));
+
+        act(() =>
+            result.current.schedule('q-1', () =>
+                Promise.reject(new Error('Nope')),
+            ),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        act(() => result.current.schedule('q-2', () => Promise.resolve()));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(result.current.state).toEqual({
+            status: 'error',
+            message: 'Nope',
+        });
+        expect(result.current.hasFailed()).toBe(true);
+    });
+
+    it('leaves the error once the failed key saves again', async () => {
+        const { result } = renderHook(() => useAutosave(600));
+
+        act(() =>
+            result.current.schedule('q-1', () =>
+                Promise.reject(new Error('Nope')),
+            ),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        act(() => result.current.schedule('q-1', () => Promise.resolve()));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(result.current.state.status).toBe('saved');
+        expect(result.current.hasFailed()).toBe(false);
+    });
+
+    it('waits in a flush for a save already in flight', async () => {
+        let resolve: () => void = () => {};
+        const { result } = renderHook(() => useAutosave(600));
+        let flushed = false;
+
+        act(() =>
+            result.current.schedule(
+                'q-1',
+                () =>
+                    new Promise<void>((done) => {
+                        resolve = done;
+                    }),
+            ),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        await act(async () => {
+            void result.current.flush().then(() => {
+                flushed = true;
+            });
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(flushed).toBe(false);
+
+        await act(async () => {
+            resolve();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(flushed).toBe(true);
+    });
+
+    it('waits for the save in flight of a cancelled key', async () => {
+        let resolve: () => void = () => {};
+        const { result } = renderHook(() => useAutosave(600));
+        let cancelled = false;
+
+        act(() =>
+            result.current.schedule(
+                'q-1',
+                () =>
+                    new Promise<void>((done) => {
+                        resolve = done;
+                    }),
+            ),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        await act(async () => {
+            void result.current.cancel('q-1').then(() => {
+                cancelled = true;
+            });
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(cancelled).toBe(false);
+
+        await act(async () => {
+            resolve();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(cancelled).toBe(true);
+    });
+
+    it('sends the pending saves when it unmounts', () => {
+        const run = vi.fn(() => Promise.resolve());
+        const { result, unmount } = renderHook(() => useAutosave(600));
+
+        act(() => result.current.schedule('q-1', run));
+        unmount();
+
+        expect(run).toHaveBeenCalledTimes(1);
     });
 });

@@ -67,6 +67,9 @@ class BuildTeamSurveySnapshot
                 'show' => route('surveys.show', $survey, absolute: false),
                 'results' => route('surveys.results.show', $survey, absolute: false),
                 'edit' => $isEditor && ! $isGuest ? route('surveys.edit', $survey, absolute: false) : null,
+                'healthCheck' => $survey->hasLockedQuestions() && ! $isGuest
+                    ? route('teams.healthCheck.show', [$survey->team->workspace, $survey->team], absolute: false)
+                    : null,
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
