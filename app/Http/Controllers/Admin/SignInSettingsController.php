@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\RecordAuditEvent;
+use App\Enums\AuditAction;
 use App\Enums\SsoProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SignInSettingsUpdateRequest;
@@ -32,16 +34,24 @@ class SignInSettingsController extends Controller
         ]);
     }
 
-    public function update(SignInSettingsUpdateRequest $request, InstanceSettings $settings): RedirectResponse
+    public function update(SignInSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         $required = $request->boolean('sso_required');
 
-        DB::transaction(function () use ($settings, $required): void {
+        DB::transaction(function () use ($request, $settings, $recordAuditEvent, $required): void {
+            $wasRequired = $settings->ssoRequired();
+
             $settings->set('sso_required', $required);
 
             if ($required) {
                 MagicLink::query()->delete();
             }
+
+            if ($wasRequired === $required) {
+                return;
+            }
+
+            $recordAuditEvent->handle(AuditAction::SsoRequiredChanged, $request->user(), null, ['value' => $required]);
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sign-in settings saved.')]);

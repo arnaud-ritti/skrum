@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Admin\RecordAuditEvent;
 use App\Actions\Auth\VerifyEmailTwoFactorCode;
+use App\Enums\AuditAction;
 use App\Enums\EmailCodePurpose;
+use App\Enums\SecondFactorMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\EmailSecondFactorRequest;
 use App\Models\EmailTwoFactorCode;
@@ -14,7 +17,7 @@ use Inertia\Inertia;
 
 class EmailSecondFactorsController extends Controller
 {
-    public function store(EmailSecondFactorRequest $request, VerifyEmailTwoFactorCode $verify): RedirectResponse
+    public function store(EmailSecondFactorRequest $request, VerifyEmailTwoFactorCode $verify, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         $user = $request->user();
 
@@ -24,18 +27,26 @@ class EmailSecondFactorsController extends Controller
 
         $user->forceFill(['two_factor_email_enabled_at' => now()])->save();
 
+        $recordAuditEvent->handle(AuditAction::TwoFactorEnabled, $user, $user, ['method' => SecondFactorMethod::EmailCode->value]);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('E-mail code turned on.')]);
 
         return back();
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         $user = $request->user();
+
+        $wasEnabled = $user->two_factor_email_enabled_at !== null;
 
         $user->forceFill(['two_factor_email_enabled_at' => null])->save();
 
         EmailTwoFactorCode::query()->where('user_id', $user->id)->delete();
+
+        if ($wasEnabled) {
+            $recordAuditEvent->handle(AuditAction::TwoFactorDisabled, $user, $user, ['method' => SecondFactorMethod::EmailCode->value]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('E-mail code turned off.')]);
 

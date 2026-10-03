@@ -2,6 +2,8 @@
 
 namespace App\Actions\Mcp;
 
+use App\Actions\Admin\RecordAuditEvent;
+use App\Enums\AuditAction;
 use App\Enums\McpScope;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
@@ -17,6 +19,8 @@ use LogicException;
 class IssueMcpToken
 {
     public const MaxActiveTokens = 25;
+
+    public function __construct(private RecordAuditEvent $recordAuditEvent) {}
 
     /**
      * @param  array<int, McpScope>  $scopes
@@ -39,6 +43,12 @@ class IssueMcpToken
                 'team_id' => $team?->id,
                 'token_hint' => substr($newToken->plainTextToken, -4),
             ])->save();
+
+            $this->recordAuditEvent->handle(AuditAction::TokenCreated, $user, $token, [
+                'name' => $name,
+                'scopes' => $token->abilities,
+                'teamId' => $team?->id,
+            ]);
 
             return $newToken;
         }, Transactions::Attempts);

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\RecordAuditEvent;
+use App\Enums\AuditAction;
 use App\Enums\InstanceSettingKey;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandingUpdateRequest;
+use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Branding\BrandAssets;
@@ -15,6 +18,7 @@ use App\Support\InstanceSettings;
 use App\Support\Mail\MailBrand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,26 +70,61 @@ class BrandingController extends Controller
         ]);
     }
 
-    public function update(BrandingUpdateRequest $request, InstanceSettings $settings): RedirectResponse
+    public function update(BrandingUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
-        $settings->setMany($request->settings());
+        DB::transaction(function () use ($request, $settings, $recordAuditEvent): void {
+            $before = $this->storedBranding();
+
+            $settings->setMany($request->settings());
+
+            $after = $this->storedBranding();
+
+            $changedKeys = array_values(array_filter(
+                array_column(InstanceSettingKey::branding(), 'value'),
+                fn (string $key): bool => ($before[$key] ?? null) !== ($after[$key] ?? null),
+            ));
+
+            if ($changedKeys === []) {
+                return;
+            }
+
+            $recordAuditEvent->handle(AuditAction::SettingsUpdated, $request->user(), null, ['section' => 'branding', 'keys' => $changedKeys]);
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding saved.')]);
 
         return to_route('admin.branding.edit');
     }
 
-    public function destroy(InstanceSettings $settings, BrandAssets $assets): RedirectResponse
+    public function destroy(Request $request, InstanceSettings $settings, BrandAssets $assets, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         foreach (BrandAssets::Names as $asset) {
             $assets->remove($asset);
         }
 
-        $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::branding(), 'value'), null));
+        DB::transaction(function () use ($request, $settings, $recordAuditEvent): void {
+            $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::branding(), 'value'), null));
+
+            $recordAuditEvent->handle(AuditAction::BrandingReset, $request->user());
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding reset to the Skrüm defaults.')]);
 
         return to_route('admin.branding.edit');
+    }
+
+    /**
+     * The raw stored rows: a secret is compared by its stored form and never decrypted.
+     *
+     * @return array<string, mixed>
+     */
+    private function storedBranding(): array
+    {
+        return InstanceSetting::query()
+            ->whereIn('key', array_column(InstanceSettingKey::branding(), 'value'))
+            ->get()
+            ->pluck('value', 'key')
+            ->all();
     }
 
     /**

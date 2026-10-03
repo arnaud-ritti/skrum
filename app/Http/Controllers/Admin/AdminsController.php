@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\RecordAuditEvent;
 use App\Actions\Admin\RevokeInstanceAdmin;
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminStoreRequest;
 use App\Models\User;
 use App\Support\Alphabetical;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,9 +41,19 @@ class AdminsController extends Controller
         ]);
     }
 
-    public function store(AdminStoreRequest $request): RedirectResponse
+    public function store(AdminStoreRequest $request, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
-        User::query()->whereKey($request->validated('user_id'))->update(['is_instance_admin' => true]);
+        DB::transaction(function () use ($request, $recordAuditEvent): void {
+            $user = User::query()->whereKey($request->validated('user_id'))->lockForUpdate()->firstOrFail();
+
+            if ($user->is_instance_admin) {
+                return;
+            }
+
+            $user->forceFill(['is_instance_admin' => true])->save();
+
+            $recordAuditEvent->handle(AuditAction::AdminGranted, $request->user(), $user);
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Admin added.')]);
 
@@ -49,7 +62,7 @@ class AdminsController extends Controller
 
     public function destroy(Request $request, User $user, RevokeInstanceAdmin $revokeInstanceAdmin): RedirectResponse
     {
-        if (! $revokeInstanceAdmin->handle($user)) {
+        if (! $revokeInstanceAdmin->handle($user, $request->user())) {
             throw ValidationException::withMessages(['user' => __('An instance needs at least one admin.')]);
         }
 
