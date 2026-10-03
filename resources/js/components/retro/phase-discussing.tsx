@@ -445,8 +445,8 @@ type Props = {
     following?: ReactNode;
     /** Place of the "discussed" mark and of the action count of a topic (RT-7, RT-8). */
     topicMeta?: (topic: Topic) => ReactNode;
-    /** Place of the topic a new action item is linked to (RT-8). */
-    linkedTo?: ReactNode;
+    /** Place of the action items, linked to the viewer's topic (RT-8). */
+    actions?: ReactNode;
     /** Place of the time left for the discussion, in the topics list's footer (RT-5). */
     estimate?: ReactNode;
     /** Place of the last line of the topics list: the time per topic and the actions so far (RT-5). */
@@ -466,7 +466,7 @@ export function PhaseDiscussing({
     notes,
     following,
     topicMeta,
-    linkedTo,
+    actions = <ActionItemsList />,
     estimate,
     summary,
     upNextEstimate,
@@ -487,7 +487,7 @@ export function PhaseDiscussing({
 
     const panels: { id: string; node: ReactNode }[] = [
         { id: 'notes', node: notes },
-        { id: 'actions', node: <ActionItemsList linkedTo={linkedTo} /> },
+        { id: 'actions', node: actions },
         { id: 'suggestions', node: <SuggestionsPanel /> },
         { id: 'surveys', node: <SurveysColumn /> },
     ];

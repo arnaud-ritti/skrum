@@ -41,6 +41,12 @@ import {
     TopicMeta,
     TopicTime,
 } from './topic-meta';
+import {
+    ItemTopic,
+    LinkedActionCount,
+    QuickAddLink,
+    TopicActions,
+} from './topic-actions';
 import { TopicNotes } from './topic-notes';
 import { TopicTimer } from './topic-timer';
 
@@ -110,6 +116,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
                 hideMyCursor={hideMyCursor}
                 timer={<TopicTimer />}
                 notes={<TopicNotes />}
+                actions={<TopicActions />}
                 topicMeta={(topic) => <TopicMeta topic={topic} />}
                 estimate={<DiscussionEstimate />}
                 summary={<DiscussionPace />}
@@ -119,7 +126,14 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     if (phase === 'actions') {
-        return <PhaseActions hideMyCursor={hideMyCursor} />;
+        return (
+            <PhaseActions
+                hideMyCursor={hideMyCursor}
+                topicMeta={(topic) => <LinkedActionCount topic={topic} />}
+                linkedTo={(topic) => <QuickAddLink topic={topic} />}
+                itemTopic={(item) => <ItemTopic item={item} />}
+            />
+        );
     }
 
     if (phase === 'roti') {

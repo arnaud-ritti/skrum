@@ -224,6 +224,81 @@ describe('ActionItemsList', () => {
         ).not.toContain('ring-skrum-success');
     });
 
+    it('lists the items it keeps under its title, and the rest folded under "Other action items (n)"', () => {
+        const { container } = renderInBoard(
+            <ActionItemsList
+                title="Topic actions"
+                filter={(item) => item.cardId === 'card-2'}
+            />,
+            boardContext(
+                retroSnapshot({
+                    ...people,
+                    actionItems: [
+                        actionItemFixture({ id: 'mine', cardId: 'card-2' }),
+                        actionItemFixture({ id: 'other', cardId: null }),
+                        actionItemFixture({ id: 'third', cardId: 'card-3' }),
+                    ],
+                    retro: { phase: 'discussing' },
+                }),
+            ),
+        );
+
+        expect(
+            screen.getByRole('heading', { name: 'Topic actions' }),
+        ).toBeTruthy();
+        expect(container.querySelector('#action-item-mine')).not.toBeNull();
+        expect(container.querySelector('#action-item-other')).toBeNull();
+
+        const others = screen.getByRole('button', {
+            name: 'Other action items (2)',
+        });
+
+        expect(others.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(others);
+
+        expect(container.querySelector('#action-item-other')).not.toBeNull();
+        expect(container.querySelector('#action-item-third')).not.toBeNull();
+    });
+
+    it('creates the item linked to the card it is given', async () => {
+        renderInBoard(
+            <ActionItemsList
+                linkedTo={{ cardId: 'card-2', label: 'Linked to #2 · Scope' }}
+            />,
+            boardContext(retroSnapshot({ ...people })),
+        );
+
+        const form = screen.getByRole('form', { name: 'New action item' });
+        const field = within(form).getByLabelText('Add an action item…');
+
+        expect(within(form).getByText('Linked to #2 · Scope')).toBeTruthy();
+
+        fireEvent.change(field, { target: { value: 'One in, one out' } });
+        fireEvent.submit(form);
+
+        await waitFor(() => expect(callsTo('post')).toHaveLength(1));
+        expect(callsTo('post')[0][1]).toMatchObject({ card_id: 'card-2' });
+    });
+
+    it('says what the quick add of the Actions card is linked to in place of "Quick add"', () => {
+        renderInBoard(
+            <ActionItemsList
+                variant="phase"
+                linkedTo={{
+                    cardId: 'card-1',
+                    label: 'Quick add · linked to «CI»',
+                }}
+            />,
+            boardContext(
+                retroSnapshot({ ...people, retro: { phase: 'actions' } }),
+            ),
+        );
+
+        expect(screen.getByText('Quick add · linked to «CI»')).toBeTruthy();
+        expect(screen.queryByText('Quick add')).toBeNull();
+    });
+
     it('closes the form with "Create an action" and with Cancel', () => {
         list();
 

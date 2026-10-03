@@ -102,3 +102,24 @@ export function actionCountByTopic(
 
     return counts;
 }
+
+/**
+ * The topic an action item was created for, by its rank and title; none for
+ * an item without a card, or whose card no longer leads a topic of the board.
+ */
+export function topicLabel(
+    item: { cardId: string | null },
+    topics: Topic[],
+): { rank: number; title: string } | null {
+    if (item.cardId === null) {
+        return null;
+    }
+
+    const index = topics.findIndex((topic) => topic.leadCardId === item.cardId);
+
+    if (index === -1) {
+        return null;
+    }
+
+    return { rank: index + 1, title: topics[index].title };
+}

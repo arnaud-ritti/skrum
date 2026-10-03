@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import type { NewActionItem } from '@/components/action-items/action-item-adapters';
 import { ItemCreateForm } from '@/components/action-items/item-create-form';
 import type { ActionItemOwner } from '@/components/skrum/action-item';
 import { actionItemFixture } from '@/test/action-items';
@@ -306,6 +307,69 @@ describe('ItemCreateForm', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
         expect(onCancel).toHaveBeenCalled();
+    });
+
+    it('links the item to the card it is given, and to none once the link is removed for this item', async () => {
+        const onCreate = vi.fn(
+            async (_values: NewActionItem): Promise<boolean> => true,
+        );
+
+        render(
+            <ItemCreateForm
+                members={members}
+                onCreate={onCreate}
+                linkedTo="Linked to #2 · Scope changes"
+                cardId="card-2"
+                unlinkable
+            />,
+        );
+
+        fireEvent.submit(
+            typeTitle('One in, one out').closest('form') as HTMLFormElement,
+        );
+
+        await waitFor(() =>
+            expect(onCreate).toHaveBeenLastCalledWith(
+                expect.objectContaining({ cardId: 'card-2' }),
+            ),
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Remove the link to the topic',
+            }),
+        );
+
+        expect(screen.queryByText('Linked to #2 · Scope changes')).toBeNull();
+
+        fireEvent.submit(
+            typeTitle('Ask the PO').closest('form') as HTMLFormElement,
+        );
+
+        await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(2));
+        expect(onCreate.mock.lastCall?.[0]).not.toHaveProperty('cardId');
+        await waitFor(() =>
+            expect(
+                screen.getByText('Linked to #2 · Scope changes'),
+            ).toBeTruthy(),
+        );
+    });
+
+    it('offers no way to remove a link it was not told could go', () => {
+        render(
+            <ItemCreateForm
+                members={members}
+                onCreate={vi.fn()}
+                linkedTo="Quick add · linked to «CI»"
+                cardId="card-1"
+            />,
+        );
+
+        expect(
+            screen.queryByRole('button', {
+                name: 'Remove the link to the topic',
+            }),
+        ).toBeNull();
     });
 
     it('is disabled on a board that takes no change, and warns on an anonymous one', () => {

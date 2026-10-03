@@ -4586,5 +4586,12 @@
     "of :total · this topic": "de :total · este tema",
     "Mark as discussed": "Marcar como tratado",
     "What the room decides, the questions left open…": "Lo que decide el grupo, las preguntas que quedan abiertas…",
-    "Your text was not saved": "Tu texto no se ha guardado"
+    "Your text was not saved": "Tu texto no se ha guardado",
+    "Topic actions": "Acciones del tema",
+    "Linked to #:rank · :title": "Vinculada al n.º :rank · :title",
+    "Other action items (:count)": "Otras acciones (:count)",
+    "Quick add · linked to «:title»": "Añadido rápido · vinculado a «:title»",
+    "1 linked action": "1 acción vinculada",
+    ":count linked actions": ":count acciones vinculadas",
+    "Remove the link to the topic": "Quitar el vínculo con el tema"
 }

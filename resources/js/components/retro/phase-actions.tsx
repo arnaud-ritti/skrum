@@ -137,8 +137,11 @@ type Props = {
     exportAll?: ReactNode;
     /** Place of the count of actions of a topic, on its card (RT-8). */
     topicMeta?: (topic: Topic) => ReactNode;
-    /** Place of the topic a new action item is linked to (RT-8). */
-    linkedTo?: ReactNode;
+    /**
+     * The line of the quick add linked to the shared topic (RT-8); given,
+     * the quick add links its items to that topic.
+     */
+    linkedTo?: (topic: Topic) => ReactNode;
     /** Place of the topic an action item belongs to, in its row (RT-8). */
     itemTopic?: (item: ActionItemPayload) => ReactNode;
 };
@@ -276,7 +279,14 @@ export function PhaseActions({
                 <ActionItemsList
                     variant="phase"
                     headerActions={exportAll}
-                    linkedTo={linkedTo}
+                    linkedTo={
+                        linkedTo && shared
+                            ? {
+                                  cardId: shared.leadCardId,
+                                  label: linkedTo(shared),
+                              }
+                            : undefined
+                    }
                     itemMeta={itemTopic}
                     more={
                         carried.length > 0
