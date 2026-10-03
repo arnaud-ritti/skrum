@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import type { RefObject } from 'react';
 import { toast } from 'sonner';
+import RetroHealthChecksController from '@/actions/App/Http/Controllers/Retros/RetroHealthChecksController';
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import {
     SessionSettingsPopover,
     useRetroSettingGroups,
 } from '@/components/skrum/session-settings-popover';
-import type { RetroSettingsValues } from '@/components/skrum/session-settings-popover';
+import type {
+    RetroSettingsValues,
+    SurveyKind,
+} from '@/components/skrum/session-settings-popover';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { MaxSurveys, SurveyPhases } from '@/lib/retro/survey-api';
@@ -27,7 +31,6 @@ export function retroSettingsValues(
         votes_per_participant: retro.votesAuto
             ? null
             : retro.votesPerParticipant,
-        health_check_enabled: retro.healthCheckEnabled,
         icebreaker_enabled: retro.icebreakerEnabled,
         icebreaker_game: retro.icebreakerGame,
         reactions_enabled: retro.reactionsEnabled,
@@ -66,6 +69,8 @@ export function BoardSettings({
         SurveyPhases.includes(retro.phase) &&
         ctx.isEditable &&
         board.surveys.length < MaxSurveys;
+    const canAttachHealthCheck =
+        board.viewer.isFacilitator && retro.phase !== 'completed';
 
     const groups = useRetroSettingGroups({
         phase: retro.phase,
@@ -127,6 +132,28 @@ export function BoardSettings({
         surveyEditor.openCreate();
     };
 
+    const attachHealthCheck = async () => {
+        const response = await ctx.run(
+            retroRequest(RetroHealthChecksController.store(retro.id)).then(
+                () => true,
+            ),
+        );
+
+        if (response) {
+            await ctx.refetch();
+        }
+    };
+
+    const onAddSurvey = (kind: SurveyKind) => {
+        if (kind === 'quick_poll') {
+            addSurvey();
+
+            return;
+        }
+
+        void attachHealthCheck();
+    };
+
     return (
         <>
             <SessionSettingsPopover<RetroSettingsValues>
@@ -149,7 +176,12 @@ export function BoardSettings({
                 }}
                 variant={variant}
                 anchorRef={anchorRef}
-                onAddSurvey={canAddSurvey ? addSurvey : undefined}
+                onAddSurvey={canAttachHealthCheck ? onAddSurvey : undefined}
+                surveys={{
+                    healthCheckStatements: retro.healthCheckStatements,
+                    healthCheckAttached: board.healthCheck !== null,
+                    quickPollAvailable: canAddSurvey,
+                }}
             />
             <SurveyEditorDialog editor={surveyEditor} />
         </>

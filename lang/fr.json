@@ -3429,7 +3429,6 @@
     "Live containers, with whiteboard settings: the popover is open. Change a value, then try to close to see the discard confirmation. Apply shows the toast.": "Conteneurs réels, avec les paramètres du tableau blanc : le popover est ouvert. Modifie une valeur, puis essaie de fermer pour voir la confirmation d’abandon. Appliquer affiche le toast.",
     "Retro, writing phase (facilitator, no change)": "Rétro, phase d’écriture (facilitateur, aucune modification)",
     "Modified, not applied, with next-phase warning; vote limit locked since voting started": "Modifié, non appliqué, avec l’avertissement de phase suivante ; limite de votes verrouillée depuis le début du vote",
-    "Automatic vote limit, health check phase (cannot be turned off)": "Limite de votes automatique, phase de bilan de santé (impossible à désactiver)",
     "Server error on a setting": "Erreur du serveur sur un paramètre",
     "Completed retro: only the title changes": "Rétro terminée : seul le titre peut changer",
     "A phase added later (ROTI), no GIF or AI provider, maximum of 20 votes": "Une phase ajoutée plus tard (ROTI), sans fournisseur de GIF ni d’IA, maximum de 20 votes",
@@ -4427,5 +4426,11 @@
     "Results, scale 1-5 with mean, most frequent answer and a fall": "Résultats, échelle 1-5 avec moyenne, réponse la plus fréquente et une baisse",
     "Results, NPS with segments and a rise": "Résultats, NPS avec segments et une hausse",
     "Results, NPS with no change": "Résultats, NPS sans changement",
-    "Sprint 41": "Sprint 41"
+    "Sprint 41": "Sprint 41",
+    "Add to this retro": "Ajouter à cette rétro",
+    "Health check added": "Bilan de santé ajouté",
+    ":count statements": ":count énoncés",
+    "Quick poll": "Sondage rapide",
+    "One question, answered on the board": "Une question, répondue sur le board",
+    "Automatic vote limit, health check added": "Limite de votes automatique, bilan de santé ajouté"
 }

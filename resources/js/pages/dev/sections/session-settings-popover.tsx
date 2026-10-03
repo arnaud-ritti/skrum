@@ -23,7 +23,6 @@ const applied: RetroSettingsValues = {
     title: 'Sprint 42',
     is_anonymous: true,
     votes_per_participant: 5,
-    health_check_enabled: true,
     icebreaker_enabled: true,
     icebreaker_game: 'draw',
     reactions_enabled: true,
@@ -101,6 +100,10 @@ function Retro({
                 draft={draft}
                 onDraftChange={setDraft}
                 onAddSurvey={() => {}}
+                surveys={{
+                    healthCheckStatements: 6,
+                    healthCheckAttached: false,
+                }}
                 onApply={async (patch) => {
                     setValue((current) => ({ ...current, ...patch }));
                 }}
@@ -359,14 +362,13 @@ export default function SessionSettingsPopoverSection() {
                         ]}
                     />
                 </Example>
-                <Example
-                    label={t(
-                        'Automatic vote limit, health check phase (cannot be turned off)',
-                    )}
-                >
+                <Example label={t('Automatic vote limit, health check added')}>
                     <Retro
-                        context={{ phase: 'health_check' }}
                         initialValue={{ votes_per_participant: null }}
+                        surveys={{
+                            healthCheckStatements: 6,
+                            healthCheckAttached: true,
+                        }}
                     />
                 </Example>
                 <Example label={t('Applying (click Apply: it never resolves)')}>
