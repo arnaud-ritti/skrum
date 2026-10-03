@@ -8,6 +8,7 @@ One place to find every recorded difference between the application and the mock
 |---|---|---|
 | D-01 to D-127 | `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup" | See the 18e phase report (`18e-report/README.md`): approved by the owner, ruled under the autonomy mandate, or open |
 | V1 to V32 | `docs/superpowers/plans/2026-10-16-plan-18f-front-rewrite-auth-mail-search.md`, "Deviations" | See `18f-report.md` §5 |
+| P19-01 to P19-27 | `docs/superpowers/plans/2026-10-19-plan-19-standalone-surveys.md`, "Pre-build deviations" | Put to the owner before each screen was built. P19-23 to P19-27, found by the capture comparison of Task 32, were decided by the owner on 2026-10-03: P19-23 (scale results as a histogram) and P19-26 (builder: "Réglages", draft badge in the breadcrumb, "Saved … ago" always shown) are fixed and their rows removed; P19-24 (results topbar: "Reopen" in a "…" menu), P19-25 (participant header: an editor's "Results" and "Share", the reconnecting banner) and P19-27 (Compare: the two surveys overlaid in one chart per question, with a table) remain, reworded |
 | D-128 to D-131 | this file | New in plan 18g. D-128 fixed and D-130 reworked in rework 3 (owner rounds 7 and 8); D-129 and D-131 still **to approve by the owner** |
 
 The rows were not copied here: two copies of 159 rows would drift. Plan 18g Task 8 asked for one renumbered table; that was not done.

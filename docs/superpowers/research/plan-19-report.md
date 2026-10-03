@@ -83,8 +83,8 @@ says concurrency. Vitest files ran once (`npx vitest run`).
 ## 3. Differences that remain with the mockups
 
 They are the rows P19-01 to P19-27 of the plan's **Pre-build deviations** table, unchanged by this task. P19-23 to
-P19-27 were found when Task 32 compared the captures and were taken on the owner's behalf; they wait for the
-owner's word. Plan 18e's deviation rows D-03 and D-102 are gone, D-09, D-22, D-23 and D-76 were reworded (Task 32).
+P19-27 were found when Task 32 compared the captures and were taken on the owner's behalf; the owner decided on
+them on 2026-10-03 (P19-23 and P19-26 fixed and removed, P19-24, P19-25 and P19-27 reworded: see the plan). Plan 18e's deviation rows D-03 and D-102 are gone, D-09, D-22, D-23 and D-76 were reworded (Task 32).
 
 ## 4. Existing tests edited, and why
 
