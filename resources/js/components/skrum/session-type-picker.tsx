@@ -93,8 +93,8 @@ export function useDefaultSessionTypeOptions(): SessionTypeOption[] {
         },
         {
             value: 'survey',
-            label: t('Survey'),
-            description: t('Ask the team a few quick questions.'),
+            label: t('Poll'),
+            description: t('Quick vote or health check'),
             duration: t('5–10 min'),
         },
         {
