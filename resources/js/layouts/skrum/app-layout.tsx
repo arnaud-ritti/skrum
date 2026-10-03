@@ -15,11 +15,14 @@ import type { BreadcrumbItem } from '@/types';
 export default function AppLayout({
     breadcrumbs = [],
     active,
+    status,
     actions,
     children,
 }: {
     breadcrumbs?: BreadcrumbItem[];
     active?: NavKey;
+    /** A status of the page (a badge), right after the breadcrumb. */
+    status?: ReactNode;
     /** Page actions, at the end of the topbar, before the bell. */
     actions?: ReactNode;
     children: ReactNode;
@@ -35,6 +38,7 @@ export default function AppLayout({
             topbar={
                 <AppTopbar
                     breadcrumbs={breadcrumbs}
+                    status={status}
                     search={<CommandMenu links={sidebar.links} />}
                     actions={
                         <>

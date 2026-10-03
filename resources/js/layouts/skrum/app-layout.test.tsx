@@ -45,6 +45,37 @@ describe('AppLayout', () => {
         expect(screen.getByRole('main').textContent).toBe('content');
     });
 
+    it('puts the status beside the breadcrumb, before the search and the actions', () => {
+        renderWithProviders(
+            <AppLayout
+                breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
+                status={<span data-test="page-status">Draft</span>}
+                actions={<button type="button">Publish</button>}
+            >
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        const banner = screen.getByRole('banner');
+        const status = banner.querySelector('[data-test="page-status"]');
+        const breadcrumb = screen.getByRole('navigation', {
+            name: 'Breadcrumb',
+        });
+        const search = banner.querySelector(
+            '[data-test^="command-menu-button"]',
+        );
+
+        expect(status).not.toBeNull();
+        expect(
+            breadcrumb.compareDocumentPosition(status as Node) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(
+            (status as Node).compareDocumentPosition(search as Node) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
     it('shows the search and the bell alone without actions', () => {
         renderWithProviders(
             <AppLayout>
