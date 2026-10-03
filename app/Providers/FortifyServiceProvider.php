@@ -228,6 +228,9 @@ class FortifyServiceProvider extends ServiceProvider
                 'email' => __('Too many attempts. Wait a minute and try again.'),
             ])));
 
+        RateLimiter::for('invitationDeclines', fn (Request $request) => Limit::perMinute(10)
+            ->by('invitation-decline-ip:'.$request->ip()));
+
         RateLimiter::for('passkeys', fn (Request $request) => Limit::perMinute(10)->by(
             ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
         ));

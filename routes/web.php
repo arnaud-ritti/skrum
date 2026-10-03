@@ -82,6 +82,7 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
+use App\Http\Controllers\InvitationDeclinesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
@@ -278,6 +279,9 @@ Route::get('gifs/{gif}/{size}', [GifsController::class, 'show'])
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
     ->middleware('auth')
     ->name('invitations.acceptance.store');
+Route::post('invitations/{token}/decline', [InvitationDeclinesController::class, 'store'])
+    ->middleware('throttle:invitationDeclines')
+    ->name('invitations.decline.store');
 
 /*
  * Outside the guest group: a signed-in user comes back here after asking to

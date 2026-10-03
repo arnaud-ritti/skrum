@@ -82,7 +82,7 @@ class InvitationLinksController extends Controller
             'teamRole' => $invitation->team_role?->value,
             'message' => $invitation->message,
             'isDeclined' => false,
-            'declineUrl' => null,
+            'declineUrl' => route('invitations.decline.store', $token),
             ...$this->pendingDetails($invitation),
         ]);
     }

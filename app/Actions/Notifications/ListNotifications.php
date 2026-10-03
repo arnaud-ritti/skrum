@@ -6,6 +6,7 @@ use App\Enums\ActionItemReminderKind;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\InvitationDeclinedNotification;
 use App\Notifications\RetroResultsNotification;
 use App\Notifications\TeamAccessAnsweredNotification;
 use App\Notifications\TeamAccessRequestedNotification;
@@ -23,6 +24,7 @@ class ListNotifications
         private PresentRecapNotifications $presentRecapNotifications,
         private PresentInvitationNotifications $presentInvitationNotifications,
         private PresentAccessRequestNotifications $presentAccessRequestNotifications,
+        private PresentInvitationDeclinedNotifications $presentInvitationDeclinedNotifications,
     ) {}
 
     /**
@@ -61,6 +63,7 @@ class ListNotifications
             ...$this->presentRecapNotifications->handle($notifications, $viewableTeamIds),
             ...$this->presentInvitationNotifications->handle($user, $notifications),
             ...$this->presentAccessRequestNotifications->handle($user, $notifications),
+            ...$this->presentInvitationDeclinedNotifications->handle($user, $notifications),
         ];
 
         $visible = $notifications->filter(fn (DatabaseNotification $notification): bool => isset($presented[$notification->id]));
@@ -98,6 +101,7 @@ class ListNotifications
             WorkspaceInvitationReceivedNotification::Kind,
             TeamAccessRequestedNotification::Kind,
             TeamAccessAnsweredNotification::Kind,
+            InvitationDeclinedNotification::Kind,
         ], true);
     }
 
