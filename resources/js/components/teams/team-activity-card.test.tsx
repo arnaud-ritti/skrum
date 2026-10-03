@@ -4,12 +4,18 @@ import { TeamActivityCard } from '@/components/teams/team-activity-card';
 import { renderWithProviders } from '@/test/render';
 import type { TeamActivityLine } from '@/types';
 
+const mocks = vi.hoisted(() => ({
+    translations: {} as Record<string, string>,
+}));
+
 vi.mock('@inertiajs/react', async (importOriginal) => {
     const original = await importOriginal<typeof import('@inertiajs/react')>();
 
     return {
         ...original,
-        usePage: () => ({ props: { translations: {}, locale: 'en' } }),
+        usePage: () => ({
+            props: { translations: mocks.translations, locale: 'en' },
+        }),
         Link: ({
             href,
             children,
@@ -93,6 +99,33 @@ describe('the activity of a team', () => {
         ).toBe('J');
         expect(items[0].textContent).toContain('34 minutes ago');
         expect(items[2].textContent).toContain('yesterday');
+    });
+
+    it('places the actor and the subject where the translated sentence puts them', () => {
+        mocks.translations = {
+            ':actor started the planning poker :title':
+                ':actor hat das Planning Poker :title gestartet',
+            ':actor completed :title': ':actor hat :title erledigt',
+        };
+
+        const { container } = renderWithProviders(
+            <TeamActivityCard lines={lines} />,
+        );
+        const items = container.querySelectorAll('[data-test="activity-line"]');
+
+        mocks.translations = {};
+
+        expect(items[0].querySelector('p')?.textContent).toBe(
+            'Camille Roux hat das Planning Poker Sprint 43 refinement gestartet',
+        );
+        expect(
+            screen
+                .getByRole('link', { name: 'Sprint 43 refinement' })
+                .getAttribute('href'),
+        ).toBe('/poker/game-1');
+        expect(items[1].querySelector('p')?.textContent).toBe(
+            'Jira hat Quarantine the flaky tests erledigt',
+        );
     });
 
     it('says so when nothing has happened yet', () => {

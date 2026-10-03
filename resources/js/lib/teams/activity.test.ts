@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TeamActivityKind } from '@/types';
-import { activityVerb } from './activity';
+import { activitySentence } from './activity';
 
 const kinds: TeamActivityKind[] = [
     'retro_started',
@@ -14,16 +14,24 @@ const kinds: TeamActivityKind[] = [
     'member_joined',
 ];
 
-describe('activityVerb', () => {
-    it('maps the nine kinds to nine distinct keys', () => {
-        const verbs = kinds.map((kind) => activityVerb(kind, (key) => key));
-
-        expect(new Set(verbs).size).toBe(9);
-        expect(activityVerb('retro_started', (key) => key)).toBe(
-            'started the retrospective',
+describe('activitySentence', () => {
+    it('maps the nine kinds to nine whole sentences with their placeholders', () => {
+        const sentences = kinds.map((kind) =>
+            activitySentence(kind, (key) => key),
         );
-        expect(activityVerb('member_joined', (key) => key)).toBe(
-            'joined the team',
+
+        expect(new Set(sentences).size).toBe(9);
+        expect(sentences.every((sentence) => sentence.includes(':actor'))).toBe(
+            true,
+        );
+        expect(activitySentence('retro_started', (key) => key)).toBe(
+            ':actor started the retrospective :title',
+        );
+        expect(activitySentence('action_item_completed', (key) => key)).toBe(
+            ':actor completed :title',
+        );
+        expect(activitySentence('member_joined', (key) => key)).toBe(
+            ':actor joined the team',
         );
     });
 });
