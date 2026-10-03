@@ -34,6 +34,7 @@ use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameSwitchesController;
 use App\Http\Controllers\Games\GameTimerExtensionsController;
 use App\Http\Controllers\Games\GameTimersController;
+use App\Http\Controllers\Games\GameTurnsController;
 use App\Http\Controllers\Games\GameVotesController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
@@ -675,6 +676,7 @@ Route::prefix('games/{room}')
         Route::put('rounds/{round}/vote', [GameVotesController::class, 'update'])->name('games.rounds.vote.update')->whereUuid('round');
         Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy')->whereUuid('round');
         Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store')->whereUuid('round');
+        Route::post('rounds/{round}/turn', [GameTurnsController::class, 'store'])->name('games.rounds.turn.store')->whereUuid('round');
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
     });
 

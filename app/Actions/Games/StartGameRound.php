@@ -6,6 +6,7 @@ use App\Events\Games\GameRoundStarted;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,7 @@ class StartGameRound
         private ScheduleRoundExpiry $scheduleRoundExpiry,
         private AnnounceTeamGameRoom $announceTeamGameRoom,
         private NumberGameRound $numberGameRound,
+        private ScheduleTurnExpiry $scheduleTurnExpiry,
     ) {}
 
     /**
@@ -53,6 +55,7 @@ class StartGameRound
             ]);
 
             $rules->prepare($locked, $round, $input);
+            $this->prepareTurns($locked, $round, $rules, $input);
             $round->save();
 
             $locked->forceFill(['current_round_id' => $round->id])->save();
@@ -60,6 +63,7 @@ class StartGameRound
             $this->pruneEndedRounds($locked);
 
             $this->scheduleRoundExpiry->handle($locked, $round);
+            $this->scheduleTurnExpiry->handle($round);
 
             (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
 
@@ -67,6 +71,33 @@ class StartGameRound
 
             return ['round' => $round, 'ended' => $ended];
         });
+    }
+
+    /**
+     * A game in turns starts with the host's order; a game that times turns
+     * copies the room's time per turn and sets the first deadline.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function prepareTurns(GameRoom $room, GameRound $round, GameRules $rules, array $input): void
+    {
+        if ($rules->takesTurns($room)) {
+            $order = array_values((array) ($input['turn_order'] ?? []));
+
+            if ($order === []) {
+                throw ValidationException::withMessages(['turn_order' => __('Choose who plays.')]);
+            }
+
+            $round->turn_order = $order;
+            $round->turn_player_id = $order[0];
+        }
+
+        if (! $rules->timesTurns() || $room->turn_seconds === null) {
+            return;
+        }
+
+        $round->turn_seconds = $room->turn_seconds;
+        $round->turn_ends_at = $round->started_at->copy()->addSeconds($room->turn_seconds);
     }
 
     /**

@@ -4335,5 +4335,10 @@
     "Cloudy": "Cloudy",
     "Rainy": "Rainy",
     "Stormy": "Stormy",
-    "No word fits these themes.": "No word fits these themes."
+    "No word fits these themes.": "No word fits these themes.",
+    "Choose who plays.": "Choose who plays.",
+    "This game is not played in turns.": "This game is not played in turns.",
+    "Only the host or the player whose turn it is can do this.": "Only the host or the player whose turn it is can do this.",
+    "The turn has already moved on.": "The turn has already moved on.",
+    "It's not your turn.": "It's not your turn."
 }

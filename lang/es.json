@@ -4555,5 +4555,10 @@
     "Cloudy": "Nublado",
     "Rainy": "Lluvioso",
     "Stormy": "Tormentoso",
-    "No word fits these themes.": "Ninguna palabra encaja con estos temas."
+    "No word fits these themes.": "Ninguna palabra encaja con estos temas.",
+    "Choose who plays.": "Elige quién juega.",
+    "This game is not played in turns.": "Este juego no se juega por turnos.",
+    "Only the host or the player whose turn it is can do this.": "Solo el anfitrión o el jugador al que le toca puede hacer esto.",
+    "The turn has already moved on.": "El turno ya ha pasado.",
+    "It's not your turn.": "No es tu turno."
 }

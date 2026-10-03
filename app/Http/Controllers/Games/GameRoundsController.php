@@ -31,6 +31,8 @@ class GameRoundsController extends Controller
 
         $validated = $request->validate([
             'leader_player_id' => ['nullable', 'string', 'uuid', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
+            'turn_order' => ['sometimes', 'array', 'min:1', 'max:50'],
+            'turn_order.*' => ['string', 'uuid', 'distinct', Rule::exists('game_players', 'id')->where('game_room_id', $room->id)],
         ]);
 
         ['round' => $round, 'ended' => $ended] = $startGameRound->handle($room, $player, $validated);

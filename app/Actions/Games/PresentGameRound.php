@@ -28,6 +28,10 @@ class PresentGameRound
             'revealedAt' => $round->revealed_at?->toIso8601String(),
             'number' => $round->number,
             'roundsTotal' => $round->rounds_total,
+            'turnOrder' => $round->turnOrder(),
+            'turnPlayerId' => $round->turn_player_id,
+            'turnEndsAt' => $round->turn_ends_at?->toIso8601String(),
+            'turnSeconds' => $round->turn_seconds,
             ...($this->gameRulesRegistry->find($round->game)?->presentActive($round, $room, $viewer) ?? []),
         ];
     }

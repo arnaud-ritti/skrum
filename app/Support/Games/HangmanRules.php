@@ -2,6 +2,7 @@
 
 namespace App\Support\Games;
 
+use App\Actions\Games\AdvanceGameTurn;
 use App\Actions\Games\DrawGameWord;
 use App\Enums\GameKind;
 use App\Enums\GameRoundOutcome;
@@ -16,7 +17,10 @@ class HangmanRules implements GameRules
 
     private const int SolveBonus = 5;
 
-    public function __construct(private DrawGameWord $drawGameWord) {}
+    public function __construct(
+        private DrawGameWord $drawGameWord,
+        private AdvanceGameTurn $advanceGameTurn,
+    ) {}
 
     public function kind(): GameKind
     {
@@ -60,6 +64,31 @@ class HangmanRules implements GameRules
 
     public function outcomeOnNextRound(GameRound $round): ?GameRoundOutcome
     {
+        return null;
+    }
+
+    public function takesTurns(GameRoom $room): bool
+    {
+        return $room->takes_turns;
+    }
+
+    public function timesTurns(): bool
+    {
+        return true;
+    }
+
+    /**
+     * A turn that runs out passes to the next player with no penalty; a
+     * round without turns is its own turn and times out.
+     */
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome
+    {
+        if (! $round->takesTurns()) {
+            return GameRoundOutcome::TimedOut;
+        }
+
+        $this->advanceGameTurn->handle($room, $round);
+
         return null;
     }
 

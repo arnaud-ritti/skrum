@@ -123,6 +123,24 @@ class SprintGifRules implements GameRules
         return $round->revealed_at === null ? null : GameRoundOutcome::Revealed;
     }
 
+    public function takesTurns(GameRoom $room): bool
+    {
+        return false;
+    }
+
+    /**
+     * The stages follow the room timer: no deadline is ever set per turn.
+     */
+    public function timesTurns(): bool
+    {
+        return false;
+    }
+
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome
+    {
+        return null;
+    }
+
     /**
      * Every author earns 2 points per favourite vote received; everyone who
      * answered or voted gets a row. On anonymous retros a vote would tie a GIF

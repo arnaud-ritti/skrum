@@ -8,9 +8,9 @@ use App\Support\Games\GameRulesRegistry;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Ends (or moves on) the active round once the room's timer has run out,
- * both from the delayed job and lazily on every game request, so a late
- * queue never shows a stale round.
+ * Ends (or moves on) the active round once the room's timer, or the
+ * current turn's deadline, has run out, both from the delayed jobs and
+ * lazily on every game request, so a late queue never shows a stale round.
  */
 class ExpireGameRound
 {
@@ -23,7 +23,11 @@ class ExpireGameRound
     {
         $round = $room->activeRound();
 
-        if ($round === null || ! $this->hasExpired($room, $round)) {
+        if ($round === null) {
+            return;
+        }
+
+        if (! $this->hasExpired($room, $round) && ! self::turnHasExpired($round)) {
             return;
         }
 
@@ -34,11 +38,23 @@ class ExpireGameRound
                 return;
             }
 
-            if (! $this->hasExpired($lockedRoom, $lockedRound)) {
+            $rules = $this->gameRulesRegistry->for($lockedRound->game);
+
+            if ($this->hasExpired($lockedRoom, $lockedRound)) {
+                $outcome = $rules->expire($lockedRoom, $lockedRound);
+
+                if ($outcome !== null) {
+                    $this->endGameRound->handle($lockedRoom, $lockedRound, $outcome);
+                }
+
                 return;
             }
 
-            $outcome = $this->gameRulesRegistry->for($lockedRound->game)->expire($lockedRoom, $lockedRound);
+            if (! self::turnHasExpired($lockedRound)) {
+                return;
+            }
+
+            $outcome = $rules->expireTurn($lockedRoom, $lockedRound);
 
             if ($outcome !== null) {
                 $this->endGameRound->handle($lockedRoom, $lockedRound, $outcome);
@@ -46,6 +62,15 @@ class ExpireGameRound
         });
 
         $room->refresh();
+    }
+
+    /**
+     * The round's own deadline (a turn, or a round that is its own turn)
+     * has passed.
+     */
+    public static function turnHasExpired(GameRound $round): bool
+    {
+        return $round->turn_ends_at !== null && ! $round->turn_ends_at->isFuture();
     }
 
     /**
