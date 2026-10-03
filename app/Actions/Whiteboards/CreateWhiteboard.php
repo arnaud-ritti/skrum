@@ -4,6 +4,7 @@ namespace App\Actions\Whiteboards;
 
 use App\Actions\Teams\RecordTeamActivity;
 use App\Enums\TeamActivityKind;
+use App\Jobs\RefreshWhiteboardPreview;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Whiteboard;
@@ -38,6 +39,10 @@ class CreateWhiteboard
 
             $this->copyWhiteboardScene->handle($board, $member, $scene);
             $this->recordTeamActivity->handle($team->id, TeamActivityKind::WhiteboardCreated, $creator, null, $board->id, $board->title);
+
+            if ($scene['elements'] !== []) {
+                RefreshWhiteboardPreview::dispatch($board->id)->afterCommit();
+            }
 
             return $board;
         });

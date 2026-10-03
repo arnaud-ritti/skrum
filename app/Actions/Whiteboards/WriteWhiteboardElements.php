@@ -3,6 +3,7 @@
 namespace App\Actions\Whiteboards;
 
 use App\Events\Whiteboards\WhiteboardElementsChanged;
+use App\Jobs\RefreshWhiteboardPreview;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
@@ -86,6 +87,8 @@ class WriteWhiteboardElements
             }
 
             $locked->update(['seq' => $seq]);
+
+            RefreshWhiteboardPreview::dispatch($locked->id)->afterCommit()->delay(now()->addSeconds(30));
 
             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
 

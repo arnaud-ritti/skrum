@@ -12,6 +12,7 @@ use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
+use App\Actions\Teams\RefreshStaleWhiteboardPreviews;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
@@ -65,11 +66,19 @@ class TeamsController extends Controller
         ListTeamActivity $listTeamActivity,
         ListRecentTeamSessions $listRecentTeamSessions,
         PresentActionItem $presentActionItem,
+        RefreshStaleWhiteboardPreviews $refreshStaleWhiteboardPreviews,
     ): Response {
         Gate::authorize('view', $team);
 
         $canManage = $request->user()->can('manageMembers', $team);
         $managesWorkspace = $request->user()->canManage($workspace);
+        $whiteboards = $team->whiteboards()
+            ->with('facilitator.user')
+            ->latest('updated_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $refreshStaleWhiteboardPreviews->handle($whiteboards);
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
@@ -109,11 +118,7 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
-            'whiteboards' => $team->whiteboards()
-                ->with('facilitator.user')
-                ->latest('updated_at')
-                ->get()
-                ->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
+            'whiteboards' => $whiteboards->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
             'whiteboardTemplates' => Alphabetical::sort(
                 $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']),
                 fn (WhiteboardTemplate $template): string => $template->name,

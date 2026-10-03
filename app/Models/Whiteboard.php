@@ -28,11 +28,13 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $timer_ends_at
  * @property int $seq
  * @property int $purged_seq
+ * @property array{width: int, height: int, shapes: list<array{kind: string, x: int, y: int, width: int, height: int, fill: ?string, stroke: ?string, points: list<array{0: int, 1: int}>}>}|null $preview
+ * @property int|null $preview_seq
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  */
-#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'reactions_enabled', 'locked', 'follow_enabled', 'timer_ends_at', 'seq', 'purged_seq'])]
+#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'reactions_enabled', 'locked', 'follow_enabled', 'timer_ends_at', 'seq', 'purged_seq', 'preview', 'preview_seq'])]
 #[Hidden(['guest_token'])]
 class Whiteboard extends Model
 {
@@ -112,6 +114,8 @@ class Whiteboard extends Model
             'timer_ends_at' => 'datetime',
             'seq' => 'integer',
             'purged_seq' => 'integer',
+            'preview' => 'array',
+            'preview_seq' => 'integer',
         ];
     }
 }
