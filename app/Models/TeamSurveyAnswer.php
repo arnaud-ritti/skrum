@@ -52,7 +52,9 @@ class TeamSurveyAnswer extends Model
     /** @return BelongsToMany<TeamSurveyOption, $this> */
     public function options(): BelongsToMany
     {
-        return $this->belongsToMany(TeamSurveyOption::class, 'team_survey_answer_options');
+        return $this->belongsToMany(TeamSurveyOption::class, 'team_survey_answer_options')
+            ->orderBy('team_survey_options.position')
+            ->orderBy('team_survey_options.id');
     }
 
     protected function casts(): array

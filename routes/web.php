@@ -154,6 +154,7 @@ use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
+use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyGuestTokensController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyQuestionDuplicatesController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyQuestionOrdersController;
@@ -162,6 +163,7 @@ use App\Http\Controllers\TeamSurveys\TeamSurveyResultsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveysController;
 use App\Http\Controllers\TeamSurveys\TeamSurveySnapshotsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyStatusesController;
+use App\Http\Controllers\TeamSurveys\TeamSurveySubmissionsController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
 use App\Http\Controllers\Whiteboards\WhiteboardDuplicatesController;
@@ -618,6 +620,10 @@ Route::prefix('surveys/{teamSurvey}')
         Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
         Route::post('guest-token', [TeamSurveyGuestTokensController::class, 'store'])->name('surveys.guestToken.store');
         Route::put('status', [TeamSurveyStatusesController::class, 'update'])->name('surveys.status.update');
+        Route::put('questions/{question}/answer', [TeamSurveyAnswersController::class, 'update'])->name('surveys.answers.update')->whereUuid('question');
+        Route::delete('questions/{question}/answer', [TeamSurveyAnswersController::class, 'destroy'])->name('surveys.answers.destroy')->whereUuid('question');
+        Route::post('submission', [TeamSurveySubmissionsController::class, 'store'])->name('surveys.submission.store');
+        Route::delete('submission', [TeamSurveySubmissionsController::class, 'destroy'])->name('surveys.submission.destroy');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

@@ -3,10 +3,17 @@
 namespace App\Actions\TeamSurveys;
 
 use App\Models\TeamSurvey;
+use App\Models\TeamSurveyAnswer;
+use App\Models\TeamSurveyQuestion;
 use App\Models\TeamSurveyRespondent;
 
 class BuildTeamSurveySnapshot
 {
+    public function __construct(
+        private PresentSurveyQuestion $presentSurveyQuestion,
+        private PresentSurveyProgress $presentSurveyProgress,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -48,6 +55,8 @@ class BuildTeamSurveySnapshot
                 'hasSubmitted' => $viewer->hasSubmitted(),
                 'canSeeResults' => $survey->resultsVisibleTo($viewer),
             ],
+            'questions' => $this->questions($survey, $viewer),
+            'progress' => $this->presentSurveyProgress->handle($survey),
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$survey->team->workspace, $survey->team], absolute: false),
                 'show' => route('surveys.show', $survey, absolute: false),
@@ -56,5 +65,25 @@ class BuildTeamSurveySnapshot
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function questions(TeamSurvey $survey, TeamSurveyRespondent $viewer): array
+    {
+        $questions = $survey->questions()->with('options')->get();
+
+        $myAnswers = TeamSurveyAnswer::query()
+            ->where('team_survey_respondent_id', $viewer->id)
+            ->whereIn('team_survey_question_id', $questions->pluck('id'))
+            ->with('options')
+            ->get()
+            ->keyBy('team_survey_question_id');
+
+        return $questions
+            ->map(fn (TeamSurveyQuestion $question): array => $this->presentSurveyQuestion->handle($question, $myAnswers->get($question->id)))
+            ->values()
+            ->all();
     }
 }

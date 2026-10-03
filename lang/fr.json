@@ -4402,5 +4402,6 @@
     "Send every question exactly once.": "Envoie chaque question exactement une fois.",
     "This change is not possible.": "Ce changement n'est pas possible.",
     "Add a question before publishing.": "Ajoute une question avant de publier.",
-    "An attached health check cannot be reopened once its retro is completed.": "Un bilan de santé rattaché ne peut pas être rouvert une fois sa rétro terminée."
+    "An attached health check cannot be reopened once its retro is completed.": "Un bilan de santé rattaché ne peut pas être rouvert une fois sa rétro terminée.",
+    "Answer at least one question before finishing.": "Réponds à au moins une question avant de terminer."
 }
