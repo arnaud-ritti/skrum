@@ -17,6 +17,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Policies\PokerDeckPolicy;
+use App\Support\Auth\PasswordRule;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Games\DecodedRules;
@@ -30,7 +31,9 @@ use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\DevCommands;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +43,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\NotPwnedVerifier;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passkeys\Passkeys;
 use Laravel\Sanctum\Sanctum;
@@ -66,6 +70,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(InstanceSettings::class);
         $this->app->scoped(AvatarStyleCatalogue::class);
         $this->app->bind(McpGrant::class, fn (): McpGrant => McpGrant::current());
+        $this->app->extend(UncompromisedVerifier::class, fn (UncompromisedVerifier $verifier, Application $app): UncompromisedVerifier => new NotPwnedVerifier(
+            $app->make(HttpFactory::class),
+            (int) config('skrum.passwords.breach_check_timeout'),
+        ));
     }
 
     /**
@@ -111,14 +119,9 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        Password::defaults(fn (): ?Password => PasswordRule::defaults(
+            app()->isProduction(),
+            (bool) config('skrum.passwords.breach_check'),
+        ));
     }
 }

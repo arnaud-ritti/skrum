@@ -25,5 +25,10 @@ return [
         'write_rate_limit' => (int) env('SKRUM_MCP_WRITE_RATE_LIMIT', 30),
     ],
 
+    'passwords' => [
+        'breach_check' => (bool) env('SKRUM_PASSWORD_BREACH_CHECK', true),
+        'breach_check_timeout' => (int) env('SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT', 5),
+    ],
+
     'trusted_proxies' => env('TRUSTED_PROXIES'),
 ];

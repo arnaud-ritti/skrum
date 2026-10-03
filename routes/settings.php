@@ -6,6 +6,7 @@ use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
 use App\Http\Controllers\Settings\MotionPreferencesController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
+use App\Http\Controllers\Settings\PasswordBreachRangesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\ProfilePhotosController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -38,6 +39,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    Route::post('settings/password/breach-range', [PasswordBreachRangesController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('passwordBreachRanges.store');
 
     Route::middleware([RequirePassword::class, 'throttle:6,1,emailSecondFactor'])->group(function (): void {
         Route::post('settings/email-second-factor/code', [EmailSecondFactorCodesController::class, 'store'])->name('emailSecondFactor.codes.store');

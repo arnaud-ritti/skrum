@@ -32,6 +32,7 @@ class SecuritySettings
      * @return array{
      *     passwordRules: string,
      *     checksCompromisedPasswords: bool,
+     *     liveBreachCheck: bool,
      *     canManageTwoFactor: bool,
      *     canManagePasskeys: bool,
      *     canManageEmailCode: bool,
@@ -45,6 +46,7 @@ class SecuritySettings
         return [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'checksCompromisedPasswords' => Password::defaults()->appliedRules()['uncompromised'],
+            'liveBreachCheck' => Password::defaults()->appliedRules()['uncompromised'],
             'canManageTwoFactor' => $canManageTwoFactor,
             'canManagePasskeys' => Features::canManagePasskeys(),
             'canManageEmailCode' => $this->availability->emailEnabled(),
