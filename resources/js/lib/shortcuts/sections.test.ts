@@ -71,7 +71,7 @@ describe('shortcutSections', () => {
         expect(withUnknown).not.toContain('poker.coffee');
     });
 
-    it('lists the keys the whiteboard canvas answers to', () => {
+    it("lists the keys of the whiteboard's tool bar", () => {
         const whiteboard = shortcutSections(t).find(
             (section) => section.id === 'whiteboard',
         );
@@ -79,16 +79,22 @@ describe('shortcutSections', () => {
         expect(whiteboard?.items.map((item) => item.id)).toEqual([
             'select',
             'hand',
-            'rectangle',
+            'sticky',
+            'shape',
+            'connector',
             'text',
             'pencil',
-            'arrow',
+            'eraser',
+            'frame',
+            'minimap',
+            'fit',
             'pan',
             'undo',
             'redo',
             'zoom-in',
             'zoom-out',
         ]);
+        expect(whiteboard?.note).toBeUndefined();
     });
 
     it('finds the reaction keys under the name of their section', () => {

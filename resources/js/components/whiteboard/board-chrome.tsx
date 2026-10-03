@@ -11,6 +11,7 @@ import { CanvasTools } from './canvas-tools';
 import { CanvasView, fitToScreen } from './canvas-view';
 import { PhoneToolbar } from './phone-toolbar';
 import { ReadModeLayer } from './read-mode-toggle';
+import { useCanvasKeyGuard } from './use-canvas-key-guard';
 
 type Props = {
     /** Null until the canvas is ready. */
@@ -47,6 +48,8 @@ export function BoardChrome({
     const canvas = useRef<HTMLDivElement | null>(null);
     const [stylesShown, setStylesShown] = useState(false);
     const ready = api !== null && snapshot !== null;
+
+    useCanvasKeyGuard(canvas);
 
     /** The phone's panel of shape actions opens only on the library's own "shape" menu. */
     const changeStyles = useCallback(

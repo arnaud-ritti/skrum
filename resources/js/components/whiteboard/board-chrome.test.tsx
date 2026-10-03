@@ -5,6 +5,7 @@ import type {
     CanvasAppState,
     CanvasSnapshot,
 } from '@/hooks/use-canvas-snapshot';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import { POSTIT } from '@/lib/whiteboard/palette';
 import { renderWithProviders } from '@/test/render';
 
@@ -188,6 +189,22 @@ describe('BoardChrome', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Styles' }));
 
         expect(wrapper?.className).not.toContain('skrum-whiteboard--styles');
+    });
+
+    it('stops the single keys at the canvas while the single-key shortcuts are off', () => {
+        setScreen(true);
+        renderChrome();
+        const reached = vi.fn();
+        const canvas = screen.getByTestId('library-canvas');
+        document.addEventListener('keydown', reached);
+
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(canvas, { key: 'r' });
+        setSingleKeyShortcuts(true);
+        fireEvent.keyDown(canvas, { key: 'r' });
+        document.removeEventListener('keydown', reached);
+
+        expect(reached).toHaveBeenCalledTimes(1);
     });
 
     it('docks "Fit to screen" before "Edit" on a phone in read mode, with no tool bar, zoom bar or minimap', () => {
