@@ -131,13 +131,16 @@ function ContainerMapping({
     const current: Record<string, string | string[] | null> = isJira
         ? {
               done_status_ids: jira?.doneStatusIds ?? null,
+              start_status_id: jira?.startStatusId ?? null,
               complete_status_id: jira?.completeStatusId ?? null,
               reopen_status_id: jira?.reopenStatusId ?? null,
           }
         : {
+              start_state_id: linear?.startStateId ?? null,
               complete_state_id: linear?.completeStateId ?? null,
               reopen_state_id: linear?.reopenStateId ?? null,
           };
+    const startKey = isJira ? 'start_status_id' : 'start_state_id';
     const completeKey = isJira ? 'complete_status_id' : 'complete_state_id';
     const reopenKey = isJira ? 'reopen_status_id' : 'reopen_state_id';
     const doneStatuses = (statuses ?? []).filter(
@@ -303,6 +306,7 @@ function ContainerMapping({
                         </fieldset>
                     )}
                     <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
+                        {targetSelect(startKey, t('Start to'))}
                         {targetSelect(completeKey, t('Complete to'))}
                         {targetSelect(reopenKey, t('Reopen to'))}
                     </div>

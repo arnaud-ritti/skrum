@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import { RetroRequestError } from '@/lib/retro/api';
 import {
     providerButtons,
@@ -846,6 +847,13 @@ describe('PrioritiesPanel', () => {
 });
 
 describe('StatusMappingPanel', () => {
+    beforeAll(() => {
+        Element.prototype.hasPointerCapture = () => false;
+        Element.prototype.setPointerCapture = () => {};
+        Element.prototype.releasePointerCapture = () => {};
+        Element.prototype.scrollIntoView = () => {};
+    });
+
     const jira = connection('jira', {
         statusSync: true,
         settings: {
@@ -853,6 +861,7 @@ describe('StatusMappingPanel', () => {
                 projects: {
                     PROJ: {
                         doneStatusIds: ['10002'],
+                        startStatusId: null,
                         completeStatusId: null,
                         reopenStatusId: null,
                     },
@@ -923,8 +932,118 @@ describe('StatusMappingPanel', () => {
             status_mapping: {
                 container: 'PROJ',
                 done_status_ids: null,
+                start_status_id: null,
                 complete_status_id: null,
                 reopen_status_id: null,
+            },
+        });
+    });
+
+    it('offers a start target before the two others, and saves it', async () => {
+        request.mockResolvedValueOnce({ containers: ['PROJ'] });
+        request.mockResolvedValueOnce({
+            statuses: [
+                { id: '10000', name: 'To Do', category: 'todo' },
+                { id: '3', name: 'In Progress', category: 'in_progress' },
+                { id: '10002', name: 'Done', category: 'done' },
+            ],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={jira} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+        await screen.findByRole('combobox', { name: 'Start to' });
+
+        expect(
+            screen
+                .getAllByRole('combobox')
+                .map((combobox) => combobox.getAttribute('aria-label')),
+        ).toEqual(['Start to', 'Complete to', 'Reopen to']);
+
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            screen.getByRole('combobox', { name: 'Start to' }),
+        );
+        await userEvent.click(
+            screen.getByRole('option', { name: 'In Progress' }),
+        );
+
+        await waitFor(() =>
+            expect(toast.success).toHaveBeenCalledWith('Status mapping saved.'),
+        );
+        expect(request.mock.calls.at(-1)?.[0]).toEqual(
+            TeamIntegrationsController.update({
+                workspace: 'nordlys',
+                team: 't1',
+                integration: 'i1',
+            }),
+        );
+        expect(request.mock.calls.at(-1)?.[1]).toEqual({
+            status_mapping: {
+                container: 'PROJ',
+                done_status_ids: ['10002'],
+                start_status_id: '3',
+                complete_status_id: null,
+                reopen_status_id: null,
+            },
+        });
+    });
+
+    it('saves the start state of a Linear team', async () => {
+        const linear = connection('linear', {
+            statusSync: true,
+            settings: {
+                statusMapping: {
+                    teams: {
+                        ENG: {
+                            startStateId: null,
+                            completeStateId: null,
+                            reopenStateId: null,
+                        },
+                    },
+                },
+            },
+        } as Partial<TeamIntegration>);
+        request.mockResolvedValueOnce({ containers: ['ENG'] });
+        request.mockResolvedValueOnce({
+            statuses: [
+                { id: 'st-todo', name: 'Todo', category: 'todo' },
+                {
+                    id: 'st-started',
+                    name: 'In Progress',
+                    category: 'in_progress',
+                },
+            ],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={linear} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            await screen.findByRole('combobox', { name: 'Start to' }),
+        );
+        await userEvent.click(
+            screen.getByRole('option', { name: 'In Progress' }),
+        );
+
+        await waitFor(() =>
+            expect(toast.success).toHaveBeenCalledWith('Status mapping saved.'),
+        );
+        expect(request.mock.calls.at(-1)?.[1]).toEqual({
+            status_mapping: {
+                container: 'ENG',
+                start_state_id: 'st-started',
+                complete_state_id: null,
+                reopen_state_id: null,
             },
         });
     });

@@ -1663,6 +1663,7 @@
     "Automatic": "Automatisch",
     "Edit mapping": "Zuordnung bearbeiten",
     "Counts as done": "Zählt als erledigt",
+    "Start to": "Status beim Starten",
     "Complete to": "Status beim Erledigen",
     "Reopen to": "Status beim Wiederöffnen",
     "skrum now waits for the first event.": "skrum wartet jetzt auf das erste Ereignis.",
