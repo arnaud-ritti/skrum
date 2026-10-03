@@ -209,3 +209,80 @@ export type UsersPageProps = {
     filters: AdminUsersFilters;
     activeAdminCount: number;
 };
+
+export type LicencePageProps = {
+    /** The project's licence, never the deployer's: `AGPL-3.0`. */
+    licence: string;
+    licenceUrl: string;
+    repositoryUrl: string;
+    /** The accounts not deactivated. */
+    accountsInUse: number;
+    version: string;
+};
+
+/** Every value of `App\Enums\AuditAction`, in its order. */
+export const AuditActions = [
+    'settings_updated',
+    'configuration_updated',
+    'branding_reset',
+    'sso_tested',
+    'mail_tested',
+    'sso_required_changed',
+    'admin_granted',
+    'admin_revoked',
+    'user_deactivated',
+    'user_reactivated',
+    'signed_in',
+    'sign_in_failed',
+    'two_factor_enabled',
+    'two_factor_disabled',
+    'password_changed',
+    'token_created',
+    'token_revoked',
+    'token_revoked_by_admin',
+] as const;
+
+export type AuditAction = (typeof AuditActions)[number];
+
+export const AuditGroups = [
+    'settings',
+    'accounts',
+    'signIn',
+    'tokens',
+] as const;
+
+export type AuditGroup = (typeof AuditGroups)[number];
+
+/** One event of the audit log: names and identifiers, never a secret or a configuration value. */
+export type AuditEvent = {
+    id: string;
+    action: AuditAction;
+    group: AuditGroup;
+    /** Null for the system; a null id for an actor whose account is gone. */
+    actor: { id: string | null; name: string; avatarUrl: string | null } | null;
+    subject: { type: string; id: string | null; label: string | null } | null;
+    properties: Record<string, unknown>;
+    /** The owner of a key an admin revoked. */
+    ownerName: string | null;
+    ip: string | null;
+    at: string;
+};
+
+/** One page of the events, as Laravel's paginator serialises it. */
+export type AuditEventsPage = {
+    data: AuditEvent[];
+    current_page: number;
+    last_page: number;
+    total: number;
+};
+
+export type AuditLogFilters = {
+    group: AuditGroup | null;
+    actor: string | null;
+};
+
+export type AuditLogPageProps = {
+    events: AuditEventsPage;
+    filters: AuditLogFilters;
+    retentionDays: number;
+};

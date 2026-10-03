@@ -214,7 +214,32 @@ it('keeps the name of an actor whose account is gone', function () {
     AuditEvent::factory()->create(['actor_user_id' => null, 'actor_name' => 'Ines']);
 
     $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
-        ->where('events.data.0.actor', ['name' => 'Ines', 'avatarUrl' => null]));
+        ->where('events.data.0.actor', ['id' => null, 'name' => 'Ines', 'avatarUrl' => null]));
+});
+
+it('gives the actor id the actor filter visits with', function () {
+    confirmedAdmin($this);
+    $nadia = User::factory()->create(['name' => 'Nadia']);
+    AuditEvent::factory()->create(['actor_user_id' => $nadia->id, 'actor_name' => 'Nadia']);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('events.data.0.actor.id', $nadia->id));
+});
+
+it('names the owner of a key an admin revoked', function () {
+    confirmedAdmin($this);
+    $malik = User::factory()->create(['name' => 'Malik']);
+    AuditEvent::factory()->create([
+        'action' => AuditAction::TokenRevokedByAdmin,
+        'subject_type' => 'PersonalAccessToken',
+        'subject_id' => '7',
+        'properties' => ['owner' => $malik->id, 'name' => 'CI'],
+    ]);
+    AuditEvent::factory()->create(['action' => AuditAction::SignedIn, 'created_at' => now()->subMinute()]);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('events.data.0.ownerName', 'Malik')
+        ->where('events.data.1.ownerName', null));
 });
 
 it('refuses an unknown group filter', function () {
