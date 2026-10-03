@@ -28,6 +28,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import { prefersReducedMotion } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 export type GifRating = 'g' | 'pg';
@@ -140,14 +141,6 @@ export function splitIntoColumns(gifs: GifItem[]): [GifItem[], GifItem[]] {
     });
 
     return columns;
-}
-
-function prefersReducedMotion(): boolean {
-    if (typeof window === 'undefined' || !window.matchMedia) {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function colorFor(id: string): string {
