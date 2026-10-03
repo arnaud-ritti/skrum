@@ -4330,5 +4330,10 @@
     "Your system already asks for fewer animations.": "Your system already asks for fewer animations.",
     "This image could not be read. Choose a JPEG or PNG file.": "This image could not be read. Choose a JPEG or PNG file.",
     "Photo updated.": "Photo updated.",
-    "Photo removed.": "Photo removed."
+    "Photo removed.": "Photo removed.",
+    "Upload photo": "Upload photo",
+    "Use initials": "Use initials",
+    "Remove photo": "Remove photo",
+    "Profile photos": "Profile photos",
+    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars."
 }

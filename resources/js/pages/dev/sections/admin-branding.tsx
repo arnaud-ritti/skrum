@@ -81,6 +81,7 @@ const avatarStyles: AdminAvatarStyle[] = [
 function InteractiveAvatars({ initial }: { initial: string }) {
     const [value, setValue] = useState(initial);
     const [allow, setAllow] = useState(true);
+    const [photos, setPhotos] = useState(false);
 
     return (
         <AvatarStyleGrid
@@ -90,6 +91,8 @@ function InteractiveAvatars({ initial }: { initial: string }) {
             sampleName="Ada Lovelace"
             allowMemberChoice={allow}
             onAllowMemberChoiceChange={setAllow}
+            allowProfilePhotos={photos}
+            onAllowProfilePhotosChange={setPhotos}
         />
     );
 }

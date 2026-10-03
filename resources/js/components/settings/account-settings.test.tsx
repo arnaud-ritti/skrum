@@ -19,7 +19,7 @@ const seen = vi.hoisted(() => ({
     serverUrl: undefined as unknown,
     gate: undefined as Record<string, unknown> | undefined,
     profile: undefined as
-        | { presence?: number; presenceColours?: ReactNode }
+        | { presence?: number; presenceColours?: ReactNode; photo?: ReactNode }
         | undefined,
 }));
 
@@ -43,11 +43,17 @@ vi.mock('@/components/settings/profile-card', () => ({
     ProfileCard: (props: {
         presence?: number;
         presenceColours?: ReactNode;
+        photo?: ReactNode;
     }) => {
         seen.profile = props;
 
         return <p>profile card</p>;
     },
+}));
+vi.mock('@/components/settings/profile-photo', () => ({
+    ProfilePhoto: (props: Record<string, unknown>) => (
+        <p>profile photo {JSON.stringify(props)}</p>
+    ),
 }));
 vi.mock('@/components/settings/delete-account-card', () => ({
     DeleteAccountCard: () => <p>delete account card</p>,
@@ -154,6 +160,8 @@ function unlocked(): AccountSettingsProps {
             instanceAvatarStyle: 'thumbs',
             avatarStyles: [],
             presenceColor: 7,
+            hasPhoto: true,
+            photosAllowed: true,
         },
         security: {
             passwordRules: 'minlength: 12;',
@@ -319,6 +327,31 @@ describe('AccountSettings', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'Colour 3' }));
 
         expect(seen.profile?.presence).toBe(3);
+    });
+
+    it('mounts the photo block with the switch, the photo and the style the avatar draws without it', () => {
+        const props = unlocked();
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                profile={{
+                    ...props.profile,
+                    avatarMemberChoice: true,
+                    avatarStyle: null,
+                }}
+            />,
+        );
+
+        renderWithProviders(<>{seen.profile?.photo}</>);
+
+        expect(screen.getByText(/^profile photo/).textContent).toBe(
+            `profile photo ${JSON.stringify({
+                photosAllowed: true,
+                hasPhoto: true,
+                memberChoice: true,
+                style: 'thumbs',
+            })}`,
+        );
     });
 
     it('hands the protected state to the cards once the server sent it', () => {

@@ -16,6 +16,8 @@ type AvatarStyleGridProps = {
     sampleName: string;
     allowMemberChoice: boolean;
     onAllowMemberChoiceChange: (allow: boolean) => void;
+    allowProfilePhotos: boolean;
+    onAllowProfilePhotosChange: (allow: boolean) => void;
     className?: string;
 };
 
@@ -33,6 +35,8 @@ export function AvatarStyleGrid({
     sampleName,
     allowMemberChoice,
     onAllowMemberChoiceChange,
+    allowProfilePhotos,
+    onAllowProfilePhotosChange,
     className,
 }: AvatarStyleGridProps) {
     const { t } = useTrans();
@@ -185,6 +189,28 @@ export function AvatarStyleGrid({
                     {t('Members can choose their own style')}
                 </span>
             </label>
+            <div
+                data-slot="avatar-style-profile-photos"
+                className="flex min-w-0 flex-col gap-1"
+            >
+                <label className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium">
+                    <Switch
+                        checked={allowProfilePhotos}
+                        onCheckedChange={onAllowProfilePhotosChange}
+                        aria-describedby={`${id}-profile-photos-help`}
+                        className="cursor-pointer"
+                    />
+                    <span className="min-w-0">{t('Profile photos')}</span>
+                </label>
+                <p
+                    id={`${id}-profile-photos-help`}
+                    className="text-xs text-muted-foreground"
+                >
+                    {t(
+                        'Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.',
+                    )}
+                </p>
+            </div>
         </div>
     );
 }

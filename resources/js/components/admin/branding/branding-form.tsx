@@ -480,6 +480,13 @@ export function BrandingForm({
                                                 allow,
                                             )
                                         }
+                                        allowProfilePhotos={data.profile_photos}
+                                        onAllowProfilePhotosChange={(allow) =>
+                                            form.setData(
+                                                'profile_photos',
+                                                allow,
+                                            )
+                                        }
                                     />
                                     {errors.avatar_style && (
                                         <p

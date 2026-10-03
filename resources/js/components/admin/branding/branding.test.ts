@@ -101,12 +101,38 @@ describe('payload', () => {
             powered_by: null,
             avatar_style: null,
             avatar_member_choice: null,
+            profile_photos: null,
             gif_provider: null,
             gif_enabled: null,
             gif_rating: null,
             gif_key: '',
             gif_key_clear: false,
         });
+    });
+
+    it('shows "Profile photos" as stored, else off by default, and stores it like the member choice', () => {
+        const fresh = sampleProps();
+
+        expect(initialFormData(fresh).profile_photos).toBe(false);
+        expect(
+            toPayload(
+                { ...initialFormData(fresh), profile_photos: true },
+                fresh,
+            ).profile_photos,
+        ).toBe(true);
+
+        const stored = sampleProps({ profilePhotos: true });
+
+        expect(initialFormData(stored).profile_photos).toBe(true);
+        expect(toPayload(initialFormData(stored), stored).profile_photos).toBe(
+            true,
+        );
+        expect(
+            toPayload(
+                { ...initialFormData(stored), profile_photos: false },
+                stored,
+            ).profile_photos,
+        ).toBeNull();
     });
 
     it('stores only the field the admin changed', () => {

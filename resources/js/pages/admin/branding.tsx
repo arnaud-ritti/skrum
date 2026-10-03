@@ -41,6 +41,7 @@ export default function AdminBranding(props: BrandingPageProps) {
                 poweredBy={props.poweredBy}
                 avatarStyle={props.avatarStyle}
                 avatarMemberChoice={props.avatarMemberChoice}
+                profilePhotos={props.profilePhotos}
                 gifProvider={props.gifProvider}
                 gifEnabled={props.gifEnabled}
                 gifRating={props.gifRating}

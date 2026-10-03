@@ -29,6 +29,7 @@ const options: AdminAvatarStyle[] = values.map((value) => ({
 function Harness({ initial }: { initial: string }) {
     const [value, setValue] = useState(initial);
     const [allow, setAllow] = useState(false);
+    const [photos, setPhotos] = useState(false);
 
     return (
         <AvatarStyleGrid
@@ -38,6 +39,8 @@ function Harness({ initial }: { initial: string }) {
             sampleName="Ada Admin"
             allowMemberChoice={allow}
             onAllowMemberChoiceChange={setAllow}
+            allowProfilePhotos={photos}
+            onAllowProfilePhotosChange={setPhotos}
         />
     );
 }
@@ -138,5 +141,30 @@ describe('AvatarStyleGrid', () => {
         fireEvent.click(choice);
 
         expect(choice.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('lets the admin allow profile photos, under the member choice', () => {
+        renderWithProviders(<Harness initial="thumbs" />);
+
+        const switches = screen.getAllByRole('switch');
+        const photos = screen.getByRole('switch', { name: 'Profile photos' });
+
+        expect(switches.indexOf(photos)).toBe(
+            switches.indexOf(
+                screen.getByRole('switch', {
+                    name: 'Members can choose their own style',
+                }),
+            ) + 1,
+        );
+        expect(photos.getAttribute('aria-checked')).toBe('false');
+        expect(
+            screen.getByText(
+                'Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.',
+            ),
+        ).toBeTruthy();
+
+        fireEvent.click(photos);
+
+        expect(photos.getAttribute('aria-checked')).toBe('true');
     });
 });

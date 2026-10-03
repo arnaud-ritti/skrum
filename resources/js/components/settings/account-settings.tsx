@@ -15,6 +15,7 @@ import type { NotificationPreferences } from '@/components/settings/notification
 import { PasswordGateProvider } from '@/components/settings/password-gate';
 import { PresenceColourPicker } from '@/components/settings/presence-colour-picker';
 import { ProfileCard } from '@/components/settings/profile-card';
+import { ProfilePhoto } from '@/components/settings/profile-photo';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
 import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
@@ -54,6 +55,10 @@ export type ProfileSettings = {
     avatarStyles: ProfileAvatarStyle[];
     /** The chosen colour, or the one derived from the avatar seed: 1 to 12. */
     presenceColor: number;
+    /** A stored photo shows as the avatar; always false while photos are not allowed. */
+    hasPhoto: boolean;
+    /** The admin switch "Profile photos". */
+    photosAllowed: boolean;
 };
 
 export type AppearanceSettings = {
@@ -249,11 +254,23 @@ export function AccountSettings({
                                     onChange={setPresence}
                                 />
                             }
+                            photo={
+                                <ProfilePhoto
+                                    photosAllowed={profile.photosAllowed}
+                                    hasPhoto={profile.hasPhoto}
+                                    memberChoice={profile.avatarMemberChoice}
+                                    style={
+                                        profile.avatarStyle ??
+                                        profile.instanceAvatarStyle
+                                    }
+                                />
+                            }
                         />
                         <DeleteAccountCard />
                     </div>
 
                     <AvatarStyleCard
+                        key={profile.avatarStyle ?? ''}
                         user={auth.user}
                         memberChoice={profile.avatarMemberChoice}
                         style={profile.avatarStyle}

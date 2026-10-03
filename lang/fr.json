@@ -4550,5 +4550,10 @@
     "Your system already asks for fewer animations.": "Ton système demande déjà moins d'animations.",
     "This image could not be read. Choose a JPEG or PNG file.": "Impossible de lire cette image. Choisis un fichier JPEG ou PNG.",
     "Photo updated.": "Photo mise à jour.",
-    "Photo removed.": "Photo supprimée."
+    "Photo removed.": "Photo supprimée.",
+    "Upload photo": "Importer une photo",
+    "Use initials": "Utiliser les initiales",
+    "Remove photo": "Retirer la photo",
+    "Profile photos": "Photos de profil",
+    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Les membres peuvent importer une photo qui remplace leur avatar généré. Les photos sont publiques, comme les avatars."
 }
