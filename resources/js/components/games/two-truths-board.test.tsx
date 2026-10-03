@@ -153,6 +153,65 @@ describe('TwoTruthsBoard', () => {
         });
     });
 
+    it('keeps the cards focusable while a pick is sent, and ignores clicks meanwhile', async () => {
+        mocks.request.mockReturnValue(new Promise(() => undefined));
+        renderWithRoom(<TwoTruthsBoard round={round()} />);
+        const welsh = screen.getByRole('radio', { name: /I speak Welsh/ });
+
+        await act(async () => {
+            fireEvent.click(welsh);
+        });
+
+        expect(welsh.hasAttribute('disabled')).toBe(false);
+        expect(welsh.getAttribute('aria-disabled')).toBe('true');
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('radio', { name: /I ran a marathon/ }),
+            );
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends one pick once the arrow keys rest on a card', async () => {
+        vi.useFakeTimers();
+        mocks.request.mockResolvedValue(null);
+        const { dispatch } = renderWithRoom(<TwoTruthsBoard round={round()} />);
+        const group = screen.getByRole('radiogroup');
+
+        for (const name of [/I speak Welsh/, /I ran a marathon/]) {
+            await act(async () => {
+                fireEvent.keyDown(group, { key: 'ArrowDown' });
+                fireEvent.click(screen.getByRole('radio', { name }));
+            });
+        }
+
+        expect(mocks.request).not.toHaveBeenCalled();
+        expect(dispatch).toHaveBeenLastCalledWith({
+            type: 'round.patched',
+            roundId: 'round',
+            patch: { myChoice: 2 },
+        });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500);
+        });
+
+        vi.useRealTimers();
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+        expect(mocks.request.mock.calls[0][1]).toEqual({ choice: '2' });
+    });
+
+    it('names each card as a choice of the lie', () => {
+        renderWithRoom(<TwoTruthsBoard round={round()} />);
+
+        expect(
+            screen.getByRole('radio', { name: /I speak Welsh.*It's the lie!/ }),
+        ).toBeTruthy();
+    });
+
     it('shows the teller their lie, without a vote, and the reveal', () => {
         renderWithRoom(<TwoTruthsBoard round={round({ lieIndex: 1 })} />, {
             me: 'bob',

@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import GameChoicesController from '@/actions/App/Http/Controllers/Games/GameChoicesController';
 import GameRevealsController from '@/actions/App/Http/Controllers/Games/GameRevealsController';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -17,6 +17,9 @@ import type {
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useRoom } from './room-context';
+
+/** How long the arrow keys rest on a card before the pick is sent. */
+const ArrowPickDelay = 400;
 
 function LieBadge({ isLie }: { isLie: boolean }) {
     const { t } = useTrans();
@@ -57,29 +60,43 @@ export function TwoTruthsBoard({ round }: { round: GameRound }) {
         });
     };
 
-    /** A second click on the chosen card withdraws it. */
-    const choose = async (index: number) => {
-        const withdrawing = myChoice === index;
+    const isSending = useRef(false);
+    const isArrowing = useRef(false);
+    const arrowPick = useRef<{
+        timer: ReturnType<typeof setTimeout>;
+        previous: number | null;
+    } | null>(null);
 
-        patchChoice(withdrawing ? null : index);
+    useEffect(
+        () => () => {
+            if (arrowPick.current) {
+                clearTimeout(arrowPick.current.timer);
+            }
+        },
+        [],
+    );
+
+    const send = async (choice: number | null, previous: number | null) => {
+        isSending.current = true;
         setBusy(true);
 
         let result: null | undefined;
 
         try {
             result = await ctx.run(
-                withdrawing
+                choice === null
                     ? retroRequest<null>(GameChoicesController.destroy(target))
                     : retroRequest<null>(GameChoicesController.update(target), {
-                          choice: String(index),
+                          choice: String(choice),
                       }),
             );
         } finally {
+            isSending.current = false;
             setBusy(false);
         }
 
         if (result === undefined) {
-            patchChoice(myChoice);
+            patchChoice(previous);
 
             return;
         }
@@ -88,8 +105,53 @@ export function TwoTruthsBoard({ round }: { round: GameRound }) {
             type: 'vote.changed',
             roundId: round.id,
             playerId: me.playerId,
-            voted: !withdrawing,
+            voted: choice !== null,
         });
+    };
+
+    /**
+     * Radix clicks a radio when the arrow keys focus it: those picks wait for
+     * the keys to rest, so arrowing through the cards sends one request.
+     */
+    const pickByArrow = (index: number) => {
+        const previous = arrowPick.current?.previous ?? myChoice;
+
+        if (arrowPick.current) {
+            clearTimeout(arrowPick.current.timer);
+        }
+
+        patchChoice(index);
+        arrowPick.current = {
+            previous,
+            timer: setTimeout(() => {
+                arrowPick.current = null;
+                void send(index, previous);
+            }, ArrowPickDelay),
+        };
+    };
+
+    /** A second click on the chosen card withdraws it. */
+    const choose = (index: number) => {
+        if (isSending.current) {
+            return;
+        }
+
+        if (isArrowing.current) {
+            isArrowing.current = false;
+            pickByArrow(index);
+
+            return;
+        }
+
+        if (arrowPick.current) {
+            clearTimeout(arrowPick.current.timer);
+            arrowPick.current = null;
+        }
+
+        const choice = myChoice === index ? null : index;
+
+        patchChoice(choice);
+        void send(choice, myChoice);
     };
 
     const reveal = async () => {
@@ -163,17 +225,26 @@ export function TwoTruthsBoard({ round }: { round: GameRound }) {
                     aria-label={t('Which one is the lie?')}
                     value={myChoice === null ? '' : String(myChoice)}
                     className="w-full gap-3"
+                    onKeyDownCapture={(event) => {
+                        isArrowing.current = event.key.startsWith('Arrow');
+                    }}
+                    onPointerDownCapture={() => {
+                        isArrowing.current = false;
+                    }}
                 >
                     {statements.map((statement, index) => (
                         <RadioGroupCardItem
                             key={index}
                             value={String(index)}
-                            disabled={busy}
-                            onClick={() => void choose(index)}
-                            className="p-4"
+                            aria-disabled={busy || undefined}
+                            onClick={() => choose(index)}
+                            className="p-4 aria-disabled:cursor-progress"
                         >
                             <span className="text-lg break-words">
                                 {statement}
+                            </span>
+                            <span className="sr-only">
+                                {t("It's the lie!")}
                             </span>
                         </RadioGroupCardItem>
                     ))}

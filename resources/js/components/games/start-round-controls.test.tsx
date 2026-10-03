@@ -136,7 +136,7 @@ describe('StartRoundControls, Two truths', () => {
             truthSets: ready,
         });
 
-        expect(screen.getByText('Waiting for another player')).toBeTruthy();
+        expect(screen.getByText('Waiting for players (3 needed)')).toBeTruthy();
         expect(startButton().disabled).toBe(true);
     });
 

@@ -1,6 +1,11 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { GameKind, GameRoundEnded } from '@/lib/games/types';
+import type {
+    GameKind,
+    GameRoundDetail,
+    GameRoundEnded,
+} from '@/lib/games/types';
+import { retroRequest } from '@/lib/retro/api';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { RoundEndCard } from './round-end-card';
@@ -36,6 +41,7 @@ function renderCard(
     lastEnded: GameRoundEnded | null,
     isHost: boolean,
     game: GameKind = 'hangman',
+    history: GameRoundDetail[] = [],
 ) {
     const ctx = {
         snapshot: {
@@ -43,7 +49,8 @@ function renderCard(
                 id: 'room',
                 game,
                 isHost,
-                currentRoundId: lastEnded === null ? null : 'round',
+                currentRoundId:
+                    lastEnded === null ? (history[0]?.id ?? null) : 'round',
                 settings: {
                     wordThemes: [],
                     turnSeconds: null,
@@ -57,7 +64,7 @@ function renderCard(
             me: { playerId: 'ada' },
             games: [{ value: game, label: game, available: true }],
             players,
-            history: [],
+            history,
             truthSets: game === 'two_truths' ? { ready: [], mine: null } : null,
             round: null,
             leaderboard: [
@@ -143,6 +150,50 @@ describe('RoundEndCard', () => {
         expect(
             document.querySelector('[data-slot="two-truths-set-form"]'),
         ).not.toBeNull();
+    });
+
+    it('fetches the lie and the votes of a Two truths round seen only in the history', async () => {
+        const revealed: GameRoundDetail = {
+            id: 'round',
+            game: 'two_truths',
+            outcome: 'revealed',
+            word: null,
+            question: null,
+            leaderPlayerId: 'bob',
+            leaderName: 'Bob',
+            winnerPlayerId: null,
+            winnerName: null,
+            endedAt: '2026-10-03T10:00:00Z',
+        };
+
+        vi.mocked(retroRequest).mockResolvedValueOnce({
+            ...revealed,
+            statements: ['I ski', 'I sing', 'I fly'],
+            lieIndex: 2,
+            votes: [
+                { index: 0, playerIds: [] },
+                { index: 1, playerIds: ['cy'] },
+                { index: 2, playerIds: ['ada'] },
+            ],
+        });
+
+        renderCard(null, false, 'two_truths', [revealed]);
+
+        await waitFor(() =>
+            expect(
+                document.querySelector('[data-slot="two-truths-result"]'),
+            ).not.toBeNull(),
+        );
+
+        const result = document.querySelector<HTMLElement>(
+            '[data-slot="two-truths-result"]',
+        );
+
+        expect(within(result!).getByText('I fly')).toBeTruthy();
+        expect(within(result!).getByText('Lie')).toBeTruthy();
+        expect(
+            within(result!).getByRole('list', { name: 'Picked by Ada' }),
+        ).toBeTruthy();
     });
 
     it('asks for my statements on the waiting stage of Two truths', () => {

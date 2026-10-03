@@ -72,7 +72,8 @@ export function StartRoundControls({ label }: { label: string }) {
         leaderChoices.some((player) => player.id === chosenLeaderId)
             ? chosenLeaderId
             : proposedLeaderId;
-    const isWaiting = onlinePlayers.length < MinimumPlayers[room.game];
+    const minimumPlayers = MinimumPlayers[room.game];
+    const isWaiting = onlinePlayers.length < minimumPlayers;
     const hasNoTeller = isTwoTruths && leaderChoices.length === 0;
     const closedGame =
         lastEnded !== null &&
@@ -141,7 +142,11 @@ export function StartRoundControls({ label }: { label: string }) {
             )}
             {isWaiting && (
                 <p className="text-sm text-muted-foreground">
-                    {t('Waiting for another player')}
+                    {minimumPlayers > 2
+                        ? t('Waiting for players (:count needed)', {
+                              count: minimumPlayers,
+                          })
+                        : t('Waiting for another player')}
                 </p>
             )}
             {!isWaiting && hasNoTeller && (

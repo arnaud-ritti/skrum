@@ -11,6 +11,7 @@ import { StartRoundControls } from './start-round-controls';
 import { TwoTruthsResult } from './two-truths-board';
 import { TwoTruthsSetForm } from './two-truths-set-form';
 import { useEndedGifAnswers } from './use-ended-gif-answers';
+import { useEndedRoundDetail } from './use-ended-round-detail';
 
 function RoundPoints({ points }: { points: GamePointsAward[] }) {
     const { snapshot } = useRoom();
@@ -114,6 +115,11 @@ export function RoundEndCard() {
         lastEnded?.roundsTotal ?? lastRound?.roundsTotal ?? null;
     const isGameOver = number !== null && number === roundsTotal;
     const gifAnswers = useEndedGifAnswers();
+    const fetchedTruths = useEndedRoundDetail(
+        'two_truths',
+        Boolean(lastEnded?.statements),
+    );
+    const truths = lastEnded?.statements ? lastEnded : fetchedTruths;
     /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
     const setForm = snapshot.room.game === 'two_truths' && (
         <TwoTruthsSetForm className="max-w-2xl" />
@@ -169,12 +175,12 @@ export function RoundEndCard() {
                         points={lastEnded?.answers ? lastEnded.points : []}
                     />
                 )}
-                {lastEnded?.statements && (
+                {truths?.statements && (
                     <TwoTruthsResult
-                        statements={lastEnded.statements}
-                        lieIndex={lastEnded.lieIndex ?? null}
-                        votes={lastEnded.votes ?? []}
-                        points={lastEnded.points}
+                        statements={truths.statements}
+                        lieIndex={truths.lieIndex ?? null}
+                        votes={truths.votes ?? []}
+                        points={lastEnded?.statements ? lastEnded.points : []}
                     />
                 )}
                 {winner && (
