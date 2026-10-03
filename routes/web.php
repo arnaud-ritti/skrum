@@ -34,6 +34,7 @@ use App\Http\Controllers\Games\GameSharesController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameStatementsController;
 use App\Http\Controllers\Games\GameSwitchesController;
+use App\Http\Controllers\Games\GameTextAnswersController;
 use App\Http\Controllers\Games\GameTimerExtensionsController;
 use App\Http\Controllers\Games\GameTimersController;
 use App\Http\Controllers\Games\GameTurnsController;
@@ -687,6 +688,8 @@ Route::prefix('games/{room}')
         Route::post('rounds/{round}/word-guesses', [GameWordGuessesController::class, 'store'])->name('games.rounds.wordGuesses.store')->whereUuid('round');
         Route::put('statements', [GameStatementsController::class, 'update'])->name('games.statements.update');
         Route::delete('statements', [GameStatementsController::class, 'destroy'])->name('games.statements.destroy');
+        Route::put('rounds/{round}/text-answer', [GameTextAnswersController::class, 'update'])->name('games.rounds.textAnswer.update')->whereUuid('round');
+        Route::delete('rounds/{round}/text-answer', [GameTextAnswersController::class, 'destroy'])->name('games.rounds.textAnswer.destroy')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

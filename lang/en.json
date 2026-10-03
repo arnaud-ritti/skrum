@@ -4346,5 +4346,9 @@
     "Choose who tells this round.": "Choose who tells this round.",
     "This player has no statements ready.": "This player has no statements ready.",
     "You are telling this round, so you cannot vote.": "You are telling this round, so you cannot vote.",
-    "Your statements have been played.": "Your statements have been played."
+    "Your statements have been played.": "Your statements have been played.",
+    "An answer has already been drawn.": "An answer has already been drawn.",
+    "At least 2 answers are needed.": "At least 2 answers are needed.",
+    "No answer has been drawn yet.": "No answer has been drawn yet.",
+    "This is your answer.": "This is your answer."
 }

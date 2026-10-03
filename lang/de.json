@@ -4566,5 +4566,9 @@
     "Choose who tells this round.": "Wähle, wer in dieser Runde erzählt.",
     "This player has no statements ready.": "Diese Person hat keine Aussagen bereit.",
     "You are telling this round, so you cannot vote.": "Du erzählst in dieser Runde, also kannst du nicht abstimmen.",
-    "Your statements have been played.": "Deine Aussagen wurden schon gespielt."
+    "Your statements have been played.": "Deine Aussagen wurden schon gespielt.",
+    "An answer has already been drawn.": "Es wurde bereits eine Antwort gezogen.",
+    "At least 2 answers are needed.": "Es werden mindestens 2 Antworten gebraucht.",
+    "No answer has been drawn yet.": "Es wurde noch keine Antwort gezogen.",
+    "This is your answer.": "Das ist deine Antwort."
 }
