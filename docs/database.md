@@ -259,12 +259,18 @@ open connection still holds pages in the write-ahead log, and the file then read
 requests at once, lock order, a retry that writes once, the 503 of a busy SQLite file. It runs on PostgreSQL,
 MariaDB, MySQL and SQLite in a file (`sqlite-file`), never in memory, and never in parallel.
 
-A race is written with `Tests\Concurrency\Support\Race`: `Race::run()` takes one closure per contender, starts each
-in its own PHP process with its own connection, releases them at the same instant, and pauses each one 200 ms after
-its first query inside a transaction, so that without a lock they have all read the same state before the first
-one writes. The closures are `static` and capture scalars only (ids, not models), because they are serialised into
-another process; `Race::request()` sends an HTTP request as a user from inside one. Each test states the protection
-it proves; removing that protection makes it fail.
+A race is written with `Tests\Concurrency\Support\Race`: `Race::run($contenders, $pauseAfter)` takes one closure per
+contender, starts each in its own PHP process with its own connection (Laravel's `process` concurrency driver),
+releases them at the same instant (`RACE_LEAD_SECONDS` after the call, 4 by default; raise it on a slow machine), and
+pauses each one 200 ms once. By default the pause comes after its first query inside a transaction
+(`Race::FirstQueryInTransaction`), so that without a lock they have all read the same state before the first one
+writes; `Race::FirstQuery`, `Race::NoPause` and `Race::firstQueryMentioning('name_key')` (after the first query
+whose SQL holds that fragment, for a check made before the transaction opens) are the other choices. It returns,
+per contender, `ok`, `value`, `error` (the exception class), `message`, `startedAt` and `endedAt`: an exception in a
+contender is reported, not thrown. The closures are `static` and capture scalars only (ids, not models), because
+they are serialised into another process. Inside one, `Race::request($userId, $method, $uri, $payload)` sends a
+JSON request through the HTTP kernel as that user and returns the status; `Race::response()` returns the status and
+the headers. Each test states the protection it proves; removing that protection makes it fail.
 
 ### Continuous integration
 
