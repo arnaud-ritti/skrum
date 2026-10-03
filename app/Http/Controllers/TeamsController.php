@@ -9,17 +9,20 @@ use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\PresentTeamRetro;
 use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Teams\BuildTeamMoodTrend;
+use App\Actions\TeamSurveys\PresentTeamSurveySummary;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
+use App\Enums\TeamSurveyStatus;
 use App\Enums\TemplateCategory;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
@@ -27,6 +30,7 @@ use App\Models\Workspace;
 use App\Support\Alphabetical;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
+use App\Support\Surveys\SurveyTemplateCatalogue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +45,7 @@ class TeamsController extends Controller
         private PresentTeamRetro $presentTeamRetro,
         private PokerPresenceRoster $pokerPresenceRoster,
         private PresentWhiteboardSummary $presentWhiteboardSummary,
+        private PresentTeamSurveySummary $presentTeamSurveySummary,
     ) {}
 
     public function store(Request $request, Workspace $workspace): RedirectResponse
@@ -68,6 +73,7 @@ class TeamsController extends Controller
         GameRulesRegistry $gameRulesRegistry,
         BuildTeamMoodTrend $buildTeamMoodTrend,
         PresentTeamHealthStatements $presentTeamHealthStatements,
+        SurveyTemplateCatalogue $surveyTemplateCatalogue,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -139,6 +145,16 @@ class TeamsController extends Controller
                     'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
                 ]),
             'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
+            'surveys' => PresentTeamSurveySummary::withCounts($team->teamSurveys())
+                ->whereNull('retro_id')
+                ->latest('updated_at')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn (TeamSurvey $survey): array => $this->presentTeamSurveySummary->handle($survey, $request->user(), $managesWorkspace))
+                ->reject(fn (array $survey): bool => $survey['status'] === TeamSurveyStatus::Draft->value && ! $survey['canManage'])
+                ->values(),
+            'canCreateSurvey' => $request->user()->can('createSurvey', $team),
+            'surveyTemplates' => $surveyTemplateCatalogue->options($team),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
