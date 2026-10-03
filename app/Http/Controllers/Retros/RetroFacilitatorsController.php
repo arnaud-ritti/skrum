@@ -48,9 +48,12 @@ class RetroFacilitatorsController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * The new facilitator must take part in the team: an observer only keeps a session they already facilitated.
+     */
     private function ensureCanHandOver(Retro $locked, User $user): void
     {
-        if ($user->can('view', $locked->team)) {
+        if ($user->can('createRetro', $locked->team)) {
             return;
         }
 

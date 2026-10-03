@@ -136,3 +136,43 @@ it('keeps "Take control" of poker games and whiteboards for every member, and re
     $this->actingAs($observer)->get(route('whiteboards.show', $board))->assertOk();
     $this->actingAs($observer)->putJson(route('whiteboards.facilitator.update', $board), ['user_id' => $observer->id])->assertForbidden();
 });
+
+it('refuses to hand a session over to an observer, and leaves observers out of the hand-over list', function (string $kind) {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    $member = teamMember($team);
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin, ['role' => TeamRole::Observer->value]);
+
+    [$facilitator, $handOverRoute, $snapshotRoute, $candidatesPath, $currentFacilitatorUserId] = match ($kind) {
+        'retro' => (function () use ($team): array {
+            [$retro, $facilitator] = retroInProgress($team);
+
+            return [$facilitator, route('retros.facilitator.update', $retro), route('retros.snapshot.show', $retro), 'viewer.transferCandidates', fn () => $retro->fresh()->facilitator->user_id];
+        })(),
+        'poker' => (function () use ($team): array {
+            $game = PokerGame::factory()->for($team)->create();
+            [$facilitator] = pokerFacilitator($game);
+
+            return [$facilitator, route('poker.facilitator.update', $game), route('poker.snapshot.show', $game), 'me.transferCandidates', fn () => $game->fresh()->facilitator->user_id];
+        })(),
+        'whiteboard' => (function () use ($team): array {
+            $board = Whiteboard::factory()->for($team)->create();
+            [$facilitator] = whiteboardFacilitator($board);
+
+            return [$facilitator, route('whiteboards.facilitator.update', $board), route('whiteboards.snapshot.show', $board), 'me.transferCandidates', fn () => $board->fresh()->facilitator->user_id];
+        })(),
+    };
+
+    $candidateIds = collect($this->actingAs($facilitator)->getJson($snapshotRoute)->json($candidatesPath))->pluck('userId');
+
+    expect($candidateIds)->toContain($member->id)
+        ->toContain($admin->id)
+        ->not->toContain($observer->id);
+
+    $this->actingAs($facilitator)->putJson($handOverRoute, ['user_id' => $observer->id])->assertUnprocessable()->assertJsonValidationErrors('user_id');
+
+    expect($currentFacilitatorUserId())->toBe($facilitator->id);
+
+    $this->actingAs($facilitator)->putJson($handOverRoute, ['user_id' => $admin->id])->assertNoContent();
+})->with(['retro', 'poker', 'whiteboard']);

@@ -99,10 +99,12 @@ it('lists in the dialog the members who take part, without observers', function 
     $team = Team::factory()->create();
     $member = teamMember($team);
     $observer = teamMember($team, TeamRole::Observer);
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin, ['role' => TeamRole::Observer->value]);
 
     $ids = collect(resolve(PresentNewSessionOptions::class)->handle($member, $team->workspace, $team)['retroFacilitators'])->pluck('id');
 
-    expect($ids)->toContain($member->id)->not->toContain($observer->id);
+    expect($ids)->toContain($member->id)->toContain($admin->id)->not->toContain($observer->id);
 });
 
 it('refuses a member, an observer, duplicates, more than ten people and a rotation without anyone', function (Closure $body, string $field) {
@@ -140,3 +142,26 @@ it('takes a person out of the list when they become a member or leave the team',
 
     expect($team->defaultFacilitators()->count())->toBe(0);
 });
+
+it('starts the rotation over when a person on the list leaves the team or the workspace', function (string $leaves) {
+    $team = Team::factory()->create();
+    $camille = teamMember($team, TeamRole::Facilitator);
+    $ines = teamMember($team, TeamRole::Owner);
+    $noor = teamMember($team, TeamRole::Facilitator);
+    $admin = workspaceManager($team->workspace);
+
+    $this->actingAs($ines)
+        ->put(route('teams.facilitators.update', [$team->workspace, $team]), ['user_ids' => [$camille->id, $ines->id, $noor->id], 'rotation' => true])
+        ->assertRedirect();
+
+    $team->update(['rotation_position' => 1]);
+
+    $route = $leaves === 'team'
+        ? route('teams.members.destroy', [$team->workspace, $team, $camille])
+        : route('workspaces.members.destroy', [$team->workspace, $camille]);
+
+    $this->actingAs($admin)->delete($route)->assertRedirect();
+
+    expect($team->defaultFacilitators()->pluck('users.id')->all())->toBe([$ines->id, $noor->id])
+        ->and($team->fresh()->rotation_position)->toBe(0);
+})->with(['team', 'workspace']);

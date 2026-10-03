@@ -17,7 +17,6 @@ use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
-use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\GamePlayer;
@@ -290,13 +289,11 @@ class BuildBoardSnapshot
     {
         $team = $retro->team;
 
-        $managerIds = $team->workspace->members()
-            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
-            ->pluck('users.id');
+        $managerIds = $team->workspace->managers()->pluck('users.id');
 
         $candidates = User::query()
             ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->members()->select('users.id'))
+                ->whereIn('id', $team->participatingMembers()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
             ->orderBy('id')

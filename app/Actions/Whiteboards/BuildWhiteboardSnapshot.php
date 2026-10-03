@@ -2,7 +2,6 @@
 
 namespace App\Actions\Whiteboards;
 
-use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
@@ -125,13 +124,11 @@ class BuildWhiteboardSnapshot
     {
         $team = $board->team;
 
-        $managerIds = $team->workspace->members()
-            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
-            ->pluck('users.id');
+        $managerIds = $team->workspace->managers()->pluck('users.id');
 
         $candidates = User::query()
             ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->members()->select('users.id'))
+                ->whereIn('id', $team->participatingMembers()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
             ->orderBy('id')

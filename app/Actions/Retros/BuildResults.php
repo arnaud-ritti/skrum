@@ -11,7 +11,6 @@ use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
-use App\Enums\TeamRole;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Integrations\IntegrationAvailability;
@@ -92,8 +91,8 @@ class BuildResults
      */
     private function stats(Retro $retro): array
     {
-        $observerIds = $retro->team->members()->wherePivot('role', TeamRole::Observer->value)->pluck('users.id');
-        $teamMemberIds = $retro->team->members()->wherePivot('role', '!=', TeamRole::Observer->value)->pluck('users.id');
+        $observerIds = $retro->team->observers()->pluck('users.id');
+        $teamMemberIds = $retro->team->participatingMembers()->pluck('users.id');
         $participants = $retro->participants->whereNotIn('user_id', $observerIds);
         $participantCount = $participants->count();
 

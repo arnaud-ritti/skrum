@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TeamRole;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TeamSurveyTemplate;
 use Database\Factories\TeamSurveyFactory;
@@ -185,7 +184,7 @@ class TeamSurvey extends Model
      */
     public function participantCount(): int
     {
-        $memberIds = $this->team->members()->wherePivot('role', '!=', TeamRole::Observer->value)->pluck('users.id');
+        $memberIds = $this->team->participatingMembers()->pluck('users.id');
         $observerIds = $this->observerIds();
 
         return $this->respondents()
@@ -201,7 +200,7 @@ class TeamSurvey extends Model
      */
     private function observerIds(): SupportCollection
     {
-        return $this->team->members()->wherePivot('role', TeamRole::Observer->value)->pluck('users.id');
+        return $this->team->observers()->pluck('users.id');
     }
 
     protected function casts(): array

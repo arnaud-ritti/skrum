@@ -50,6 +50,12 @@ class Workspace extends Model
         return $this->members()->wherePivot('role', WorkspaceRole::Owner->value);
     }
 
+    /** @return BelongsToMany<User, $this, WorkspaceMembership, 'membership'> */
+    public function managers(): BelongsToMany
+    {
+        return $this->members()->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value]);
+    }
+
     /** @return HasMany<WorkspaceInvitation, $this> */
     public function invitations(): HasMany
     {

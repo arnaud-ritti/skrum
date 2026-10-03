@@ -68,6 +68,25 @@ class Team extends Model
             ->withTimestamps();
     }
 
+    /**
+     * The observers as `User::isObserverOf` reads them: a workspace owner or admin is never one,
+     * whatever their team row says.
+     *
+     * @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'>
+     */
+    public function observers(): BelongsToMany
+    {
+        return $this->members()
+            ->wherePivot('role', TeamRole::Observer->value)
+            ->whereNotIn('users.id', $this->workspace->managers()->select('users.id'));
+    }
+
+    /** @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'> */
+    public function participatingMembers(): BelongsToMany
+    {
+        return $this->members()->whereNotIn('users.id', $this->observers()->select('users.id'));
+    }
+
     /** @return BelongsToMany<User, $this> */
     public function defaultFacilitators(): BelongsToMany
     {
