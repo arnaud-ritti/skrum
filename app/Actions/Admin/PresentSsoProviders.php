@@ -31,35 +31,41 @@ class PresentSsoProviders
      */
     public function handle(): array
     {
-        return array_map(function (SsoProvider $provider): array {
+        $providers = array_map(function (SsoProvider $provider): array {
             $section = $this->catalogue->section($provider);
-            $fields = $this->configuration->describe($section);
 
             return [
-                'key' => $provider->value,
-                'label' => $this->label($provider),
-                'configured' => $provider->isEnabled(),
-                'redirectUri' => (string) config($this->redirectConfigKey($provider)),
-                'fields' => $fields,
-                'testable' => TestOidcDiscovery::isTestable($provider),
-                'updateUrl' => route('admin.ssoProviders.update', $provider->value),
-                'secretChangedAt' => $this->secretChangedAt($section, $fields),
+                'provider' => $provider,
+                'section' => $section,
+                'fields' => $this->configuration->describe($section),
             ];
         }, SsoProvider::cases());
+
+        $secretChangeTimes = $this->secretChangeTimes->handleMany(array_values(array_map(
+            fn (array $provider): InstanceSettingKey => $provider['section'],
+            array_filter($providers, fn (array $provider): bool => $this->hasStoredSecret($provider['fields'])),
+        )), 'client_secret');
+
+        return array_map(fn (array $provider): array => [
+            'key' => $provider['provider']->value,
+            'label' => $this->label($provider['provider']),
+            'configured' => $provider['provider']->isEnabled(),
+            'redirectUri' => (string) config($this->redirectConfigKey($provider['provider'])),
+            'fields' => $provider['fields'],
+            'testable' => TestOidcDiscovery::isTestable($provider['provider']),
+            'updateUrl' => route('admin.ssoProviders.update', $provider['provider']->value),
+            'secretChangedAt' => ($secretChangeTimes[$provider['section']->value] ?? null)?->toIso8601String(),
+        ], $providers);
     }
 
     /**
-     * When the stored secret last changed, from the audit log; nothing for a secret from the environment or cleared.
+     * Only a stored secret has a change time: nothing for a secret from the environment or cleared.
      *
      * @param  array<string, array<string, mixed>>  $fields
      */
-    private function secretChangedAt(InstanceSettingKey $section, array $fields): ?string
+    private function hasStoredSecret(array $fields): bool
     {
-        if (($fields['client_secret']['source'] ?? null) !== 'stored') {
-            return null;
-        }
-
-        return $this->secretChangeTimes->handle($section, 'client_secret')?->toIso8601String();
+        return ($fields['client_secret']['source'] ?? null) === 'stored';
     }
 
     private function label(SsoProvider $provider): string

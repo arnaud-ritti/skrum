@@ -52,3 +52,17 @@ it('shows when a stored secret changed, and nothing for an environment or cleare
     $this->get(route('admin.signIn.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('providerDetails.3.secretChangedAt', null));
 });
+
+it('reads the audit log once for every stored secret of the sign-in page', function () {
+    Mail::fake();
+    $this->actingAs(User::factory()->instanceAdmin()->create())->withSession(['auth.password_confirmed_at' => time()]);
+    $this->put(route('admin.ssoProviders.update', 'oidc'), ['client_secret' => 'stored-oidc-secret'])->assertSessionHasNoErrors();
+    $this->put(route('admin.ssoProviders.update', 'entra'), ['client_secret' => 'stored-entra-secret'])->assertSessionHasNoErrors();
+    $secretChangeTimes = $this->partialMock(SecretChangeTimes::class);
+    $secretChangeTimes->shouldReceive('handleMany')->once()->passthru();
+    $secretChangeTimes->shouldNotReceive('handle');
+
+    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
+        ->whereNot('providerDetails.3.secretChangedAt', null)
+        ->whereNot('providerDetails.2.secretChangedAt', null));
+});
