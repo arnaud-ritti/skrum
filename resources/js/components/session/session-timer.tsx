@@ -19,8 +19,13 @@ type SessionTimerProps = {
     onStop?: () => void;
     /** Poker only: opens its custom-duration dialog. */
     onCustom?: () => void;
-    /** Adds two minutes to the running timer. Shown as "+2 min" while a timer runs. */
+    /** Adds two minutes to the timer. Shown as "+2 min" while a timer runs or is paused. */
     onExtend?: () => void;
+    /** The seconds left of a paused timer; null or absent unless paused. */
+    pausedSeconds?: number | null;
+    /** Given only to who may pause and resume (the facilitator of a retro). */
+    onPause?: () => void;
+    onResume?: () => void;
     /** false in a game room: it shows <TimeUpBadge> instead of a toast. */
     alarm?: boolean;
     className?: string;
@@ -35,17 +40,32 @@ export function SessionTimer({
     onStop,
     onCustom,
     onExtend,
+    pausedSeconds = null,
+    onPause,
+    onResume,
     alarm = true,
     className,
 }: SessionTimerProps) {
-    const remaining = useCountdown(endsAt, offset);
+    const isPaused = pausedSeconds !== null;
+    const remaining = useCountdown(isPaused ? null : endsAt, offset);
     const isMounted = useIsMounted();
 
-    useTimerAlarm(alarm ? endsAt : null, remaining, offset);
+    useTimerAlarm(alarm && !isPaused ? endsAt : null, remaining, offset);
+
+    // A paused timer does not move: its seconds are the same on the server
+    // and in every browser, so they show from the first render.
+    const remainingSeconds = isPaused
+        ? pausedSeconds
+        : isMounted
+          ? remaining
+          : null;
 
     return (
         <Timer
-            remainingSeconds={isMounted ? remaining : null}
+            remainingSeconds={remainingSeconds}
+            paused={isPaused}
+            onPause={onPause}
+            onResume={isPaused ? onResume : undefined}
             totalSeconds={totalSeconds}
             presets={presets}
             onStart={onStart}
