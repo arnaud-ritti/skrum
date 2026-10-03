@@ -128,6 +128,7 @@ describe('the team page', () => {
                 moodTrend={[
                     {
                         retroId: 'retro-1',
+                        surveyId: null,
                         title: 'Sprint 41',
                         completedAt: '2026-09-18T08:00:00+00:00',
                         url: '/retros/retro-1',

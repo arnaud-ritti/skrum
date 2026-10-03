@@ -39,6 +39,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
 const point: TeamMoodPoint = {
     retroId: '42',
+    surveyId: null,
     title: 'Sprint 42',
     completedAt: '2026-09-01T10:00:00+00:00',
     url: '/retros/42',

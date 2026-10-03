@@ -11,6 +11,7 @@ function point(
 ): TeamMoodPoint {
     return {
         retroId,
+        surveyId: null,
         title: `Sprint ${retroId}`,
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,

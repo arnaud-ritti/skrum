@@ -13,6 +13,7 @@ function point(
 ): TeamMoodPoint {
     return {
         retroId,
+        surveyId: null,
         title: `Retro ${retroId}`,
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,
@@ -57,6 +58,54 @@ describe('toMoodPoints', () => {
                 voters: 2,
                 href: '/retros/c',
             },
+        ]);
+    });
+
+    it('keeps a retro and a survey of the same date apart, and links the survey to its results', () => {
+        const sameDay = '2026-09-18T10:00:00+00:00';
+        const points = toMoodPoints([
+            point('r1', {
+                surveyId: 's-attached',
+                mood: 3.5,
+                moodVoters: 4,
+                completedAt: sameDay,
+            }),
+            point('ignored', {
+                retroId: null,
+                surveyId: 's1',
+                title: 'Pulse of September',
+                url: '/surveys/s1/results',
+                mood: 4,
+                moodVoters: 6,
+                completedAt: sameDay,
+            }),
+        ]);
+
+        expect(points.map((moodPoint) => moodPoint.id)).toEqual([
+            's-attached',
+            's1',
+        ]);
+        expect(points[1]).toEqual({
+            id: 's1',
+            sprint: 'Pulse of September',
+            mean: 4,
+            voters: 6,
+            href: '/surveys/s1/results',
+        });
+    });
+
+    it('names the kind of each point when it is given the labels', () => {
+        const points = toMoodPoints(
+            [
+                point('r1', { mood: 3 }),
+                point('x', { retroId: null, surveyId: 's1', mood: 4 }),
+            ],
+            { retro: 'Retro', survey: 'Survey' },
+        );
+
+        expect(points.map((moodPoint) => moodPoint.kind)).toEqual([
+            'Retro',
+            'Survey',
         ]);
     });
 

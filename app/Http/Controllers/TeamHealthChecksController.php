@@ -27,6 +27,7 @@ class TeamHealthChecksController extends Controller
             'team' => $team->only(['id', 'name']),
             'healthStatements' => $presentTeamHealthStatements->handle($team),
             'canManageHealthStatements' => $request->user()->can('update', $team),
+            'canCreateSurvey' => $request->user()->can('createSurvey', $team),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
         ]);
     }

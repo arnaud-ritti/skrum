@@ -116,13 +116,14 @@ const games: PokerGameSummary[] = [
 ];
 
 const moodTrend: TeamMoodPoint[] = [
-    [37, 6.4, 7, 3.6, 8],
-    [38, 6.9, 8, 3.9, 8],
+    [37, 3.2, 7, 3.6, 8],
+    [38, 3.5, 8, 3.9, 8],
     [39, null, 0, 3.4, 6],
-    [40, 7.1, 8, 3.8, 9],
-    [41, 7.8, 9, 4.1, 9],
+    [40, 3.6, 8, 3.8, 9],
+    [41, 3.9, 9, 4.1, 9],
 ].map(([sprint, mood, moodVoters, roti, rotiVoters], index) => ({
     retroId: `retro-sprint-${sprint}`,
+    surveyId: null,
     title: `Sprint ${sprint} retrospective`,
     completedAt: new Date(Date.UTC(2026, 6, 24 + index * 14, 8)).toISOString(),
     url: `/retros/retro-sprint-${sprint}`,
@@ -343,6 +344,7 @@ export default function TeamSection() {
                     team={page.team}
                     healthStatements={healthStatements}
                     canManageHealthStatements
+                    canCreateSurvey
                     moodTrend={moodTrend}
                 />
             </Example>
@@ -357,6 +359,7 @@ export default function TeamSection() {
                     team={page.team}
                     healthStatements={healthStatements}
                     canManageHealthStatements={false}
+                    canCreateSurvey
                     moodTrend={[]}
                 />
             </Example>

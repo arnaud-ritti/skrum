@@ -8,20 +8,41 @@ import type { TeamMoodPoint } from '@/types';
  */
 export const healthScale: MoodScale = { min: 0, max: 5 };
 
-/** One point per retro that has a health score, in the order received (oldest first). */
-export function toMoodPoints(trend: TeamMoodPoint[]): MoodPoint[] {
-    return trend.flatMap((retro) => {
-        if (retro.mood === null) {
+export type MoodKindLabels = { retro: string; survey: string };
+
+/**
+ * One point per health check that has a score, in the order received (oldest
+ * first): the one of a retro, or one run as a survey, which links to its results.
+ * With labels, each point names its kind for the table view.
+ */
+export function toMoodPoints(
+    trend: TeamMoodPoint[],
+    kindLabels?: MoodKindLabels,
+): MoodPoint[] {
+    return trend.flatMap((entry) => {
+        if (entry.mood === null) {
             return [];
+        }
+
+        const point: MoodPoint = {
+            id: entry.surveyId ?? entry.retroId ?? entry.url,
+            sprint: entry.title,
+            mean: entry.mood,
+            voters: entry.moodVoters,
+            href: entry.url,
+        };
+
+        if (kindLabels === undefined) {
+            return [point];
         }
 
         return [
             {
-                id: retro.retroId,
-                sprint: retro.title,
-                mean: retro.mood,
-                voters: retro.moodVoters,
-                href: retro.url,
+                ...point,
+                kind:
+                    entry.retroId === null
+                        ? kindLabels.survey
+                        : kindLabels.retro,
             },
         ];
     });
@@ -47,7 +68,7 @@ export function toRotiPoints(
 
         return [
             {
-                id: retro.retroId,
+                id: retro.retroId ?? retro.url,
                 label: day.format(new Date(retro.completedAt)),
                 title: retro.title,
                 mean: retro.roti,
