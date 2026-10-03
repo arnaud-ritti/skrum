@@ -23,6 +23,7 @@ const applied: RetroSettingsValues = {
     title: 'Sprint 42',
     is_anonymous: true,
     votes_per_participant: 5,
+    max_votes_per_card: 2,
     icebreaker_enabled: true,
     icebreaker_game: 'draw',
     reactions_enabled: true,

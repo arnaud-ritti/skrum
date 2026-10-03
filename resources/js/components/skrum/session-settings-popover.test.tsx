@@ -31,6 +31,7 @@ const base: RetroSettingsValues = {
     title: 'Sprint 42 retro',
     is_anonymous: true,
     votes_per_participant: 5,
+    max_votes_per_card: null,
     icebreaker_enabled: false,
     icebreaker_game: 'draw',
     reactions_enabled: true,
@@ -135,6 +136,7 @@ describe('useRetroSettingGroups', () => {
             'is_anonymous',
             'is_locked',
             'votes_per_participant',
+            'max_votes_per_card',
             'hide_vote_counts',
             'icebreaker_enabled',
             'icebreaker_game',
@@ -182,6 +184,37 @@ describe('useRetroSettingGroups', () => {
                 settingsOf({ phase }).votes_per_participant.disabledReason,
             ).toBe('The vote limit can only change before voting starts.');
         }
+    });
+
+    it('caps the votes per card from 1 to the vote limit, or no limit', () => {
+        expect(
+            settingsOf({ votesPerParticipant: 4 }).max_votes_per_card,
+        ).toMatchObject({
+            type: 'stepper',
+            id: 'retro-max-votes-per-card',
+            label: 'Max per card',
+            help: 'Votes one person can stack',
+            min: 1,
+            max: 4,
+            auto: {
+                id: 'retro-max-votes-per-card-auto',
+                label: 'No limit per card',
+                valueLabel: 'No limit',
+                fallback: 2,
+            },
+        });
+        expect(
+            settingsOf({ votesPerParticipant: 1 }).max_votes_per_card,
+        ).toMatchObject({ max: 1, auto: { fallback: 1 } });
+    });
+
+    it('locks the cap per card with the vote limit once voting has started', () => {
+        expect(
+            settingsOf({ phase: 'grouping' }).max_votes_per_card.disabledReason,
+        ).toBeUndefined();
+        expect(
+            settingsOf({ phase: 'voting' }).max_votes_per_card.disabledReason,
+        ).toBe('The vote limit can only change before voting starts.');
     });
 
     it('refuses to turn off the phase the retro is in', () => {
@@ -396,6 +429,31 @@ describe('SessionSettingsPopover', () => {
 
         expect(onDraftChange).toHaveBeenLastCalledWith({});
         expect(screen.getByRole('spinbutton')).toBeTruthy();
+    });
+
+    it('turns "No limit per card" off to a cap, and back on to null', async () => {
+        const onDraftChange = vi.fn();
+        renderWithProviders(<Harness onDraftChange={onDraftChange} />);
+        const noLimit = screen.getByRole('switch', {
+            name: 'No limit per card',
+        });
+
+        expect(noLimit.getAttribute('aria-checked')).toBe('true');
+        expect(screen.getByText('No limit')).toBeTruthy();
+
+        await userEvent.click(noLimit);
+
+        expect(onDraftChange).toHaveBeenLastCalledWith({
+            max_votes_per_card: 2,
+        });
+
+        const cap = screen.getByRole('spinbutton', { name: 'Max per card' });
+
+        expect(cap.getAttribute('aria-valuemax')).toBe('5');
+
+        await userEvent.click(noLimit);
+
+        expect(onDraftChange).toHaveBeenLastCalledWith({});
     });
 
     it('shows the game choice only while the icebreaker is on', async () => {
@@ -802,6 +860,7 @@ describe('SessionSettingsPopover', () => {
         expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Add survey' })).toBeNull();
         expect(screen.getByText('Unlocked')).toBeTruthy();
+        expect(screen.getByText('No limit')).toBeTruthy();
         expect(screen.getByText('Draw')).toBeTruthy();
         expect(screen.getAllByText('On').length).toBeGreaterThan(0);
         expect(

@@ -4561,5 +4561,9 @@
     ":name is moving a card…": ":name está moviendo una tarjeta…",
     ":first and :second are moving cards…": ":first y :second están moviendo tarjetas…",
     ":name and :count others are moving cards…": ":name y :count más están moviendo tarjetas…",
-    ":name is taking notes…": ":name está tomando notas…"
+    ":name is taking notes…": ":name está tomando notas…",
+    "Max per card": "Máx. por tarjeta",
+    "Votes one person can stack": "Votos que una persona puede acumular",
+    "No limit per card": "Sin límite por tarjeta",
+    "No limit": "Sin límite"
 }

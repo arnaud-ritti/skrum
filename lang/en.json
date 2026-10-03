@@ -4341,5 +4341,9 @@
     ":name is moving a card…": ":name is moving a card…",
     ":first and :second are moving cards…": ":first and :second are moving cards…",
     ":name and :count others are moving cards…": ":name and :count others are moving cards…",
-    ":name is taking notes…": ":name is taking notes…"
+    ":name is taking notes…": ":name is taking notes…",
+    "Max per card": "Max per card",
+    "Votes one person can stack": "Votes one person can stack",
+    "No limit per card": "No limit per card",
+    "No limit": "No limit"
 }
