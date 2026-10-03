@@ -153,8 +153,13 @@ export function AnswerControl({
     labelledBy: string;
     className?: string;
 }) {
+    const { t } = useTrans();
     const draft = answers.draft(question);
     const props = toQuestionProps(question, { mode: 'answer' });
+    const scaleLabels: [string, string] | undefined =
+        question.kind === 'nps'
+            ? [`0 · ${t('Not at all likely')}`, `10 · ${t('Extremely likely')}`]
+            : props.scaleLabels;
     const takesComment =
         question.allowsComment &&
         (question.kind === 'scale' || question.kind === 'nps');
@@ -163,6 +168,7 @@ export function AnswerControl({
         <>
             <SurveyQuestion
                 {...props}
+                scaleLabels={scaleLabels}
                 chrome="none"
                 labelledBy={labelledBy}
                 invalid={invalid}
@@ -459,7 +465,7 @@ export function SurveyAnswerFlow({
                 <div
                     className={cn(
                         'mx-auto flex w-full max-w-190 flex-col gap-4 px-4 py-6',
-                        !isPhone && 'md:py-10',
+                        !isPhone && 'min-h-full justify-center gap-6 md:py-10',
                     )}
                 >
                     <SurveyProgress index={step} count={questions.length} />
@@ -472,7 +478,7 @@ export function SurveyAnswerFlow({
                         className={cn(
                             'flex min-w-0 flex-col gap-5',
                             !isPhone &&
-                                'rounded-xl border bg-card p-6 text-card-foreground shadow-card',
+                                'gap-6 rounded-2xl border bg-card p-6 text-card-foreground shadow-raised md:p-10',
                         )}
                     >
                         <div className="flex flex-col gap-2">
@@ -481,7 +487,10 @@ export function SurveyAnswerFlow({
                                 ref={heading}
                                 id={headingId}
                                 tabIndex={-1}
-                                className="font-display text-xl font-semibold break-words outline-none"
+                                className={cn(
+                                    'font-display font-semibold break-words outline-none',
+                                    isPhone ? 'text-xl' : 'text-3xl',
+                                )}
                             >
                                 {question.label}
                             </h2>

@@ -115,6 +115,13 @@ describe('SurveyAnswerFlow', () => {
         });
     });
 
+    it('names the two ends of an NPS under its scale', () => {
+        renderFlow(fiveKinds, { initialStep: 1 });
+
+        expect(screen.getByText('0 · Not at all likely')).toBeTruthy();
+        expect(screen.getByText('10 · Extremely likely')).toBeTruthy();
+    });
+
     it('starts on the first question without an answer', () => {
         renderFlow([
             surveyQuestion('a', 'scale', {

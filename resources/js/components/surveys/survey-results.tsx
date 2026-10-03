@@ -14,6 +14,7 @@ import { ResultsFreeText, takesFreeText } from './results-free-text';
 import { ResultsHeader } from './results-header';
 import { ResultsState, resultsStateOf } from './results-states';
 import { ResultsSummary } from './results-summary';
+import { SurveyShare } from './survey-share';
 
 export type ResultsTab = 'summary' | 'free-text' | 'compare';
 
@@ -28,8 +29,6 @@ type SurveyResultsProps = {
     initial: SurveySnapshot;
     /** The frame of a member's page (the app layout); a guest gets a bare `main`. */
     layout?: ComponentType<ResultsLayoutProps>;
-    /** The Share trigger of the header. */
-    share?: ReactNode;
 };
 
 const TabParameter = 'tab';
@@ -99,11 +98,10 @@ function useClosedOn(closedAt: string | null): string | null {
 export function SurveyResults({
     initial,
     layout: Layout = BareLayout,
-    share,
 }: SurveyResultsProps) {
     const { t } = useTrans();
     const headingId = useId();
-    const { snapshot, refetch } = useTeamSurvey(initial);
+    const { snapshot, dispatch, online, refetch } = useTeamSurvey(initial);
     const { survey, me, progress } = snapshot;
     const closedOn = useClosedOn(
         survey.status === 'closed' ? survey.closedAt : null,
@@ -148,7 +146,13 @@ export function SurveyResults({
             canExport={canExport}
             exportUrl={TeamSurveyExportsController.show(survey.id).url}
             onSetStatus={setStatus}
-            share={share}
+            share={
+                <SurveyShare
+                    snapshot={snapshot}
+                    online={online}
+                    dispatch={dispatch}
+                />
+            }
         />
     );
 

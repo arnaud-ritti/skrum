@@ -350,6 +350,29 @@ describe('SurveyResults', () => {
         expect(screen.getByRole('main', { name: 'Results' })).not.toBeNull();
         expect(screen.queryByRole('tab', { name: 'Compare' })).toBeNull();
         expect(screen.getByText('Open')).not.toBeNull();
+        expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+    });
+
+    it('puts Share in the header of a member, opening the Share dialog', () => {
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot()}
+                layout={({ actions, children }) => (
+                    <>
+                        <header data-test="topbar">{actions}</header>
+                        {children}
+                    </>
+                )}
+            />,
+        );
+
+        fireEvent.click(
+            within(
+                document.querySelector('[data-test="topbar"]') as HTMLElement,
+            ).getByRole('button', { name: 'Share' }),
+        );
+
+        expect(screen.getByRole('dialog')).not.toBeNull();
     });
 
     it('hands its header to the layout of a member', () => {
