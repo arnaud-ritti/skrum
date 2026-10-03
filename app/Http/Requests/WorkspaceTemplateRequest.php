@@ -98,7 +98,11 @@ class WorkspaceTemplateRequest extends FormRequest
         return $workspace;
     }
 
-    private function nameIsTaken(): bool
+    /**
+     * Asked again by the controller once the workspace row is locked: the rule ran before the lock,
+     * and two requests may have passed it together.
+     */
+    public function nameIsTaken(): bool
     {
         $template = $this->route('template');
         $ignoredId = $template instanceof WorkspaceTemplate ? $template->id : null;

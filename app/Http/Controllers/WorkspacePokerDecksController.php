@@ -19,6 +19,7 @@ class WorkspacePokerDecksController extends Controller
             $lockedWorkspace = Workspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
 
             SavedPokerDeckRules::ensureRoomInWorkspace($lockedWorkspace);
+            SavedPokerDeckRules::ensureNameIsFree($lockedWorkspace, (string) $request->validated('name'));
 
             $lockedWorkspace->pokerDecks()->create([
                 'name' => $request->validated('name'),
@@ -42,7 +43,15 @@ class WorkspacePokerDecksController extends Controller
             $attributes['cards'] = $request->deckCards();
         }
 
-        $pokerDeck->update($attributes);
+        DB::transaction(function () use ($pokerDeck, $attributes): void {
+            $lockedOwner = SavedPokerDeckRules::lockOwner($pokerDeck);
+
+            if (array_key_exists('name', $attributes)) {
+                SavedPokerDeckRules::ensureNameIsFree($lockedOwner, (string) $attributes['name'], $pokerDeck);
+            }
+
+            $pokerDeck->update($attributes);
+        });
 
         return back();
     }
