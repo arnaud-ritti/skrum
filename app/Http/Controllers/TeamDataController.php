@@ -26,6 +26,8 @@ class TeamDataController extends Controller
         return Inertia::render('teams/data', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name', 'description']),
+            'createdAt' => $team->created_at?->toIso8601String(),
+            'membersCount' => $team->members()->count(),
             'sections' => $sections->handle($user, $team),
             'closedSurveys' => $team->teamSurveys()
                 ->whereNull('retro_id')

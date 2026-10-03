@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -96,6 +97,21 @@ it('links Data & export to the action items page filtered on the team', function
     $this->actingAs(teamMember($team, TeamRole::Owner))->get(route('teams.data.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page->where('actionItemsUrl', route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'team' => $team->id])));
 });
+
+it('sends every tab the facts of the header line: description, members count and creation date', function (string $routeName) {
+    enableIntegrations(IntegrationProvider::Slack);
+    $this->travelTo(CarbonImmutable::parse('2025-03-10 09:00', 'UTC'));
+    $team = Team::factory()->create(['description' => 'Product squad']);
+    $this->travelBack();
+    $owner = teamMember($team, TeamRole::Owner);
+    teamMember($team);
+
+    $this->actingAs($owner)->get(route($routeName, [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('team.description', 'Product squad')
+            ->where('membersCount', 2)
+            ->where('createdAt', '2025-03-10T09:00:00+00:00'));
+})->with(['teams.settings.show', 'teams.data.show', 'teams.integrations.index']);
 
 it('lists on Data & export the closed surveys the viewer may export', function () {
     $team = Team::factory()->create();

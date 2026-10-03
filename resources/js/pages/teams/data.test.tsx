@@ -22,6 +22,8 @@ describe('the Data & export tab of the team settings', () => {
             <TeamDataPage
                 workspace={{ id: 'w1', name: 'Nordlys', slug: 'nordlys' }}
                 team={{ id: 't1', name: 'Atlas', description: null }}
+                createdAt="2025-03-10T09:00:00+00:00"
+                membersCount={7}
                 sections={{
                     general: true,
                     members: true,
@@ -42,6 +44,8 @@ describe('the Data & export tab of the team settings', () => {
             .find((link) => link.getAttribute('aria-current') === 'page');
 
         expect(current?.textContent).toBe('Data & export');
+        expect(document.body.textContent).toContain('7 members');
+        expect(document.body.textContent).toContain('created in March 2025');
         expect(screen.getByRole('region', { name: 'Exports' })).not.toBeNull();
         expect(
             screen.getByRole('region', { name: 'What is kept' }),

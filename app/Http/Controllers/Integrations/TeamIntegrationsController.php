@@ -35,7 +35,9 @@ class TeamIntegrationsController extends Controller
 
         return Inertia::render('teams/integrations', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => $team->only(['id', 'name']),
+            'team' => $team->only(['id', 'name', 'description']),
+            'createdAt' => $team->created_at?->toIso8601String(),
+            'membersCount' => $team->members()->count(),
             'sections' => $sections->handle($request->user(), $team),
             'providers' => array_map(function (IntegrationProvider $provider) use ($integrations): array {
                 $integration = $integrations->get($provider->value);

@@ -26,7 +26,9 @@ import type {
 
 type Props = {
     workspace: WorkspaceSummary;
-    team: TeamSummary;
+    team: TeamSummary & { description: string | null };
+    createdAt: string | null;
+    membersCount: number;
     sections: TeamSettingsSections;
     providers: IntegrationProviderCard[];
     telegram: TelegramBotInfo | null;
@@ -37,6 +39,8 @@ type Props = {
 export default function TeamIntegrations({
     workspace,
     team,
+    createdAt,
+    membersCount,
     sections,
     providers,
     telegram,
@@ -56,6 +60,8 @@ export default function TeamIntegrations({
             team={team}
             active="integrations"
             sections={sections}
+            createdAt={createdAt}
+            membersCount={membersCount}
         >
             <Head title={t('Integrations')} />
             <section

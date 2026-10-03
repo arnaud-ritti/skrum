@@ -12,6 +12,8 @@ import type {
 type Props = {
     workspace: WorkspaceSummary;
     team: TeamSummary & { description: string | null };
+    createdAt: string | null;
+    membersCount: number;
     sections: TeamSettingsSections;
     closedSurveys: ClosedTeamSurvey[];
     estimatesUrl: string;
@@ -21,6 +23,8 @@ type Props = {
 export default function TeamDataPage({
     workspace,
     team,
+    createdAt,
+    membersCount,
     sections,
     closedSurveys,
     estimatesUrl,
@@ -34,6 +38,8 @@ export default function TeamDataPage({
             team={team}
             active="data"
             sections={sections}
+            createdAt={createdAt}
+            membersCount={membersCount}
         >
             <Head title={t('Data & export')} />
             <DataExport

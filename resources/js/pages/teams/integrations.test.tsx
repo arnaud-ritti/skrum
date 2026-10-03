@@ -5,7 +5,6 @@ import { renderWithProviders } from '@/test/render';
 import type {
     IntegrationProviderCard,
     IntegrationProviderKey,
-    TeamSummary,
     WorkspaceSummary,
 } from '@/types';
 import TeamIntegrations from './integrations';
@@ -47,7 +46,9 @@ describe('team integrations page', () => {
         renderWithProviders(
             <TeamIntegrations
                 workspace={{ slug: 'nordlys' } as WorkspaceSummary}
-                team={{ id: 't1', name: 'Atlas' } as TeamSummary}
+                team={{ id: 't1', name: 'Atlas', description: null }}
+                createdAt={null}
+                membersCount={3}
                 sections={{
                     general: true,
                     members: true,
