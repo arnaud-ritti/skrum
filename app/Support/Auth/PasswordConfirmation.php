@@ -17,4 +17,16 @@ class PasswordConfirmation
 
         return Date::now()->unix() - $confirmedAt <= ($seconds ?? (int) config('auth.password_timeout', 10800));
     }
+
+    /** When a confirmation window of these seconds runs out, as an ISO time; null once it has. */
+    public function freshUntil(Request $request, int $seconds): ?string
+    {
+        if (! $this->isFresh($request, $seconds)) {
+            return null;
+        }
+
+        $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
+
+        return Date::createFromTimestamp($confirmedAt + $seconds)->toIso8601String();
+    }
 }

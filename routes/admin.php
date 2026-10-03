@@ -10,6 +10,9 @@ use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\LicencesController;
+use App\Http\Controllers\Admin\MailConfirmationsController;
+use App\Http\Controllers\Admin\MailSettingsController;
+use App\Http\Controllers\Admin\MailTestsController;
 use App\Http\Controllers\Admin\McpKeysController;
 use App\Http\Controllers\Admin\SignInConfirmationsController;
 use App\Http\Controllers\Admin\SignInSettingsController;
@@ -51,6 +54,13 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::post('admin/sign-in/tests', [SsoConnectionTestsController::class, 'store'])
             ->middleware('throttle:10,1,ssoTests')
             ->name('admin.ssoTests.store');
+
+        Route::get('admin/mail', [MailSettingsController::class, 'show'])->name('admin.mail.show');
+        Route::put('admin/mail', [MailSettingsController::class, 'update'])->name('admin.mail.update');
+        Route::get('admin/mail/confirm', [MailConfirmationsController::class, 'create'])->name('admin.mailConfirmation.create');
+        Route::post('admin/mail/tests', [MailTestsController::class, 'store'])
+            ->middleware('throttle:5,10,mailTests')
+            ->name('admin.mailTests.store');
 
         Route::post('admin/branding/assets/{asset}', [BrandingAssetsController::class, 'store'])
             ->where('asset', BrandAssets::RoutePattern)

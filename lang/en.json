@@ -4384,5 +4384,10 @@
     "Configure this provider before testing it.": "Configure this provider before testing it.",
     "Nothing to save.": "Nothing to save.",
     "Saved, but the alert to the admins could not be sent.": "Saved, but the alert to the admins could not be sent.",
-    "This provider cannot be tested.": "This provider cannot be tested."
+    "This provider cannot be tested.": "This provider cannot be tested.",
+    "Nothing else to do: you can delete this e-mail.": "Nothing else to do: you can delete this e-mail.",
+    "SMTP": "SMTP",
+    "Test e-mail from :name": "Test e-mail from :name",
+    "The mail settings of :name deliver.": "The mail settings of :name deliver.",
+    "You get this email because an admin of this instance sent a test e-mail to this address.": "You get this email because an admin of this instance sent a test e-mail to this address."
 }

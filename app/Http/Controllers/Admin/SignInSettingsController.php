@@ -17,7 +17,6 @@ use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,21 +36,9 @@ class SignInSettingsController extends Controller
                 ->count(),
             'providerDetails' => $presentSsoProviders->handle(),
             'lastTest' => $settings->ssoLastTest(),
-            'confirmedUntil' => $this->confirmedUntil($request, $confirmation),
+            'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
             'confirmUrl' => route('admin.signInConfirmation.create'),
         ]);
-    }
-
-    /** When the confirmation the configuration writes ask for (rule S2) runs out, null once it has. */
-    private function confirmedUntil(Request $request, PasswordConfirmation $confirmation): ?string
-    {
-        if (! $confirmation->isFresh($request, InstanceConfiguration::ConfirmationSeconds)) {
-            return null;
-        }
-
-        $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
-
-        return Date::createFromTimestamp($confirmedAt + InstanceConfiguration::ConfirmationSeconds)->toIso8601String();
     }
 
     public function update(SignInSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse

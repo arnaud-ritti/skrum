@@ -4604,5 +4604,10 @@
     "Configure this provider before testing it.": "Konfiguriere diesen Anbieter, bevor du ihn testest.",
     "Nothing to save.": "Nichts zu speichern.",
     "Saved, but the alert to the admins could not be sent.": "Gespeichert, aber die Warnung an die Admins konnte nicht gesendet werden.",
-    "This provider cannot be tested.": "Dieser Anbieter kann nicht getestet werden."
+    "This provider cannot be tested.": "Dieser Anbieter kann nicht getestet werden.",
+    "Nothing else to do: you can delete this e-mail.": "Du musst nichts weiter tun: Du kannst diese E-Mail löschen.",
+    "SMTP": "SMTP",
+    "Test e-mail from :name": "Test-E-Mail von :name",
+    "The mail settings of :name deliver.": "Die E-Mail-Einstellungen von :name funktionieren.",
+    "You get this email because an admin of this instance sent a test e-mail to this address.": "Du bekommst diese E-Mail, weil ein Admin dieser Instanz eine Test-E-Mail an diese Adresse gesendet hat."
 }

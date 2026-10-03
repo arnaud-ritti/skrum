@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Mail;
 
 dataset('configuration writes', [
     'sso provider' => [fn () => route('admin.ssoProviders.update', 'oidc'), ['client_id' => 'skrum-stored', 'client_secret' => 'route-secret-value'], 'sso_oidc'],
+    'smtp' => [fn () => route('admin.mail.update'), ['host' => 'smtp.stored.test', 'password' => 'route-secret-value'], 'smtp'],
 ]);
 
 beforeEach(function () {

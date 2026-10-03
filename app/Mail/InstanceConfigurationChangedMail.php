@@ -133,6 +133,7 @@ class InstanceConfigurationChangedMail extends Mailable
             InstanceSettingKey::SsoGitHub,
             InstanceSettingKey::SsoEntra,
             InstanceSettingKey::SsoOidc => route('admin.signIn.edit'),
+            InstanceSettingKey::Smtp => route('admin.mail.show'),
             default => route('admin.index'),
         };
     }
