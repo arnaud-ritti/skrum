@@ -59,7 +59,11 @@ class TeamSurveyAnswersController extends Controller
         DB::transaction(function () use ($teamSurvey, $question, $respondent): void {
             [$locked, $fresh] = $this->lock($teamSurvey, $question);
 
-            $fresh->answers()->where('team_survey_respondent_id', $respondent->id)->delete();
+            $withdrawn = $fresh->answers()->where('team_survey_respondent_id', $respondent->id)->delete();
+
+            if ($withdrawn > 0 && $fresh->is_required) {
+                $respondent->update(['completed_at' => null]);
+            }
 
             $this->announceSurveyResponses->handle($locked);
         });

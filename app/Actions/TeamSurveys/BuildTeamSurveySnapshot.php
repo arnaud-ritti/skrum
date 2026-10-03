@@ -78,6 +78,7 @@ class BuildTeamSurveySnapshot
     private function questions(TeamSurvey $survey, TeamSurveyRespondent $viewer): array
     {
         $questions = $survey->questions()->with('options')->get();
+        $questions->each->setRelation('survey', $survey);
 
         $myAnswers = TeamSurveyAnswer::query()
             ->where('team_survey_respondent_id', $viewer->id)

@@ -4,6 +4,7 @@ use App\Enums\TeamSurveyQuestionKind;
 use App\Events\TeamSurveys\TeamSurveyResponsesChanged;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -95,6 +96,25 @@ it('withdraws an answer', function () {
         ->assertJsonPath('progress.responses', 0);
 });
 
+it('reopens a finished response when it withdraws a required answer, and keeps it finished for an optional one', function () {
+    [$survey, $user, $respondent] = openSurvey();
+    $required = surveyQuestion($survey, TeamSurveyQuestionKind::Scale, ['is_required' => true]);
+    $optional = surveyQuestion($survey, TeamSurveyQuestionKind::Text);
+    answerSurveyQuestion($required, $respondent, 4);
+    answerSurveyQuestion($optional, $respondent, 'hello');
+    $respondent->update(['completed_at' => now()]);
+
+    $this->actingAs($user)->deleteJson(route('surveys.answers.destroy', [$survey, $optional]))
+        ->assertOk()
+        ->assertJsonPath('progress.completed', 1);
+
+    $this->actingAs($user)->deleteJson(route('surveys.answers.destroy', [$survey, $required]))
+        ->assertOk()
+        ->assertJsonPath('progress.completed', 0);
+
+    expect($respondent->fresh()->completed_at)->toBeNull();
+});
+
 it('refuses answers on a draft and on a closed survey', function (string $state) {
     $survey = TeamSurvey::factory()->{$state}()->create();
     [$user] = surveyFacilitator($survey);
@@ -169,4 +189,26 @@ it('sends each viewer their own answers in the snapshot, and nobody else\'s', fu
         ->assertJsonPath('progress.audience', 2);
 
     expect($snapshot->getContent())->not->toContain('theirs');
+});
+
+it('reads the snapshot with as many queries for thirty questions as for one', function () {
+    [$survey, $user] = openSurvey();
+    surveyQuestion($survey);
+    $countQueries = function () use ($survey, $user): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($user)->getJson(route('surveys.snapshot.show', $survey))->assertOk();
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    $countQueries();
+    $withOne = $countQueries();
+
+    foreach (range(1, 29) as $ignored) {
+        surveyQuestion($survey);
+    }
+
+    expect($countQueries())->toBe($withOne);
 });
