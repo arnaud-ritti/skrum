@@ -53,7 +53,7 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
             $inviterName,
             $this->url,
             resolve(AvatarUrl::class)->initials($inviterName),
-            MailBrand::presence($invitation?->invitedBy?->avatarSeed() ?? $inviterName),
+            $invitation?->invitedBy?->presenceColor() ?? MailBrand::presence($inviterName),
             $invitation?->workspace->teams()->count(),
             $invitation?->workspace->members()->count(),
             SsoProvider::enabled() !== [],

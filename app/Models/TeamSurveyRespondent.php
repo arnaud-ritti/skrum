@@ -33,7 +33,9 @@ class TeamSurveyRespondent extends Model
     /** @use HasFactory<TeamSurveyRespondentFactory> */
     use HasFactory;
 
-    use HasGuestIdentity;
+    use HasGuestIdentity {
+        presenceColor as private identityPresenceColor;
+    }
     use HasUuids;
 
     public static function current(Request $request): self
@@ -61,6 +63,19 @@ class TeamSurveyRespondent extends Model
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);
+    }
+
+    /**
+     * A respondent who answers for a retro participant wears that
+     * participant's colour, so a guest keeps one colour across both.
+     */
+    public function presenceColor(): int
+    {
+        if ($this->participant_id !== null && $this->participant !== null) {
+            return $this->participant->presenceColor();
+        }
+
+        return $this->identityPresenceColor();
     }
 
     /** @return HasMany<TeamSurveyAnswer, $this> */

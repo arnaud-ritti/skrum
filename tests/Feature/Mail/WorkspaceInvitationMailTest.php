@@ -2,7 +2,9 @@
 
 use App\Mail\WorkspaceInvitationMail;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
+use App\Support\Avatars\PresenceColor;
 use Illuminate\Notifications\AnonymousNotifiable;
 
 function invitationNotification(string $workspace = 'Nordlys', string $inviter = 'Fran'): WorkspaceInvitationNotification
@@ -28,6 +30,17 @@ it('escapes user text in the html part and keeps it literal in the text part', f
         ->toContain('href="https://skrum.test/invitations/token"');
 
     $mail->assertSeeInText('[y](https://evil.test)');
+});
+
+it('wears the colour the inviter chose', function () {
+    $inviter = User::factory()->create();
+    $chosen = PresenceColor::forSeed($inviter->avatarSeed()) % PresenceColor::Count + 1;
+    $inviter->forceFill(['presence_color' => $chosen])->save();
+    $invitation = WorkspaceInvitation::factory()->create(['invited_by_id' => $inviter->id]);
+
+    $mail = (new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+
+    expect($mail->inviterPresence)->toBe($chosen);
 });
 
 it('keeps the subject on one line', function () {

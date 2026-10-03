@@ -14,7 +14,6 @@ use App\Support\Alphabetical;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\Integrations\Messages\RetroRecap;
 use App\Support\Integrations\Messages\RetroRecapContent;
-use App\Support\Mail\MailBrand;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -165,9 +164,7 @@ class BuildRetroRecap
 
     private function assigneePresence(ActionItem $item): ?int
     {
-        $seed = $item->assigneeUser?->avatarSeed() ?? $item->assigneeParticipant?->avatarSeed();
-
-        return $seed === null ? null : MailBrand::presence($seed);
+        return $item->assigneeUser?->presenceColor() ?? $item->assigneeParticipant?->presenceColor();
     }
 
     /**

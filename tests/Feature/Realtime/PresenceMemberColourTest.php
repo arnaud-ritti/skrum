@@ -5,6 +5,7 @@ use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\TeamSurvey;
+use App\Models\TeamSurveyRespondent;
 use App\Models\Whiteboard;
 
 beforeEach(function () {
@@ -115,4 +116,11 @@ it('gives a guest icebreaker player the colour its participant picked', function
     $player = $room->players()->create(['participant_id' => $participant->id, 'presence_color' => 1]);
 
     expect($player->presenceColor())->toBe(12);
+});
+
+it('gives a survey respondent the colour of the retro guest it answers for', function () {
+    $participant = Participant::factory()->guest()->create(['presence_color' => 12]);
+    $respondent = TeamSurveyRespondent::factory()->guest()->create(['participant_id' => $participant->id, 'presence_color' => 1]);
+
+    expect($respondent->presenceColor())->toBe(12);
 });

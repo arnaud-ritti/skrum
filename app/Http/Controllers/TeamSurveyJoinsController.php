@@ -33,7 +33,7 @@ class TeamSurveyJoinsController extends Controller
             'surveyTitle' => $survey->title,
             'session' => $presentJoinSession->survey($survey),
             ...$presentJoinSession->nickname($request->user()),
-            ...$presentJoinSession->colours($survey->respondents()->with('user')->get(), $request->user()),
+            ...$presentJoinSession->colours($survey->respondents()->with(['user', 'participant.user'])->get(), $request->user()),
         ])->toResponse($request);
     }
 
