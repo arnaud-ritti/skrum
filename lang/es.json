@@ -57,6 +57,7 @@
     "Conflict": "Conflicto",
     "Configure": "Configurar",
     "Finish setup": "Terminar la configuración",
+    "Observers can follow this session but not take part.": "Los observadores pueden seguir esta sesión, pero no participar.",
     "Turning this off disconnects the integration.": "Al desactivarlo se desconecta la integración.",
     "Connect": "Conectar",
     "Connection Closed Without Response": "Conexión cerrada sin respuesta",

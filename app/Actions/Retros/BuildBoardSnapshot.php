@@ -205,6 +205,7 @@ class BuildBoardSnapshot
                 'llm' => $this->llm->isConfigured(),
                 'llmProvider' => $this->llm->providerName(),
             ],
+            'viewerIsObserver' => $viewerParticipant->user?->isObserverOf($retro->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

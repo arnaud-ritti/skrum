@@ -66,6 +66,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     integrations: ?array<string, array{connected: bool, canWrite: bool, estimateFields: list<array{id: string, name: string}>, defaultEstimateFieldId: ?string}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
+ *     viewerIsObserver: bool,
  *     serverTime: string
  * }
  */
@@ -165,6 +166,7 @@ class BuildPokerSnapshot
             'deliveries' => $this->sharePermissions->pokerGame($game, $viewer)
                 ? $this->latestDeliveries->handle($game, [IntegrationDeliveryKind::PokerLink])
                 : [],
+            'viewerIsObserver' => $viewer->user?->isObserverOf($game->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

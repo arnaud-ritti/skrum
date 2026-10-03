@@ -43,6 +43,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     elements: array<int, array<string, mixed>>,
  *     seq: int,
  *     links: array{team: ?string},
+ *     viewerIsObserver: bool,
  *     serverTime: string
  * }
  */
@@ -112,6 +113,7 @@ class BuildWhiteboardSnapshot
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
             ],
+            'viewerIsObserver' => $viewer->user?->isObserverOf($board->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

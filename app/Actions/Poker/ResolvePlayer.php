@@ -14,10 +14,10 @@ class ResolvePlayer
         $user = $request->user();
 
         if ($user !== null && $user->can('view', $game->team)) {
-            return PokerPlayer::query()->firstOrCreate([
-                'poker_game_id' => $game->id,
-                'user_id' => $user->id,
-            ]);
+            return PokerPlayer::query()->firstOrCreate(
+                ['poker_game_id' => $game->id, 'user_id' => $user->id],
+                fn (): array => ['is_spectator' => $user->isObserverOf($game->team)],
+            );
         }
 
         return $this->guest($request, $game);

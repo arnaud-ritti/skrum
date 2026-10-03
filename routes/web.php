@@ -213,6 +213,7 @@ use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Controllers\WorkspaceWhiteboardTemplatesController;
 use App\Http\Middleware\EnsureIntegrationProviderEnabled;
+use App\Http\Middleware\RefuseObserverWrites;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
@@ -500,7 +501,7 @@ Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('
 
 Route::prefix('retros/{retro}')
     ->whereUuid('retro')
-    ->middleware(ResolveRetroParticipant::class)
+    ->middleware([ResolveRetroParticipant::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
@@ -601,7 +602,7 @@ Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->
 
 Route::prefix('poker/{game}')
     ->whereUuid('game')
-    ->middleware(ResolvePokerPlayer::class)
+    ->middleware([ResolvePokerPlayer::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
@@ -643,7 +644,7 @@ Route::post('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 
 
 Route::prefix('whiteboards/{board}')
     ->whereUuid('board')
-    ->middleware(ResolveWhiteboardMember::class)
+    ->middleware([ResolveWhiteboardMember::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [WhiteboardsController::class, 'show'])->name('whiteboards.show');
@@ -667,7 +668,7 @@ Route::post('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'sto
 
 Route::prefix('surveys/{teamSurvey}')
     ->whereUuid('teamSurvey')
-    ->middleware(ResolveSurveyRespondent::class)
+    ->middleware([ResolveSurveyRespondent::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [TeamSurveysController::class, 'show'])->name('surveys.show');
@@ -697,7 +698,7 @@ Route::post('play/{guestToken}', [GameJoinsController::class, 'store'])->name('g
 
 Route::prefix('games/{room}')
     ->whereUuid('room')
-    ->middleware(ResolveGamePlayer::class)
+    ->middleware([ResolveGamePlayer::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');

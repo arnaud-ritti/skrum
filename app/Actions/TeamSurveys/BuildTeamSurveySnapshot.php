@@ -75,6 +75,7 @@ class BuildTeamSurveySnapshot
                     ? route('teams.healthCheck.show', [$survey->team->workspace, $survey->team], absolute: false)
                     : null,
             ],
+            'viewerIsObserver' => $viewer->user?->isObserverOf($survey->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

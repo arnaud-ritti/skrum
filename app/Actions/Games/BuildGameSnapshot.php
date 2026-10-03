@@ -44,6 +44,7 @@ use App\Support\Sessions\JoinCodes;
  *     scoresResetAt: ?string,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, array<string, mixed>>,
+ *     viewerIsObserver: bool,
  *     serverTime: string
  * }
  */
@@ -119,6 +120,7 @@ class BuildGameSnapshot
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
             'share' => $this->gameRoomShares->availability($room, $viewer),
             'deliveries' => $this->gameRoomShares->deliveries($room, $viewer),
+            'viewerIsObserver' => $viewer->user?->isObserverOf($room->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }
