@@ -45,6 +45,14 @@ class CardVotesController extends Controller
                 throw ValidationException::withMessages(['votes' => __('You have no votes left.')]);
             }
 
+            $cap = $locked->maxVotesPerCard();
+
+            if ($cap !== null && $locked->votes()->where('participant_id', $participant->id)->where('card_id', $card->id)->count() >= $cap) {
+                throw ValidationException::withMessages(['votes' => $cap === 1
+                    ? __('You can put only one vote on a card.')
+                    : __('You can put at most :count votes on one card.', ['count' => $cap])]);
+            }
+
             $locked->votes()->create([
                 'card_id' => $card->id,
                 'participant_id' => $participant->id,

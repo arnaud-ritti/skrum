@@ -451,6 +451,8 @@
     "This card is not grouped.": "Esta tarjeta no está agrupada.",
     "Votes can only be cast on cards that are not grouped under another card.": "Los votos solo se pueden emitir en tarjetas que no estén agrupadas bajo otra tarjeta.",
     "You have no votes left.": "No te quedan votos.",
+    "You can put only one vote on a card.": "Solo puedes poner un voto por tarjeta.",
+    "You can put at most :count votes on one card.": "Puedes poner como máximo :count votos en una tarjeta.",
     "You have not voted for this card.": "No has votado por esta tarjeta.",
     "The retrospective can only move to the previous or next phase.": "La retrospectiva solo puede pasar a la fase anterior o siguiente.",
     "Anonymity can only be turned off before any card is written.": "El anonimato solo se puede desactivar antes de que se escriba ninguna tarjeta.",
