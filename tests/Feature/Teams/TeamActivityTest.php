@@ -3,6 +3,7 @@
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ExternalSyncActor;
 use App\Actions\ActionItems\SetActionItemStatus;
+use App\Actions\Teams\AnswerTeamAccessRequest;
 use App\Actions\Teams\RecordTeamActivity;
 use App\Enums\ActionItemStatus;
 use App\Enums\RetroPhase;
@@ -13,6 +14,7 @@ use App\Models\ActionItem;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamAccessRequest;
 use App\Models\TeamActivity;
 use App\Models\TeamSurvey;
 use Illuminate\Support\Facades\DB;
@@ -101,6 +103,20 @@ it('records a member joining the team', function () {
     $this->actingAs(workspaceManager($team->workspace))->post(route('teams.members.store', [$team->workspace, $team]), ['user_id' => $newcomer->id]);
 
     expect(lastActivity($team))->kind->toBe(TeamActivityKind::MemberJoined)->actor_user_id->toBe($newcomer->id);
+});
+
+it('records a member joining through an approved access request, once', function () {
+    $team = Team::factory()->create();
+    $manager = workspaceManager($team->workspace);
+    $request = TeamAccessRequest::factory()->for($team)->pending()->create();
+    $alreadyIn = TeamAccessRequest::factory()->for($team)->pending()->create();
+    $team->members()->attach($alreadyIn->user_id);
+
+    resolve(AnswerTeamAccessRequest::class)->handle($manager, $request, approve: true);
+    resolve(AnswerTeamAccessRequest::class)->handle($manager, $alreadyIn, approve: true);
+
+    expect(TeamActivity::query()->where('team_id', $team->id)->where('kind', TeamActivityKind::MemberJoined)->pluck('actor_user_id')->all())
+        ->toBe([$request->user_id]);
 });
 
 it('has the nine kinds of the spec and none about cards, votes, comments or answers', function () {

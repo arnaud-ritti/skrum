@@ -3,6 +3,7 @@
 namespace App\Actions\Teams;
 
 use App\Enums\TeamAccessRequestStatus;
+use App\Enums\TeamActivityKind;
 use App\Models\Team;
 use App\Models\TeamAccessRequest;
 use App\Models\User;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class AnswerTeamAccessRequest
 {
+    public function __construct(private RecordTeamActivity $recordTeamActivity) {}
+
     /**
      * An approval of someone who has left the workspace since asking declines the request instead.
      */
@@ -32,12 +35,23 @@ class AnswerTeamAccessRequest
                 : TeamAccessRequestStatus::Declined;
 
             if ($canJoin) {
-                $team->members()->syncWithoutDetaching([$locked->user_id]);
+                $this->addToTeam($team, $locked->user);
             }
 
             $locked->update(['status' => $status, 'decided_by_user_id' => $manager->id, 'decided_at' => now()]);
 
             return $status;
         }, Transactions::Attempts);
+    }
+
+    private function addToTeam(Team $team, User $user): void
+    {
+        $changes = $team->members()->syncWithoutDetaching([$user->id]);
+
+        if ($changes['attached'] === []) {
+            return;
+        }
+
+        $this->recordTeamActivity->handle($team->id, TeamActivityKind::MemberJoined, $user);
     }
 }
