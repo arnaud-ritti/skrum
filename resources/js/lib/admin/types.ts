@@ -172,3 +172,40 @@ export type McpKeysPageProps = {
     /** The admin's own token settings, where a key is created. */
     createUrl: string;
 };
+
+/** An account of the instance, as the admin's Users section lists it. */
+export type AdminUser = {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+    isAdmin: boolean;
+    isDeactivated: boolean;
+    hasSecondFactor: boolean;
+    workspacesCount: number;
+    createdAt: string | null;
+    /** Null until the account signs in again after the column was added. */
+    lastSignedInAt: string | null;
+    isSelf: boolean;
+};
+
+export type AdminUsersStatus = 'all' | 'active' | 'deactivated' | 'admins';
+
+export type AdminUsersFilters = {
+    query: string | null;
+    status: AdminUsersStatus;
+};
+
+/** One page of the accounts, as Laravel's paginator serialises it. */
+export type AdminUsersPage = {
+    data: AdminUser[];
+    current_page: number;
+    last_page: number;
+    total: number;
+};
+
+export type UsersPageProps = {
+    users: AdminUsersPage;
+    filters: AdminUsersFilters;
+    activeAdminCount: number;
+};

@@ -4486,5 +4486,20 @@
     "Revoke :name of :owner?": "Revoke :name of :owner?",
     "Agents using it stop at once.": "Agents using it stop at once.",
     "The MCP server is off (:env).": "The MCP server is off (:env).",
-    "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once."
+    "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.",
+    "2FA on": "2FA on",
+    "Account": "Account",
+    "Deactivate": "Deactivate",
+    "Deactivate :name?": "Deactivate :name?",
+    "Deactivated": "Deactivated",
+    "Every account of the instance. A deactivated account is signed out and keeps its content.": "Every account of the instance. A deactivated account is signed out and keeps its content.",
+    "Filter accounts": "Filter accounts",
+    "Last sign-in": "Last sign-in",
+    "Make admin": "Make admin",
+    "No account matches your search.": "No account matches your search.",
+    "Reactivate": "Reactivate",
+    "Search by name or email address": "Search by name or email address",
+    "The instance needs an active admin": "The instance needs an active admin",
+    "They are signed out and can't sign in until you reactivate them. Their content stays.": "They are signed out and can't sign in until you reactivate them. Their content stays.",
+    "You can't deactivate yourself": "You can't deactivate yourself"
 }

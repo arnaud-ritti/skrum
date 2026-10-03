@@ -4706,5 +4706,20 @@
     "Revoke :name of :owner?": "¿Revocar :name de :owner?",
     "Agents using it stop at once.": "Los agentes que la usan se detienen al instante.",
     "The MCP server is off (:env).": "El servidor MCP está desactivado (:env).",
-    "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "Para conectar agentes de IA (Claude, IDE, scripts) al servidor MCP de la instancia. Una clave solo se muestra una vez."
+    "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "Para conectar agentes de IA (Claude, IDE, scripts) al servidor MCP de la instancia. Una clave solo se muestra una vez.",
+    "2FA on": "2FA activada",
+    "Account": "Cuenta",
+    "Deactivate": "Desactivar",
+    "Deactivate :name?": "¿Desactivar a :name?",
+    "Deactivated": "Desactivada",
+    "Every account of the instance. A deactivated account is signed out and keeps its content.": "Todas las cuentas de la instancia. Una cuenta desactivada pierde su sesión y conserva su contenido.",
+    "Filter accounts": "Filtrar cuentas",
+    "Last sign-in": "Último inicio de sesión",
+    "Make admin": "Hacer administrador",
+    "No account matches your search.": "Ninguna cuenta coincide con tu búsqueda.",
+    "Reactivate": "Reactivar",
+    "Search by name or email address": "Buscar por nombre o dirección de correo",
+    "The instance needs an active admin": "La instancia necesita un administrador activo",
+    "They are signed out and can't sign in until you reactivate them. Their content stays.": "Se cierra su sesión y no puede volver a entrar hasta que la reactives. Su contenido se conserva.",
+    "You can't deactivate yourself": "No puedes desactivar tu propia cuenta"
 }
