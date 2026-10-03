@@ -78,7 +78,7 @@ class AccountSettingsController extends Controller
         $allowsMemberStyles = $this->settings->avatarMemberChoice();
 
         return [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            'mustVerifyEmail' => Features::enabled(Features::emailVerification()),
             'status' => $request->session()->get('status'),
             'avatarMemberChoice' => $allowsMemberStyles,
             'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,

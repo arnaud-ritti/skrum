@@ -8,6 +8,7 @@ use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Support\Alphabetical;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Branding\BrandAssets;
@@ -149,7 +150,7 @@ class HandleInertiaRequests extends Middleware
 
         return Alphabetical::sort($workspaces, fn (Workspace $workspace): string => $workspace->name)
             ->map(function (Workspace $workspace): array {
-                $role = $workspace->membership->role;
+                $role = $this->membershipOf($workspace)->role;
 
                 return [
                     ...$workspace->only(['id', 'name', 'slug']),
@@ -158,6 +159,11 @@ class HandleInertiaRequests extends Middleware
                 ];
             })
             ->all();
+    }
+
+    private function membershipOf(Workspace $workspace): WorkspaceMembership
+    {
+        return $workspace->getRelation('membership');
     }
 
     /**

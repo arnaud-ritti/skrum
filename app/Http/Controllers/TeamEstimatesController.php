@@ -117,7 +117,7 @@ class TeamEstimatesController extends Controller
             'roundsCount' => (int) $task->rounds_count,
             'estimatedAt' => $task->estimated_at?->toIso8601String(),
             'deck' => $game->deckLabel(),
-            'voters' => $lastRound?->anonymous ?? false
+            'voters' => $lastRound->anonymous ?? false
                 ? []
                 : $lastRoundVoters
                     ->map(fn (PokerPlayer $player): array => ['name' => $player->displayName(), 'avatarUrl' => $player->avatarUrl()])

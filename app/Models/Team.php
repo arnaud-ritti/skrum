@@ -20,6 +20,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $default_poker_deck
  * @property string|null $default_saved_poker_deck_id
  * @property-read Workspace $workspace
+ * @property-read string|null $last_retro_at
+ * @property-read int|null $open_poker_games_count
+ * @property-read int|null $open_action_items_count
+ * @property-read int|null $overdue_action_items_count
  */
 #[Fillable(['name', 'default_poker_deck', 'default_saved_poker_deck_id'])]
 class Team extends Model

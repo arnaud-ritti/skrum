@@ -11,7 +11,6 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -46,14 +45,14 @@ class WorkspacesController extends Controller
         $teams = $workspace->teamsVisibleTo($user)
             ->loadCount([
                 'members',
-                'pokerGames as open_poker_games_count' => fn (Builder $games) => $games->whereNull('ended_at'),
-                'actionItems as open_action_items_count' => fn (Builder $items) => $items->whereNull('completed_at'),
-                'actionItems as overdue_action_items_count' => fn (Builder $items) => $items
+                'pokerGames as open_poker_games_count' => fn ($games) => $games->whereNull('ended_at'),
+                'actionItems as open_action_items_count' => fn ($items) => $items->whereNull('completed_at'),
+                'actionItems as overdue_action_items_count' => fn ($items) => $items
                     ->whereNull('completed_at')
                     ->where('due_on', '<', $today),
             ])
             ->loadMax(
-                ['retros as last_retro_at' => fn (Builder $retros) => $retros->where('phase', RetroPhase::Completed->value)],
+                ['retros as last_retro_at' => fn ($retros) => $retros->where('phase', RetroPhase::Completed->value)],
                 'completed_at',
             )
             ->load(['members' => fn ($members) => $members->orderBy('users.name')->orderBy('users.id')->limit(5)]);

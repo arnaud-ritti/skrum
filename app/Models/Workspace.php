@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $slug
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read int|null $member_teams_count
  */
 #[Fillable(['name', 'slug'])]
 #[RouteKey('slug')]

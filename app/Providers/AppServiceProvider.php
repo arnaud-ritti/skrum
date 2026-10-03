@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
         Passkeys::authorizeLoginUsing(
-            fn (Request $request, User $user): bool => resolve(SignInPolicy::class)->allowsLocalCredentials(),
+            fn (): bool => resolve(SignInPolicy::class)->allowsLocalCredentials(),
         );
         Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
         Gate::define('manageInstance', fn (User $user): bool => $user->is_instance_admin === true);
