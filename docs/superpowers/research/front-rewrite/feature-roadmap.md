@@ -140,12 +140,14 @@ Not requested, staying backlog: other notification events, "last changed", "Chan
 
 | Id | Feature | Mockup | Clears | Back end | Needs |
 |---|---|---|---|---|---|
-| GM-1 | Settings card of a room (word theme, time per turn, auto hints, categories) | ScreenIcebreaker, ScreenIcebreakerDraw, ScreenIcebreakerEmoji | D-20 | A room stores name, access, language and reactions only | — |
-| GM-2 | Turn order and a number of rounds | ScreenIcebreaker, ScreenIcebreakerDraw | D-20 | Hangman has no turns and a room no round total | GM-1 |
-| GM-3 | GIF captions and the podium | ScreenIcebreakerGif | D-20 | An answer has no caption; one vote per player and no ranking | — |
-| GM-4 | The four games the engine lacks (Two truths and a lie, Mood weather, Guess who, Quick question) | ScreenIcebreaker (game picker) | D-20 | Four new `GameKind` cases with their rules classes, events and redaction | — |
+| GM-1 | Settings card of a room (word theme, time per turn, auto hints, categories) — **done, plan 27** | ScreenIcebreaker, ScreenIcebreakerDraw, ScreenIcebreakerEmoji | D-20 | A room stores name, access, language and reactions only | — |
+| GM-2 | Turn order and a number of rounds; hangman in turns and the whole-word guess — **done, plan 27** | ScreenIcebreaker, ScreenIcebreakerDraw | D-20 | Hangman has no turns and a room no round total | GM-1 |
+| GM-3 | GIF captions and the podium — **done, plan 27** | ScreenIcebreakerGif | D-20 | An answer has no caption; one vote per player and no ranking | — |
+| GM-4 | The four games the engine lacks (Two truths and a lie, Mood weather, Guess who, Quick question) — **done, plan 27** | ScreenIcebreaker (game picker) | D-20 | Four new `GameKind` cases with their rules classes, events and redaction | — |
 
-Not requested, staying backlog: "needs n more players", "found by" chips, Redo and "New word", the emoji riddle bank, "Pin to the retro", the duration on a game card.
+Brought in by the owner's answers to plan 27's deviations (P27-04, P27-08, P27-14), built by plan 27 Tasks 28 to 31 (owner's deviation answers): the Draw & Guess extras ("found · time", "Found by n/m", points per finder, "New word", Redo), the duration and players on a game card, Decoded's list of puzzles. They are marked done when those tasks are merged.
+
+Not requested, staying backlog (plan 27 spec §3): "needs n more players", the emoji riddle bank with timed hints and the "−20" hint, several finders in Decoded, "Pin to the retro", GIFs as video with a title.
 
 ## Administration and error pages — plan 29
 
