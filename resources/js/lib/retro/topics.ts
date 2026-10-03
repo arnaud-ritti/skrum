@@ -85,3 +85,20 @@ export function stepTopic(
 
     return topics[index + offset] ?? null;
 }
+
+/** How many action items each topic has, by the lead card's id. */
+export function actionCountByTopic(
+    items: { cardId: string | null }[],
+): Map<string, number> {
+    const counts = new Map<string, number>();
+
+    for (const item of items) {
+        if (item.cardId === null) {
+            continue;
+        }
+
+        counts.set(item.cardId, (counts.get(item.cardId) ?? 0) + 1);
+    }
+
+    return counts;
+}

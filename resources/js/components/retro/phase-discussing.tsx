@@ -1,6 +1,13 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ScanEye } from 'lucide-react';
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    CircleCheck,
+    ScanEye,
+} from 'lucide-react';
 import { createContext, Fragment, useContext, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import CardDiscussionsController from '@/actions/App/Http/Controllers/Retros/CardDiscussionsController';
 import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { EmptyState } from '@/components/skrum/empty-state';
@@ -14,6 +21,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { stepTopic, topicOfCard, topicsFrom } from '@/lib/retro/topics';
 import type { Topic } from '@/lib/retro/topics';
+import type { TimerState } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
@@ -41,7 +49,19 @@ type DiscussionValue = {
     stopPresenting: () => void;
     /** A participant closes the presented topic for themselves. */
     dismiss: () => void;
+    /** The facilitator marks a topic discussed, or takes the mark back (RT-7). */
+    toggleDiscussed: (topic: Topic) => void;
 };
+
+type HighlightAnswer = {
+    highlightedCardId: string | null;
+    /** The retro's timer, restarted when the shared topic moved on (RT-5). */
+    timer?: TimerState;
+    /** The topic left, marked discussed on the way (RT-7). */
+    discussed?: { cardId: string; discussedAt: string } | null;
+};
+
+type DiscussedAnswer = { cardId: string; discussedAt: string | null };
 
 const DiscussionContext = createContext<DiscussionValue | null>(null);
 
@@ -107,6 +127,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     const [dismissedId, setDismissedId] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const inFlight = useRef(false);
+    const marking = useRef(false);
 
     if (seenHighlight !== retro.highlightedCardId) {
         setSeenHighlight(retro.highlightedCardId);
@@ -141,7 +162,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         setBusy(true);
 
         const response = await ctx.run(
-            retroRequest<{ highlightedCardId: string | null }>(
+            retroRequest<HighlightAnswer>(
                 RetroHighlightsController.update(retro.id),
                 { card_id: cardId },
             ),
@@ -150,11 +171,46 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         inFlight.current = false;
         setBusy(false);
 
+        if (!response) {
+            return;
+        }
+
+        ctx.apply({
+            type: 'highlight.set',
+            cardId: response.highlightedCardId,
+        });
+
+        if (response.timer) {
+            ctx.apply({ type: 'timer.set', ...response.timer });
+        }
+
+        if (response.discussed) {
+            ctx.apply({ type: 'topic.discussed', ...response.discussed });
+        }
+    };
+
+    const toggleDiscussed = async (topic: Topic): Promise<void> => {
+        if (marking.current) {
+            return;
+        }
+
+        const lead = board.cards.find((card) => card.id === topic.leadCardId);
+        const args = { retro: retro.id, card: topic.leadCardId };
+
+        marking.current = true;
+
+        const response = await ctx.run(
+            retroRequest<DiscussedAnswer>(
+                lead?.discussedAt
+                    ? CardDiscussionsController.destroy(args)
+                    : CardDiscussionsController.update(args),
+            ),
+        );
+
+        marking.current = false;
+
         if (response) {
-            ctx.apply({
-                type: 'highlight.set',
-                cardId: response.highlightedCardId,
-            });
+            ctx.apply({ type: 'topic.discussed', ...response });
         }
     };
 
@@ -180,6 +236,24 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
             enabled: viewer.isFacilitator && (isDiscussing || isActions),
             enableInOverlays: true,
         },
+    );
+
+    // D on the card or the topic that has the focus: the "discussed" mark of
+    // the stage, from the keyboard.
+    useShortcut(
+        'd',
+        (event) => {
+            if (event.repeat) {
+                return;
+            }
+
+            const topic = topicOfFocus(topics, event.target);
+
+            if (topic !== null) {
+                void toggleDiscussed(topic);
+            }
+        },
+        { enabled: viewer.isFacilitator && isDiscussing },
     );
 
     const goTo = (topic: Topic): void => {
@@ -236,6 +310,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         setFollows: (next) => void setFollows(next),
         stopPresenting: () => void highlight(null),
         dismiss: () => setDismissedId(retro.highlightedCardId),
+        toggleDiscussed: (topic) => void toggleDiscussed(topic),
     };
 
     return <DiscussionContext value={value}>{children}</DiscussionContext>;
@@ -326,6 +401,40 @@ function FollowBanner({ following }: { following?: ReactNode }) {
     );
 }
 
+/** The facilitator's "discussed" mark of the topic in front of them (RT-7). */
+function DiscussedToggle({ topic }: { topic: Topic }) {
+    const { board } = useBoard();
+    const { t } = useTrans();
+    const { toggleDiscussed } = useDiscussion();
+    const lead = board.cards.find((card) => card.id === topic.leadCardId);
+    const isDiscussed = Boolean(lead?.discussedAt);
+
+    if (!board.viewer.isFacilitator) {
+        return null;
+    }
+
+    return (
+        <Button
+            type="button"
+            size="sm"
+            variant={isDiscussed ? 'secondary' : 'outline'}
+            data-slot="retro-topic-discussed"
+            aria-pressed={isDiscussed}
+            aria-keyshortcuts="D"
+            className={cn(
+                'max-w-full min-w-0',
+                isDiscussed && 'text-skrum-success-text',
+            )}
+            onClick={() => toggleDiscussed(topic)}
+        >
+            <CircleCheck aria-hidden />
+            <span className="truncate">
+                {isDiscussed ? t('Discussed') : t('Mark as discussed')}
+            </span>
+        </Button>
+    );
+}
+
 type Props = {
     hideMyCursor: boolean;
     /** Place of the timer of the topic, between the two navigation buttons (RT-5). */
@@ -338,6 +447,12 @@ type Props = {
     topicMeta?: (topic: Topic) => ReactNode;
     /** Place of the topic a new action item is linked to (RT-8). */
     linkedTo?: ReactNode;
+    /** Place of the time left for the discussion, in the topics list's footer (RT-5). */
+    estimate?: ReactNode;
+    /** Place of the last line of the topics list: the time per topic and the actions so far (RT-5). */
+    summary?: ReactNode;
+    /** Place of the time the topic up next will get (RT-5). */
+    upNextEstimate?: ReactNode;
 };
 
 /**
@@ -352,6 +467,9 @@ export function PhaseDiscussing({
     following,
     topicMeta,
     linkedTo,
+    estimate,
+    summary,
+    upNextEstimate,
 }: Props) {
     const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
@@ -425,6 +543,8 @@ export function PhaseDiscussing({
                                         sharedId={shared?.id ?? null}
                                         actionCount={board.actionItems.length}
                                         rowMeta={topicMeta}
+                                        estimate={estimate}
+                                        summary={summary}
                                         className="border-b-0 bg-transparent"
                                         onSelect={(topic) => {
                                             goTo(topic);
@@ -444,6 +564,8 @@ export function PhaseDiscussing({
                     sharedId={shared?.id ?? null}
                     actionCount={board.actionItems.length}
                     rowMeta={topicMeta}
+                    estimate={estimate}
+                    summary={summary}
                     onSelect={goTo}
                 />
             )}
@@ -465,9 +587,16 @@ export function PhaseDiscussing({
                                 key={current.id}
                                 topic={current}
                                 rank={index + 1}
+                                mark={<DiscussedToggle topic={current} />}
                             />
                         )}
-                        {next && <TopicUpNext topic={next} rank={index + 2} />}
+                        {next && (
+                            <TopicUpNext
+                                topic={next}
+                                rank={index + 2}
+                                estimate={upNextEstimate}
+                            />
+                        )}
                     </>
                 ) : (
                     <EmptyState

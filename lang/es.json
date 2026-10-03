@@ -4572,5 +4572,17 @@
     ":finished/:total have finished": ":finished/:total han terminado",
     ":finished of :total have finished": ":finished de :total han terminado",
     "I have finished voting": "He terminado de votar",
-    "Change my votes": "Cambiar mis votos"
+    "Change my votes": "Cambiar mis votos",
+    "Now · :time left": "Ahora · quedan :time",
+    "Discussed": "Tratado",
+    "Discussed · 1 action": "Tratado · 1 acción",
+    "Discussed · :count actions": "Tratado · :count acciones",
+    "1 action": "1 acción",
+    ":count actions": ":count acciones",
+    "~ :count min left": "~ :count min restantes",
+    "< 1 min left": "< 1 min restante",
+    ":minutes min per topic · :count actions so far": ":minutes min por tema · :count acciones hasta ahora",
+    ":minutes min per topic · 1 action so far": ":minutes min por tema · 1 acción hasta ahora",
+    "of :total · this topic": "de :total · este tema",
+    "Mark as discussed": "Marcar como tratado"
 }

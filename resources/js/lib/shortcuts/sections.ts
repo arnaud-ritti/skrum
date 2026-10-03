@@ -94,6 +94,12 @@ export function shortcutSections(
                     facilitatorOnly: true,
                 },
                 {
+                    id: 'discussed',
+                    label: t('Mark as discussed'),
+                    keys: ['D'],
+                    facilitatorOnly: true,
+                },
+                {
                     id: 'next-phase',
                     label: t('Next phase'),
                     keys: ['mod', 'ArrowRight'],

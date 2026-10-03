@@ -441,6 +441,180 @@ describe('the topic of everyone', () => {
     });
 });
 
+describe('the shared topic moving on (RT-5, RT-7)', () => {
+    it('applies the timer and the topic left that the highlight answers', async () => {
+        const timer = {
+            timerEndsAt: '2026-10-21T10:05:00+00:00',
+            timerPausedSeconds: null,
+            topicSeconds: 300,
+        };
+
+        retroRequest.mockResolvedValue({
+            highlightedCardId: 'scope',
+            timer,
+            discussed: {
+                cardId: 'slow',
+                discussedAt: '2026-10-21T10:00:00+00:00',
+            },
+        });
+
+        const { container, ctx } = discussion({
+            retro: { presentationMode: true, highlightedCardId: 'slow' },
+        });
+
+        fireEvent.click(row(container, 'scope'));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...timer,
+            }),
+        );
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'topic.discussed',
+            cardId: 'slow',
+            discussedAt: '2026-10-21T10:00:00+00:00',
+        });
+    });
+
+    it('marks no topic when the highlight answers none', async () => {
+        retroRequest.mockResolvedValue({
+            highlightedCardId: 'scope',
+            timer: {
+                timerEndsAt: null,
+                timerPausedSeconds: null,
+                topicSeconds: null,
+            },
+            discussed: null,
+        });
+
+        const { container, ctx } = discussion({
+            retro: { presentationMode: true },
+        });
+
+        fireEvent.click(row(container, 'scope'));
+
+        await waitFor(() => expect(highlightCalls()).toHaveLength(1));
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'timer.set' }),
+            ),
+        );
+        expect(ctx.apply).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'topic.discussed' }),
+        );
+    });
+});
+
+describe('the "discussed" mark (RT-7)', () => {
+    const discussionCalls = () =>
+        retroRequest.mock.calls.filter(([route]) =>
+            String(route.url).endsWith('/discussion'),
+        );
+
+    const toggle = (container: HTMLElement) =>
+        container.querySelector(
+            '[data-slot="retro-topic-focus"] [data-slot="retro-topic-discussed"]',
+        ) as HTMLElement | null;
+
+    it('gives the facilitator a toggle beside the topic in front of them', async () => {
+        retroRequest.mockResolvedValue({
+            cardId: 'slow',
+            discussedAt: '2026-10-21T10:00:00+00:00',
+        });
+
+        const { container, ctx } = discussion();
+        const button = toggle(container) as HTMLElement;
+
+        expect(button.textContent).toBe('Mark as discussed');
+        expect(button.getAttribute('aria-pressed')).toBe('false');
+
+        fireEvent.click(button);
+
+        await waitFor(() => expect(discussionCalls()).toHaveLength(1));
+        expect(discussionCalls()[0][0].method).toBe('put');
+        expect(String(discussionCalls()[0][0].url)).toContain(
+            '/cards/slow/discussion',
+        );
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'topic.discussed',
+                cardId: 'slow',
+                discussedAt: '2026-10-21T10:00:00+00:00',
+            }),
+        );
+    });
+
+    it('takes the mark back from a discussed topic', async () => {
+        retroRequest.mockResolvedValue({ cardId: 'slow', discussedAt: null });
+
+        const { container, ctx } = discussion({
+            cards: cards.map((candidate) =>
+                candidate.id === 'slow'
+                    ? { ...candidate, discussedAt: '2026-10-21T09:00:00Z' }
+                    : candidate,
+            ),
+        });
+        const button = toggle(container) as HTMLElement;
+
+        expect(button.textContent).toBe('Discussed');
+        expect(button.getAttribute('aria-pressed')).toBe('true');
+
+        fireEvent.click(button);
+
+        await waitFor(() => expect(discussionCalls()).toHaveLength(1));
+        expect(discussionCalls()[0][0].method).toBe('delete');
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'topic.discussed',
+                cardId: 'slow',
+                discussedAt: null,
+            }),
+        );
+    });
+
+    it('gives a participant no toggle', () => {
+        const { container } = discussion({ viewer: { isFacilitator: false } });
+
+        expect(
+            container.querySelector('[data-slot="retro-topic-focus"]'),
+        ).not.toBeNull();
+        expect(toggle(container)).toBeNull();
+    });
+
+    it('toggles the focused topic with D, for the facilitator only', async () => {
+        retroRequest.mockResolvedValue({
+            cardId: 'scope',
+            discussedAt: '2026-10-21T10:00:00+00:00',
+        });
+
+        const facilitator = discussion();
+
+        fireEvent.keyDown(row(facilitator.container, 'scope'), { key: 'd' });
+
+        await waitFor(() => expect(discussionCalls()).toHaveLength(1));
+        expect(String(discussionCalls()[0][0].url)).toContain(
+            '/cards/scope/discussion',
+        );
+        facilitator.unmount();
+        retroRequest.mockClear();
+
+        const participant = discussion({ viewer: { isFacilitator: false } });
+
+        fireEvent.keyDown(row(participant.container, 'scope'), { key: 'd' });
+        participant.unmount();
+
+        setSingleKeyShortcuts(false);
+
+        const off = discussion();
+
+        fireEvent.keyDown(row(off.container, 'scope'), { key: 'd' });
+        setSingleKeyShortcuts(true);
+
+        expect(discussionCalls()).toHaveLength(0);
+    });
+});
+
 describe('PresentationOverlay', () => {
     it('shows the highlighted topic over the board while everyone follows, with its controls', () => {
         const { container } = discussion({

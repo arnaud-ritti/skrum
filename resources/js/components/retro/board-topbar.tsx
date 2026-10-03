@@ -247,7 +247,18 @@ function PhaseMenuItems() {
  * The countdown, for everyone. `controls` adds what only the facilitator of
  * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
  */
-export function BoardTimer({ controls = true }: { controls?: boolean }) {
+export function BoardTimer({
+    controls = true,
+    size,
+    caption,
+    totalSeconds,
+}: {
+    controls?: boolean;
+    size?: 'md' | 'lg';
+    caption?: ReactNode;
+    /** The seconds of the ring when the timer was not started from here. */
+    totalSeconds?: number;
+}) {
     const ctx = useBoard();
     const { board } = ctx;
     const { retro } = board;
@@ -339,12 +350,14 @@ export function BoardTimer({ controls = true }: { controls?: boolean }) {
             endsAt={retro.timerEndsAt}
             offset={offset}
             pausedSeconds={retro.timerPausedSeconds}
-            totalSeconds={startedHere ? started.seconds : undefined}
+            totalSeconds={startedHere ? started.seconds : totalSeconds}
             onStart={canControl ? (seconds) => void set(seconds) : undefined}
             onStop={canControl ? () => void set(null) : undefined}
             onExtend={canControl ? () => void extend() : undefined}
             onPause={canPause ? () => void pause() : undefined}
             onResume={canControl ? () => void resume() : undefined}
+            size={size}
+            caption={caption}
             className="shrink-0"
         />
     );

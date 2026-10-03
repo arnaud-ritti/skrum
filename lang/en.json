@@ -4352,5 +4352,17 @@
     ":finished/:total have finished": ":finished/:total have finished",
     ":finished of :total have finished": ":finished of :total have finished",
     "I have finished voting": "I have finished voting",
-    "Change my votes": "Change my votes"
+    "Change my votes": "Change my votes",
+    "Now · :time left": "Now · :time left",
+    "Discussed": "Discussed",
+    "Discussed · 1 action": "Discussed · 1 action",
+    "Discussed · :count actions": "Discussed · :count actions",
+    "1 action": "1 action",
+    ":count actions": ":count actions",
+    "~ :count min left": "~ :count min left",
+    "< 1 min left": "< 1 min left",
+    ":minutes min per topic · :count actions so far": ":minutes min per topic · :count actions so far",
+    ":minutes min per topic · 1 action so far": ":minutes min per topic · 1 action so far",
+    "of :total · this topic": "of :total · this topic",
+    "Mark as discussed": "Mark as discussed"
 }

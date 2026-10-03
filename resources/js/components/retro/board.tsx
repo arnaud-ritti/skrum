@@ -35,6 +35,13 @@ import {
 import { PhaseActions } from './phase-actions';
 import { PhaseRoti } from './phase-roti';
 import { SessionEnd, type CompletedView } from './session-end';
+import {
+    DiscussionEstimate,
+    DiscussionPace,
+    TopicMeta,
+    TopicTime,
+} from './topic-meta';
+import { TopicTimer } from './topic-timer';
 
 /**
  * Grouping has its own banner for the suggestions; in Actions and ROTI the
@@ -97,7 +104,16 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     if (phase === 'discussing') {
-        return <PhaseDiscussing hideMyCursor={hideMyCursor} />;
+        return (
+            <PhaseDiscussing
+                hideMyCursor={hideMyCursor}
+                timer={<TopicTimer />}
+                topicMeta={(topic) => <TopicMeta topic={topic} />}
+                estimate={<DiscussionEstimate />}
+                summary={<DiscussionPace />}
+                upNextEstimate={<TopicTime />}
+            />
+        );
     }
 
     if (phase === 'actions') {
@@ -184,9 +200,13 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     };
 
     const isCompleted = board.retro.phase === 'completed';
+    // In Discussing the timer is the topic's, on the stage, and nowhere else
+    // (P21-07).
+    const timerOnStage = board.retro.phase === 'discussing';
     // Below md the header has no room for the facilitator's timer controls:
     // the whole timer sits in the facilitator bar.
-    const timerInDock = isMobile && board.viewer.isFacilitator && !isCompleted;
+    const timerInDock =
+        isMobile && board.viewer.isFacilitator && !isCompleted && !timerOnStage;
 
     return (
         <BoardProvider value={ctx}>
@@ -199,7 +219,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                             title={<BoardTitle />}
                             phases={isMobile ? undefined : <BoardPhases />}
                             timer={
-                                timerInDock ? undefined : (
+                                timerInDock || timerOnStage ? undefined : (
                                     <BoardTimer controls={!isMobile} />
                                 )
                             }

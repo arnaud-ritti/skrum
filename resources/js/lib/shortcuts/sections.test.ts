@@ -108,9 +108,11 @@ describe('shortcutSections', () => {
         const facilitatorOnly = (id: string) =>
             items.find((item) => item.id === id)?.facilitatorOnly === true;
 
-        expect(['focus', 'next-phase', 'revote'].every(facilitatorOnly)).toBe(
-            true,
-        );
+        expect(
+            ['focus', 'discussed', 'next-phase', 'revote'].every(
+                facilitatorOnly,
+            ),
+        ).toBe(true);
         expect(facilitatorOnly('group')).toBe(false);
         expect(facilitatorOnly('coffee')).toBe(false);
     });

@@ -4572,5 +4572,17 @@
     ":finished/:total have finished": ":finished/:total sind fertig",
     ":finished of :total have finished": ":finished von :total sind fertig",
     "I have finished voting": "Ich bin fertig mit Abstimmen",
-    "Change my votes": "Meine Stimmen ändern"
+    "Change my votes": "Meine Stimmen ändern",
+    "Now · :time left": "Jetzt · noch :time",
+    "Discussed": "Besprochen",
+    "Discussed · 1 action": "Besprochen · 1 Aktion",
+    "Discussed · :count actions": "Besprochen · :count Aktionen",
+    "1 action": "1 Aktion",
+    ":count actions": ":count Aktionen",
+    "~ :count min left": "~ :count Min. übrig",
+    "< 1 min left": "< 1 Min. übrig",
+    ":minutes min per topic · :count actions so far": ":minutes Min. pro Thema · bisher :count Aktionen",
+    ":minutes min per topic · 1 action so far": ":minutes Min. pro Thema · bisher 1 Aktion",
+    "of :total · this topic": "von :total · dieses Thema",
+    "Mark as discussed": "Als besprochen markieren"
 }

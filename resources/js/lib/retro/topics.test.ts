@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { stepTopic, topicOfCard, topicsFrom } from '@/lib/retro/topics';
+import {
+    actionCountByTopic,
+    stepTopic,
+    topicOfCard,
+    topicsFrom,
+} from '@/lib/retro/topics';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
 
 function column(overrides: Partial<BoardColumn> = {}): BoardColumn {
@@ -197,5 +202,23 @@ describe('stepTopic', () => {
 
     it('has no neighbour for an unknown topic', () => {
         expect(stepTopic(topics, 'gone', 1)).toBeNull();
+    });
+});
+
+describe('actionCountByTopic', () => {
+    it('counts the action items of each topic, and leaves out those without one', () => {
+        expect(
+            actionCountByTopic([
+                { cardId: 'a' },
+                { cardId: 'b' },
+                { cardId: 'a' },
+                { cardId: null },
+            ]),
+        ).toEqual(
+            new Map([
+                ['a', 2],
+                ['b', 1],
+            ]),
+        );
     });
 });
