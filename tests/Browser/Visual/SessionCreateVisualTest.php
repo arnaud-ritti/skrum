@@ -60,6 +60,43 @@ it('[P18e-01-08d] renders the icebreaker form of the new session dialog without 
     );
 });
 
+it('[P19-31-09] renders the poll form of the new session dialog on the health check without overflow', function () {
+    config(['app.name' => 'Skrum']);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $admin = User::factory()->create([
+        'id' => '0199a000-0000-7000-8000-000000000011',
+        'name' => 'Camille Roux',
+        'email' => 'camille@example.com',
+    ]);
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
+    $team->members()->attach($admin);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'session-create-poll',
+        route('teams.show', [$workspace, $team, 'new' => 'survey', 'template' => 'health_check'], false),
+        function (string $path, array $options) use ($admin) {
+            User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $admin->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            return $page->navigate($path)
+                ->assertPresent('[role="dialog"] [data-slot="survey-session-fields"]')
+                ->assertAttribute('[role="dialog"] [data-type="survey"][role="radio"]', 'data-state', 'checked')
+                ->assertAttribute('[role="dialog"] [data-slot="survey-start-choice"][data-choice="health_check"]', 'aria-checked', 'true')
+                ->assertCount('[role="dialog"] button[type="submit"]', 1);
+        },
+    );
+});
+
 it('[P18e-01-22] renders the saved decks page without overflow', function () {
     config(['app.name' => 'Skrum']);
 

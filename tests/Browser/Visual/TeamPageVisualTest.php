@@ -1,9 +1,7 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -64,11 +62,11 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
     $older = $retro('Sprint 40 retrospective', 'sailboat', RetroPhase::Completed, 28);
 
     $trend = [
-        [$closed, [4, 4, 5, 4], [8, 7, 8]],
-        [$older, [4, 3, 4, 4], [7, 7, 7]],
+        [$closed, [4, 4, 5, 4], [4, 4, 4]],
+        [$older, [4, 3, 4, 4], [4, 3, 4]],
         [$retro('Sprint 39 retrospective', 'four_ls', RetroPhase::Completed, 42), [3, 4, 3, 3], []],
-        [$retro('Sprint 38 retrospective', 'mad_sad_glad', RetroPhase::Completed, 56), [4, 4, 4, 3], [7, 6, 8]],
-        [$retro('Sprint 37 retrospective', 'start_stop_continue', RetroPhase::Completed, 70), [3, 4, 4, 3], [6, 6, 7]],
+        [$retro('Sprint 38 retrospective', 'mad_sad_glad', RetroPhase::Completed, 56), [4, 4, 4, 3], [3, 3, 4]],
+        [$retro('Sprint 37 retrospective', 'start_stop_continue', RetroPhase::Completed, 70), [3, 4, 4, 3], [3, 3, 4]],
     ];
 
     foreach ($trend as [$voted, $rotiScores, $healthScores]) {
@@ -76,16 +74,13 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
             RotiVote::factory()->create(['retro_id' => $voted->id, 'score' => $score]);
         }
 
-        resolve(FreezeHealthStatements::class)->handle($voted);
+        attachHealthCheck($voted);
 
         foreach ($healthScores as $score) {
-            HealthCheckAnswer::factory()->create([
-                'retro_id' => $voted->id,
-                'participant_id' => Participant::factory()->create(['retro_id' => $voted->id])->id,
-                'statement' => 'vision',
-                'score' => $score,
-            ]);
+            answerHealthCheck($voted, Participant::factory()->create(['retro_id' => $voted->id]), ['vision' => $score]);
         }
+
+        closeHealthCheck($voted);
     }
 
     $refinement = PokerGame::factory()->for($team)->create(['title' => 'Sprint 43 refinement']);
@@ -141,7 +136,7 @@ it('[P18e-04-02b] renders the states of the team page on the bench without overf
         fn (string $path, array $options) => visit($path, $options)
             ->assertPresent('[data-bench-section="team"]')
             ->assertPresent('[data-state="manager"] [data-slot="team-page"]')
-            ->assertCount('[data-state="empty"] [data-slot="empty-state"]', 3)
+            ->assertCount('[data-state="empty"] [data-slot="empty-state"]', 4)
             ->assertCount('[data-state="manager"] aside [data-slot="health-check-summary-statement"]', 6)
             ->assertPresent('[data-state="manager"] aside [data-slot="health-check-manage"]')
             ->assertNotPresent('[data-state="manager"] [data-slot="team-page"] [data-slot="health-statements"]')

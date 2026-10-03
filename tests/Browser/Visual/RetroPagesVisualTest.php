@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\ActionItemPriority;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
@@ -14,7 +13,6 @@ use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
@@ -23,6 +21,7 @@ use App\Models\SurveyComment;
 use App\Models\SurveyResponse;
 use App\Models\SurveyTextAnswer;
 use App\Models\Team;
+use App\Models\TeamHealthStatement;
 use App\Models\User;
 use App\Models\Vote;
 use App\Models\Workspace;
@@ -228,8 +227,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
     }
 
     if ($phase === RetroPhase::Completed) {
-        $retro->forceFill(['started_at' => '2026-10-02 09:02:00', 'health_check_enabled' => true])->save();
-        resolve(FreezeHealthStatements::class)->handle($retro);
+        $retro->forceFill(['started_at' => '2026-10-02 09:02:00'])->save();
 
         $earlier = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
             'id' => '0199b000-0000-7000-8000-000000000002',
@@ -238,34 +236,25 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
             'created_at' => '2026-09-18 10:00:00',
             'completed_at' => '2026-09-18 11:00:00',
         ]);
-        resolve(FreezeHealthStatements::class)->handle($earlier);
         $earlierParticipant = Participant::factory()->create(['retro_id' => $earlier->id, 'user_id' => $people[0][0]->id]);
 
         $answers = [
-            [HealthStatement::Interaction, [8, 9], 8],
-            [HealthStatement::TaskClarity, [7, 7], 8],
-            [HealthStatement::ManagerSupport, [9, 9], 9],
-            [HealthStatement::Vision, [6, 7], 6],
-            [HealthStatement::Processes, [5, 5], 6],
+            [HealthStatement::Interaction, [4, 5], 4],
+            [HealthStatement::TaskClarity, [4, 4], 4],
+            [HealthStatement::ManagerSupport, [5, 5], 5],
+            [HealthStatement::Vision, [3, 4], 3],
+            [HealthStatement::Processes, [3, 3], 3],
         ];
 
-        foreach ($answers as [$statement, $scores, $before]) {
-            foreach ($scores as $index => $score) {
-                HealthCheckAnswer::factory()->create([
-                    'retro_id' => $retro->id,
-                    'participant_id' => $people[$index][1]->id,
-                    'statement' => $statement->value,
-                    'score' => $score,
-                ]);
-            }
+        attachHealthCheck($retro);
 
-            HealthCheckAnswer::factory()->create([
-                'retro_id' => $earlier->id,
-                'participant_id' => $earlierParticipant->id,
-                'statement' => $statement->value,
-                'score' => $before,
-            ]);
+        foreach ([0, 1] as $index) {
+            answerHealthCheck($retro, $people[$index][1], collect($answers)->mapWithKeys(fn (array $answer): array => [$answer[0]->value => $answer[1][$index]])->all());
         }
+
+        answerHealthCheck($earlier, $earlierParticipant, collect($answers)->mapWithKeys(fn (array $answer): array => [$answer[0]->value => $answer[2]])->all());
+        closeHealthCheck($retro);
+        closeHealthCheck($earlier);
 
         foreach ([4, 5] as $index => $score) {
             RotiVote::factory()->create([
@@ -287,29 +276,6 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
             'participant_id' => $people[0][1]->id,
             'score' => 4,
         ]);
-    }
-
-    if ($phase === RetroPhase::HealthCheck) {
-        $retro->update(['health_check_enabled' => true]);
-        resolve(FreezeHealthStatements::class)->handle($retro);
-
-        $answers = [
-            [HealthStatement::Interaction, [8, 6]],
-            [HealthStatement::TaskClarity, [6, null]],
-            [HealthStatement::ManagerSupport, [null, 9]],
-            [HealthStatement::Vision, [10, 7]],
-        ];
-
-        foreach ($answers as [$statement, $scores]) {
-            foreach (array_filter($scores) as $index => $score) {
-                HealthCheckAnswer::factory()->create([
-                    'retro_id' => $retro->id,
-                    'participant_id' => $people[$index][1]->id,
-                    'statement' => $statement->value,
-                    'score' => $score,
-                ]);
-            }
-        }
     }
 
     if ($phase === RetroPhase::Icebreaker) {
@@ -377,8 +343,6 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
         },
     );
 })->with([
-    'facilitator, health check' => ['retro-board-health', RetroPhase::HealthCheck, true, false],
-    'participant, health check, locked' => ['retro-board-health-locked', RetroPhase::HealthCheck, false, true],
     'facilitator, icebreaker, before the round' => ['retro-board-icebreaker', RetroPhase::Icebreaker, true, false],
     'participant, icebreaker, round running' => ['retro-board-icebreaker-round', RetroPhase::Icebreaker, false, false, false, true],
     'facilitator, writing' => ['retro-board-facilitator', RetroPhase::Writing, true, false],
@@ -395,6 +359,99 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'participant, roti, thinking, locked' => ['retro-board-roti-participant', RetroPhase::Roti, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);
+
+/**
+ * The board in Writing with a health check of three statements: the member has sent his answers, the facilitator not
+ * yet; with `$closed`, the facilitator has sent too and the health check is closed.
+ *
+ * @return array{
+ *     0: Retro,
+ *     1: User
+ * }
+ */
+function p19RetroHealthCheckBoard(bool $closed): array
+{
+    [$retro, $facilitator] = p18eRetroVisualBoard(RetroPhase::Writing);
+
+    foreach ([HealthStatement::Interaction, HealthStatement::TaskClarity, HealthStatement::Vision] as $position => $statement) {
+        TeamHealthStatement::factory()->builtin($statement)->create(['team_id' => $retro->team_id, 'position' => $position]);
+    }
+
+    attachHealthCheck($retro);
+
+    $participants = Participant::query()->where('retro_id', $retro->id)->orderBy('id')->get()->values();
+    answerHealthCheck($retro, $participants[1], ['interaction' => 4, 'task_clarity' => 3, 'vision' => 2]);
+
+    if ($closed) {
+        answerHealthCheck($retro, $participants[0], ['interaction' => 5, 'task_clarity' => 4, 'vision' => 3]);
+        closeHealthCheck($retro);
+    }
+
+    return [$retro->fresh(), $facilitator];
+}
+
+/**
+ * The dialog is opened at the width of the visit; at a phone's width, the harness's resize turns it into its drawer.
+ *
+ * @param  array<string, string>  $options
+ */
+function p19OpenRetroHealthCheck(User $viewer, Retro $retro, array $options): mixed
+{
+    User::query()->whereKey($viewer->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+    $page = visit('/login', $options);
+
+    $page->fill('#email', $viewer->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+
+    return $page->navigate("/retros/{$retro->id}")
+        ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+        ->click('button[aria-haspopup="dialog"]:has([data-slot="health-check-count"])')
+        ->assertPresent('[data-slot="retro-health-check-dialog"]');
+}
+
+it('[P19-31-10] renders the health-check dialog of a retro in Writing, three statements scored, without overflow', function () {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    [$retro, $facilitator] = p19RetroHealthCheckBoard(closed: false);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'retro-health-check-dialog',
+        "/retros/{$retro->id}",
+        function (string $path, array $options) use ($facilitator, $retro) {
+            $page = p19OpenRetroHealthCheck($facilitator, $retro, $options);
+            $dialog = '[data-slot="retro-health-check-dialog"]';
+
+            return $page->assertSeeIn('[data-slot="health-check-count"]', '1/2')
+                ->click("{$dialog} [data-statement-key=\"interaction\"] [data-score=\"4\"]")
+                ->click("{$dialog} [data-statement-key=\"task_clarity\"] [data-score=\"5\"]")
+                ->click("{$dialog} [data-statement-key=\"vision\"] [data-score=\"3\"]")
+                ->assertCount("{$dialog} [data-slot=\"health-question\"][data-answered=\"true\"]", 3)
+                ->assertScript("[...document.querySelectorAll('{$dialog} [data-slot=\"health-check-form\"] button')].at(-1).disabled", false);
+        },
+    );
+});
+
+it('[P19-31-11] renders the results of the closed health check of a retro, with their distribution, without overflow', function () {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    [$retro, $facilitator] = p19RetroHealthCheckBoard(closed: true);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'retro-health-check-results',
+        "/retros/{$retro->id}",
+        fn (string $path, array $options) => p19OpenRetroHealthCheck($facilitator, $retro, $options)
+            ->assertNotPresent('[data-slot="retro-health-check-dialog"] [data-slot="health-check-form"]')
+            ->click('[data-slot="retro-health-result"] button')
+            ->assertCount('[data-slot="health-check-results"] [data-slot="health-distribution"]', 3),
+    );
+});
 
 it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow', function (string $name, RetroPhase $phase, string $trigger, string $drawer) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
