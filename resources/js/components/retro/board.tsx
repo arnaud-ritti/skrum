@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
@@ -34,6 +35,7 @@ import {
 } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
 import { PhaseRoti } from './phase-roti';
+import { useRotiFacilitation } from './roti-facilitation';
 import { SessionEnd, type CompletedView } from './session-end';
 import {
     DiscussionEstimate,
@@ -145,6 +147,11 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
             <ColumnsBoard hideMyCursor={hideMyCursor} />
         </div>
     );
+}
+
+/** The facilitator's bar, with the ROTI phase's nudge and reveal (RT-9). */
+function BoardDock({ start }: { start?: ReactNode }) {
+    return <FacilitatorDock start={start} roti={useRotiFacilitation()} />;
 }
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
@@ -283,7 +290,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     <BoardBody hideMyCursor={hideMyCursor} />
                                 </div>
                             </div>
-                            <FacilitatorDock
+                            <BoardDock
                                 start={timerInDock ? <BoardTimer /> : undefined}
                             />
                         </SessionShell>

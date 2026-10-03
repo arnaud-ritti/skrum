@@ -4373,5 +4373,10 @@
     "Quick add · linked to «:title»": "Quick add · linked to «:title»",
     "1 linked action": "1 linked action",
     ":count linked actions": ":count linked actions",
-    "Remove the link to the topic": "Remove the link to the topic"
+    "Remove the link to the topic": "Remove the link to the topic",
+    "Nudge the last one": "Nudge the last one",
+    "Nudge the last :count": "Nudge the last :count",
+    "Your ROTI vote is awaited": "Your ROTI vote is awaited",
+    "Votes are closed.": "Votes are closed.",
+    "Results appear for everyone when the facilitator reveals them or ends the session.": "Results appear for everyone when the facilitator reveals them or ends the session."
 }

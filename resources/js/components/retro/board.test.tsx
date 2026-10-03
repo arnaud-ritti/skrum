@@ -349,6 +349,20 @@ describe('Board', () => {
             ).toBeTruthy();
             expect(screen.queryByText('Suggest group names')).toBeNull();
         });
+
+        it('puts "Nudge the last" and "Reveal ROTI" in the facilitator bar', () => {
+            given({}, rotiSnapshot());
+            const bar = screen.getByRole('toolbar', {
+                name: 'Facilitation tools',
+            });
+
+            expect(
+                within(bar).getByRole('button', { name: 'Nudge the last one' }),
+            ).toBeTruthy();
+            expect(
+                within(bar).getByRole('button', { name: 'Reveal ROTI' }),
+            ).toBeTruthy();
+        });
     });
 
     describe('once completed', () => {

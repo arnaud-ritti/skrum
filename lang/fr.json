@@ -4593,5 +4593,10 @@
     "Quick add · linked to «:title»": "Ajout rapide · lié à « :title »",
     "1 linked action": "1 action liée",
     ":count linked actions": ":count actions liées",
-    "Remove the link to the topic": "Retirer le lien avec le sujet"
+    "Remove the link to the topic": "Retirer le lien avec le sujet",
+    "Nudge the last one": "Relancer le dernier",
+    "Nudge the last :count": "Relancer les :count derniers",
+    "Your ROTI vote is awaited": "On attend ton vote ROTI",
+    "Votes are closed.": "Les votes sont clos.",
+    "Results appear for everyone when the facilitator reveals them or ends the session.": "Les résultats s'affichent pour tous quand le facilitateur les révèle ou termine la session."
 }

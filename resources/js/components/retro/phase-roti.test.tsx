@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PhaseRoti, RotiVote, rotiVoters } from '@/components/retro/phase-roti';
 import type { PresenceMember } from '@/lib/retro/types';
@@ -166,9 +172,91 @@ describe('PhaseRoti', () => {
         ).not.toMatch(/\d/);
         expect(
             screen.getByText(
-                'Results appear for everyone when the facilitator ends the session.',
+                'Results appear for everyone when the facilitator reveals them or ends the session.',
             ),
         ).toBeTruthy();
+    });
+
+    it('shows the result to everyone once revealed, says the vote is closed and keeps who has voted', () => {
+        renderInBoard(
+            <PhaseRoti />,
+            boardContext(
+                rotiBoard({
+                    myScore: 4,
+                    respondents: 2,
+                    voterIds: ['me', 'bob'],
+                    canVote: false,
+                    revealed: true,
+                    results: {
+                        distribution: [
+                            { score: 4, count: 1 },
+                            { score: 5, count: 1 },
+                        ],
+                        average: 4.5,
+                        respondents: 2,
+                    },
+                }),
+            ),
+        );
+
+        expect(
+            screen.queryByRole('group', {
+                name: 'Was this time together worth it?',
+            }),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('img', { name: 'Distribution hidden' }),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="roti-mean"]')?.textContent,
+        ).toContain('4.5');
+        expect(screen.getByText('Votes are closed.')).toBeTruthy();
+        expect(
+            screen.getByRole('heading', { name: 'Who has voted' }),
+        ).toBeTruthy();
+        expect(rows()).toEqual([
+            'Alice Martin (you) · Voted',
+            'Bob Stone · Voted',
+        ]);
+    });
+
+    it('pulses the widget of a participant who has not voted when nudged', () => {
+        const listeners = new Set<() => void>();
+
+        renderInBoard(
+            <PhaseRoti />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'roti' },
+                    viewer: { isFacilitator: false },
+                    roti: {
+                        myScore: null,
+                        respondents: 0,
+                        voterIds: [],
+                        canVote: true,
+                        revealed: false,
+                        results: null,
+                    },
+                }),
+                {
+                    subscribeRotiNudges: (listener) => {
+                        listeners.add(listener);
+
+                        return () => listeners.delete(listener);
+                    },
+                },
+            ),
+        );
+        const widget = () =>
+            document.querySelector('[data-slot="retro-roti-widget"]');
+
+        expect(widget()?.getAttribute('data-nudged')).toBe('false');
+
+        act(() => listeners.forEach((listener) => listener()));
+
+        expect(widget()?.getAttribute('data-nudged')).toBe('true');
+        expect(widget()?.className).toContain('animate-nudge');
+        expect(widget()?.className).toContain('motion-reduce:animate-none');
     });
 
     it('sends the score, applies the answer and says the vote is saved', async () => {

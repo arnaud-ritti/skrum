@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
+import { toRotiResult } from '@/lib/retro/session-end';
 import type {
     PresenceMember,
     RotiVoteResponse,
@@ -21,6 +22,7 @@ import type {
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
+import { useRotiNudgeToast } from './roti-facilitation';
 
 /**
  * The viewer's rating: a press on a score gives it, a press on the score
@@ -171,7 +173,7 @@ function VoterRow({ voter }: { voter: RotiVoter }) {
  * "Who has voted": everyone in the room with "Voted" or "Thinking…". On a
  * phone the list is the stack of those who have voted.
  */
-function WhoHasVoted() {
+function WhoHasVoted({ closed }: { closed: boolean }) {
     const { board, online } = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
@@ -239,9 +241,11 @@ function WhoHasVoted() {
                     </ul>
                 )}
                 <p className="text-xs text-muted-foreground">
-                    {t(
-                        'Results appear for everyone when the facilitator ends the session.',
-                    )}
+                    {closed
+                        ? t('Votes are closed.')
+                        : t(
+                              'Results appear for everyone when the facilitator reveals them or ends the session.',
+                          )}
                 </p>
             </section>
         </Card>
@@ -267,37 +271,58 @@ export function RotiVote({ className }: { className?: string }) {
 
 /**
  * ROTI: the last step. Everyone gives a score; the room sees who has voted,
- * never what. The distribution shows once the facilitator ends the session.
+ * never what. The distribution shows once the facilitator reveals it, which
+ * closes the vote, or ends the session (RT-9).
  */
 export function PhaseRoti() {
     const { t } = useTrans();
+    const { board } = useBoard();
     const { value, vote } = useRotiVote();
+    const nudged = useRotiNudgeToast();
+    const results = board.roti.revealed ? board.roti.results : null;
 
     return (
         <div
             data-slot="retro-roti"
             className="mx-auto grid w-full max-w-5xl min-w-0 grid-cols-1 content-start items-start gap-6 px-4 pt-5 md:px-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:pt-16"
         >
-            <ROTIWidget
-                mode="vote"
-                layout="row"
-                value={value}
-                onVote={vote}
-                eyebrow={t('Last step · ROTI (return on time invested)')}
-                labels={{
-                    saved: t(
-                        'Vote saved · you can change it until the session ends',
-                    ),
-                }}
-                footer={
-                    <ROTIHiddenDistribution
-                        title={t('Votes hidden until the end')}
-                        note={t('Anonymous · nobody sees who voted what')}
+            <div
+                data-slot="retro-roti-widget"
+                data-nudged={nudged}
+                className={cn(
+                    'min-w-0',
+                    nudged && 'animate-nudge motion-reduce:animate-none',
+                )}
+            >
+                {results ? (
+                    <ROTIWidget mode="result" result={toRotiResult(results)} />
+                ) : (
+                    <ROTIWidget
+                        mode="vote"
+                        layout="row"
+                        value={value}
+                        onVote={vote}
+                        eyebrow={t(
+                            'Last step · ROTI (return on time invested)',
+                        )}
+                        labels={{
+                            saved: t(
+                                'Vote saved · you can change it until the session ends',
+                            ),
+                        }}
+                        footer={
+                            <ROTIHiddenDistribution
+                                title={t('Votes hidden until the end')}
+                                note={t(
+                                    'Anonymous · nobody sees who voted what',
+                                )}
+                            />
+                        }
+                        className="min-w-0"
                     />
-                }
-                className="min-w-0"
-            />
-            <WhoHasVoted />
+                )}
+            </div>
+            <WhoHasVoted closed={results !== null} />
         </div>
     );
 }
