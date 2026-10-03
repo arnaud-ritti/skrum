@@ -45,21 +45,30 @@ describe('HangmanTurnBanner', () => {
     it('tells the viewer it is their turn', () => {
         renderBanner({ turnOrder: ['ada', 'ines'], turnPlayerId: 'ada' });
 
-        const banner = screen.getByRole('status');
+        const banner = document.querySelector(
+            '[data-slot="hangman-turn-banner"]',
+        );
 
-        expect(banner.textContent).toContain(
+        expect(banner?.textContent).toContain(
             'Your turn, Arnaud — pick a letter',
         );
-        expect(banner.getAttribute('data-mine')).toBe('true');
+        expect(banner?.getAttribute('data-mine')).toBe('true');
+        expect(screen.getByRole('status').textContent).toBe(
+            'Your turn, Arnaud — pick a letter',
+        );
     });
 
     it('names whose turn it is to the others', () => {
         renderBanner({ turnOrder: ['ada', 'ines'], turnPlayerId: 'ines' });
 
-        const banner = screen.getByRole('status');
+        const banner = document.querySelector(
+            '[data-slot="hangman-turn-banner"]',
+        );
 
-        expect(banner.textContent).toContain("Inès's turn");
-        expect(banner.getAttribute('data-mine')).toBe('false');
+        expect(banner?.textContent).toContain("Inès's turn");
+        expect(banner?.getAttribute('data-mine')).toBe('false');
+        expect(banner?.hasAttribute('role')).toBe(false);
+        expect(screen.getByRole('status').textContent).toBe('');
     });
 
     it('is absent from a round without turns', () => {

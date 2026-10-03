@@ -202,6 +202,17 @@ describe('GameSettingsCard', () => {
         expect(mocks.request.mock.calls[0][1]).toEqual({ word_themes: [] });
     });
 
+    it('shows the number of themes chosen through Decoded on the word theme of another game', () => {
+        renderCard({
+            game: 'hangman',
+            settings: { wordThemes: ['work', 'food'] },
+        });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Word theme' }).textContent,
+        ).toBe('2 chosen');
+    });
+
     it('chooses the categories of Decoded in a popover', async () => {
         renderCard({
             game: 'decoded',

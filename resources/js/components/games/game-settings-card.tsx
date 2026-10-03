@@ -228,6 +228,13 @@ export function GameSettingsCard() {
                             />
                         </SelectTrigger>
                         <SelectContent>
+                            {values.categories.length > 1 && (
+                                <SelectItem value={MixedThemes} disabled>
+                                    {t(':count chosen', {
+                                        count: values.categories.length,
+                                    })}
+                                </SelectItem>
+                            )}
                             <SelectItem value={AllWords}>
                                 {t('All words')}
                             </SelectItem>

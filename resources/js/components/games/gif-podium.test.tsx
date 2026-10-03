@@ -120,7 +120,15 @@ describe('GifPodium', () => {
         );
 
         expect(screen.getByText('Malik, Inès win the round')).toBeTruthy();
-        expect(screen.queryByRole('list', { name: 'Ranking' })).toBeNull();
+
+        const rows = within(
+            screen.getByRole('list', { name: 'Ranking' }),
+        ).getAllByRole('listitem');
+
+        expect(rows).toHaveLength(1);
+        expect(rows[0].firstChild?.textContent).toBe('1');
+        expect(within(rows[0]).getByText('Inès')).toBeTruthy();
+        expect(within(rows[0]).getByText('2 votes')).toBeTruthy();
     });
 
     it('crowns nobody when no GIF got a vote', () => {

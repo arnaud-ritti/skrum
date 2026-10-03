@@ -18,7 +18,8 @@ function votesLabel(
 
 /**
  * The right column after the votes of Sprint in one GIF close: "This sprint's
- * GIF" with its winner, then the ranking of the others with ties. On an
+ * GIF" with its winner, then the ranking of the others with ties (the other
+ * winners of a tie for first among them). On an
  * anonymous retro the GIFs carry no author, so no name is shown.
  */
 export function GifPodium({ className }: { className?: string }) {
@@ -35,8 +36,11 @@ export function GifPodium({ className }: { className?: string }) {
     );
     const ranked = rankedAnswers(answers);
     const winners = ranked.filter(isWinningAnswer);
-    const others = ranked.filter((answer) => !isWinningAnswer(answer));
-    const [shown] = winners;
+    const [shown, ...otherWinners] = winners;
+    const others = [
+        ...otherWinners,
+        ...ranked.filter((answer) => !isWinningAnswer(answer)),
+    ];
     const totalVotes = answers.reduce(
         (sum, answer) => sum + (answer.votes ?? 0),
         0,

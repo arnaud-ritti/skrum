@@ -18,30 +18,34 @@ export function HangmanTurnBanner({ round }: { round: GameRound }) {
         null;
     const name = player?.name ?? t('Someone');
     const isMine = round.turnPlayerId === snapshot.me.playerId;
+    const label = isMine
+        ? t('Your turn, :name — pick a letter', { name })
+        : t(":name's turn", { name });
 
     return (
-        <div
-            data-slot="hangman-turn-banner"
-            data-mine={isMine}
-            role="status"
-            className={cn(
-                'flex max-w-full items-center gap-3 rounded-full py-2.5 pr-4 pl-2.5 font-semibold',
-                isMine
-                    ? 'bg-skrum-primary-soft text-skrum-primary-text'
-                    : 'bg-muted text-muted-foreground',
-            )}
-        >
-            <PersonAvatar
-                name={name}
-                src={player?.avatarUrl}
-                kind={player?.isGuest ? 'guest' : 'member'}
-                size="sm"
-            />
-            <span className="min-w-0 break-words">
-                {isMine
-                    ? t('Your turn, :name — pick a letter', { name })
-                    : t(":name's turn", { name })}
+        <>
+            {/* Announced only when the turn becomes the viewer's. */}
+            <span role="status" className="sr-only">
+                {isMine ? label : ''}
             </span>
-        </div>
+            <div
+                data-slot="hangman-turn-banner"
+                data-mine={isMine}
+                className={cn(
+                    'flex max-w-full items-center gap-3 rounded-full py-2.5 pr-4 pl-2.5 font-semibold',
+                    isMine
+                        ? 'bg-skrum-primary-soft text-skrum-primary-text'
+                        : 'bg-muted text-muted-foreground',
+                )}
+            >
+                <PersonAvatar
+                    name={name}
+                    src={player?.avatarUrl}
+                    kind={player?.isGuest ? 'guest' : 'member'}
+                    size="sm"
+                />
+                <span className="min-w-0 break-words">{label}</span>
+            </div>
+        </>
     );
 }
