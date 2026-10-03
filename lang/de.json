@@ -4397,5 +4397,7 @@
     "Questions can only change while the survey is a draft.": "Fragen können nur geändert werden, solange die Umfrage ein Entwurf ist.",
     "The questions of a health check come from the team's statements.": "Die Fragen eines Gesundheitschecks stammen aus den Aussagen des Teams.",
     "This survey is not open.": "Diese Umfrage ist nicht geöffnet.",
-    "You no longer have access to this survey.": "Du hast keinen Zugriff mehr auf diese Umfrage."
+    "You no longer have access to this survey.": "Du hast keinen Zugriff mehr auf diese Umfrage.",
+    "A survey can have at most 30 questions.": "Eine Umfrage kann höchstens 30 Fragen haben.",
+    "Send every question exactly once.": "Sende jede Frage genau einmal."
 }

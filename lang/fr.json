@@ -4397,5 +4397,7 @@
     "Questions can only change while the survey is a draft.": "Les questions ne peuvent changer que tant que le sondage est un brouillon.",
     "The questions of a health check come from the team's statements.": "Les questions d'un bilan de santé viennent des énoncés de l'équipe.",
     "This survey is not open.": "Ce sondage n'est pas ouvert.",
-    "You no longer have access to this survey.": "Tu n'as plus accès à ce sondage."
+    "You no longer have access to this survey.": "Tu n'as plus accès à ce sondage.",
+    "A survey can have at most 30 questions.": "Un sondage peut avoir au plus 30 questions.",
+    "Send every question exactly once.": "Envoie chaque question exactement une fois."
 }

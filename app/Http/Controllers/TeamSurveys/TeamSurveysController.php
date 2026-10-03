@@ -8,13 +8,16 @@ use App\Actions\TeamSurveys\NewTeamSurvey;
 use App\Actions\TeamSurveys\TeamSurveyGuard;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TeamSurveyTemplate;
+use App\Events\TeamSurveys\TeamSurveyChanged;
 use App\Events\TeamSurveys\TeamSurveyDeleted;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TeamSurveys\TeamSurveyStoreRequest;
+use App\Http\Requests\TeamSurveys\TeamSurveyUpdateRequest;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyRespondent;
 use App\Models\Workspace;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -60,6 +63,29 @@ class TeamSurveysController extends Controller
         return Inertia::render('surveys/edit', [
             'snapshot' => $buildTeamSurveySnapshot->handle($teamSurvey, $respondent),
         ]);
+    }
+
+    public function update(TeamSurveyUpdateRequest $request, TeamSurvey $teamSurvey, BuildTeamSurveySnapshot $buildTeamSurveySnapshot): JsonResponse
+    {
+        $respondent = TeamSurveyRespondent::current($request);
+
+        TeamSurveyGuard::editor($teamSurvey, $respondent);
+
+        $updated = DB::transaction(function () use ($request, $teamSurvey, $respondent): TeamSurvey {
+            $locked = TeamSurvey::query()->whereKey($teamSurvey->id)->lockForUpdate()->firstOrFail();
+
+            TeamSurveyGuard::editor($locked, $respondent);
+
+            $locked->fill($request->validated());
+            $locked->version++;
+            $locked->save();
+
+            TeamSurveyChanged::for($locked)->sendToOthers();
+
+            return $locked;
+        });
+
+        return response()->json($buildTeamSurveySnapshot->handle($updated, $respondent));
     }
 
     public function destroy(Request $request, TeamSurvey $teamSurvey): HttpResponse

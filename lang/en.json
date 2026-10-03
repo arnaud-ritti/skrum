@@ -4177,5 +4177,7 @@
     "Questions can only change while the survey is a draft.": "Questions can only change while the survey is a draft.",
     "The questions of a health check come from the team's statements.": "The questions of a health check come from the team's statements.",
     "This survey is not open.": "This survey is not open.",
-    "You no longer have access to this survey.": "You no longer have access to this survey."
+    "You no longer have access to this survey.": "You no longer have access to this survey.",
+    "A survey can have at most 30 questions.": "A survey can have at most 30 questions.",
+    "Send every question exactly once.": "Send every question exactly once."
 }
