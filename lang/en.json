@@ -4334,5 +4334,12 @@
     "Survey builder settings": "Settings",
     "Option": "Option",
     "Someone is writing…": "Someone is writing…",
-    ":count people are writing…": ":count people are writing…"
+    ":count people are writing…": ":count people are writing…",
+    ":name is writing a card…": ":name is writing a card…",
+    ":first and :second are writing cards…": ":first and :second are writing cards…",
+    ":name and :count others are writing cards…": ":name and :count others are writing cards…",
+    ":name is moving a card…": ":name is moving a card…",
+    ":first and :second are moving cards…": ":first and :second are moving cards…",
+    ":name and :count others are moving cards…": ":name and :count others are moving cards…",
+    ":name is taking notes…": ":name is taking notes…"
 }

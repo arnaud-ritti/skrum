@@ -6,6 +6,11 @@ import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
 import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import type { BoardContextValue } from '@/components/retro/board-context';
+import {
+    ActivityContext,
+    type RetroActivity,
+} from '@/hooks/use-retro-activity';
+import type { ActivityEntry } from '@/lib/retro/activity';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -1388,5 +1393,140 @@ describe('ColumnsBoard in Voting', () => {
         expect(
             container.querySelector('[data-slot="card-group-votes"]'),
         ).toBeNull();
+    });
+});
+
+describe('ColumnsBoard activity (RT-1)', () => {
+    function withActivity(
+        entries: ActivityEntry[],
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+    ) {
+        const activity: RetroActivity = {
+            entries,
+            writingCount: 0,
+            announce: vi.fn(),
+            end: vi.fn(),
+        };
+        const rendered = renderInBoard(
+            <ActivityContext value={activity}>
+                <GroupNameSuggestionsProvider>
+                    <ColumnsBoard hideMyCursor />
+                </GroupNameSuggestionsProvider>
+            </ActivityContext>,
+            boardContext(retroSnapshot({ columns, ...overrides })),
+        );
+
+        return { activity, ...rendered };
+    }
+
+    const live = (
+        senderId: string,
+        kind: ActivityEntry['kind'],
+        targetId: string,
+    ): ActivityEntry => ({
+        senderId,
+        kind,
+        targetId,
+        expiresAt: Number.MAX_SAFE_INTEGER,
+    });
+
+    it('says under the cards of a column who is writing in it, above "Add a card"', () => {
+        const { container } = withActivity([live('bob', 'writing', 'start')]);
+        const start = container.querySelector(
+            '[data-test="retro-column-start"]',
+        ) as HTMLElement;
+        const stop = container.querySelector(
+            '[data-test="retro-column-stop"]',
+        ) as HTMLElement;
+        const line = start.querySelector('[data-slot="retro-activity"]');
+
+        expect(line?.getAttribute('data-kind')).toBe('writing');
+        expect(line?.textContent).toBe('Bob is writing a card…');
+        expect(
+            line?.compareDocumentPosition(
+                start.querySelector(
+                    '[data-slot="retro-column-add"]',
+                ) as HTMLElement,
+            ),
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+        expect(stop.querySelector('[data-slot="retro-activity"]')).toBeNull();
+        expect(
+            stop.querySelector('[data-slot="retro-column-empty"]'),
+        ).not.toBeNull();
+    });
+
+    it('says in Grouping who moves a card of the column', () => {
+        const { container } = withActivity([live('bob', 'moving', 'c1')], {
+            cards: [card({ isMine: false })],
+            retro: { phase: 'grouping' },
+        });
+        const line = container.querySelector('[data-slot="retro-activity"]');
+
+        expect(line?.getAttribute('data-kind')).toBe('moving');
+        expect(line?.textContent).toBe('Bob is moving a card…');
+    });
+
+    it('announces writing in the column while a card is typed, and ends it on Cancel', () => {
+        const { activity, container } = withActivity([]);
+        const start = container.querySelector(
+            '[data-test="retro-column-start"]',
+        ) as HTMLElement;
+
+        fireEvent.click(
+            within(start).getByRole('button', { name: 'Add a card' }),
+        );
+
+        const form = start.querySelector(
+            '[data-slot="retro-card-composer"]',
+        ) as HTMLElement;
+
+        fireEvent.input(within(form).getByLabelText('Add a card…'), {
+            target: { value: 'Pair more' },
+        });
+
+        expect(activity.announce).toHaveBeenCalledWith('writing', 'start');
+
+        fireEvent.click(within(form).getByRole('button', { name: 'Cancel' }));
+
+        expect(activity.end).toHaveBeenCalledWith('writing', 'start');
+    });
+
+    it('announces writing while one of my cards is edited, and ends it on Cancel', () => {
+        const { activity, container } = withActivity([], {
+            cards: [card()],
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit card' }));
+        fireEvent.input(
+            container.querySelector('#card-c1 textarea') as HTMLElement,
+            { target: { value: 'Ship smaller and smaller pull requests' } },
+        );
+
+        expect(activity.announce).toHaveBeenCalledWith('writing', 'start');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(activity.end).toHaveBeenCalledWith('writing', 'start');
+    });
+
+    it('announces the move of a card picked up from the keyboard, and its end', async () => {
+        const { activity, container } = withActivity([], {
+            cards: [card({ isMine: false })],
+            retro: { phase: 'grouping' },
+        });
+        const handle = container.querySelector(
+            '[data-test="retro-card-handle-c1"]',
+        ) as HTMLElement;
+
+        fireEvent.keyDown(handle, { code: 'Space', key: ' ' });
+
+        expect(activity.announce).toHaveBeenCalledWith('moving', 'c1');
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        fireEvent.keyDown(handle, { code: 'Escape', key: 'Escape' });
+
+        await waitFor(() =>
+            expect(activity.end).toHaveBeenCalledWith('moving', 'c1'),
+        );
     });
 });

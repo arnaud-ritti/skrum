@@ -38,11 +38,12 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useServerOffset } from '@/hooks/use-countdown';
+import { useActivity } from '@/hooks/use-retro-activity';
 import { useTrans } from '@/hooks/use-trans';
 import type { SessionSelf } from '@/layouts/skrum/session-layout';
 import { retroRequest } from '@/lib/retro/api';
 import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
-import type { RetroPhase, Snapshot } from '@/lib/retro/types';
+import type { PresenceMember, RetroPhase, Snapshot } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { showsRetroCursors } from './board-cursors';
 import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
@@ -313,12 +314,24 @@ export function BoardTimer({ controls = true }: { controls?: boolean }) {
 
 export function BoardPresence() {
     const { board, online } = useBoard();
+    const { entries, writingCount } = useActivity();
+    const isAnonymous = board.retro.isAnonymous;
 
     return (
         <SessionPresence
             online={online}
             selfId={board.viewer.participantId}
             facilitatorId={board.retro.facilitatorParticipantId}
+            {...(isAnonymous
+                ? { typingCount: writingCount }
+                : {
+                      typingFor: (member: PresenceMember) =>
+                          entries.some(
+                              (entry) =>
+                                  entry.kind === 'writing' &&
+                                  entry.senderId === member.id,
+                          ),
+                  })}
             className="shrink-0 flex-nowrap"
         />
     );

@@ -4554,5 +4554,12 @@
     "Survey builder settings": "Einstellungen",
     "Option": "Option",
     "Someone is writing…": "Jemand schreibt…",
-    ":count people are writing…": ":count Personen schreiben…"
+    ":count people are writing…": ":count Personen schreiben…",
+    ":name is writing a card…": ":name schreibt eine Karte…",
+    ":first and :second are writing cards…": ":first und :second schreiben Karten…",
+    ":name and :count others are writing cards…": ":name und :count weitere schreiben Karten…",
+    ":name is moving a card…": ":name verschiebt eine Karte…",
+    ":first and :second are moving cards…": ":first und :second verschieben Karten…",
+    ":name and :count others are moving cards…": ":name und :count weitere verschieben Karten…",
+    ":name is taking notes…": ":name macht Notizen…"
 }

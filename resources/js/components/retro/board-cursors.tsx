@@ -1,5 +1,6 @@
 import { LiveCursors } from '@/components/session/live-cursors';
 import { useTrans } from '@/hooks/use-trans';
+import { activityLabel } from '@/lib/retro/activity';
 import { channelKey } from '@/lib/realtime/whisper-transport';
 import { useBoard } from './board-context';
 
@@ -30,10 +31,11 @@ export function BoardCursors({ container, hidden }: Props) {
     }
 
     const labelFor = (senderId: string) =>
-        board.retro.isAnonymous
-            ? t('Participant')
-            : (online.find((member) => member.id === senderId)?.name ??
-              t('Participant'));
+        activityLabel(
+            online.find((member) => member.id === senderId),
+            board.retro.isAnonymous,
+            t,
+        );
 
     return (
         <LiveCursors

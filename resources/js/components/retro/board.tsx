@@ -4,6 +4,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ActivityProvider } from '@/hooks/use-retro-activity';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
@@ -189,66 +190,71 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     return (
         <BoardProvider value={ctx}>
-            <GroupNameSuggestionsProvider>
-                <DiscussionProvider>
-                    <SessionShell
-                        kind="retro"
-                        self={boardSelf(board)}
-                        title={<BoardTitle />}
-                        phases={isMobile ? undefined : <BoardPhases />}
-                        timer={
-                            timerInDock ? undefined : (
-                                <BoardTimer controls={!isMobile} />
-                            )
-                        }
-                        presence={<BoardPresence />}
-                        actions={
-                            <BoardActions
-                                hideMyCursor={hideMyCursor}
-                                onHideMyCursorChange={setHideMyCursor}
-                                mobile={isMobile}
-                            />
-                        }
-                        realtime={realtimeState(connected, online)}
-                        connection={{ reconnecting, expired: sessionExpired }}
-                    >
-                        <div className="flex h-full min-h-0 flex-col">
-                            {isMobile && (
-                                <div
-                                    data-slot="retro-subheader"
-                                    className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2 *:min-w-0"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <BoardPhases mobile />
+            <ActivityProvider>
+                <GroupNameSuggestionsProvider>
+                    <DiscussionProvider>
+                        <SessionShell
+                            kind="retro"
+                            self={boardSelf(board)}
+                            title={<BoardTitle />}
+                            phases={isMobile ? undefined : <BoardPhases />}
+                            timer={
+                                timerInDock ? undefined : (
+                                    <BoardTimer controls={!isMobile} />
+                                )
+                            }
+                            presence={<BoardPresence />}
+                            actions={
+                                <BoardActions
+                                    hideMyCursor={hideMyCursor}
+                                    onHideMyCursorChange={setHideMyCursor}
+                                    mobile={isMobile}
+                                />
+                            }
+                            realtime={realtimeState(connected, online)}
+                            connection={{
+                                reconnecting,
+                                expired: sessionExpired,
+                            }}
+                        >
+                            <div className="flex h-full min-h-0 flex-col">
+                                {isMobile && (
+                                    <div
+                                        data-slot="retro-subheader"
+                                        className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2 *:min-w-0"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <BoardPhases mobile />
+                                        </div>
+                                        {board.viewer.isGuest && (
+                                            <LanguageSwitcher />
+                                        )}
                                     </div>
-                                    {board.viewer.isGuest && (
-                                        <LanguageSwitcher />
-                                    )}
-                                </div>
-                            )}
-                            <div
-                                data-slot="retro-body"
-                                className={cn(
-                                    'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
-                                    !isCompleted && 'pb-32',
-                                    // Wide, the columns of the discussion
-                                    // scroll on their own and clear the dock
-                                    // themselves.
-                                    board.retro.phase === 'discussing' &&
-                                        'xl:pb-0',
                                 )}
-                            >
-                                <PhaseTools />
-                                <BoardBody hideMyCursor={hideMyCursor} />
+                                <div
+                                    data-slot="retro-body"
+                                    className={cn(
+                                        'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
+                                        !isCompleted && 'pb-32',
+                                        // Wide, the columns of the discussion
+                                        // scroll on their own and clear the dock
+                                        // themselves.
+                                        board.retro.phase === 'discussing' &&
+                                            'xl:pb-0',
+                                    )}
+                                >
+                                    <PhaseTools />
+                                    <BoardBody hideMyCursor={hideMyCursor} />
+                                </div>
                             </div>
-                        </div>
-                        <FacilitatorDock
-                            start={timerInDock ? <BoardTimer /> : undefined}
-                        />
-                    </SessionShell>
-                    <PresentationOverlay />
-                </DiscussionProvider>
-            </GroupNameSuggestionsProvider>
+                            <FacilitatorDock
+                                start={timerInDock ? <BoardTimer /> : undefined}
+                            />
+                        </SessionShell>
+                        <PresentationOverlay />
+                    </DiscussionProvider>
+                </GroupNameSuggestionsProvider>
+            </ActivityProvider>
         </BoardProvider>
     );
 }

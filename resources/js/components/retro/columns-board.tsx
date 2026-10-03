@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useActivity } from '@/hooks/use-retro-activity';
 import { useSwipe } from '@/hooks/use-swipe';
 import { useTrans } from '@/hooks/use-trans';
 import {
@@ -426,6 +427,7 @@ export function ColumnsBoard({
         }),
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+    const { announce, end } = useActivity();
 
     useGroupShortcut();
 
@@ -446,6 +448,10 @@ export function ColumnsBoard({
 
         const dragged = parseDndId(active.id);
         const target = parseDndId(over?.id);
+
+        if (dragged?.kind === 'card') {
+            end('moving', dragged.id);
+        }
 
         if (!dragged || !target || dragged.kind !== 'card') {
             return;
@@ -537,8 +543,20 @@ export function ColumnsBoard({
 
                 setActiveCardId(cardId);
                 setActiveCardWidth(cardElement?.getBoundingClientRect().width);
+
+                if (cardId !== null) {
+                    announce('moving', cardId);
+                }
             }}
-            onDragCancel={() => setActiveCardId(null)}
+            onDragCancel={({ active }) => {
+                const dragged = parseDndId(active.id);
+
+                setActiveCardId(null);
+
+                if (dragged?.kind === 'card') {
+                    end('moving', dragged.id);
+                }
+            }}
             onDragEnd={(event) => void handleDragEnd(event)}
         >
             {isMobile ? (

@@ -1,6 +1,6 @@
 import { EyeOff, GripVertical, ImageOff, Layers } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import type { FocusEvent, FormEvent, ReactNode } from 'react';
 import { toast } from 'sonner';
 import CardCommentsController from '@/actions/App/Http/Controllers/Retros/CardCommentsController';
 import CardReactionsController from '@/actions/App/Http/Controllers/Retros/CardReactionsController';
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useActivity } from '@/hooks/use-retro-activity';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
@@ -161,6 +162,13 @@ function GifTools({
     );
 }
 
+/** The focus left the element for somewhere outside it. */
+function leaves(event: FocusEvent<HTMLElement>): boolean {
+    const next = event.relatedTarget;
+
+    return !(next instanceof Node && event.currentTarget.contains(next));
+}
+
 function draftGif(gif: PickedGif | null) {
     return gif ? { previewUrl: gif.previewUrl, url: gif.previewUrl } : null;
 }
@@ -191,6 +199,9 @@ export function CardComposer({
     const [isBlank, setIsBlank] = useState(true);
     const [sending, setSending] = useState(false);
     const inFlight = useRef(false);
+    const { announce, end } = useActivity();
+
+    useEffect(() => () => end('writing', columnId), [end, columnId]);
 
     const reset = () => {
         setGif(null);
@@ -235,11 +246,13 @@ export function CardComposer({
             type: 'writers.set',
             writersCount: response.writersCount,
         });
+        end('writing', columnId);
         reset();
         onAdded?.();
     };
 
     const cancel = () => {
+        end('writing', columnId);
         reset();
         onCancel?.();
     };
@@ -255,8 +268,23 @@ export function CardComposer({
             onInput={(event) => {
                 const value = typedValue(event);
 
-                if (value !== null) {
-                    setIsBlank(value.trim() === '');
+                if (value === null) {
+                    return;
+                }
+
+                setIsBlank(value.trim() === '');
+
+                if (value.trim() === '') {
+                    end('writing', columnId);
+
+                    return;
+                }
+
+                announce('writing', columnId);
+            }}
+            onBlur={(event) => {
+                if (leaves(event)) {
+                    end('writing', columnId);
                 }
             }}
         >
@@ -558,6 +586,8 @@ export function BoardCard({
     /** The editor is open, and nobody closed it on purpose. */
     const editorOpen = useRef(false);
     const typed = useRef('');
+    const { announce, end } = useActivity();
+    const writesIn = phase === 'writing' ? card.columnId : null;
     const latest = useRef({
         saved: card.content,
         hasActiveCard: ctx.hasActiveCard,
@@ -621,7 +651,19 @@ export function BoardCard({
         setEditing(true);
     };
 
+    useEffect(() => {
+        if (writesIn === null) {
+            return;
+        }
+
+        return () => end('writing', writesIn);
+    }, [end, writesIn]);
+
     const closeEditor = () => {
+        if (writesIn !== null) {
+            end('writing', writesIn);
+        }
+
         editorOpen.current = false;
         setEditing(false);
     };
@@ -835,7 +877,22 @@ export function BoardCard({
                     </>
                 }
                 onInput={(event) => {
-                    typed.current = typedValue(event) ?? typed.current;
+                    const value = typedValue(event);
+
+                    if (value === null) {
+                        return;
+                    }
+
+                    typed.current = value;
+
+                    if (writesIn !== null && value.trim() !== '') {
+                        announce('writing', writesIn);
+                    }
+                }}
+                onBlur={(event) => {
+                    if (writesIn !== null && isEditing && leaves(event)) {
+                        end('writing', writesIn);
+                    }
                 }}
                 {...(isEditing && {
                     onPointerDown: dragIsolation.onPointerDown,

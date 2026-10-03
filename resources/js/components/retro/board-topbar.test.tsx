@@ -4,10 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     BoardActions,
     BoardPhases,
+    BoardPresence,
     BoardTimer,
     BoardTitle,
     boardSelf,
 } from '@/components/retro/board-topbar';
+import {
+    ActivityContext,
+    type RetroActivity,
+} from '@/hooks/use-retro-activity';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -275,6 +280,51 @@ describe('BoardPhases', () => {
 
         expect(screen.getByRole('list', { name: 'Phases' })).toBeTruthy();
         expect(screen.queryByRole('button')).toBeNull();
+    });
+});
+
+describe('BoardPresence', () => {
+    function presence(isAnonymous: boolean) {
+        const activity: RetroActivity = {
+            entries: [
+                {
+                    senderId: 'bob',
+                    kind: 'writing',
+                    targetId: 'start',
+                    expiresAt: Number.MAX_SAFE_INTEGER,
+                },
+            ],
+            writingCount: 3,
+            announce: vi.fn(),
+            end: vi.fn(),
+        };
+
+        const { container } = renderInBoard(
+            <ActivityContext value={activity}>
+                <BoardPresence />
+            </ActivityContext>,
+            boardContext(retroSnapshot({ retro: { isAnonymous } })),
+        );
+
+        return {
+            ringed: container.querySelectorAll('[data-typing="true"]'),
+            line: container.querySelector('[data-slot="presence-stack-typing"]')
+                ?.textContent,
+        };
+    }
+
+    it('rings the writer and names them on a named retro', () => {
+        const { ringed, line } = presence(false);
+
+        expect(ringed).toHaveLength(1);
+        expect(line).toBe('Bob is writing…');
+    });
+
+    it('says only how many write on an anonymous retro, with no ring', () => {
+        const { ringed, line } = presence(true);
+
+        expect(ringed).toHaveLength(0);
+        expect(line).toBe('3 people are writing…');
     });
 });
 

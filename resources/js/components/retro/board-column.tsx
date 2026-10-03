@@ -17,6 +17,7 @@ import type {
     ColumnColor,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
+import { ActivityLine, useShowsActivity } from './activity-line';
 import { BoardCard, CardComposer } from './board-card';
 import { useBoard } from './board-context';
 import { BoardGroup } from './board-group';
@@ -129,6 +130,25 @@ export function BoardColumn({
             throw new ColumnChangeRefused();
         }
     };
+
+    const columnCardIds = ctx.board.cards
+        .filter((card) => card.columnId === column.id)
+        .map((card) => card.id);
+    const showsWriting =
+        useShowsActivity('writing', column.id) && phase === 'writing';
+    const showsMoving =
+        useShowsActivity('moving', undefined, columnCardIds) &&
+        (phase === 'writing' || phase === 'grouping');
+    const typingLine =
+        typing ??
+        (showsWriting ? (
+            <ActivityLine kind="writing" targetId={column.id} />
+        ) : undefined);
+    const movingLine =
+        moving ??
+        (showsMoving ? (
+            <ActivityLine kind="moving" targetIds={columnCardIds} />
+        ) : undefined);
 
     const leadIds = new Set(
         ctx.board.cards.flatMap((card) =>
@@ -258,8 +278,8 @@ export function BoardColumn({
             ) : (
                 cards.map(renderCard)
             )}
-            {typing}
-            {moving}
+            {typingLine}
+            {movingLine}
         </RetroColumn>
     );
 }
