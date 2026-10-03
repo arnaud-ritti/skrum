@@ -71,7 +71,7 @@ it('connects the Linear workspace', function () {
     expect($integration->status)->toBe(IntegrationStatus::Active)
         ->and($integration->access)->toBe(IntegrationAccess::Write)
         ->and($integration->scopes)->toBe(['read', 'write'])
-        ->and($integration->settings)->toBe(['organizationId' => 'org-1', 'organizationName' => 'Acme', 'urlKey' => 'acme'])
+        ->and($integration->settings)->toBeIgnoringKeyOrder(['organizationId' => 'org-1', 'organizationName' => 'Acme', 'urlKey' => 'acme'])
         ->and($integration->credential('access_token'))->toBe('linear-access-new')
         ->and($integration->credential('refresh_token'))->toBe('linear-refresh-new')
         ->and($integration->credential('expires_at'))->toBeGreaterThan(now()->getTimestamp());

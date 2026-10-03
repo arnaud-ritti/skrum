@@ -100,6 +100,12 @@ pest()->browser()->timeout(20_000);
 
 expect()->extend('toBeOne', fn () => $this->toBe(1));
 
+expect()->extend('toBeIgnoringKeyOrder', function (array $expected) {
+    expect(withKeysSorted($this->value))->toBe(withKeysSorted($expected));
+
+    return $this;
+});
+
 /*
 |--------------------------------------------------------------------------
 | Functions
@@ -110,6 +116,24 @@ expect()->extend('toBeOne', fn () => $this->toBe(1));
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * MySQL hands a json column back with its keys reordered: what matters is
+ * the same keys and values, with lists kept in their order.
+ *
+ * @param  array<array-key, mixed>  $value
+ * @return array<array-key, mixed>
+ */
+function withKeysSorted(array $value): array
+{
+    $sorted = array_map(fn (mixed $item): mixed => is_array($item) ? withKeysSorted($item) : $item, $value);
+
+    if (! array_is_list($sorted)) {
+        ksort($sorted);
+    }
+
+    return $sorted;
+}
 
 /**
  * @return array{0: User, 1: Participant}

@@ -74,7 +74,7 @@ it('saves the live scene of a board, with its images, as a workspace template', 
         ->and($template->created_by_user_id)->toBe($user->id)
         ->and(array_column($template->scene['elements'], 'id'))->toBe(['note', 'words', 'zone', 'photo'])
         ->and($template->scene['elements'][1]['text'])->toBe('Ship it')
-        ->and($template->scene['files'])->toBe([['fileId' => $file->file_id, 'path' => $copy, 'mimeType' => 'image/png', 'size' => 11]])
+        ->and($template->scene['files'])->toBeIgnoringKeyOrder([['fileId' => $file->file_id, 'path' => $copy, 'mimeType' => 'image/png', 'size' => 11]])
         ->and(Storage::get($copy))->toBe('image bytes')
         ->and(array_column($template->preview['shapes'], 'kind'))->toBe(['rect', 'rect', 'rect'])
         ->and(json_encode($template->scene))->not->toContain($board->facilitator_member_id)

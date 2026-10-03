@@ -108,7 +108,7 @@ it('connects a group that sends the command', function (string $text, string $ki
         ->and($integration->provider)->toBe(IntegrationProvider::Telegram)
         ->and($integration->status)->toBe(IntegrationStatus::Active)
         ->and($integration->connected_by_user_id)->toBe($admin->id)
-        ->and($integration->settings)->toBe(['chatId' => '-100123', 'chatTitle' => 'Team chat', 'chatType' => 'supergroup'])
+        ->and($integration->settings)->toBeIgnoringKeyOrder(['chatId' => '-100123', 'chatTitle' => 'Team chat', 'chatType' => 'supergroup'])
         ->and(telegramReplies())->toBe(['Connected to the Rocket team on '.config('app.name').'.']);
 })->with([
     'addressed to the bot' => ['/connect@skrum_test_bot CODE', 'message'],

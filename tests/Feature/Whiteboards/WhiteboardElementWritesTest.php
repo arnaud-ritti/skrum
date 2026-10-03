@@ -164,7 +164,7 @@ it('returns the server copy with an invalid rejection of an element it already h
         'whiteboard_id' => $board->id, 'element_id' => 'note', 'type' => 'text', 'version' => 3, 'version_nonce' => 100, 'data' => $note,
     ]);
 
-    writeElements($this->actingAs($user), $board, [
+    $response = writeElements($this->actingAs($user), $board, [
         [...$note, 'version' => 4, 'text' => str_repeat('a', 10_001)],
         sceneElement(['id' => 'unknown', 'type' => 'iframe']),
     ])
@@ -173,10 +173,10 @@ it('returns the server copy with an invalid rejection of an element it already h
         ->assertJsonCount(2, 'rejected')
         ->assertJsonPath('rejected.0.id', 'note')
         ->assertJsonPath('rejected.0.reason', 'invalid')
-        ->assertJsonPath('rejected.0.element', $note)
         ->assertJsonPath('rejected.1', ['id' => 'unknown', 'reason' => 'invalid', 'element' => null]);
 
-    expect($board->elements()->sole()->data['text'])->toBe('short');
+    expect($response->json('rejected.0.element'))->toBeIgnoringKeyOrder($note)
+        ->and($board->elements()->sole()->data['text'])->toBe('short');
 
     Event::assertNotDispatched(WhiteboardElementsChanged::class);
 });
@@ -357,15 +357,15 @@ it('rejects a guest who deletes, moves or unlocks a locked element and hands bac
         'whiteboard_id' => $board->id, 'element_id' => 'frame', 'version_nonce' => 100, 'data' => $frame,
     ]);
 
-    writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
+    $response = writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
         ->assertOk()
         ->assertJsonPath('seq', 1)
-        ->assertJsonPath('rejected.0.reason', 'locked')
-        ->assertJsonPath('rejected.0.element', $frame);
+        ->assertJsonPath('rejected.0.reason', 'locked');
 
     $stored = $board->elements()->sole();
 
-    expect($stored->data)->toEqual($frame)
+    expect($response->json('rejected.0.element'))->toBeIgnoringKeyOrder($frame)
+        ->and($stored->data)->toEqual($frame)
         ->and($stored->is_deleted)->toBeFalse();
 
     Event::assertNotDispatched(WhiteboardElementsChanged::class);

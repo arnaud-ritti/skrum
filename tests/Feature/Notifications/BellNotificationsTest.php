@@ -211,7 +211,7 @@ it('stores the invitation token encrypted, never a link, and gives the link to i
 
     expect($stored)->not->toContain($token)
         ->and($stored)->not->toContain('invitations')
-        ->and(array_keys($data))->toBe(['kind', 'invitationId', 'token'])
+        ->and(array_keys($data))->toEqualCanonicalizing(['kind', 'invitationId', 'token'])
         ->and($data['invitationId'])->toBe($invitation->id)
         ->and(Crypt::decryptString($data['token']))->toBe($token)
         ->and(bellOf($invited)[0]['href'])->toBe(route('invitations.show', $token))

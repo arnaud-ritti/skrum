@@ -152,7 +152,7 @@ it('saves and resets a status mapping per project', function () {
         'complete_status_id' => '10002',
     ]])->assertOk();
 
-    expect($integration->fresh()->setting('statusMapping'))->toBe(['projects' => ['PROJ' => [
+    expect($integration->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['projects' => ['PROJ' => [
         'doneStatusIds' => ['10002', '10005'],
         'completeStatusId' => '10002',
         'reopenStatusId' => null,
