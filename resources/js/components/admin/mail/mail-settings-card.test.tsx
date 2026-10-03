@@ -270,4 +270,54 @@ describe('MailSettingsCard', () => {
             ),
         ).not.toBeNull();
     });
+
+    it('empties the password and allows a test once a save that changes no description succeeds', async () => {
+        const visit = spyOnVisit();
+
+        setup();
+
+        fireEvent.change(password(), { target: { value: 'same-secret' } });
+        save();
+        await act(async () => {
+            await Promise.resolve(
+                visit.mock.calls[0][1]?.onSuccess?.({} as never),
+            );
+        });
+
+        expect(password().value).toBe('');
+        expect(
+            (screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement)
+                .disabled,
+        ).toBe(false);
+        expect(
+            screen.queryByText('Save first to test these values.'),
+        ).toBeNull();
+    });
+
+    it('does not offer no encryption over an encryption from the environment', () => {
+        setup();
+
+        fireEvent.click(screen.getByRole('combobox', { name: 'Encryption' }));
+
+        expect(
+            screen
+                .getByRole('option', { name: 'None' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+    });
+
+    it('names a mailer from the environment that is neither SMTP nor the log', () => {
+        setup({
+            mail: mail({
+                fields: {
+                    ...mail().fields,
+                    mailer: described('ses', 'MAIL_MAILER'),
+                },
+            }),
+        });
+
+        expect(
+            screen.getByText('Another mailer from the environment (ses)'),
+        ).not.toBeNull();
+    });
 });

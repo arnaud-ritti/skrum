@@ -48,6 +48,9 @@ type AdminNavEntry = {
     href: NavHref;
     /** A state of the section, said beside its name. */
     badge?: string;
+    /** The badge as a screen reader says it, when its text alone is terse. */
+    badgeLabel?: string;
+    badgeVariant?: 'success' | 'muted';
 };
 
 type AdminNavGroup = {
@@ -124,8 +127,16 @@ export function AdminShell({
     const host = useInstanceHost();
     const selectId = useId();
     const groupId = useId();
-    const { ssoInForce, instanceVersion, instanceVersionStatus } =
-        usePage().props;
+    const {
+        ssoInForce,
+        integrationCounts,
+        instanceVersion,
+        instanceVersionStatus,
+    } = usePage().props;
+    const countsIntegrations =
+        integrationCounts !== null &&
+        integrationCounts !== undefined &&
+        integrationCounts.configured > 0;
     /** The navigation takes its entries from these groups: a new section is one more row. */
     const groups: AdminNavGroup[] = [
         {
@@ -162,6 +173,19 @@ export function AdminShell({
                     label: t('Integrations'),
                     icon: Plug,
                     href: IntegrationSettingsController.edit(),
+                    badge: countsIntegrations
+                        ? `${integrationCounts.enabled}/${integrationCounts.configured}`
+                        : undefined,
+                    badgeLabel: countsIntegrations
+                        ? t(
+                              ':enabled of :configured configured integrations turned on',
+                              {
+                                  enabled: integrationCounts.enabled,
+                                  configured: integrationCounts.configured,
+                              },
+                          )
+                        : undefined,
+                    badgeVariant: 'muted',
                 },
                 {
                     section: 'mcpKeys',
@@ -304,12 +328,26 @@ export function AdminShell({
                                         </span>
                                         {entry.badge !== undefined && (
                                             <Badge
-                                                variant="success"
+                                                variant={
+                                                    entry.badgeVariant ??
+                                                    'success'
+                                                }
                                                 shape="pill"
                                                 data-slot="admin-nav-badge"
+                                                aria-hidden={
+                                                    entry.badgeLabel !==
+                                                    undefined
+                                                        ? true
+                                                        : undefined
+                                                }
                                             >
                                                 {entry.badge}
                                             </Badge>
+                                        )}
+                                        {entry.badgeLabel !== undefined && (
+                                            <span className="sr-only">
+                                                {entry.badgeLabel}
+                                            </span>
                                         )}
                                     </Link>
                                 ))}

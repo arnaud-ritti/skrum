@@ -4656,7 +4656,7 @@
     "The provider's discovery document could not be reached.": "Das Discovery-Dokument des Anbieters ist nicht erreichbar.",
     "The last test failed.": "Der letzte Test ist fehlgeschlagen.",
     "Connected · :ms ms · issuer :issuer": "Verbunden · :ms ms · Aussteller :issuer",
-    "Last test :relative": "Letzter Test :relative",
+    "Last test :relative at :time": "Letzter Test :relative um :time",
     "Configured": "Konfiguriert",
     "Save or cancel the changes to :provider first.": "Speichere oder verwirf zuerst die Änderungen an :provider.",
     "Redirect URI": "Weiterleitungs-URI",
@@ -4673,8 +4673,8 @@
     "Mails are written to the log.": "E-Mails werden ins Log geschrieben.",
     "Send a test e-mail": "Test-E-Mail senden",
     "Wait a few minutes before the next test.": "Warte ein paar Minuten bis zum nächsten Test.",
-    "Last test delivered :relative": "Letzter Test zugestellt :relative",
-    "Last test failed :relative: :sentence": "Letzter Test fehlgeschlagen :relative: :sentence",
+    "Last test delivered :relative at :time": "Letzter Test zugestellt :relative um :time",
+    "Last test failed :relative at :time: :sentence": "Letzter Test fehlgeschlagen :relative um :time: :sentence",
     "the mail server could not be reached or refused the message.": "der Mailserver war nicht erreichbar oder hat die Nachricht abgelehnt.",
     "an unexpected error stopped the e-mail.": "ein unerwarteter Fehler hat die E-Mail gestoppt.",
     "Available · 1 team connected": "Verfügbar · 1 Team verbunden",
@@ -4766,5 +4766,11 @@
     "tested the :provider connection: connected": "hat die Verbindung zu :provider getestet: verbunden",
     "tested the :provider connection: failed": "hat die Verbindung zu :provider getestet: fehlgeschlagen",
     "turned off two-factor authentication": "hat die Zwei-Faktor-Authentifizierung ausgeschaltet",
-    "turned on two-factor authentication": "hat die Zwei-Faktor-Authentifizierung eingeschaltet"
+    "turned on two-factor authentication": "hat die Zwei-Faktor-Authentifizierung eingeschaltet",
+    "Mails are written to the log: choose SMTP and save to send a test.": "E-Mails werden ins Log geschrieben: wähle SMTP und speichere, um einen Test zu senden.",
+    "no e-mail was sent, mails are written to the log.": "es wurde keine E-Mail gesendet, E-Mails werden ins Log geschrieben.",
+    "Another mailer from the environment (:mailer)": "Ein anderer Mailer aus der Umgebung (:mailer)",
+    "GIF provider": "GIF-Anbieter",
+    "Turned-off integrations": "Deaktivierte Integrationen",
+    ":enabled of :configured configured integrations turned on": ":enabled von :configured konfigurierten Integrationen aktiviert"
 }

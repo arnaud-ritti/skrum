@@ -57,6 +57,17 @@ it('turns a configured provider off and on, keeping the team integrations', func
         ->toBe(['section' => 'integrations', 'keys' => ['disabled_integrations'], 'disabled' => ['slack']]);
 });
 
+it('counts the enabled and the configured providers for the navigation of the instance admins only', function () {
+    $configured = count(array_filter(IntegrationProvider::cases(), fn (IntegrationProvider $provider): bool => $provider->isConfigured()));
+
+    $this->put(route('admin.integrations.update'), ['disabled' => ['slack']]);
+
+    $this->get(route('admin.integrations.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('integrationCounts', ['enabled' => $configured - 1, 'configured' => $configured]));
+    $this->actingAs(User::factory()->create())->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('integrationCounts', null));
+});
+
 it('refuses to turn on a provider that is not configured', function () {
     expect(IntegrationProvider::Linear->isEnabled())->toBeFalse();
 

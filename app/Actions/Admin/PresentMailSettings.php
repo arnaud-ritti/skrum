@@ -10,6 +10,12 @@ class PresentMailSettings
     /** @var array<int, string> */
     private const array NonDeliveringMailers = ['log', 'array'];
 
+    /** The mailer in force sends mails: it does not write them to the log or keep them in memory. */
+    public static function delivering(): bool
+    {
+        return ! in_array(config('mail.default'), self::NonDeliveringMailers, true);
+    }
+
     public function __construct(private InstanceConfiguration $configuration) {}
 
     /**
@@ -23,7 +29,7 @@ class PresentMailSettings
     public function handle(): array
     {
         return [
-            'delivering' => ! in_array(config('mail.default'), self::NonDeliveringMailers, true),
+            'delivering' => self::delivering(),
             'fields' => $this->configuration->describe(InstanceSettingKey::Smtp),
         ];
     }

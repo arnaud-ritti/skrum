@@ -83,12 +83,15 @@ export function ConnectionTestResult({
             )}
             {lastTest !== null && (
                 <p className="text-xs text-muted-foreground">
-                    {t('Last test :relative', {
+                    {t('Last test :relative at :time', {
                         relative: formatDaysAgo(
                             lastTest.at,
                             locale,
                             Date.now(),
                         ),
+                        time: new Intl.DateTimeFormat(locale, {
+                            timeStyle: 'short',
+                        }).format(new Date(lastTest.at)),
                     })}
                 </p>
             )}

@@ -200,6 +200,51 @@ describe('AdminShell', () => {
         ).toBe('page');
     });
 
+    it('counts the integrations turned on out of those configured', () => {
+        page.props = {
+            translations: {},
+            integrationCounts: { enabled: 2, configured: 3 },
+        };
+
+        renderWithProviders(
+            <AdminShell active="general">
+                <p>content</p>
+            </AdminShell>,
+        );
+
+        const integrations = screen.getByRole('link', {
+            name: /^Integrations/,
+            hidden: true,
+        });
+
+        expect(
+            integrations.querySelector('[data-slot=admin-nav-badge]')
+                ?.textContent,
+        ).toBe('2/3');
+        expect(integrations.textContent).toContain(
+            '2 of 3 configured integrations turned on',
+        );
+    });
+
+    it('shows no integration count before one is configured', () => {
+        page.props = {
+            translations: {},
+            integrationCounts: { enabled: 0, configured: 0 },
+        };
+
+        renderWithProviders(
+            <AdminShell active="general">
+                <p>content</p>
+            </AdminShell>,
+        );
+
+        expect(
+            screen
+                .getByRole('link', { name: /^Integrations/, hidden: true })
+                .querySelector('[data-slot=admin-nav-badge]'),
+        ).toBeNull();
+    });
+
     it('shows the host of the instance under the navigation', () => {
         const { container } = renderWithProviders(
             <AdminShell active="branding">

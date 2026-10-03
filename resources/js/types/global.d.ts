@@ -26,6 +26,8 @@ declare module '@inertiajs/core' {
             signInAlert: 'sso_required_ignored' | null;
             /** True for instance admins while only single sign-on signs in. */
             ssoInForce: boolean;
+            /** Sent to instance admins only: the providers turned on, out of those configured. */
+            integrationCounts: { enabled: number; configured: number } | null;
             auth: Auth;
             sidebarOpen: boolean;
             locale: string;

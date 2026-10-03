@@ -55,15 +55,32 @@ function sameValue(left: ConfigurationValue, right: ConfigurationValue) {
     return JSON.stringify(left) === JSON.stringify(right);
 }
 
-/** The changed values, the typed secrets and the fields to clear, as the server reads them. */
+function isBlank(value: ConfigurationValue): boolean {
+    if (value === null) {
+        return true;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+
+    return typeof value === 'string' && value.trim() === '';
+}
+
+/**
+ * The changed values, the typed secrets and the fields to clear, as the server reads them.
+ * The server skips a blank value, so a blank stored value becomes a clear and any other is not sent.
+ */
 function payload(
+    fields: ConfigurationFields,
     initial: ConfigurationFormData,
     current: ConfigurationFormData,
 ): ConfigurationPayload {
     const sent: ConfigurationPayload = {};
+    const clear = [...current.clear];
 
     for (const [name, value] of Object.entries(current.values)) {
-        if (current.clear.includes(name)) {
+        if (clear.includes(name)) {
             continue;
         }
 
@@ -71,11 +88,19 @@ function payload(
             continue;
         }
 
+        if (isBlank(value)) {
+            if (fields[name]?.source === 'stored') {
+                clear.push(name);
+            }
+
+            continue;
+        }
+
         sent[name] = value;
     }
 
     for (const [name, secret] of Object.entries(current.secrets)) {
-        if (current.clear.includes(name)) {
+        if (clear.includes(name)) {
             continue;
         }
 
@@ -86,8 +111,8 @@ function payload(
         sent[name] = secret;
     }
 
-    if (current.clear.length > 0) {
-        sent.clear = current.clear;
+    if (clear.length > 0) {
+        sent.clear = clear;
     }
 
     return sent;
@@ -110,9 +135,12 @@ export function useConfigurationForm(
     const initial = initialData(fields);
     const form = useForm<ConfigurationFormData>(initial);
     const { data } = form;
-    const dirtyCount = Object.keys(payload(initial, data)).reduce(
-        (count, name) =>
-            name === 'clear' ? count + data.clear.length : count + 1,
+    const changes = payload(fields, initial, data);
+    const dirtyCount = Object.entries(changes).reduce(
+        (count, [name, change]) =>
+            name === 'clear' && Array.isArray(change)
+                ? count + change.length
+                : count + 1,
         0,
     );
 
@@ -153,10 +181,22 @@ export function useConfigurationForm(
             return;
         }
 
-        form.transform((current) => payload(initial, current));
+        form.transform((current) => payload(fields, initial, current));
         form.put(updateUrl, {
             preserveScroll: true,
-            onSuccess: () => onSaved?.(),
+            onSuccess: () => {
+                /* The page keeps its state: an unchanged answer must not leave a typed secret behind (rule S5). */
+                const saved: ConfigurationFormData = {
+                    values: data.values,
+                    secrets: emptySecrets(data.secrets),
+                    clear: [],
+                };
+
+                form.setDefaults(saved);
+                form.setData(saved);
+                form.clearErrors();
+                onSaved?.();
+            },
             onError: (errors) => {
                 form.setData('secrets', emptySecrets(data.secrets));
 

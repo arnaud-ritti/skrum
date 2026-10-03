@@ -18,6 +18,8 @@ type MailTestFormProps = {
     lastTest: MailLastTest | null;
     /** The settings have unsaved changes: the test would not use them. */
     dirty: boolean;
+    /** The mailer in force sends mails: a test written to the log proves nothing. */
+    delivering: boolean;
 };
 
 /** Sends a test e-mail through the configuration in force, and says how the last one went. */
@@ -25,6 +27,7 @@ export function MailTestForm({
     defaultRecipient,
     lastTest,
     dirty,
+    delivering,
 }: MailTestFormProps) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -34,6 +37,12 @@ export function MailTestForm({
     const errorId = `${id}-error`;
     const form = useForm({ to: defaultRecipient });
     const [throttled, setThrottled] = useState(false);
+    const blocked = dirty || !delivering;
+    const hint = dirty
+        ? t('Save first to test these values.')
+        : t(
+              'Mails are written to the log: choose SMTP and save to send a test.',
+          );
     const error = throttled
         ? t('Wait a few minutes before the next test.')
         : form.errors.to;
@@ -41,7 +50,7 @@ export function MailTestForm({
     function send(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
-        if (dirty || form.processing) {
+        if (blocked || form.processing) {
             return;
         }
 
@@ -61,6 +70,10 @@ export function MailTestForm({
     }
 
     function failure(test: MailLastTest): string {
+        if (test.error === 'log') {
+            return t('no e-mail was sent, mails are written to the log.');
+        }
+
         if (test.error === 'transport') {
             return t(
                 'the mail server could not be reached or refused the message.',
@@ -72,6 +85,9 @@ export function MailTestForm({
 
     function resultLine(test: MailLastTest) {
         const relative = formatDaysAgo(test.at, locale, Date.now());
+        const time = new Intl.DateTimeFormat(locale, {
+            timeStyle: 'short',
+        }).format(new Date(test.at));
 
         if (test.ok) {
             return (
@@ -84,7 +100,10 @@ export function MailTestForm({
                         className="mt-0.5 size-4 shrink-0 text-skrum-success-text"
                     />
                     <span className="min-w-0">
-                        {t('Last test delivered :relative', { relative })}
+                        {t('Last test delivered :relative at :time', {
+                            relative,
+                            time,
+                        })}
                     </span>
                 </p>
             );
@@ -100,8 +119,9 @@ export function MailTestForm({
                     className="mt-0.5 size-4 shrink-0"
                 />
                 <span className="min-w-0">
-                    {t('Last test failed :relative: :sentence', {
+                    {t('Last test failed :relative at :time: :sentence', {
                         relative,
+                        time,
                         sentence: failure(test),
                     })}
                 </span>
@@ -127,7 +147,7 @@ export function MailTestForm({
                     className="min-w-0 flex-1"
                     aria-invalid={error !== undefined ? true : undefined}
                     aria-describedby={describedBy(
-                        dirty && hintId,
+                        blocked && hintId,
                         error !== undefined && errorId,
                     )}
                 />
@@ -135,16 +155,16 @@ export function MailTestForm({
                     type="submit"
                     variant="outline"
                     loading={form.processing}
-                    disabled={dirty}
+                    disabled={blocked}
                     className="shrink-0"
                 >
                     <Send aria-hidden="true" />
                     {t('Send')}
                 </LoadingButton>
             </div>
-            {dirty && (
+            {blocked && (
                 <p id={hintId} className="text-xs text-muted-foreground">
-                    {t('Save first to test these values.')}
+                    {hint}
                 </p>
             )}
             {error !== undefined && (

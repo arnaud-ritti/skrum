@@ -155,4 +155,41 @@ describe('useConfigurationForm', () => {
         );
         expect(onConfirmationRefused).not.toHaveBeenCalled();
     });
+
+    it('empties the secrets and counts nothing once a save whose answer is unchanged succeeds', async () => {
+        const visit = spyOnVisit();
+        const { result } = setup();
+
+        act(() => result.current.setValue('client_secret', 's3cret'));
+        act(() => result.current.submit());
+        await act(async () => {
+            await Promise.resolve(
+                visit.mock.calls[0][1]?.onSuccess?.({} as never),
+            );
+        });
+
+        expect(result.current.value('client_secret')).toBe('');
+        expect(result.current.dirtyCount).toBe(0);
+
+        act(() => result.current.reset());
+
+        expect(result.current.value('client_secret')).toBe('');
+    });
+
+    it('does not count a blank value over the environment, and clears a blank stored value', () => {
+        const visit = spyOnVisit();
+        const { result } = setup();
+
+        act(() => result.current.setValue('client_id', ''));
+
+        expect(result.current.dirtyCount).toBe(0);
+
+        act(() => result.current.setValue('base_url', ''));
+
+        expect(result.current.dirtyCount).toBe(1);
+
+        act(() => result.current.submit());
+
+        expect(visit.mock.calls[0][1]?.data).toEqual({ clear: ['base_url'] });
+    });
 });

@@ -58,7 +58,7 @@ describe('auditActionLabel', () => {
                 }),
                 t,
             ),
-        ).toBe('changed client_id, issuer of OIDC (admins alerted)');
+        ).toBe('changed Client ID, issuer of OIDC (admins alerted)');
         expect(
             auditActionLabel(
                 event('configuration_updated', {
@@ -72,7 +72,7 @@ describe('auditActionLabel', () => {
                 }),
                 t,
             ),
-        ).toBe('changed client_id of Slack');
+        ).toBe('changed Client ID of Slack');
     });
 
     it('names the keys and the section of a settings change', () => {
@@ -87,7 +87,50 @@ describe('auditActionLabel', () => {
                 }),
                 t,
             ),
-        ).toBe('changed signup_mode, maintenance_message in General');
+        ).toBe('changed Sign-up, Maintenance message in General');
+    });
+
+    it('names the fields with the labels of their forms', () => {
+        expect(
+            auditActionLabel(
+                event('settings_updated', {
+                    subject: null,
+                    properties: {
+                        section: 'integrations',
+                        keys: ['disabled_integrations'],
+                    },
+                }),
+                t,
+            ),
+        ).toBe('changed Turned-off integrations in Integrations');
+        expect(
+            auditActionLabel(
+                event('configuration_updated', {
+                    subject: null,
+                    properties: {
+                        section: 'smtp',
+                        changed: ['password', 'from_name'],
+                        cleared: [],
+                        alertSent: null,
+                    },
+                }),
+                t,
+            ),
+        ).toBe('changed Password, Sender name of SMTP');
+        expect(
+            auditActionLabel(
+                event('configuration_updated', {
+                    subject: null,
+                    properties: {
+                        section: 'integration_jira_dc',
+                        changed: ['base_url'],
+                        cleared: [],
+                        alertSent: null,
+                    },
+                }),
+                t,
+            ),
+        ).toBe('changed Server URL of Jira Data Center');
     });
 
     it('names the owner of a key an admin revoked', () => {

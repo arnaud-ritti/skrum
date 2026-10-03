@@ -31,10 +31,63 @@ function text(value: unknown): string | null {
     return typeof value === 'string' && value !== '' ? value : null;
 }
 
-function names(...values: unknown[]): string {
+/** The labels the admin forms give these settings and fields; an unknown name stays as it is. */
+function fieldLabels(section: string, t: Translate): Record<string, string> {
+    return {
+        brand_color: t('Primary colour'),
+        brand_radius: t('Corner radius'),
+        display_name: t('Display name'),
+        powered_by: t('Show "Powered by Skrüm"'),
+        logo_light: t('Light logo'),
+        logo_dark: t('Dark logo'),
+        favicon: t('Favicon'),
+        logo_mail: t('Logo for e-mails'),
+        avatar_style: t('Avatar style'),
+        avatar_member_choice: t('Members can choose their own style'),
+        gif_provider: t('GIF provider'),
+        gif_enabled: t('GIFs enabled'),
+        gif_rating: t('Content rating'),
+        gif_key: t('API key'),
+        sso_required: t('Require single sign-on'),
+        signup_mode: t('Sign-up'),
+        allowed_email_domains: t('Allowed domains'),
+        maintenance_message: t('Maintenance message'),
+        update_check_enabled: t('Updates'),
+        disabled_integrations: t('Turned-off integrations'),
+        mailer: t('Delivery'),
+        host: t('Host'),
+        port: t('Port'),
+        scheme: t('Encryption'),
+        username: t('Username'),
+        password: t('Password'),
+        from_address: t('Sender address'),
+        from_name: t('Sender name'),
+        base_url: section.startsWith('sso_')
+            ? t('Issuer URL')
+            : t('Server URL'),
+        tenant: t('Tenant ID'),
+        label: t('Button label'),
+        client_id: t('Client ID'),
+        client_secret: t('Client secret'),
+        webhook_secret: t('Webhook secret'),
+        bot_token: t('Bot token'),
+        url: t('Server URL'),
+        personal_tokens: t('Personal access tokens'),
+        app_id: t('App ID'),
+        slug: t('App slug'),
+        private_key: t('Private key'),
+        enabled: t('Enabled'),
+        allowed_hosts: t('Allowed hosts'),
+    };
+}
+
+function names(section: unknown, t: Translate, ...values: unknown[]): string {
+    const labels = fieldLabels(text(section) ?? '', t);
+
     return values
         .flatMap((value) => (Array.isArray(value) ? value : []))
         .filter((value): value is string => typeof value === 'string')
+        .map((name) => labels[name] ?? name)
         .join(', ');
 }
 
@@ -90,11 +143,16 @@ export function auditActionLabel(event: AuditEvent, t: Translate): string {
     switch (event.action) {
         case 'settings_updated':
             return t('changed :keys in :section', {
-                keys: names(properties.keys),
+                keys: names(properties.section, t, properties.keys),
                 section,
             });
         case 'configuration_updated': {
-            const fields = names(properties.changed, properties.cleared);
+            const fields = names(
+                properties.section,
+                t,
+                properties.changed,
+                properties.cleared,
+            );
 
             if (properties.alertSent === true) {
                 return t('changed :fields of :section (admins alerted)', {

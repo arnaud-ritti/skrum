@@ -62,6 +62,9 @@ class HandleInertiaRequests extends Middleware
                 ? 'sso_required_ignored'
                 : null,
             'ssoInForce' => fn (): bool => $request->user()?->can('manageInstance') === true && resolve(SignInPolicy::class)->ssoRequired(),
+            'integrationCounts' => fn (): ?array => $request->user()?->can('manageInstance')
+                ? $this->integrationCounts()
+                : null,
             'auth' => [
                 'user' => $this->user($request),
             ],
@@ -89,6 +92,24 @@ class HandleInertiaRequests extends Middleware
             'instanceVersionStatus' => fn (): ?array => $request->user()?->can('manageInstance')
                 ? resolve(InstanceVersion::class)->status()
                 : null,
+        ];
+    }
+
+    /**
+     * The integration providers turned on, out of those configured, for the badge of the admin navigation.
+     *
+     * @return array{
+     *     enabled: int,
+     *     configured: int
+     * }
+     */
+    private function integrationCounts(): array
+    {
+        $configured = array_filter(IntegrationProvider::cases(), fn (IntegrationProvider $provider): bool => $provider->isConfigured());
+
+        return [
+            'enabled' => count(IntegrationProvider::enabled()),
+            'configured' => count($configured),
         ];
     }
 

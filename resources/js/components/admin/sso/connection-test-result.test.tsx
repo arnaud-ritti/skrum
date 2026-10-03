@@ -89,7 +89,7 @@ describe('ConnectionTestResult', () => {
                 'Connected · 120 ms · issuer https://login.atlas.test',
             ),
         ).not.toBeNull();
-        expect(screen.getByText('Last test 2 days ago')).not.toBeNull();
+        expect(screen.getByText(/^Last test 2 days ago at /)).not.toBeNull();
     });
 
     it('says the last test failed without its reason', () => {
@@ -109,7 +109,11 @@ describe('ConnectionTestResult', () => {
         expect(screen.getByRole('alert').textContent).toContain(
             'The last test failed.',
         );
-        expect(screen.getByText('Last test today')).not.toBeNull();
+        expect(
+            screen.getByText(
+                `Last test today at ${new Intl.DateTimeFormat('en', { timeStyle: 'short' }).format(new Date('2026-10-03T09:00:00Z'))}`,
+            ),
+        ).not.toBeNull();
     });
 
     it('shows nothing before a first test', () => {

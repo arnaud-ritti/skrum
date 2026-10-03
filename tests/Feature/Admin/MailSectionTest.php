@@ -129,6 +129,17 @@ it('turns a transport failure into a sentence', function () {
         ->and(json_encode(session()->all()))->not->toContain('Connection refused');
 });
 
+it('sends nothing and keeps a failed test while mails are written to the log', function () {
+    config(['mail.default' => 'log']);
+    Mail::fake();
+
+    $this->post(route('admin.mailTests.store'), ['to' => 'camille@atlas.test'])
+        ->assertSessionHas('inertia.flash_data.mailTest.error', 'log');
+
+    Mail::assertNothingSent();
+    expect(resolve(InstanceSettings::class)->mailLastTest())->toMatchArray(['ok' => false, 'error' => 'log']);
+});
+
 it('refuses a test to an address that is not one', function () {
     Mail::fake();
 

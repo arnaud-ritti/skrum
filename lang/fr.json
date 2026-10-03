@@ -4656,7 +4656,7 @@
     "The provider's discovery document could not be reached.": "Le document de découverte du fournisseur est injoignable.",
     "The last test failed.": "Le dernier test a échoué.",
     "Connected · :ms ms · issuer :issuer": "Connexion réussie · :ms ms · émetteur :issuer",
-    "Last test :relative": "Dernier test :relative",
+    "Last test :relative at :time": "Dernier test :relative à :time",
     "Configured": "Configuré",
     "Save or cancel the changes to :provider first.": "Enregistre ou annule d'abord les modifications de :provider.",
     "Redirect URI": "URI de redirection",
@@ -4673,8 +4673,8 @@
     "Mails are written to the log.": "Les e-mails sont écrits dans le journal.",
     "Send a test e-mail": "Envoyer un e-mail de test",
     "Wait a few minutes before the next test.": "Attends quelques minutes avant le prochain test.",
-    "Last test delivered :relative": "Dernier test délivré :relative",
-    "Last test failed :relative: :sentence": "Dernier test en échec :relative : :sentence",
+    "Last test delivered :relative at :time": "Dernier test délivré :relative à :time",
+    "Last test failed :relative at :time: :sentence": "Dernier test en échec :relative à :time : :sentence",
     "the mail server could not be reached or refused the message.": "le serveur de mail est injoignable ou a refusé le message.",
     "an unexpected error stopped the e-mail.": "une erreur inattendue a bloqué l'e-mail.",
     "Available · 1 team connected": "Disponible · 1 équipe connectée",
@@ -4766,5 +4766,11 @@
     "tested the :provider connection: connected": "a testé la connexion :provider : connecté",
     "tested the :provider connection: failed": "a testé la connexion :provider : échec",
     "turned off two-factor authentication": "a désactivé l'authentification à deux facteurs",
-    "turned on two-factor authentication": "a activé l'authentification à deux facteurs"
+    "turned on two-factor authentication": "a activé l'authentification à deux facteurs",
+    "Mails are written to the log: choose SMTP and save to send a test.": "Les e-mails sont écrits dans le journal : choisis SMTP et enregistre pour envoyer un test.",
+    "no e-mail was sent, mails are written to the log.": "aucun e-mail n'a été envoyé, les e-mails sont écrits dans le journal.",
+    "Another mailer from the environment (:mailer)": "Un autre service d'envoi depuis l'environnement (:mailer)",
+    "GIF provider": "Fournisseur de GIF",
+    "Turned-off integrations": "Intégrations désactivées",
+    ":enabled of :configured configured integrations turned on": ":enabled intégrations activées sur :configured configurées"
 }

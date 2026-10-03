@@ -194,6 +194,9 @@ export function MailSettingsCard({
         }
 
         const clearing = form.isClearing('mailer');
+        const current = String(form.value('mailer') ?? '');
+        const otherMailer =
+            current !== '' && current !== 'smtp' && current !== 'log';
 
         return (
             <ChoiceField
@@ -204,23 +207,40 @@ export function MailSettingsCard({
                 readOnly={readOnly}
             >
                 {({ inputId, labelId, describedBy: hints }) => (
-                    <RadioGroup<Mailer>
-                        id={inputId}
-                        aria-labelledby={labelId}
-                        aria-describedby={hints}
-                        value={String(form.value('mailer') ?? '') as Mailer}
-                        onValueChange={(value) =>
-                            form.setValue('mailer', value)
-                        }
-                        disabled={readOnly || clearing}
-                        options={[
-                            { value: 'smtp', label: t('Send through SMTP') },
-                            {
-                                value: 'log',
-                                label: t("Don't send: write mails to the log"),
-                            },
-                        ]}
-                    />
+                    <>
+                        <RadioGroup<Mailer>
+                            id={inputId}
+                            aria-labelledby={labelId}
+                            aria-describedby={hints}
+                            value={current as Mailer}
+                            onValueChange={(value) =>
+                                form.setValue('mailer', value)
+                            }
+                            disabled={readOnly || clearing}
+                            options={[
+                                {
+                                    value: 'smtp',
+                                    label: t('Send through SMTP'),
+                                },
+                                {
+                                    value: 'log',
+                                    label: t(
+                                        "Don't send: write mails to the log",
+                                    ),
+                                },
+                            ]}
+                        />
+                        {otherMailer && (
+                            <p className="text-body-sm text-muted-foreground">
+                                {t(
+                                    'Another mailer from the environment (:mailer)',
+                                    {
+                                        mailer: current,
+                                    },
+                                )}
+                            </p>
+                        )}
+                    </>
                 )}
             </ChoiceField>
         );
@@ -235,6 +255,10 @@ export function MailSettingsCard({
 
         const current = String(form.value('scheme') ?? '');
         const clearing = form.isClearing('scheme');
+        /* A blank value is not saved: the environment's encryption cannot be turned off from here. */
+        const environmentScheme =
+            description.source === 'environment' &&
+            String(description.value ?? '') !== '';
 
         function choose(value: string): void {
             const scheme = value === NoScheme ? '' : value;
@@ -274,6 +298,10 @@ export function MailSettingsCard({
                                 <SelectItem
                                     key={scheme.value}
                                     value={scheme.value}
+                                    disabled={
+                                        scheme.value === NoScheme &&
+                                        environmentScheme
+                                    }
                                 >
                                     {scheme.label}
                                 </SelectItem>
@@ -357,6 +385,7 @@ export function MailSettingsCard({
                         defaultRecipient={defaultRecipient}
                         lastTest={lastTest}
                         dirty={dirty}
+                        delivering={mail.delivering}
                     />
                     <p className="text-xs text-muted-foreground">
                         {t(

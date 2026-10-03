@@ -4436,7 +4436,7 @@
     "The provider's discovery document could not be reached.": "The provider's discovery document could not be reached.",
     "The last test failed.": "The last test failed.",
     "Connected · :ms ms · issuer :issuer": "Connected · :ms ms · issuer :issuer",
-    "Last test :relative": "Last test :relative",
+    "Last test :relative at :time": "Last test :relative at :time",
     "Configured": "Configured",
     "Save or cancel the changes to :provider first.": "Save or cancel the changes to :provider first.",
     "Redirect URI": "Redirect URI",
@@ -4453,8 +4453,8 @@
     "Mails are written to the log.": "Mails are written to the log.",
     "Send a test e-mail": "Send a test e-mail",
     "Wait a few minutes before the next test.": "Wait a few minutes before the next test.",
-    "Last test delivered :relative": "Last test delivered :relative",
-    "Last test failed :relative: :sentence": "Last test failed :relative: :sentence",
+    "Last test delivered :relative at :time": "Last test delivered :relative at :time",
+    "Last test failed :relative at :time: :sentence": "Last test failed :relative at :time: :sentence",
     "the mail server could not be reached or refused the message.": "the mail server could not be reached or refused the message.",
     "an unexpected error stopped the e-mail.": "an unexpected error stopped the e-mail.",
     "Available · 1 team connected": "Available · 1 team connected",
@@ -4546,5 +4546,11 @@
     "tested the :provider connection: connected": "tested the :provider connection: connected",
     "tested the :provider connection: failed": "tested the :provider connection: failed",
     "turned off two-factor authentication": "turned off two-factor authentication",
-    "turned on two-factor authentication": "turned on two-factor authentication"
+    "turned on two-factor authentication": "turned on two-factor authentication",
+    "Mails are written to the log: choose SMTP and save to send a test.": "Mails are written to the log: choose SMTP and save to send a test.",
+    "no e-mail was sent, mails are written to the log.": "no e-mail was sent, mails are written to the log.",
+    "Another mailer from the environment (:mailer)": "Another mailer from the environment (:mailer)",
+    "GIF provider": "GIF provider",
+    "Turned-off integrations": "Turned-off integrations",
+    ":enabled of :configured configured integrations turned on": ":enabled of :configured configured integrations turned on"
 }

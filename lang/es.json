@@ -4656,7 +4656,7 @@
     "The provider's discovery document could not be reached.": "No se pudo acceder al documento de descubrimiento del proveedor.",
     "The last test failed.": "La última prueba falló.",
     "Connected · :ms ms · issuer :issuer": "Conexión correcta · :ms ms · emisor :issuer",
-    "Last test :relative": "Última prueba :relative",
+    "Last test :relative at :time": "Última prueba :relative a las :time",
     "Configured": "Configurado",
     "Save or cancel the changes to :provider first.": "Guarda o cancela primero los cambios de :provider.",
     "Redirect URI": "URI de redirección",
@@ -4673,8 +4673,8 @@
     "Mails are written to the log.": "Los correos se escriben en el registro.",
     "Send a test e-mail": "Enviar un correo de prueba",
     "Wait a few minutes before the next test.": "Espera unos minutos antes de la próxima prueba.",
-    "Last test delivered :relative": "Última prueba entregada :relative",
-    "Last test failed :relative: :sentence": "Última prueba fallida :relative: :sentence",
+    "Last test delivered :relative at :time": "Última prueba entregada :relative a las :time",
+    "Last test failed :relative at :time: :sentence": "Última prueba fallida :relative a las :time: :sentence",
     "the mail server could not be reached or refused the message.": "el servidor de correo no se pudo alcanzar o rechazó el mensaje.",
     "an unexpected error stopped the e-mail.": "un error inesperado detuvo el correo.",
     "Available · 1 team connected": "Disponible · 1 equipo conectado",
@@ -4766,5 +4766,11 @@
     "tested the :provider connection: connected": "probó la conexión :provider: conectado",
     "tested the :provider connection: failed": "probó la conexión :provider: falló",
     "turned off two-factor authentication": "desactivó la autenticación en dos pasos",
-    "turned on two-factor authentication": "activó la autenticación en dos pasos"
+    "turned on two-factor authentication": "activó la autenticación en dos pasos",
+    "Mails are written to the log: choose SMTP and save to send a test.": "Los correos se escriben en el registro: elige SMTP y guarda para enviar una prueba.",
+    "no e-mail was sent, mails are written to the log.": "no se envió ningún correo, los correos se escriben en el registro.",
+    "Another mailer from the environment (:mailer)": "Otro servicio de envío del entorno (:mailer)",
+    "GIF provider": "Proveedor de GIF",
+    "Turned-off integrations": "Integraciones desactivadas",
+    ":enabled of :configured configured integrations turned on": ":enabled de :configured integraciones configuradas activadas"
 }

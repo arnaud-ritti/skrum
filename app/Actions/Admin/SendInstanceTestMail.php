@@ -14,7 +14,8 @@ use Throwable;
 /**
  * Sends the test e-mail now, through the mail configuration in force for this request (saved values
  * included), and keeps the result as the section's last test. The server's own answer is never kept
- * or shown: a failure is a code the page turns into a sentence.
+ * or shown: a failure is a code the page turns into a sentence. A mailer that does not deliver
+ * (log, array) sends nothing, so its test is kept as a failure rather than a false success.
  */
 class SendInstanceTestMail
 {
@@ -48,6 +49,10 @@ class SendInstanceTestMail
 
     private function send(string $to): ?string
     {
+        if (! PresentMailSettings::delivering()) {
+            return 'log';
+        }
+
         try {
             Mail::to($to)->send(new InstanceTestMail(resolve(MailBrand::class)->name()));
         } catch (TransportExceptionInterface) {

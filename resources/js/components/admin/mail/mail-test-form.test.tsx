@@ -10,13 +10,24 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     usePage: () => ({ props: { translations: {}, locale: 'en' } }),
 }));
 
-function setup(lastTest: MailLastTest | null = null, dirty = false): void {
+function setup(
+    lastTest: MailLastTest | null = null,
+    dirty = false,
+    delivering = true,
+): void {
     renderWithProviders(
         <MailTestForm
             defaultRecipient="arnaud@atlas.test"
             lastTest={lastTest}
             dirty={dirty}
+            delivering={delivering}
         />,
+    );
+}
+
+function time(iso: string): string {
+    return new Intl.DateTimeFormat('en', { timeStyle: 'short' }).format(
+        new Date(iso),
     );
 }
 
@@ -58,7 +69,11 @@ describe('MailTestForm', () => {
             error: null,
         });
 
-        expect(screen.getByText('Last test delivered today')).not.toBeNull();
+        expect(
+            screen.getByText(
+                `Last test delivered today at ${time('2026-10-15T14:02:00Z')}`,
+            ),
+        ).not.toBeNull();
     });
 
     it('says why the last test failed, in a sentence', () => {
@@ -71,7 +86,7 @@ describe('MailTestForm', () => {
 
         expect(
             screen.getByText(
-                'Last test failed yesterday: the mail server could not be reached or refused the message.',
+                `Last test failed yesterday at ${time('2026-10-14T09:00:00Z')}: the mail server could not be reached or refused the message.`,
             ),
         ).not.toBeNull();
     });
@@ -122,6 +137,32 @@ describe('MailTestForm', () => {
         expect(send().disabled).toBe(true);
         expect(
             screen.getByText('Save first to test these values.'),
+        ).not.toBeNull();
+    });
+
+    it('cannot send while mails are only written to the log', () => {
+        setup(null, false, false);
+
+        expect(send().disabled).toBe(true);
+        expect(
+            screen.getByText(
+                'Mails are written to the log: choose SMTP and save to send a test.',
+            ),
+        ).not.toBeNull();
+    });
+
+    it('says a test written to the log was not delivered', () => {
+        setup({
+            at: '2026-10-14T09:00:00Z',
+            ok: false,
+            to: 'arnaud@atlas.test',
+            error: 'log',
+        });
+
+        expect(
+            screen.getByText(
+                `Last test failed yesterday at ${time('2026-10-14T09:00:00Z')}: no e-mail was sent, mails are written to the log.`,
+            ),
         ).not.toBeNull();
     });
 });

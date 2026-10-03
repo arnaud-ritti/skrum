@@ -83,7 +83,7 @@ export type SsoLastTest = {
 };
 
 /** Why the last test e-mail failed: a code, never the server's own answer. */
-export type MailTestError = 'transport' | 'unknown';
+export type MailTestError = 'transport' | 'log' | 'unknown';
 
 export type MailLastTest = {
     at: string;

@@ -362,7 +362,7 @@ describe('ProviderCard', () => {
 
         setup();
 
-        fireEvent.change(clientId(), { target: { value: '' } });
+        fireEvent.change(clientId(), { target: { value: 'skrum-next' } });
         save();
         act(() => {
             visit.mock.calls[0][1]?.onError?.({
