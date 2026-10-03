@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils';
 
 export type SessionConnection = { reconnecting: boolean; expired: boolean };
 
-/** The four live session types; picks the sentence of the reconnecting banner. */
-export type SessionKind = 'retro' | 'poker' | 'game' | 'whiteboard';
+/** The live session types; picks the sentence of the reconnecting banner. */
+export type SessionKind = 'retro' | 'poker' | 'game' | 'whiteboard' | 'survey';
 
 type SessionShellProps = {
     /** Session type: the reconnecting banner says what is true for it. */
@@ -52,6 +52,10 @@ function useReconnectingHint(kind: SessionKind): string {
         case 'whiteboard':
             return t(
                 "Live updates are paused. Other people's changes appear when the connection returns.",
+            );
+        case 'survey':
+            return t(
+                'Your answers are saved as you give them; the counter is paused.',
             );
         default:
             return t(
