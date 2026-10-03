@@ -13,6 +13,7 @@ use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 
@@ -100,7 +101,7 @@ it('shows a draft survey to its editors only', function () {
     $draft = TeamSurvey::factory()->for($team)->draft()->create();
     [$editor] = surveyFacilitator($draft);
 
-    $ids = fn ($user) => collect(resolve(ListRecentTeamSessions::class)->handle($team, $user))->pluck('id')->all();
+    $ids = fn (User $user) => collect(resolve(ListRecentTeamSessions::class)->handle($team, $user))->pluck('id')->all();
 
     expect($ids($editor))->toContain($draft->id)
         ->and($ids(workspaceManager($team->workspace)))->toContain($draft->id)

@@ -69,7 +69,7 @@ it('skips a sprint too short to hold the retro weekday', function () {
     $calendar = new SprintCalendar([
         ['id' => 'short', 'number' => 1, 'startsOn' => '2026-10-05', 'endsOn' => '2026-10-07'],
         ['id' => 'next', 'number' => 2, 'startsOn' => '2026-10-08', 'endsOn' => '2026-10-21'],
-    ], 'UTC', 4, null);
+    ], 'UTC', 4);
 
     expect($calendar->nextRetro(CarbonImmutable::parse('2026-10-05 09:00', 'UTC')))->toBe(['date' => '2026-10-15', 'time' => null]);
 });

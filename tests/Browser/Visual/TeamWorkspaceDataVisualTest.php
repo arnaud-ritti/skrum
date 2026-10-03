@@ -215,7 +215,7 @@ function p23Whiteboard(Team $team, string $title, User $facilitator, CarbonInter
         ]);
     }
 
-    RefreshWhiteboardPreview::dispatchSync($board->id);
+    dispatch_sync(new RefreshWhiteboardPreview($board->id));
 
     $board->timestamps = false;
     $board->forceFill([

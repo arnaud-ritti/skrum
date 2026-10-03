@@ -20,7 +20,7 @@ class RefreshStaleWhiteboardPreviews
                 continue;
             }
 
-            RefreshWhiteboardPreview::dispatch($board->id);
+            dispatch(new RefreshWhiteboardPreview($board->id));
         }
     }
 }

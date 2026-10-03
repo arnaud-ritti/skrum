@@ -52,12 +52,10 @@ it('suggests the next person of the rotation and moves on only when the suggesti
     [$team, $camille, $ines] = rotatingTeam();
     $creator = teamMember($team);
 
-    expect(suggestedFor($team, $creator))->toBe($camille->id);
-
-    expect(createRetroAs($team, $creator, 'One', $camille)->facilitator->user_id)->toBe($camille->id)
-        ->and(suggestedFor($team, $creator))->toBe($ines->id);
-
-    expect(createRetroAs($team, $creator, 'Two', $creator)->facilitator->user_id)->toBe($creator->id)
+    expect(suggestedFor($team, $creator))->toBe($camille->id)
+        ->and(createRetroAs($team, $creator, 'One', $camille)->facilitator->user_id)->toBe($camille->id)
+        ->and(suggestedFor($team, $creator))->toBe($ines->id)
+        ->and(createRetroAs($team, $creator, 'Two', $creator)->facilitator->user_id)->toBe($creator->id)
         ->and(suggestedFor($team, $creator))->toBe($ines->id)
         ->and($team->fresh()->rotation_position)->toBe(1);
 });

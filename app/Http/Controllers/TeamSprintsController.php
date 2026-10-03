@@ -63,7 +63,7 @@ class TeamSprintsController extends Controller
             $overlap = $this->otherSprints($locked, $sprint)
                 ->where('starts_on', '<=', $attributes['ends_on'])
                 ->where('ends_on', '>=', $attributes['starts_on'])
-                ->orderBy('starts_on')
+                ->oldest('starts_on')
                 ->orderBy('id')
                 ->first();
 

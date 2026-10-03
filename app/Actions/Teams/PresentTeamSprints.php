@@ -32,7 +32,7 @@ class PresentTeamSprints
 
         $list = TeamSprint::query()
             ->where('team_id', $team->id)
-            ->orderByDesc('starts_on')
+            ->latest('starts_on')
             ->orderByDesc('id')
             ->limit(self::MaxListed)
             ->get()
