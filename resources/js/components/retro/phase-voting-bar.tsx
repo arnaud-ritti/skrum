@@ -19,6 +19,8 @@ type Tally = {
     votesCast: number;
     votesVersion: number;
     total: number | null;
+    /** Who has finished voting, when this vote took the voter's back. */
+    finishedIds: string[] | null;
 };
 
 /**
@@ -76,6 +78,13 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
                     cardId: tally.cardId,
                     total: tally.total ?? undefined,
                 });
+
+                if (tally.finishedIds !== null) {
+                    ctx.apply({
+                        type: 'voting.finished',
+                        finishedIds: tally.finishedIds,
+                    });
+                }
             });
     };
 }

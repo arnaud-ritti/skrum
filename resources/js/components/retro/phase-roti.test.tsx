@@ -37,6 +37,8 @@ function rotiBoard(roti = {}, phase: 'roti' | 'completed' = 'roti') {
             respondents: 0,
             voterIds: [],
             canVote: true,
+            revealed: false,
+            results: null,
             ...roti,
         },
     });

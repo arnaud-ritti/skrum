@@ -74,6 +74,8 @@ export type CardPayload = {
     gif: CardGif | null;
     author: Person | null;
     groupName: string | null;
+    /** When the topic was marked discussed; null while it is not. */
+    discussedAt: string | null;
 };
 
 export type ReactionSummary = {
@@ -228,6 +230,8 @@ export type ActionItem = {
     createdAt: string | null;
     /** Members only; null in broadcasts, where clients keep what they know. */
     externalLinks: ExternalLink[] | null;
+    /** The topic of the discussion the item was made for. */
+    cardId: string | null;
     /** Client-only: bumped by comment events so an open thread refetches. */
     commentsRevision?: number;
 };
@@ -307,6 +311,14 @@ export type Snapshot = {
         guestAccessEnabled: boolean;
         facilitatorParticipantId: string | null;
         timerEndsAt: string | null;
+        /** The seconds left of a paused timer; null unless paused. */
+        timerPausedSeconds: number | null;
+        /** The time each topic of the discussion gets; null without one. */
+        topicSeconds: number | null;
+        /** The cap in force in Voting; null without one. */
+        maxVotesPerCard: number | null;
+        /** The cap as set, for the settings. */
+        maxVotesPerCardSetting: number | null;
         highlightedCardId: string | null;
         completedAt: string | null;
         guestUrl: string | null;
@@ -335,6 +347,8 @@ export type Snapshot = {
     teamMembers: TeamMember[];
     surveys: SurveyPayload[];
     writersCount: number;
+    voting: { finishedIds: string[] };
+    topicNotes: TopicNote[];
     roti: RotiState;
     results: Results | null;
     insights: Insights | null;
@@ -353,6 +367,21 @@ export type Snapshot = {
     };
     emojiData: { baseUrl: string; locale: string };
     serverTime: string;
+};
+
+/** The shared notes of a topic; version 0 before the first save. */
+export type TopicNote = {
+    cardId: string;
+    body: string;
+    version: number;
+    updatedAt: string | null;
+};
+
+/** What `timer.changed` carries. */
+export type TimerState = {
+    timerEndsAt: string | null;
+    timerPausedSeconds: number | null;
+    topicSeconds: number | null;
 };
 
 export type PresenceMember = {
@@ -418,10 +447,17 @@ type RotiState = {
     voterIds: string[];
     /** True in the ROTI phase, and on a retro completed before that phase existed. */
     canVote: boolean;
+    /** The facilitator revealed the results; the vote is closed. */
+    revealed: boolean;
+    /** Once revealed, or once the retro is completed. */
+    results: RotiResults | null;
 };
 
 /** What a vote or a retract answers. */
-export type RotiVoteResponse = Omit<RotiState, 'canVote'>;
+export type RotiVoteResponse = Omit<
+    RotiState,
+    'canVote' | 'revealed' | 'results'
+>;
 
 export type GamesPlayedPerson = {
     playerId: string;

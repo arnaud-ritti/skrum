@@ -44,6 +44,12 @@ const RetroEvents = [
     'roti.changed',
     'results.changed',
     'insights.changed',
+    'voting.finished',
+    'writing.count',
+    'topic.discussed',
+    'topic.note.saved',
+    'roti.revealed',
+    'roti.nudged',
 ] as const;
 
 /**

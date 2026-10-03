@@ -133,6 +133,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         reconnecting,
         sessionExpired,
         subscribeGameEvents,
+        subscribeRotiNudges,
+        subscribeWritingCount,
     } = useRetroBoard(snapshot);
     const isMobile = useIsMobile();
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
@@ -176,6 +178,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         unreadCardIds,
         markCommentsRead,
         subscribeGameEvents,
+        subscribeRotiNudges,
+        subscribeWritingCount,
     };
 
     const isCompleted = board.retro.phase === 'completed';

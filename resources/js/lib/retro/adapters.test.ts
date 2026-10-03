@@ -47,6 +47,7 @@ function card(overrides: Partial<BoardCard> = {}): BoardCard {
         gif: null,
         author: { id: 'me', name: 'Alice Martin' },
         groupName: null,
+        discussedAt: null,
         votes: null,
         myVotes: 0,
         reactions: [],
@@ -478,6 +479,7 @@ describe('cardVoting', () => {
             canVote: true,
             canUnvote: true,
             blocked: null,
+            maxPerCard: null,
         });
     });
 
@@ -549,5 +551,52 @@ describe('votingProgress', () => {
 
     it('starts at zero before the first vote', () => {
         expect(votingProgress(retroSnapshot())).toEqual({ cast: 0, total: 5 });
+    });
+});
+
+describe('cardVoting with a cap, and a finished voter', () => {
+    const board = (overrides: {
+        maxVotesPerCard?: number | null;
+        finishedIds?: string[];
+        remainingVotes?: number;
+    }) =>
+        retroSnapshot({
+            retro: {
+                phase: 'voting',
+                isLocked: false,
+                maxVotesPerCard: overrides.maxVotesPerCard ?? null,
+            },
+            viewer: {
+                participantId: 'me',
+                remainingVotes: overrides.remainingVotes ?? 3,
+            },
+            voting: { finishedIds: overrides.finishedIds ?? [] },
+        });
+    const capped = card({ id: 'c', votes: null, myVotes: 2 });
+
+    it('blocks a vote at the cap and still lets the vote go back', () => {
+        expect(cardVoting(capped, board({ maxVotesPerCard: 2 }))).toMatchObject(
+            {
+                canVote: false,
+                canUnvote: true,
+                blocked: 'cap',
+                maxPerCard: 2,
+            },
+        );
+    });
+
+    it('lets a viewer who has finished still vote both ways (decision 10, B)', () => {
+        expect(
+            cardVoting(capped, board({ finishedIds: ['me'] })),
+        ).toMatchObject({ canVote: true, canUnvote: true, blocked: null });
+    });
+
+    it('says the budget is spent before the cap', () => {
+        expect(
+            cardVoting(
+                capped,
+                board({ maxVotesPerCard: 2, remainingVotes: 0 }),
+            ),
+        ).toMatchObject({ blocked: 'spent' });
     });
 });

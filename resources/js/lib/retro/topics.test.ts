@@ -25,6 +25,7 @@ function card(overrides: Partial<BoardCard> = {}): BoardCard {
         gif: null,
         author: null,
         groupName: null,
+        discussedAt: null,
         votes: 0,
         myVotes: 0,
         reactions: [],

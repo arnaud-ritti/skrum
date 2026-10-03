@@ -1,7 +1,19 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { PhaseVotingBar } from '@/components/retro/phase-voting-bar';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import {
+    PhaseVotingBar,
+    useCardVote,
+} from '@/components/retro/phase-voting-bar';
+import type { BoardCard } from '@/lib/retro/types';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
+
+const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+
+    return { ...original, retroRequest: mocks.request };
+});
 
 const people = [
     { id: 'me', name: 'Alice Martin', avatarUrl: '/a.svg', isGuest: false },
@@ -114,5 +126,63 @@ describe('PhaseVotingBar', () => {
         expect(
             container.querySelector('[data-slot="retro-voting-done"] button'),
         ).not.toBeNull();
+    });
+});
+
+describe('useCardVote', () => {
+    const voted = { id: 'c', myVotes: 0 } as BoardCard;
+
+    function VoteButton() {
+        const vote = useCardVote(voted);
+
+        return (
+            <button type="button" onClick={() => vote(1)}>
+                Vote
+            </button>
+        );
+    }
+
+    async function voteAnswered(finishedIds: string[] | null) {
+        mocks.request.mockResolvedValueOnce({
+            cardId: 'c',
+            myVotes: 1,
+            remainingVotes: 2,
+            votesCast: 4,
+            votesVersion: 7,
+            total: 3,
+            finishedIds,
+        });
+
+        const { ctx } = renderInBoard(
+            <VoteButton />,
+            boardContext(retroSnapshot({ retro: { phase: 'voting' } })),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Vote' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'votes.cast' }),
+            ),
+        );
+
+        return ctx.apply;
+    }
+
+    it('takes back "finished" as the answer of the vote says', async () => {
+        const apply = await voteAnswered(['p2']);
+
+        expect(apply).toHaveBeenCalledWith({
+            type: 'voting.finished',
+            finishedIds: ['p2'],
+        });
+    });
+
+    it('leaves "finished" alone when the answer does not say it', async () => {
+        const apply = await voteAnswered(null);
+
+        expect(apply).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'voting.finished' }),
+        );
     });
 });

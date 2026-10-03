@@ -12,6 +12,7 @@ import type {
     Snapshot,
     SuggestedAction,
     SurveyPayload,
+    TopicNote,
 } from './types';
 
 export type BoardAction =
@@ -57,7 +58,16 @@ export type BoardAction =
           /** Absent on the optimistic tally dispatched before the request. */
           votesVersion?: number;
       }
-    | { type: 'timer.set'; timerEndsAt: string | null }
+    | {
+          type: 'timer.set';
+          timerEndsAt: string | null;
+          /** Absent from callers that move the end only: the value is kept. */
+          timerPausedSeconds?: number | null;
+          topicSeconds?: number | null;
+      }
+    | { type: 'voting.finished'; finishedIds: string[] }
+    | { type: 'topic.discussed'; cardId: string; discussedAt: string | null }
+    | { type: 'topicNote.set'; note: TopicNote }
     | { type: 'highlight.set'; cardId: string | null }
     | { type: 'actionItem.upsert'; actionItem: ActionItem }
     | { type: 'actionItem.remove'; actionItemId: string }
@@ -483,8 +493,48 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
         case 'timer.set':
             return {
                 ...state,
-                retro: { ...state.retro, timerEndsAt: action.timerEndsAt },
+                retro: {
+                    ...state.retro,
+                    timerEndsAt: action.timerEndsAt,
+                    timerPausedSeconds:
+                        action.timerPausedSeconds === undefined
+                            ? state.retro.timerPausedSeconds
+                            : action.timerPausedSeconds,
+                    topicSeconds:
+                        action.topicSeconds === undefined
+                            ? state.retro.topicSeconds
+                            : action.topicSeconds,
+                },
             };
+        case 'voting.finished':
+            return { ...state, voting: { finishedIds: action.finishedIds } };
+        case 'topic.discussed':
+            return updateCard(state, action.cardId, (card) => ({
+                ...card,
+                discussedAt: action.discussedAt,
+            }));
+        case 'topicNote.set': {
+            const current = state.topicNotes.find(
+                (note) => note.cardId === action.note.cardId,
+            );
+
+            if (
+                current !== undefined &&
+                current.version >= action.note.version
+            ) {
+                return state;
+            }
+
+            return {
+                ...state,
+                topicNotes: [
+                    ...state.topicNotes.filter(
+                        (note) => note.cardId !== action.note.cardId,
+                    ),
+                    action.note,
+                ],
+            };
+        }
         case 'highlight.set':
             return {
                 ...state,

@@ -126,6 +126,7 @@ function actionItem(id: string, content: string): ActionItem {
         createdAt: '2026-10-02T09:00:00Z',
         subtasks: [],
         externalLinks: [],
+        cardId: null,
     } as unknown as ActionItem;
 }
 
@@ -136,6 +137,7 @@ function card(id: string, overrides: Partial<BoardCard> = {}): BoardCard {
         parentCardId: null,
         content: `Card ${id}`,
         groupName: null,
+        discussedAt: null,
         gif: null,
         votes: 0,
         myVotes: 0,
@@ -587,6 +589,8 @@ describe('SessionEnd', () => {
                         respondents: 2,
                         voterIds: ['me', 'bob'],
                         canVote: true,
+                        revealed: false,
+                        results: null,
                     },
                 }),
             );

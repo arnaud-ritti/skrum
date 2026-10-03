@@ -45,6 +45,7 @@ function actionItem(overrides: Partial<ActionItem> = {}): ActionItem {
         ],
         createdAt: '2026-10-02T10:00:00Z',
         externalLinks: null,
+        cardId: null,
         ...overrides,
     };
 }
