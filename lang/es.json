@@ -5258,5 +5258,6 @@
     ":name (suggested)": ":name (sugerido)",
     "Suggested by the rotation.": "Sugerido por la rotación.",
     "More than :cap action items match. Narrow the filters.": "Coinciden más de :cap acciones. Ajusta los filtros.",
-    "The list changed: :count action items match now.": "La lista cambió: ahora coinciden :count acciones."
+    "The list changed: :count action items match now.": "La lista cambió: ahora coinciden :count acciones.",
+    "Tickets": "Tickets"
 }

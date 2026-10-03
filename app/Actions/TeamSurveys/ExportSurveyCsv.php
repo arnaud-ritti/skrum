@@ -7,13 +7,12 @@ use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyOption;
 use App\Models\TeamSurveyQuestion;
+use App\Support\CsvCell;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ExportSurveyCsv
 {
-    private const string FormulaLeads = "=+-@\t\r";
-
     /**
      * The header, then one row per respondent who answered. Rows are
      * ordered by their content so that the order tells neither when nor
@@ -79,10 +78,10 @@ class ExportSurveyCsv
 
         foreach ($questions as $question) {
             $answer = $answers->get($question->id);
-            $cells[] = $this->safe($this->value($question, $answer));
+            $cells[] = CsvCell::safe($this->value($question, $answer));
 
             if ($question->allows_comment) {
-                $cells[] = $this->safe((string) $answer?->comment);
+                $cells[] = CsvCell::safe((string) $answer?->comment);
             }
         }
 
@@ -103,18 +102,5 @@ class ExportSurveyCsv
                 ->map(fn (TeamSurveyOption $option): string => $option->label)
                 ->implode(' | '),
         };
-    }
-
-    /**
-     * A leading =, +, -, @, tab or carriage return makes a spreadsheet run
-     * the cell as a formula; an apostrophe makes it text.
-     */
-    private function safe(string $cell): string
-    {
-        if ($cell === '' || ! str_contains(self::FormulaLeads, $cell[0])) {
-            return $cell;
-        }
-
-        return "'".$cell;
     }
 }
