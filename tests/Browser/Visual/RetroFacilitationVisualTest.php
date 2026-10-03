@@ -16,6 +16,7 @@ use App\Models\TopicNote;
 use App\Models\User;
 use App\Models\Vote;
 use App\Models\Workspace;
+use App\Support\Retros\PhaseDurations;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -462,5 +463,19 @@ it('[P21-20-09] renders the retro form of the new session dialog with a cap of 2
                 ->assertAttribute('[role="dialog"] #new-retro-max-votes-per-card-auto', 'aria-checked', 'false')
                 ->assertSeeIn('[role="dialog"] [data-slot="stepper"][aria-label="Max par carte"] output', '2');
         },
+    );
+});
+
+it('[P22-20-05] renders the phase timer offered to the facilitator of a writing board, its menu open, without overflow', function () {
+    [$retro, $users] = p21RetroVisualBoard(RetroPhase::Writing, 3, ['phase_durations' => PhaseDurations::Standard]);
+
+    $this->captureVisuals(
+        'retro-phase-timer-offer',
+        "/retros/{$retro->id}",
+        fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
+            ->assertSeeIn('[data-slot="timer-suggestion"]', '7 min')
+            ->assertAttribute('[data-slot="timer-suggestion"]', 'aria-label', 'Lancer le timer de la phase Écriture, 7 minutes')
+            ->click('button[aria-label="Minuteur"]')
+            ->assertSeeIn('[role="menu"] [role="menuitem"]:first-child', 'Écriture · 7 min'),
     );
 });

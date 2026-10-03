@@ -481,3 +481,44 @@ it('[P18e-03-18] renders the estimation history of a team that estimated nothing
             ->assertNotPresent('[data-slot="estimate-row"]'),
     );
 });
+
+it('[P22-20-06] renders the story of a Jira ticket with its type, labels and acceptance criteria before the reveal without overflow', function () {
+    ['game' => $game, 'task' => $typed, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
+    pokerVisualPlayedRounds($game, $players);
+    pokerVisualJira($game);
+    $typed->delete();
+    $task = importedPokerTask($game, [
+        'title' => 'CSV export of retro action items',
+        'description' => <<<'MARKDOWN'
+            As a facilitator, I want to export the action items of one or several retros as CSV (title, owner, due date, status, linked ticket) to share them with management.
+
+            ## Acceptance criteria
+
+            - The export holds every action item of the chosen retros, one per line.
+            - The owner and the due date are empty when the item has none.
+            - The file opens in a spreadsheet without an encoding error.
+            MARKDOWN,
+        'external_id' => '11287',
+        'external_key' => 'ATLAS-1287',
+        'external_url' => 'https://acme.atlassian.net/browse/ATLAS-1287',
+        'external_type' => 'Story',
+        'external_labels' => ['Actions'],
+        'external_status_name' => 'To Do',
+        'external_status_category' => ExternalStatusCategory::Todo,
+    ]);
+    $round = openPokerRound($game, $task);
+
+    foreach (['Camille Roux' => '5', 'Théo Martin' => '8', 'Inès Benali' => '5'] as $name => $value) {
+        pokerVote($round, $players[$name], $value);
+    }
+
+    $this->captureVisuals(
+        'poker-story-details',
+        "/poker/{$game->id}",
+        fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
+            ->assertSeeIn('[data-slot="story-card"] [data-slot="ticket-type"]', 'Story')
+            ->assertCount('[data-slot="story-card"] [data-slot="ticket-label"]', 1)
+            ->assertCount('[data-slot="story-card"] [data-slot="ticket-criteria"] li', 3)
+            ->assertDontSeeIn('[data-slot="story-card"] [data-slot="story-description"]', 'The file opens in a spreadsheet'),
+    );
+});
