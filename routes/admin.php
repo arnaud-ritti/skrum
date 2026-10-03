@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\LicencesController;
 use App\Http\Controllers\Admin\McpKeysController;
+use App\Http\Controllers\Admin\SignInConfirmationsController;
 use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Controllers\Admin\SsoConnectionTestsController;
 use App\Http\Controllers\Admin\SsoProvidersController;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
 
         Route::get('admin/sign-in', [SignInSettingsController::class, 'edit'])->name('admin.signIn.edit');
         Route::put('admin/sign-in', [SignInSettingsController::class, 'update'])->name('admin.signIn.update');
+        Route::get('admin/sign-in/confirm', [SignInConfirmationsController::class, 'create'])->name('admin.signInConfirmation.create');
         Route::put('admin/sign-in/providers/{provider}', [SsoProvidersController::class, 'update'])
             ->whereIn('provider', array_column(SsoProvider::cases(), 'value'))
             ->name('admin.ssoProviders.update');

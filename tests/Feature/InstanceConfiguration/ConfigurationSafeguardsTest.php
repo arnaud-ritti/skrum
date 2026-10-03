@@ -10,7 +10,9 @@ use App\Support\Auth\PasswordConfirmation;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceSettings;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Sleep;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
@@ -95,6 +97,37 @@ it('refuses a value the catalogue does not accept and stores nothing', function 
 
     expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::Smtp))->toBe([])
         ->and(AuditEvent::query()->count())->toBe(0);
+});
+
+it('refuses an allowed host that is not a host name', function (string $host) {
+    expect(fn () => updateConfiguration($this->admin, InstanceSettingKey::IntegrationMicrosoftTeams, ['allowed_hosts' => ['atlas.webhook.office.com', $host]]))
+        ->toThrow(ValidationException::class);
+
+    expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::IntegrationMicrosoftTeams))->toBe([]);
+})->with(['evil.test/path', '*', 'http://x', 'localhost']);
+
+it('stores allowed host names folded and unique', function () {
+    updateConfiguration($this->admin, InstanceSettingKey::IntegrationMicrosoftTeams, ['allowed_hosts' => ['Atlas.Webhook.Office.com', 'atlas.webhook.office.com']]);
+
+    expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::IntegrationMicrosoftTeams))
+        ->toBe(['allowed_hosts' => ['atlas.webhook.office.com']]);
+});
+
+it('answers with a validation message when another admin keeps the section locked', function () {
+    Sleep::fake(syncWithCarbon: true);
+    $heldLock = Cache::lock('instance-configuration:smtp', 10);
+    $heldLock->get();
+
+    try {
+        updateConfiguration($this->admin, InstanceSettingKey::Smtp, ['host' => 'smtp.atlas.test']);
+        $this->fail('The save was not refused.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('section');
+    } finally {
+        $heldLock->release();
+    }
+
+    expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::Smtp))->toBe([]);
 });
 
 it('S9: refuses a change that leaves no SSO provider while SSO is required', function () {

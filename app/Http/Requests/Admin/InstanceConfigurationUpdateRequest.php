@@ -39,6 +39,10 @@ abstract class InstanceConfigurationUpdateRequest extends FormRequest
 
         foreach ($fields as $name => $field) {
             $rules[$name] = ['sometimes', 'nullable', ...$field->kind->rules()];
+
+            if ($field->kind->itemRules() !== []) {
+                $rules["{$name}.*"] = $field->kind->itemRules();
+            }
         }
 
         return $rules;

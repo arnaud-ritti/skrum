@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceSettings;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -45,8 +46,12 @@ class UpdateInstanceConfiguration
     {
         $this->ensureAccepted($section, $values);
 
-        $stored = Cache::lock("instance-configuration:{$section->value}", self::LockSeconds)
-            ->block(self::LockWaitSeconds, fn (): array => $this->store($admin, $section, $values, $clear, $ip));
+        try {
+            $stored = Cache::lock("instance-configuration:{$section->value}", self::LockSeconds)
+                ->block(self::LockWaitSeconds, fn (): array => $this->store($admin, $section, $values, $clear, $ip));
+        } catch (LockTimeoutException) {
+            throw ValidationException::withMessages(['section' => __('Another admin is saving this section; try again.')]);
+        }
 
         $change = new ConfigurationChange($stored['changed'], $stored['cleared'], alerted: $this->catalogue->alertsAdmins($section));
 

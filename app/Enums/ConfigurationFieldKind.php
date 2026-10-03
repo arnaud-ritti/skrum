@@ -19,6 +19,9 @@ enum ConfigurationFieldKind: string
     case MailMailer = 'mail_mailer';
     case MailScheme = 'mail_scheme';
 
+    /** A host name with at least one dot, as allowed e-mail domains and allowed hosts are written. */
+    public const string HostNamePattern = '/^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/i';
+
     public function isSecret(): bool
     {
         return in_array($this, [self::Secret, self::LongSecret], true);
@@ -41,9 +44,24 @@ enum ConfigurationFieldKind: string
         };
     }
 
+    /** @return array<int, mixed> The rules of each entry of a list kind, none for any other kind. */
+    public function itemRules(): array
+    {
+        return match ($this) {
+            self::Hosts => ['string', 'max:253', 'regex:'.self::HostNamePattern],
+            default => [],
+        };
+    }
+
     public function normalise(#[SensitiveParameter] mixed $value): mixed
     {
-        $isValid = Validator::make(['value' => $value], ['value' => ['required', ...$this->rules()]])->passes();
+        $rules = ['value' => ['required', ...$this->rules()]];
+
+        if ($this->itemRules() !== []) {
+            $rules['value.*'] = $this->itemRules();
+        }
+
+        $isValid = Validator::make(['value' => $value], $rules)->passes();
 
         if (! $isValid) {
             throw new InvalidArgumentException("A configuration value of kind [{$this->value}] was refused.");

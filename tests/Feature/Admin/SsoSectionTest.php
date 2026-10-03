@@ -37,7 +37,7 @@ it('describes each provider with its sources and without any secret', function (
         ->where('providerDetails.3.updateUrl', route('admin.ssoProviders.update', 'oidc'))
         ->where('providerDetails.0.configured', false)
         ->where('providerDetails.0.testable', false)
-        ->where('confirmUrl', route('password.confirm'))
+        ->where('confirmUrl', route('admin.signInConfirmation.create'))
         ->where('lastTest', null)
         ->whereNot('confirmedUntil', null));
     expect($response->getContent())->not->toContain('very-secret-value');
@@ -48,6 +48,20 @@ it('shows no confirmation end once the confirmation is older than five minutes',
 
     $this->get(route('admin.signIn.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('confirmedUntil', null));
+});
+
+it('leaves the intended url alone when the page is only viewed', function () {
+    $this->withSession(['auth.password_confirmed_at' => now()->subSeconds(301)->unix()]);
+
+    $this->get(route('admin.signIn.edit'))->assertOk()->assertSessionMissing('url.intended');
+});
+
+it('returns to the sign-in section once the admin follows confirm', function () {
+    $this->withSession(['auth.password_confirmed_at' => now()->subSeconds(301)->unix()]);
+
+    $this->get(route('admin.signInConfirmation.create'))
+        ->assertRedirect(route('password.confirm'))
+        ->assertSessionHas('url.intended', route('admin.signIn.edit'));
 });
 
 it('S1: lets an instance admin store an issuer, a client id and a secret, used on the next request', function () {
@@ -136,6 +150,19 @@ it('tests the discovery document of Microsoft Entra for its tenant', function ()
     $this->post(route('admin.ssoTests.store'), ['provider' => 'entra'])->assertInertiaFlash('ssoTest.ok', true);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://login.microsoftonline.com/atlas-tenant/v2.0/.well-known/openid-configuration');
+});
+
+it('does not follow a redirect of the discovery document', function () {
+    Http::fake([
+        'auth.atlas.test/*' => Http::response('', 302, ['Location' => 'http://10.0.0.5/doc']),
+        '10.0.0.5/*' => Http::response(['issuer' => 'https://auth.atlas.test/realms/atlas', 'authorization_endpoint' => 'x', 'token_endpoint' => 'y']),
+    ]);
+
+    $this->post(route('admin.ssoTests.store'), ['provider' => 'oidc'])
+        ->assertInertiaFlash('ssoTest.ok', false)
+        ->assertInertiaFlash('ssoTest.error', 'unreachable');
+
+    Http::assertSentCount(1);
 });
 
 it('reports an issuer that does not match and a failure', function (Closure $answer, string $error) {

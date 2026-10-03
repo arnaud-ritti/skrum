@@ -13,7 +13,8 @@ use InvalidArgumentException;
 
 /**
  * Fetches the discovery document of the values in force (the stored configuration is already applied
- * to this request) and keeps the result as the section's last test (spec §9.3).
+ * to this request) and keeps the result as the section's last test (spec §9.3). A redirect is not
+ * followed, so the test cannot be bounced towards an address the admin did not type.
  */
 class TestOidcDiscovery
 {
@@ -38,7 +39,7 @@ class TestOidcDiscovery
         $startedAt = hrtime(true);
 
         try {
-            $response = Http::timeout(self::TimeoutSeconds)->acceptJson()->get("{$baseUrl}/.well-known/openid-configuration");
+            $response = Http::timeout(self::TimeoutSeconds)->withoutRedirecting()->acceptJson()->get("{$baseUrl}/.well-known/openid-configuration");
         } catch (ConnectionException) {
             $response = null;
         }

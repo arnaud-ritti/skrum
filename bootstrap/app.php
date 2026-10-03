@@ -34,7 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->prepend([AssignRequestId::class, ApplyInstanceConfiguration::class]);
+        $middleware->prepend(AssignRequestId::class);
+        $middleware->append(ApplyInstanceConfiguration::class);
 
         $middleware->replace(FrameworkTrustProxies::class, TrustProxies::class);
 

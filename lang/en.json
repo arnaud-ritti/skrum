@@ -4378,6 +4378,7 @@
     "Sender name": "Sender name",
     "This value is not accepted.": "This value is not accepted.",
     "Turn off \"Require SSO\" first.": "Turn off \"Require SSO\" first.",
+    "Another admin is saving this section; try again.": "Another admin is saving this section; try again.",
     "Confirm your password again to change these settings.": "Confirm your password again to change these settings.",
     ":provider settings saved. Every instance admin gets an e-mail.": ":provider settings saved. Every instance admin gets an e-mail.",
     "Configure this provider before testing it.": "Configure this provider before testing it.",

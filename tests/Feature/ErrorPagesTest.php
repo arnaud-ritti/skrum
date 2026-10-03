@@ -321,7 +321,7 @@ it('shows the time of return and the admin message in maintenance', function () 
             ->toContain('data-slot="maintenance-back-at"')
             ->toContain('<time datetime="2026-10-03T12:30:00+00:00">12:30 UTC</time>')
             ->toContain('« Mise à jour mensuelle. »')
-            ->toContain(e("Hugo Lambert, admin de l'instance"))
+            ->toContain(e('Hugo Lambert, admin de l’instance'))
             ->toContain('href="/status"')
             ->and(substr_count($content, '<script'))->toBe(1);
     } finally {

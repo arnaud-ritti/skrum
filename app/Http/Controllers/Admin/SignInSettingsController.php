@@ -26,12 +26,6 @@ class SignInSettingsController extends Controller
 {
     public function edit(Request $request, SignInPolicy $policy, InstanceSettings $settings, SecondFactors $secondFactors, PresentSsoProviders $presentSsoProviders, PasswordConfirmation $confirmation): Response
     {
-        $confirmedUntil = $this->confirmedUntil($request, $confirmation);
-
-        if ($confirmedUntil === null) {
-            redirect()->setIntendedUrl(route('admin.signIn.edit'));
-        }
-
         return Inertia::render('admin/sign-in', [
             'ssoRequired' => $settings->ssoRequired(),
             'inForce' => $policy->ssoRequired(),
@@ -43,8 +37,8 @@ class SignInSettingsController extends Controller
                 ->count(),
             'providerDetails' => $presentSsoProviders->handle(),
             'lastTest' => $settings->ssoLastTest(),
-            'confirmedUntil' => $confirmedUntil,
-            'confirmUrl' => route('password.confirm'),
+            'confirmedUntil' => $this->confirmedUntil($request, $confirmation),
+            'confirmUrl' => route('admin.signInConfirmation.create'),
         ]);
     }
 

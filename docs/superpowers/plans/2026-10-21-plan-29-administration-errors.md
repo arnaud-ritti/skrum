@@ -3385,7 +3385,7 @@ class ApplyInstanceConfiguration
 }
 ```
 
-`bootstrap/app.php`: `$middleware->prepend(AssignRequestId::class);` becomes `$middleware->prepend([AssignRequestId::class, ApplyInstanceConfiguration::class]);` (re-read the method's signature; the order is request id first). Global, so the login page, the status page, the integration callbacks, the inbound webhooks and the MCP route all see it.
+`bootstrap/app.php`: `$middleware->append(ApplyInstanceConfiguration::class);` beside `$middleware->prepend(AssignRequestId::class);`: after the maintenance check, so a request that maintenance turns away reads no setting (review of Tasks 11 to 20). Global, so the login page, the status page, the integration callbacks, the inbound webhooks and the MCP route all see it.
 
 Listener (auto-discovered; re-read `bootstrap/app.php` `withEvents`):
 
@@ -3879,11 +3879,12 @@ it('S5: keeps no secret in the session after a refused write', function (Closure
 
 **Files:**
 - Create: `app/Actions/Admin/PresentMailSettings.php`, `app/Http/Controllers/Admin/MailSettingsController.php`, `MailTestsController.php`, `app/Http/Requests/Admin/MailSettingsUpdateRequest.php`, `MailTestStoreRequest.php`, `app/Mail/InstanceTestMail.php`, `resources/views/mail/instance-test.blade.php`, `resources/js/pages/admin/mail.tsx` (thin)
-- Modify: `routes/admin.php`, `tests/Feature/InstanceConfiguration/ConfigurationRoutesTest.php` (one dataset row)
+- Modify: `routes/admin.php`, `tests/Feature/InstanceConfiguration/ConfigurationRoutesTest.php` (one dataset row), `app/Mail/InstanceConfigurationChangedMail.php` (`sectionUrl()`: the `Smtp` section links to `admin.mail.show`, with an assertion in the mail test; review of Tasks 11 to 20)
 - Test: `tests/Feature/Admin/MailSectionTest.php`
 
 **Interfaces:**
 - Consumes: Tasks 17, 18, 19.
+- `confirmUrl` follows Task 20's fix: a GET route (like `admin.signInConfirmation.create`) sets the intended URL and redirects to `password.confirm`; the section page itself never writes `url.intended`.
 - Produces: `admin/mail` props `{mail: {delivering: bool, fields: <describe() of Smtp>}, lastTest: ?{at, ok, to}, defaultRecipient: string, confirmedUntil: ?string, confirmUrl: string, updateUrl: string}`; route `admin.mail.update` (PUT, fields of `Smtp` + `clear[]`); route `admin.mailTests.store` (POST `{to}`).
 
 - [ ] **Step 1: Write the failing tests**

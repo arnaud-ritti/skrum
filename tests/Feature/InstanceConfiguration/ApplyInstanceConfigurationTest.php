@@ -105,6 +105,20 @@ it('writes nothing into the configuration at boot', function () {
         ->and(config(InstanceConfiguration::AppliedKeys))->toBeNull();
 });
 
+it('reads no stored configuration for a request that maintenance turns away', function () {
+    config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
+    $this->artisan('down')->assertSuccessful();
+    $configuration = $this->spy(InstanceConfiguration::class);
+
+    try {
+        $this->get('/')->assertServiceUnavailable();
+
+        $configuration->shouldNotHaveReceived('apply');
+    } finally {
+        $this->artisan('up');
+    }
+});
+
 it('renders the status page with an unreachable database', function () {
     withUnreachableDatabase(function (): void {
         $this->get('/status')->assertOk();
