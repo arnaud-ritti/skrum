@@ -12,7 +12,7 @@ it('gives the team page the options of the dialog from one place', function () {
     expect(array_keys($options))->toEqualCanonicalizing([
         'templateCategories', 'topTemplates', 'catalogue', 'llm', 'canCreateRetro', 'icebreakerGames', 'gameOptions',
         'canCreateGameRoom', 'roomLimit', 'pokerDecks', 'defaultPokerDeck', 'pokerDeckOptions', 'canCreatePokerGame',
-        'canCreateWhiteboard', 'whiteboardGallery', 'surveys', 'canCreateSurvey', 'surveyTemplates',
+        'canCreateWhiteboard', 'whiteboardGallery', 'surveys', 'canCreateSurvey', 'surveyTemplates', 'pokerSources',
     ]);
 
     $this->actingAs($member)

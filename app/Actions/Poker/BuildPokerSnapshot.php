@@ -126,6 +126,10 @@ class BuildPokerSnapshot
                 'anonymousVotes' => $game->anonymous_votes,
                 'cursorsEnabled' => $game->cursors_enabled,
                 'reactionsEnabled' => $game->reactions_enabled,
+                'revoteAfterReveal' => $game->revote_after_reveal,
+                'taskTimerSeconds' => $game->task_timer_seconds,
+                'writesEstimates' => $game->writes_estimates,
+                'estimateFieldId' => $game->estimate_field_id,
                 'teamName' => $isGuest ? null : $team->name,
             ],
             'me' => [

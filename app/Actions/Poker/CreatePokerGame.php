@@ -36,6 +36,10 @@ class CreatePokerGame
                 'anonymous_votes' => $new->anonymousVotes,
                 'auto_reveal' => $new->autoReveal,
                 'guest_access_enabled' => $new->guestAccessEnabled,
+                'revote_after_reveal' => $new->revoteAfterReveal,
+                'task_timer_seconds' => $new->taskTimerSeconds,
+                'writes_estimates' => $new->writesEstimates,
+                'estimate_field_id' => $new->estimateFieldId,
                 'guest_token' => Str::random(40),
             ]);
 

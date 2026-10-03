@@ -22,7 +22,9 @@ class ListPokerSources
      *     canWriteBack: bool,
      *     writeBackUnavailableReason: ?string,
      *     canSyncStatus: bool,
-     *     syncMode: string
+     *     syncMode: string,
+     *     estimateFields: list<array{id: string, name: string}>,
+     *     defaultEstimateFieldId: ?string
      * }>
      */
     public function handle(Team $team): array
@@ -54,10 +56,50 @@ class ListPokerSources
                 'writeBackUnavailableReason' => $reason,
                 'canSyncStatus' => $integration->isActive() && $integration->setting('statusSync') === true,
                 'syncMode' => $integration->inbound_mode->value,
+                'estimateFields' => $this->estimateFields($integration),
+                'defaultEstimateFieldId' => $this->defaultEstimateFieldId($integration),
             ];
         }
 
         return $sources;
+    }
+
+    /**
+     * @return list<array{id: string, name: string}>
+     */
+    private function estimateFields(TeamIntegration $integration): array
+    {
+        if (! $this->isJira($integration)) {
+            return [];
+        }
+
+        $fields = [];
+
+        foreach ((array) $integration->setting('numberFields', []) as $field) {
+            if (! is_array($field) || ! is_string($field['id'] ?? null) || ! is_string($field['name'] ?? null)) {
+                continue;
+            }
+
+            $fields[] = ['id' => $field['id'], 'name' => $field['name']];
+        }
+
+        return $fields;
+    }
+
+    private function defaultEstimateFieldId(TeamIntegration $integration): ?string
+    {
+        if (! $this->isJira($integration)) {
+            return null;
+        }
+
+        $id = data_get($integration->setting('storyPointFields', []), '0.id');
+
+        return is_string($id) ? $id : null;
+    }
+
+    private function isJira(TeamIntegration $integration): bool
+    {
+        return in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true);
     }
 
     private function siteName(TeamIntegration $integration): ?string

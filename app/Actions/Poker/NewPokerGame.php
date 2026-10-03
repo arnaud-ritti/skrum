@@ -22,5 +22,9 @@ readonly class NewPokerGame
         public bool $guestAccessEnabled = false,
         public bool $spectator = false,
         public array $tasks = [],
+        public bool $revoteAfterReveal = false,
+        public ?int $taskTimerSeconds = null,
+        public bool $writesEstimates = true,
+        public ?string $estimateFieldId = null,
     ) {}
 }

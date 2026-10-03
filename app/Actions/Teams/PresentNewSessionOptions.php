@@ -3,10 +3,12 @@
 namespace App\Actions\Teams;
 
 use App\Actions\Games\IcebreakerGameOptions;
+use App\Actions\Integrations\ListPokerSources;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\TeamSurveys\PresentTeamSurveySummary;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
+use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TemplateCategory;
@@ -33,6 +35,7 @@ class PresentNewSessionOptions
         private GameRulesRegistry $gameRulesRegistry,
         private SurveyTemplateCatalogue $surveyTemplateCatalogue,
         private PresentTeamSurveySummary $presentTeamSurveySummary,
+        private ListPokerSources $listPokerSources,
     ) {}
 
     /**
@@ -65,6 +68,9 @@ class PresentNewSessionOptions
             ],
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $viewer->can('createPokerGame', $team),
+            'pokerSources' => $viewer->can('createPokerGame', $team) && IntegrationProvider::anyEnabled()
+                ? $this->listPokerSources->handle($team)
+                : [],
             'canCreateWhiteboard' => $viewer->can('createWhiteboard', $team),
             'whiteboardGallery' => Inertia::optional(fn (): array => $this->buildWhiteboardGallery->handle($workspace)),
             'surveys' => PresentTeamSurveySummary::withCounts($team->teamSurveys())

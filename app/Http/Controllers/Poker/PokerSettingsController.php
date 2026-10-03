@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Poker;
 
 use App\Actions\Poker\AutoRevealPokerRound;
 use App\Actions\Poker\PokerDeckRules;
+use App\Actions\Poker\PokerGameSettingsRules;
 use App\Actions\Poker\PokerGuard;
 use App\Actions\Poker\SavedPokerDeckRules;
 use App\Enums\PokerDeck;
@@ -41,6 +42,7 @@ class PokerSettingsController extends Controller
             'cursors_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
             'auto_reveal' => ['sometimes', 'boolean'],
+            ...PokerGameSettingsRules::rules($game->team),
         ]);
 
         $turnsAnonymityOn = array_key_exists('anonymous_votes', $validated) && (bool) $validated['anonymous_votes'];
@@ -84,7 +86,10 @@ class PokerSettingsController extends Controller
      */
     private function attributes(array $validated, PokerGame $locked): array
     {
-        $attributes = Arr::only($validated, ['title', 'guest_access_enabled', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled', 'auto_reveal']);
+        $attributes = Arr::only($validated, [
+            'title', 'guest_access_enabled', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled', 'auto_reveal',
+            'revote_after_reveal', 'task_timer_seconds', 'writes_estimates', 'estimate_field_id',
+        ]);
 
         if (array_key_exists('saved_deck_id', $validated)) {
             $savedDeck = SavedPokerDeckRules::findForTeam($locked->team, (string) $validated['saved_deck_id']);

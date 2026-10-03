@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Poker\CreatePokerGame;
 use App\Actions\Poker\NewPokerGame;
 use App\Actions\Poker\PokerDeckRules;
+use App\Actions\Poker\PokerGameSettingsRules;
 use App\Actions\Poker\SavedPokerDeckRules;
 use App\Enums\PokerDeck;
 use App\Models\Team;
@@ -38,6 +39,7 @@ class TeamPokerGamesController extends Controller
             'spectator' => ['sometimes', 'boolean'],
             'tasks' => ['sometimes', 'array', 'max:50'],
             'tasks.*' => ['required', 'string', 'max:200'],
+            ...PokerGameSettingsRules::rules($team),
         ]);
 
         $savedDeck = null;
@@ -62,6 +64,10 @@ class TeamPokerGamesController extends Controller
             guestAccessEnabled: (bool) ($validated['guest_access_enabled'] ?? false),
             spectator: (bool) ($validated['spectator'] ?? false),
             tasks: array_values($validated['tasks'] ?? []),
+            revoteAfterReveal: (bool) ($validated['revote_after_reveal'] ?? false),
+            taskTimerSeconds: isset($validated['task_timer_seconds']) ? (int) $validated['task_timer_seconds'] : null,
+            writesEstimates: (bool) ($validated['writes_estimates'] ?? true),
+            estimateFieldId: $validated['estimate_field_id'] ?? null,
         ));
 
         return to_route('poker.show', $game);
