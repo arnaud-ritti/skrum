@@ -78,7 +78,7 @@ describe('SurveyAnswerFlow', () => {
             ],
             [
                 'Would you recommend the team?',
-                'NPS 0 to 10',
+                'NPS',
                 () =>
                     screen.getByRole('radiogroup', {
                         name: 'Would you recommend the team?',

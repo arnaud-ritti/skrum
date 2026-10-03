@@ -86,7 +86,7 @@ function KindBadge({ kind }: { kind: SurveyKind }) {
     const { t } = useTrans();
     const labels: Record<SurveyKind, string> = {
         scale: t('Scale 1 to 5'),
-        nps: t('NPS 0 to 10'),
+        nps: t('NPS'),
         single: t('Single choice'),
         multiple: t('Multiple choice'),
         text: t('Free text'),

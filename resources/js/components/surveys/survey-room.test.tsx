@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SurveyRoom } from '@/components/surveys/survey-room';
 import type { SurveySnapshot } from '@/lib/surveys/types';
@@ -50,27 +50,53 @@ function renderRoom(snapshot: SurveySnapshot = surveySnapshot()) {
 }
 
 describe('SurveyRoom', () => {
-    it('frames the survey in the session shell: the team, the type, the anonymity badge, the viewer', () => {
+    it('frames the survey in its own header: the title with the team, the anonymity badge, the viewer', () => {
         const { container } = renderRoom();
 
         expect(container.querySelectorAll('[data-realtime]')).toHaveLength(1);
         expect(
             screen.getByRole('region', { name: 'Survey' }).dataset.realtime,
         ).toBe('connected');
+
+        const header = screen.getByRole('banner');
+
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
         expect(
-            container.querySelector('[data-slot="session-overline"]')
-                ?.textContent,
-        ).toBe('Atlas · Survey');
-        expect(screen.getByText('Anonymous answers')).toBeTruthy();
+            within(header).getByRole('heading', { level: 1 }).textContent,
+        ).toBe('Team pulse');
         expect(
-            screen
+            header.querySelector('[data-slot="survey-team"]')?.textContent,
+        ).toBe('· Atlas');
+        expect(within(header).getByText('Anonymous answers')).toBeTruthy();
+        expect(
+            within(header)
                 .getByRole('link', { name: 'Back to the team' })
                 .getAttribute('href'),
         ).toBe('/teams/t1');
-        expect(screen.getByRole('img', { name: 'Mia Lopez' })).toBeTruthy();
-        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
-            'Team pulse',
-        );
+        expect(
+            within(header).getByRole('img', { name: 'Mia Lopez' }),
+        ).toBeTruthy();
+        expect(screen.getByRole('main')).toBeTruthy();
+        expect(
+            screen
+                .getByRole('main')
+                .contains(screen.getByRole('region', { name: 'Survey' })),
+        ).toBe(true);
+    });
+
+    it('shows neither the synced state nor the shortcuts button of the session pages', () => {
+        const { container } = renderRoom();
+
+        expect(screen.queryByText('Synced')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="session-synced"]'),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Keyboard shortcuts' }),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="session-overline"]'),
+        ).toBeNull();
     });
 
     it('names no team and links nowhere for a guest', () => {
@@ -88,10 +114,7 @@ describe('SurveyRoom', () => {
             }),
         );
 
-        expect(
-            container.querySelector('[data-slot="session-overline"]')
-                ?.textContent,
-        ).toBe('Survey');
+        expect(container.querySelector('[data-slot="survey-team"]')).toBeNull();
         expect(
             screen.queryByRole('link', { name: 'Back to the team' }),
         ).toBeNull();
@@ -292,13 +315,27 @@ describe('SurveyRoom', () => {
         ).toBe('/surveys/s1/results');
     });
 
-    it('shows the reconnecting banner with the survey sentence', () => {
+    it('shows the reconnecting banner with the survey sentence, and no pill in the header', () => {
         room.connection = { reconnecting: true, expired: false };
-        renderRoom();
+        const { container } = renderRoom();
 
         expect(screen.getByRole('status').textContent).toContain(
             'Your answers are saved as you give them; the counter is paused.',
         );
+        expect(
+            screen.getByRole('region', { name: 'Survey' }).dataset.realtime,
+        ).toBe('reconnecting');
+        expect(
+            container.querySelector('[data-slot="session-connection-pill"]'),
+        ).toBeNull();
+    });
+
+    it('shows the expired banner and makes the survey inert', () => {
+        room.connection = { reconnecting: false, expired: true };
+        const { container } = renderRoom();
+
+        expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+        expect(container.querySelector('[inert]')).not.toBeNull();
     });
 
     it('says a deleted survey is gone, outside any realtime root', () => {

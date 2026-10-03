@@ -3,15 +3,16 @@ import { BarChart3, Pencil, VenetianMask } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { Dispatch, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { SessionShell } from '@/components/session/session-shell';
 import type { SessionConnection } from '@/components/session/session-shell';
-import { SessionTitle } from '@/components/session/session-title';
+import { ConnectionState } from '@/components/skrum/connection-state';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTeamSurvey } from '@/hooks/use-team-survey';
 import { useTrans } from '@/hooks/use-trans';
-import SessionLayout from '@/layouts/skrum/session-layout';
+import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
+import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
+import { HeaderLogo, SelfAvatar } from '@/layouts/skrum/session-layout';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import type { PresenceMember } from '@/lib/retro/types';
 import { surveyApi } from '@/lib/surveys/api';
@@ -25,37 +26,81 @@ import { SurveyShare } from './survey-share';
 import { SurveyThanks } from './survey-thanks';
 import type { SurveyAnswerSaver } from './use-survey-answers';
 
-function SurveyHeading({ snapshot }: { snapshot: SurveySnapshot }) {
+/**
+ * The survey's own header (ScreenSurvey frame b): the logo, leading to the team
+ * for a member and to nothing for a guest; the title with the team; the
+ * actions of an editor; "Anonymous answers" and the viewer. Not the chrome of
+ * the session pages: no "Synced", no shortcuts button ("?" still opens them).
+ */
+function SurveyChrome({
+    snapshot,
+    actions,
+    children,
+}: {
+    snapshot: SurveySnapshot;
+    actions?: ReactNode;
+    children: ReactNode;
+}) {
     const { t } = useTrans();
-    const { survey, me } = snapshot;
-    const overline =
-        me.isGuest || survey.teamName === null
-            ? t('Survey')
-            : `${survey.teamName} · ${t('Survey')}`;
+    const { survey, me, links } = snapshot;
+    const shortcuts = useGlobalShortcuts();
+    const teamName = me.isGuest ? null : survey.teamName;
 
     return (
-        <SessionTitle
-            overline={overline}
-            badges={
+        <div
+            data-slot="survey-frame"
+            className="flex h-svh min-h-svh w-full min-w-0 flex-col overflow-hidden bg-skrum-canvas"
+        >
+            <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 md:px-6">
+                <HeaderLogo
+                    homeHref={me.isGuest ? null : links.team}
+                    isGuest={me.isGuest}
+                />
+                <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                    <h1 className="min-w-0 truncate text-base font-semibold">
+                        {survey.title}
+                    </h1>
+                    {teamName !== null && (
+                        <span
+                            data-slot="survey-team"
+                            className="hidden max-w-48 shrink-0 truncate text-sm text-muted-foreground md:inline"
+                        >
+                            {`· ${teamName}`}
+                        </span>
+                    )}
+                </div>
+                {actions}
                 <Badge
                     variant="secondary"
                     shape="pill"
                     icon={VenetianMask}
-                    className="hidden md:inline-flex"
+                    className="hidden shrink-0 md:inline-flex"
                 >
                     {t('Anonymous answers')}
                 </Badge>
-            }
-        >
-            {survey.title}
-        </SessionTitle>
+                <SelfAvatar
+                    self={{
+                        name: me.name,
+                        avatarUrl: me.avatarUrl,
+                        isGuest: me.isGuest,
+                    }}
+                />
+            </header>
+            <main className="relative min-h-0 flex-1">{children}</main>
+            <KeyboardShortcutsDialog
+                shortcuts={shortcuts}
+                palette={false}
+                sidebar={false}
+                preference="switch"
+            />
+        </div>
     );
 }
 
 /**
- * The shell of a survey page (ScreenSurvey frame b): the logo, leading to the
- * team for a member and to nothing for a guest, the title, the anonymity
- * badge, the connection state and the viewer. No rail.
+ * A live survey page: its own header, then the one realtime root, named
+ * "Survey", with the reconnecting banner (the survey's sentence) and the
+ * expired state that makes the page inert.
  */
 export function SurveyFrame({
     snapshot,
@@ -71,26 +116,43 @@ export function SurveyFrame({
     children: ReactNode;
 }) {
     const { t } = useTrans();
-    const { me, links } = snapshot;
+    const isReconnecting = connection.reconnecting && !connection.expired;
 
     return (
-        <SessionShell
-            kind="survey"
-            chrome="logo"
-            homeHref={me.isGuest ? null : links.team}
-            title={<SurveyHeading snapshot={snapshot} />}
-            self={{
-                name: me.name,
-                avatarUrl: me.avatarUrl,
-                isGuest: me.isGuest,
-            }}
-            actions={actions}
-            realtime={realtime}
-            connection={connection}
-            rootProps={{ role: 'region', 'aria-label': t('Survey') }}
-        >
-            {children}
-        </SessionShell>
+        <SurveyChrome snapshot={snapshot} actions={actions}>
+            <div
+                role="region"
+                aria-label={t('Survey')}
+                data-slot="session-root"
+                data-realtime={realtime}
+                className="flex h-full min-h-0 flex-col"
+            >
+                {isReconnecting && (
+                    <ConnectionState
+                        status="reconnecting"
+                        variant="banner"
+                        hint={t(
+                            'Your answers are saved as you give them; the counter is paused.',
+                        )}
+                        className="m-2"
+                    />
+                )}
+                {connection.expired && (
+                    <ConnectionState
+                        status="expired"
+                        variant="banner"
+                        onReload={() => window.location.reload()}
+                        className="m-2"
+                    />
+                )}
+                <div
+                    inert={connection.expired}
+                    className="relative min-h-0 flex-1"
+                >
+                    {children}
+                </div>
+            </div>
+        </SurveyChrome>
     );
 }
 
@@ -100,11 +162,7 @@ function SurveyGone({ snapshot }: { snapshot: SurveySnapshot }) {
     const teamUrl = snapshot.me.isGuest ? null : snapshot.links.team;
 
     return (
-        <SessionLayout
-            chrome="logo"
-            homeHref={teamUrl}
-            title={<SessionTitle>{snapshot.survey.title}</SessionTitle>}
-        >
+        <SurveyChrome snapshot={snapshot}>
             <div className="flex h-full items-center justify-center overflow-y-auto p-6">
                 <EmptyState
                     module="survey"
@@ -121,7 +179,7 @@ function SurveyGone({ snapshot }: { snapshot: SurveySnapshot }) {
                     }
                 />
             </div>
-        </SessionLayout>
+        </SurveyChrome>
     );
 }
 
