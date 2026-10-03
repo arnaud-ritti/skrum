@@ -27,9 +27,7 @@ class RetroRotiNudgesController extends Controller
 
         $key = "roti-nudge:{$retro->id}";
 
-        abort_if(RateLimiter::tooManyAttempts($key, 1), 429, __('You can nudge again in a moment.'));
-
-        RateLimiter::hit($key, Retro::NudgeIntervalSeconds);
+        abort_if(RateLimiter::hit($key, Retro::NudgeIntervalSeconds) > 1, 429, __('You can nudge again in a moment.'));
 
         (new RotiNudged($retro->id))->sendToOthers();
 
