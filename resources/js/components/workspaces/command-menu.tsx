@@ -383,7 +383,7 @@ export function CommandMenu({ links }: { links: Links }) {
             <Button
                 type="button"
                 variant="outline"
-                className="hidden w-65 justify-start gap-2 px-3 font-normal text-muted-foreground md:inline-flex"
+                className="hidden w-65 max-w-full justify-start gap-2 px-3 font-normal text-muted-foreground md:inline-flex"
                 onClick={() => setIsOpen(true)}
                 aria-keyshortcuts="Meta+K Control+K"
                 data-test="command-menu-button"
