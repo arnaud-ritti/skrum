@@ -10623,7 +10623,7 @@ git commit -m "feat(surveys): the builder — questions of five kinds, reorder, 
 | `survey-closed.tsx` | "This survey is closed.", the closing date, and the results link | — |
 | preview mode | `SurveyAnswerFlow preview`: no request, a local answers map, "Finish" closes the dialog | — |
 
-- [ ] **Step 3: Hooks kept for later tests.** `main[aria-label="Survey"]`; heading of the current question; `[data-test="survey-step"]` with `data-step`; buttons "Previous", "Next", "Finish", "Change my answers"; the radiogroup named by the question; text field named by the question; comment field "Why this score? (optional)".
+- [ ] **Step 3: Hooks kept for later tests.** the region named "Survey" (`getByRole('region', { name: 'Survey' })`, the root of the session shell: the frame's `<main>` stays unlabelled, as on every session page); heading of the current question; `[data-test="survey-step"]` with `data-step`; buttons "Previous", "Next", "Finish", "Change my answers"; the radiogroup named by the question; text field named by the question; comment field "Why this score? (optional)".
 - [ ] **Step 4: States in Vitest:** each of the five kinds as the current step; required error; not saved; finished without results; finished with results; closed; reconnecting; a guest (no team in the overline, no logo link); the phone layout (`useIsMobile` mocked) for a scale, an NPS and a text.
 - [ ] **Step 5: Gates and commits.** `npm run test -- surveys/answer-flow survey-room survey-answer survey-progress survey-thanks survey-closed session-shell`, `npm run types:check`, `npm run check`, `npm run build:front`.
 
