@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -24,9 +26,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $group_name
  * @property CardSentiment|null $sentiment
  * @property string|null $category
+ * @property Carbon|null $discussed_at
  * @property-read Participant $participant
  */
-#[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id', 'group_name'])]
+#[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id', 'group_name', 'discussed_at'])]
 class Card extends Model
 {
     /** @use HasFactory<CardFactory> */
@@ -83,6 +86,12 @@ class Card extends Model
         return $this->hasMany(CardComment::class)->oldest();
     }
 
+    /** @return HasOne<TopicNote, $this> */
+    public function note(): HasOne
+    {
+        return $this->hasOne(TopicNote::class);
+    }
+
     public function clearGroupNameWhenEmpty(): bool
     {
         if ($this->group_name === null) {
@@ -114,6 +123,7 @@ class Card extends Model
         return [
             'position' => 'integer',
             'sentiment' => CardSentiment::class,
+            'discussed_at' => 'datetime',
         ];
     }
 }

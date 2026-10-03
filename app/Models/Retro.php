@@ -8,6 +8,7 @@ use App\Enums\GameKind;
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
 use App\Events\Retros\ResultsChanged;
+use App\Exceptions\ModelInvariantViolation;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -49,6 +50,10 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $summary_requested_at
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
+ * @property int|null $timer_paused_seconds
+ * @property int|null $topic_seconds
+ * @property int|null $max_votes_per_card
+ * @property Carbon|null $roti_revealed_at
  * @property string|null $highlighted_card_id
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
@@ -63,6 +68,7 @@ use Illuminate\Support\Collection;
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
     'icebreaker_enabled', 'workspace_template_id',
+    'timer_paused_seconds', 'topic_seconds', 'max_votes_per_card', 'roti_revealed_at',
     'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at', 'icebreaker_game',
 ])]
 #[Hidden(['guest_token'])]
@@ -83,6 +89,35 @@ class Retro extends Model implements DeliverySubject
 
     public const SummaryPendingTimeoutMinutes = 10;
 
+    /**
+     * Checked here and not in a `saving` listener: a faked or muted event dispatcher
+     * (Event::fake, saveQuietly) would skip the listener. A query builder update goes
+     * through no model and is not checked.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        if ($this->isDirty(['timer_ends_at', 'timer_paused_seconds'])) {
+            $this->refuseRunningAndPausedTimer();
+        }
+
+        return parent::save($options);
+    }
+
+    private function refuseRunningAndPausedTimer(): void
+    {
+        if ($this->timer_ends_at === null) {
+            return;
+        }
+
+        if ($this->timer_paused_seconds === null) {
+            return;
+        }
+
+        throw ModelInvariantViolation::because($this, 'a timer either runs or is paused, never both');
+    }
+
     public function voteLimit(): int
     {
         if ($this->votes_per_participant !== null) {
@@ -94,6 +129,33 @@ class Retro extends Model implements DeliverySubject
             : $this->cards()->whereNull('parent_card_id')->count();
 
         return min(10, $topLevelCards + 3);
+    }
+
+    /**
+     * The cap in force: an automatic vote limit below the stored cap wins.
+     */
+    public function maxVotesPerCard(): ?int
+    {
+        if ($this->max_votes_per_card === null) {
+            return null;
+        }
+
+        return min($this->max_votes_per_card, $this->voteLimit());
+    }
+
+    /** @return array<int, string> */
+    public function votingFinishedIds(): array
+    {
+        /** @var array<int, string> $ids */
+        $ids = $this->participants()->whereNotNull('voting_finished_at')->orderBy('id')->pluck('id')->all();
+
+        return $ids;
+    }
+
+    /** @return HasMany<TopicNote, $this> */
+    public function topicNotes(): HasMany
+    {
+        return $this->hasMany(TopicNote::class);
     }
 
     public function showsVoteTotals(): bool
@@ -345,6 +407,10 @@ class Retro extends Model implements DeliverySubject
             'votes_per_participant' => 'integer',
             'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',
+            'timer_paused_seconds' => 'integer',
+            'topic_seconds' => 'integer',
+            'max_votes_per_card' => 'integer',
+            'roti_revealed_at' => 'datetime',
             'completed_at' => 'datetime',
             'started_at' => 'datetime',
             'summary_status' => SummaryStatus::class,

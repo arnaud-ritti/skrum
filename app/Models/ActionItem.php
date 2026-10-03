@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $team_id
  * @property string|null $retro_id
+ * @property string|null $card_id
  * @property string $content
  * @property ActionItemPriority $priority
  * @property CarbonInterface|null $due_on
@@ -52,7 +53,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'team_id', 'retro_id', 'content', 'priority', 'due_on', 'completed_at',
     'assignee_user_id', 'assignee_participant_id', 'created_by_participant_id', 'created_by_user_id',
-    'theme_id', 'theme_name', 'recurrence', 'previous_occurrence_id',
+    'theme_id', 'theme_name', 'recurrence', 'previous_occurrence_id', 'card_id',
 ])]
 class ActionItem extends Model
 {
@@ -127,6 +128,12 @@ class ActionItem extends Model
     public function retro(): BelongsTo
     {
         return $this->belongsTo(Retro::class);
+    }
+
+    /** @return BelongsTo<Card, $this> */
+    public function card(): BelongsTo
+    {
+        return $this->belongsTo(Card::class);
     }
 
     /** @return BelongsTo<User, $this> */

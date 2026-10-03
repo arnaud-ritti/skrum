@@ -32,6 +32,7 @@ it('presents every field of a board item', function () {
     expect(presentedActionItem($item))->toBe([
         'id' => $item->id,
         'retroId' => $retro->id,
+        'cardId' => null,
         'teamId' => $retro->team_id,
         'content' => 'Speed up CI',
         'priority' => 'high',

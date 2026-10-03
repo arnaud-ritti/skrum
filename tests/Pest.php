@@ -200,6 +200,23 @@ function retroGuestCookie(Participant $participant, string $secret = 'secret'): 
     return [GuestCookie::name(GuestCookie::RetroScope, $participant->retro_id) => "{$participant->id}|{$secret}"];
 }
 
+function retroGuest(Retro $retro, string $secret = 'secret'): Participant
+{
+    $retro->forceFill(['guest_access_enabled' => true])->save();
+
+    return Participant::factory()->guest($secret)->create(['retro_id' => $retro->id]);
+}
+
+/**
+ * A top-level card of the retro: a topic once the retro discusses.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function topicCard(Retro $retro, array $attributes = []): Card
+{
+    return Card::factory()->create(['retro_id' => $retro->id, ...$attributes]);
+}
+
 function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void
 {
     $options = $survey->options()->get()->values();

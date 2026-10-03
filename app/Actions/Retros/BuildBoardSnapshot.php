@@ -23,6 +23,7 @@ use App\Models\Card;
 use App\Models\GamePlayer;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\TopicNote;
 use App\Models\User;
 use App\Support\Alphabetical;
 use App\Support\EmojibaseLocale;
@@ -58,6 +59,8 @@ class BuildBoardSnapshot
         private ExpireGameRound $expireGameRound,
         private BuildGameSnapshot $buildGameSnapshot,
         private IcebreakerGameOptions $icebreakerGameOptions,
+        private PresentTopicNote $presentTopicNote,
+        private SummarizeRoti $summarizeRoti,
     ) {}
 
     /**
@@ -73,6 +76,7 @@ class BuildBoardSnapshot
             'cards.reactions.participant.user',
             'cards.comments.participant.user',
             'actionItems' => fn ($query) => $query->with(ActionItem::presentationRelations())->withCount('comments'),
+            'topicNotes',
         ]);
 
         $showsTotals = $retro->showsVoteTotals();
@@ -113,12 +117,16 @@ class BuildBoardSnapshot
                 'aiSummaryEnabled' => $retro->ai_summary_enabled,
                 'votesPerParticipant' => $retro->voteLimit(),
                 'votesAuto' => $retro->votes_per_participant === null,
+                'maxVotesPerCard' => $retro->maxVotesPerCard(),
+                'maxVotesPerCardSetting' => $retro->max_votes_per_card,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
                 'guestUrl' => $retro->guest_access_enabled && $isFacilitator
                     ? route('retros.join.show', $retro->guest_token)
                     : null,
                 'facilitatorParticipantId' => $retro->facilitator_participant_id,
                 'timerEndsAt' => $retro->timer_ends_at?->toIso8601String(),
+                'timerPausedSeconds' => $retro->timer_paused_seconds,
+                'topicSeconds' => $retro->topic_seconds,
                 'highlightedCardId' => $retro->highlighted_card_id,
                 'completedAt' => $retro->completed_at?->toIso8601String(),
             ],
@@ -161,6 +169,12 @@ class BuildBoardSnapshot
             'teamMembers' => $this->teamMembers($retro),
             'insights' => $this->buildInsights->handle($retro),
             'writersCount' => $retro->writersCount(),
+            'voting' => ['finishedIds' => $retro->votingFinishedIds()],
+            'topicNotes' => $retro->topicNotes
+                ->sortBy('card_id')
+                ->map(fn (TopicNote $note): array => $this->presentTopicNote->handle($note, $note->card_id))
+                ->values()
+                ->all(),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,
             'results' => $this->buildResults->handle($retro, $viewer, $surveys),
@@ -286,7 +300,13 @@ class BuildBoardSnapshot
      *     myScore: ?int,
      *     respondents: int,
      *     voterIds: array<int, string>,
-     *     canVote: bool
+     *     canVote: bool,
+     *     revealed: bool,
+     *     results: ?array{
+     *         distribution: array<int, array{score: int, count: int}>,
+     *         average: ?float,
+     *         respondents: int
+     *     }
      * }
      */
     private function roti(Retro $retro, Participant $viewer): array
@@ -300,6 +320,10 @@ class BuildBoardSnapshot
             'respondents' => count($voterIds),
             'voterIds' => $voterIds,
             'canVote' => $retro->takesRotiVotes(),
+            'revealed' => $retro->roti_revealed_at !== null,
+            'results' => $retro->roti_revealed_at !== null || $retro->phase === RetroPhase::Completed
+                ? $this->summarizeRoti->handle($retro)
+                : null,
         ];
     }
 

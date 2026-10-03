@@ -45,7 +45,7 @@ class RetroTimersController extends Controller
                 $markRetroStarted->handle($locked);
             }
 
-            (new TimerChanged($locked->id, $endsAt?->toIso8601String()))->sendToOthers();
+            TimerChanged::of($locked)->sendToOthers();
 
             $scheduleIcebreakerExpiry->handle($locked);
         });
