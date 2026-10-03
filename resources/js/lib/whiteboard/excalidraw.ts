@@ -12,6 +12,7 @@ export {
 } from '@excalidraw/excalidraw';
 export type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 export type {
+    AppState,
     BinaryFiles,
     ExcalidrawImperativeAPI,
 } from '@excalidraw/excalidraw/types';
