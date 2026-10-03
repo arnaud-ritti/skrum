@@ -52,6 +52,8 @@ use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\InstanceConfiguration\ConfigurationCatalogue;
+use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
@@ -1909,4 +1911,23 @@ function withUnreachableDatabase(Closure $callback): void
         config(['database.default' => $default]);
         DB::purge('unreachable');
     }
+}
+
+/**
+ * Sets configuration as if the process had booted with that environment: an OIDC connection key
+ * is mirrored into services.oidc_* as the package's boot() does, and the baseline is captured again.
+ *
+ * @param  array<string, mixed>  $config
+ */
+function withEnvironmentConfiguration(array $config): void
+{
+    foreach ($config as $key => $value) {
+        config([$key => $value]);
+
+        if (preg_match('/^oidc\.connections\.(\w+)\.(\w+)$/', $key, $match) === 1) {
+            config(["services.oidc_{$match[1]}.{$match[2]}" => $value]);
+        }
+    }
+
+    app()->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
 }
