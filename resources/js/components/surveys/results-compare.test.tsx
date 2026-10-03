@@ -41,6 +41,14 @@ function row(label: string): HTMLElement {
     return screen.getByRole('listitem', { name: label });
 }
 
+function tableRows(table: HTMLElement): string[][] {
+    return Array.from(table.querySelectorAll('tr')).map((tableRow) =>
+        Array.from(tableRow.querySelectorAll('th, td')).map(
+            (cell) => cell.textContent ?? '',
+        ),
+    );
+}
+
 describe('ResultsCompare', () => {
     it('says nothing compares yet when the team has no other closed survey', () => {
         renderWithProviders(
@@ -76,25 +84,160 @@ describe('ResultsCompare', () => {
 
         await screen.findByRole('listitem', { name: 'Workload of the sprint' });
 
-        expect(row('Workload of the sprint').textContent).toContain(
-            'Scale 1 to 5',
+        const scale = row('Workload of the sprint');
+
+        expect(scale.textContent).toContain('Scale 1 to 5');
+        expect(scale.textContent).toContain('3.8 / 5');
+        expect(scale.textContent).toContain('3.4 / 5');
+        expect(
+            scale.querySelector('[data-slot="survey-compare-legend"]')
+                ?.textContent,
+        ).toBe('NowBefore');
+
+        const chart = scale.querySelector(
+            '[data-slot="survey-compare-chart"]',
+        ) as HTMLElement;
+
+        expect(chart.getAttribute('aria-hidden')).toBe('true');
+        expect(chart.querySelectorAll('[data-series="now"]')).toHaveLength(5);
+        expect(chart.querySelectorAll('[data-series="before"]')).toHaveLength(
+            5,
         );
-        expect(row('Workload of the sprint').textContent).toContain('3.8 / 5');
-        expect(row('Workload of the sprint').textContent).toContain('3.4 / 5');
-        expect(row('Workload of the sprint').textContent).toContain(
-            '+0.4, higher',
-        );
+        expect(
+            row('Would you recommend the team?').querySelectorAll(
+                '[data-series="before"]',
+            ),
+        ).toHaveLength(11);
         expect(row('Would you recommend the team?').textContent).toContain(
-            '+11 points, higher',
+            '+22',
         );
-        expect(row('Which ritual must we keep?').textContent).toContain(
-            '−10 percentage points, lower',
+        expect(
+            row('Which ritual must we keep?').querySelectorAll(
+                '[data-series="now"]',
+            ),
+        ).toHaveLength(2);
+        expect(
+            tableRows(within(row('A word for the team?')).getByRole('table')),
+        ).toEqual([
+            ['Value', 'Now', 'Before'],
+            ['Answers', '7', '5'],
+        ]);
+    });
+
+    it('gives the two series of each question as a table, without a difference', async () => {
+        api.comparison.mockResolvedValue({ comparison: mockupComparison });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
         );
-        expect(row('Which ritual must we keep?').textContent).toContain(
-            'no change',
+
+        await screen.findByRole('listitem', { name: 'Workload of the sprint' });
+
+        expect(
+            tableRows(
+                screen.getByRole('table', { name: 'Workload of the sprint' }),
+            ),
+        ).toEqual([
+            ['Value', 'Now', 'Before'],
+            ['1', '0%', '0%'],
+            ['2', '11%', '13%'],
+            ['3', '22%', '38%'],
+            ['4', '44%', '38%'],
+            ['5', '22%', '13%'],
+        ]);
+        expect(
+            tableRows(
+                screen.getByRole('table', {
+                    name: 'Which ritual must we keep?',
+                }),
+            ),
+        ).toEqual([
+            ['Option', 'Now', 'Before'],
+            ['Retrospective', '56%', '56%'],
+            ['Daily', '22%', '32%'],
+        ]);
+        expect(document.body.textContent).not.toContain('Difference');
+        expect(document.body.textContent).not.toContain('higher');
+        expect(document.body.textContent).not.toContain('lower');
+    });
+
+    it('shows the tables in place of the charts on request', async () => {
+        api.comparison.mockResolvedValue({ comparison: mockupComparison });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
         );
-        expect(row('A word for the team?').textContent).toContain('7 answers');
-        expect(row('A word for the team?').textContent).toContain('5 answers');
+
+        await screen.findByRole('listitem', { name: 'Workload of the sprint' });
+
+        const table = screen.getByRole('table', {
+            name: 'Workload of the sprint',
+        });
+
+        expect(table.className).toContain('sr-only');
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'View as table' }),
+        );
+
+        expect(
+            screen.getByRole('table', { name: 'Workload of the sprint' })
+                .className,
+        ).not.toContain('sr-only');
+        expect(
+            document.querySelector('[data-slot="survey-compare-chart"]'),
+        ).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'View as chart' }),
+        ).not.toBeNull();
+    });
+
+    it('draws the two means when the two scales are not of the same length', async () => {
+        const [scale] = mockupComparison.pairs;
+
+        api.comparison.mockResolvedValue({
+            comparison: {
+                ...mockupComparison,
+                pairs: [
+                    {
+                        ...scale,
+                        other: {
+                            mean: 3.4,
+                            responses: 8,
+                            shares: Array.from({ length: 10 }, (_, index) => ({
+                                key: String(index + 1),
+                                label: String(index + 1),
+                                percent: 10,
+                            })),
+                        },
+                    },
+                ],
+            },
+        });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
+        );
+
+        await screen.findByRole('listitem', { name: 'Workload of the sprint' });
+
+        expect(
+            tableRows(
+                screen.getByRole('table', { name: 'Workload of the sprint' }),
+            ),
+        ).toEqual([
+            ['Value', 'Now', 'Before'],
+            ['Average', '3.8 / 5', '3.4 / 5'],
+        ]);
     });
 
     it('tells each option of a choice apart by its id, even when two share a label', async () => {
@@ -129,14 +272,17 @@ describe('ResultsCompare', () => {
             />,
         );
 
-        const choice = await screen.findByRole('listitem', {
+        await screen.findByRole('listitem', {
             name: 'Which ritual must we keep?',
         });
-        const nows = within(choice)
-            .getAllByText('Now')
-            .map((term) => term.nextElementSibling?.textContent);
 
-        expect(nows).toEqual(['40%', '10%']);
+        expect(
+            tableRows(
+                screen.getByRole('table', {
+                    name: 'Which ritual must we keep?',
+                }),
+            ).map(([, now]) => now),
+        ).toEqual(['Now', '40%', '10%']);
     });
 
     it('says no option is in common when both surveys have answers but no shared option', async () => {
