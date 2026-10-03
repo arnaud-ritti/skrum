@@ -115,7 +115,7 @@ PHP tests ran on PostgreSQL in the whole suites of §1; Vitest files once (`npm 
 | 15 | No confirmation, "Set a password", `password_set_at`, asked again after; no card under `sso_required` | `SetPasswordTest` (five cases), `PasswordConfirmationGuardTest` (S-1 cases), Upgrade `PasswordSetAtBackfillTest`; `password-card.test.tsx` |
 | 16 | Taken colours on the five join pages, twelve taken, 0 and 13 refused | `GuestColourTest` (seven cases, datasets over the five kinds); `guest-join-page.test.tsx`, the five `pages/*/join.test.tsx`, `guest-join.test.tsx`, `presence-swatches.test.tsx` |
 | 17 | Code `XXX-XXXX` to who sees the link, none for a guest; regenerate | `JoinCodesTest` (seven cases), unit `JoinCodeTest`, concurrency `JoinCodeIssueTest`; `GameSnapshotTest`; the five share-mount tests, `share-dialog.test.tsx` |
-| 18 | `POST join` in any case and form; same error; throttled | `JoinByCodeTest` (four cases); `join-code.test.ts`, `pages/sessions/join-code.test.tsx`, `join-code-card.test.tsx`, `login-form.test.tsx` |
+| 18 | `POST join` in any case and form; same error; throttled | `JoinByCodeTest` (unknown, closed, deleted, look-alike, throttle); `join-code.test.ts`, `pages/sessions/join-code.test.tsx`, `join-code-card.test.tsx`, `login-form.test.tsx` |
 | 19 | Four languages, informal; captures compared | `TranslationKeysTest`, `InformalRegisterTest` (inside the whole suite); captures of Task 24 (`4acf27ac`), comparison and fixes of Task 25 (`56a154ad`, `198c56e0`) |
 | 20 | Whole suites and concurrency on PostgreSQL; portability arch test | §1. SQLite, MariaDB, MySQL and the concurrency suite on a SQLite file: the roadmap's final matrix |
 | 21 | Rule S-1 both ways | §2 |
@@ -190,6 +190,11 @@ accounts.", "Show my linked accounts", "Join at :url", "Code copied", "Type the 
 ## 9. Decisions taken on the owner's behalf
 
 - The plan's lanes were flattened (controller): every task ran in order on the plan branch, so no lane merge.
+- `POST join` uses the inline limiter `throttle:10,1,joinCodes` instead of the named `RateLimiter::for('joinCodes')`
+  the plan describes. Same behaviour: its own `joinCodes` bucket, keyed by IP for visitors and by user for
+  members, the 11th try in a minute answers 429 (`JoinByCodeTest`, "throttles guessing").
+- "Enter it on :url" left the four language files: the Share dialog now says "Join at :url" and nothing else
+  used it.
 - Task 26: the motion variants moved out of the design-system copy of the stylesheet (§1.1); rector applied to the
   files this plan created only (§1.2); the whole suites ran with four processes instead of eight.
 - Built in earlier tasks and visible in their commits: the presence colour is sent with the profile only once one

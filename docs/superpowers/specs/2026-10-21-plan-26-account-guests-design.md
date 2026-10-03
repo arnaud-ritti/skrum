@@ -244,7 +244,7 @@ In the avatar group (`avatar-style-grid.tsx`), under "Members can choose their o
 
 The five share mounts pass `invite.code` and `invite.joinUrl` (`<host>/join`, without scheme). "Copy the code" exists already. Regenerate updates both.
 
-### 8.9 Join with a code — new page `join/code` (no mockup: P26-08)
+### 8.9 Join with a code — new page `/join` (no mockup: P26-08)
 
 Auth layout, card "Join a session", field "Session code" (mono, upper case, placeholder `ABC-1234`, autofocus, `autocomplete="off"`, the `Input` mockup's invalid state "The code has 8 characters" for a wrong length), button "Continue", link "Have an account? Sign in". The login page gains the link "Join a session with a code" under its form (P26-09).
 
