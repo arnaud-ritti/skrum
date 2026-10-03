@@ -22,7 +22,7 @@ describe('SurveyThanks', () => {
         ).toBeTruthy();
         expect(screen.getByText('3 of 11 have answered')).toBeTruthy();
         expect(
-            screen.getByText('Results will show when the survey is closed'),
+            screen.getByText('Results will show when the survey is closed.'),
         ).toBeTruthy();
 
         fireEvent.click(
@@ -58,7 +58,7 @@ describe('SurveyThanks', () => {
         );
 
         expect(
-            screen.queryByText('Results will show when the survey is closed'),
+            screen.queryByText('Results will show when the survey is closed.'),
         ).toBeNull();
         expect(screen.getByRole('article', { name: 'Mood' })).toBeTruthy();
         expect(screen.getByText('4 responses')).toBeTruthy();

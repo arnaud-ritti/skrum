@@ -20,10 +20,13 @@ function SurveyAnswerResults({ snapshot }: { snapshot: SurveySnapshot }) {
     if (results.belowThreshold) {
         return (
             <p className="text-center text-sm text-muted-foreground">
-                {t('Results appear from :threshold answers. :count so far.', {
-                    threshold: survey.resultsThreshold,
-                    count: results.responses,
-                })}
+                {t(
+                    'Results appear from :threshold answers. :responses so far.',
+                    {
+                        threshold: survey.resultsThreshold,
+                        responses: results.responses,
+                    },
+                )}
             </p>
         );
     }
@@ -93,7 +96,7 @@ export function SurveyThanks({
                 ) : (
                     isOpen && (
                         <p className="text-center text-sm text-muted-foreground">
-                            {t('Results will show when the survey is closed')}
+                            {t('Results will show when the survey is closed.')}
                         </p>
                     )
                 )}

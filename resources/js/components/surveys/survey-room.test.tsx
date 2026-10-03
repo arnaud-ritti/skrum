@@ -226,7 +226,7 @@ describe('SurveyRoom', () => {
             screen.getByText('Thank you — your answers are saved.'),
         ).toBeTruthy();
         expect(
-            screen.getByText('Results will show when the survey is closed'),
+            screen.getByText('Results will show when the survey is closed.'),
         ).toBeTruthy();
         expect(document.querySelector('[data-test="survey-step"]')).toBeNull();
     });
