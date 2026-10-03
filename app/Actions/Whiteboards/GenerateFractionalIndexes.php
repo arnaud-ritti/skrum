@@ -12,9 +12,9 @@ class GenerateFractionalIndexes
 {
     private const string Digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    private const int Base = 62;
+    private const string HeadLetters = 'abcdefghijklmnopqrstuvwxyz';
 
-    private const int MaxWidth = 26;
+    private const int Base = 62;
 
     /**
      * @return list<string>
@@ -39,7 +39,7 @@ class GenerateFractionalIndexes
             $width++;
         }
 
-        if ($width > self::MaxWidth) {
+        if ($width > strlen(self::HeadLetters)) {
             throw new OverflowException("No fractional index past the width of the head letter z: position {$position}.");
         }
 
@@ -50,6 +50,6 @@ class GenerateFractionalIndexes
             $position = intdiv($position, self::Base);
         }
 
-        return chr(ord('a') + $width - 1).$digits;
+        return self::HeadLetters[$width - 1].$digits;
     }
 }
