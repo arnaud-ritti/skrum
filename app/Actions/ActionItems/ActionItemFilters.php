@@ -2,6 +2,7 @@
 
 namespace App\Actions\ActionItems;
 
+use App\Enums\ActionItemPriority;
 use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -9,37 +10,88 @@ use Illuminate\Support\Str;
 
 class ActionItemFilters
 {
-    public const Statuses = ['open', 'overdue', 'completed', 'all'];
+    /**
+     * Single status values, as MCP takes them and as links and stored filters of before
+     * plan 24 carry them: `open` is "not done", `overdue` is "not done and late".
+     */
+    public const Statuses = ['open', 'doing', 'overdue', 'completed', 'all'];
 
+    public const StatusTokens = ['todo', 'doing', 'completed'];
+
+    public const DefaultStatuses = ['todo', 'doing'];
+
+    public const DueBuckets = ['overdue', 'today', 'week', 'later', 'none'];
+
+    public const Sources = ['retro', 'outside'];
+
+    /**
+     * @param  array<int, string>  $statuses  StatusTokens, canonical order
+     * @param  array<int, string>  $priorities  priority values, canonical order; empty is every priority
+     */
     public function __construct(
-        public string $status = 'open',
+        public array $statuses = self::DefaultStatuses,
         public ?string $assignee = null,
         public ?string $teamId = null,
         public ?string $itemId = null,
+        public array $priorities = [],
+        public ?string $due = null,
+        public ?string $source = null,
     ) {}
 
     /**
-     * Unknown values fall back to the defaults instead of failing.
-     *
      * @param  Collection<int, Team>  $visibleTeams
      */
     public static function fromRequest(Request $request, Collection $visibleTeams): self
     {
-        $status = $request->query('status');
-        $team = $request->query('team');
-        $item = $request->query('item');
+        return self::fromQuery($request->query(), $visibleTeams);
+    }
+
+    /**
+     * The page's parameters as an array: the request's query, or the `filters` of an "all
+     * matching" bulk request. Unknown values fall back to the defaults instead of failing; a
+     * team the viewer cannot see is ignored, as on the page.
+     *
+     * @param  array<array-key, mixed>  $query
+     * @param  Collection<int, Team>  $visibleTeams
+     */
+    public static function fromQuery(array $query, Collection $visibleTeams): self
+    {
+        $team = $query['team'] ?? null;
+        $item = $query['item'] ?? null;
+        [$statuses, $statusDue] = self::readStatus($query['status'] ?? null);
 
         return new self(
-            status: is_string($status) && in_array($status, self::Statuses, true) ? $status : 'open',
-            assignee: self::assignee($request->query('assignee')),
+            statuses: $statuses,
+            assignee: self::assignee($query['assignee'] ?? null),
             teamId: is_string($team) && $visibleTeams->contains('id', $team) ? $team : null,
             itemId: is_string($item) && Str::isUuid($item) ? $item : null,
+            priorities: self::many($query['priority'] ?? null, self::priorityValues()),
+            due: self::one($query['due'] ?? null, self::DueBuckets) ?? $statusDue,
+            source: self::one($query['source'] ?? null, self::Sources),
         );
     }
 
     /**
+     * One of `Statuses`, as MCP sends it.
+     */
+    public static function forStatus(string $status, ?string $assignee = null): self
+    {
+        [$statuses, $due] = self::readStatus($status);
+
+        return new self(statuses: $statuses, assignee: self::assignee($assignee), due: $due);
+    }
+
+    public function hasEveryStatus(): bool
+    {
+        return count($this->statuses) === count(self::StatusTokens);
+    }
+
+    /**
      * @return array{
-     *     status: string,
+     *     status: array<int, string>,
+     *     priority: array<int, string>,
+     *     due: ?string,
+     *     source: ?string,
      *     assignee: ?string,
      *     team: ?string,
      *     item: ?string
@@ -48,11 +100,60 @@ class ActionItemFilters
     public function toArray(): array
     {
         return [
-            'status' => $this->status,
+            'status' => $this->statuses,
+            'priority' => $this->priorities,
+            'due' => $this->due,
+            'source' => $this->source,
             'assignee' => $this->assignee,
             'team' => $this->teamId,
             'item' => $this->itemId,
         ];
+    }
+
+    /**
+     * @return array{0: array<int, string>, 1: ?string} the statuses and the due bucket a status value stands for
+     */
+    private static function readStatus(mixed $value): array
+    {
+        return match ($value) {
+            'open' => [self::DefaultStatuses, null],
+            'overdue' => [self::DefaultStatuses, 'overdue'],
+            'all' => [self::StatusTokens, null],
+            default => [self::many($value, self::StatusTokens) ?: self::DefaultStatuses, null],
+        };
+    }
+
+    /**
+     * The known values of a comma list, once each, in the order of $known.
+     *
+     * @param  array<int, string>  $known
+     * @return array<int, string>
+     */
+    private static function many(mixed $value, array $known): array
+    {
+        if (! is_string($value)) {
+            return [];
+        }
+
+        $given = explode(',', $value);
+
+        return array_values(array_filter($known, fn (string $candidate): bool => in_array($candidate, $given, true)));
+    }
+
+    /**
+     * @param  array<int, string>  $known
+     */
+    private static function one(mixed $value, array $known): ?string
+    {
+        return is_string($value) && in_array($value, $known, true) ? $value : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function priorityValues(): array
+    {
+        return array_map(fn (ActionItemPriority $priority): string => $priority->value, ActionItemPriority::cases());
     }
 
     private static function assignee(mixed $value): ?string

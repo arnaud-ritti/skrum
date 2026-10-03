@@ -2,6 +2,7 @@
 
 namespace App\Actions\ActionItems;
 
+use App\Enums\ActionItemPriority;
 use App\Models\ActionItem;
 use App\Models\User;
 use App\Models\Workspace;
@@ -30,13 +31,14 @@ class ActionItemQuery
      */
     public function filter(Builder $query, User $user, ActionItemFilters $filters): Builder
     {
-        $this->filterByStatus($query, $filters->status);
+        $this->filterByStatuses($query, $filters);
+        $this->filterByDue($query, $filters->due);
 
         return $this->filterByScope($query, $user, $filters);
     }
 
     /**
-     * Counts under the team and assignee filters, whatever the status filter.
+     * Counts under the team, assignee, priority and source filters, whatever the status and the due date.
      *
      * @return array{
      *     open: int,
@@ -62,6 +64,8 @@ class ActionItemQuery
     }
 
     /**
+     * What the counters follow: everything but the status and the due date.
+     *
      * @param  Builder<ActionItem>  $query
      * @return Builder<ActionItem>
      */
@@ -71,6 +75,18 @@ class ActionItemQuery
 
         if ($filters->teamId !== null) {
             $query->where('team_id', $filters->teamId);
+        }
+
+        if ($filters->priorities !== [] && count($filters->priorities) < count(ActionItemPriority::cases())) {
+            $query->whereIn('priority', $filters->priorities);
+        }
+
+        if ($filters->source === 'retro') {
+            $query->whereNotNull('retro_id');
+        }
+
+        if ($filters->source === 'outside') {
+            $query->whereNull('retro_id');
         }
 
         return $query;
@@ -121,23 +137,77 @@ class ActionItemQuery
     /**
      * @param  Builder<ActionItem>  $query
      */
-    private function filterByStatus(Builder $query, string $status): void
+    private function filterByStatuses(Builder $query, ActionItemFilters $filters): void
     {
-        if ($status === 'all') {
+        if ($filters->hasEveryStatus()) {
             return;
         }
 
-        if ($status === 'completed') {
-            $query->whereNotNull('completed_at');
+        $query->where(function (Builder $query) use ($filters): void {
+            foreach ($filters->statuses as $status) {
+                $query->orWhere(function (Builder $query) use ($status): void {
+                    if ($status === 'completed') {
+                        $query->whereNotNull('completed_at');
+
+                        return;
+                    }
+
+                    $query->whereNull('completed_at');
+
+                    if ($status === 'doing') {
+                        $query->whereNotNull('started_at');
+
+                        return;
+                    }
+
+                    $query->whereNull('started_at');
+                });
+            }
+        });
+    }
+
+    /**
+     * Dates are compared as `Y-m-d` strings (docs/database.md rule 11).
+     *
+     * @param  Builder<ActionItem>  $query
+     */
+    private function filterByDue(Builder $query, ?string $due): void
+    {
+        if ($due === null) {
+            return;
+        }
+
+        $today = ActionItem::today();
+        $todayDate = $today->toDateString();
+        $lastOfWeek = $today->addDays(6)->toDateString();
+
+        if ($due === 'none') {
+            $query->whereNull('due_on');
 
             return;
         }
 
-        $query->whereNull('completed_at');
+        $query->whereNotNull('due_on');
 
-        if ($status === 'overdue') {
-            $query->whereNotNull('due_on')->where('due_on', '<', ActionItem::today()->toDateString());
+        if ($due === 'overdue') {
+            $query->whereNull('completed_at')->where('due_on', '<', $todayDate);
+
+            return;
         }
+
+        if ($due === 'today') {
+            $query->where('due_on', $todayDate);
+
+            return;
+        }
+
+        if ($due === 'week') {
+            $query->where('due_on', '>=', $todayDate)->where('due_on', '<=', $lastOfWeek);
+
+            return;
+        }
+
+        $query->where('due_on', '>', $lastOfWeek);
     }
 
     /**

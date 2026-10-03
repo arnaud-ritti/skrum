@@ -267,3 +267,15 @@ it('combines the overdue status with the assignee filter', function () {
     expect($ids(['status' => 'overdue', 'assignee' => 'me']))->toBe([$myOverdue->id])
         ->and($ids(['status' => 'all', 'assignee' => 'me']))->toContain($myDone->id)->toHaveCount(3);
 });
+
+it('lists started action items and keeps the single statuses of before', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $started = ActionItem::factory()->withoutRetro($team, $user)->started()->create();
+    $todo = ActionItem::factory()->withoutRetro($team, $user)->create();
+    $ids = fn (array $arguments) => collect(mcpStructured(actingAsMcp($user)->tool(ListActionItems::class, $arguments))['items'])->pluck('id')->sort()->values()->all();
+
+    expect($ids(['status' => 'doing']))->toBe([$started->id])
+        ->and($ids(['status' => 'open']))->toBe(collect([$started->id, $todo->id])->sort()->values()->all())
+        ->and(collect(mcpStructured(actingAsMcp($user)->tool(ListActionItems::class, ['status' => 'doing']))['items'])->first()['status'])->toBe('doing');
+});
