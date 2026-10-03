@@ -142,6 +142,7 @@ use App\Http\Controllers\Retros\SurveyDraftsController;
 use App\Http\Controllers\Retros\SurveyReactionsController;
 use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
+use App\Http\Controllers\Retros\TopicNotesController;
 use App\Http\Controllers\Retros\VotingCompletionsController;
 use App\Http\Controllers\SearchResultsController;
 use App\Http\Controllers\SsoCallbacksController;
@@ -504,6 +505,7 @@ Route::prefix('retros/{retro}')
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
         Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy')->whereUuid('card');
         Route::post('cards/{card}/comments', [CardCommentsController::class, 'store'])->name('retros.cards.comments.store')->whereUuid('card');
+        Route::put('cards/{card}/notes', [TopicNotesController::class, 'update'])->name('retros.cards.notes.update')->whereUuid('card');
         Route::patch('comments/{comment}', [CardCommentsController::class, 'update'])->name('retros.comments.update')->whereUuid('comment');
         Route::delete('comments/{comment}', [CardCommentsController::class, 'destroy'])->name('retros.comments.destroy')->whereUuid('comment');
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
