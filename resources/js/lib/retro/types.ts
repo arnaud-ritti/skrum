@@ -360,6 +360,8 @@ export type PresenceMember = {
     name: string;
     avatarUrl: string;
     isGuest: boolean;
+    /** The person's colour, 1 to 12, sent with the channel's member data. */
+    presence?: number;
 };
 
 export type HealthStatementResult = {

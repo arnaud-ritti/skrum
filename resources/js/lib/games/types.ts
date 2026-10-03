@@ -19,6 +19,7 @@ export type GamePlayer = {
     name: string;
     avatarUrl: string;
     isGuest: boolean;
+    presence: number;
 };
 
 export type GameOption = { value: GameKind; label: string; available: boolean };

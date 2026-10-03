@@ -1,12 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toParticipants } from '@/components/session/session-presence';
+import { hashedSlot } from '@/lib/presence/presence-color';
 import {
-    PresenceSlots,
     compensateDarkFilter,
     forgetPresenceCursorColors,
     presenceCursorColor,
     presenceFor,
-    presenceSlot,
 } from '@/lib/whiteboard/presence-slot';
 
 const fran = {
@@ -14,6 +13,7 @@ const fran = {
     name: 'Fran Facilitator',
     avatarUrl: '/avatars/f.svg',
     isGuest: false,
+    presence: 5,
 };
 const gia = {
     id: '0199f3a2-7c1e-7a10-9d5e-aaaaaaaaaaaa',
@@ -42,31 +42,9 @@ function throughDarkFilter([red, green, blue]: number[]): number[] {
     ].map((channel) => Math.round(Math.min(1, Math.max(0, channel)) * 255));
 }
 
-describe('presenceSlot', () => {
-    it('gives the same member the same slot every time', () => {
-        expect(presenceSlot(fran.id)).toBe(presenceSlot(fran.id));
-    });
-
-    it('stays between 1 and the number of presence colours', () => {
-        const ids = Array.from(
-            { length: 200 },
-            (_, index) => `member-${index}`,
-        );
-        const slots = ids.map(presenceSlot);
-
-        expect(Math.min(...slots)).toBeGreaterThanOrEqual(1);
-        expect(Math.max(...slots)).toBeLessThanOrEqual(PresenceSlots);
-        expect(new Set(slots).size).toBe(PresenceSlots);
-    });
-
-    it('gives an empty id the first slot', () => {
-        expect(presenceSlot('')).toBe(1);
-    });
-});
-
 describe('presenceCursorColor', () => {
-    it('reads the presence token of the member from the document', () => {
-        const slot = presenceSlot(fran.id);
+    it('reads the presence token of the slot from the document', () => {
+        const slot = 5;
 
         document.documentElement.style.setProperty(
             `--skrum-presence-${slot}`,
@@ -77,14 +55,28 @@ describe('presenceCursorColor', () => {
             'oklch(0.2 0.01 50)',
         );
 
-        expect(presenceCursorColor(fran.id)).toEqual({
+        expect(presenceCursorColor(slot)).toEqual({
             background: 'oklch(0.7 0.1 20)',
             stroke: 'oklch(0.2 0.01 50)',
         });
     });
 
-    it('resolves the token once per member colour, until the theme changes', () => {
-        const slot = presenceSlot(fran.id);
+    it('gives each slot its own token', () => {
+        document.documentElement.style.setProperty(
+            '--skrum-presence-5',
+            'oklch(0.7 0.1 20)',
+        );
+        document.documentElement.style.setProperty(
+            '--skrum-presence-9',
+            'oklch(0.6 0.2 140)',
+        );
+
+        expect(presenceCursorColor(5).background).toBe('oklch(0.7 0.1 20)');
+        expect(presenceCursorColor(9).background).toBe('oklch(0.6 0.2 140)');
+    });
+
+    it('resolves the token once per slot, until the theme changes', () => {
+        const slot = 5;
         const read = vi.spyOn(window, 'getComputedStyle');
 
         document.documentElement.style.setProperty(
@@ -92,19 +84,19 @@ describe('presenceCursorColor', () => {
             'oklch(0.7 0.1 20)',
         );
 
-        presenceCursorColor(fran.id);
-        presenceCursorColor(fran.id);
+        presenceCursorColor(slot);
+        presenceCursorColor(slot);
 
         expect(read).toHaveBeenCalledTimes(1);
 
         forgetPresenceCursorColors();
-        presenceCursorColor(fran.id);
+        presenceCursorColor(slot);
 
         expect(read).toHaveBeenCalledTimes(2);
     });
 
     it('gives the dark canvas the colour its filter turns back into the token', () => {
-        const slot = presenceSlot(fran.id);
+        const slot = 5;
         const painted: Record<string, number[]> = {
             'oklch(0.748 0.135 250)': [118, 178, 250],
             'oklch(0.2 0.015 50)': [26, 21, 17],
@@ -129,7 +121,7 @@ describe('presenceCursorColor', () => {
             'oklch(0.2 0.015 50)',
         );
 
-        const { background, stroke } = presenceCursorColor(fran.id);
+        const { background, stroke } = presenceCursorColor(slot);
         const channels = (color: string) =>
             color.match(/\d+/g)?.map(Number) ?? [];
 
@@ -153,7 +145,7 @@ describe('presenceCursorColor', () => {
     });
 
     it('keeps the token as it is in the dark theme when the browser cannot paint it', () => {
-        const slot = presenceSlot(fran.id);
+        const slot = 5;
 
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
             null,
@@ -164,13 +156,13 @@ describe('presenceCursorColor', () => {
             'oklch(0.748 0.135 250)',
         );
 
-        expect(presenceCursorColor(fran.id).background).toBe(
+        expect(presenceCursorColor(slot).background).toBe(
             'oklch(0.748 0.135 250)',
         );
     });
 
     it('still gives a colour when the token is missing', () => {
-        expect(presenceCursorColor(fran.id)).toEqual({
+        expect(presenceCursorColor(5)).toEqual({
             background: 'currentColor',
             stroke: 'currentColor',
         });
@@ -198,7 +190,7 @@ describe('compensateDarkFilter', () => {
 });
 
 describe('participants of a whiteboard', () => {
-    it('maps the facilitator, a guest, the viewer and the presence slot', () => {
+    it("maps the facilitator, a guest, the viewer and each person's colour", () => {
         const participants = toParticipants(
             [fran, gia],
             gia.id,
@@ -214,7 +206,7 @@ describe('participants of a whiteboard', () => {
                 role: 'facilitator',
                 status: 'online',
                 isMe: false,
-                presence: presenceSlot(fran.id),
+                presence: 5,
             },
             {
                 id: gia.id,
@@ -223,7 +215,7 @@ describe('participants of a whiteboard', () => {
                 role: 'guest',
                 status: 'online',
                 isMe: true,
-                presence: presenceSlot(gia.id),
+                presence: hashedSlot(gia.id),
             },
         ]);
     });

@@ -11,7 +11,9 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
-import { presenceFor, presenceSlot } from '@/lib/whiteboard/presence-slot';
+import { presenceOf } from '@/lib/presence/presence-color';
+import type { PresenceMember } from '@/lib/retro/types';
+import { presenceFor } from '@/lib/whiteboard/presence-slot';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardMenu } from './board-menu';
 import { BoardShare } from './board-share';
@@ -45,15 +47,21 @@ type BoardSnapshot = Pick<
     'board' | 'me' | 'links'
 >;
 
-/** The viewer as the end of the header shows them, in their colour on the board. */
-export function boardSelf(snapshot: BoardSnapshot) {
+/**
+ * The viewer as the end of the header shows them, in their own colour: the
+ * one their roster entry carries, a colour drawn from their id until the
+ * channel is up.
+ */
+export function boardSelf(snapshot: BoardSnapshot, online: PresenceMember[]) {
     const { me } = snapshot;
 
     return {
         name: me.name,
         avatarUrl: me.avatarUrl,
         isGuest: me.isGuest,
-        presence: presenceSlot(me.id),
+        presence: presenceOf(
+            online.find((member) => member.id === me.id) ?? { id: me.id },
+        ),
     };
 }
 

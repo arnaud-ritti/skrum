@@ -4,6 +4,7 @@ import {
     SessionPresence,
     toParticipants,
 } from '@/components/session/session-presence';
+import { hashedSlot } from '@/lib/presence/presence-color';
 import { renderWithProviders } from '@/test/render';
 
 const online = [
@@ -12,12 +13,14 @@ const online = [
         name: 'Alice Martin',
         avatarUrl: '/avatars/a.svg',
         isGuest: false,
+        presence: 9,
     },
     {
         id: 'p2',
         name: 'Bob Stone',
         avatarUrl: '/avatars/b.svg',
         isGuest: false,
+        presence: 2,
     },
     { id: 'p3', name: 'Visitor', avatarUrl: '/avatars/c.svg', isGuest: true },
 ];
@@ -42,7 +45,7 @@ afterEach(() => {
 });
 
 describe('toParticipants', () => {
-    it('maps role, self and status', () => {
+    it("maps role, self, status and each person's colour", () => {
         expect(toParticipants(online, 'p2', 'p1')).toEqual([
             {
                 id: 'p1',
@@ -51,7 +54,7 @@ describe('toParticipants', () => {
                 role: 'facilitator',
                 status: 'online',
                 isMe: false,
-                presence: undefined,
+                presence: 9,
             },
             {
                 id: 'p2',
@@ -60,7 +63,7 @@ describe('toParticipants', () => {
                 role: 'member',
                 status: 'online',
                 isMe: true,
-                presence: undefined,
+                presence: 2,
             },
             {
                 id: 'p3',
@@ -69,13 +72,29 @@ describe('toParticipants', () => {
                 role: 'guest',
                 status: 'online',
                 isMe: false,
-                presence: undefined,
+                presence: hashedSlot('p3'),
             },
         ]);
+    });
+
+    it('lets a caller choose the colour', () => {
+        expect(
+            toParticipants(online, 'p2', 'p1', () => 4).map(
+                (participant) => participant.presence,
+            ),
+        ).toEqual([4, 4, 4]);
     });
 });
 
 describe('SessionPresence', () => {
+    it("paints each avatar in the person's colour", () => {
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p2" />,
+        );
+
+        expect(container.querySelector('.bg-skrum-presence-9')).not.toBeNull();
+    });
+
     it('names the group by the number online and tags each avatar for flying reactions', () => {
         const { container } = renderWithProviders(
             <SessionPresence online={online} selfId="p1" />,
