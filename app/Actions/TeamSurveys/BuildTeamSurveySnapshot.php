@@ -12,6 +12,7 @@ class BuildTeamSurveySnapshot
     public function __construct(
         private PresentSurveyQuestion $presentSurveyQuestion,
         private PresentSurveyProgress $presentSurveyProgress,
+        private BuildSurveyResults $buildSurveyResults,
     ) {}
 
     /**
@@ -57,6 +58,7 @@ class BuildTeamSurveySnapshot
             ],
             'questions' => $this->questions($survey, $viewer),
             'progress' => $this->presentSurveyProgress->handle($survey),
+            'results' => $this->buildSurveyResults->handle($survey, $viewer),
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$survey->team->workspace, $survey->team], absolute: false),
                 'show' => route('surveys.show', $survey, absolute: false),
