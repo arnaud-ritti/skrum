@@ -2,6 +2,7 @@
 
 namespace App\Actions\Poker;
 
+use App\Events\Poker\PokerRoundChanged;
 use App\Events\Poker\PokerVoteChanged;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
@@ -13,7 +14,9 @@ class PlayPokerCard
 {
     /**
      * Plays `$value` for `$player` (the requester — never anyone else), or
-     * withdraws their card when `$value` is null.
+     * withdraws their card when `$value` is null. A card changed in a
+     * revealed round (`PokerGuard::acceptsCard`) changes its result: the
+     * room reloads the round instead of counting a vote.
      *
      * @return array{
      *     roundId: string,
@@ -32,7 +35,7 @@ class PlayPokerCard
 
             PokerGuard::notEnded($locked);
             PokerGuard::canVote($lockedPlayer);
-            PokerGuard::openRound($locked, $lockedRound);
+            PokerGuard::acceptsCard($locked, $lockedRound, $value);
 
             if ($value !== null && ! in_array($value, $locked->cards, true)) {
                 throw ValidationException::withMessages(['value' => __('Choose a card from the deck.')]);
@@ -58,8 +61,13 @@ class PlayPokerCard
             }
 
             $votesCount = $lockedRound->votes()->count();
+            $revealed = $lockedRound->isRevealed();
 
-            if ($changed) {
+            if ($changed && $revealed) {
+                (new PokerRoundChanged($locked->id))->sendToOthers();
+            }
+
+            if ($changed && ! $revealed) {
                 (new PokerVoteChanged(
                     $locked->id,
                     $lockedRound->id,
@@ -75,7 +83,7 @@ class PlayPokerCard
                 'myVote' => $value,
                 'votesCount' => $votesCount,
                 'version' => $lockedRound->version,
-                'revealed' => false,
+                'revealed' => $revealed,
             ];
         });
     }

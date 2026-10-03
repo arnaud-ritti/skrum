@@ -63,6 +63,33 @@ class PokerGuard
         throw ValidationException::withMessages(['votes' => __('Voting is closed for this round.')]);
     }
 
+    /**
+     * The card of a player: the open round as `openRound` says, or, when
+     * the game lets cards change after reveal, the revealed latest round of
+     * the current task until its estimate is saved. A card is changed then,
+     * never withdrawn: the round keeps a result.
+     */
+    public static function acceptsCard(PokerGame $game, PokerRound $round, ?string $value): void
+    {
+        $latest = $game->latestRoundOfCurrentTask();
+        $isLatest = $latest !== null && $latest->id === $round->id;
+
+        if ($isLatest && ! $round->isRevealed()) {
+            return;
+        }
+
+        $reopened = $isLatest
+            && $value !== null
+            && $game->revote_after_reveal
+            && $game->currentTask?->estimate === null;
+
+        if ($reopened) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['votes' => __('Voting is closed for this round.')]);
+    }
+
     public static function canDelete(PokerGame $game, PokerPlayer $player): void
     {
         if ($game->isFacilitator($player)) {
