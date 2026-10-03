@@ -5036,5 +5036,7 @@
     ":count whiteboards edited today": ":count whiteboards edited today",
     "You are observing this session.": "You are observing this session.",
     ":name (suggested)": ":name (suggested)",
-    "Suggested by the rotation.": "Suggested by the rotation."
+    "Suggested by the rotation.": "Suggested by the rotation.",
+    "More than :cap action items match. Narrow the filters.": "More than :cap action items match. Narrow the filters.",
+    "The list changed: :count action items match now.": "The list changed: :count action items match now."
 }

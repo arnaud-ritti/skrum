@@ -11,7 +11,12 @@ class WorkspaceActionItemBulkDeletionsController extends Controller
 {
     public function store(ActionItemBulkDeletionRequest $request, Workspace $workspace, ActionItemBulkChanges $bulkChanges): JsonResponse
     {
-        $result = $bulkChanges->delete($request->user(), $workspace, $request->validated('ids'));
+        $user = $request->user();
+        $validated = $request->validated();
+        $ids = array_key_exists('ids', $validated)
+            ? $validated['ids']
+            : $bulkChanges->matching($user, $workspace, $validated['filters'] ?? [], (int) $validated['count']);
+        $result = $bulkChanges->delete($user, $workspace, $ids);
 
         return response()->json([
             'deleted' => $result['changed'],

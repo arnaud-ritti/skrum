@@ -5256,5 +5256,7 @@
     ":count whiteboards edited today": ":count Whiteboards heute bearbeitet",
     "You are observing this session.": "Du beobachtest diese Sitzung.",
     ":name (suggested)": ":name (vorgeschlagen)",
-    "Suggested by the rotation.": "Von der Rotation vorgeschlagen."
+    "Suggested by the rotation.": "Von der Rotation vorgeschlagen.",
+    "More than :cap action items match. Narrow the filters.": "Mehr als :cap Aktionen passen. Grenze die Filter ein.",
+    "The list changed: :count action items match now.": "Die Liste hat sich geändert: Jetzt passen :count Aktionen."
 }

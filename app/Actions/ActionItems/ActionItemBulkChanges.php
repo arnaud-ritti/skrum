@@ -20,11 +20,49 @@ use Throwable;
  */
 class ActionItemBulkChanges
 {
+    public const MatchingCap = 500;
+
+    public const FilterKeys = ['status', 'priority', 'due', 'source', 'assignee', 'team'];
+
     public function __construct(
         private ActionItemQuery $actionItemQuery,
         private ApplyActionItemChanges $applyActionItemChanges,
         private DeleteActionItem $deleteActionItem,
     ) {}
+
+    /**
+     * Spec 24 §5 rule 7: the items the filters match for the viewer now, in the order of the
+     * list. Refused above the cap, and when they are not as many as the viewer confirmed, so
+     * that nothing is changed on a set the viewer did not see.
+     *
+     * @param  array<string, mixed>  $query  page parameters among FilterKeys
+     * @return array<int, string>
+     *
+     * @throws ValidationException
+     */
+    public function matching(User $user, Workspace $workspace, array $query, int $confirmedCount): array
+    {
+        $filters = ActionItemFilters::fromQuery($query, $workspace->teamsVisibleTo($user));
+        $ids = ActionItemQuery::order($this->actionItemQuery->filter($this->actionItemQuery->visibleTo($user, $workspace), $user, $filters))
+            ->limit(self::MatchingCap + 1)
+            ->pluck('action_items.id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+
+        if (count($ids) > self::MatchingCap) {
+            throw ValidationException::withMessages([
+                'filters' => __('More than :cap action items match. Narrow the filters.', ['cap' => self::MatchingCap]),
+            ]);
+        }
+
+        if (count($ids) !== $confirmedCount) {
+            throw ValidationException::withMessages([
+                'count' => __('The list changed: :count action items match now.', ['count' => count($ids)]),
+            ]);
+        }
+
+        return $ids;
+    }
 
     /**
      * @param  array<int, string>  $ids

@@ -40,3 +40,23 @@ it('deletes and changes the same items at once without a failure, and leaves non
         ->and($outcomes['deletion']['value'])->toBe(200)
         ->and(ActionItem::query()->whereKey($ids)->count())->toBe(0);
 });
+
+it('starts the same matching items twice at once without a failure', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $ids = ActionItem::factory()->withoutRetro($team, $user)->count(4)->create()->pluck('id')->all();
+    $userId = $user->id;
+    $uri = route('workspaces.actionItemBulkUpdates.store', $team->workspace, false);
+    $payload = ['filters' => ['status' => 'todo'], 'count' => 4, 'changes' => ['status' => 'doing']];
+
+    $outcomes = Race::run([
+        static fn (): int => Race::request($userId, 'POST', $uri, $payload),
+        static fn (): int => Race::request($userId, 'POST', $uri, $payload),
+    ]);
+
+    $statuses = array_column($outcomes, 'value');
+
+    expect($statuses)->toContain(200)
+        ->and(array_diff($statuses, [200, 422]))->toBe([])
+        ->and(ActionItem::query()->whereKey($ids)->whereNull('started_at')->count())->toBe(0);
+});
