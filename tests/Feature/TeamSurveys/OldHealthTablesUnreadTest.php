@@ -14,7 +14,7 @@ it('reads and writes the old health tables nowhere but in the import and its ver
         ->values()
         ->all();
 
-    expect($offenders)->toBe([]);
+    expect($offenders)->toBeEmpty();
 });
 
 it('keeps the old tables and the old column until a later release drops them', function () {

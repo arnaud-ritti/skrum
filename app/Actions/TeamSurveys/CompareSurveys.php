@@ -27,7 +27,7 @@ class CompareSurveys
             ->where('template', TeamSurveyTemplate::HealthCheck)
             ->where('status', TeamSurveyStatus::Closed)
             ->where('closed_at', '<', $survey->closed_at ?? now())
-            ->orderByDesc('closed_at')
+            ->latest('closed_at')
             ->orderByDesc('id')
             ->first();
     }

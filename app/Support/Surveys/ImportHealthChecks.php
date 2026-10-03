@@ -61,7 +61,7 @@ class ImportHealthChecks
     private function importRetro(stdClass $retro, array &$report): void
     {
         $statements = DB::table('retro_health_statements')->where('retro_id', $retro->id)->orderBy('position')->orderBy('id')->get();
-        $answers = DB::table('health_check_answers')->where('retro_id', $retro->id)->orderBy('created_at')->orderBy('id')->get();
+        $answers = DB::table('health_check_answers')->where('retro_id', $retro->id)->oldest()->orderBy('id')->get();
         $isCompleted = $retro->phase === 'completed';
         $isEnabled = (bool) $retro->health_check_enabled;
 
@@ -94,7 +94,7 @@ class ImportHealthChecks
      */
     private function surveyId(stdClass $retro, Collection $answers, string $status, array &$report): string
     {
-        $existing = DB::table('team_surveys')->where('retro_id', $retro->id)->where('template', self::Template)->orderBy('created_at')->orderBy('id')->value('id');
+        $existing = DB::table('team_surveys')->where('retro_id', $retro->id)->where('template', self::Template)->oldest()->orderBy('id')->value('id');
 
         if ($existing !== null) {
             return (string) $existing;

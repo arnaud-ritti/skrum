@@ -47,7 +47,7 @@ it('summarises nothing for a retro whose health check was turned off, completed 
 it('withholds the previous averages from a guest', function () {
     $summary = resolve(SummarizeHealthCheck::class)->handle($this->history['sprint41'], $this->history['guest']);
 
-    expect(collect($summary['statements'])->pluck('previousAverage')->filter()->all())->toBe([]);
+    expect(collect($summary['statements'])->pluck('previousAverage')->filter()->all())->toBeEmpty();
 });
 
 it('lists the imported health checks in the trend, oldest first, with their deltas on the health scale', function () {

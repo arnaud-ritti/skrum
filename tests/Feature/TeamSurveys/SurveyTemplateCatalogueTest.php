@@ -7,10 +7,11 @@ use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyTemplate;
 use App\Models\Team;
 use App\Models\TeamSurvey;
+use App\Support\Surveys\QuestionDefinition;
 use App\Support\Surveys\SurveyTemplateCatalogue;
 
 it('gives a blank survey no question', function () {
-    expect(resolve(SurveyTemplateCatalogue::class)->questions(null, Team::factory()->create()))->toBe([]);
+    expect(resolve(SurveyTemplateCatalogue::class)->questions(null, Team::factory()->create()))->toBeEmpty();
 });
 
 it('turns the six built-in statements into required scale questions from 1 to 5', function () {
@@ -36,7 +37,7 @@ it('follows the statements the team customised: order, archived ones left out, c
 
     $questions = resolve(SurveyTemplateCatalogue::class)->questions(TeamSurveyTemplate::HealthCheck, $team);
 
-    expect(array_map(fn ($question) => $question->matchKey, $questions))
+    expect(array_map(fn (QuestionDefinition $question) => $question->matchKey, $questions))
         ->toBe([$custom->id, 'interaction', 'task_clarity', 'vision', 'processes', 'motivation'])
         ->and($questions[0]->label)->toBe('We ship without fear')
         ->and($questions[0]->shortLabel)->toBe('Shipping')
@@ -46,7 +47,7 @@ it('follows the statements the team customised: order, archived ones left out, c
 it('gives the team pulse its five questions', function () {
     $questions = resolve(SurveyTemplateCatalogue::class)->questions(TeamSurveyTemplate::TeamPulse, Team::factory()->create());
 
-    expect(array_map(fn ($question) => $question->kind, $questions))->toBe([
+    expect(array_map(fn (QuestionDefinition $question) => $question->kind, $questions))->toBe([
         TeamSurveyQuestionKind::Scale,
         TeamSurveyQuestionKind::Nps,
         TeamSurveyQuestionKind::Single,

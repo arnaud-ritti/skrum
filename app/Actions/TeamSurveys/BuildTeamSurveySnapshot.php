@@ -114,12 +114,12 @@ class BuildTeamSurveySnapshot
             ->where('team_id', $survey->team_id)
             ->where('status', TeamSurveyStatus::Closed)
             ->whereKeyNot($survey->id)
-            ->orderByDesc('closed_at')
+            ->latest('closed_at')
             ->orderByDesc('id')
             ->limit(20)
             ->get(['id', 'title', 'closed_at']);
 
-        if ($default !== null && ! $surveys->contains('id', $default->id)) {
+        if ($default !== null && $surveys->doesntContain('id', $default->id)) {
             $surveys->push($default);
         }
 

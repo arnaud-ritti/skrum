@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ResolveSurveyRespondent
 {
-    private const RetroPages = ['surveys.show', 'surveys.results.show'];
+    private const array RetroPages = ['surveys.show', 'surveys.results.show'];
 
     public function __construct(private ResolveRespondent $resolveRespondent) {}
 
@@ -72,6 +72,6 @@ class ResolveSurveyRespondent
         abort_if($request->expectsJson(), 404);
         abort_unless(in_array($request->route()?->getName(), self::RetroPages, true), 404);
 
-        return redirect()->route('retros.show', $survey->retro_id);
+        return to_route('retros.show', $survey->retro_id);
     }
 }

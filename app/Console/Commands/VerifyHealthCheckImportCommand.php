@@ -3,14 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Support\Surveys\VerifyHealthCheckImport;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Compare the copied health-check answers with the old tables. Run it right after the upgrade, before new answers are given.')]
+#[Signature('surveys:verify-health-import')]
 class VerifyHealthCheckImportCommand extends Command
 {
-    protected $signature = 'surveys:verify-health-import';
-
-    protected $description = 'Compare the copied health-check answers with the old tables. Run it right after the upgrade, before new answers are given.';
-
     public function handle(VerifyHealthCheckImport $verifyHealthCheckImport): int
     {
         $this->info('Comparing old and copied health-check answers…');
@@ -23,7 +23,7 @@ class VerifyHealthCheckImportCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->table(['Retro', 'Title', 'Old answers', 'Copied', 'Old sum', 'Copied sum'], array_map('array_values', $differences));
+        $this->table(['Retro', 'Title', 'Old answers', 'Copied', 'Old sum', 'Copied sum'], array_map(array_values(...), $differences));
         $this->error(count($differences).' retros differ.');
 
         return self::FAILURE;

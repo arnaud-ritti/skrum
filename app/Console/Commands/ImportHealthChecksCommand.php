@@ -3,14 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Support\Surveys\ImportHealthChecks;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Copy the health checks of before plan 19 into team surveys (adds what is missing, changes nothing else)')]
+#[Signature('surveys:import-health-checks')]
 class ImportHealthChecksCommand extends Command
 {
-    protected $signature = 'surveys:import-health-checks';
-
-    protected $description = 'Copy the health checks of before plan 19 into team surveys (adds what is missing, changes nothing else)';
-
     public function handle(ImportHealthChecks $importHealthChecks): int
     {
         $this->info('Importing health checks…');

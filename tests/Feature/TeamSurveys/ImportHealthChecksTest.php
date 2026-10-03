@@ -20,9 +20,9 @@ it('copies each health check into a survey attached to its retro, values and sca
         ->title->toBe('Sprint 41')
         ->status->toBe('closed')
         ->and((int) $survey->results_threshold)->toBe(0)
-        ->and((bool) $survey->guest_access_enabled)->toBeFalse()
-        ->and((bool) $survey->one_question_at_a_time)->toBeFalse()
-        ->and((bool) $survey->show_results_after_answer)->toBeFalse()
+        ->and($survey->guest_access_enabled)->toBeFalsy()
+        ->and($survey->one_question_at_a_time)->toBeFalsy()
+        ->and($survey->show_results_after_answer)->toBeFalsy()
         ->and(strlen($survey->guest_token))->toBe(40)
         ->and(substr((string) $survey->closed_at, 0, 19))->toBe('2026-09-10 10:00:00')
         ->and(substr((string) $survey->opened_at, 0, 19))->toBe('2026-09-10 09:00:00');
@@ -163,7 +163,7 @@ it('verifies itself, and tells when a copied answer was altered', function () {
     $history = healthHistory();
     resolve(ImportHealthChecks::class)->handle();
 
-    expect(resolve(VerifyHealthCheckImport::class)->handle())->toBe([]);
+    expect(resolve(VerifyHealthCheckImport::class)->handle())->toBeEmpty();
     $this->artisan('surveys:verify-health-import')->assertSuccessful();
 
     $survey = importedSurvey($history['sprint41']->id);
