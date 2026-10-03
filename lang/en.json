@@ -4978,5 +4978,17 @@
     "Gathered from every session of the team · overdue first.": "Gathered from every session of the team · overdue first.",
     "See all": "See all",
     "All sessions": "All sessions",
-    "Session": "Session"
+    "Session": "Session",
+    "Team saved.": "Team saved.",
+    "Shown on the workspace page.": "Shown on the workspace page.",
+    "Exports": "Exports",
+    "Survey results (CSV)": "Survey results (CSV)",
+    "No closed survey yet.": "No closed survey yet.",
+    "Estimates": "Estimates",
+    "What is kept": "What is kept",
+    "Deleting the team deletes its sessions, action items and settings. Guests' names live only in the sessions they joined.": "Deleting the team deletes its sessions, action items and settings. Guests' names live only in the sessions they joined.",
+    "The team's action items, on the action items page.": "The team's action items, on the action items page.",
+    "Download CSV": "Download CSV",
+    "One CSV file per closed survey of the team.": "One CSV file per closed survey of the team.",
+    "The estimates saved in the team's planning poker games.": "The estimates saved in the team's planning poker games."
 }

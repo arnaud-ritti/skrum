@@ -5198,5 +5198,17 @@
     "Gathered from every session of the team · overdue first.": "Agrégées depuis toutes les sessions de l'équipe · en retard d'abord.",
     "See all": "Tout voir",
     "All sessions": "Toutes les sessions",
-    "Session": "Session"
+    "Session": "Session",
+    "Team saved.": "Équipe enregistrée.",
+    "Shown on the workspace page.": "Affichée sur la page de l'espace de travail.",
+    "Exports": "Exports",
+    "Survey results (CSV)": "Résultats des sondages (CSV)",
+    "No closed survey yet.": "Aucun sondage clôturé pour l'instant.",
+    "Estimates": "Estimations",
+    "What is kept": "Ce qui est conservé",
+    "Deleting the team deletes its sessions, action items and settings. Guests' names live only in the sessions they joined.": "Supprimer l'équipe supprime ses sessions, ses actions et ses réglages. Les noms des invités ne vivent que dans les sessions qu'ils ont rejointes.",
+    "The team's action items, on the action items page.": "Les actions de l'équipe, sur la page des actions.",
+    "Download CSV": "Télécharger le CSV",
+    "One CSV file per closed survey of the team.": "Un fichier CSV par sondage clôturé de l'équipe.",
+    "The estimates saved in the team's planning poker games.": "Les estimations enregistrées dans les parties de planning poker de l'équipe."
 }

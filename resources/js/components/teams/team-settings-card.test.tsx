@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamSettingsCard } from '@/components/teams/team-settings-card';
@@ -71,32 +71,17 @@ beforeEach(() => {
     mocks.delete.mockReset();
 });
 
-describe('the settings card of a team', () => {
-    it('renames the team and shows the server error under the field', async () => {
-        mocks.patch.mockImplementation(
-            (_url: string, _data: unknown, options: VisitOptions) => {
-                options.onStart?.();
-                options.onError?.({ name: 'The name field is required.' });
-                options.onFinish?.();
-            },
-        );
-
+describe('the danger zone of the team settings', () => {
+    it('is the danger zone: the consequence and the Delete team button', () => {
         card();
 
-        const input = screen.getByRole('textbox', { name: 'Team name' });
+        const zone = screen.getByRole('region', { name: 'Delete team' });
 
-        expect((input as HTMLInputElement).value).toBe('Atlas');
-
-        fireEvent.change(input, { target: { value: 'Borealis' } });
-        fireEvent.submit(input.closest('form') as HTMLFormElement);
-        await act(async () => {});
-
-        expect(mocks.patch.mock.calls[0][0]).toBe('/w/nordlys/teams/team-1');
-        expect(mocks.patch.mock.calls[0][1]).toEqual({ name: 'Borealis' });
-        expect(screen.getByRole('alert').textContent).toBe(
-            'The name field is required.',
+        expect(zone.getAttribute('data-tone')).toBe('destructive');
+        expect(zone.textContent).toContain(
+            'This permanently deletes the team and its retrospectives.',
         );
-        expect(input.getAttribute('aria-invalid')).toBe('true');
+        expect(screen.queryByRole('textbox')).toBeNull();
     });
 
     it('deletes the team only after the confirmation', async () => {

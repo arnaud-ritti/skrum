@@ -173,6 +173,8 @@ class TeamsController extends Controller
             'description' => ['sometimes', 'nullable', 'string', 'max:200'],
         ]));
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team saved.')]);
+
         return back();
     }
 

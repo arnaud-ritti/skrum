@@ -16,6 +16,16 @@ it('lets a team owner describe the team, and clears an empty description', funct
     expect($team->fresh()->description)->toBeNull();
 });
 
+it('confirms a saved team with a toast', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamMember($team, TeamRole::Owner))
+        ->patch(route('teams.update', [$team->workspace, $team]), ['name' => 'Borealis', 'description' => 'Product squad'])
+        ->assertRedirect()
+        ->assertInertiaFlash('toast.type', 'success')
+        ->assertInertiaFlash('toast.message', 'Team saved.');
+});
+
 it('keeps the description when only the name is sent, and refuses more than 200 characters', function () {
     $team = Team::factory()->create(['description' => 'Kept']);
     $owner = teamMember($team, TeamRole::Owner);
