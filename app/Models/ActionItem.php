@@ -6,6 +6,7 @@ use App\Casts\DateOnly;
 use App\Concerns\HasSearchColumns;
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemRecurrence;
+use App\Enums\ActionItemStatus;
 use App\Exceptions\ModelInvariantViolation;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -30,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property CarbonInterface|null $due_on
  * @property Carbon|null $completed_at
  * @property string|null $completed_via_source
+ * @property Carbon|null $started_at
  * @property string|null $assignee_user_id
  * @property string|null $assignee_participant_id
  * @property string|null $created_by_participant_id
@@ -242,6 +244,23 @@ class ActionItem extends Model
         return $this->completed_at !== null;
     }
 
+    /**
+     * Completion is read from `completed_at` alone; `started_at` only tells a started item
+     * from one still to do.
+     */
+    public function currentStatus(): ActionItemStatus
+    {
+        if ($this->completed_at !== null) {
+            return ActionItemStatus::Completed;
+        }
+
+        if ($this->started_at !== null) {
+            return ActionItemStatus::Doing;
+        }
+
+        return ActionItemStatus::Open;
+    }
+
     public function hasRetro(): bool
     {
         return $this->retro_id !== null;
@@ -273,6 +292,7 @@ class ActionItem extends Model
             'recurrence' => ActionItemRecurrence::class,
             'due_on' => DateOnly::class,
             'completed_at' => 'datetime',
+            'started_at' => 'datetime',
             'sort_rank' => 'integer',
         ];
     }

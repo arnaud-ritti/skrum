@@ -8,6 +8,7 @@ use App\Enums\ActionItemStatus;
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamActivityKind;
 use App\Events\ActionItems\ActionItemCompleted;
+use App\Events\ActionItems\ActionItemProgressChanged;
 use App\Events\ActionItems\ActionItemReopened;
 use App\Models\ActionItem;
 
@@ -22,7 +23,8 @@ class SetActionItemStatus
     ) {}
 
     /**
-     * Setting the current status again changes and announces nothing.
+     * Setting the current status again changes and announces nothing. Completion and
+     * reopening keep their events; starting and stopping fire ActionItemProgressChanged.
      */
     public function handle(ActionItem $locked, ActionItemActor|ExternalSyncActor $actor, ActionItemStatus $status): ActionItem
     {
@@ -30,15 +32,21 @@ class SetActionItemStatus
             $this->permissions->authorizeComplete($locked, $actor);
         }
 
-        $completing = $status === ActionItemStatus::Completed;
-
-        if ($locked->isCompleted() === $completing) {
+        if ($locked->currentStatus() === $status) {
             return $locked->loadForPresentation();
         }
+
+        $wasCompleted = $locked->isCompleted();
+        $completing = $status === ActionItemStatus::Completed;
 
         $locked->forceFill([
             'completed_at' => $completing ? now() : null,
             'completed_via_source' => $completing && $actor instanceof ExternalSyncActor ? $actor->source : null,
+            'started_at' => match ($status) {
+                ActionItemStatus::Open => null,
+                ActionItemStatus::Doing => $locked->started_at ?? now(),
+                ActionItemStatus::Completed => $locked->started_at,
+            },
         ])->save();
 
         if ($completing) {
@@ -53,8 +61,12 @@ class SetActionItemStatus
             event(new ActionItemCompleted($locked, $origin, $actor));
         }
 
-        if (! $completing) {
+        if ($wasCompleted && ! $completing) {
             event(new ActionItemReopened($locked, $origin, $actor));
+        }
+
+        if (! $wasCompleted && ! $completing) {
+            event(new ActionItemProgressChanged($locked, $origin, $actor));
         }
 
         $this->broadcastActionItemChange->saved($locked);

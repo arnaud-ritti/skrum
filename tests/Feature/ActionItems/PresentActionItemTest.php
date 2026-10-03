@@ -40,6 +40,7 @@ it('presents every field of a board item', function () {
         'isOverdue' => true,
         'status' => 'open',
         'completedAt' => null,
+        'startedAt' => null,
         'completedVia' => null,
         'assignee' => [
             'kind' => 'member',

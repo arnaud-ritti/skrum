@@ -41,6 +41,11 @@ class ActionItemFactory extends Factory
         return $this->state(fn () => ['completed_at' => now()]);
     }
 
+    public function started(string $at = '2026-10-20 08:00:00'): static
+    {
+        return $this->state(fn () => ['started_at' => $at]);
+    }
+
     public function overdue(): static
     {
         return $this->state(fn () => [
