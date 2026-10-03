@@ -22,3 +22,21 @@ it('completes the same recurring items twice at once and leaves one next occurre
         ->and(ActionItem::query()->whereIn('previous_occurrence_id', $ids)->count())->toBe(4)
         ->and(ActionItem::query()->whereKey($ids)->whereNull('completed_at')->count())->toBe(0);
 });
+
+it('deletes and changes the same items at once without a failure, and leaves none', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $ids = ActionItem::factory()->withoutRetro($team, $user)->count(4)->create()->pluck('id')->all();
+    $userId = $user->id;
+    $update = route('workspaces.actionItemBulkUpdates.store', $team->workspace, false);
+    $deletion = route('workspaces.actionItemBulkDeletions.store', $team->workspace, false);
+
+    $outcomes = Race::run([
+        'update' => static fn (): int => Race::request($userId, 'POST', $update, ['ids' => $ids, 'changes' => ['status' => 'doing']]),
+        'deletion' => static fn (): int => Race::request($userId, 'POST', $deletion, ['ids' => $ids]),
+    ]);
+
+    expect($outcomes['update']['value'])->toBe(200)
+        ->and($outcomes['deletion']['value'])->toBe(200)
+        ->and(ActionItem::query()->whereKey($ids)->count())->toBe(0);
+});

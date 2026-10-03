@@ -210,6 +210,7 @@ use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTemplatesController;
 use App\Http\Controllers\Whiteboards\WhiteboardTimerExtensionsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
+use App\Http\Controllers\WorkspaceActionItemBulkDeletionsController;
 use App\Http\Controllers\WorkspaceActionItemBulkUpdatesController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
@@ -490,6 +491,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('action-items', [WorkspaceActionItemsController::class, 'index'])->name('workspaces.actionItems.index');
             Route::post('action-items', [WorkspaceActionItemsController::class, 'store'])->name('workspaces.actionItems.store');
             Route::post('action-items/bulk-updates', [WorkspaceActionItemBulkUpdatesController::class, 'store'])->name('workspaces.actionItemBulkUpdates.store');
+            Route::post('action-items/bulk-deletions', [WorkspaceActionItemBulkDeletionsController::class, 'store'])->name('workspaces.actionItemBulkDeletions.store');
             Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update')->whereUuid('actionItem');
             Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy')->whereUuid('actionItem');
             Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index')->whereUuid('actionItem');
