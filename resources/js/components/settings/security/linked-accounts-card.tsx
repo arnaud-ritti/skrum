@@ -256,7 +256,7 @@ export function LinkedAccountsCard({
                 )}
                 flush
                 footer={
-                    accounts?.lastWayIn === true && (
+                    accounts?.lastWayIn === true ? (
                         <p
                             data-slot="linked-accounts-note"
                             className="flex min-w-0 flex-1 items-center gap-2 text-xs text-muted-foreground"
@@ -271,7 +271,7 @@ export function LinkedAccountsCard({
                                 )}
                             </span>
                         </p>
-                    )
+                    ) : undefined
                 }
             >
                 {accounts === null && (

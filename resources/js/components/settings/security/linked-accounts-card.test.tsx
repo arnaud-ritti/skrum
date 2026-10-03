@@ -209,6 +209,11 @@ describe('LinkedAccountsCard', () => {
         expect(
             document.querySelector('[data-slot="linked-accounts-note"]'),
         ).toBeNull();
+        expect(
+            screen
+                .getByRole('region', { name: 'Linked accounts' })
+                .querySelector('[data-slot="settings-card-footer"]'),
+        ).toBeNull();
     });
 
     it('unlinks after its confirmation, through the gate', async () => {

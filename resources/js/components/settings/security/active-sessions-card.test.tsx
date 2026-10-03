@@ -108,7 +108,7 @@ describe('ActiveSessionsCard', () => {
         ).not.toBeNull();
     });
 
-    it('shows the full IPv4 or IPv6 address in mono, breaking anywhere, and "Unknown" without one', () => {
+    it('shows the full IPv4 or IPv6 address in mono, breaking only between its groups, and "Unknown" without one', () => {
         withGate(<ActiveSessionsCard sessions={[current, phone, unknown]} />);
 
         const v4 = within(row(current)).getByText('203.0.113.7');
@@ -116,7 +116,9 @@ describe('ActiveSessionsCard', () => {
 
         expect(v4.className).toContain('font-mono');
         expect(v6.className).toContain('font-mono');
-        expect(v6.className).toContain('break-all');
+        expect(v6.className).not.toContain('break-all');
+        expect(v6.querySelectorAll('wbr')).toHaveLength(7);
+        expect(v4.querySelectorAll('wbr')).toHaveLength(3);
         expect(within(row(unknown)).getByText('Unknown').className).toContain(
             'text-muted-foreground',
         );
@@ -132,6 +134,14 @@ describe('ActiveSessionsCard', () => {
         ).toBeNull();
         expect(within(row(phone)).queryByText('This device')).toBeNull();
         expect(within(row(phone)).getByText('2 hours ago')).toBeTruthy();
+    });
+
+    it('keeps the last activity on one line in the table', () => {
+        withGate(<ActiveSessionsCard sessions={[current, phone]} />);
+
+        expect(
+            within(row(current)).getByText('Active now').className,
+        ).toContain('whitespace-nowrap');
     });
 
     it('signs one device out after its own confirmation, through the gate', async () => {

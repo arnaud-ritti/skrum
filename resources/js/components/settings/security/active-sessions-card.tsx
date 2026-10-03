@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { Eye, Laptop, LogOut, MonitorOff, Smartphone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { ReactElement } from 'react';
 import { destroy as signOutDevice } from '@/actions/App/Http/Controllers/Settings/BrowserSessionsController';
 import { destroy as signOutOthers } from '@/actions/App/Http/Controllers/Settings/OtherBrowserSessionsController';
@@ -67,7 +67,16 @@ function IpAddress({ address }: { address: string | null }): ReactElement {
         );
     }
 
-    return <span className="font-mono text-sm break-all">{address}</span>;
+    return (
+        <span className="font-mono text-sm">
+            {address.split(/(?<=[:.])/).map((group, index) => (
+                <Fragment key={index}>
+                    {index > 0 && <wbr />}
+                    {group}
+                </Fragment>
+            ))}
+        </span>
+    );
 }
 
 function useLastActive(): (session: BrowserSessionRow) => string {
@@ -161,7 +170,7 @@ function SessionTable({ sessions, onSignOut }: SessionListProps): ReactElement {
                         <TableCell className="px-5 py-3 whitespace-normal">
                             <IpAddress address={session.ipAddress} />
                         </TableCell>
-                        <TableCell className="px-5 py-3 text-sm">
+                        <TableCell className="px-5 py-3 text-sm whitespace-nowrap">
                             {lastActive(session)}
                         </TableCell>
                         <TableCell className="px-5 py-3 text-right">
