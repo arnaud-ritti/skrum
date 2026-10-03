@@ -18,7 +18,7 @@ class InstanceStatus
 
     private const int HealthyMinutes = 3;
 
-    private const int LateMinutes = 15;
+    public const int LateMinutes = 15;
 
     private const float SocketTimeoutSeconds = 1.0;
 

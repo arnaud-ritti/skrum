@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\StatusComponentState as State;
+use App\Jobs\RecordQueueHeartbeat;
 use App\Support\Status\InstanceStatus;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 
 function stateOf(string $key): State
 {
@@ -57,4 +59,13 @@ it('calls real time down when nothing listens on its port', function () {
 
 it('calls the database down when it cannot be reached', function () {
     withUnreachableDatabase(fn () => expect(stateOf('database'))->toBe(State::Down));
+});
+
+it('keeps at most one queue heartbeat waiting while the worker is down', function () {
+    Queue::fake();
+
+    $this->artisan('skrum:heartbeat')->assertSuccessful();
+    $this->artisan('skrum:heartbeat')->assertSuccessful();
+
+    Queue::assertPushed(RecordQueueHeartbeat::class, 1);
 });
