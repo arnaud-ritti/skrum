@@ -22,6 +22,8 @@ class EndGameTurn
      * "Done" from the turn's player or "Skip" from the host. The expected
      * player makes a second click, or a host and a player at once, end one
      * turn only; the late one hears that the turn moved on, whoever sent it.
+     * A player may end only the turn it names as its own, checked before
+     * the turn's state so the answer does not depend on the race.
      *
      * @return array{turn: array{roundId: string, turnPlayerId: ?string, turnEndsAt: ?string}, ended: ?array<string, mixed>}
      */
@@ -37,12 +39,12 @@ class EndGameTurn
                 throw ValidationException::withMessages(['round' => __('This game is not played in turns.')]);
             }
 
-            if ($lockedRound->turn_player_id !== $expectedPlayerId) {
-                throw new ConflictHttpException(__('The turn has already moved on.'));
+            if (! $lockedRoom->isHost($actor) && $actor->id !== $expectedPlayerId) {
+                throw new AuthorizationException(__('Only the host or the player whose turn it is can do this.'));
             }
 
-            if (! $lockedRoom->isHost($actor) && $actor->id !== $lockedRound->turn_player_id) {
-                throw new AuthorizationException(__('Only the host or the player whose turn it is can do this.'));
+            if ($lockedRound->turn_player_id !== $expectedPlayerId) {
+                throw new ConflictHttpException(__('The turn has already moved on.'));
             }
 
             $outcome = $this->gameRulesRegistry->for($lockedRound->game)->expireTurn($lockedRoom, $lockedRound);
