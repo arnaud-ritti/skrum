@@ -124,6 +124,47 @@ describe('IcebreakerGameCard', () => {
         ).not.toBeNull();
     });
 
+    it('reads a duration range, a duration per person or a single duration', () => {
+        const { rerender } = render(
+            <IcebreakerGameCard {...base} durationMax={10} />,
+        );
+
+        expect(screen.getByText('5–10 min')).toBeTruthy();
+
+        rerender(<IcebreakerGameCard {...base} durationPerPerson />);
+
+        expect(screen.getByText('5 min / person')).toBeTruthy();
+
+        rerender(<IcebreakerGameCard {...base} />);
+
+        expect(screen.getByText('5 min')).toBeTruthy();
+    });
+
+    it('adds the anonymous note to the duration', () => {
+        render(<IcebreakerGameCard {...base} durationMin={3} anonymous />);
+
+        expect(screen.getByText('3 min · anonymous')).toBeTruthy();
+    });
+
+    it('shows the duration and players on a compact card', () => {
+        render(<IcebreakerGameCard {...base} compact />);
+
+        expect(screen.getByText('5 min')).toBeTruthy();
+        expect(screen.getByText('3-12')).toBeTruthy();
+        expect(screen.getByText('3 to 12 players')).toBeTruthy();
+    });
+
+    it('has no meta line without a duration or players', () => {
+        render(
+            <IcebreakerGameCard game="mood" title="Mood weather" anonymous />,
+        );
+
+        expect(screen.queryByText(/anonymous/)).toBeNull();
+        expect(
+            screen.getByRole('radio').getAttribute('aria-describedby'),
+        ).toBeNull();
+    });
+
     it('says "In play" on the selected card of a room, in place of the check', () => {
         const { rerender } = render(<IcebreakerGameCard {...base} inPlay />);
 

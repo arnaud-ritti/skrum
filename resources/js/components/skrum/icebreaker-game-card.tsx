@@ -47,8 +47,14 @@ export type IcebreakerGameCardProps = {
     available?: boolean;
     /** Shown when the game is unavailable; a generic reason otherwise. */
     unavailableReason?: string;
-    /** No source on the server today: each line is hidden when absent. */
+    /** `GameCatalogue` (spec §9.1): each line is hidden when absent. */
     durationMin?: number;
+    /** "5–10 min" with `durationMin`. */
+    durationMax?: number;
+    /** "2 min / person": the duration is per speaker. */
+    durationPerPerson?: boolean;
+    /** "3 min · anonymous", beside the duration. */
+    anonymous?: boolean;
     players?: { min: number; max: number };
     participants?: number;
     selected?: boolean;
@@ -378,6 +384,27 @@ export function unavailabilityReason(
     return null;
 }
 
+function durationLine(
+    t: (key: string, replacements?: Record<string, string | number>) => string,
+    durationMin: number,
+    durationMax: number | undefined,
+    durationPerPerson: boolean,
+    anonymous: boolean,
+): string {
+    const duration =
+        durationMax !== undefined
+            ? t(':min–:max min', { min: durationMin, max: durationMax })
+            : durationPerPerson
+              ? t(':count min / person', { count: durationMin })
+              : t(':count min', { count: durationMin });
+
+    if (!anonymous) {
+        return duration;
+    }
+
+    return `${duration} · ${t('anonymous')}`;
+}
+
 export function IcebreakerGameCard({
     game,
     title,
@@ -386,6 +413,9 @@ export function IcebreakerGameCard({
     available,
     unavailableReason,
     durationMin,
+    durationMax,
+    durationPerPerson = false,
+    anonymous = false,
     players,
     participants,
     selected = false,
@@ -513,7 +543,13 @@ export function IcebreakerGameCard({
                         {durationMin !== undefined && (
                             <span className="inline-flex items-center gap-1 whitespace-nowrap">
                                 <Clock className="size-3.5" aria-hidden />
-                                {t(':count min', { count: durationMin })}
+                                {durationLine(
+                                    t,
+                                    durationMin,
+                                    durationMax,
+                                    durationPerPerson,
+                                    anonymous,
+                                )}
                             </span>
                         )}
                         {players !== undefined && (

@@ -4673,5 +4673,8 @@
     "Round :number · endless": "Ronda :number · sin fin",
     "Someone has already found the word.": "Alguien ya ha encontrado la palabra.",
     "You have already changed the word.": "Ya has cambiado la palabra.",
-    "You have already found the word.": "Ya has encontrado la palabra."
+    "You have already found the word.": "Ya has encontrado la palabra.",
+    ":min–:max min": ":min–:max min",
+    ":count min / person": ":count min / pers.",
+    "anonymous": "anónimo"
 }

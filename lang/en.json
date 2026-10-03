@@ -4453,5 +4453,8 @@
     "Round :number · endless": "Round :number · endless",
     "Someone has already found the word.": "Someone has already found the word.",
     "You have already changed the word.": "You have already changed the word.",
-    "You have already found the word.": "You have already found the word."
+    "You have already found the word.": "You have already found the word.",
+    ":min–:max min": ":min–:max min",
+    ":count min / person": ":count min / person",
+    "anonymous": "anonymous"
 }
