@@ -11,6 +11,7 @@ import { HangmanBoard } from './hangman-board';
 import { HistoryDrawer } from './history-drawer';
 import { MoodWeatherBoard } from './mood-weather-board';
 import { PassRoundButton } from './pass-round-button';
+import { QuickQuestionBoard } from './quick-question-board';
 import { useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
 import { RoundInfo } from './round-info';
@@ -38,7 +39,7 @@ function RoundBoard({ round }: { round: GameRound }) {
         case 'guess_who':
             return <GuessWhoBoard key={round.id} round={round} />;
         case 'quick_question':
-            return null;
+            return <QuickQuestionBoard key={round.id} round={round} />;
         default:
             return (
                 <p className="text-muted-foreground">

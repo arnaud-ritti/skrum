@@ -4444,5 +4444,9 @@
     "Show the author": "Show the author",
     "Who wrote this?": "Who wrote this?",
     "Written by :name": "Written by :name",
-    "Your vote": "Your vote"
+    "Your vote": "Your vote",
+    ":name is speaking": ":name is speaking",
+    "Another question": "Another question",
+    "Answer aloud, one after the other.": "Answer aloud, one after the other.",
+    "Your turn to speak": "Your turn to speak"
 }

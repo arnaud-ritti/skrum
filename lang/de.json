@@ -4664,5 +4664,9 @@
     "Show the author": "Autor zeigen",
     "Who wrote this?": "Wer hat das geschrieben?",
     "Written by :name": "Geschrieben von :name",
-    "Your vote": "Deine Stimme"
+    "Your vote": "Deine Stimme",
+    ":name is speaking": ":name spricht",
+    "Another question": "Andere Frage",
+    "Answer aloud, one after the other.": "Antworte laut, einer nach dem anderen.",
+    "Your turn to speak": "Du bist dran"
 }

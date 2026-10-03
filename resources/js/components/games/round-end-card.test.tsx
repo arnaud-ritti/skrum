@@ -304,4 +304,20 @@ describe('RoundEndCard', () => {
 
         expect(await screen.findByText('Written by Bob')).toBeTruthy();
     });
+
+    it('says everyone has spoken under the question of a Quick question round', () => {
+        renderCard(
+            {
+                ...ended(1, null),
+                outcome: 'finished',
+                word: null,
+                question: 'Your perfect weekend?',
+            },
+            false,
+            'quick_question',
+        );
+
+        expect(screen.getByText('Everyone has spoken')).toBeTruthy();
+        expect(screen.getByText('Your perfect weekend?')).toBeTruthy();
+    });
 });

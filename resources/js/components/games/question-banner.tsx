@@ -18,8 +18,26 @@ type Props = {
 };
 
 /**
- * The question of a game that asks one (Sprint in one GIF, Guess who?): the
- * host can shuffle or rewrite it until the first answer (spec §4.2, §9.9).
+ * Whether the host may still change the question: until the first answer
+ * (Sprint in one GIF, Guess who?), or until the first speaker is done
+ * (Quick question), as the server's `questionLocked` decides.
+ */
+function isQuestionOpen(round: GameRound): boolean {
+    if (round.game === 'quick_question') {
+        return round.turnPlayerId === (round.turnOrder[0] ?? null);
+    }
+
+    return (
+        round.revealedAt === null &&
+        (round.answers ?? []).length === 0 &&
+        !round.myAnswer
+    );
+}
+
+/**
+ * The question of a game that asks one (Sprint in one GIF, Guess who?, Quick
+ * question): the host can shuffle or rewrite it while it is open (spec §4.2,
+ * §9.9).
  */
 export function QuestionBanner({
     round,
@@ -31,11 +49,7 @@ export function QuestionBanner({
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState('');
     const [busy, setBusy] = useState(false);
-    const canChange =
-        ctx.snapshot.room.isHost &&
-        round.revealedAt === null &&
-        (round.answers ?? []).length === 0 &&
-        !round.myAnswer;
+    const canChange = ctx.snapshot.room.isHost && isQuestionOpen(round);
 
     const save = async (text?: string) => {
         setBusy(true);
@@ -127,7 +141,9 @@ export function QuestionBanner({
                         onClick={() => void save()}
                     >
                         <Shuffle aria-hidden />
-                        {t('Shuffle question')}
+                        {round.game === 'quick_question'
+                            ? t('Another question')
+                            : t('Shuffle question')}
                     </Button>
                     <Button
                         size="sm"

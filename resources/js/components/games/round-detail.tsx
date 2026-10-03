@@ -165,7 +165,7 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 </div>
             );
         case 'quick_question':
-            return null;
+            return <p className="font-medium break-words">{detail.question}</p>;
         default:
             return detail.word ? (
                 <p className="font-display text-xl font-bold break-words">
