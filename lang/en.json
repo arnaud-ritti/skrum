@@ -4389,5 +4389,7 @@
     "SMTP": "SMTP",
     "Test e-mail from :name": "Test e-mail from :name",
     "The mail settings of :name deliver.": "The mail settings of :name deliver.",
-    "You get this email because an admin of this instance sent a test e-mail to this address.": "You get this email because an admin of this instance sent a test e-mail to this address."
+    "You get this email because an admin of this instance sent a test e-mail to this address.": "You get this email because an admin of this instance sent a test e-mail to this address.",
+    ":provider settings saved.": ":provider settings saved.",
+    "Integration settings saved.": "Integration settings saved."
 }

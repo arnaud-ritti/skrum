@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\McpFeature;
 use App\Mail\InstanceConfigurationChangedMail;
 use App\Mail\InstanceTestMail;
@@ -16,7 +17,7 @@ arch()->preset()->security();
 // The test e-mail is sent synchronously too: the admin reads its result as soon as the request ends.
 arch()->preset()->laravel()->ignoring([InstanceConfigurationChangedMail::class, InstanceTestMail::class]);
 
-arch('enums use nothing from the application, except McpFeature which asks the container whether its feature is available')
+arch('enums use nothing from the application, except McpFeature which asks the container whether its feature is available, and IntegrationProvider which asks the instance settings whether the admin turned it off')
     ->expect('App\Enums')
     ->not->toUse([
         'App\Actions',
@@ -36,7 +37,7 @@ arch('enums use nothing from the application, except McpFeature which asks the c
         'App\Rules',
         'App\Support',
     ])
-    ->ignoring(McpFeature::class);
+    ->ignoring([McpFeature::class, IntegrationProvider::class]);
 
 arch('models do not use actions, the http layer or the mcp layer, except WhiteboardTemplate which imports array shapes from two actions for static analysis')
     ->expect('App\Models')

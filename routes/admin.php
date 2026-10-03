@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\SsoProvider;
 use App\Http\Controllers\Admin\AdminCandidatesController;
 use App\Http\Controllers\Admin\AdminsController;
@@ -9,6 +10,9 @@ use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
+use App\Http\Controllers\Admin\IntegrationAppsController;
+use App\Http\Controllers\Admin\IntegrationConfirmationsController;
+use App\Http\Controllers\Admin\IntegrationSettingsController;
 use App\Http\Controllers\Admin\LicencesController;
 use App\Http\Controllers\Admin\MailConfirmationsController;
 use App\Http\Controllers\Admin\MailSettingsController;
@@ -61,6 +65,13 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::post('admin/mail/tests', [MailTestsController::class, 'store'])
             ->middleware('throttle:5,10,mailTests')
             ->name('admin.mailTests.store');
+
+        Route::get('admin/integrations', [IntegrationSettingsController::class, 'edit'])->name('admin.integrations.edit');
+        Route::put('admin/integrations', [IntegrationSettingsController::class, 'update'])->name('admin.integrations.update');
+        Route::get('admin/integrations/confirm', [IntegrationConfirmationsController::class, 'create'])->name('admin.integrationConfirmation.create');
+        Route::put('admin/integrations/{provider}/app', [IntegrationAppsController::class, 'update'])
+            ->whereIn('provider', array_column(IntegrationProvider::cases(), 'value'))
+            ->name('admin.integrationApps.update');
 
         Route::post('admin/branding/assets/{asset}', [BrandingAssetsController::class, 'store'])
             ->where('asset', BrandAssets::RoutePattern)

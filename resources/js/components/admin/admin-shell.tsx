@@ -24,6 +24,7 @@ export type AdminSection =
     | 'branding'
     | 'signIn'
     | 'mail'
+    | 'integrations'
     | 'mcpKeys'
     | 'licence'
     | 'users'
