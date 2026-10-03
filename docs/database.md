@@ -32,7 +32,8 @@ five seconds, the action fails with "The database is busy. Try again." (HTTP 503
 - Keep sessions and the cache out of it (`SESSION_DRIVER=file`, `CACHE_STORE=file`), so that their writes do not
   queue behind the application's. `compose.production.sqlite.yaml` does this. Those files live in the container,
   not in a volume: recreating the container signs everyone out and empties the cache. The queue stays in the
-  database.
+  database. With `SESSION_DRIVER=file`, the security
+  settings show no Active sessions card: the sessions cannot be listed.
 
 ## Settings Skrüm needs, and why
 

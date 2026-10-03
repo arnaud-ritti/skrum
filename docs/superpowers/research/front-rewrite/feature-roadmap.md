@@ -123,18 +123,18 @@ Not requested, staying backlog: "already in n teams".
 
 ## Account and guests — plan 26
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| AC-1 | Photo upload | ScreenUserSettings | D-25 | Avatars are generated (DiceBear): a stored image and its serving, beside the generated one | — |
-| AC-2 | Active sessions (list, sign out one, sign out others) | ScreenSecurity | D-25 | Needs the database session driver and a device description; the mockup's city needs a lookup the owner has not asked for | — |
-| AC-3 | Linked accounts (link, unlink) | ScreenSecurity | D-25 | `social_accounts` exists and is written at sign-in only: link and unlink routes, with a "last sign-in method" guard, read against `sso_required` (B33) | — |
-| AC-4 | Presence colour chosen by the user | ScreenUserSettings | D-25 | The colour is assigned by the back end today | — |
-| AC-5 | "Reduce animations" on the account | ScreenUserSettings | D-25 | A user preference; the system setting is already respected | — |
-| AC-6 | Breach check of a new password | ScreenSecurity | D-25 | `Password::defaults()` without `uncompromised()`: an outbound call, to weigh for a self-hosted instance | — |
-| GU-1 | Colour picker on the guest-join page | GuestJoin | D-32 | Taken colours of the session, and a colour on the participant | AC-4 |
-| GU-2 | Short session code (join by code) | GuestJoin | D-32 | Sessions are joined by a 40-character token: a short code and its entry page | — |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| AC-1 | Photo upload | ScreenUserSettings | D-25 | Avatars are generated (DiceBear): a stored image and its serving, beside the generated one | — | done, plan 26 |
+| AC-2 | Active sessions (list, sign out one, sign out others) | ScreenSecurity | D-25 | Needs the database session driver and a device description; the mockup's city needs a lookup the owner has not asked for | — | done, plan 26 |
+| AC-3 | Linked accounts (link, unlink) | ScreenSecurity | D-25 | `social_accounts` exists and is written at sign-in only: link and unlink routes, with a "last sign-in method" guard, read against `sso_required` (B33) | — | done, plan 26 |
+| AC-4 | Presence colour chosen by the user | ScreenUserSettings | D-25 | No page or channel received a colour: mail derived one from the avatar seed, the whiteboard hashed the member id in the browser, retro and poker cursors used the `live-cursors` palette (plan 26 spec §1.1) | — | done, plan 26 |
+| AC-5 | "Reduce animations" on the account | ScreenUserSettings | D-25 | A user preference; the system setting is already respected | — | done, plan 26 |
+| AC-6 | Breach check of a new password | ScreenSecurity | D-25 | `Password::defaults()` already set `uncompromised()` in production, through a 30-second outbound call that passes on failure; missing were the live line while typing and a way to turn the call off (plan 26 spec §1.1) | — | done, plan 26 |
+| GU-1 | Colour picker on the guest-join page | GuestJoin | D-32 | Taken colours of the session, and a colour on the participant | AC-4 | done, plan 26 |
+| GU-2 | Short session code (join by code) | GuestJoin | D-32 | Sessions are joined by a 40-character token: a short code and its entry page | — | done, plan 26 |
 
-Not requested, staying backlog: other notification events, "last changed", "Change device", revoked-token rows.
+Not requested, staying backlog: other notification events, "last changed", "Change device", revoked-token rows; and from plan 26 spec §3: approximate location and "Unusual location" in Active sessions, listing sessions where they are not in the database, any confirmation for an account without a known password, a device model or browser version beyond "Firefox on macOS", the theme stored on the account, a guest changing name or colour after joining, a colour per session, the card-lock use of the colour, a `/s/{code}` short URL, server-side image resizing, animated or SVG photos, the "Print" button of recovery codes, deleting an account without a known password.
 
 ## Games — plan 27
 
