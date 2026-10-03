@@ -19,10 +19,11 @@ use Inertia\Response;
 
 class IntegrationSettingsController extends Controller
 {
-    public function edit(Request $request, PresentIntegrationSettings $presentIntegrationSettings, PasswordConfirmation $confirmation): Response
+    public function edit(Request $request, PresentIntegrationSettings $presentIntegrationSettings, PasswordConfirmation $confirmation, InstanceSettings $settings): Response
     {
         return Inertia::render('admin/integrations', [
             'providers' => $presentIntegrationSettings->handle(),
+            'disabled' => $settings->disabledIntegrations(),
             'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
             'confirmUrl' => route('admin.integrationConfirmation.create'),
         ]);

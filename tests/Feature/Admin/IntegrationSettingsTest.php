@@ -36,6 +36,13 @@ it('lists every provider with its state, its fields and the teams that use it', 
     expect($response->getContent())->not->toContain('slack-env-secret');
 });
 
+it('gives the stored list of providers turned off, an unconfigured one included', function () {
+    $this->put(route('admin.integrations.update'), ['disabled' => ['slack', 'linear']]);
+
+    $this->get(route('admin.integrations.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('disabled', ['linear', 'slack']));
+});
+
 it('turns a configured provider off and on, keeping the team integrations', function () {
     $integration = TeamIntegration::factory()->create(['provider' => IntegrationProvider::Slack]);
 

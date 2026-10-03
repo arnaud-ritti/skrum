@@ -107,3 +107,37 @@ export type MailSettingsPageProps = {
     confirmUrl: string;
     updateUrl: string;
 };
+
+export type IntegrationProviderKey =
+    | 'slack'
+    | 'telegram'
+    | 'jira'
+    | 'linear'
+    | 'jira_dc'
+    | 'github'
+    | 'msteams'
+    | 'mattermost'
+    | 'webhook';
+
+/** One integration provider at instance level: never a secret's value (rule S5). */
+export type IntegrationProviderSettings = {
+    key: IntegrationProviderKey;
+    label: string;
+    configured: boolean;
+    /** Configured and not turned off here. */
+    enabled: boolean;
+    connectedTeams: number;
+    fields: ConfigurationFields;
+    callbackUrl: string | null;
+    webhookUrl: string | null;
+    updateUrl: string;
+};
+
+export type IntegrationSettingsPageProps = {
+    providers: IntegrationProviderSettings[];
+    /** The providers turned off here, configured or not. */
+    disabled: string[];
+    /** End of the fresh password confirmation that configuration writes need (rule S2). */
+    confirmedUntil: string | null;
+    confirmUrl: string;
+};

@@ -16,6 +16,8 @@ type ConfigurationPayload = Record<string, ConfigurationValue | string[]>;
 type UseConfigurationFormOptions = {
     /** The server asked for a fresh password confirmation (rule S2). */
     onConfirmationRefused?: () => void;
+    /** The server stored the section. */
+    onSaved?: () => void;
 };
 
 export type ConfigurationForm = {
@@ -103,7 +105,7 @@ function emptySecrets(secrets: Record<string, string>): Record<string, string> {
 export function useConfigurationForm(
     fields: ConfigurationFields,
     updateUrl: string,
-    { onConfirmationRefused }: UseConfigurationFormOptions = {},
+    { onConfirmationRefused, onSaved }: UseConfigurationFormOptions = {},
 ): ConfigurationForm {
     const initial = initialData(fields);
     const form = useForm<ConfigurationFormData>(initial);
@@ -154,6 +156,7 @@ export function useConfigurationForm(
         form.transform((current) => payload(initial, current));
         form.put(updateUrl, {
             preserveScroll: true,
+            onSuccess: () => onSaved?.(),
             onError: (errors) => {
                 form.setData('secrets', emptySecrets(data.secrets));
 
