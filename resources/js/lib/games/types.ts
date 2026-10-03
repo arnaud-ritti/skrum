@@ -76,7 +76,12 @@ export type GameWeatherCount = { weather: GameWeather; count: number };
 
 export type GameStatementVotes = { index: number; playerIds: string[] };
 
-export type GameWordGuess = { playerId: string; text: string };
+export type GameWordGuess = {
+    playerId: string;
+    text: string;
+    /** Client only: the arrival of a word seen live; none for those of the snapshot. */
+    seq?: number;
+};
 
 export type GameRoomAccess = 'team' | 'link';
 
@@ -113,7 +118,13 @@ type GameRoomInfo = {
 /** One entry per character: separators and revealed letters, null for hidden letters. */
 export type GameMask = (string | null)[];
 
-type GameLetterPick = { playerId: string; letter: string; hit: boolean };
+type GameLetterPick = {
+    playerId: string;
+    letter: string;
+    hit: boolean;
+    /** Client only: the arrival of the move among the round's letters and words. */
+    seq?: number;
+};
 
 export type DrawingColor =
     | 'black'

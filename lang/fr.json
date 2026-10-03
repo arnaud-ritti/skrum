@@ -4610,5 +4610,10 @@
     ":seconds s per turn": ":seconds s par tour",
     "Round :number / :total": "Manche :number / :total",
     "Game over": "Partie terminée",
-    "Final scores": "Scores finaux"
+    "Final scores": "Scores finaux",
+    ":name tries :word — missed": ":name tente :word — raté",
+    "Guess the whole word (+5 pts, −1 life if wrong)": "Tenter le mot entier (+5 pts, −1 vie si raté)",
+    "Last moves": "Derniers coups",
+    "Missed: −1 life": "Raté : −1 vie",
+    "Your turn, :name — pick a letter": "À toi de jouer, :name — choisis une lettre"
 }

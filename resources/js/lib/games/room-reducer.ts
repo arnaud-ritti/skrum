@@ -14,6 +14,7 @@ import type {
     GameTruthSets,
     GameTurnChanged,
     GameVotesCounted,
+    GameWordGuess,
 } from './types';
 import { withAwardedPoints } from './leaderboard';
 import { pendingAnswers, withPendingAnswer, withVoter } from './gif';
@@ -132,7 +133,7 @@ function requestResync(state: GameRoomState): GameRoomState {
  * A fresh snapshot knows nothing of what only the client holds for the round
  * in play. Dropping `committedOpIds` would let the live preview of a stroke
  * committed moments ago show again once that stroke is undone or the drawing
- * is cleared; dropping `recentPicks` would empty "Last letters" each time the
+ * is cleared; dropping `recentPicks` would empty "Last moves" each time the
  * room is fetched again in the middle of a hangman round.
  */
 function withClientRoundState(
@@ -158,8 +159,49 @@ function withClientRoundState(
             fresh.round.recentPicks === undefined
                 ? { recentPicks }
                 : {}),
+            ...(fresh.round.wordGuesses !== undefined
+                ? {
+                      wordGuesses: withWordGuessSeqs(
+                          fresh.round.wordGuesses,
+                          previous.round.wordGuesses ?? [],
+                      ),
+                  }
+                : {}),
         },
     };
+}
+
+/** The fetched words keep the arrival the live ones had, so "Last moves" keeps its order. */
+function withWordGuessSeqs(
+    fresh: GameWordGuess[],
+    previous: GameWordGuess[],
+): GameWordGuess[] {
+    const unmatched = [...previous];
+
+    return fresh.map((guess) => {
+        const index = unmatched.findIndex(
+            (known) =>
+                known.playerId === guess.playerId && known.text === guess.text,
+        );
+
+        if (index === -1) {
+            return guess;
+        }
+
+        const [known] = unmatched.splice(index, 1);
+
+        return known.seq === undefined ? guess : { ...guess, seq: known.seq };
+    });
+}
+
+/** The arrival number of the next letter or word of a hangman round. */
+function nextMoveSeq(round: GameRound): number {
+    const seqs = [
+        ...(round.recentPicks ?? []),
+        ...(round.wordGuesses ?? []),
+    ].map((move) => move.seq ?? 0);
+
+    return Math.max(0, ...seqs) + 1;
 }
 
 function withReady(
@@ -319,6 +361,7 @@ export function roomReducer(
                         playerId: action.picked.playerId,
                         letter: action.picked.letter,
                         hit: action.picked.hit,
+                        seq: nextMoveSeq(round),
                     },
                 ].slice(-RecentPicks),
             }));
@@ -344,6 +387,7 @@ export function roomReducer(
                             {
                                 playerId: action.guess.playerId,
                                 text: action.guess.text,
+                                seq: nextMoveSeq(round),
                             },
                         ].slice(-WordGuessesShown),
                     };

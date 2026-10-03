@@ -15,6 +15,8 @@ import {
 } from './game-layout';
 import { HangmanFeed } from './hangman-feed';
 import { HangmanFigure } from './hangman-figure';
+import { HangmanTurnBanner } from './hangman-turn-banner';
+import { HangmanWordGuess } from './hangman-word-guess';
 import { LetterKeyboard } from './letter-keyboard';
 import { useRoom } from './room-context';
 import { WordMask } from './word-mask';
@@ -35,8 +37,18 @@ export function HangmanBoard({ round }: { round: GameRound }) {
     const picked = round.pickedLetters ?? [];
     const hits = hitLetters(mask, picked);
     const missed = picked.filter((letter) => !hits.includes(letter));
+    const isOutOfTurn =
+        round.turnOrder.length > 0 &&
+        round.turnPlayerId !== ctx.snapshot.me.playerId;
+    const turnPlayerName =
+        ctx.snapshot.players.find((player) => player.id === round.turnPlayerId)
+            ?.name ?? t('Someone');
 
     const pick = async (letter: string) => {
+        if (isOutOfTurn) {
+            return;
+        }
+
         setPending(true);
 
         try {
@@ -71,8 +83,16 @@ export function HangmanBoard({ round }: { round: GameRound }) {
             picked={picked}
             hits={hits}
             disabled={pending}
+            disabledReason={
+                isOutOfTurn
+                    ? t(":name's turn", { name: turnPlayerName })
+                    : undefined
+            }
             onPick={(letter) => void pick(letter)}
         />
+    );
+    const wordGuess = (
+        <HangmanWordGuess round={round} disabled={pending || isOutOfTurn} />
     );
 
     return (
@@ -100,7 +120,9 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                 )}
             </div>
             <WordMask mask={mask} size="lg" />
+            <HangmanTurnBanner round={round} />
             {footer === null && keyboard}
+            {footer === null && wordGuess}
             {!hasRightColumn && (
                 <HangmanFeed
                     round={round}
@@ -113,10 +135,11 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                     <div
                         data-slot="keyboard-dock"
                         className={cn(
-                            'flex justify-center bg-muted px-1.5',
+                            'flex flex-col items-center gap-2 bg-muted px-1.5',
                             dockedPanelClass,
                         )}
                     >
+                        {wordGuess}
                         {keyboard}
                     </div>,
                     footer,

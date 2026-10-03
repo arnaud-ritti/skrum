@@ -236,12 +236,79 @@ describe('roomReducer, hangman', () => {
         );
 
         expect(next.snapshot.round?.wordGuesses).toHaveLength(10);
-        expect(next.snapshot.round?.wordGuesses?.at(-1)).toEqual({
+        expect(next.snapshot.round?.wordGuesses?.at(-1)).toMatchObject({
             playerId: 'b',
             text: 'retro',
         });
         expect(next.snapshot.round?.misses).toBe(3);
         expect(next.snapshot.round?.guesses).toBeUndefined();
+    });
+
+    it('numbers the letters and the words in the order they arrive', () => {
+        const picked = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'hangman',
+                wordGuesses: [{ playerId: 'a', text: 'early' }],
+            }),
+            {
+                type: 'letter.picked',
+                picked: {
+                    roundId: 'round-1',
+                    playerId: 'a',
+                    letter: 'e',
+                    hit: true,
+                    mask: ['e'],
+                    misses: 0,
+                    turnPlayerId: null,
+                    turnEndsAt: null,
+                },
+            },
+        );
+        const guessed = roomReducer(picked, {
+            type: 'guess.added',
+            roundId: 'round-1',
+            guess: { id: 'g', playerId: 'b', text: 'retro' },
+            misses: 1,
+        });
+
+        expect(guessed.snapshot.round?.recentPicks?.[0].seq).toBe(1);
+        expect(guessed.snapshot.round?.wordGuesses).toEqual([
+            { playerId: 'a', text: 'early' },
+            { playerId: 'b', text: 'retro', seq: 2 },
+        ]);
+    });
+
+    it('keeps the arrival of the live words when the room is fetched again', () => {
+        const next = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'hangman',
+                recentPicks: [
+                    { playerId: 'a', letter: 'e', hit: true, seq: 1 },
+                ],
+                wordGuesses: [
+                    { playerId: 'a', text: 'early' },
+                    { playerId: 'b', text: 'retro', seq: 2 },
+                ],
+            }),
+            {
+                type: 'replace',
+                snapshot: snapshot({
+                    id: 'round-1',
+                    game: 'hangman',
+                    wordGuesses: [
+                        { playerId: 'a', text: 'early' },
+                        { playerId: 'b', text: 'retro' },
+                    ],
+                }),
+            },
+        );
+
+        expect(next.snapshot.round?.wordGuesses).toEqual([
+            { playerId: 'a', text: 'early' },
+            { playerId: 'b', text: 'retro', seq: 2 },
+        ]);
     });
 });
 

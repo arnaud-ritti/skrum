@@ -10,6 +10,8 @@ type LetterKeyboardProps = {
     hits: string[];
     /** A pick is on its way: no key answers. */
     disabled: boolean;
+    /** Why no key answers for now (another player's turn), shown above the rows. */
+    disabledReason?: string;
     onPick: (letter: string) => void;
     className?: string;
 };
@@ -27,10 +29,12 @@ export function LetterKeyboard({
     picked,
     hits,
     disabled,
+    disabledReason,
     onPick,
     className,
 }: LetterKeyboardProps) {
     const { t } = useTrans();
+    const isBlocked = disabledReason !== undefined;
 
     const stateOf = (letter: string): KeyState => {
         if (!picked.includes(letter)) {
@@ -50,6 +54,14 @@ export function LetterKeyboard({
                 className,
             )}
         >
+            {isBlocked && (
+                <p
+                    data-slot="keyboard-reason"
+                    className="text-body-sm font-semibold text-muted-foreground"
+                >
+                    {disabledReason}
+                </p>
+            )}
             {keyboardRows(layout).map((row) => (
                 <div
                     key={row.join('')}
@@ -58,7 +70,8 @@ export function LetterKeyboard({
                 >
                     {row.map((letter) => {
                         const state = stateOf(letter);
-                        const isLocked = disabled || state !== 'free';
+                        const isLocked =
+                            disabled || isBlocked || state !== 'free';
                         const outcomes = {
                             free: undefined,
                             hit: `${letter}, ${t('in the word')}`,
@@ -81,6 +94,7 @@ export function LetterKeyboard({
                                 className={cn(
                                     'grid h-11.5 max-w-11.5 min-w-0 flex-1 place-items-center rounded-md border text-base font-bold uppercase outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-shadow motion-safe:duration-140 sm:h-12',
                                     stateClasses[state],
+                                    isBlocked && 'is-disabled opacity-50',
                                     state === 'free' &&
                                         'aria-disabled:cursor-default aria-disabled:hover:border-input aria-disabled:hover:ring-0',
                                 )}
