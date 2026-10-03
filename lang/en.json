@@ -4343,5 +4343,6 @@
     "“:message”": "“:message”",
     "You are not in the workspace of this team.": "You are not in the workspace of this team.",
     "You are already in this team.": "You are already in this team.",
-    "This request was already answered.": "This request was already answered."
+    "This request was already answered.": "This request was already answered.",
+    "They have left the workspace, so the request was declined.": "They have left the workspace, so the request was declined."
 }

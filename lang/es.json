@@ -4563,5 +4563,6 @@
     "“:message”": "«:message»",
     "You are not in the workspace of this team.": "No formas parte del espacio de trabajo de este equipo.",
     "You are already in this team.": "Ya formas parte de este equipo.",
-    "This request was already answered.": "Esta solicitud ya tiene respuesta."
+    "This request was already answered.": "Esta solicitud ya tiene respuesta.",
+    "They have left the workspace, so the request was declined.": "Esta persona dejó el espacio de trabajo, así que la solicitud se rechazó."
 }

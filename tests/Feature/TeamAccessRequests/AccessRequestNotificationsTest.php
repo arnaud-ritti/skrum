@@ -100,3 +100,31 @@ it('notifies the managers once when the same person asks again', function () {
 
     $this->actingAs($manager)->getJson(route('notifications.index'))->assertJsonCount(1, 'notifications');
 });
+
+it('tells the manager why an approval became a decline and spares the former member the bell', function () {
+    $team = Team::factory()->create();
+    $manager = workspaceManager($team->workspace);
+    $request = TeamAccessRequest::factory()->for($team)->pending()->create();
+    $team->workspace->members()->detach($request->user_id);
+
+    $this->actingAs($manager)
+        ->patchJson(route('teams.accessRequests.update', [$team->workspace, $team, $request]), ['decision' => 'approve'])
+        ->assertOk()
+        ->assertJson([
+            'status' => 'declined',
+            'reason' => 'leftWorkspace',
+            'message' => __('They have left the workspace, so the request was declined.'),
+        ]);
+
+    expect($request->user->notifications()->count())->toBe(0);
+});
+
+it('gives no reason for a decline the manager chose', function () {
+    $team = Team::factory()->create();
+    $request = TeamAccessRequest::factory()->for($team)->pending()->create();
+
+    $this->actingAs(workspaceManager($team->workspace))
+        ->patchJson(route('teams.accessRequests.update', [$team->workspace, $team, $request]), ['decision' => 'decline'])
+        ->assertOk()
+        ->assertExactJson(['status' => 'declined']);
+});

@@ -39,12 +39,23 @@ class TeamAccessRequestsController extends Controller
         return response()->json(['status' => $accessRequest->status->value], 201);
     }
 
+    /**
+     * Someone who has left the workspace is not told: the team would answer them with a 403.
+     */
     public function update(TeamAccessRequestUpdateRequest $request, Workspace $workspace, Team $team, TeamAccessRequest $accessRequest, AnswerTeamAccessRequest $answer): JsonResponse
     {
         /** @var User $manager */
         $manager = $request->user();
 
         $status = $answer->handle($manager, $accessRequest, $request->validated('decision') === 'approve');
+
+        if (! $accessRequest->user->belongsToWorkspace($workspace)) {
+            return response()->json([
+                'status' => $status->value,
+                'reason' => 'leftWorkspace',
+                'message' => __('They have left the workspace, so the request was declined.'),
+            ]);
+        }
 
         $accessRequest->user->notify(new TeamAccessAnsweredNotification($accessRequest->id));
 
