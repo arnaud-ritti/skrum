@@ -5252,5 +5252,9 @@
     ":count whiteboards edited today": ":count tableaux blancs modifiés aujourd'hui",
     "You are observing this session.": "Tu observes cette session.",
     ":name (suggested)": ":name (suggéré)",
-    "Suggested by the rotation.": "Suggéré par la rotation."
+    "Suggested by the rotation.": "Suggéré par la rotation.",
+    ":inviter invited you to join :team on :workspace": ":inviter t'invite à rejoindre :team sur :workspace",
+    ":inviter invited you to join the :team team in the :workspace workspace": ":inviter t'invite à rejoindre l'équipe :team dans l'espace :workspace",
+    ":workspace workspace": "Espace :workspace",
+    "This person is already in :team.": "Cette personne fait déjà partie de :team."
 }

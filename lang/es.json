@@ -5252,5 +5252,9 @@
     ":count whiteboards edited today": ":count pizarras editadas hoy",
     "You are observing this session.": "Estás observando esta sesión.",
     ":name (suggested)": ":name (sugerido)",
-    "Suggested by the rotation.": "Sugerido por la rotación."
+    "Suggested by the rotation.": "Sugerido por la rotación.",
+    ":inviter invited you to join :team on :workspace": ":inviter te invita a unirte a :team en :workspace",
+    ":inviter invited you to join the :team team in the :workspace workspace": ":inviter te invita a unirte al equipo :team en el espacio :workspace",
+    ":workspace workspace": "Espacio :workspace",
+    "This person is already in :team.": "Esta persona ya está en :team."
 }

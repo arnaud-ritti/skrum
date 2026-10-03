@@ -1,10 +1,12 @@
 <?php
 
 use App\Mail\WorkspaceInvitationMail;
+use App\Models\Team;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
 use App\Support\Avatars\PresenceColor;
+use App\Support\Mail\MailBrand;
 use Illuminate\Notifications\AnonymousNotifiable;
 
 function invitationNotification(string $workspace = 'Nordlys', string $inviter = 'Fran'): WorkspaceInvitationNotification
@@ -62,4 +64,31 @@ it('carries no unsubscribe header', function () {
 
 it('previews the invitation', function () {
     $this->get('/dev/mail/invitation')->assertOk()->assertSee('Accept invitation');
+});
+
+it('quotes the message of a workspace invitation in both parts, line breaks kept', function () {
+    $invitation = WorkspaceInvitation::factory()->withMessage("See you Thursday.\n<b>Bring</b> coffee.")->create();
+
+    $mail = (new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+
+    expect($mail->subject)->toBe('Fran invited you to join Nordlys')
+        ->and((string) $mail->render())->toContain("“See you Thursday.\n&lt;b&gt;Bring&lt;/b&gt; coffee.”")
+        ->toContain('white-space:pre-line');
+    $mail->assertSeeInText("“See you Thursday.\n<b>Bring</b> coffee.”");
+});
+
+it('draws the team mark in the team colour with its initial and its member count', function () {
+    $team = Team::factory()->create(['name' => 'atlas', 'color' => 'moss']);
+    teamMember($team);
+    $invitation = WorkspaceInvitation::factory()->forTeam($team)->create();
+
+    $mail = (new WorkspaceInvitationNotification($team->workspace->name, 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+    $html = (string) $mail->render();
+
+    expect($mail->teamColor)->toBe('moss')
+        ->and($html)->toContain('background-color:'.MailBrand::Palette['light']['skrum-col-moss'])
+        ->toContain('>A</td>')
+        ->toContain('1 member</span>')
+        ->toContain('.m-c-moss { background-color: '.MailBrand::Palette['dark']['skrum-col-moss']);
+    $mail->assertSeeInText('atlas: '.$team->workspace->name.' workspace · 1 member');
 });

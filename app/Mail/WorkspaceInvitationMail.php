@@ -19,6 +19,11 @@ class WorkspaceInvitationMail extends BrandedMail
         public bool $canUseSso,
         public bool $canRegister,
         public int $validDays,
+        public ?string $teamName = null,
+        public ?string $teamInitial = null,
+        public ?string $teamColor = null,
+        public ?int $teamMembersCount = null,
+        public ?string $inviterMessage = null,
     ) {}
 
     public function content(): Content
@@ -30,7 +35,7 @@ class WorkspaceInvitationMail extends BrandedMail
                 ...$this->brandData(),
                 'title' => $this->subject,
                 'preheader' => __(':workspace runs its retros, planning poker and icebreakers on :app.', [
-                    'workspace' => $this->workspaceName,
+                    'workspace' => $this->teamName ?? $this->workspaceName,
                     'app' => resolve(MailBrand::class)->name(),
                 ]),
                 'inviterFirstName' => Str::before($this->inviterName, ' '),

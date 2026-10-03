@@ -3,81 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Notifications\ForgetInvitationNotifications;
-use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationTerms;
+use App\Actions\Workspaces\SendInvitation;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
-use App\Models\User;
+use App\Models\Team;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
-use App\Notifications\WorkspaceInvitationNotification;
-use App\Notifications\WorkspaceInvitationReceivedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use SensitiveParameter;
 
 class WorkspaceInvitationsController extends Controller
 {
-    public function store(Request $request, Workspace $workspace, CreateWorkspaceInvitation $createInvitation): RedirectResponse
+    public function store(Request $request, Workspace $workspace, SendInvitation $sendInvitation): RedirectResponse
     {
         Gate::authorize('manageMembers', $workspace);
 
         $validated = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'role' => ['required', Rule::in([WorkspaceRole::Admin->value, WorkspaceRole::Member->value])],
+            'team_id' => ['nullable', 'uuid', Rule::exists('teams', 'id')->where('workspace_id', $workspace->id)],
+            'team_role' => ['nullable', 'required_with:team_id', Rule::in(array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()))],
+            'message' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $isAlreadyMember = $workspace->members()
-            ->whereAddress($validated['email'])
-            ->exists();
+        $team = $request->filled('team_id')
+            ? $workspace->teams()->findOrFail($request->string('team_id')->value())
+            : null;
 
-        if ($isAlreadyMember) {
-            throw ValidationException::withMessages(['email' => __('This person is already a member of the workspace.')]);
-        }
+        $this->ensureNotAlreadyIn($workspace, $team, $validated['email']);
 
-        $inviter = $request->user();
-        $issued = $createInvitation->handle($workspace, $inviter, $validated['email'], WorkspaceRole::from($validated['role']));
-        $url = route('invitations.show', $issued->token);
-
-        $recipientLocale = User::query()
-            ->whereAddress($validated['email'])
-            ->value('locale');
-
-        Notification::route('mail', $validated['email'])->notify(
-            (new WorkspaceInvitationNotification($workspace->name, $inviter->name, $url, $issued->invitation->expires_at, $issued->invitation->id))
-                ->locale($recipientLocale ?? app()->getLocale()),
-        );
-
-        $this->notifyExistingAccount($validated['email'], $issued->invitation, $issued->token);
+        $issued = $sendInvitation->handle($workspace, $request->user(), new InvitationTerms(
+            $validated['email'],
+            WorkspaceRole::from($validated['role']),
+            $team,
+            $team === null ? null : TeamRole::from($validated['team_role']),
+            $validated['message'] ?? null,
+        ));
 
         if (config('mail.default') === 'log') {
-            Inertia::flash('invitationUrl', $url);
+            Inertia::flash('invitationUrl', $issued->url());
         }
 
         return back();
     }
 
-    /**
-     * The bell of the one verified account that owns the invited address
-     * is told of the invitation. The inviter's answer is the same whether
-     * or not such an account exists.
-     */
-    private function notifyExistingAccount(string $email, WorkspaceInvitation $invitation, #[SensitiveParameter] string $token): void
+    private function ensureNotAlreadyIn(Workspace $workspace, ?Team $team, string $email): void
     {
-        $accounts = User::query()
-            ->whereAddress($email)
-            ->whereNotNull('email_verified_at')
-            ->limit(2)
-            ->get();
+        $isAlreadyIn = $team === null
+            ? $workspace->members()->whereAddress($email)->exists()
+            : $team->members()->whereAddress($email)->exists();
 
-        if ($accounts->count() !== 1) {
+        if (! $isAlreadyIn) {
             return;
         }
 
-        $accounts->sole()->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $token));
+        throw ValidationException::withMessages(['email' => $team === null
+            ? __('This person is already a member of the workspace.')
+            : __('This person is already in :team.', ['team' => $team->name])]);
     }
 
     public function destroy(Workspace $workspace, WorkspaceInvitation $invitation, ForgetInvitationNotifications $forgetNotifications): RedirectResponse

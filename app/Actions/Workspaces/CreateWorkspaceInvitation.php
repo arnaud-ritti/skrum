@@ -3,7 +3,6 @@
 namespace App\Actions\Workspaces;
 
 use App\Actions\Notifications\ForgetInvitationNotifications;
-use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
@@ -18,14 +17,20 @@ class CreateWorkspaceInvitation
 
     public function __construct(private ForgetInvitationNotifications $forgetNotifications) {}
 
-    public function handle(Workspace $workspace, User $inviter, string $email, WorkspaceRole $role): IssuedInvitation
+    /**
+     * The workspace row is locked first, so that one address invited twice at
+     * the same instant leaves one pending invitation.
+     */
+    public function handle(Workspace $workspace, User $inviter, InvitationTerms $terms): IssuedInvitation
     {
         $token = Str::random(40);
 
-        $invitation = DB::transaction(function () use ($workspace, $inviter, $email, $role, $token): WorkspaceInvitation {
+        $invitation = DB::transaction(function () use ($workspace, $inviter, $terms, $token): WorkspaceInvitation {
+            Workspace::query()->whereKey($workspace->id)->lockForUpdate()->first();
+
             /** @var array<int, string> $replacedIds */
             $replacedIds = $workspace->invitations()
-                ->where('email', LoginAddress::normalise($email))
+                ->where('email', LoginAddress::normalise($terms->email))
                 ->whereNull('accepted_at')
                 ->pluck('id')
                 ->all();
@@ -34,8 +39,11 @@ class CreateWorkspaceInvitation
             $this->forgetNotifications->handle($replacedIds);
 
             return $workspace->invitations()->create([
-                'email' => $email,
-                'role' => $role,
+                'email' => $terms->email,
+                'role' => $terms->role,
+                'team_id' => $terms->team?->id,
+                'team_role' => $terms->team === null ? null : $terms->teamRole,
+                'message' => $terms->cleanMessage(),
                 'token_hash' => WorkspaceInvitation::hashToken($token),
                 'invited_by_id' => $inviter->id,
                 'expires_at' => now()->addDays(self::ValidForDays),

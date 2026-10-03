@@ -10,4 +10,9 @@ class IssuedInvitation
         public WorkspaceInvitation $invitation,
         public string $token,
     ) {}
+
+    public function url(): string
+    {
+        return route('invitations.show', $this->token);
+    }
 }

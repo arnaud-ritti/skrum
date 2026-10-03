@@ -10,6 +10,7 @@ use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\Mail\MailBrand;
+use App\Support\Teams\TeamMark;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -44,9 +45,11 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
     {
         $invitation = $this->invitationId === null
             ? null
-            : WorkspaceInvitation::query()->with(['workspace', 'invitedBy'])->find($this->invitationId);
+            : WorkspaceInvitation::query()->with(['workspace', 'invitedBy', 'team'])->find($this->invitationId);
         $workspaceName = Str::squish($this->workspaceName);
         $inviterName = Str::squish($this->inviterName);
+        $team = $invitation?->team;
+        $teamName = $team === null ? null : Str::squish($team->name);
 
         return (new WorkspaceInvitationMail(
             $workspaceName,
@@ -59,8 +62,15 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
             SsoProvider::enabled() !== [],
             resolve(SignInPolicy::class)->allowsLocalCredentials() && resolve(SignupGate::class)->canShowRegistration($invitation),
             max(1, (int) ceil(now()->diffInDays($this->expiresAt, absolute: false))),
+            $teamName,
+            $teamName === null ? null : mb_strtoupper(mb_substr($teamName, 0, 1)),
+            $team === null ? null : TeamMark::colorFor($team)->value,
+            $team?->members()->count(),
+            $invitation?->message,
         ))
-            ->subject(__(':inviter invited you to join :workspace', ['inviter' => $inviterName, 'workspace' => $workspaceName]))
+            ->subject($teamName === null
+                ? __(':inviter invited you to join :workspace', ['inviter' => $inviterName, 'workspace' => $workspaceName])
+                : __(':inviter invited you to join :team on :workspace', ['inviter' => $inviterName, 'team' => $teamName, 'workspace' => $workspaceName]))
             ->forNotifiable($notifiable);
     }
 }

@@ -3,6 +3,7 @@
 use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Actions\Integrations\BuildRetroRecap;
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationTerms;
 use App\Enums\ActionItemReminderKind;
 use App\Enums\EmailCodePurpose;
 use App\Enums\RetroPhase;
@@ -98,7 +99,7 @@ function mockupInvitationMail(): Mailable
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Admin)->create(['name' => 'Atlas']);
     $workspace->members()->attach(User::factory()->count(10)->create(), ['role' => WorkspaceRole::Member->value]);
     Team::factory()->count(2)->create(['workspace_id' => $workspace->id]);
-    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.test', WorkspaceRole::Member);
+    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
     return (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
         ->toMail((new AnonymousNotifiable)->route('mail', 'new@example.test'));
@@ -276,7 +277,7 @@ it('counts one team and one member in the singular', function () {
     $inviter = User::factory()->create();
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Admin)->create();
     Team::factory()->create(['workspace_id' => $workspace->id]);
-    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.test', WorkspaceRole::Member);
+    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
     $html = (string) (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
         ->toMail(new AnonymousNotifiable)
@@ -518,7 +519,7 @@ it('stays within the hex table', function (string $mail, ?string $brandColor) {
 it('escapes user text in the blocks of the mockup', function () {
     $inviter = User::factory()->create(['name' => '<i>Eve</i> [y](https://evil.test)']);
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Admin)->create(['name' => "<script>alert(1)</script>\nBcc: evil@example.test"]);
-    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.test', WorkspaceRole::Member);
+    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
     $mail = (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
         ->toMail(new AnonymousNotifiable);

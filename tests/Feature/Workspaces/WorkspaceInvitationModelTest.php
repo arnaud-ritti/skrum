@@ -2,6 +2,7 @@
 
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationTerms;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
@@ -11,7 +12,7 @@ it('issues an invitation that can be found by its plain token only', function ()
     $inviter = User::factory()->create();
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Owner)->create();
 
-    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.com', WorkspaceRole::Admin);
+    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.com', WorkspaceRole::Admin));
 
     expect($issued->invitation->token_hash)->not->toBe($issued->token)
         ->and(WorkspaceInvitation::findByToken($issued->token)?->id)->toBe($issued->invitation->id)
@@ -26,8 +27,8 @@ it('replaces a previous pending invitation for the same email', function () {
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Owner)->create();
     $createInvitation = resolve(CreateWorkspaceInvitation::class);
 
-    $first = $createInvitation->handle($workspace, $inviter, 'new@example.com', WorkspaceRole::Member);
-    $second = $createInvitation->handle($workspace, $inviter, 'NEW@example.com', WorkspaceRole::Admin);
+    $first = $createInvitation->handle($workspace, $inviter, new InvitationTerms('new@example.com', WorkspaceRole::Member));
+    $second = $createInvitation->handle($workspace, $inviter, new InvitationTerms('NEW@example.com', WorkspaceRole::Admin));
 
     expect($workspace->invitations()->count())->toBe(1)
         ->and(WorkspaceInvitation::findByToken($first->token))->toBeNull()
