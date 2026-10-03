@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\McpFeature;
+use App\Mail\InstanceConfigurationChangedMail;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\WhiteboardTemplate;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -9,7 +10,9 @@ arch()->preset()->php();
 
 arch()->preset()->security();
 
-arch()->preset()->laravel();
+// The configuration alert is sent synchronously, through the mailer in force before the change (spec §5.1 rule S4):
+// a queued copy would run after the configuration is applied again, through the new mailer.
+arch()->preset()->laravel()->ignoring(InstanceConfigurationChangedMail::class);
 
 arch('enums use nothing from the application, except McpFeature which asks the container whether its feature is available')
     ->expect('App\Enums')

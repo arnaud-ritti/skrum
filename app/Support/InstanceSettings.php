@@ -247,6 +247,17 @@ class InstanceSettings
         $this->invalidateAfterCommit();
     }
 
+    /**
+     * Drops what this instance and the cache hold, so that the next read sees the committed rows:
+     * a writer that holds a lock reads this way.
+     */
+    public function refresh(): void
+    {
+        Cache::forget(self::CacheKey);
+
+        $this->stored = null;
+    }
+
     public function ssoRequired(): bool
     {
         return $this->storedBool(InstanceSettingKey::SsoRequired) ?? self::DefaultSsoRequired;

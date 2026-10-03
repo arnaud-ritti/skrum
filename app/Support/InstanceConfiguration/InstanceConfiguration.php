@@ -3,6 +3,7 @@
 namespace App\Support\InstanceConfiguration;
 
 use App\Enums\InstanceSettingKey;
+use App\Enums\SsoProvider;
 use App\Support\InstanceSettings;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Mail\MailManager;
@@ -30,26 +31,35 @@ class InstanceConfiguration
     /** @return array{stored: bool, value: mixed, unreadable: bool} */
     public function stored(InstanceSettingKey $section, string $name): array
     {
-        $field = $this->catalogue->field($section, $name);
-        $object = $this->settings->configuration($section);
+        return $this->storedIn($section, $name, $this->settings->configuration($section));
+    }
 
-        if (! array_key_exists($name, $object)) {
-            return ['stored' => false, 'value' => null, 'unreadable' => false];
+    /**
+     * Whether a sign-in provider would have every required value if its section held this object.
+     *
+     * @param  array<string, mixed>  $object  the section's stored object, secrets encrypted
+     */
+    public function completesSsoProvider(SsoProvider $provider, #[SensitiveParameter] array $object): bool
+    {
+        $section = $this->catalogue->section($provider);
+
+        foreach ($provider->requiredConfigKeys() as $key) {
+            $field = collect($this->catalogue->fields($section))
+                ->first(fn (ConfigurationField $field): bool => in_array($key, $field->configKeys, true));
+
+            if ($field === null) {
+                return false;
+            }
+
+            $stored = $this->storedIn($section, $field->name, $object);
+            $value = $stored['stored'] ? $stored['value'] : $this->environmentValue($section, $field->name);
+
+            if (blank($value)) {
+                return false;
+            }
         }
 
-        if (! $field->kind->isSecret()) {
-            return ['stored' => true, 'value' => $object[$name], 'unreadable' => false];
-        }
-
-        if (! is_string($object[$name])) {
-            return ['stored' => false, 'value' => null, 'unreadable' => true];
-        }
-
-        try {
-            return ['stored' => true, 'value' => Crypt::decryptString($object[$name]), 'unreadable' => false];
-        } catch (DecryptException) {
-            return ['stored' => false, 'value' => null, 'unreadable' => true];
-        }
+        return true;
     }
 
     public function value(InstanceSettingKey $section, string $name): mixed
@@ -207,6 +217,33 @@ class InstanceConfiguration
 
         if (app()->resolved(SocialiteFactory::class)) {
             app(SocialiteFactory::class)->forgetDrivers();
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $object
+     * @return array{stored: bool, value: mixed, unreadable: bool}
+     */
+    private function storedIn(InstanceSettingKey $section, string $name, #[SensitiveParameter] array $object): array
+    {
+        $field = $this->catalogue->field($section, $name);
+
+        if (! array_key_exists($name, $object)) {
+            return ['stored' => false, 'value' => null, 'unreadable' => false];
+        }
+
+        if (! $field->kind->isSecret()) {
+            return ['stored' => true, 'value' => $object[$name], 'unreadable' => false];
+        }
+
+        if (! is_string($object[$name])) {
+            return ['stored' => false, 'value' => null, 'unreadable' => true];
+        }
+
+        try {
+            return ['stored' => true, 'value' => Crypt::decryptString($object[$name]), 'unreadable' => false];
+        } catch (DecryptException) {
+            return ['stored' => false, 'value' => null, 'unreadable' => true];
         }
     }
 

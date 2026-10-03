@@ -101,7 +101,7 @@ enum SsoProvider: string
     /**
      * @return array<int, string>
      */
-    private function requiredConfigKeys(): array
+    public function requiredConfigKeys(): array
     {
         return match ($this) {
             self::Google => ['services.google.client_id', 'services.google.client_secret'],
