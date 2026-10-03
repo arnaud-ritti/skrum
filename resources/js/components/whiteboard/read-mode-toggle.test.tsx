@@ -78,6 +78,23 @@ describe('ReadModeLayer', () => {
         );
     });
 
+    it('puts the dock actions before the toggle', () => {
+        const { container } = renderWithProviders(
+            <ReadModeLayer
+                reading
+                onChange={vi.fn()}
+                dockActions={<button type="button">Fit to screen</button>}
+            />,
+        );
+        const dock = container.querySelector('[data-slot="read-mode-dock"]');
+
+        expect(
+            Array.from(dock?.querySelectorAll('button') ?? []).map(
+                (button) => button.textContent,
+            ),
+        ).toEqual(['Fit to screen', 'Edit']);
+    });
+
     it('renders nothing in the places left for later features', () => {
         const { container } = renderWithProviders(
             <ReadModeLayer reading onChange={vi.fn()} />,

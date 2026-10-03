@@ -18,6 +18,7 @@ const twMerge = extendTailwindMerge({
                 'ui-lg',
                 'body-sm',
                 'overline',
+                '3xs',
             ],
             'font-weight': ['title'],
             tracking: ['display', 'title', 'heading', 'subheading', 'overline'],

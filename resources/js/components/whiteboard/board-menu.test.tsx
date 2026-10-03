@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { retroRequest } from '@/lib/retro/api';
 import { renderWithProviders } from '@/test/render';
 import { boardState } from '@/test/whiteboard-state';
+import { CANVAS_LIGHT } from '@/lib/whiteboard/palette';
 import { BoardMenu } from './board-menu';
+import type { BoardCanvasActions } from './board-menu';
 
 const mocks = vi.hoisted(() => ({ visit: vi.fn() }));
 
@@ -27,7 +29,26 @@ afterEach(() => {
 
 type State = ReturnType<typeof boardState>;
 
-async function openMenu(state: State, onHide = vi.fn()) {
+function canvasActions(
+    overrides: Partial<BoardCanvasActions> = {},
+): BoardCanvasActions {
+    return {
+        saveAsImage: vi.fn(),
+        findOnCanvas: vi.fn(),
+        canvasHelp: vi.fn(),
+        clearCanvas: vi.fn(),
+        editing: true,
+        background: CANVAS_LIGHT,
+        setBackground: vi.fn(),
+        ...overrides,
+    };
+}
+
+async function openMenu(
+    state: State,
+    onHide = vi.fn(),
+    actions?: BoardCanvasActions,
+) {
     const user = userEvent.setup();
 
     renderWithProviders(
@@ -35,6 +56,7 @@ async function openMenu(state: State, onHide = vi.fn()) {
             state={state}
             hideMyCursor={false}
             onHideMyCursorChange={onHide}
+            canvasActions={actions}
         />,
     );
 
@@ -164,5 +186,145 @@ describe('BoardMenu', () => {
 
         expect(await screen.findByRole(role, { name: title })).toBeTruthy();
         expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    describe('canvas entries', () => {
+        const canvasEntries = [
+            'Save as image',
+            'Find on canvas',
+            'Canvas help',
+            'Clear canvas',
+            'Canvas background',
+        ];
+
+        it.each([
+            [
+                'the facilitator',
+                boardState(),
+                [
+                    'Duplicate this board',
+                    'Save as template',
+                    'Rename',
+                    'Hand over facilitation',
+                    ...canvasEntries,
+                    'Delete this board',
+                ],
+            ],
+            [
+                'a member',
+                boardState({
+                    me: { isFacilitator: false, canDelete: false },
+                }),
+                ['Duplicate this board', 'Save as template', ...canvasEntries],
+            ],
+            [
+                'a guest',
+                boardState({
+                    me: {
+                        isGuest: true,
+                        isFacilitator: false,
+                        canDelete: false,
+                        userId: null,
+                    },
+                    links: { team: null },
+                }),
+                canvasEntries,
+            ],
+        ])(
+            'gives %s the canvas entries before the deletion',
+            async (_who, state, entries) => {
+                const { menu } = await openMenu(
+                    state,
+                    vi.fn(),
+                    canvasActions(),
+                );
+
+                expect(names(menu.getAllByRole('menuitem'))).toEqual(entries);
+            },
+        );
+
+        it.each([
+            ['Save as image', 'saveAsImage'],
+            ['Find on canvas', 'findOnCanvas'],
+            ['Canvas help', 'canvasHelp'],
+            ['Clear canvas', 'clearCanvas'],
+        ] as const)('runs "%s" on the canvas', async (entry, action) => {
+            const actions = canvasActions();
+            const { user, menu } = await openMenu(
+                boardState(),
+                vi.fn(),
+                actions,
+            );
+
+            await user.click(menu.getByRole('menuitem', { name: entry }));
+
+            expect(actions[action]).toHaveBeenCalledOnce();
+            expect(screen.queryByRole('menu')).toBeNull();
+        });
+
+        it('chooses the canvas background among the paper and the five picks', async () => {
+            const actions = canvasActions({ background: '#f5faff' });
+            const { user, menu } = await openMenu(
+                boardState(),
+                vi.fn(),
+                actions,
+            );
+
+            menu.getByRole('menuitem', { name: 'Canvas background' }).focus();
+            await user.keyboard('{ArrowRight}');
+
+            const choices = await screen.findAllByRole('menuitemradio');
+
+            expect(names(choices)).toEqual([
+                'Paper',
+                'White',
+                'Light grey',
+                'Light blue',
+                'Light yellow',
+                'Light beige',
+            ]);
+            expect(
+                choices.map((choice) => choice.getAttribute('aria-checked')),
+            ).toEqual(['false', 'false', 'false', 'true', 'false', 'false']);
+
+            await waitFor(() =>
+                expect(document.activeElement).toBe(choices[0]),
+            );
+            await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}');
+
+            expect(document.activeElement).toBe(
+                screen.getByRole('menuitemradio', { name: 'Light yellow' }),
+            );
+
+            await user.keyboard('{Enter}');
+
+            expect(actions.setBackground).toHaveBeenCalledWith('#fffce8');
+        });
+
+        it('leaves out what changes the canvas while it is read only', async () => {
+            const { menu } = await openMenu(
+                boardState({ me: { isFacilitator: false, canDelete: false } }),
+                vi.fn(),
+                canvasActions({ editing: false }),
+            );
+
+            expect(names(menu.getAllByRole('menuitem'))).toEqual([
+                'Duplicate this board',
+                'Save as template',
+                'Save as image',
+                'Find on canvas',
+                'Canvas help',
+            ]);
+        });
+
+        it('has no canvas entry until the canvas is ready', async () => {
+            const { menu } = await openMenu(boardState());
+
+            for (const entry of canvasEntries) {
+                expect(
+                    menu.queryByRole('menuitem', { name: entry }),
+                ).toBeNull();
+            }
+        });
     });
 });

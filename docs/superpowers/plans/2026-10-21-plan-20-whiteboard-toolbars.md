@@ -125,6 +125,8 @@ Put to the owner before the screens are built (owner's rule of the fifth round).
 | P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the hidden library tool bar) | S §5 rule 3 | approved |
 | P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 % | F | approved as listed |
 | P20-10 | minimap at every desktop width | from `lg` only | A (no overlap) | approved |
+| P20-11 | ScreenWhiteboard: zoom bar above the minimap | minimap above the zoom bar (spec §9.1) | S §9.1: the zoom bar and its Minimap toggle keep one place | found in Task 19; kept as built on the owner's behalf, **to approve** |
+| P20-12 | WhiteboardToolbar preview: five sticky colours in the sub-bar | the eight colours | O: 7-D1, 7-D3 | found in Task 19; covered by 7-D1 |
 
 ---
 

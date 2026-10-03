@@ -1,11 +1,16 @@
 import { router } from '@inertiajs/react';
 import {
     ArrowRightLeft,
+    CircleHelp,
     Copy,
     Crown,
     Ellipsis,
+    Eraser,
+    ImageDown,
     LayoutTemplate,
+    PaintBucket,
     Pencil,
+    Search,
     Trash2,
 } from 'lucide-react';
 import { Fragment, useState } from 'react';
@@ -19,13 +24,20 @@ import {
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
+import { CanvasBackgrounds } from '@/lib/whiteboard/palette';
+import type { CanvasBackgroundKey } from '@/lib/whiteboard/palette';
 import {
     DeleteBoardDialog,
     HandOverDialog,
@@ -33,18 +45,101 @@ import {
     SaveTemplateDialog,
 } from './board-dialogs';
 
+/** The entries of the library's hidden menu (spec §9.4), run on the canvas. */
+export type BoardCanvasActions = {
+    saveAsImage: () => void;
+    findOnCanvas: () => void;
+    canvasHelp: () => void;
+    /** Opens the library's own confirmation. */
+    clearCanvas: () => void;
+    /** False in view mode: as in the library's menu, nothing changes the canvas then. */
+    editing: boolean;
+    background: string;
+    setBackground: (color: string) => void;
+};
+
 type Props = {
     state: WhiteboardState;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
+    /** Absent until the canvas is ready. */
+    canvasActions?: BoardCanvasActions;
 };
 
 type BoardDialog = 'rename' | 'template' | 'handOver' | 'delete';
+
+function CanvasEntries({ actions }: { actions: BoardCanvasActions }) {
+    const { t } = useTrans();
+    const backgroundNames: Record<CanvasBackgroundKey, string> = {
+        Paper: t('Paper'),
+        White: t('White'),
+        'Light grey': t('Light grey'),
+        'Light blue': t('Light blue'),
+        'Light yellow': t('Light yellow'),
+        'Light beige': t('Light beige'),
+    };
+
+    return (
+        <>
+            <DropdownMenuItem onSelect={actions.saveAsImage}>
+                <ImageDown aria-hidden />
+                <span className="truncate">{t('Save as image')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={actions.findOnCanvas}>
+                <Search aria-hidden />
+                <span className="truncate">{t('Find on canvas')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={actions.canvasHelp}>
+                <CircleHelp aria-hidden />
+                <span className="truncate">{t('Canvas help')}</span>
+            </DropdownMenuItem>
+            {actions.editing && (
+                <>
+                    <DropdownMenuItem onSelect={actions.clearCanvas}>
+                        <Eraser aria-hidden />
+                        <span className="truncate">{t('Clear canvas')}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <PaintBucket aria-hidden />
+                            <span className="truncate">
+                                {t('Canvas background')}
+                            </span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuRadioGroup
+                                value={actions.background.toLowerCase()}
+                                onValueChange={actions.setBackground}
+                            >
+                                {CanvasBackgrounds.map(({ key, value }) => (
+                                    <DropdownMenuRadioItem
+                                        key={key}
+                                        value={value}
+                                    >
+                                        <span
+                                            aria-hidden
+                                            className="size-4 shrink-0 rounded-sm border"
+                                            style={{ backgroundColor: value }}
+                                        />
+                                        <span className="truncate">
+                                            {backgroundNames[key]}
+                                        </span>
+                                    </DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                </>
+            )}
+        </>
+    );
+}
 
 export function BoardMenu({
     state,
     hideMyCursor,
     onHideMyCursorChange,
+    canvasActions,
 }: Props) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
@@ -150,6 +245,7 @@ export function BoardMenu({
                 </DropdownMenuCheckboxItem>
             </>
         ),
+        canvasActions && <CanvasEntries actions={canvasActions} />,
         me.canDelete && (
             <DropdownMenuItem
                 variant="destructive"

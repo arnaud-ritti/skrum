@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     CANVAS_LIGHT,
+    CanvasBackgrounds,
     POSTIT,
     PostItColors,
     isPostItColor,
@@ -123,5 +124,42 @@ describe('post-it palette', () => {
         expect(result[1].fillStyle).toBe('solid');
         expect(result[1].version).toBe(4);
         expect(elements[1].backgroundColor).toBe('transparent');
+    });
+});
+
+describe('canvas backgrounds', () => {
+    const dist = 'node_modules/@excalidraw/excalidraw/dist/dev';
+    const chunks = readdirSync(dist)
+        .filter((name) => /^chunk-.*\.js$/.test(name))
+        .map((name) => readFileSync(`${dist}/${name}`, 'utf8'))
+        .join('\n');
+
+    it('offers the paper first, then the five picks of the library', () => {
+        expect(CanvasBackgrounds.map(({ value }) => value)).toEqual([
+            CANVAS_LIGHT,
+            '#ffffff',
+            '#f8f9fa',
+            '#f5faff',
+            '#fffce8',
+            '#fdf8f6',
+        ]);
+    });
+
+    it('matches DEFAULT_CANVAS_BACKGROUND_PICKS of the pinned library', () => {
+        const picks = chunks.match(
+            /var DEFAULT_CANVAS_BACKGROUND_PICKS = \[([\s\S]*?)\];/,
+        );
+
+        expect(picks).not.toBeNull();
+
+        const literals = [
+            ...(picks?.[1] ?? '').matchAll(/"(#[0-9a-f]{6})"/g),
+        ].map((match) => match[1]);
+
+        expect(picks?.[1]).toContain('COLOR_PALETTE.white');
+        expect(chunks).toContain('white: "#ffffff"');
+        expect(['#ffffff', ...literals]).toEqual(
+            CanvasBackgrounds.slice(1).map(({ value }) => value),
+        );
     });
 });

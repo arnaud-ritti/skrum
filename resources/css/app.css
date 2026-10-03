@@ -510,11 +510,11 @@
  * up, and keeps 0.625rem of air.
  *
  * In the mobile layout (the library's own class, set below 730px of width or
- * below 500px of height and 1000px of width) the canvas has a toolbar along
- * the bottom: 14px of margin, the safe area, then at most 56px (8px of
- * padding around buttons of at most 40px). The bar sits 8px above it, and
- * the scroll-back button, placed from the top of that margin, 0.625rem above
- * the bar. The panel of shape actions opens over that area: the bar gives way.
+ * below 500px of height and 1000px of width) the library's bottom row is
+ * hidden under the board's own chrome (excalidraw-theme.css, plan 20): the
+ * bar keeps its 1.5rem and adds the safe area. The scroll-back button, placed
+ * from 14px up (the library's margin), stays 0.625rem above the bar. The
+ * panel of shape actions ("Styles") opens over that area: the bar gives way.
  */
 .whiteboard-canvas:has(~ [data-slot='reaction-bar']) .scroll-back-to-content {
     bottom: calc(5.5rem + 2px) !important;
@@ -527,7 +527,7 @@
 }
 
 .whiteboard-canvas:has(.excalidraw--mobile) ~ [data-slot='reaction-bar'] {
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .whiteboard-canvas:has(.App-mobile-menu) ~ [data-slot='reaction-bar'] {
@@ -535,14 +535,37 @@
 }
 
 /*
- * The phone's read mode (`[data-slot='read-mode-dock']`, as tall as the
- * reactions bar) makes one dock with the reactions: in the mobile layout it
- * sits on the same line, at the right, and the bar moves to the left; the
+ * The phone's read mode (`[data-slot='read-mode-dock']`, 3.5rem, as tall as
+ * the reactions bar) makes one dock with the reactions: in the mobile layout
+ * it sits on the same line, at the right, and the bar moves to the left; the
  * scroll-back button goes above both, with or without the bar. Like the bar,
  * it gives way to the panel of shape actions.
+ *
+ * In edit mode the dock holds the phone's tool bar (`phone-toolbar`, plan 20)
+ * and is centred: the reactions go above it (1.5rem, the dock's 3.5rem and
+ * 0.5rem of air), and give way to the sub-bar of the sticky note or the
+ * shape, which opens in that place; the scroll-back button stays 0.625rem
+ * above the reactions (9.5rem up, less the library's 14px).
  */
 .whiteboard-canvas:has(.excalidraw--mobile) [data-slot='read-mode-dock'] {
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.whiteboard-canvas:has([data-slot='read-mode-dock'] [data-slot='phone-toolbar'])
+    ~ [data-slot='reaction-bar'] {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    margin-left: auto;
+}
+
+.whiteboard-canvas:has([data-slot='phone-sub-bar'])
+    ~ [data-slot='reaction-bar'] {
+    display: none;
+}
+
+.whiteboard-canvas:has([data-slot='phone-toolbar'])
+    .excalidraw--mobile
+    .scroll-back-to-content {
+    bottom: calc(9.5rem - 12px) !important;
 }
 
 .whiteboard-canvas:has(.excalidraw--mobile):has([data-slot='read-mode-dock'])
@@ -764,3 +787,14 @@
   .bg-stripes { background-image: repeating-linear-gradient(135deg, var(--muted) 0 0.375rem, color-mix(in oklch, var(--muted-foreground) 22%, var(--muted)) 0.375rem 0.75rem); }
 }
 /* ===== End of plan 18e additions ===== */
+
+/*
+ * ===== Plan 20 additions to @theme =====
+ * The whiteboard bars: the key letter in the corner of a tool (text-3xs) and
+ * the element count chip of a selection (text-2xs).
+ */
+@theme {
+  --text-2xs: 0.6875rem;         --text-2xs--line-height: 1.125rem;
+  --text-3xs: 0.5625rem;         --text-3xs--line-height: 0.75rem;
+}
+/* ===== End of plan 20 additions ===== */

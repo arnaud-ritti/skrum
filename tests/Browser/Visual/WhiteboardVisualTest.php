@@ -38,25 +38,6 @@ function p18eVisualSticky(Whiteboard $board, WhiteboardMember $author, int $seq,
 }
 
 /**
- * The overflow check is for the chrome of this plan. The canvas toolbar is the library's: at 390, with the
- * sticky tool in it, it is wider than its island and its last trigger is clipped (plan WB-1 rebuilds it).
- */
-function p18eVisualLeaveCanvasToolbarOut(mixed $page): void
-{
-    $page->script(<<<'JS'
-        () => {
-            const canvas = document.querySelector('.whiteboard-canvas');
-            const mark = () => canvas.querySelectorAll('.App-toolbar').forEach((toolbar) => toolbar.setAttribute('data-overflow-ok', ''));
-
-            new MutationObserver(mark).observe(canvas, { childList: true, subtree: true });
-            mark();
-
-            return true;
-        }
-        JS);
-}
-
-/**
  * @param  array<string, mixed>  $attributes
  * @return array{
  *     board: Whiteboard,
@@ -75,6 +56,45 @@ function p18eVisualBoard(array $attributes = []): array
     p18eVisualSticky($board, $franMember, 3, 80, 400, '#e2f3ff', '#8dccf9');
 
     return ['board' => $board, 'fran' => $fran];
+}
+
+/**
+ * The facilitator's board of ScreenWhiteboard: five notes, three in a row above two. A marquee from (170, 30)
+ * to (910, 290) on the canvas holds the first three; (540, 180) is the middle of the second.
+ *
+ * @return array{
+ *     board: Whiteboard,
+ *     fran: User
+ * }
+ */
+function p20VisualBoard(): array
+{
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator([
+        'title' => 'Onboarding journey: pain points of the first week',
+    ]);
+
+    p18eVisualSticky($board, $franMember, 1, 200, 60, '#fdf1c2', '#ddc362');
+    p18eVisualSticky($board, $franMember, 2, 440, 80, '#ffebe8', '#f9aea4');
+    p18eVisualSticky($board, $franMember, 3, 680, 60, '#e2f3ff', '#8dccf9');
+    p18eVisualSticky($board, $franMember, 4, 320, 320, '#efeeff', '#c3bbfb');
+    p18eVisualSticky($board, $franMember, 5, 560, 340, '#e1f8dc', '#a5d39b');
+
+    return ['board' => $board, 'fran' => $fran];
+}
+
+/**
+ * @param  array<string, string>  $options
+ */
+function p20VisualSignIn(User $user, string $path, array $options): mixed
+{
+    $page = visit('/login', $options);
+
+    $page->fill('#email', $user->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+
+    return $page->navigate($path);
 }
 
 it('[P18e-07-02] renders the guest-join page of a whiteboard without overflow', function () {
@@ -132,8 +152,6 @@ it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a 
                 ->assertCount('[data-realtime]', 1)
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
-            p18eVisualLeaveCanvasToolbarOut($page);
-
             return $page;
         },
     );
@@ -156,7 +174,12 @@ it('[P18e-07-05] renders a locked board with a finished timer to a guest without
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('[data-slot="board-notices"]')
                 ->assertPresent('[role="timer"]')
-                ->assertCount('[data-realtime]', 1);
+                ->assertCount('[data-realtime]', 1)
+                ->assertPresent('.whiteboard-canvas [data-slot="whiteboard-zoom-bar"]')
+                ->assertPresent('.whiteboard-canvas [data-slot="whiteboard-minimap"]')
+                ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-tools"]')
+                ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-history"]')
+                ->assertNotPresent('.whiteboard-canvas [data-slot="whiteboard-selection-bar"]');
         },
     );
 });
@@ -171,7 +194,7 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
     $this->captureVisuals(
         $name,
         $this->whiteboardPath($board),
-        function (string $path, array $options) use ($fran, $entry, $surface) {
+        function (string $path, array $options, int $width) use ($fran, $entry, $surface) {
             $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
 
             User::query()->whereKey($fran->id)->update(['locale' => $locale]);
@@ -187,7 +210,8 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
-            p18eVisualLeaveCanvasToolbarOut($page);
+            // At the size of the capture before the menu opens: a resize moves the trigger of an open sub-menu away from the pointer, which closes it.
+            $page->resize($width, $width === 390 ? 844 : 900);
 
             $this->openWhiteboardMenu($page, __('Board menu', [], $locale));
 
@@ -199,59 +223,101 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
         },
     );
 })->with([
-    'menu' => ['whiteboard-board-menu', null, '[role="menu"] [role="menuitem"][data-variant="destructive"]'],
+    'menu with the canvas background' => ['whiteboard-board-menu', 'Canvas background', '[role="menu"] [role="menuitemradio"]'],
     'save as template' => ['whiteboard-board-save-template', 'Save as template', '[role="dialog"] input[maxlength="80"]'],
     'hand over' => ['whiteboard-board-hand-over', 'Hand over facilitation', '[role="dialog"] #whiteboard-new-facilitator'],
     'delete' => ['whiteboard-board-delete', 'Delete this board', '[role="alertdialog"]'],
 ]);
 
-it('[P18e-07-05] renders the colour bar of the canvas, the colours of the sticky tool and the export card without overflow', function (string $name, string $surface) {
+it('[P18e-07-05] renders the export card of the canvas without overflow', function () {
     ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'whiteboard-board-export',
+        $this->whiteboardPath($board),
+        function (string $path, array $options) use ($fran) {
+            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+
+            User::query()->whereKey($fran->id)->update(['locale' => $locale]);
+
+            $page = $this->awaitRealtime(p20VisualSignIn($fran, $path, $options))
+                ->assertPresent('[data-scene^="3:"]');
+
+            return $page->click('header button[aria-label="'.__('Export', [], $locale).'"]')
+                ->assertPresent('.ExportDialog--json [data-slot="scene-export"]');
+        },
+    );
+});
+
+it('[P20-18] renders the toolbars of the board to the facilitator without overflow', function (string $name, string $surface, string $phoneSurface) {
+    ['board' => $board, 'fran' => $fran] = p20VisualBoard();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         $name,
         $this->whiteboardPath($board),
-        function (string $path, array $options) use ($fran, $name, $surface) {
-            User::query()->whereKey($fran->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+        function (string $path, array $options, int $width) use ($fran, $name, $surface, $phoneSurface) {
+            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+            $isPhone = $width === 390;
+            $selects = in_array($name, ['whiteboard-toolbars', 'whiteboard-align-menu', 'whiteboard-styles'], true);
 
-            $page = visit('/login', $options);
+            User::query()->whereKey($fran->id)->update(['locale' => $locale]);
 
-            $page->fill('#email', $fran->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page = $this->awaitRealtime($page->navigate($path))
-                ->assertPresent('[data-scene^="3:"]')
+            $page = $this->awaitRealtime(p20VisualSignIn($fran, $path, $options))
+                ->assertPresent('[data-scene^="5:"]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
-            p18eVisualLeaveCanvasToolbarOut($page);
-
-            if ($name === 'whiteboard-board-colors') {
-                $this->selectWhiteboardTool($page, 'rectangle');
+            // The board opens wide, so it stays in edit mode at 390; the phone selects at that size and shows its compact tool bar.
+            if ($isPhone && $selects) {
+                $name === 'whiteboard-styles'
+                    ? $this->dragOnWhiteboard($page, [540, 180], [540, 180], 1)
+                    : $this->dragOnWhiteboard($page, [170, 30], [910, 290]);
             }
 
-            if ($name === 'whiteboard-board-sticky-colors') {
-                $page->click('.whiteboard-canvas .App-toolbar [data-slot="popover-trigger"]');
+            $page->resize($width, $isPhone ? 844 : 900);
+
+            if ($isPhone) {
+                $page->assertPresent('.whiteboard-canvas [data-slot="read-mode-dock"] [data-slot="phone-toolbar"]')
+                    ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-tools"]');
+
+                match ($name) {
+                    'whiteboard-sticky-tool' => $page->click('[data-slot="phone-toolbar"] [data-toolbar-item="sticky"]'),
+                    'whiteboard-shape-tool' => $page->click('[data-slot="phone-toolbar"] button[aria-haspopup="dialog"]')
+                        ->click('[data-slot="phone-drawer-tools"] button:nth-child(2)'),
+                    default => $page->assertPresent('[data-slot="whiteboard-selection-bar"]'),
+                };
+            } else {
+                $page->assertPresent('.whiteboard-canvas [data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"]');
+
+                match ($name) {
+                    'whiteboard-toolbars', 'whiteboard-align-menu' => $this->dragOnWhiteboard($page, [170, 30], [910, 290]),
+                    'whiteboard-styles' => $this->dragOnWhiteboard($page, [540, 180], [540, 180], 1),
+                    'whiteboard-shape-tool' => $this->selectWhiteboardTool($page, 'rectangle'),
+                    'whiteboard-sticky-tool' => $page->click('[data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"] button[aria-keyshortcuts="N"]'),
+                };
             }
 
-            if ($name === 'whiteboard-board-export') {
-                $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-                    ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]');
-
-                return $page->assertPresent($surface);
+            if ($name === 'whiteboard-styles') {
+                $page->click('[data-slot="whiteboard-selection-bar"] [data-toolbar-item="styles"]')
+                    ->assertAttribute('[data-slot="whiteboard-selection-bar"] [data-toolbar-item="styles"]', 'aria-pressed', 'true');
             }
 
-            return $page->assertPresent($surface)
-                ->assertCount('[role="radiogroup"]', 1);
+            if ($name === 'whiteboard-align-menu') {
+                $page->click('[data-slot="whiteboard-selection-bar"] [data-selection-item="align"]');
+            }
+
+            return $page->assertPresent($isPhone ? $phoneSurface : $surface);
         },
     );
 })->with([
-    'colour bar' => ['whiteboard-board-colors', '.whiteboard-canvas [data-slot="canvas-colors"] [role="radiogroup"]'],
-    'sticky colours' => ['whiteboard-board-sticky-colors', '[data-slot="popover-content"] [role="radiogroup"]'],
-    'export card' => ['whiteboard-board-export', '.ExportDialog--json [data-slot="scene-export"]'],
+    'tool bar, selection bar, history, zoom and minimap' => ['whiteboard-toolbars', '[data-slot="whiteboard-selection-count"]', '[data-slot="whiteboard-selection-count"]'],
+    'sticky note tool' => ['whiteboard-sticky-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]', '[data-slot="phone-sub-bar"] [data-slot="whiteboard-color-bar"]'],
+    'shape tool' => ['whiteboard-shape-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]', '[data-slot="phone-sub-bar"] [data-slot="whiteboard-color-bar"]'],
+    'styles' => ['whiteboard-styles', '.whiteboard-canvas.skrum-whiteboard--styles .selected-shape-actions', '.whiteboard-canvas.skrum-whiteboard--styles'],
+    'align menu' => ['whiteboard-align-menu', '[role="menu"] [role="menuitem"]', '[role="menu"] [role="menuitem"]'],
 ]);
 
 it('[P18e-07-05] renders the cursor of another member in the presence colour of that member without overflow', function () {
@@ -316,8 +382,6 @@ it('[P18e-07-05] renders the cursor of another member in the presence colour of 
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('header [role="group"][aria-label]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
-
-            p18eVisualLeaveCanvasToolbarOut($page);
 
             expect($page->script($cursorIsDrawn))->toBeTrue();
 

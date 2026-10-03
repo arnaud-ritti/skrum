@@ -30,4 +30,23 @@ describe('excalidraw theme stylesheet', () => {
         expect(css).not.toMatch(/Excalifont|Virgil/);
         expect(css).not.toMatch(/--font-family/);
     });
+
+    it('hides the library tool row of the phone layout under the board chrome', () => {
+        expect(css).toMatch(
+            /\.skrum-whiteboard--own-chrome\s+\.excalidraw\.excalidraw--mobile\s+\.App-bottom-bar\s+\.App-toolbar-content/,
+        );
+    });
+
+    it('keeps the closed property panel laid out, so the library measures its opacity slider', () => {
+        const closedPanel =
+            /\.skrum-whiteboard--own-chrome:not\(\.skrum-whiteboard--styles\)\s+\.excalidraw\s+\.selected-shape-actions\s*\{([^}]*)\}/.exec(
+                css,
+            );
+
+        expect(closedPanel?.[1]).toContain('visibility: hidden !important;');
+        expect(closedPanel?.[1]).not.toContain('display');
+        expect(css).toMatch(
+            /\.skrum-whiteboard--own-chrome\s+\.excalidraw\s+\.App-menu_top__left\s*\{\s*margin-left:/,
+        );
+    });
 });

@@ -9,6 +9,30 @@ use RuntimeException;
 
 trait InteractsWithWhiteboards
 {
+    /** The key of the board's tool (resources/js/lib/whiteboard/tools.ts) that draws each tool of the library. */
+    private const array WhiteboardToolKeys = [
+        'selection' => 'V',
+        'hand' => 'H',
+        'rectangle' => 'R',
+        'diamond' => 'R',
+        'ellipse' => 'R',
+        'arrow' => 'C',
+        'line' => 'C',
+        'text' => 'T',
+        'freedraw' => 'P',
+        'eraser' => 'E',
+        'frame' => 'F',
+    ];
+
+    /** The place of a kind among the radios of its sub-bar (resources/js/components/whiteboard/canvas-tools.tsx). */
+    private const array WhiteboardToolKinds = [
+        'rectangle' => 1,
+        'diamond' => 2,
+        'ellipse' => 3,
+        'arrow' => 1,
+        'line' => 2,
+    ];
+
     /**
      * @return array<string, mixed>
      */
@@ -177,12 +201,17 @@ trait InteractsWithWhiteboards
         return $element;
     }
 
+    /**
+     * Presses the sticky note tool (N), then a colour of its sub-bar, which adds a note in the middle of the view.
+     */
     protected function addWhiteboardSticky(mixed $page, string $colour = 'Sun'): mixed
     {
-        $page->assertPresent('button[aria-label="Sticky note"]')
-            ->click('button[aria-label="Sticky note"]')
-            ->click("[role=\"radiogroup\"][aria-label=\"Fill colour\"] [role=\"radio\"][aria-label=\"{$colour}\"]")
-            ->assertNotPresent('[data-slot="popover-content"]');
+        $tool = '[data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"] button[aria-keyshortcuts="N"]';
+        $swatch = strtolower($colour);
+
+        $page->click($tool)
+            ->assertAttribute($tool, 'aria-pressed', 'true')
+            ->click("[data-slot=\"canvas-tools\"] [data-slot=\"whiteboard-sub-bar\"] [role=\"radio\"][data-color=\"{$swatch}\"]");
 
         return $page;
     }
@@ -238,10 +267,31 @@ trait InteractsWithWhiteboards
         return "{$live->count()}:{$live->sum('version')}:{$live->sum('version_nonce')}";
     }
 
+    /**
+     * Presses a tool of the board's own tool bar by its key, in any language, then the kind in its sub-bar
+     * (shapes and connectors), and checks both are on.
+     *
+     * @param  string  $tool  the library's tool: selection, hand, rectangle, diamond, ellipse, arrow, line, text, freedraw, eraser or frame
+     */
     protected function selectWhiteboardTool(mixed $page, string $tool): mixed
     {
-        $page->click(".whiteboard-canvas .App-toolbar label:has([data-testid=\"toolbar-{$tool}\"])")
-            ->assertScript("document.querySelector('.whiteboard-canvas [data-testid=\"toolbar-{$tool}\"]').checked", true);
+        throw_unless(array_key_exists($tool, self::WhiteboardToolKeys), InvalidArgumentException::class, "selectWhiteboardTool() does not know the tool `{$tool}`.");
+
+        $key = self::WhiteboardToolKeys[$tool];
+        $button = "[data-slot=\"canvas-tools\"] [data-slot=\"whiteboard-toolbar\"] button[aria-keyshortcuts=\"{$key}\"]";
+
+        $page->click($button)
+            ->assertAttribute($button, 'aria-pressed', 'true');
+
+        if (! array_key_exists($tool, self::WhiteboardToolKinds)) {
+            return $page;
+        }
+
+        $position = self::WhiteboardToolKinds[$tool];
+        $kind = "[data-slot=\"canvas-tools\"] [data-slot=\"whiteboard-sub-bar\"] > [role=\"radiogroup\"]:first-child > [role=\"radio\"]:nth-child({$position})";
+
+        $page->click($kind)
+            ->assertAttribute($kind, 'aria-checked', 'true');
 
         return $page;
     }

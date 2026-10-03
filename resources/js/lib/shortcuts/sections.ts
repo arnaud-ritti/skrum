@@ -168,15 +168,18 @@ export function shortcutSections(
             id: 'whiteboard',
             title: t('Whiteboard'),
             icon: PenTool,
-            // The keys the canvas library answers to, not those of the
-            // mockup: the whiteboard keeps its own shortcuts.
             items: [
                 { id: 'select', label: t('Selection'), keys: ['V'] },
                 { id: 'hand', label: t('Hand'), keys: ['H'] },
-                { id: 'rectangle', label: t('Rectangle'), keys: ['R'] },
+                { id: 'sticky', label: t('Sticky note'), keys: ['N'] },
+                { id: 'shape', label: t('Shape'), keys: ['R'] },
+                { id: 'connector', label: t('Connector'), keys: ['C'] },
                 { id: 'text', label: t('Text'), keys: ['T'] },
                 { id: 'pencil', label: t('Pencil'), keys: ['P'] },
-                { id: 'arrow', label: t('Arrow'), keys: ['A'] },
+                { id: 'eraser', label: t('Eraser'), keys: ['E'] },
+                { id: 'frame', label: t('Frame'), keys: ['F'] },
+                { id: 'minimap', label: t('Minimap'), keys: ['M'] },
+                { id: 'fit', label: t('Fit to screen'), keys: ['shift', '1'] },
                 {
                     id: 'pan',
                     label: t('Pan'),
@@ -188,7 +191,6 @@ export function shortcutSections(
                 { id: 'zoom-in', label: t('Zoom in'), keys: ['mod', '+'] },
                 { id: 'zoom-out', label: t('Zoom out'), keys: ['mod', '−'] },
             ],
-            note: t('The whiteboard uses the shortcuts of its own toolbar.'),
         },
         {
             id: 'reactions',

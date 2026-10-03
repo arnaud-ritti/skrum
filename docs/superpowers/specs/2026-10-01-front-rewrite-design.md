@@ -30,7 +30,7 @@ The front end still carries the Laravel starter kit: stock shadcn neutral tokens
 
 - A mockup element that needs a concept the product does not have at all, or that the owner sent to the backlog. These are not rendered. They are listed in §10 as backlog. An element whose data the server already holds is not in this case: it is built, with a §9 item (§5 rule 13).
 - Changing realtime protocols, reducers or the JSON contracts of live pages, except for the two new retro phases.
-- Recoding the Excalidraw toolbar. The whiteboard is themed, not rebuilt.
+- Recoding the Excalidraw toolbar. The whiteboard is themed, not rebuilt. *Reversed by plan 20 (WB-1): the board's own tool bar, selection bar, history, zoom and minimap replace the library's chrome, which stays mounted and hidden; see `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.*
 - Dark-mode screen mockups. None exist; dark rendering is judged on tokens and component previews.
 - A landing page. A self-hosted instance has none: `/` redirects (B32). The ScreenLanding mockup is not built.
 
@@ -144,7 +144,7 @@ A live session shows a lost connection as a full-width banner under the header (
 - **Team page sections**: the secondary entries of a section ("Saved decks" in Planning poker, "Whiteboard templates" in Whiteboards) are in the section's "…" actions menu, not buttons in its header.
 - **Guest label**: a guest's name is followed by "(Guest)", with a capital, wherever the action-item components show an owner.
 - **ReactionBar**: one bar, floating bottom centre or stacked above a panel with a `space-3` gap. It never overlaps another element, including the poker deck and the FacilitatorBar. Reaction chips on a card are another component.
-- **Whiteboard**: Excalidraw with its native toolbar, themed per `ExcalidrawTheme/README.md` (CSS variables and the eight sticky colours). `WhiteboardToolbar` in `skrum/` is the theming wrapper and the colour bar that README describes, not a custom tool set. The colour bar is shown for every tool that has a fill; Excalidraw's native colour quick picks are hidden (its "more colours" picker stays). A sticky note has the palette border of its colour. The built-in templates use the eight colours (B29). Cursor colours come from the presence tokens. On a phone (below the `md` breakpoint) the board opens in read mode (Excalidraw's view mode: pan and zoom, no tool) with an "Edit" button ("Modifier" in French) that switches to edit mode and back; the mode is client state, is not stored, and never lets a non-facilitator edit a locked board. The existing DOM adjustments that target Excalidraw 0.18.1 internals must keep working.
+- **Whiteboard**: Excalidraw with its native toolbar, themed per `ExcalidrawTheme/README.md` (CSS variables and the eight sticky colours). `WhiteboardToolbar` in `skrum/` is the theming wrapper and the colour bar that README describes, not a custom tool set. The colour bar is shown for every tool that has a fill; Excalidraw's native colour quick picks are hidden (its "more colours" picker stays). A sticky note has the palette border of its colour. The built-in templates use the eight colours (B29). Cursor colours come from the presence tokens. On a phone (below the `md` breakpoint) the board opens in read mode (Excalidraw's view mode: pan and zoom, no tool) with an "Edit" button ("Modifier" in French) that switches to edit mode and back; the mode is client state, is not stored, and never lets a non-facilitator edit a locked board. The existing DOM adjustments that target Excalidraw 0.18.1 internals must keep working. *Plan 20 (WB-1) replaced the native toolbar with the board's own bars, after the mockup (ScreenWhiteboard, WhiteboardToolbar, MobileRituals); the colour bar lives in the sticky and shape sub-bars and the selection bar; the phone's edit mode has the compact bottom bar. See `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.*
 - **Avatars**: DiceBear, server-rendered at `avatars/{seed}.svg`. The seed stays the existing HMAC of the user or participant id, never the e-mail. Background is the presence colour. Fallback is initials. No call to api.dicebear.com.
 - **GIF**: through the existing Laravel proxy.
 
@@ -155,7 +155,7 @@ Numbers refer to `design-system-digest.md` §5.
 | # | Ruling |
 |---|---|
 | 1, 2, 3, 4, 6 | Identifiers, channel names and event names follow the back end (`discussing`, `survey`, existing `GameKind` values, `presence-whiteboard.{id}`, `presence-retro.{id}`). |
-| 5, 29 | Native Excalidraw toolbar and shortcuts. |
+| 5, 29 | Native Excalidraw toolbar and shortcuts. *Reversed by plan 20 (WB-1): the board's own bars, after ScreenWhiteboard and WhiteboardToolbar; the library's shortcuts stay, plus N (sticky note), C (connector) and M (minimap); see `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.* |
 | 7 | Presence colour stays as the back end assigns it today. User-chosen colour is backlog. |
 | 8, 9 | Column and deck limits follow server validation. |
 | 10 | Poker statistics are computed by the server; the front end displays what it receives. |

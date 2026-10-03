@@ -38,6 +38,32 @@ export const DEFAULT_POSTIT_COLOR: PostItColor = 'sun';
 /** Light value of --skrum-canvas, stored as the scene background. */
 export const CANVAS_LIGHT = '#f8f5f1';
 
+export type CanvasBackgroundKey =
+    | 'Paper'
+    | 'White'
+    | 'Light grey'
+    | 'Light blue'
+    | 'Light yellow'
+    | 'Light beige';
+
+/**
+ * The "Canvas background" choices of the board menu: the paper, then the five
+ * picks of the library's own picker (`DEFAULT_CANVAS_BACKGROUND_PICKS` of
+ * 0.18.1). Canvas data, local to the browser. Check this when the library is
+ * upgraded.
+ */
+export const CanvasBackgrounds: readonly {
+    key: CanvasBackgroundKey;
+    value: string;
+}[] = [
+    { key: 'Paper', value: CANVAS_LIGHT },
+    { key: 'White', value: '#ffffff' },
+    { key: 'Light grey', value: '#f8f9fa' },
+    { key: 'Light blue', value: '#f5faff' },
+    { key: 'Light yellow', value: '#fffce8' },
+    { key: 'Light beige', value: '#fdf8f6' },
+];
+
 /**
  * Excalidraw's own default stroke: what lines, arrows, pencil strokes and
  * text are drawn in, so that they stay readable on the canvas and on a note.
