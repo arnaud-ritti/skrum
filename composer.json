@@ -104,6 +104,8 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
             "npm run build",
+            "@putenv DB_CONNECTION=pgsql",
+            "@putenv DB_DATABASE=testing",
             "pest tests/Browser"
         ],
         "test:browser:shards": [

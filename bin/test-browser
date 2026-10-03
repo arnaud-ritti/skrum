@@ -85,6 +85,7 @@ started_at=$(date +%s)
 for i in $(seq 1 "$shards"); do
     BROWSER_SHARD="$i" \
     BROWSER_REVERB_PORT=$(( base_port + i )) \
+    DB_CONNECTION=pgsql \
     DB_HOST=127.0.0.1 \
     DB_DATABASE="${database_prefix}_$i" \
         php -d memory_limit=2G vendor/bin/pest tests/Browser --shard="$i/$shards" "$@" \
