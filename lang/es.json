@@ -4403,5 +4403,10 @@
     "This change is not possible.": "Este cambio no es posible.",
     "Add a question before publishing.": "Añade una pregunta antes de publicar.",
     "An attached health check cannot be reopened once its retro is completed.": "Un chequeo de salud adjunto no puede reabrirse una vez completada su retro.",
-    "Answer at least one question before finishing.": "Responde al menos a una pregunta antes de terminar."
+    "Answer at least one question before finishing.": "Responde al menos a una pregunta antes de terminar.",
+    "Respondent": "Encuestado",
+    "Respondent :number": "Encuestado :number",
+    "comment": "comentario",
+    "Results can be exported once the survey is closed.": "Los resultados se pueden exportar una vez cerrada la encuesta.",
+    "Not enough answers to show results.": "No hay suficientes respuestas para mostrar resultados."
 }

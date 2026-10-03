@@ -4183,5 +4183,10 @@
     "This change is not possible.": "This change is not possible.",
     "Add a question before publishing.": "Add a question before publishing.",
     "An attached health check cannot be reopened once its retro is completed.": "An attached health check cannot be reopened once its retro is completed.",
-    "Answer at least one question before finishing.": "Answer at least one question before finishing."
+    "Answer at least one question before finishing.": "Answer at least one question before finishing.",
+    "Respondent": "Respondent",
+    "Respondent :number": "Respondent :number",
+    "comment": "comment",
+    "Results can be exported once the survey is closed.": "Results can be exported once the survey is closed.",
+    "Not enough answers to show results.": "Not enough answers to show results."
 }

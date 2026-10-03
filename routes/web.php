@@ -157,6 +157,7 @@ use App\Http\Controllers\TeamSurveyJoinsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyComparisonsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyDuplicatesController;
+use App\Http\Controllers\TeamSurveys\TeamSurveyExportsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyGuestTokensController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyQuestionDuplicatesController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyQuestionOrdersController;
@@ -621,6 +622,7 @@ Route::prefix('surveys/{teamSurvey}')
         Route::get('snapshot', [TeamSurveySnapshotsController::class, 'show'])->name('surveys.snapshot.show');
         Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
         Route::get('comparison', [TeamSurveyComparisonsController::class, 'show'])->name('surveys.comparison.show');
+        Route::get('export', [TeamSurveyExportsController::class, 'show'])->name('surveys.export.show');
         Route::post('duplicate', [TeamSurveyDuplicatesController::class, 'store'])->name('surveys.duplicate.store');
         Route::post('guest-token', [TeamSurveyGuestTokensController::class, 'store'])->name('surveys.guestToken.store');
         Route::put('status', [TeamSurveyStatusesController::class, 'update'])->name('surveys.status.update');
