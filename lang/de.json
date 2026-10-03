@@ -4399,5 +4399,8 @@
     "This survey is not open.": "Diese Umfrage ist nicht geöffnet.",
     "You no longer have access to this survey.": "Du hast keinen Zugriff mehr auf diese Umfrage.",
     "A survey can have at most 30 questions.": "Eine Umfrage kann höchstens 30 Fragen haben.",
-    "Send every question exactly once.": "Sende jede Frage genau einmal."
+    "Send every question exactly once.": "Sende jede Frage genau einmal.",
+    "This change is not possible.": "Diese Änderung ist nicht möglich.",
+    "Add a question before publishing.": "Füge vor dem Veröffentlichen eine Frage hinzu.",
+    "An attached health check cannot be reopened once its retro is completed.": "Ein angehängter Gesundheitscheck kann nicht wieder geöffnet werden, sobald seine Retro abgeschlossen ist."
 }

@@ -4179,5 +4179,8 @@
     "This survey is not open.": "This survey is not open.",
     "You no longer have access to this survey.": "You no longer have access to this survey.",
     "A survey can have at most 30 questions.": "A survey can have at most 30 questions.",
-    "Send every question exactly once.": "Send every question exactly once."
+    "Send every question exactly once.": "Send every question exactly once.",
+    "This change is not possible.": "This change is not possible.",
+    "Add a question before publishing.": "Add a question before publishing.",
+    "An attached health check cannot be reopened once its retro is completed.": "An attached health check cannot be reopened once its retro is completed."
 }

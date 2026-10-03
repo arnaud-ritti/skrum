@@ -161,6 +161,7 @@ use App\Http\Controllers\TeamSurveys\TeamSurveyQuestionsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyResultsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveysController;
 use App\Http\Controllers\TeamSurveys\TeamSurveySnapshotsController;
+use App\Http\Controllers\TeamSurveys\TeamSurveyStatusesController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
 use App\Http\Controllers\Whiteboards\WhiteboardDuplicatesController;
@@ -616,6 +617,7 @@ Route::prefix('surveys/{teamSurvey}')
         Route::get('snapshot', [TeamSurveySnapshotsController::class, 'show'])->name('surveys.snapshot.show');
         Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
         Route::post('guest-token', [TeamSurveyGuestTokensController::class, 'store'])->name('surveys.guestToken.store');
+        Route::put('status', [TeamSurveyStatusesController::class, 'update'])->name('surveys.status.update');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
