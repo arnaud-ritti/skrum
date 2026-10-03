@@ -23,6 +23,7 @@ use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
+use App\Support\Games\MoodWeatherRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
 use App\Support\Games\TwoTruthsRules;
@@ -60,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(DecodedRules::class),
             $app->make(SprintGifRules::class),
             $app->make(TwoTruthsRules::class),
+            $app->make(MoodWeatherRules::class),
         ]));
         $this->app->singleton(WriteWhiteboardElements::class);
         $this->app->scoped(McpGrantContext::class);
