@@ -28,6 +28,8 @@ type SessionTimerProps = {
     onResume?: () => void;
     /** false in a game room: it shows <TimeUpBadge> instead of a toast. */
     alarm?: boolean;
+    /** "lg" on a stage: the topic timer of the discussion. */
+    size?: 'md' | 'lg';
     className?: string;
 };
 
@@ -44,6 +46,7 @@ export function SessionTimer({
     onPause,
     onResume,
     alarm = true,
+    size,
     className,
 }: SessionTimerProps) {
     const isPaused = pausedSeconds !== null;
@@ -73,6 +76,7 @@ export function SessionTimer({
             onCustom={onCustom}
             onAdd={onExtend ? () => onExtend() : undefined}
             addSeconds={120}
+            size={size}
             className={className}
         />
     );

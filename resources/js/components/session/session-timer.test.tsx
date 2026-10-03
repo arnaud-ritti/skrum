@@ -261,6 +261,18 @@ describe('SessionTimer', () => {
         );
     });
 
+    it('draws the large timer when asked', () => {
+        const { container } = renderWithProviders(
+            <SessionTimer endsAt={inTenSeconds} offset={0} size="lg" />,
+        );
+
+        expect(
+            container
+                .querySelector('[data-slot="timer"]')
+                ?.getAttribute('data-size'),
+        ).toBe('lg');
+    });
+
     it('offers "+2 min" on a paused timer', () => {
         const onExtend = vi.fn();
 
