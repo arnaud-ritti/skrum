@@ -919,7 +919,7 @@ function ShareBody({
                     </p>
                     {joinText !== null && (
                         <p className="text-xs text-muted-foreground">
-                            {t('Enter it on :url', { url: joinText })}
+                            {t('Join at :url', { url: joinText })}
                         </p>
                     )}
                     <Button

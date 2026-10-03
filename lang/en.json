@@ -4380,5 +4380,6 @@
     "Confirm your password to see your linked accounts.": "Confirm your password to see your linked accounts.",
     "Show my linked accounts": "Show my linked accounts",
     "Join a session": "Join a session",
-    "No session matches this code.": "No session matches this code."
+    "No session matches this code.": "No session matches this code.",
+    "Join at :url": "Join at :url"
 }

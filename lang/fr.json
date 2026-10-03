@@ -4600,5 +4600,6 @@
     "Confirm your password to see your linked accounts.": "Confirme ton mot de passe pour voir tes comptes liés.",
     "Show my linked accounts": "Afficher mes comptes liés",
     "Join a session": "Rejoindre une session",
-    "No session matches this code.": "Aucune session ne correspond à ce code."
+    "No session matches this code.": "Aucune session ne correspond à ce code.",
+    "Join at :url": "Rejoindre sur :url"
 }
