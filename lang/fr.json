@@ -4558,6 +4558,7 @@
     "Rainy": "Pluvieux",
     "Stormy": "Orageux",
     "No word fits these themes.": "Aucun mot ne correspond à ces thèmes.",
+    "No other word fits these themes.": "Aucun autre mot ne correspond à ces thèmes.",
     "Choose who plays.": "Choisis qui joue.",
     "This game is not played in turns.": "Ce jeu ne se joue pas chacun son tour.",
     "Only the host or the player whose turn it is can do this.": "Seul l'hôte ou le joueur dont c'est le tour peut faire cela.",
@@ -4681,5 +4682,5 @@
     "found · :time": "trouvé · :time",
     "New word (:count)": "Autre mot (:count)",
     "You earn +:points per finder": "Tu gagnes +:points par joueur qui trouve",
-    "You found it: :word": "Tu as trouvé : :word"
+    "You found it: :word": "Tu l'as trouvé : :word"
 }

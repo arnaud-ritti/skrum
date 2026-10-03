@@ -18,7 +18,7 @@ class DrawGameWord
      */
     public function handle(GameRoom $room, bool $drawableOnly, ?string $except = null): string
     {
-        $pool = array_values(array_diff($this->gameWordBook->words($room->locale, $drawableOnly, $room->wordThemes()), [$except]));
+        $pool = $this->pool($room, $drawableOnly, $except);
 
         if ($pool === []) {
             throw ValidationException::withMessages(['game' => __('No word fits these themes.')]);
@@ -41,6 +41,17 @@ class DrawGameWord
         GameUsedWord::query()->firstOrCreate(['team_id' => $room->team_id, 'locale' => $room->locale, 'word' => $word]);
 
         return $word;
+    }
+
+    /**
+     * The words the room's themes allow.
+     *
+     * @param  ?string  $except  the word being replaced, left out
+     * @return array<int, string>
+     */
+    public function pool(GameRoom $room, bool $drawableOnly, ?string $except = null): array
+    {
+        return array_values(array_diff($this->gameWordBook->words($room->locale, $drawableOnly, $room->wordThemes()), [$except]));
     }
 
     /** @return Builder<GameUsedWord> */

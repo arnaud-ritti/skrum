@@ -3,6 +3,7 @@
 use App\Enums\GameKind;
 use App\Events\Games\GameWordChanged;
 use App\Models\GameGuess;
+use App\Support\Games\GameWordBook;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(fn () => Event::fake());
@@ -60,4 +61,20 @@ it('refuses a new word in Decoded', function () {
     $this->actingAs($table['leaderUser'])
         ->postJson(route('games.rounds.wordChanges.store', [$table['room'], $table['round']]))
         ->assertUnprocessable();
+});
+
+it('says no other word fits when the themes leave only the round word', function () {
+    $table = wordGuessTable(GameKind::DrawAndGuess, 'rocket', ['guessers_total' => 1]);
+    app()->instance(GameWordBook::class, new GameWordBook(words: [
+        $table['room']->locale => [['word' => 'rocket', 'drawable' => true]],
+    ]));
+
+    $this->actingAs($table['leaderUser'])
+        ->postJson(route('games.rounds.wordChanges.store', [$table['room'], $table['round']]))
+        ->assertConflict()
+        ->assertJsonPath('message', __('No other word fits these themes.'));
+
+    expect($table['round']->fresh())
+        ->word->toBe('rocket')
+        ->word_changes->toBe(0);
 });

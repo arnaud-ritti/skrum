@@ -41,6 +41,10 @@ class ChangeDrawWord
                 throw new ConflictHttpException(__('Someone has already found the word.'));
             }
 
+            if ($this->drawGameWord->pool($lockedRoom, true, $lockedRound->word) === []) {
+                throw new ConflictHttpException(__('No other word fits these themes.'));
+            }
+
             $word = $this->drawGameWord->handle($lockedRoom, true, $lockedRound->word);
 
             $lockedRound->forceFill([
