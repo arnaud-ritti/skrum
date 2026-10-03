@@ -212,6 +212,7 @@ export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
             show: '/surveys/survey-1',
             results: '/surveys/survey-1/results',
             edit: '/surveys/survey-1/edit',
+            healthCheck: null,
         },
         serverTime: '2026-10-03T08:00:00.000Z',
     };
