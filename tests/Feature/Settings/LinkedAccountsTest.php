@@ -36,12 +36,12 @@ it('refuses to unlink the last way in', function (Closure $setUp) {
 
     expect($account->fresh())->not->toBeNull();
 })->with([
-    'no password, mail off' => [function () {
+    'no password, mail off' => [function (): array {
         $user = User::factory()->create(['password_set_at' => null]);
 
         return [$user, SocialAccount::factory()->for($user)->create(['provider' => 'google'])];
     }],
-    'a member while single sign-on is required' => [function () {
+    'a member while single sign-on is required' => [function (): array {
         resolve(InstanceSettings::class)->set('sso_required', true);
         $user = User::factory()->create();
 

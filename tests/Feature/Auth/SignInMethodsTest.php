@@ -41,7 +41,7 @@ it('does not count a password nobody chose, nor a provider turned off', function
     $user = User::factory()->create(['password_set_at' => null]);
     SocialAccount::factory()->for($user)->create(['provider' => 'entra']);
 
-    expect(ways($user))->toBe([]);
+    expect(ways($user))->toBeEmpty();
 });
 
 it('counts only single sign-on for a member while it is required', function () {
@@ -56,7 +56,7 @@ it('counts only single sign-on for a member while it is required', function () {
     ]);
 
     expect(ways($user))->toBe(['sso:google'])
-        ->and(ways($user, $google))->toBe([])
+        ->and(ways($user, $google))->toBeEmpty()
         ->and(resolve(SignInMethods::class)->isManagedByAdmin($google))->toBeTrue();
 });
 

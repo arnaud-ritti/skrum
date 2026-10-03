@@ -37,7 +37,7 @@ class LinkedAccounts
     public function of(User $user): array
     {
         $accounts = $user->socialAccounts()
-            ->orderBy('created_at')
+            ->oldest()
             ->orderBy('id')
             ->get()
             ->unique('provider')

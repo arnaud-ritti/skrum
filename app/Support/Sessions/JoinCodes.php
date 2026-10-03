@@ -29,7 +29,7 @@ class JoinCodes
 
     public function for(Retro|PokerGame|Whiteboard|TeamSurvey|GameRoom $session): string
     {
-        $kind = self::kindOf($session);
+        $kind = $this->kindOf($session);
 
         for ($attempt = 1; $attempt <= self::Attempts; $attempt++) {
             $existing = $this->codeOf($kind, $session->id);
@@ -54,7 +54,7 @@ class JoinCodes
 
     public function rotate(Retro|PokerGame|Whiteboard|TeamSurvey|GameRoom $session): string
     {
-        $kind = self::kindOf($session);
+        $kind = $this->kindOf($session);
 
         for ($attempt = 1; $attempt <= self::Attempts; $attempt++) {
             try {
@@ -119,7 +119,7 @@ class JoinCodes
         return is_string($code) ? $code : null;
     }
 
-    private static function kindOf(Retro|PokerGame|Whiteboard|TeamSurvey|GameRoom $session): JoinableSessionKind
+    private function kindOf(Retro|PokerGame|Whiteboard|TeamSurvey|GameRoom $session): JoinableSessionKind
     {
         return match (true) {
             $session instanceof Retro => JoinableSessionKind::Retro,

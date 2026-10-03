@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Attributes\WithoutIncrementing;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -14,13 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $payload
  * @property int $last_activity
  */
-class BrowserSession extends Model
-{
-    public $incrementing = false;
-
-    public $timestamps = false;
-
-    protected $table = 'sessions';
-
-    protected $keyType = 'string';
-}
+#[Table(name: 'sessions', keyType: 'string')]
+#[WithoutIncrementing]
+#[WithoutTimestamps]
+class BrowserSession extends Model {}

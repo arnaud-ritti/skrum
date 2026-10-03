@@ -5,7 +5,7 @@ namespace App\Support\Settings;
 use App\Models\BrowserSession;
 use App\Models\User;
 use App\Support\Auth\UserAgentSummary;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -52,7 +52,7 @@ class BrowserSessions
                 'deviceKind' => UserAgentSummary::deviceKind($session->user_agent),
                 'ipAddress' => $session->ip_address,
                 'isCurrent' => hash_equals($currentId, $session->id),
-                'lastActiveAt' => Carbon::createFromTimestamp($session->last_activity)->toIso8601String(),
+                'lastActiveAt' => Date::createFromTimestamp($session->last_activity)->toIso8601String(),
             ])
             ->values()
             ->all();
