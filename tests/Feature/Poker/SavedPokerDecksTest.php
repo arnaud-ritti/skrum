@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
@@ -248,4 +249,20 @@ it('lists the team decks on the team page', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('pokerDecks.0.canManage', true)
             ->where('pokerDecks.1.canManage', true));
+});
+
+it('keeps team decks read-only to observers, including a deck they created before', function () {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    $deck = saveDeck($team, $observer);
+
+    $this->actingAs($observer)
+        ->post(route('teams.pokerDecks.store', [$team->workspace, $team]), ['name' => 'Scale', 'cards' => ['1', '2']])
+        ->assertForbidden();
+
+    $this->actingAs($observer)
+        ->delete(route('teams.pokerDecks.destroy', [$team->workspace, $team, $deck]))
+        ->assertForbidden();
+
+    expect($team->pokerDecks()->count())->toBe(1);
 });

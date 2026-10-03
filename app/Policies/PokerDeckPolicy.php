@@ -17,7 +17,7 @@ class PokerDeckPolicy
 
     public function create(User $user, Team $team): bool
     {
-        return $user->can('view', $team);
+        return $user->can('createPokerGame', $team);
     }
 
     public function createForWorkspace(User $user, Workspace $workspace): bool
@@ -47,7 +47,7 @@ class PokerDeckPolicy
             return Response::allow();
         }
 
-        if ($deck->created_by_user_id === $user->id && $user->can('view', $deck->team)) {
+        if ($deck->created_by_user_id === $user->id && $user->can('createPokerGame', $deck->team)) {
             return Response::allow();
         }
 
