@@ -13,6 +13,7 @@ use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
+use App\Actions\Teams\PresentTeamInvitations;
 use App\Actions\Teams\RefreshStaleWhiteboardPreviews;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
@@ -28,6 +29,7 @@ use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
 use App\Support\Teams\SprintCalendar;
+use App\Support\Teams\TeamMark;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,11 +71,13 @@ class TeamsController extends Controller
         PresentActionItem $presentActionItem,
         RefreshStaleWhiteboardPreviews $refreshStaleWhiteboardPreviews,
         AvailableTeamMembers $availableTeamMembers,
+        PresentTeamInvitations $presentTeamInvitations,
     ): Response {
         Gate::authorize('view', $team);
 
         $canManage = $request->user()->can('manageMembers', $team);
         $managesWorkspace = $request->user()->canManage($workspace);
+        $canInvite = $request->user()->can('invite', $team);
         $whiteboards = $team->whiteboards()
             ->with('facilitator.user')
             ->latest('updated_at')
@@ -84,7 +88,11 @@ class TeamsController extends Controller
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => $team->only(['id', 'name']),
+            'team' => [...$team->only(['id', 'name']), 'color' => TeamMark::colorFor($team)->value],
+            'canInvite' => $canInvite,
+            'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
+            'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $this->inviteLink($team) : null),
+            'pendingInvitations' => $canInvite ? $presentTeamInvitations->handle($team) : [],
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [
                     ...$member->only(['id', 'name', 'email']),
@@ -143,6 +151,22 @@ class TeamsController extends Controller
                 ->where('due_on', '<', ActionItem::today()->toDateString())
                 ->count(),
         ]);
+    }
+
+    /** @return array{url: string, expiresAt: string, usesCount: int}|null */
+    private function inviteLink(Team $team): ?array
+    {
+        $link = $team->usableInviteLink();
+
+        if ($link === null) {
+            return null;
+        }
+
+        return [
+            'url' => $link->url(),
+            'expiresAt' => $link->expires_at->toIso8601String(),
+            'usesCount' => $link->uses_count,
+        ];
     }
 
     /**

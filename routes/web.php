@@ -84,6 +84,7 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationDeclinesController;
 use App\Http\Controllers\InvitationLinksController;
+use App\Http\Controllers\InviteLinksController;
 use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\MagicLinksController;
@@ -175,6 +176,7 @@ use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamInvitationsController;
+use App\Http\Controllers\TeamInviteLinksController;
 use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
@@ -241,6 +243,7 @@ Route::get('/', fn (Request $request) => $request->user() === null
     : to_route('dashboard'))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
+Route::get('invite/{token}', [InviteLinksController::class, 'show'])->middleware('throttle:30,1,inviteLinkPages')->name('inviteLinks.show');
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
@@ -483,6 +486,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
             Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
             Route::post('teams/{team}/invitations', [TeamInvitationsController::class, 'store'])->name('teams.invitations.store')->middleware('throttle:10,1,teamInvitations');
+            Route::post('teams/{team}/invite-link', [TeamInviteLinksController::class, 'store'])->name('teams.inviteLink.store')->middleware('throttle:10,1,inviteLinks');
+            Route::delete('teams/{team}/invite-link', [TeamInviteLinksController::class, 'destroy'])->name('teams.inviteLink.destroy');
 
             Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
