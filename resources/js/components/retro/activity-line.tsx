@@ -5,7 +5,7 @@ import {
     type ActivityEntry,
     type ActivityKind,
 } from '@/lib/retro/activity';
-import { presenceSlot } from '@/lib/whiteboard/presence-slot';
+import { presenceOf } from '@/lib/presence/presence-color';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 
@@ -106,7 +106,13 @@ export function ActivityLine({ kind, targetId, targetIds, className }: Props) {
                 aria-hidden
                 className={cn(
                     'flex items-center gap-px',
-                    presenceTextClasses[presenceSlot(shown[0].senderId) - 1],
+                    presenceTextClasses[
+                        presenceOf(
+                            online.find(
+                                (person) => person.id === shown[0].senderId,
+                            ) ?? { id: shown[0].senderId },
+                        ) - 1
+                    ],
                 )}
             >
                 <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
