@@ -1,16 +1,14 @@
 import { Head } from '@inertiajs/react';
+import { SurveyBuilder } from '@/components/surveys/survey-builder';
+import type { SurveySnapshot } from '@/lib/surveys/types';
 
-type Props = { snapshot: { survey: { title: string } } };
+type Props = { snapshot: SurveySnapshot };
 
-export default function SurveyBuilder({ snapshot }: Props) {
+export default function SurveyEdit({ snapshot }: Props) {
     return (
         <>
             <Head title={snapshot.survey.title} />
-            <main className="p-6">
-                <h1 className="text-lg font-semibold text-foreground">
-                    {snapshot.survey.title}
-                </h1>
-            </main>
+            <SurveyBuilder key={snapshot.survey.id} snapshot={snapshot} />
         </>
     );
 }

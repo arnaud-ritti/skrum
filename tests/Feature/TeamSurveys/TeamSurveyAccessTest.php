@@ -138,3 +138,18 @@ it('lets an editor delete the survey and tells the others', function () {
     expect(TeamSurvey::query()->find($survey->id))->toBeNull();
     Event::assertDispatched(fn (TeamSurveyDeleted $event) => $event->surveyId === $survey->id && $event->broadcastAs() === 'survey.deleted');
 });
+
+it('links the builder of a health check to the statements of its team', function () {
+    $healthCheck = TeamSurvey::factory()->healthCheck()->create();
+    [$facilitator] = surveyFacilitator($healthCheck);
+    $pulse = TeamSurvey::factory()->create(['team_id' => $healthCheck->team_id]);
+    [$pulseFacilitator] = surveyFacilitator($pulse);
+
+    $this->actingAs($facilitator)->get(route('surveys.edit', $healthCheck))
+        ->assertInertia(fn (Assert $page) => $page->where(
+            'snapshot.links.healthCheck',
+            route('teams.healthCheck.show', [$healthCheck->team->workspace, $healthCheck->team], absolute: false),
+        ));
+    $this->actingAs($pulseFacilitator)->get(route('surveys.edit', $pulse))
+        ->assertInertia(fn (Assert $page) => $page->where('snapshot.links.healthCheck', null));
+});

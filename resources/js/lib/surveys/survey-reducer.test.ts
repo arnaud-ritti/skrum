@@ -60,7 +60,13 @@ function snapshot(overrides: Partial<SurveySnapshot> = {}): SurveySnapshot {
         progress: { responses: 0, completed: 0, audience: 11 },
         results: null,
         comparable: null,
-        links: { team: '/t', show: '/s', results: '/r', edit: null },
+        links: {
+            team: '/t',
+            show: '/s',
+            results: '/r',
+            edit: null,
+            healthCheck: null,
+        },
         serverTime: '2026-10-19T10:00:00.000Z',
         ...overrides,
     };
