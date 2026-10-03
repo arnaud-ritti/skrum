@@ -74,6 +74,7 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationLinksController;
+use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\MagicLinksController;
 use App\Http\Controllers\MagicLinkSessionsController;
@@ -460,6 +461,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->whereUuid(['actionItem', 'externalLink']);
         });
 });
+
+Route::get('join', [JoinCodesController::class, 'create'])->name('joinCodes.create');
+Route::post('join', [JoinCodesController::class, 'store'])->name('joinCodes.store')->middleware('throttle:10,1,joinCodes');
 
 Route::get('join/{guestToken}', [RetroJoinsController::class, 'show'])->name('retros.join.show');
 Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('retros.join.store')->middleware('throttle:10,1');

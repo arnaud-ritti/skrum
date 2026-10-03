@@ -4598,5 +4598,7 @@
     "Unlink :provider?": ":provider trennen?",
     "You will no longer sign in with :provider. You can link it again later.": "Du kannst dich nicht mehr mit :provider anmelden. Du kannst es später erneut verknüpfen.",
     "Confirm your password to see your linked accounts.": "Bestätige dein Passwort, um deine verknüpften Konten zu sehen.",
-    "Show my linked accounts": "Meine verknüpften Konten anzeigen"
+    "Show my linked accounts": "Meine verknüpften Konten anzeigen",
+    "Join a session": "Einer Sitzung beitreten",
+    "No session matches this code.": "Keine Sitzung passt zu diesem Code."
 }

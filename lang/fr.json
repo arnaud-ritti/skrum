@@ -4598,5 +4598,7 @@
     "Unlink :provider?": "Délier :provider ?",
     "You will no longer sign in with :provider. You can link it again later.": "Tu ne pourras plus te connecter avec :provider. Tu pourras le lier à nouveau plus tard.",
     "Confirm your password to see your linked accounts.": "Confirme ton mot de passe pour voir tes comptes liés.",
-    "Show my linked accounts": "Afficher mes comptes liés"
+    "Show my linked accounts": "Afficher mes comptes liés",
+    "Join a session": "Rejoindre une session",
+    "No session matches this code.": "Aucune session ne correspond à ce code."
 }
