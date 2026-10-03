@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     Building2,
+    Heart,
     HeartPulse,
     LayoutGrid,
     Minus,
@@ -88,6 +89,9 @@ type VisitPage = { props: { catalogue?: CatalogueTemplate[] } };
 const DefaultFixedVotes = 5;
 const MinVotes = 1;
 const MaxVotes = 20;
+/** The most votes the automatic limit gives, so the most a cap can be. */
+const MaxAutomaticVotes = 10;
+const DefaultMaxVotesPerCard = 2;
 const ShortcutSkeletons = 6;
 
 /** The retro form of the creation dialog, as `NewSessionDialog` takes it. */
@@ -103,14 +107,17 @@ export function retroSessionForm(
 }
 
 function VotesStepper({
+    label,
     value,
+    max,
     onChange,
 }: {
+    label: string;
     value: number;
+    max: number;
     onChange: (value: number) => void;
 }) {
     const { t } = useTrans();
-    const label = t('Votes per participant');
 
     return (
         <div
@@ -134,7 +141,7 @@ function VotesStepper({
             <button
                 type="button"
                 aria-label={t('Increase :label', { label })}
-                disabled={value >= MaxVotes}
+                disabled={value >= max}
                 onClick={() => onChange(value + 1)}
                 className="grid h-full w-7 place-items-center rounded-r-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
@@ -315,6 +322,7 @@ export function RetroSessionFields({
     const [icebreaker, setIcebreaker] = useState(false);
     const [icebreakerGame, setIcebreakerGame] = useState<GameKind>('draw');
     const [votes, setVotes] = useState<number | null>(null);
+    const [maxPerCard, setMaxPerCard] = useState<number | null>(null);
     const [guests, setGuests] = useState(false);
     const [saveTemplate, setSaveTemplate] = useState(false);
     const [errors, setErrors] = useState<Errors>({});
@@ -358,6 +366,9 @@ export function RetroSessionFields({
     const categoryLabel = (category: string | null | undefined): string =>
         categories.find((option) => option.value === category)?.label ?? '';
     const loading = catalogue === undefined;
+    const maxPerCardBound = votes ?? MaxAutomaticVotes;
+    const cappedMaxPerCard =
+        maxPerCard === null ? null : Math.min(maxPerCard, maxPerCardBound);
     const games = icebreakerGames.filter(
         (option) => option.available || option.value === icebreakerGame,
     );
@@ -369,6 +380,7 @@ export function RetroSessionFields({
         icebreaker_enabled: icebreaker,
         icebreaker_game: icebreakerGame,
         votes_per_participant: votes,
+        max_votes_per_card: cappedMaxPerCard,
         guest_access_enabled: guests,
     });
 
@@ -498,7 +510,12 @@ export function RetroSessionFields({
             control: (
                 <>
                     {votes !== null && (
-                        <VotesStepper value={votes} onChange={setVotes} />
+                        <VotesStepper
+                            label={t('Votes per participant')}
+                            value={votes}
+                            max={MaxVotes}
+                            onChange={setVotes}
+                        />
                     )}
                     <span aria-hidden className="text-xs text-muted-foreground">
                         {t('Automatic')}
@@ -509,6 +526,44 @@ export function RetroSessionFields({
                         checked={votes === null}
                         onCheckedChange={(checked) =>
                             setVotes(checked ? null : DefaultFixedVotes)
+                        }
+                    />
+                </>
+            ),
+        },
+        {
+            key: 'max-per-card',
+            label: t('Max per card'),
+            htmlFor: 'new-retro-max-votes-per-card-auto',
+            help: t('Votes one person can stack'),
+            icon: Heart,
+            error: errors.max_votes_per_card,
+            control: (
+                <>
+                    {cappedMaxPerCard !== null && (
+                        <VotesStepper
+                            label={t('Max per card')}
+                            value={cappedMaxPerCard}
+                            max={maxPerCardBound}
+                            onChange={setMaxPerCard}
+                        />
+                    )}
+                    <span aria-hidden className="text-xs text-muted-foreground">
+                        {t('No limit')}
+                    </span>
+                    <Switch
+                        id="new-retro-max-votes-per-card-auto"
+                        aria-label={t('No limit per card')}
+                        checked={cappedMaxPerCard === null}
+                        onCheckedChange={(checked) =>
+                            setMaxPerCard(
+                                checked
+                                    ? null
+                                    : Math.min(
+                                          DefaultMaxVotesPerCard,
+                                          maxPerCardBound,
+                                      ),
+                            )
                         }
                     />
                 </>

@@ -3,6 +3,7 @@ import {
     cardEngagement,
     cardVoting,
     ColumnEditPhases,
+    finishedCount,
     groupingProgress,
     toCardProps,
     toColumnProps,
@@ -598,5 +599,41 @@ describe('cardVoting with a cap, and a finished voter', () => {
                 board({ maxVotesPerCard: 2, remainingVotes: 0 }),
             ),
         ).toMatchObject({ blocked: 'spent' });
+    });
+});
+
+describe('finishedCount', () => {
+    const member = (id: string) => ({
+        id,
+        name: id,
+        avatarUrl: '/a.svg',
+        isGuest: id === 'guest',
+    });
+
+    it('counts the viewer alone before presence answers', () => {
+        expect(
+            finishedCount(
+                retroSnapshot({ voting: { finishedIds: ['me'] } }),
+                [],
+            ),
+        ).toEqual({ finished: 1, total: 1 });
+    });
+
+    it('counts the online people who have finished, a guest included', () => {
+        expect(
+            finishedCount(
+                retroSnapshot({ voting: { finishedIds: ['me', 'guest'] } }),
+                [member('me'), member('bob'), member('guest')],
+            ),
+        ).toEqual({ finished: 2, total: 3 });
+    });
+
+    it('does not count a finished participant who left', () => {
+        expect(
+            finishedCount(
+                retroSnapshot({ voting: { finishedIds: ['me', 'gone'] } }),
+                [member('me'), member('bob')],
+            ),
+        ).toEqual({ finished: 1, total: 2 });
     });
 });

@@ -91,17 +91,21 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
 
 /** Why "Add a vote" is disabled, as the card says it next to the button. */
 export function useVoteBlockedLabel(): (
-    blocked: CardVoting['blocked'],
+    voting: Pick<CardVoting, 'blocked' | 'maxPerCard'>,
 ) => string | undefined {
     const { t } = useTrans();
 
-    return (blocked) => {
+    return ({ blocked, maxPerCard }) => {
         if (blocked === 'locked') {
             return t('Board closed for editing');
         }
 
         if (blocked === 'spent') {
             return t('You have used all your votes');
+        }
+
+        if (blocked === 'cap') {
+            return t('Max :count votes per card', { count: maxPerCard ?? 0 });
         }
 
         return undefined;

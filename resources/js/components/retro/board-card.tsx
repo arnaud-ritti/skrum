@@ -830,7 +830,7 @@ export function BoardCard({
                     votes: voting.votes,
                     canVote: voting.canVote,
                     canUnvote: voting.canUnvote,
-                    labels: { voteBlocked: voteBlockedLabel(voting.blocked) },
+                    labels: { voteBlocked: voteBlockedLabel(voting) },
                     onVote: vote,
                 })}
                 commentCount={card.commentCount}

@@ -4345,5 +4345,12 @@
     "Max per card": "Max per card",
     "Votes one person can stack": "Votes one person can stack",
     "No limit per card": "No limit per card",
-    "No limit": "No limit"
+    "No limit": "No limit",
+    " · max :count per card": " · max :count per card",
+    "Max :count votes per card": "Max :count votes per card",
+    "You changed your votes: you're no longer marked as finished.": "You changed your votes: you're no longer marked as finished.",
+    ":finished/:total have finished": ":finished/:total have finished",
+    ":finished of :total have finished": ":finished of :total have finished",
+    "I have finished voting": "I have finished voting",
+    "Change my votes": "Change my votes"
 }

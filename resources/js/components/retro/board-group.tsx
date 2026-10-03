@@ -397,11 +397,12 @@ export function BoardGroup({
                     <CardVotes
                         mine={voting.votes.mine}
                         total={voting.votes.total}
+                        maxPerCard={voting.maxPerCard ?? undefined}
                         budgetLeft={ctx.board.viewer.remainingVotes}
                         hiddenTotalNote={false}
                         disabledReason={
                             voting.blocked === 'locked'
-                                ? voteBlockedLabel(voting.blocked)
+                                ? voteBlockedLabel(voting)
                                 : undefined
                         }
                         onVote={() => vote(1)}

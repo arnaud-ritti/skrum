@@ -9,6 +9,7 @@ import type {
     BoardCard,
     BoardColumn,
     ColumnColor,
+    PresenceMember,
     ReactionSummary,
     RetroPhase,
     Snapshot,
@@ -276,6 +277,30 @@ export function votingProgress(
     return {
         cast: board.votesCast ?? 0,
         total: board.participants.length * board.retro.votesPerParticipant,
+    };
+}
+
+/**
+ * "x/y have finished": the people online, guests and the facilitator
+ * included, and those of them who said they have finished voting. Before
+ * the presence channel answers, the viewer alone.
+ */
+export function finishedCount(
+    board: Pick<Snapshot, 'viewer' | 'voting'>,
+    online: PresenceMember[],
+): { finished: number; total: number } {
+    const finishedIds = new Set(board.voting.finishedIds);
+
+    if (online.length === 0) {
+        return {
+            finished: finishedIds.has(board.viewer.participantId) ? 1 : 0,
+            total: 1,
+        };
+    }
+
+    return {
+        finished: online.filter((member) => finishedIds.has(member.id)).length,
+        total: online.length,
     };
 }
 

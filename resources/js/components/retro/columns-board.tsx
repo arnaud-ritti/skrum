@@ -53,8 +53,8 @@ import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
-import { PhaseVotingBar } from './phase-voting-bar';
 import { SurveysColumn } from './surveys/surveys-column';
+import { BoardVotingBar } from './voting-finished';
 
 const DefaultColor: ColumnColor = 'moss';
 
@@ -280,7 +280,7 @@ function PhoneColumns({
                     data-slot="retro-phone-columns-head"
                     className="sticky top-0 z-10 flex min-w-0 shrink-0 flex-col gap-2 border-b bg-background py-2"
                 >
-                    {phase === 'voting' && <PhaseVotingBar part="budget" />}
+                    {phase === 'voting' && <BoardVotingBar part="budget" />}
                     <ColumnTabs
                         aria-label={t('Columns')}
                         tabs={tabs}
@@ -568,7 +568,7 @@ export function ColumnsBoard({
                             )}
                             {phase === 'grouping' && <GroupingBanner />}
                             {phase === 'voting' && (
-                                <PhaseVotingBar part="progress" />
+                                <BoardVotingBar part="progress" />
                             )}
                         </>
                     }
@@ -580,7 +580,7 @@ export function ColumnsBoard({
                 <div className="flex min-w-0 flex-1 flex-col">
                     {phase === 'writing' && <WritingBanner typing={typing} />}
                     {phase === 'grouping' && <GroupingBanner />}
-                    {phase === 'voting' && <PhaseVotingBar />}
+                    {phase === 'voting' && <BoardVotingBar />}
                     <div
                         ref={setBoardElement}
                         data-slot="retro-columns"

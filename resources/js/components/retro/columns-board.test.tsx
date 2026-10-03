@@ -1326,6 +1326,44 @@ describe('ColumnsBoard in Voting', () => {
         ).toBe(false);
     });
 
+    it('stops the votes of one card at the cap, says why, and still takes one back', () => {
+        const { container } = voting(
+            { retro: { maxVotesPerCard: 2 }, viewer: { remainingVotes: 3 } },
+            [{ ...lead, myVotes: 2 }, child, { ...alone, myVotes: 2 }],
+        );
+
+        const add = within(
+            container,
+            '#card-alone [aria-label="Add a vote"]',
+        ) as HTMLButtonElement;
+
+        expect(add.disabled).toBe(true);
+        expect(add.closest('[role="group"]')?.getAttribute('aria-label')).toBe(
+            'Max 2 votes per card',
+        );
+        expect(
+            (
+                within(
+                    container,
+                    '#card-alone [aria-label="Remove a vote"]',
+                ) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+
+        const groupAdd = within(
+            container,
+            '#group-lead [aria-label="Add a vote"]',
+        ) as HTMLButtonElement;
+
+        expect(groupAdd.disabled).toBe(true);
+        expect(
+            groupAdd.closest('[role="group"]')?.getAttribute('aria-label'),
+        ).toBe('You reached the limit of 2 votes on this card');
+        expect(
+            container.querySelector('#group-lead [aria-label="Remove a vote"]'),
+        ).not.toBeNull();
+    });
+
     it('closes the votes of a closed board, with its reason', () => {
         const { container } = voting({ retro: { isLocked: true } }, [
             { ...lead, myVotes: 1 },
