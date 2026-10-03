@@ -154,6 +154,7 @@ use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
+use App\Http\Controllers\TeamSurveys\TeamSurveyGuestTokensController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyResultsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveysController;
 use App\Http\Controllers\TeamSurveys\TeamSurveySnapshotsController;
@@ -605,6 +606,7 @@ Route::prefix('surveys/{teamSurvey}')
         Route::delete('/', [TeamSurveysController::class, 'destroy'])->name('surveys.destroy');
         Route::get('snapshot', [TeamSurveySnapshotsController::class, 'show'])->name('surveys.snapshot.show');
         Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
+        Route::post('guest-token', [TeamSurveyGuestTokensController::class, 'store'])->name('surveys.guestToken.store');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

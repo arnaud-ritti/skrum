@@ -2,9 +2,11 @@
 
 namespace App\Actions\Sessions;
 
+use App\Enums\TeamSurveyStatus;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Support\Sessions\GuestNames;
@@ -114,6 +116,24 @@ class PresentJoinSession
             'facilitatorName' => $board->facilitator?->displayName(),
             'participantsCount' => $board->members()->count(),
             'isLive' => true,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     title: string,
+     *     facilitatorName: ?string,
+     *     participantsCount: int,
+     *     isLive: bool
+     * }
+     */
+    public function survey(TeamSurvey $survey): array
+    {
+        return [
+            'title' => $survey->title,
+            'facilitatorName' => $survey->facilitator?->displayName(),
+            'participantsCount' => $survey->respondents()->count(),
+            'isLive' => $survey->status === TeamSurveyStatus::Open,
         ];
     }
 }

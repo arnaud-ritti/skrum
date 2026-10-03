@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Controllers\TeamSurveys;
+
+use App\Actions\TeamSurveys\TeamSurveyGuard;
+use App\Events\TeamSurveys\TeamSurveyChanged;
+use App\Http\Controllers\Controller;
+use App\Models\TeamSurvey;
+use App\Models\TeamSurveyRespondent;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class TeamSurveyGuestTokensController extends Controller
+{
+    public function store(Request $request, TeamSurvey $teamSurvey): JsonResponse
+    {
+        $respondent = TeamSurveyRespondent::current($request);
+
+        TeamSurveyGuard::editor($teamSurvey, $respondent);
+
+        $guestToken = DB::transaction(function () use ($teamSurvey, $respondent): string {
+            $locked = TeamSurvey::query()->whereKey($teamSurvey->id)->lockForUpdate()->firstOrFail();
+
+            TeamSurveyGuard::editor($locked, $respondent);
+
+            $locked->update(['guest_token' => Str::random(40)]);
+
+            $locked->respondents()
+                ->whereNull('user_id')
+                ->whereNotNull('guest_secret_hash')
+                ->update(['guest_secret_hash' => null]);
+
+            TeamSurveyChanged::for($locked)->sendToOthers();
+
+            return $locked->guest_token;
+        });
+
+        return response()->json(['guestUrl' => route('surveys.join.show', $guestToken)]);
+    }
+}

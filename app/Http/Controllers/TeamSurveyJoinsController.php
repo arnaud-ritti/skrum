@@ -2,18 +2,84 @@
 
 namespace App\Http\Controllers;
 
-/**
- * Registered now so the snapshot can name the guest link; Task 6 fills it.
- */
+use App\Actions\Retros\GuestCookie;
+use App\Actions\Sessions\PresentJoinSession;
+use App\Actions\TeamSurveys\ResolveRespondent;
+use App\Enums\TeamSurveyStatus;
+use App\Models\TeamSurvey;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
+
 class TeamSurveyJoinsController extends Controller
 {
-    public function show(): never
+    public function show(Request $request, string $guestToken, ResolveRespondent $resolveRespondent, PresentJoinSession $presentJoinSession): Response
     {
-        abort(404);
+        $survey = $this->findSurvey($guestToken);
+
+        if ($survey === null) {
+            return $this->invalidLink($request);
+        }
+
+        if ($resolveRespondent->handle($request, $survey) !== null) {
+            return to_route('surveys.show', $survey);
+        }
+
+        return Inertia::render('surveys/join', [
+            'isInvalid' => false,
+            'guestToken' => $guestToken,
+            'surveyTitle' => $survey->title,
+            'session' => $presentJoinSession->survey($survey),
+            ...$presentJoinSession->nickname($request->user()),
+        ])->toResponse($request);
     }
 
-    public function store(): never
+    public function store(Request $request, string $guestToken, ResolveRespondent $resolveRespondent): Response
     {
-        abort(404);
+        $survey = $this->findSurvey($guestToken);
+
+        if ($survey === null) {
+            return $this->invalidLink($request);
+        }
+
+        if ($resolveRespondent->handle($request, $survey) !== null) {
+            return to_route('surveys.show', $survey);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+        ]);
+
+        $secret = Str::random(40);
+
+        $respondent = $survey->respondents()->create([
+            'guest_name' => $validated['name'],
+            'guest_secret_hash' => hash('sha256', $secret),
+        ]);
+
+        return to_route('surveys.show', $survey)
+            ->withCookie(GuestCookie::make(GuestCookie::SurveyScope, $survey->id, $respondent->id, $secret));
+    }
+
+    /**
+     * An attached health check is answered in its retro only (spec §6.3),
+     * and a draft is not open to guests yet.
+     */
+    private function findSurvey(string $guestToken): ?TeamSurvey
+    {
+        return TeamSurvey::query()
+            ->where('guest_token', $guestToken)
+            ->where('guest_access_enabled', true)
+            ->where('status', '!=', TeamSurveyStatus::Draft)
+            ->whereNull('retro_id')
+            ->first();
+    }
+
+    private function invalidLink(Request $request): Response
+    {
+        return Inertia::render('surveys/join', ['isInvalid' => true])
+            ->toResponse($request)
+            ->setStatusCode(404);
     }
 }
