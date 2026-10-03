@@ -5166,5 +5166,7 @@
     "Add a facilitator first.": "Füge zuerst einen Moderator hinzu.",
     "Choose a facilitator from the team.": "Wähle einen Moderator aus dem Team.",
     "Facilitators saved.": "Moderatoren gespeichert.",
-    "Only owners and facilitators of the team can be suggested.": "Nur Inhaber und Moderatoren des Teams können vorgeschlagen werden."
+    "Only owners and facilitators of the team can be suggested.": "Nur Inhaber und Moderatoren des Teams können vorgeschlagen werden.",
+    "A personal template cannot be the team default.": "Eine persönliche Vorlage kann nicht die Standardvorlage des Teams sein.",
+    "Default template saved.": "Standardvorlage gespeichert."
 }

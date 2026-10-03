@@ -164,6 +164,7 @@ use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
+use App\Http\Controllers\TeamDefaultRetroTemplatesController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamFacilitatorsController;
 use App\Http\Controllers\TeamGameRoomsController;
@@ -348,6 +349,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::put('teams/{team}/default-poker-deck', [TeamDefaultPokerDecksController::class, 'update'])->name('teams.defaultPokerDeck.update');
+            Route::put('teams/{team}/default-retro-template', [TeamDefaultRetroTemplatesController::class, 'update'])->name('teams.defaultRetroTemplate.update');
             Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');

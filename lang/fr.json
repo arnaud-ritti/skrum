@@ -5166,5 +5166,7 @@
     "Add a facilitator first.": "Ajoute d'abord un facilitateur.",
     "Choose a facilitator from the team.": "Choisis un facilitateur dans l'équipe.",
     "Facilitators saved.": "Facilitateurs enregistrés.",
-    "Only owners and facilitators of the team can be suggested.": "Seuls les propriétaires et facilitateurs de l'équipe peuvent être suggérés."
+    "Only owners and facilitators of the team can be suggested.": "Seuls les propriétaires et facilitateurs de l'équipe peuvent être suggérés.",
+    "A personal template cannot be the team default.": "Un modèle personnel ne peut pas être celui de l'équipe par défaut.",
+    "Default template saved.": "Modèle par défaut enregistré."
 }

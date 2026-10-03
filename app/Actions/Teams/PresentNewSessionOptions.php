@@ -5,6 +5,7 @@ namespace App\Actions\Teams;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\Integrations\ListPokerSources;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Retros\TemplateAvailability;
 use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\TeamSurveys\PresentTeamSurveySummary;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
@@ -39,6 +40,7 @@ class PresentNewSessionOptions
         private PresentTeamSurveySummary $presentTeamSurveySummary,
         private ListPokerSources $listPokerSources,
         private SuggestedFacilitator $suggestedFacilitator,
+        private TemplateAvailability $templateAvailability,
     ) {}
 
     /**
@@ -93,7 +95,19 @@ class PresentNewSessionOptions
             )->map(fn (User $member): array => [...$member->only(['id', 'name']), 'avatarUrl' => $member->avatarUrl()])->values()->all(),
             'suggestedFacilitatorId' => $this->suggestedFacilitator->for($team)?->id,
             'facilitatorRotation' => $team->facilitator_rotation_enabled,
+            'defaultRetroTemplate' => $this->defaultRetroTemplate($team, $viewer),
         ];
+    }
+
+    private function defaultRetroTemplate(Team $team, User $viewer): ?string
+    {
+        $key = $team->default_retro_template;
+
+        if ($key === null || ! $this->templateAvailability->isAvailable($team, $viewer, $key)) {
+            return null;
+        }
+
+        return $key;
     }
 
     /**

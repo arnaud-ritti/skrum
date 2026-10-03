@@ -4946,5 +4946,7 @@
     "Add a facilitator first.": "Add a facilitator first.",
     "Choose a facilitator from the team.": "Choose a facilitator from the team.",
     "Facilitators saved.": "Facilitators saved.",
-    "Only owners and facilitators of the team can be suggested.": "Only owners and facilitators of the team can be suggested."
+    "Only owners and facilitators of the team can be suggested.": "Only owners and facilitators of the team can be suggested.",
+    "A personal template cannot be the team default.": "A personal template cannot be the team default.",
+    "Default template saved.": "Default template saved."
 }

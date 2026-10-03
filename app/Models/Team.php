@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $retro_time
  * @property bool $facilitator_rotation_enabled
  * @property int $rotation_position
+ * @property string|null $default_retro_template
  * @property-read Workspace $workspace
  * @property-read string|null $last_retro_at
  * @property-read int|null $open_poker_games_count
@@ -40,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'retro_time',
     'facilitator_rotation_enabled',
     'rotation_position',
+    'default_retro_template',
 ])]
 class Team extends Model
 {
