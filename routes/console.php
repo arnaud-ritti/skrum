@@ -44,6 +44,10 @@ Schedule::command('model:prune', ['--model' => [AuditEvent::class, IntegrationDe
     ->daily()
     ->onOneServer();
 
+Schedule::command('skrum:check-for-update')
+    ->daily()
+    ->onOneServer();
+
 Schedule::command('skrum:prune-whiteboards')
     ->daily()
     ->withoutOverlapping()
