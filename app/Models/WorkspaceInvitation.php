@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Support\Auth\LoginAddress;
 use Database\Factories\WorkspaceInvitationFactory;
@@ -22,9 +23,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $invited_by_id
  * @property Carbon $expires_at
  * @property Carbon|null $accepted_at
+ * @property string|null $team_id
+ * @property TeamRole|null $team_role
+ * @property string|null $message
+ * @property Carbon|null $declined_at
  * @property-read Workspace $workspace
+ * @property-read Team|null $team
  */
-#[Fillable(['email', 'role', 'token_hash', 'invited_by_id', 'expires_at', 'accepted_at'])]
+#[Fillable(['email', 'role', 'token_hash', 'invited_by_id', 'expires_at', 'accepted_at', 'team_id', 'team_role', 'message', 'declined_at'])]
 class WorkspaceInvitation extends Model
 {
     /** @use HasFactory<WorkspaceInvitationFactory> */
@@ -58,13 +64,28 @@ class WorkspaceInvitation extends Model
         return $this->belongsTo(User::class, 'invited_by_id');
     }
 
+    /** @return BelongsTo<Team, $this> */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
     public function isPending(): bool
     {
         if ($this->accepted_at !== null) {
             return false;
         }
 
+        if ($this->declined_at !== null) {
+            return false;
+        }
+
         return $this->expires_at->isFuture();
+    }
+
+    public function isDeclined(): bool
+    {
+        return $this->declined_at !== null;
     }
 
     public function matchesEmail(string $email): bool
@@ -90,6 +111,8 @@ class WorkspaceInvitation extends Model
             'role' => WorkspaceRole::class,
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
+            'team_role' => TeamRole::class,
+            'declined_at' => 'datetime',
         ];
     }
 }

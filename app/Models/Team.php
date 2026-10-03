@@ -114,6 +114,12 @@ class Team extends Model
         return $this->members()->whereKey($user->id)->exists();
     }
 
+    /** @return HasMany<WorkspaceInvitation, $this> */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class);
+    }
+
     /** @return HasMany<TeamAccessRequest, $this> */
     public function accessRequests(): HasMany
     {

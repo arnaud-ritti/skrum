@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
+use App\Models\Team;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -38,5 +40,24 @@ class WorkspaceInvitationFactory extends Factory
     public function accepted(): static
     {
         return $this->state(fn () => ['accepted_at' => now()]);
+    }
+
+    public function declined(): static
+    {
+        return $this->state(fn () => ['declined_at' => now()]);
+    }
+
+    public function forTeam(Team $team, TeamRole $role = TeamRole::Member): static
+    {
+        return $this->state(fn () => [
+            'workspace_id' => $team->workspace_id,
+            'team_id' => $team->id,
+            'team_role' => $role,
+        ]);
+    }
+
+    public function withMessage(string $message): static
+    {
+        return $this->state(fn () => ['message' => $message]);
     }
 }

@@ -281,6 +281,16 @@ function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
     return $user;
 }
 
+function teamInviter(Team $team): User
+{
+    return teamMember($team, TeamRole::Owner);
+}
+
+function teamFacilitator(Team $team): User
+{
+    return teamMember($team, TeamRole::Facilitator);
+}
+
 function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User
 {
     $user = User::factory()->create();
