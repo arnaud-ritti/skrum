@@ -38,8 +38,20 @@ describe('readNewSessionIntent', () => {
         });
     });
 
+    it('reads a survey and the template it starts from, and drops an unknown template', () => {
+        expect(
+            readNewSessionIntent('?new=survey&template=health_check'),
+        ).toEqual({ type: 'survey', template: 'health_check' });
+        expect(readNewSessionIntent('?new=survey&template=team_pulse')).toEqual(
+            { type: 'survey', template: 'team_pulse' },
+        );
+        expect(readNewSessionIntent('?new=survey&template=four_ls')).toEqual({
+            type: 'survey',
+        });
+    });
+
     it('ignores an unknown or missing type', () => {
-        expect(readNewSessionIntent('?new=survey')).toBeNull();
+        expect(readNewSessionIntent('?new=quiz')).toBeNull();
         expect(readNewSessionIntent('?template=four_ls')).toBeNull();
         expect(readNewSessionIntent('')).toBeNull();
     });

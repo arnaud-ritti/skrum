@@ -233,6 +233,28 @@ const page: TeamPageProps = {
         },
     ],
     canCreateWhiteboard: true,
+    surveys: [],
+    canCreateSurvey: true,
+    surveyTemplates: [
+        {
+            key: null,
+            name: 'Blank',
+            description: 'Start with no question.',
+            questionCount: 0,
+        },
+        {
+            key: 'health_check',
+            name: 'Health check',
+            description: "The team's statements, scored 1 to 5.",
+            questionCount: 6,
+        },
+        {
+            key: 'team_pulse',
+            name: 'Team pulse',
+            description: 'Workload, recommendation, rituals and blockers.',
+            questionCount: 5,
+        },
+    ],
     whiteboardTemplates: [],
     whiteboardGallery: [],
     pokerPresence: { 'game-1': 4, 'game-2': 0 },

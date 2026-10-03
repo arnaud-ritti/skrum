@@ -86,6 +86,9 @@ const base: TeamPageProps = {
     pokerDecks: [],
     whiteboards: [],
     canCreateWhiteboard: true,
+    surveys: [],
+    canCreateSurvey: true,
+    surveyTemplates: [],
     whiteboardTemplates: [],
     pokerPresence: {},
 };

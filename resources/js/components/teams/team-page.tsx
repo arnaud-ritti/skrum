@@ -9,6 +9,7 @@ import {
 import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
 import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
+import { surveySessionForm } from '@/components/teams/session-create/survey-session-fields';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { whiteboardSessionForm } from '@/components/teams/session-create/whiteboard-session-fields';
 import { TeamHeader } from '@/components/teams/team-header';
@@ -22,6 +23,10 @@ import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-sect
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import type {
+    SurveyTemplateOption,
+    TeamSurveySummary,
+} from '@/lib/surveys/types';
 import type {
     CatalogueTemplate,
     CategoryOption,
@@ -70,6 +75,9 @@ export type TeamPageProps = {
     canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
+    surveys: TeamSurveySummary[];
+    canCreateSurvey: boolean;
+    surveyTemplates: SurveyTemplateOption[];
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     pokerPresence?: Record<string, number | null> | null;
@@ -183,6 +191,14 @@ export function TeamPage({
                                   })
                                 : undefined
                         }
+                        survey={surveySessionForm({
+                            workspaceSlug: workspace.slug,
+                            templates: props.surveyTemplates,
+                            surveys: props.surveys,
+                            disabledReason: props.canCreateSurvey
+                                ? undefined
+                                : t('You cannot create a survey in this team.'),
+                        })}
                         icebreaker={icebreakerSessionForm({
                             workspaceSlug: workspace.slug,
                             gameOptions: props.gameOptions,
