@@ -1,27 +1,73 @@
+import { Import } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { PokerImportField } from '@/components/teams/session-create/poker-import-field';
+import type { PokerImportValue } from '@/components/teams/session-create/poker-import-field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
+import { TrackerLabels } from '@/lib/poker/types';
+import type { PokerTrackerSource } from '@/lib/poker/types';
 
 export const MaxPokerTasks = 50;
 const MaxPokerTaskTitleLength = 200;
 
-type PokerTasksMode = 'type' | 'later';
+type PokerTasksMode = 'import' | 'type' | 'later';
 
-export type PokerTasksValue = { mode: PokerTasksMode; text: string };
+/** The tasks of a new game; `source` and `ids` hold the tickets chosen on the import tab. */
+export type PokerTasksValue = {
+    mode: PokerTasksMode;
+    text: string;
+    source?: PokerTrackerSource;
+    ids?: string[];
+};
+
+/** Where the import tab browses: the team's trackers that can import. */
+export type PokerImportSources = {
+    workspaceSlug: string;
+    teamId: string;
+    sources: PokerTrackerSource[];
+};
 
 type PokerTasksFieldProps = {
     value: PokerTasksValue;
     onChange: (value: PokerTasksValue) => void;
     /** Error of the server on `tasks` or one of its lines. */
     error?: string;
+    /** Error of the server on `import_ids` or `import_source`. */
+    importError?: string;
+    /** The import tab, first, when the team has a tracker that can import. */
+    importFrom?: PokerImportSources;
     /** Id of the text area. */
     id?: string;
 };
 
 export function emptyPokerTasks(): PokerTasksValue {
     return { mode: 'later', text: '' };
+}
+
+function importValue(
+    value: PokerTasksValue,
+    sources: PokerTrackerSource[],
+): PokerImportValue {
+    const source =
+        value.source !== undefined && sources.includes(value.source)
+            ? value.source
+            : sources[0];
+
+    return { source, ids: value.source === source ? (value.ids ?? []) : [] };
+}
+
+/** The tickets the game imports: only from the import tab, null otherwise. */
+export function importedTickets(
+    value: PokerTasksValue,
+    sources: PokerTrackerSource[],
+): PokerImportValue | null {
+    if (value.mode !== 'import' || sources.length === 0) {
+        return null;
+    }
+
+    return importValue(value, sources);
 }
 
 function typedLines(text: string): string[] {
@@ -59,18 +105,35 @@ export function tasksProblem(
 type TaskTab = { value: PokerTasksMode; label: string; icon?: LucideIcon };
 
 /**
- * The tasks of a new game: typed now, one per line, or added later in the
- * room. The ways come from a list, so that another one takes its tab without
- * moving these.
+ * The tasks of a new game: imported from the team's tracker, typed now, one
+ * per line, or added later in the room. The import tab stays mounted while
+ * another one is shown, so that its tickets wait for the facilitator to come
+ * back.
  */
 export function PokerTasksField({
     value,
     onChange,
     error,
+    importError,
+    importFrom,
     id = 'new-poker-tasks',
 }: PokerTasksFieldProps): ReactElement {
     const { t } = useTrans();
+    const importSources = importFrom?.sources ?? [];
+    const tickets =
+        importSources.length === 0 ? null : importValue(value, importSources);
     const tabs: TaskTab[] = [
+        ...(tickets === null
+            ? []
+            : [
+                  {
+                      value: 'import' as const,
+                      label: t('Import from :source', {
+                          source: TrackerLabels[tickets.source],
+                      }),
+                      icon: Import,
+                  },
+              ]),
         { value: 'type', label: t('Type them') },
         { value: 'later', label: t('Later') },
     ];
@@ -114,6 +177,22 @@ export function PokerTasksField({
                     ))}
                 </TabsList>
             </div>
+            {importFrom !== undefined && tickets !== null && (
+                <TabsContent
+                    value="import"
+                    forceMount
+                    hidden={value.mode !== 'import'}
+                >
+                    <PokerImportField
+                        workspaceSlug={importFrom.workspaceSlug}
+                        teamId={importFrom.teamId}
+                        sources={importSources}
+                        value={tickets}
+                        onChange={(next) => onChange({ ...value, ...next })}
+                        error={importError}
+                    />
+                </TabsContent>
+            )}
             <TabsContent value="type" className="flex flex-col gap-1.5">
                 <Textarea
                     id={id}

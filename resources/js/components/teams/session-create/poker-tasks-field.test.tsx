@@ -1,26 +1,63 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     MaxPokerTasks,
     PokerTasksField,
     emptyPokerTasks,
+    importedTickets,
     taskTitles,
     tasksProblem,
 } from '@/components/teams/session-create/poker-tasks-field';
 import type { PokerTasksValue } from '@/components/teams/session-create/poker-tasks-field';
 import { renderWithProviders } from '@/test/render';
 
-function Harness({ error }: { error?: string }) {
+const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+
+    return { ...original, retroRequest: mocks.request };
+});
+
+const importFrom = {
+    workspaceSlug: 'acme',
+    teamId: 't1',
+    sources: ['jira' as const],
+};
+
+function Harness({
+    error,
+    withSource = false,
+}: {
+    error?: string;
+    withSource?: boolean;
+}) {
     const [value, setValue] = useState<PokerTasksValue>(emptyPokerTasks);
+    const tickets = importedTickets(value, importFrom.sources);
 
     return (
         <>
-            <PokerTasksField value={value} onChange={setValue} error={error} />
+            <PokerTasksField
+                value={value}
+                onChange={setValue}
+                error={error}
+                importFrom={withSource ? importFrom : undefined}
+            />
             <output data-testid="titles">{taskTitles(value).join('|')}</output>
+            <output data-testid="tickets">
+                {tickets === null
+                    ? ''
+                    : `${tickets.source}:${tickets.ids.join('|')}`}
+            </output>
         </>
     );
 }
+
+beforeEach(() => {
+    mocks.request.mockReset();
+    mocks.request.mockResolvedValue({ containers: [] });
+});
 
 function lines(count: number): string {
     return Array.from(
@@ -136,6 +173,70 @@ describe('PokerTasksField', () => {
         expect(screen.getByRole('alert').textContent).toBe(
             'A game starts with 50 tasks at most.',
         );
+    });
+
+    it('puts "Import from <source>" first when the team has a tracker, "Later" still chosen', () => {
+        renderWithProviders(<Harness withSource />);
+
+        expect(
+            screen.getAllByRole('tab').map((tab) => tab.textContent),
+        ).toEqual(['Import from Jira', 'Type them', 'Later']);
+        expect(
+            screen
+                .getByRole('tab', { name: 'Later' })
+                .getAttribute('aria-selected'),
+        ).toBe('true');
+        expect(screen.getByTestId('tickets').textContent).toBe('');
+    });
+
+    it('keeps the chosen tickets when going to another tab and back, and sends them only from the import tab', async () => {
+        mocks.request.mockResolvedValueOnce({
+            issues: [
+                {
+                    externalId: '10001',
+                    key: 'PROJ-1',
+                    title: 'Login',
+                    assignee: null,
+                    estimate: null,
+                    status: null,
+                    alreadyImported: false,
+                },
+            ],
+            truncated: false,
+        });
+        renderWithProviders(<Harness withSource />);
+
+        fireEvent.mouseDown(
+            screen.getByRole('tab', { name: 'Import from Jira' }),
+        );
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Query' }));
+        fireEvent.change(
+            screen.getByLabelText('Query', { selector: 'textarea' }),
+            { target: { value: 'project = PROJ' } },
+        );
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Show issues' }),
+            );
+        });
+
+        expect(screen.getByTestId('tickets').textContent).toBe('jira:10001');
+
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Type them' }));
+
+        expect(screen.getByTestId('tickets').textContent).toBe('');
+
+        fireEvent.mouseDown(
+            screen.getByRole('tab', { name: 'Import from Jira' }),
+        );
+
+        expect(screen.getByTestId('tickets').textContent).toBe('jira:10001');
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'PROJ-1' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
     });
 
     it('shows the error of the server', () => {

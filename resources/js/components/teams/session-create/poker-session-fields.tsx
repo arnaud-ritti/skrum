@@ -23,6 +23,7 @@ import type {
 import {
     PokerTasksField,
     emptyPokerTasks,
+    importedTickets,
     taskTitles,
     tasksProblem,
 } from '@/components/teams/session-create/poker-tasks-field';
@@ -77,7 +78,11 @@ export type PokerSessionFormProps = {
     initialTasks?: string;
     /** Beside "Create & open". A later plan passes "Schedule…" here. */
     secondaryAction?: ReactNode;
-    /** The team's trackers: the first that can write back gets the "Write estimates" row. */
+    /**
+     * The team's trackers: those that can import give the "Import from" tab;
+     * the import tab's source, or else the first that can write back, gets
+     * the "Write estimates" row.
+     */
     pokerSources?: PokerTrackerSourceRow[];
 };
 
@@ -109,12 +114,22 @@ function emptyDeckDraft(): DeckDraft {
     return { name: '', values: [], unknownCard: true, breakCard: true };
 }
 
-function tasksError(errors: Errors): string | undefined {
-    const lineKey = Object.keys(errors).find((key) => key.startsWith('tasks.'));
+function firstError(errors: Errors, field: string): string | undefined {
+    const itemKey = Object.keys(errors).find((key) =>
+        key.startsWith(`${field}.`),
+    );
 
     return (
-        errors.tasks ?? (lineKey === undefined ? undefined : errors[lineKey])
+        errors[field] ?? (itemKey === undefined ? undefined : errors[itemKey])
     );
+}
+
+function tasksError(errors: Errors): string | undefined {
+    return firstError(errors, 'tasks');
+}
+
+function importError(errors: Errors): string | undefined {
+    return firstError(errors, 'import_ids') ?? errors.import_source;
 }
 
 export function PokerSessionFields({
@@ -159,10 +174,28 @@ export function PokerSessionFields({
     const [guests, setGuests] = useState(false);
     const [taskTimer, setTaskTimer] = useState('off');
     const [revote, setRevote] = useState(false);
-    const writeSource = writableSource(pokerSources);
-    const [writeBack, setWriteBack] = useState(() =>
-        writeSource === null ? null : writeBackChoice(writeSource, true, null),
-    );
+    const importSources = pokerSources
+        .filter((source) => source.canImport)
+        .map((source) => source.source);
+    const tickets = importedTickets(tasks, importSources);
+    const ticketSource =
+        tickets === null
+            ? undefined
+            : pokerSources.find(
+                  (source) =>
+                      source.source === tickets.source && source.canWriteBack,
+              );
+    const writeSource = ticketSource ?? writableSource(pokerSources);
+    const [writeBackPicked, setWriteBack] = useState<string | null>(null);
+    const writeBack =
+        writeSource === null
+            ? null
+            : writeBackPicked !== null &&
+                writeBackOptions(writeSource, t).some(
+                    (option) => option.value === writeBackPicked,
+                )
+              ? writeBackPicked
+              : writeBackChoice(writeSource, true, null);
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
 
@@ -231,7 +264,12 @@ export function PokerSessionFields({
                     ? {}
                     : writeBackPayload(writeBack)),
                 guest_access_enabled: guests,
-                ...(titles.length > 0 ? { tasks: titles } : {}),
+                ...(tickets !== null
+                    ? { import_source: tickets.source, import_ids: tickets.ids }
+                    : {}),
+                ...(tickets === null && titles.length > 0
+                    ? { tasks: titles }
+                    : {}),
             },
             {
                 onStart: () => setProcessing(true),
@@ -263,6 +301,14 @@ export function PokerSessionFields({
         event.preventDefault();
 
         if (processing || tasksProblem(tasks) !== null) {
+            return;
+        }
+
+        if (tickets !== null && tickets.ids.length === 0) {
+            setErrors({
+                import_ids: t('Pick at least one ticket, or choose “Later”.'),
+            });
+
             return;
         }
 
@@ -494,6 +540,16 @@ export function PokerSessionFields({
                     value={tasks}
                     onChange={setTasks}
                     error={tasksError(errors)}
+                    importError={importError(errors)}
+                    importFrom={
+                        importSources.length === 0
+                            ? undefined
+                            : {
+                                  workspaceSlug,
+                                  teamId: context.team.id,
+                                  sources: importSources,
+                              }
+                    }
                 />
             </div>
 

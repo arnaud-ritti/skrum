@@ -8,7 +8,17 @@ import { Button } from '@/components/ui/button';
 import type { PokerTrackerSourceRow } from '@/lib/poker/types';
 import { renderWithProviders } from '@/test/render';
 
-const mocks = vi.hoisted(() => ({ post: vi.fn(), reload: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    post: vi.fn(),
+    reload: vi.fn(),
+    request: vi.fn(),
+}));
+
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+
+    return { ...original, retroRequest: mocks.request };
+});
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
     const original = await importOriginal<typeof import('@inertiajs/react')>();
@@ -127,6 +137,8 @@ beforeAll(() => {
 beforeEach(() => {
     mocks.post.mockReset();
     mocks.reload.mockReset();
+    mocks.request.mockReset();
+    mocks.request.mockResolvedValue({ containers: [] });
 });
 
 describe('the poker form', () => {
@@ -677,5 +689,134 @@ describe('the poker form, the game settings', () => {
         expect(
             document.getElementById('new-poker-write-back-error')?.textContent,
         ).toBe('The selected field is invalid.');
+    });
+});
+
+async function pickTickets(dialog: HTMLElement, tab: string): Promise<void> {
+    mocks.request.mockResolvedValueOnce({
+        issues: ['10002', '10001', '10003'].map((externalId) => ({
+            externalId,
+            key: `PROJ-${externalId.slice(-1)}`,
+            title: `Story ${externalId}`,
+            assignee: null,
+            estimate: null,
+            status: null,
+            alreadyImported: false,
+        })),
+        truncated: false,
+    });
+
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: tab }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: 'Query' }));
+    fireEvent.change(
+        within(dialog).getByLabelText('Query', { selector: 'textarea' }),
+        { target: { value: 'project = PROJ' } },
+    );
+
+    await act(async () => {
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Show issues' }),
+        );
+    });
+}
+
+describe('the poker form, the import tab', () => {
+    it('has no import tab without a tracker that can import', () => {
+        const dialog = open({
+            pokerSources: [trackerSource({ canImport: false })],
+        });
+
+        expect(
+            within(dialog)
+                .getAllByRole('tab')
+                .map((tab) => tab.textContent),
+        ).toEqual(['Type them', 'Later']);
+    });
+
+    it('creates the game with the chosen tickets in the list order, never typed tasks', async () => {
+        const dialog = open({
+            pokerSources: [trackerSource()],
+            initialTasks: 'Typed',
+        });
+
+        await pickTickets(dialog, 'Import from Jira');
+        fireEvent.click(
+            within(dialog).getByRole('checkbox', { name: 'PROJ-1' }),
+        );
+        submit(dialog);
+
+        expect(lastPost()[0]).toBe('/w/acme/teams/t1/poker-games');
+        expect(lastPost()[1]).toMatchObject({
+            import_source: 'jira',
+            import_ids: ['10002', '10003'],
+        });
+        expect(lastPost()[1]).not.toHaveProperty('tasks');
+    });
+
+    it('imports from the source chosen in the tab, which also takes the estimates', async () => {
+        const dialog = open({
+            pokerSources: [
+                trackerSource(),
+                trackerSource({
+                    source: 'linear',
+                    estimateFields: [],
+                    defaultEstimateFieldId: null,
+                }),
+            ],
+        });
+
+        fireEvent.mouseDown(
+            within(dialog).getByRole('tab', { name: 'Import from Jira' }),
+        );
+
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('combobox', { name: 'Source' }));
+        await user.click(screen.getByRole('option', { name: 'Linear' }));
+
+        expect(
+            screen.getByRole('combobox', { name: 'Write estimates to Linear' }),
+        ).toBeTruthy();
+
+        await pickTickets(dialog, 'Import from Linear');
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({
+            import_source: 'linear',
+            import_ids: ['10002', '10001', '10003'],
+            writes_estimates: true,
+            estimate_field_id: null,
+        });
+    });
+
+    it('asks for a ticket before creating a game from an empty import', () => {
+        const dialog = open({ pokerSources: [trackerSource()] });
+
+        fireEvent.mouseDown(
+            within(dialog).getByRole('tab', { name: 'Import from Jira' }),
+        );
+        submit(dialog);
+
+        expect(mocks.post).not.toHaveBeenCalled();
+        expect(
+            document.getElementById('new-poker-import-error')?.textContent,
+        ).toBe('Pick at least one ticket, or choose “Later”.');
+    });
+
+    it('shows the message of the tracker under the tickets', async () => {
+        const dialog = open({ pokerSources: [trackerSource()] });
+
+        await pickTickets(dialog, 'Import from Jira');
+        submit(dialog);
+
+        act(() => {
+            lastPost()[2].onError?.({
+                import_ids: 'Jira did not answer. Try again later.',
+            });
+        });
+
+        expect(
+            document.getElementById('new-poker-import-error')?.textContent,
+        ).toBe('Jira did not answer. Try again later.');
     });
 });

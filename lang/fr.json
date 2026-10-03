@@ -5147,5 +5147,7 @@
     "Field used for the estimate": "Champ utilisé pour l'estimation",
     "Don't write": "Ne pas écrire",
     "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Les estimations sont écrites dans :source quand le facilitateur clique sur « Enregistrer l'estimation ». Les tickets non sélectionnés restent dans le backlog.",
-    "you can still change it until the estimate is saved.": "tu peux encore la changer tant que l'estimation n'est pas enregistrée."
+    "you can still change it until the estimate is saved.": "tu peux encore la changer tant que l'estimation n'est pas enregistrée.",
+    ":selected of :total selected": ":selected sur :total sélectionnés",
+    "Pick at least one ticket, or choose “Later”.": "Choisis au moins un ticket, ou « Plus tard »."
 }
