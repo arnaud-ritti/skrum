@@ -17,7 +17,7 @@ it('announces a change with a version and a status, nothing else', function () {
         ->and($event->broadcastOn()->name)->toBe("presence-survey.{$survey->id}");
 });
 
-it('announces answers with two counts and never an answer, an aggregate or a respondent', function () {
+it('announces answers with their counts and the audience, never an answer, an aggregate or a respondent', function () {
     $survey = TeamSurvey::factory()->open()->create();
     $question = surveyQuestion($survey, TeamSurveyQuestionKind::Text);
     [, $first] = surveyMember($survey);
@@ -25,10 +25,11 @@ it('announces answers with two counts and never an answer, an aggregate or a res
     answerSurveyQuestion($question, $first, 'a very recognisable sentence');
     answerSurveyQuestion($question, $second, 'another one');
     $second->update(['completed_at' => now()]);
+    surveyGuest($survey);
 
     $payload = TeamSurveyResponsesChanged::for($survey)->broadcastWith();
 
-    expect($payload)->toBe(['responses' => 2, 'completed' => 1])
+    expect($payload)->toBe(['responses' => 2, 'completed' => 1, 'audience' => 3])
         ->and(json_encode($payload))->not->toContain('recognisable')
         ->and(json_encode($payload))->not->toContain($first->id);
 });
