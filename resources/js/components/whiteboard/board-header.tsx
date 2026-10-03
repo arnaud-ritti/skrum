@@ -254,8 +254,6 @@ type BoardActionsProps = {
     onExport?: () => void;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
-    /** The sticky tool, when the canvas's own toolbar has no room for it. */
-    sticky?: ReactNode;
     /** Place left for the "Comments" button (roadmap WB-2). */
     comments?: ReactNode;
 };
@@ -266,7 +264,6 @@ export function BoardActions({
     onExport,
     hideMyCursor,
     onHideMyCursorChange,
-    sticky,
     comments,
 }: BoardActionsProps) {
     const { t } = useTrans();
@@ -279,7 +276,6 @@ export function BoardActions({
             {me.isFacilitator && facilitationInHeader && (
                 <BoardFacilitation state={state} compact={!hasRoomForLabels} />
             )}
-            {sticky}
             <span
                 aria-hidden
                 data-slot="board-header-separator"

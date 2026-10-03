@@ -86,3 +86,33 @@
 .skrum-whiteboard--fallback-colors .excalidraw .color-picker-container {
     grid-template-columns: 1.625rem;
 }
+
+/* Plan 20: the board's own chrome (spec §5 rule 3): the board's bars replace
+   the library's tool bar, zoom, history, help, hamburger and property panel,
+   which stay mounted and are only hidden. "Styles" shows the property panel
+   again. `!important`: the library's stylesheet loads later with the canvas
+   chunk (see app.css). Check this when the library is upgraded. */
+.skrum-whiteboard--own-chrome .excalidraw .App-toolbar-container,
+.skrum-whiteboard--own-chrome
+    .excalidraw
+    .layer-ui__wrapper__footer-left
+    .zoom-actions,
+.skrum-whiteboard--own-chrome
+    .excalidraw
+    .layer-ui__wrapper__footer-left
+    .undo-redo-buttons,
+.skrum-whiteboard--own-chrome .excalidraw .layer-ui__wrapper__footer-right,
+.skrum-whiteboard--own-chrome .excalidraw .main-menu-trigger,
+.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
+    .excalidraw
+    .selected-shape-actions {
+    display: none !important;
+}
+
+/* "Styles": the library's panel beside our tool bar (left 1rem, 2.25rem tools,
+   0.25rem padding, 1px border), not under it. */
+.skrum-whiteboard--own-chrome.skrum-whiteboard--styles
+    .excalidraw
+    .App-menu_top__left {
+    margin-left: calc(1rem + 2.75rem + 2px + 1rem);
+}

@@ -1,27 +1,21 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
+import { useCanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
-import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import {
     CanvasLocales,
     isDark,
     subscribeToTheme,
 } from '@/lib/whiteboard/appearance';
-import {
-    HiddenColorBar,
-    colorBarState,
-    strokeForTool,
-    type ColorBarState,
-} from '@/lib/whiteboard/canvas-colors';
+import { strokeForTool } from '@/lib/whiteboard/canvas-colors';
 import {
     CaptureUpdateAction,
     Excalidraw,
@@ -44,6 +38,7 @@ import type {
     SceneElement,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
+import { BoardChrome } from './board-chrome';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
 import {
@@ -56,10 +51,8 @@ import {
 import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
-import { CanvasColors } from './canvas-colors';
 import { ReadModeLayer } from './read-mode-toggle';
 import { SceneExport } from './scene-export';
-import { StickyTool } from './sticky-tool';
 import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
 
 const PollMs = 5000;
@@ -87,14 +80,11 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const viewMode = isViewMode(viewOnly, reading);
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
-    const [colors, setColors] = useState<ColorBarState>(HiddenColorBar);
-    const [stickyOpen, setStickyOpen] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
     const appliedStroke = useRef<string>(DEFAULT_STROKE);
-    const canvas = useRef<HTMLDivElement | null>(null);
-    const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
+    const canvasSnapshot = useCanvasSnapshot(api);
     const initial = useRef(snapshot);
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
@@ -237,16 +227,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     }
                     hideMyCursor={hideMyCursor}
                     onHideMyCursorChange={setHideMyCursor}
-                    sticky={
-                        api &&
-                        !toolbarSlot &&
-                        !viewMode && (
-                            <StickyTool
-                                api={api}
-                                onOpenChange={setStickyOpen}
-                            />
-                        )
-                    }
                 />
             }
             realtime={realtimeState(
@@ -274,20 +254,12 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     paused={follow.paused}
                     onResume={follow.resume}
                 />
-                {api &&
-                    toolbarSlot &&
-                    createPortal(
-                        <StickyTool
-                            api={api}
-                            inToolbar
-                            onOpenChange={setStickyOpen}
-                        />,
-                        toolbarSlot,
-                    )}
-                <div
-                    ref={canvas}
-                    className="whiteboard-canvas skrum-whiteboard--fallback-colors relative min-h-0 flex-1"
-                    data-facilitator={me.isFacilitator}
+                <BoardChrome
+                    api={api}
+                    snapshot={canvasSnapshot}
+                    editing={!viewMode}
+                    isPhone={isPhone}
+                    isFacilitator={me.isFacilitator}
                 >
                     <Excalidraw
                         viewModeEnabled={viewMode ? true : undefined}
@@ -308,15 +280,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             sync.current?.handleChange(
                                 reported,
                                 appState.editingTextElement?.id ?? null,
-                            );
-
-                            const bar = colorBarState(elements, appState);
-
-                            setColors((shown) =>
-                                shown.visible === bar.visible &&
-                                shown.value === bar.value
-                                    ? shown
-                                    : bar,
                             );
 
                             const stroke = strokeForTool(
@@ -378,16 +341,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <MainMenu.DefaultItems.ChangeCanvasBackground />
                         </MainMenu>
                     </Excalidraw>
-                    {api && !viewMode && !stickyOpen && (
-                        <CanvasColors api={api} state={colors} />
-                    )}
                     {api && canSwitchReadMode(isPhone, viewOnly) && (
                         <ReadModeLayer
                             reading={reading}
                             onChange={setReading}
                         />
                     )}
-                </div>
+                </BoardChrome>
                 <BoardReactions state={state} />
             </div>
         </SessionShell>

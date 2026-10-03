@@ -1,24 +1,9 @@
-import { StickyNote } from 'lucide-react';
-import { useState } from 'react';
-import { WhiteboardColorBar } from '@/components/skrum/whiteboard-toolbar';
-import { Button } from '@/components/ui/button';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import { useTrans } from '@/hooks/use-trans';
 import {
     CaptureUpdateAction,
-    ToolbarDom,
     restoreElements,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
-import {
-    DEFAULT_POSTIT_COLOR,
-    POSTIT,
-    type PostItColor,
-} from '@/lib/whiteboard/palette';
+import { POSTIT, type PostItColor } from '@/lib/whiteboard/palette';
 import type { Point } from '@/lib/whiteboard/viewport';
 
 const Size = 200;
@@ -89,71 +74,4 @@ export function addSticky(
     });
 
     return sticky.id;
-}
-
-type Props = {
-    api: ExcalidrawImperativeAPI;
-    /** In the canvas shapes toolbar the trigger looks like the library's tools. */
-    inToolbar?: boolean;
-    /** The canvas's colour bar gives way while this one is open. */
-    onOpenChange?: (open: boolean) => void;
-};
-
-/**
- * The colours open as the sub-bar of the tool. A press on a colour adds a
- * note of that colour in the middle of the view; the arrow keys only move
- * the choice, which is kept for the next note.
- */
-export function StickyTool({ api, inToolbar = false, onOpenChange }: Props) {
-    const { t } = useTrans();
-    const [open, setOpen] = useState(false);
-    const [color, setColor] = useState<PostItColor>(DEFAULT_POSTIT_COLOR);
-
-    const change = (next: boolean): void => {
-        setOpen(next);
-        onOpenChange?.(next);
-    };
-
-    const add = (chosen: PostItColor): void => {
-        addSticky(api, chosen);
-        change(false);
-    };
-
-    return (
-        <Popover open={open} onOpenChange={change}>
-            <PopoverTrigger asChild>
-                {inToolbar ? (
-                    <button
-                        type="button"
-                        className={ToolbarDom.buttonClass}
-                        title={t('Sticky note')}
-                        aria-label={t('Sticky note')}
-                    >
-                        <div
-                            className={ToolbarDom.iconClass}
-                            aria-hidden="true"
-                        >
-                            <StickyNote />
-                        </div>
-                    </button>
-                ) : (
-                    <Button size="sm" variant="outline">
-                        <StickyNote className="size-4" />
-                        <span className="truncate">{t('Sticky note')}</span>
-                    </Button>
-                )}
-            </PopoverTrigger>
-            <PopoverContent
-                align={inToolbar ? 'center' : 'end'}
-                aria-label={t('Sticky note')}
-                className="rounded-xl border-0 bg-transparent p-0 shadow-none"
-            >
-                <WhiteboardColorBar
-                    value={color}
-                    onChange={setColor}
-                    onActivate={add}
-                />
-            </PopoverContent>
-        </Popover>
-    );
 }
