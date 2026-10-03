@@ -61,8 +61,8 @@ export type SsoProviderDetails = {
     fields: ConfigurationFields;
     testable: boolean;
     updateUrl: string;
-    /** When the stored secret last changed, from the audit log (Task 37). */
-    secretChangedAt?: string | null;
+    /** When the stored secret last changed, from the audit log; null for an environment or cleared secret. */
+    secretChangedAt: string | null;
 };
 
 export type SsoTestError = 'unreachable' | 'not_oidc' | 'issuer_mismatch';

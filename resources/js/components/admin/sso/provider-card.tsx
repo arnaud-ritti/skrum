@@ -157,8 +157,7 @@ export function ProviderCard({
     }
 
     const secretChanged =
-        provider.secretChangedAt === null ||
-        provider.secretChangedAt === undefined
+        provider.secretChangedAt === null
             ? null
             : t('Secret changed :relative', {
                   relative: formatDaysAgo(

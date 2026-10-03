@@ -29,7 +29,7 @@ function providerSignature(provider: SsoProviderDetails): string {
     return JSON.stringify([
         provider.configured,
         provider.fields,
-        provider.secretChangedAt ?? null,
+        provider.secretChangedAt,
     ]);
 }
 
