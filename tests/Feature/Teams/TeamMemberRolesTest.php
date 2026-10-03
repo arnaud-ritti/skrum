@@ -78,6 +78,7 @@ it('sends each member with their role, and the role options to who manages membe
     $this->actingAs($owner)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewerRole', 'owner')
+            ->where('viewerIsObserver', false)
             ->where('canManage', true)
             ->has('roleOptions', 4)
             ->where('members', fn ($members) => collect($members)->firstWhere('id', $observer->id)['role'] === 'observer'));
@@ -85,9 +86,21 @@ it('sends each member with their role, and the role options to who manages membe
     $this->actingAs($observer)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewerRole', 'observer')
+            ->where('viewerIsObserver', true)
             ->where('canManage', false)
             ->where('roleOptions', [])
             ->where('availableMembers', []));
+});
+
+it('never counts a workspace admin as observing, whatever their row in the team says', function () {
+    $team = Team::factory()->create();
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin, ['role' => TeamRole::Observer->value]);
+
+    $this->actingAs($admin)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('viewerRole', 'observer')
+            ->where('viewerIsObserver', false));
 });
 
 it('lets a team owner rename the team and refuses them its deletion', function () {

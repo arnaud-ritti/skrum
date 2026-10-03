@@ -502,6 +502,7 @@ const page: TeamPageProps = {
         { value: 'observer', label: 'Observer' },
     ],
     viewerRole: 'owner',
+    viewerIsObserver: false,
     canManageRituals: true,
     schedule: {
         sprint: {

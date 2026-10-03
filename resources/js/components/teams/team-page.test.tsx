@@ -102,6 +102,7 @@ const base: TeamPageProps = {
     facilitatorRotation: false,
     roleOptions: [],
     viewerRole: 'owner',
+    viewerIsObserver: false,
     canManageRituals: true,
     schedule: null,
     hasSprints: false,
@@ -242,6 +243,7 @@ describe('the team page', () => {
             name: 'Atlas',
             membersCount: 1,
             viewerRole: 'owner',
+            viewerIsObserver: false,
             settingsUrl: '/w/nordlys/teams/team-1/settings',
         };
         window.history.replaceState(
@@ -268,7 +270,7 @@ describe('the team page', () => {
 
     it('disables "New session" for an observer, with the reason', () => {
         const { rerender } = renderWithProviders(
-            <TeamPage {...base} viewerRole="observer" />,
+            <TeamPage {...base} viewerRole="observer" viewerIsObserver />,
         );
         const trigger = () =>
             screen.getByRole('button', {
@@ -286,6 +288,32 @@ describe('the team page', () => {
         rerender(<TeamPage {...base} viewerRole={null} />);
 
         expect(trigger().disabled).toBe(false);
+    });
+
+    it('lets a workspace admin whose row says observer start a session and add an action', () => {
+        renderWithProviders(
+            <TeamPage
+                {...base}
+                viewerRole="observer"
+                viewerIsObserver={false}
+                openActionItems={[]}
+                openActionItemCount={0}
+            />,
+        );
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'New session',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+        expect(
+            screen.queryByText('Observers cannot start sessions.'),
+        ).toBeNull();
+        expect(
+            screen.getByRole('heading', { name: /Open action items/ }),
+        ).toBeTruthy();
     });
 
     it('counts a retro by its phase: who joined and the cards while writing, the groups once grouped, the action items once closed', () => {
@@ -330,6 +358,7 @@ describe('the team page', () => {
             name: 'Atlas',
             membersCount: 1,
             viewerRole: 'owner',
+            viewerIsObserver: false,
             settingsUrl: '/w/nordlys/teams/team-1/settings',
         };
 

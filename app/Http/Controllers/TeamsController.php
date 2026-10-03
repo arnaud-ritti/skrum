@@ -130,6 +130,7 @@ class TeamsController extends Controller
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
             'roleOptions' => $canManage ? TeamRole::options() : [],
             'viewerRole' => $team->roleOf($request->user())?->value,
+            'viewerIsObserver' => $request->user()->isObserverOf($team),
             'canManageRituals' => $request->user()->can('manageRituals', $team),
             'schedule' => $this->schedule($team),
             'hasSprints' => $team->sprints()->exists(),

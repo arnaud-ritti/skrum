@@ -30,7 +30,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
-import { takesPart } from '@/lib/teams/roles';
 import { teamSettingsHref } from '@/lib/teams/settings-href';
 import type { ActionItem } from '@/lib/retro/types';
 import type {
@@ -70,8 +69,10 @@ export type TeamPageProps = NewSessionOptions & {
     pokerPresence?: Record<string, number | null> | null;
     /** The roles a member can be given; empty for who cannot manage the members. */
     roleOptions: TeamRoleOption[];
-    /** The viewer's row in the team; null for a manager outside it. */
+    /** The viewer's row in the team, for display; null for a manager outside it. */
     viewerRole: TeamRole | null;
+    /** Whether the viewer only observes: never a workspace owner or admin, whatever their row says. */
+    viewerIsObserver: boolean;
     canManageRituals: boolean;
     /** The current sprint and the next retro; null when there is neither. */
     schedule: TeamSchedule | null;
@@ -157,7 +158,7 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
                 items={props.openActionItems}
                 count={props.openActionItemCount}
                 overdueCount={props.overdueActionItemCount}
-                canCreate={takesPart(props.viewerRole)}
+                canCreate={!props.viewerIsObserver}
                 seeAllHref={WorkspaceActionItemsController.index.url(
                     workspace.slug,
                     { query: { team: team.id } },
@@ -205,7 +206,7 @@ export function TeamPage({
     const slots = { ...defaultSlots(props), ...givenSlots };
     const settingsHref =
         currentTeam?.id === team.id ? teamSettingsHref(currentTeam) : undefined;
-    const observing = !takesPart(props.viewerRole);
+    const observing = props.viewerIsObserver;
 
     useSettingsAnchorRedirect(settingsHref);
 
