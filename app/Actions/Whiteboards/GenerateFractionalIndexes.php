@@ -2,6 +2,8 @@
 
 namespace App\Actions\Whiteboards;
 
+use OverflowException;
+
 /**
  * The keys the canvas itself gives the elements of a new scene, in stacking
  * order: `a0` … `az`, then `b00` … `bzz`, then `c000` …
@@ -11,6 +13,8 @@ class GenerateFractionalIndexes
     private const string Digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
     private const int Base = 62;
+
+    private const int MaxWidth = 26;
 
     /**
      * @return list<string>
@@ -33,6 +37,10 @@ class GenerateFractionalIndexes
         while ($position >= self::Base ** $width) {
             $position -= self::Base ** $width;
             $width++;
+        }
+
+        if ($width > self::MaxWidth) {
+            throw new OverflowException("No fractional index past the width of the head letter z: position {$position}.");
         }
 
         $digits = '';
