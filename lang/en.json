@@ -4381,5 +4381,10 @@
     "Show my linked accounts": "Show my linked accounts",
     "Join a session": "Join a session",
     "No session matches this code.": "No session matches this code.",
-    "Join at :url": "Join at :url"
+    "Join at :url": "Join at :url",
+    "Code copied": "Code copied",
+    "Type the code the facilitator shared.": "Type the code the facilitator shared.",
+    "The code has 8 characters": "The code has 8 characters",
+    "Have an account?": "Have an account?",
+    "Join a session with a code": "Join a session with a code"
 }

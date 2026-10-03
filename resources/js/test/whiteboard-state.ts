@@ -26,6 +26,7 @@ export function boardState(overrides: Overrides = {}): WhiteboardState {
                 facilitatorMemberId: fran.id,
                 guestAccessEnabled: true,
                 guestUrl: 'https://skrum.test/whiteboards/join/token-1',
+                joinCode: null,
                 cursorsEnabled: true,
                 reactionsEnabled: true,
                 locked: false,

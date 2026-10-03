@@ -176,6 +176,7 @@ export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
             facilitatorName: 'Arnaud Ritti',
             guestAccessEnabled: true,
             guestUrl: 'https://skrum.test/surveys/join/token-1',
+            joinCode: null,
             oneQuestionAtATime: true,
             showResultsAfterAnswer: false,
             resultsThreshold: 3,

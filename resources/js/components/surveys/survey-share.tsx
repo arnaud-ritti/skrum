@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { PresenceMember } from '@/lib/retro/types';
+import { joinPageHost } from '@/lib/sessions/join-code';
 import { surveyApi } from '@/lib/surveys/api';
 import type { SurveyAction } from '@/lib/surveys/survey-reducer';
 import type { SurveySnapshot } from '@/lib/surveys/types';
@@ -50,13 +51,15 @@ export function SurveyShare({
         toast.error(t('Something went wrong. Please try again.'));
     };
 
-    const copy = async (): Promise<boolean> => {
-        if (!survey.guestUrl) {
+    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
+        const text = what === 'code' ? survey.joinCode : survey.guestUrl;
+
+        if (!text) {
             return false;
         }
 
         try {
-            await navigator.clipboard.writeText(survey.guestUrl);
+            await navigator.clipboard.writeText(text);
 
             return true;
         } catch {
@@ -101,14 +104,16 @@ export function SurveyShare({
 
     const replaceLink = async (): Promise<void> => {
         try {
-            const { guestUrl } = await surveyApi.newGuestLink(survey.id);
+            const { guestUrl, joinCode } = await surveyApi.newGuestLink(
+                survey.id,
+            );
             const current = latest.current;
 
             dispatch({
                 type: 'snapshot.replace',
                 snapshot: {
                     ...current,
-                    survey: { ...current.survey, guestUrl },
+                    survey: { ...current.survey, guestUrl, joinCode },
                 },
             });
         } catch (error) {
@@ -144,6 +149,8 @@ export function SurveyShare({
                 invite={{
                     url: survey.guestUrl,
                     allowGuests: survey.guestAccessEnabled,
+                    code: survey.joinCode ?? undefined,
+                    joinUrl: joinPageHost(),
                 }}
                 canManage={me.isEditor}
                 guestSwitchId={SurveyGuestAccessSwitchId}

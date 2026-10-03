@@ -11,6 +11,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
+import { joinPageHost } from '@/lib/sessions/join-code';
 
 export const GuestAccessSwitchId = 'whiteboard-guest-access';
 
@@ -28,13 +29,15 @@ export function BoardShare({ state }: { state: WhiteboardState }) {
     const [confirmingGuestsOff, setConfirmingGuestsOff] = useState(false);
     const { board, me } = state.snapshot;
 
-    const copy = async (): Promise<boolean> => {
-        if (!board.guestUrl) {
+    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
+        const text = what === 'code' ? board.joinCode : board.guestUrl;
+
+        if (!text) {
             return false;
         }
 
         try {
-            await navigator.clipboard.writeText(board.guestUrl);
+            await navigator.clipboard.writeText(text);
 
             return true;
         } catch {
@@ -110,6 +113,8 @@ export function BoardShare({ state }: { state: WhiteboardState }) {
                 invite={{
                     url: board.guestUrl,
                     allowGuests: board.guestAccessEnabled,
+                    code: board.joinCode ?? undefined,
+                    joinUrl: joinPageHost(),
                 }}
                 canManage={me.isFacilitator}
                 guestSwitchId={GuestAccessSwitchId}

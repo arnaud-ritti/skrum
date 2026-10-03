@@ -57,6 +57,7 @@ import {
 } from '@/lib/poker/deck-adapter';
 import type { PokerTask } from '@/lib/poker/types';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { joinPageHost } from '@/lib/sessions/join-code';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as savedDecksPage } from '@/routes/teams/pokerDecks';
@@ -660,7 +661,7 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
 
     const regenerate = async (): Promise<void> => {
         const result = await ctx.run(
-            retroRequest<{ guestUrl: string }>(
+            retroRequest<{ guestUrl: string; joinCode: string }>(
                 PokerGuestTokensController.store(game.id),
             ),
         );
@@ -673,13 +674,15 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
     };
 
     const copy = async (what: 'url' | 'code'): Promise<boolean> => {
-        if (what !== 'url' || game.guestUrl === null) {
+        const text = what === 'code' ? game.joinCode : game.guestUrl;
+
+        if (text === null) {
             return false;
         }
 
         try {
-            await navigator.clipboard.writeText(game.guestUrl);
-            toast(t('Link copied'));
+            await navigator.clipboard.writeText(text);
+            toast(what === 'code' ? t('Code copied') : t('Link copied'));
 
             return true;
         } catch {
@@ -724,6 +727,8 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
                 invite={{
                     url: game.guestUrl,
                     allowGuests: game.guestAccessEnabled,
+                    code: game.joinCode ?? undefined,
+                    joinUrl: joinPageHost(),
                 }}
                 canManage={me.isFacilitator && game.endedAt === null}
                 onCopy={copy}

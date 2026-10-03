@@ -38,6 +38,7 @@ type GameRoomInfo = {
     canBecomeHost: boolean;
     hostPlayerId: string | null;
     guestUrl: string | null;
+    joinCode: string | null;
     isIcebreaker: boolean;
     currentRoundId: string | null;
     teamName: string | null;

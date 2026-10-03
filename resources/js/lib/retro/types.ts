@@ -310,6 +310,7 @@ export type Snapshot = {
         highlightedCardId: string | null;
         completedAt: string | null;
         guestUrl: string | null;
+        joinCode: string | null;
         aiSummaryEnabled: boolean;
     };
     viewer: {

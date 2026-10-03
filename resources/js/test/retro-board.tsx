@@ -54,6 +54,7 @@ export function retroSnapshot({
             highlightedCardId: null,
             completedAt: null,
             guestUrl: 'https://skrum.test/join/token',
+            joinCode: null,
             aiSummaryEnabled: false,
             ...retro,
         },

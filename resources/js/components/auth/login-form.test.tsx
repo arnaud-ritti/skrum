@@ -388,4 +388,21 @@ describe('LoginForm', () => {
             ).toBeNull();
         },
     );
+
+    it.each([
+        ['open sign-in', false],
+        ['single sign-on only', true],
+    ])('offers to join a session with a code (%s)', (_label, ssoRequired) => {
+        renderForm({
+            ssoRequired,
+            canRegister: false,
+            ssoProviders: [{ key: 'oidc', label: 'Nordlys SSO' }],
+        });
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Join a session with a code' })
+                .getAttribute('href'),
+        ).toBe('/join');
+    });
 });

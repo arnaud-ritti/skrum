@@ -139,6 +139,7 @@ function snapshot(
             facilitatorName: 'Arnaud',
             guestAccessEnabled: false,
             guestUrl: null,
+            joinCode: null,
             oneQuestionAtATime: true,
             showResultsAfterAnswer: true,
             resultsThreshold: 3,

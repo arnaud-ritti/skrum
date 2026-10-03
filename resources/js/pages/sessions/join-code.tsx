@@ -1,46 +1,40 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import JoinCodesController from '@/actions/App/Http/Controllers/JoinCodesController';
-import { LoadingButton } from '@/components/skrum/loading-button';
-import { TextField } from '@/components/skrum/text-field';
+import { JoinCodeCard } from '@/components/sessions/join-code-card';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import AuthLayout from '@/layouts/skrum/auth-layout';
+import { login } from '@/routes';
 
 export default function JoinCode() {
     const { t } = useTrans();
+    const { errors } = usePage().props;
+    const isMobile = useIsMobile();
+    const [processing, setProcessing] = useState(false);
+
+    const send = (code: string) => {
+        router.post(
+            JoinCodesController.store.url(),
+            { code },
+            {
+                onStart: () => setProcessing(true),
+                onFinish: () => setProcessing(false),
+            },
+        );
+    };
 
     return (
         <AuthLayout title={t('Join a session')} literalTitle variant="centered">
             <Head title={t('Join a session')} />
-            <Form
-                {...JoinCodesController.store.form()}
-                className="flex min-w-0 flex-col gap-4"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <TextField
-                            id="code"
-                            name="code"
-                            label={t('Session code')}
-                            required
-                            autoFocus
-                            autoComplete="off"
-                            autoCapitalize="characters"
-                            placeholder="ABC-1234"
-                            error={errors.code}
-                            className="font-mono uppercase max-md:h-12"
-                        />
-
-                        <LoadingButton
-                            type="submit"
-                            size="lg"
-                            className="w-full"
-                            loading={processing}
-                        >
-                            <span className="truncate">{t('Continue')}</span>
-                        </LoadingButton>
-                    </>
-                )}
-            </Form>
+            <JoinCodeCard
+                error={errors?.code ?? null}
+                processing={processing}
+                onSubmit={send}
+                loginUrl={login.url()}
+                stickyAction={isMobile}
+                logo={false}
+            />
         </AuthLayout>
     );
 }

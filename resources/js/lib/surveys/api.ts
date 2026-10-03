@@ -169,8 +169,8 @@ export const surveyApi = {
         );
     },
 
-    newGuestLink(id: string): Promise<{ guestUrl: string }> {
-        return retroRequest<{ guestUrl: string }>(
+    newGuestLink(id: string): Promise<{ guestUrl: string; joinCode: string }> {
+        return retroRequest<{ guestUrl: string; joinCode: string }>(
             TeamSurveyGuestTokensController.store(id),
         );
     },

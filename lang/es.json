@@ -4601,5 +4601,10 @@
     "Show my linked accounts": "Mostrar mis cuentas vinculadas",
     "Join a session": "Unirse a una sesión",
     "No session matches this code.": "Ninguna sesión coincide con este código.",
-    "Join at :url": "Únete en :url"
+    "Join at :url": "Únete en :url",
+    "Code copied": "Código copiado",
+    "Type the code the facilitator shared.": "Escribe el código que compartió quien facilita.",
+    "The code has 8 characters": "El código tiene 8 caracteres",
+    "Have an account?": "¿Tienes una cuenta?",
+    "Join a session with a code": "Unirse a una sesión con un código"
 }
