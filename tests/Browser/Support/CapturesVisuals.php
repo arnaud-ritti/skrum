@@ -102,8 +102,9 @@ trait CapturesVisuals
      *
      * @param  null|callable(string, array<string, string>, int): mixed  $visit  receives the path, the visit options (colour scheme, locale, reduced motion) and the width of the capture, and returns the page
      * @param  bool  $appShell  false for a page outside the application shell (a mail): it has no theme class, its dark colours come from the colour scheme of the visit alone
+     * @param  bool  $fullPage  false captures the viewport only: a full-page capture resizes the window, which closes an open select
      */
-    protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true): void
+    protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true, bool $fullPage = true): void
     {
         File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
 
@@ -135,7 +136,7 @@ trait CapturesVisuals
 
                     expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
 
-                    $page->screenshot(fullPage: true, filename: "{$label}.candidate");
+                    $page->screenshot(fullPage: $fullPage, filename: "{$label}.candidate");
 
                     CaptureFile::replaceWhenPictureDiffers(
                         base_path("tests/Browser/Screenshots/{$label}.candidate"),

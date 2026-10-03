@@ -118,7 +118,7 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
             ->assertCount('[data-slot="team-poker-game"]', 3)
             ->assertCount('[data-slot="team-whiteboards"] [data-slot="card"]', 3)
             ->assertCount('#members [data-slot="team-members"] li', 6)
-            ->assertPresent('[data-slot="team-settings"]')
+            ->assertNotPresent('[data-slot="team-settings"]')
             ->assertCount('aside [data-slot="health-check-summary-statement"]', 6)
             ->assertPresent('aside [data-slot="health-check-manage"]')
             ->assertNotPresent('[data-slot="poker-presence-loading"]')
