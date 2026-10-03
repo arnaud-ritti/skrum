@@ -6,6 +6,7 @@ use App\Actions\Games\AdvanceGameTurn;
 use App\Actions\Games\DrawGameWord;
 use App\Enums\GameKind;
 use App\Enums\GameRoundOutcome;
+use App\Models\GameGuess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
@@ -14,6 +15,8 @@ use Carbon\CarbonInterface;
 class HangmanRules implements GameRules
 {
     public const MaxMisses = 6;
+
+    public const WordGuessesShown = 10;
 
     private const int SolveBonus = 5;
 
@@ -39,7 +42,7 @@ class HangmanRules implements GameRules
 
     public function presentActive(GameRound $round, GameRoom $room, ?GamePlayer $viewer): array
     {
-        return $this->state($round, $round->revealed_positions);
+        return [...$this->state($round, $round->revealed_positions), 'wordGuesses' => $this->wordGuesses($round)];
     }
 
     public function presentEnded(GameRound $round): array
@@ -94,7 +97,8 @@ class HangmanRules implements GameRules
 
     /**
      * Each picker earns one point per position their hits revealed; the
-     * player whose letter completed the word earns the solve bonus.
+     * player whose letter or whole-word guess solved it earns the solve
+     * bonus; a player whose only move was a wrong word guess gets a row.
      */
     public function points(GameRound $round, GameRoom $room): array
     {
@@ -112,13 +116,34 @@ class HangmanRules implements GameRules
             $rows[$playerId]['points'] += count(GameWord::positionsOf($word, $letter));
         }
 
+        foreach ($round->guesses()->distinct()->pluck('player_id') as $playerId) {
+            $rows[(string) $playerId] ??= ['points' => 0, 'isWin' => false];
+        }
+
         $winner = $round->winner_player_id;
 
-        if ($round->outcome === GameRoundOutcome::Solved && $winner !== null && isset($rows[$winner])) {
-            $rows[$winner] = ['points' => $rows[$winner]['points'] + self::SolveBonus, 'isWin' => true];
+        if ($round->outcome === GameRoundOutcome::Solved && $winner !== null) {
+            $rows[$winner] = ['points' => ($rows[$winner]['points'] ?? 0) + self::SolveBonus, 'isWin' => true];
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array<int, array{playerId: string, text: string}>
+     */
+    private function wordGuesses(GameRound $round): array
+    {
+        return $round->guesses()
+            ->where('is_correct', false)
+            ->latest()
+            ->orderByDesc('id')
+            ->limit(self::WordGuessesShown)
+            ->get(['player_id', 'text'])
+            ->reverse()
+            ->map(fn (GameGuess $guess): array => ['playerId' => $guess->player_id, 'text' => $guess->text])
+            ->values()
+            ->all();
     }
 
     /**
