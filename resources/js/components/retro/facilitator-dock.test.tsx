@@ -294,6 +294,200 @@ describe('facilitatorPrimary', () => {
     });
 });
 
+describe('facilitatorActions, the pause of the timer', () => {
+    const timed = (
+        phase: RetroPhase,
+        timer: { running: boolean; paused: boolean },
+    ) => {
+        const given = {
+            ...tools(),
+            timer: { ...timer, onPause: vi.fn(), onResume: vi.fn() },
+        };
+
+        return {
+            given,
+            actions: facilitatorActions(
+                phase,
+                retroSnapshot({ retro: { phase } }),
+                given,
+            ),
+        };
+    };
+
+    it('offers "Pause" first while the timer runs in Writing, and pauses', () => {
+        const { given, actions } = timed('writing', {
+            running: true,
+            paused: false,
+        });
+
+        expect(actions[0]).toMatchObject({
+            id: 'pause',
+            label: 'Pause',
+            kind: 'toggle',
+            pressed: false,
+        });
+
+        actions[0].onSelect();
+
+        expect(given.timer.onPause).toHaveBeenCalled();
+        expect(given.timer.onResume).not.toHaveBeenCalled();
+    });
+
+    it('offers "Resume", pressed, while the timer is paused, and resumes', () => {
+        const { given, actions } = timed('writing', {
+            running: false,
+            paused: true,
+        });
+
+        expect(actions[0]).toMatchObject({
+            id: 'pause',
+            label: 'Resume',
+            pressed: true,
+        });
+
+        actions[0].onSelect();
+
+        expect(given.timer.onResume).toHaveBeenCalled();
+    });
+
+    it('has no pause in Icebreaker, nor without a running or paused timer', () => {
+        expect(
+            timed('icebreaker', { running: true, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).not.toContain('pause');
+        expect(
+            timed('icebreaker', { running: false, paused: true }).actions.map(
+                (action) => action.id,
+            ),
+        ).not.toContain('pause');
+        expect(
+            timed('writing', { running: false, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['lock']);
+        expect(ids('writing')).toEqual(['lock']);
+    });
+
+    it('puts the pause before the other actions in Grouping, Voting, Discussing, Actions and ROTI', () => {
+        expect(
+            timed('grouping', { running: true, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['pause', 'lock']);
+        expect(
+            timed('voting', { running: true, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['pause', 'lock', 'reveal-votes']);
+        expect(
+            timed('discussing', { running: true, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['pause', 'presentation']);
+        expect(
+            timed('actions', { running: false, paused: true }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['pause']);
+        expect(
+            timed('roti', { running: true, paused: false }).actions.map(
+                (action) => action.id,
+            ),
+        ).toEqual(['pause']);
+        expect(
+            timed('completed', { running: true, paused: false }).actions,
+        ).toEqual([]);
+    });
+});
+
+describe('FacilitatorDock, the pause of the timer', () => {
+    const inMinutes = (minutes: number) =>
+        new Date(Date.now() + minutes * 60_000).toISOString();
+
+    it('pauses a running timer from the bar and applies the answer', async () => {
+        const answer = {
+            timerEndsAt: null,
+            timerPausedSeconds: 180,
+            topicSeconds: null,
+        };
+
+        retroRequest.mockResolvedValue(answer);
+
+        const { ctx } = renderInBoard(
+            <FacilitatorDock />,
+            boardContext(
+                retroSnapshot({ retro: { timerEndsAt: inMinutes(3) } }),
+            ),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...answer,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'put',
+                url: expect.stringContaining('/retros/retro-1/timer/pause'),
+            }),
+        );
+    });
+
+    it('resumes a paused timer from the bar', async () => {
+        const answer = {
+            timerEndsAt: inMinutes(3),
+            timerPausedSeconds: null,
+            topicSeconds: null,
+        };
+
+        retroRequest.mockResolvedValue(answer);
+
+        const { ctx } = renderInBoard(
+            <FacilitatorDock />,
+            boardContext(retroSnapshot({ retro: { timerPausedSeconds: 180 } })),
+        );
+
+        const resume = screen.getByRole('button', { name: 'Resume' });
+
+        expect(resume.getAttribute('aria-pressed')).toBe('true');
+
+        fireEvent.click(resume);
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...answer,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'delete',
+                url: expect.stringContaining('/retros/retro-1/timer/pause'),
+            }),
+        );
+    });
+
+    it('has no pause in the bar of the icebreaker', () => {
+        renderInBoard(
+            <FacilitatorDock />,
+            boardContext(
+                retroSnapshot({
+                    retro: {
+                        phase: 'icebreaker',
+                        timerEndsAt: inMinutes(3),
+                    },
+                }),
+            ),
+        );
+
+        expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull();
+    });
+});
+
 describe('FacilitatorDock', () => {
     it('shows the facilitator bar of the phase and moves to the next phase', async () => {
         const { ctx } = renderInBoard(<FacilitatorDock />, boardContext());

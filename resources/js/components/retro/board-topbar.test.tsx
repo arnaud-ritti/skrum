@@ -391,6 +391,158 @@ describe('BoardTimer', () => {
         );
     });
 
+    it('applies the three keys of the answer to a start and to "+2 min"', async () => {
+        const answer = {
+            timerEndsAt: inMinutes(5),
+            timerPausedSeconds: null,
+            topicSeconds: null,
+        };
+
+        retroRequest.mockResolvedValue(answer);
+
+        const { ctx } = renderInBoard(
+            <BoardTimer />,
+            boardContext(
+                retroSnapshot({ retro: { timerEndsAt: inMinutes(3) } }),
+            ),
+        );
+
+        fireEvent.click(await screen.findByRole('button', { name: '+2 min' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...answer,
+            }),
+        );
+    });
+
+    it('lets the facilitator pause a running timer and applies the answer', async () => {
+        const answer = {
+            timerEndsAt: null,
+            timerPausedSeconds: 180,
+            topicSeconds: null,
+        };
+
+        retroRequest.mockResolvedValue(answer);
+
+        const { ctx } = renderInBoard(
+            <BoardTimer />,
+            boardContext(
+                retroSnapshot({ retro: { timerEndsAt: inMinutes(3) } }),
+            ),
+        );
+
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Pause timer' }),
+        );
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...answer,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'put',
+                url: expect.stringContaining('/retros/retro-1/timer/pause'),
+            }),
+        );
+    });
+
+    it('shows a paused timer and lets the facilitator resume it', async () => {
+        const answer = {
+            timerEndsAt: inMinutes(3),
+            timerPausedSeconds: null,
+            topicSeconds: null,
+        };
+
+        retroRequest.mockResolvedValue(answer);
+
+        const { ctx } = renderInBoard(
+            <BoardTimer />,
+            boardContext(retroSnapshot({ retro: { timerPausedSeconds: 180 } })),
+        );
+
+        const timer = screen.getByRole('timer');
+
+        expect(timer.textContent).toContain('3:00');
+        expect(timer.getAttribute('data-state')).toBe('paused');
+        expect(timer.getAttribute('aria-label')).toBe('Paused, 3 minutes left');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Resume timer' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'timer.set',
+                ...answer,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'delete',
+                url: expect.stringContaining('/retros/retro-1/timer/pause'),
+            }),
+        );
+    });
+
+    it('offers "+2 min" on a paused timer', () => {
+        renderInBoard(
+            <BoardTimer />,
+            boardContext(retroSnapshot({ retro: { timerPausedSeconds: 180 } })),
+        );
+
+        expect(screen.getByRole('button', { name: '+2 min' })).toBeTruthy();
+    });
+
+    it('offers no pause in the icebreaker, but resumes a timer paused before it', async () => {
+        const running = renderInBoard(
+            <BoardTimer />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'icebreaker', timerEndsAt: inMinutes(3) },
+                }),
+            ),
+        );
+
+        expect(await screen.findByRole('timer')).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Pause timer' }),
+        ).toBeNull();
+        running.unmount();
+
+        renderInBoard(
+            <BoardTimer />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'icebreaker', timerPausedSeconds: 60 },
+                }),
+            ),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Resume timer' }),
+        ).toBeTruthy();
+    });
+
+    it('gives a participant neither pause nor resume', () => {
+        renderInBoard(
+            <BoardTimer />,
+            boardContext(
+                retroSnapshot({
+                    viewer: { isFacilitator: false },
+                    retro: { timerPausedSeconds: 180 },
+                }),
+            ),
+        );
+
+        expect(screen.getByRole('timer').getAttribute('data-state')).toBe(
+            'paused',
+        );
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
     it('has no "+2 min" before a timer runs', () => {
         renderInBoard(<BoardTimer />, boardContext());
 
