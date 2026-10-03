@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
+import { followAccountMotion } from '@/lib/motion';
 import { echoConnection } from '@/lib/reverb-config';
 
 const connection = typeof window !== 'undefined' ? echoConnection() : null;
@@ -38,6 +39,7 @@ if (connection) {
 
 if (typeof window !== 'undefined') {
     loadDocumentOnMaintenance();
+    followAccountMotion();
 }
 
 void createInertiaApp({

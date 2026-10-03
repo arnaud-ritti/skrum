@@ -25,6 +25,7 @@ export function ReduceMotionField({
 
     const save = (reduce_motion: boolean): void => {
         const previous = reduceMotion;
+        let saved = false;
 
         setReduceMotion(reduce_motion);
         router.patch(
@@ -32,8 +33,15 @@ export function ReduceMotionField({
             { reduce_motion },
             {
                 preserveScroll: true,
-                onSuccess: () => applyReduceMotion(reduce_motion),
-                onError: () => setReduceMotion(previous),
+                onSuccess: () => {
+                    saved = true;
+                    applyReduceMotion(reduce_motion);
+                },
+                onFinish: () => {
+                    if (!saved) {
+                        setReduceMotion(previous);
+                    }
+                },
             },
         );
     };

@@ -1,3 +1,5 @@
+import { router } from '@inertiajs/react';
+
 /** Rendered on `<html>` for a member who turned "Reduce animations" on. */
 export const ReduceMotionClass = 'reduce-motion';
 
@@ -36,6 +38,26 @@ export function systemPrefersReducedMotion(): boolean {
 export function applyReduceMotion(on: boolean): void {
     document.documentElement.classList.toggle(ReduceMotionClass, on);
     window.dispatchEvent(new Event(MotionChangedEvent));
+}
+
+/**
+ * Keeps the class in step with the account of each page, so a sign-out by
+ * an Inertia visit takes it off without a full reload.
+ */
+export function followAccountMotion(): () => void {
+    return router.on('navigate', (event) => {
+        const auth = event.detail.page.props.auth as
+            | { user?: { reduce_motion?: unknown } | null }
+            | undefined;
+        const on = auth?.user?.reduce_motion === true;
+
+        if (
+            document.documentElement.classList.contains(ReduceMotionClass) !==
+            on
+        ) {
+            applyReduceMotion(on);
+        }
+    });
 }
 
 export function subscribeToMotion(onChange: () => void): () => void {

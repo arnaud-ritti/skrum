@@ -25,7 +25,7 @@ function systemAsks(matches: boolean): void {
 type Visit = {
     preserveScroll: boolean;
     onSuccess: () => void;
-    onError: () => void;
+    onFinish: () => void;
 };
 
 function control(): HTMLElement {
@@ -87,21 +87,25 @@ describe('ReduceMotionField', () => {
             document.documentElement.classList.contains('reduce-motion'),
         ).toBe(false);
 
-        act(() => visit.onSuccess());
+        act(() => {
+            visit.onSuccess();
+            visit.onFinish();
+        });
 
+        expect(control().getAttribute('aria-checked')).toBe('true');
         expect(
             document.documentElement.classList.contains('reduce-motion'),
         ).toBe(true);
     });
 
-    it('goes back to the stored value when the save fails', () => {
+    it('goes back to the stored value when the save fails for any reason', () => {
         renderWithProviders(<ReduceMotionField enabled={false} />);
 
         fireEvent.click(control());
 
         const visit = patch.mock.calls[0][2] as Visit;
 
-        act(() => visit.onError());
+        act(() => visit.onFinish());
 
         expect(
             screen

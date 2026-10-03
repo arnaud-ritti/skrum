@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     applyReduceMotion,
+    followAccountMotion,
     MotionChangedEvent,
     prefersReducedMotion,
     ReduceMotionClass,
     subscribeToMotion,
 } from '@/lib/motion';
+
+const on = vi.hoisted(() => vi.fn());
+
+vi.mock('@inertiajs/react', () => ({ router: { on } }));
 
 const original = window.matchMedia;
 
@@ -106,5 +111,47 @@ describe('subscribeToMotion', () => {
 
         expect(listeners.size).toBe(0);
         expect(onChange).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('followAccountMotion', () => {
+    type Navigate = (event: {
+        detail: { page: { props: Record<string, unknown> } };
+    }) => void;
+
+    function navigate(props: Record<string, unknown>): void {
+        const listener = on.mock.calls.at(-1)?.[1] as Navigate;
+
+        listener({ detail: { page: { props } } });
+    }
+
+    it('takes the class off when a visit signs the account out', () => {
+        followAccountMotion();
+        document.documentElement.classList.add(ReduceMotionClass);
+
+        expect(on.mock.calls.at(-1)?.[0]).toBe('navigate');
+
+        navigate({ auth: { user: null } });
+
+        expect(
+            document.documentElement.classList.contains(ReduceMotionClass),
+        ).toBe(false);
+    });
+
+    it('puts the class on for an account that asked, and notifies only on a change', () => {
+        systemAsks(false);
+        const onChange = vi.fn();
+        const unsubscribe = subscribeToMotion(onChange);
+        followAccountMotion();
+
+        navigate({ auth: { user: { reduce_motion: true } } });
+        navigate({ auth: { user: { reduce_motion: true } } });
+
+        expect(
+            document.documentElement.classList.contains(ReduceMotionClass),
+        ).toBe(true);
+        expect(onChange).toHaveBeenCalledTimes(1);
+
+        unsubscribe();
     });
 });
