@@ -25,7 +25,10 @@ class GuessWholeWord
      * Spec §6.6: right solves the round for its guesser; wrong costs a life
      * and is shown to everyone; in turns it is the guesser's turn either way.
      *
-     * @return array{result: string, guessId: string, misses: int, ended: ?array<string, mixed>}
+     * The response carries the turn, since the turn's change reaches the
+     * other players only.
+     *
+     * @return array{result: string, guessId: string, misses: int, turnPlayerId: ?string, turnEndsAt: ?string, ended: ?array<string, mixed>}
      */
     public function handle(GameRoom $room, GameRound $round, GamePlayer $player, string $text): array
     {
@@ -50,12 +53,7 @@ class GuessWholeWord
             if ($isCorrect) {
                 $lockedRound->forceFill(['revealed_positions' => GameWord::letterPositions($word)])->save();
 
-                return [
-                    'result' => 'correct',
-                    'guessId' => $guess->id,
-                    'misses' => $lockedRound->misses,
-                    'ended' => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Solved, $player),
-                ];
+                return $this->response('correct', $guess->id, $lockedRound, $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Solved, $player));
             }
 
             $lockedRound->forceFill(['misses' => $lockedRound->misses + 1])->save();
@@ -69,19 +67,30 @@ class GuessWholeWord
             ]))->sendToOthers();
 
             if ($lockedRound->misses >= HangmanRules::MaxMisses) {
-                return [
-                    'result' => 'wrong',
-                    'guessId' => $guess->id,
-                    'misses' => $lockedRound->misses,
-                    'ended' => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Lost),
-                ];
+                return $this->response('wrong', $guess->id, $lockedRound, $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Lost));
             }
 
             if ($lockedRound->takesTurns()) {
                 $this->advanceGameTurn->handle($lockedRoom, $lockedRound);
             }
 
-            return ['result' => 'wrong', 'guessId' => $guess->id, 'misses' => $lockedRound->misses, 'ended' => null];
+            return $this->response('wrong', $guess->id, $lockedRound, null);
         });
+    }
+
+    /**
+     * @param  ?array<string, mixed>  $ended
+     * @return array{result: string, guessId: string, misses: int, turnPlayerId: ?string, turnEndsAt: ?string, ended: ?array<string, mixed>}
+     */
+    private function response(string $result, string $guessId, GameRound $lockedRound, ?array $ended): array
+    {
+        return [
+            'result' => $result,
+            'guessId' => $guessId,
+            'misses' => $lockedRound->misses,
+            'turnPlayerId' => $lockedRound->turn_player_id,
+            'turnEndsAt' => $lockedRound->turn_ends_at?->toIso8601String(),
+            'ended' => $ended,
+        ];
     }
 }

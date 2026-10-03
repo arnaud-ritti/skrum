@@ -65,7 +65,7 @@ it('takes the turn of its guesser and refuses one out of turn', function () {
     guessWord($room, $round, 'pocket')->assertForbidden();
 
     $this->actingAs($aUser);
-    guessWord($room, $round, 'pocket')->assertOk();
+    guessWord($room, $round, 'pocket')->assertOk()->assertJsonPath('turnPlayerId', $b->id)->assertJsonPath('turnEndsAt', null);
 
     expect($round->fresh()->turn_player_id)->toBe($b->id);
 });
