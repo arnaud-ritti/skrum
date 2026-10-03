@@ -6,6 +6,7 @@ use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Support\EmojibaseLocale;
+use App\Support\Games\GameRoomSettings;
 use App\Support\Games\GameRulesRegistry;
 
 /**
@@ -16,6 +17,8 @@ use App\Support\Games\GameRulesRegistry;
  *         game: string,
  *         locale: string,
  *         access: string,
+ *         reactionsEnabled: bool,
+ *         settings: array{wordThemes: array<int, string>, turnSeconds: ?int, autoHints: bool, takesTurns: bool, roundsPerGame: ?int, gifVotes: int, gifAuthorsHidden: bool},
  *         timerEndsAt: ?string,
  *         isHost: bool,
  *         canManage: bool,
@@ -75,6 +78,7 @@ class BuildGameSnapshot
                 'locale' => $room->locale,
                 'access' => $room->access->value,
                 'reactionsEnabled' => $room->reactions_enabled,
+                'settings' => GameRoomSettings::present($room),
                 'timerEndsAt' => $room->effectiveTimerEndsAt()?->toIso8601String(),
                 'isHost' => $isHost,
                 'canManage' => $isManager,

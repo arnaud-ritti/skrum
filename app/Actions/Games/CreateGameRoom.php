@@ -7,6 +7,7 @@ use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Games\GameRoomSettings;
 use App\Support\Games\GameRulesRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -38,6 +39,7 @@ class CreateGameRoom
                 'locale' => app()->getLocale(),
                 'access' => $access,
                 'guest_token' => Str::random(40),
+                ...GameRoomSettings::forNewRoom(),
             ]);
 
             if (! $this->gameRulesRegistry->isAvailable($game, $room)) {

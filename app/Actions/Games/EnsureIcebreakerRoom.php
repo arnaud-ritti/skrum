@@ -6,6 +6,7 @@ use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Retro;
+use App\Support\Games\GameRoomSettings;
 use Illuminate\Support\Str;
 
 /**
@@ -24,6 +25,7 @@ class EnsureIcebreakerRoom
                 'locale' => $this->facilitatorLocale($retro),
                 'access' => GameRoomAccess::Team,
                 'guest_token' => Str::random(40),
+                ...GameRoomSettings::forNewRoom(),
             ]);
 
         $room->setRelation('retro', $retro);

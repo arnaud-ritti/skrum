@@ -18,11 +18,6 @@ beforeEach(function () {
     bindGameRules(new FakeGameRules);
 });
 
-function gameSnapshotFor(GameRoom $room, GamePlayer $viewer): array
-{
-    return resolve(BuildGameSnapshot::class)->handle($room->fresh(), $viewer->fresh());
-}
-
 it('builds the room for its host', function () {
     $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday fun', 'locale' => 'fr']);
     [$user, $host] = gameRoomHost($room);
@@ -37,6 +32,15 @@ it('builds the room for its host', function () {
         'locale' => 'fr',
         'access' => 'link',
         'reactionsEnabled' => true,
+        'settings' => [
+            'wordThemes' => [],
+            'turnSeconds' => null,
+            'autoHints' => false,
+            'takesTurns' => false,
+            'roundsPerGame' => null,
+            'gifVotes' => 1,
+            'gifAuthorsHidden' => false,
+        ],
         'timerEndsAt' => null,
         'isHost' => true,
         'canManage' => true,
