@@ -113,6 +113,36 @@ export type TeamRituals = {
 
 export type FacilitatorOption = { id: string; name: string; avatarUrl: string };
 
+/** A row of the members table of Members & rituals (`TeamMembersController::index`). */
+export type TeamSettingsMember = MemberSummary & {
+    avatarUrl: string;
+    role: TeamRole;
+    /** The latest session of the team they joined. */
+    lastActiveAt: string | null;
+    isViewer: boolean;
+};
+
+export type TeamFacilitatorsPanel = {
+    list: FacilitatorOption[];
+    rotation: boolean;
+    suggested: { id: string; name: string } | null;
+    /** The owners and facilitators of the team, who may be added. */
+    candidates: FacilitatorOption[];
+};
+
+/** A template of the team with the team's own usage (`TeamTemplateUsage`). */
+export type TeamTemplateUsageRow = {
+    key: string;
+    name: string;
+    category: TemplateCategory | null;
+    columns: TemplateColumn[];
+    usageCount: number;
+    isDefault: boolean;
+    /** The workspace template behind a `workspace:` key. */
+    templateId: string | null;
+    canEdit: boolean;
+};
+
 export type TeamActivityKind =
     | 'retro_started'
     | 'retro_completed'

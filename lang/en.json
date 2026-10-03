@@ -4990,5 +4990,18 @@
     "The team's action items, on the action items page.": "The team's action items, on the action items page.",
     "Download CSV": "Download CSV",
     "One CSV file per closed survey of the team.": "One CSV file per closed survey of the team.",
-    "The estimates saved in the team's planning poker games.": "The estimates saved in the team's planning poker games."
+    "The estimates saved in the team's planning poker games.": "The estimates saved in the team's planning poker games.",
+    "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote.": "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote.",
+    "Member actions": "Member actions",
+    "Default facilitators": "Default facilitators",
+    "Rotate the suggestion at every retro": "Rotate the suggestion at every retro",
+    "Suggested next: :name · retro of :date": "Suggested next: :name · retro of :date",
+    "Suggested next: :name": "Suggested next: :name",
+    "The person creating a retro can always choose someone else.": "The person creating a retro can always choose someone else.",
+    "Retro templates": "Retro templates",
+    "Used :count×": "Used :count×",
+    "Never used": "Never used",
+    "This template is no longer available. Choose another.": "This template is no longer available. Choose another.",
+    "Default columns · template “:name”": "Default columns · template “:name”",
+    "Duplicate as a team template": "Duplicate as a team template"
 }

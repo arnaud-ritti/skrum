@@ -2,6 +2,7 @@
 
 use App\Actions\Teams\TeamTemplateUsage;
 use App\Enums\TeamRole;
+use App\Enums\TemplateCategory;
 use App\Enums\TemplateVisibility;
 use App\Models\Retro;
 use App\Models\Team;
@@ -62,4 +63,16 @@ it('counts the team retros only, lists the default beyond the top five, and says
         ->and($rows['start_stop_continue']['canEdit'])->toBeFalse()
         ->and($rows['kudos']['isDefault'])->toBeTrue()
         ->and($rows['kudos']['usageCount'])->toBe(0);
+});
+
+it('gives each row of the team templates its category, for the columns saved from the settings', function () {
+    $team = Team::factory()->create();
+    $teamTemplate = WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Team, 'team_id' => $team->id, 'category' => TemplateCategory::Ideas]);
+    $team->update(['default_retro_template' => $teamTemplate->catalogueKey()]);
+    Retro::factory()->for($team)->create(['template' => 'start_stop_continue']);
+
+    $rows = collect(resolve(TeamTemplateUsage::class)->handle($team->fresh(), teamMember($team, TeamRole::Facilitator)))->keyBy('key');
+
+    expect($rows[$teamTemplate->catalogueKey()]['category'])->toBe('ideas')
+        ->and($rows['start_stop_continue']['category'])->toBe('essentials');
 });

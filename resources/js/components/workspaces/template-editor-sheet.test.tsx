@@ -40,7 +40,7 @@ const template: WorkspaceTemplateSummary = {
     ],
 };
 
-function sheet(target: TemplateEditorTarget) {
+function sheet(target: TemplateEditorTarget, teamId?: string) {
     const onClose = vi.fn();
     const onDuplicate = vi.fn();
 
@@ -54,6 +54,7 @@ function sheet(target: TemplateEditorTarget) {
             ]}
             onClose={onClose}
             onDuplicate={onDuplicate}
+            teamId={teamId}
         />,
     );
 
@@ -120,6 +121,27 @@ describe('TemplateEditorSheet', () => {
             within(dialog).getByText('The name has already been taken.'),
         ).toBeTruthy();
         expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('creates a template of the team it is opened for', async () => {
+        const { dialog } = sheet(
+            {
+                key: 'new-2',
+                template: null,
+                draft: { ...draftFromTemplate(template), name: 'Atlas pulse' },
+            },
+            't1',
+        );
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.post.mock.calls[0][1]).toMatchObject({
+            name: 'Atlas pulse',
+            visibility: 'team',
+            team_id: 't1',
+        });
     });
 
     it('hands the draft being edited to duplicate', async () => {

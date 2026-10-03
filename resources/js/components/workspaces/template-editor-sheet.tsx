@@ -39,6 +39,8 @@ type Props = {
     onClose: () => void;
     /** A copy of the draft being edited, to open as a new template. */
     onDuplicate: (draft: TemplateDraft) => void;
+    /** A new template is a team template of this team. */
+    teamId?: string;
 };
 
 /** The template editor in a side sheet: full width on a phone. */
@@ -82,6 +84,7 @@ function EditorBody({
     catalogue,
     onClose,
     onDuplicate,
+    teamId,
 }: Props & { target: TemplateEditorTarget }) {
     const { t } = useTrans();
     const [draft, setDraft] = useState(target.draft);
@@ -124,7 +127,13 @@ function EditorBody({
         if (template === null) {
             router.post(
                 WorkspaceTemplatesController.store.url(workspace.slug),
-                templatePayload(draft),
+                teamId === undefined
+                    ? templatePayload(draft)
+                    : {
+                          ...templatePayload(draft),
+                          visibility: 'team',
+                          team_id: teamId,
+                      },
                 options,
             );
 

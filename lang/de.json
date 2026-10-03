@@ -5210,5 +5210,18 @@
     "The team's action items, on the action items page.": "Die Maßnahmen des Teams, auf der Seite der Maßnahmen.",
     "Download CSV": "CSV herunterladen",
     "One CSV file per closed survey of the team.": "Eine CSV-Datei pro geschlossener Umfrage des Teams.",
-    "The estimates saved in the team's planning poker games.": "Die in den Planning-Poker-Spielen des Teams gespeicherten Schätzungen."
+    "The estimates saved in the team's planning poker games.": "Die in den Planning-Poker-Spielen des Teams gespeicherten Schätzungen.",
+    "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote.": "Moderator: steuert Phasen, Timer und Aufdecken und kann jede offene Sitzung übernehmen. Beobachter: nur lesen, stimmt nicht ab.",
+    "Member actions": "Aktionen für das Mitglied",
+    "Default facilitators": "Standard-Moderatoren",
+    "Rotate the suggestion at every retro": "Vorschlag bei jeder Retro wechseln",
+    "Suggested next: :name · retro of :date": "Nächster Vorschlag: :name · Retro am :date",
+    "Suggested next: :name": "Nächster Vorschlag: :name",
+    "The person creating a retro can always choose someone else.": "Wer eine Retro erstellt, kann immer jemand anderen wählen.",
+    "Retro templates": "Retro-Vorlagen",
+    "Used :count×": ":count× verwendet",
+    "Never used": "Nie verwendet",
+    "This template is no longer available. Choose another.": "Diese Vorlage ist nicht mehr verfügbar. Wähle eine andere.",
+    "Default columns · template “:name”": "Standardspalten · Vorlage „:name“",
+    "Duplicate as a team template": "Als Team-Vorlage duplizieren"
 }

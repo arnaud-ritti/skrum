@@ -5210,5 +5210,18 @@
     "The team's action items, on the action items page.": "Les actions de l'équipe, sur la page des actions.",
     "Download CSV": "Télécharger le CSV",
     "One CSV file per closed survey of the team.": "Un fichier CSV par sondage clôturé de l'équipe.",
-    "The estimates saved in the team's planning poker games.": "Les estimations enregistrées dans les parties de planning poker de l'équipe."
+    "The estimates saved in the team's planning poker games.": "Les estimations enregistrées dans les parties de planning poker de l'équipe.",
+    "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote.": "Facilitateur : pilote phases, timer et révélation, et peut prendre la main sur toute session ouverte. Observateur : lecture seule, ne vote pas.",
+    "Member actions": "Actions sur le membre",
+    "Default facilitators": "Facilitateurs par défaut",
+    "Rotate the suggestion at every retro": "Faire tourner la suggestion à chaque rétro",
+    "Suggested next: :name · retro of :date": "Suggestion suivante : :name · rétro du :date",
+    "Suggested next: :name": "Suggestion suivante : :name",
+    "The person creating a retro can always choose someone else.": "La personne qui crée une rétro peut toujours choisir quelqu'un d'autre.",
+    "Retro templates": "Modèles de rétro",
+    "Used :count×": "Utilisé :count×",
+    "Never used": "Jamais utilisé",
+    "This template is no longer available. Choose another.": "Ce modèle n'est plus disponible. Choisis-en un autre.",
+    "Default columns · template “:name”": "Colonnes par défaut · modèle « :name »",
+    "Duplicate as a team template": "Dupliquer en modèle d'équipe"
 }

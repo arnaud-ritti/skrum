@@ -47,11 +47,13 @@ class TeamMembersController extends Controller
         $canManageMembers = $user->can('manageMembers', $team);
         $lastActivity = $memberLastActivity->handle($team);
         $defaultKey = $team->default_retro_template;
+        $defaultIsAvailable = $defaultKey !== null && $templateAvailability->isAvailable($team, $user, $defaultKey);
         $person = fn (User $member): array => [...$member->only(['id', 'name']), 'avatarUrl' => $member->avatarUrl()];
 
         return Inertia::render('teams/members', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name', 'description']),
+            'createdAt' => $team->created_at?->toIso8601String(),
             'sections' => $sections->handle($user, $team),
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [
@@ -81,7 +83,8 @@ class TeamMembersController extends Controller
                 )->map($person)->values(),
             ],
             'templates' => $teamTemplateUsage->handle($team, $user),
-            'defaultRetroTemplate' => $defaultKey !== null && $templateAvailability->isAvailable($team, $user, $defaultKey) ? $defaultKey : null,
+            'defaultRetroTemplate' => $defaultIsAvailable ? $defaultKey : null,
+            'defaultRetroTemplateUnavailable' => $defaultKey !== null && ! $defaultIsAvailable,
             'categories' => TemplateCategory::options(),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace, $user, $team)),
         ]);

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @phpstan-type TemplateUsage array{
  *     key: string,
  *     name: string,
+ *     category: ?string,
  *     columns: array<int, array{title: string, description: ?string, color: string}>,
  *     usageCount: int,
  *     isDefault: bool,
@@ -76,6 +77,7 @@ class TeamTemplateUsage
         return [
             'key' => $key,
             'name' => $definition->name(),
+            'category' => $definition->category?->value,
             'columns' => array_map(fn (array $column): array => [
                 'title' => $column['title'],
                 'description' => $column['description'],
@@ -106,6 +108,7 @@ class TeamTemplateUsage
         return [
             'key' => $key,
             'name' => $template->name,
+            'category' => $template->category->value,
             'columns' => $template->presentColumns(),
             'usageCount' => (int) $template->retros_count,
             'isDefault' => $key === $default,

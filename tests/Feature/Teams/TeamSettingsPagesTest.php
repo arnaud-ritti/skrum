@@ -6,6 +6,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('opens the General tab to owners and admins only', function () {
@@ -35,6 +36,27 @@ it('opens Members & rituals to facilitators with the members read-only, and refu
             ->where('availableMembers', [])
             ->has('roleOptions', 4)
             ->has('templates'));
+});
+
+it('sends Members & rituals the creation date of the team and whether its default template is gone', function () {
+    $this->travelTo(CarbonImmutable::parse('2025-03-10 09:00', 'UTC'));
+    $team = Team::factory()->create(['default_retro_template' => 'workspace:'.Str::uuid()->toString()]);
+    $this->travelBack();
+    $route = route('teams.members.index', [$team->workspace, $team]);
+    $facilitator = teamMember($team, TeamRole::Facilitator);
+
+    $this->actingAs($facilitator)->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('createdAt', '2025-03-10T09:00:00+00:00')
+            ->where('defaultRetroTemplate', null)
+            ->where('defaultRetroTemplateUnavailable', true));
+
+    $team->update(['default_retro_template' => 'four_ls']);
+
+    $this->actingAs($facilitator)->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('defaultRetroTemplate', 'four_ls')
+            ->where('defaultRetroTemplateUnavailable', false));
 });
 
 it('sends the sprints, the next start and the suggested facilitator to Members & rituals', function () {
