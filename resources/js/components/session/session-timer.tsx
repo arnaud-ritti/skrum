@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Timer } from '@/components/skrum/timer';
 import type { TimerPreset } from '@/components/skrum/timer';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,8 @@ type SessionTimerProps = {
     alarm?: boolean;
     /** "lg" on a stage: the topic timer of the discussion. */
     size?: 'md' | 'lg';
+    /** A line beside the time: "of 5:00 · this topic". */
+    caption?: ReactNode;
     className?: string;
 };
 
@@ -47,6 +50,7 @@ export function SessionTimer({
     onResume,
     alarm = true,
     size,
+    caption,
     className,
 }: SessionTimerProps) {
     const isPaused = pausedSeconds !== null;
@@ -77,6 +81,7 @@ export function SessionTimer({
             onAdd={onExtend ? () => onExtend() : undefined}
             addSeconds={120}
             size={size}
+            caption={caption}
             className={className}
         />
     );

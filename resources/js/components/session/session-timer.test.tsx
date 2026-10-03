@@ -273,6 +273,18 @@ describe('SessionTimer', () => {
         ).toBe('lg');
     });
 
+    it('passes its caption to the timer', () => {
+        renderWithProviders(
+            <SessionTimer
+                endsAt={inTenSeconds}
+                offset={0}
+                caption="of 5:00 · this topic"
+            />,
+        );
+
+        expect(screen.getByText('of 5:00 · this topic')).toBeTruthy();
+    });
+
     it('offers "+2 min" on a paused timer', () => {
         const onExtend = vi.fn();
 
