@@ -87,15 +87,17 @@ export type TemplateDefaults = {
 };
 
 /**
- * `name`, `category` and `columns` are what WorkspaceTemplateRequest stores.
- * `description`, `visibility` and `defaults` have no back end yet: their
- * fields are rendered only when the draft carries them.
+ * `name`, `category`, `columns`, `visibility` and `teamId` are what
+ * WorkspaceTemplateRequest stores; `description` and `defaults` have no back
+ * end yet. The optional fields are rendered only when the draft carries them.
  */
 export type TemplateDraft = {
     name: string;
     category?: string;
     description?: string;
     visibility?: TemplateVisibility;
+    /** The team of a team template. */
+    teamId?: string | null;
     columns: TemplateColumnDraft[];
     defaults?: TemplateDefaults;
 };
@@ -111,6 +113,8 @@ export type TemplateCategoryOption = { value: string; label: string };
 
 export type TemplateStartOption = { key: string; name: string };
 
+export type TemplateTeamOption = { id: string; name: string };
+
 export type TemplateEditorProps = {
     mode: 'create' | 'edit';
     value: TemplateDraft;
@@ -121,6 +125,8 @@ export type TemplateEditorProps = {
     startFrom?: TemplateStartOption[];
     onStartFrom?: (key: string) => void;
     canShareWorkspace?: boolean;
+    /** The teams the person may create team templates for; empty disables "Team". */
+    teams?: TemplateTeamOption[];
     meta?: { editedBy: string; editedAt: string; usedByTeams?: number };
     saving?: boolean;
     onSave: () => void;
@@ -128,7 +134,7 @@ export type TemplateEditorProps = {
     onDuplicate?: () => void;
     onDelete?: () => void;
     /** DOM ids of the controls. Defaults: `template-name`, `template-source`, `template-category`. */
-    ids?: { name?: string; source?: string; category?: string };
+    ids?: { name?: string; source?: string; category?: string; team?: string };
     className?: string;
 };
 
@@ -681,6 +687,7 @@ export function TemplateEditor({
     startFrom,
     onStartFrom,
     canShareWorkspace = true,
+    teams,
     meta,
     saving = false,
     onSave,
@@ -698,6 +705,8 @@ export function TemplateEditor({
     const visibilityHelpId = useId();
     const categoryId = ids?.category ?? 'template-category';
     const categoryErrorId = useId();
+    const teamId = ids?.team ?? 'template-team';
+    const teamErrorId = useId();
     const startFromId = ids?.source ?? 'template-source';
     const [submitted, setSubmitted] = useState(false);
     const [nameTouched, setNameTouched] = useState(false);
@@ -730,6 +739,23 @@ export function TemplateEditor({
 
     const update = (patch: Partial<TemplateDraft>) =>
         onChange({ ...latest.current, ...patch });
+
+    /** "Team" keeps a team the person may choose, else the first of the list. */
+    const chooseVisibility = (next: TemplateVisibility): void => {
+        const current = latest.current.teamId;
+
+        if (
+            next !== 'team' ||
+            teams === undefined ||
+            teams.some((team) => team.id === current)
+        ) {
+            update({ visibility: next });
+
+            return;
+        }
+
+        update({ visibility: next, teamId: teams[0]?.id ?? null });
+    };
 
     const updateDefaults = (patch: Partial<TemplateDefaults>) => {
         const current = latest.current.defaults;
@@ -799,10 +825,14 @@ export function TemplateEditor({
     const categoryError =
         categories === undefined ? undefined : errors?.category;
     const columnsError = errors?.columns;
+    const showsTeamSelect =
+        value.visibility === 'team' && teams !== undefined && teams.length > 1;
+    const teamError = showsTeamSelect ? errors?.team_id : undefined;
 
     const visibleErrorCount =
         (nameError === undefined ? 0 : 1) +
         (categoryError === undefined ? 0 : 1) +
+        (teamError === undefined ? 0 : 1) +
         (columnsError === undefined ? 0 : 1) +
         value.columns.reduce(
             (count, _, index) =>
@@ -1021,7 +1051,12 @@ export function TemplateEditor({
             label: t('Personal'),
             icon: User,
         },
-        { value: 'team', label: t('Team'), icon: Users },
+        {
+            value: 'team',
+            label: t('Team'),
+            icon: Users,
+            disabled: teams !== undefined && teams.length === 0,
+        },
         {
             value: 'workspace',
             label: t('Workspace'),
@@ -1235,9 +1270,7 @@ export function TemplateEditor({
                                 aria-label={t('Visibility')}
                                 value={visibility}
                                 options={visibilityOptions}
-                                onValueChange={(next) =>
-                                    update({ visibility: next })
-                                }
+                                onValueChange={chooseVisibility}
                                 className="grid grid-cols-3"
                             />
                             <p
@@ -1250,6 +1283,53 @@ export function TemplateEditor({
                                           'Only workspace admins can share templates with the whole workspace.',
                                       )}
                             </p>
+                        </div>
+                    )}
+
+                    {showsTeamSelect && (
+                        <div className="flex flex-col gap-1.5">
+                            <label
+                                htmlFor={teamId}
+                                className="text-sm font-medium"
+                            >
+                                {t('Team')}
+                            </label>
+                            <Select
+                                value={value.teamId ?? ''}
+                                onValueChange={(next) =>
+                                    update({ teamId: next })
+                                }
+                            >
+                                <SelectTrigger
+                                    id={teamId}
+                                    className="w-full"
+                                    aria-invalid={
+                                        teamError === undefined
+                                            ? undefined
+                                            : true
+                                    }
+                                    aria-describedby={
+                                        teamError === undefined
+                                            ? undefined
+                                            : teamErrorId
+                                    }
+                                >
+                                    <SelectValue
+                                        placeholder={t('Choose a team')}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {teams.map((team) => (
+                                        <SelectItem
+                                            key={team.id}
+                                            value={team.id}
+                                        >
+                                            {team.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldError id={teamErrorId} message={teamError} />
                         </div>
                     )}
 

@@ -741,6 +741,90 @@ describe('TemplateEditor header, visibility and defaults', () => {
         ).toBeTruthy();
     });
 
+    it('disables the team option when the person may create for no team', () => {
+        renderWithProviders(<Harness teams={[]} />);
+
+        expect(
+            (screen.getByRole('radio', { name: 'Team' }) as HTMLButtonElement)
+                .disabled,
+        ).toBe(true);
+    });
+
+    it('preselects the only team without a team select', async () => {
+        const onChange = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <Harness
+                onChange={onChange}
+                teams={[{ id: 'atlas', name: 'Atlas' }]}
+                initial={{ ...serverDraft, visibility: 'personal' }}
+            />,
+        );
+
+        await user.click(screen.getByRole('radio', { name: 'Team' }));
+
+        expect(lastDraft(onChange)).toMatchObject({
+            visibility: 'team',
+            teamId: 'atlas',
+        });
+        expect(screen.queryByRole('combobox', { name: 'Team' })).toBeNull();
+    });
+
+    it('chooses the team in a select when there are two teams or more', async () => {
+        const onChange = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <Harness
+                onChange={onChange}
+                teams={[
+                    { id: 'atlas', name: 'Atlas' },
+                    { id: 'borealis', name: 'Borealis' },
+                ]}
+                initial={{
+                    ...serverDraft,
+                    visibility: 'team',
+                    teamId: 'atlas',
+                }}
+            />,
+        );
+
+        const select = screen.getByRole('combobox', { name: 'Team' });
+
+        expect(select.id).toBe('template-team');
+        expect(select.textContent).toContain('Atlas');
+
+        await user.click(select);
+        await user.click(
+            await screen.findByRole('option', { name: 'Borealis' }),
+        );
+
+        expect(lastDraft(onChange).teamId).toBe('borealis');
+    });
+
+    it('shows the server error of the team under its select', () => {
+        renderWithProviders(
+            <Harness
+                teams={[
+                    { id: 'atlas', name: 'Atlas' },
+                    { id: 'borealis', name: 'Borealis' },
+                ]}
+                initial={{ ...serverDraft, visibility: 'team', teamId: null }}
+                errors={{ team_id: 'The team id field is required.' }}
+            />,
+        );
+
+        const select = screen.getByRole('combobox', { name: 'Team' });
+
+        expect(select.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                select.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The team id field is required.');
+    });
+
     it('changes the visibility', async () => {
         const onChange = vi.fn();
         const user = userEvent.setup();
