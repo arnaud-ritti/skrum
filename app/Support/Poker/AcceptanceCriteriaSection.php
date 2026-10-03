@@ -17,11 +17,13 @@ class AcceptanceCriteriaSection
 
     private const string AtxHeading = '/^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/u';
 
-    private const string BoldLine = '/^[ \t]*(\*\*|__)((?:(?!\1).)+)\1:?[ \t]*$/u';
+    private const string BoldLine = '/^ {0,3}(\*\*|__)((?:(?!\1).)+)\1:?[ \t]*$/u';
 
-    private const string ColonLine = '/^[ \t]*(\p{L}[\p{L} \t\'’-]*):[ \t]*$/u';
+    private const string ColonLine = '/^ {0,3}(\p{L}[\p{L} \t\'’-]*):[ \t]*$/u';
 
-    private const string Fence = '/^ {0,3}(`{3,}|~{3,})/u';
+    private const string Fence = '/^ {0,3}(`{3,}|~{3,})(.*)$/u';
+
+    private const string SurroundingEmphasis = '/^(\*\*|__|\*|_)(.+)\1(:?)$/u';
 
     /**
      * @return array{description: ?string, criteria: ?string}
@@ -42,7 +44,7 @@ class AcceptanceCriteriaSection
 
         foreach ($lines as $index => $line) {
             if (preg_match(self::Fence, $line, $fence) === 1) {
-                $openFence = self::fenceAfter($openFence, $fence[1]);
+                $openFence = self::fenceAfter($openFence, $fence[1], $fence[2]);
 
                 continue;
             }
@@ -88,19 +90,24 @@ class AcceptanceCriteriaSection
     }
 
     /**
-     * A fence closes only with the character that opened it, at least as long.
+     * A fence closes only with the character that opened it, at least as long,
+     * and with nothing after it: a closing fence carries no info string.
      */
-    private static function fenceAfter(?string $openFence, string $marker): ?string
+    private static function fenceAfter(?string $openFence, string $marker, string $rest): ?string
     {
         if ($openFence === null) {
             return $marker;
         }
 
-        if ($marker[0] === $openFence[0] && strlen($marker) >= strlen($openFence)) {
-            return null;
+        if ($marker[0] !== $openFence[0]) {
+            return $openFence;
         }
 
-        return $openFence;
+        if (strlen($marker) < strlen($openFence)) {
+            return $openFence;
+        }
+
+        return trim($rest) === '' ? null : $openFence;
     }
 
     /**
@@ -110,7 +117,7 @@ class AcceptanceCriteriaSection
     private static function criteriaHeadingLevel(string $line): ?int
     {
         if (preg_match(self::AtxHeading, $line, $match) === 1) {
-            return self::isCriteria($match[2] ?? '') ? strlen($match[1]) : null;
+            return self::isCriteria(self::withoutEmphasis($match[2] ?? '')) ? strlen($match[1]) : null;
         }
 
         if (preg_match(self::BoldLine, $line, $match) === 1) {
@@ -135,6 +142,15 @@ class AcceptanceCriteriaSection
         }
 
         return $level === 0 && preg_match(self::BoldLine, $line) === 1;
+    }
+
+    /**
+     * Jira writes a bold heading as `## **…**`: one pair of emphasis marks
+     * around the whole text is markup, rule AC-1.
+     */
+    private static function withoutEmphasis(string $text): string
+    {
+        return preg_replace(self::SurroundingEmphasis, '$2$3', trim($text)) ?? $text;
     }
 
     private static function isCriteria(string $text): bool

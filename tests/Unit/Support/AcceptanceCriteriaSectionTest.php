@@ -18,6 +18,8 @@ it('reads every heading markup of rule AC-1, in any case', function (string $hea
     'atx' => ['# ACCEPTANCE CRITERIA'],
     'atx closed' => ['### Acceptance criteria ###'],
     'atx colon' => ['## Acceptance Criteria:'],
+    'atx bold' => ['## **Acceptance criteria**'],
+    'atx italic' => ['### _Acceptance criteria:_'],
     'bold' => ['**Acceptance criteria**'],
     'bold colon inside' => ['**Acceptance criteria:**'],
     'bold colon outside' => ['__Acceptance criteria__:'],
@@ -49,6 +51,9 @@ it('splits nothing outside the rules', function (string $markdown) {
     expect(AcceptanceCriteriaSection::split($markdown))->toBe(['description' => $markdown, 'criteria' => null]);
 })->with([
     'in a code block' => ["```\n## Acceptance criteria\n- one\n```"],
+    'after an info string inside a code block' => ["```\n```php\n## Acceptance criteria\n- one\n```"],
+    'bold in an indented code block' => ["Intro\n\n    **Acceptance criteria**\n    - one"],
+    'colon in an indented code block' => ["Intro\n\n    Acceptance criteria:\n    - one"],
     'empty section' => ["Intro\n## Acceptance criteria\n\n## Notes\nx"],
     'other wording' => ["## Definition of done\n- one"],
     'translated' => ["## Critères d'acceptation\n- un"],
