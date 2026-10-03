@@ -78,6 +78,12 @@ function usePitches(): Record<GameKind, string> {
         hangman: t('Guess the word, letter by letter.'),
         gif: t('Sum up the sprint with a single GIF.'),
         decoded: t('One writes it in emojis, the others guess.'),
+        two_truths: t('Everyone prepares three statements, one lie: find it.'),
+        mood: t('Your mood as a weather, anonymously.'),
+        guess_who: t(
+            'Everyone answers, one answer is drawn: guess who wrote it.',
+        ),
+        quick_question: t('One question, everyone answers aloud in turn.'),
     };
 }
 

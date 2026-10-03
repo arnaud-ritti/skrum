@@ -157,7 +157,9 @@ describe('GifYourPick', () => {
     it('shows the sent GIF with "Change GIF" and "Remove GIF", and a new pick as a draft over it', async () => {
         mocks.request.mockResolvedValue(null);
         const { dispatch } = renderPick(
-            round({ myAnswer: { id: 'answer', gif: gif('party') } }),
+            round({
+                myAnswer: { id: 'answer', gif: gif('party'), caption: null },
+            }),
         );
 
         expect(state()).toBe('sent');

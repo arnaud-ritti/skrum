@@ -8,6 +8,7 @@ import { GifPicker } from '@/components/skrum/gif-picker';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { myGifAnswer } from '@/lib/games/gif';
 import type { GameGifSearchResult, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useHasRightColumn } from './game-layout';
@@ -39,7 +40,7 @@ export function GifAnswerStage({ round, caption }: Props) {
     const provider = round.gifProvider ?? null;
     /** A draft is not an answer: the reveal would leave its player out of the gallery. */
     const hasUnsentDraft =
-        draft !== null && draft.id !== round.myAnswer?.gif.id;
+        draft !== null && draft.id !== myGifAnswer(round)?.gif.id;
 
     const search = useCallback(
         (query: string) =>
@@ -92,7 +93,7 @@ export function GifAnswerStage({ round, caption }: Props) {
                     results={results}
                     provider={provider ?? undefined}
                     status={provider === null ? 'disabled' : status}
-                    selectedId={draft?.id ?? round.myAnswer?.gif.id}
+                    selectedId={draft?.id ?? myGifAnswer(round)?.gif.id}
                     onOpenChange={noop}
                     onSelect={(gif) => {
                         pick({ id: gif.id, previewUrl: gif.previewUrl });

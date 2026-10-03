@@ -2,6 +2,7 @@ import type {
     GameGifPending,
     GameGifRevealed,
     GameGifSlot,
+    GameMyGifAnswer,
     GameRound,
 } from './types';
 
@@ -17,6 +18,13 @@ export function pendingAnswers(round: GameRound): GameGifPending[] {
 
 export function revealedAnswers(round: GameRound): GameGifRevealed[] {
     return (round.answers ?? []).filter(isRevealedAnswer);
+}
+
+/** `myAnswer` is shared with Guess who?, whose answer is a text. */
+export function myGifAnswer(round: GameRound): GameMyGifAnswer | null {
+    const answer = round.myAnswer ?? null;
+
+    return answer !== null && 'gif' in answer ? answer : null;
 }
 
 export function withPendingAnswer(

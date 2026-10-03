@@ -34,6 +34,14 @@ function RoundBoard({
             return <DecodedBoard key={round.id} round={round} />;
         case 'gif':
             return <SprintGifBoard round={round} caption={gifCaption} />;
+        case 'two_truths':
+            return null;
+        case 'mood':
+            return null;
+        case 'guess_who':
+            return null;
+        case 'quick_question':
+            return null;
         default:
             return (
                 <p className="text-muted-foreground">

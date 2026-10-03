@@ -19,6 +19,10 @@ const gameOptions: GameOption[] = [
     { value: 'gif', label: 'Sprint in one GIF', available: true },
     { value: 'hangman', label: 'Hangman', available: true },
     { value: 'decoded', label: 'Decoded', available: true },
+    { value: 'two_truths', label: 'Two truths and a lie', available: true },
+    { value: 'mood', label: 'Mood weather', available: true },
+    { value: 'guess_who', label: 'Guess who?', available: true },
+    { value: 'quick_question', label: 'Quick question', available: true },
 ];
 
 const formProps: IcebreakerSessionFormProps = {

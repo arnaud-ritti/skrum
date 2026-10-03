@@ -162,6 +162,7 @@ describe('GifAnswerStage', () => {
                         previewUrl: '/gifs/party/preview',
                         url: '',
                     },
+                    caption: null,
                 },
             }),
         );

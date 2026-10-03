@@ -6,7 +6,7 @@ import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { pendingAnswers } from '@/lib/games/gif';
+import { myGifAnswer, pendingAnswers } from '@/lib/games/gif';
 import type { GameMyGifAnswer, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ export function GifYourPick({
     const changeRef = useRef<HTMLButtonElement>(null);
     const { room, me, players } = ctx.snapshot;
     const target = { room: room.id, round: round.id };
-    const sent = round.myAnswer ?? null;
+    const sent = myGifAnswer(round);
     const pending = draft !== null && draft.id !== sent?.gif.id ? draft : null;
     const shown = pending ?? sent?.gif ?? null;
     const others = pendingAnswers(round).filter(

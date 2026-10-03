@@ -134,6 +134,14 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                     <GifRoundResults answers={detail.answers ?? []} />
                 </div>
             );
+        case 'two_truths':
+            return null;
+        case 'mood':
+            return null;
+        case 'guess_who':
+            return null;
+        case 'quick_question':
+            return null;
         default:
             return detail.word ? (
                 <p className="font-display text-xl font-bold break-words">

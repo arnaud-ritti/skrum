@@ -1,4 +1,14 @@
-import { Brush, Film, Smile, UserRoundPlus, WholeWord } from 'lucide-react';
+import {
+    Brush,
+    CloudSun,
+    Film,
+    MessageCircleQuestion,
+    Smile,
+    UserRoundPlus,
+    UserRoundSearch,
+    VenetianMask,
+    WholeWord,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import GameTimerExtensionsController from '@/actions/App/Http/Controllers/Games/GameTimerExtensionsController';
@@ -20,6 +30,10 @@ const gameIcons: Record<GameKind, LucideIcon> = {
     draw: Brush,
     gif: Film,
     decoded: Smile,
+    two_truths: VenetianMask,
+    mood: CloudSun,
+    guess_who: UserRoundSearch,
+    quick_question: MessageCircleQuestion,
 };
 
 const ExtensionSeconds = 120;

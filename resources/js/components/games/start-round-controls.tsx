@@ -4,19 +4,52 @@ import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRound
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { nextLeaderId } from '@/lib/games/rotation';
-import type { GameKind, GameStartResponse } from '@/lib/games/types';
+import {
+    LeaderGames,
+    MinimumPlayers,
+    startPayload,
+    tellerCandidates,
+} from '@/lib/games/turns';
+import type {
+    GameKind,
+    GamePlayer,
+    GameStartResponse,
+} from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { LeaderPicker } from './leader-picker';
 import { useRoom } from './room-context';
 
-const LeaderGames: GameKind[] = ['draw', 'decoded'];
+/** The players in join order, starting after the previous leader. */
+function rotationAfter(
+    players: GamePlayer[],
+    previousLeaderId: string | null,
+): GamePlayer[] {
+    const start = players.findIndex((player) => player.id === previousLeaderId);
+
+    return [...players.slice(start + 1), ...players.slice(0, start + 1)];
+}
+
+function leaderLabel(
+    game: GameKind,
+    t: ReturnType<typeof useTrans>['t'],
+): string {
+    if (game === 'draw') {
+        return t('Who draws?');
+    }
+
+    if (game === 'two_truths') {
+        return t('Who tells?');
+    }
+
+    return t('Who gives the clues?');
+}
 
 export function StartRoundControls({ label }: { label: string }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
     const [chosenLeaderId, setChosenLeaderId] = useState<string | null>(null);
-    const { room, games, players, history } = ctx.snapshot;
+    const { room, games, players, history, truthSets } = ctx.snapshot;
     const onlineIds = useMemo(
         () => new Set(ctx.online.map((member) => member.id)),
         [ctx.online],
@@ -24,18 +57,41 @@ export function StartRoundControls({ label }: { label: string }) {
     const onlinePlayers = players.filter((player) =>
         onlineIds.has(player.presenceId),
     );
+    const onlineOrder = onlinePlayers.map((player) => player.id);
+    const isTwoTruths = room.game === 'two_truths';
     const needsLeader = LeaderGames.includes(room.game);
     const isAvailable = games.some(
         (option) => option.value === room.game && option.available,
     );
-    const previousLeaderId =
-        ctx.lastEnded?.leaderPlayerId ?? history[0]?.leaderPlayerId ?? null;
+    const lastEnded = ctx.lastEnded ?? history[0] ?? null;
+    const previousLeaderId = lastEnded?.leaderPlayerId ?? null;
+    const tellerIds = isTwoTruths
+        ? tellerCandidates(
+              truthSets?.ready ?? [],
+              rotationAfter(players, previousLeaderId)
+                  .filter((player) => onlineIds.has(player.presenceId))
+                  .map((player) => player.id),
+          )
+        : [];
+    const leaderChoices = isTwoTruths
+        ? tellerIds.flatMap(
+              (id) => players.find((player) => player.id === id) ?? [],
+          )
+        : onlinePlayers;
+    const proposedLeaderId = isTwoTruths
+        ? (tellerIds[0] ?? null)
+        : nextLeaderId(players, onlineIds, previousLeaderId);
     const leaderId =
         chosenLeaderId !== null &&
-        onlinePlayers.some((player) => player.id === chosenLeaderId)
+        leaderChoices.some((player) => player.id === chosenLeaderId)
             ? chosenLeaderId
-            : nextLeaderId(players, onlineIds, previousLeaderId);
-    const isWaiting = needsLeader && onlinePlayers.length < 2;
+            : proposedLeaderId;
+    const isWaiting = onlinePlayers.length < MinimumPlayers[room.game];
+    const hasNoTeller = isTwoTruths && leaderChoices.length === 0;
+    const closedGame =
+        lastEnded !== null &&
+        lastEnded.number != null &&
+        lastEnded.number === lastEnded.roundsTotal;
 
     if (!room.isHost) {
         return (
@@ -62,7 +118,12 @@ export function StartRoundControls({ label }: { label: string }) {
             response = await ctx.run(
                 retroRequest<GameStartResponse>(
                     GameRoundsController.store(room.id),
-                    needsLeader ? { leader_player_id: leaderId } : {},
+                    startPayload(
+                        room.game,
+                        room.settings,
+                        leaderId,
+                        onlineOrder,
+                    ),
                 ),
             );
         } finally {
@@ -84,21 +145,22 @@ export function StartRoundControls({ label }: { label: string }) {
 
     return (
         <div className="flex max-w-full flex-col items-center gap-3">
-            {needsLeader && !isWaiting && (
+            {needsLeader && !isWaiting && !hasNoTeller && (
                 <LeaderPicker
-                    players={onlinePlayers}
+                    players={leaderChoices}
                     value={leaderId}
                     onChange={setChosenLeaderId}
-                    label={
-                        room.game === 'draw'
-                            ? t('Who draws?')
-                            : t('Who gives the clues?')
-                    }
+                    label={leaderLabel(room.game, t)}
                 />
             )}
             {isWaiting && (
                 <p className="text-sm text-muted-foreground">
                     {t('Waiting for another player')}
+                </p>
+            )}
+            {!isWaiting && hasNoTeller && (
+                <p className="text-sm text-muted-foreground">
+                    {t('No one has statements ready.')}
                 </p>
             )}
             <Button
@@ -109,7 +171,9 @@ export function StartRoundControls({ label }: { label: string }) {
                 className="max-w-full"
             >
                 <Play aria-hidden />
-                <span className="truncate">{label}</span>
+                <span className="truncate">
+                    {closedGame ? t('New game') : label}
+                </span>
             </Button>
         </div>
     );
