@@ -1255,6 +1255,7 @@
     "Showing the first 100. Narrow the query.": "Se muestran los 100 primeros. Acota la consulta.",
     "Import :count tasks": "Importar :count tareas",
     ":imported imported, :skipped skipped.": ":imported importadas, :skipped omitidas.",
+    ":imported tickets imported, :skipped skipped.": ":imported tickets importados, :skipped omitidos.",
     "More task actions": "Más acciones de tareas",
     "Refresh from :source": "Actualizar desde :source",
     ":count tasks refreshed.": ":count tareas actualizadas.",

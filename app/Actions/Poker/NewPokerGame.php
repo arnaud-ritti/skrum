@@ -2,6 +2,7 @@
 
 namespace App\Actions\Poker;
 
+use App\Actions\Integrations\PokerImportBatch;
 use App\Enums\PokerDeck;
 
 readonly class NewPokerGame
@@ -26,5 +27,6 @@ readonly class NewPokerGame
         public ?int $taskTimerSeconds = null,
         public bool $writesEstimates = true,
         public ?string $estimateFieldId = null,
+        public ?PokerImportBatch $import = null,
     ) {}
 }

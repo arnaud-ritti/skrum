@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Integrations\FetchPokerImport;
+use App\Actions\Integrations\PokerImportBatch;
 use App\Actions\Poker\CreatePokerGame;
 use App\Actions\Poker\NewPokerGame;
 use App\Actions\Poker\PokerDeckRules;
 use App\Actions\Poker\PokerGameSettingsRules;
 use App\Actions\Poker\SavedPokerDeckRules;
 use App\Enums\PokerDeck;
+use App\Models\PokerGame;
 use App\Models\Team;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
@@ -15,10 +18,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class TeamPokerGamesController extends Controller
 {
-    public function store(Request $request, Workspace $workspace, Team $team, CreatePokerGame $createPokerGame): RedirectResponse
+    public function store(Request $request, Workspace $workspace, Team $team, CreatePokerGame $createPokerGame, FetchPokerImport $fetchPokerImport): RedirectResponse
     {
         Gate::authorize('createPokerGame', $team);
 
@@ -39,6 +43,9 @@ class TeamPokerGamesController extends Controller
             'spectator' => ['sometimes', 'boolean'],
             'tasks' => ['sometimes', 'array', 'max:50'],
             'tasks.*' => ['required', 'string', 'max:200'],
+            'import_source' => ['required_with:import_ids', 'string', Rule::in(['jira', 'linear', 'jira_dc', 'github'])],
+            'import_ids' => ['sometimes', 'array', 'min:1', 'max:100', 'prohibits:tasks'],
+            'import_ids.*' => ['required', 'string', 'max:100', 'distinct'],
             ...PokerGameSettingsRules::rules($team),
         ]);
 
@@ -51,6 +58,10 @@ class TeamPokerGamesController extends Controller
             [$deck, $cards] = PokerDeckRules::resolve($validated);
             $deckName = $validated['save_deck_as'] ?? null;
         }
+
+        $import = isset($validated['import_ids'])
+            ? $fetchPokerImport->handle($team, (string) $validated['import_source'], array_values($validated['import_ids']))
+            : null;
 
         $game = $createPokerGame->handle($team, $request->user(), new NewPokerGame(
             title: $validated['title'],
@@ -68,9 +79,26 @@ class TeamPokerGamesController extends Controller
             taskTimerSeconds: isset($validated['task_timer_seconds']) ? (int) $validated['task_timer_seconds'] : null,
             writesEstimates: (bool) ($validated['writes_estimates'] ?? true),
             estimateFieldId: $validated['estimate_field_id'] ?? null,
+            import: $import,
         ));
 
+        if ($import !== null) {
+            $this->flashSkippedTickets($game, $import);
+        }
+
         return to_route('poker.show', $game);
+    }
+
+    private function flashSkippedTickets(PokerGame $game, PokerImportBatch $import): void
+    {
+        $imported = $game->tasks()->count();
+        $skipped = count($import->externalIds) - $imported;
+
+        if ($skipped === 0) {
+            return;
+        }
+
+        Inertia::flash('toast', ['type' => 'info', 'message' => __(':imported tickets imported, :skipped skipped.', ['imported' => $imported, 'skipped' => $skipped])]);
     }
 
     /**

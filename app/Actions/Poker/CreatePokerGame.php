@@ -2,6 +2,7 @@
 
 namespace App\Actions\Poker;
 
+use App\Actions\Integrations\ImportPokerTasks;
 use App\Models\PokerGame;
 use App\Models\Team;
 use App\Models\User;
@@ -10,7 +11,10 @@ use Illuminate\Support\Str;
 
 class CreatePokerGame
 {
-    public function __construct(private AddPokerTask $addPokerTask) {}
+    public function __construct(
+        private AddPokerTask $addPokerTask,
+        private ImportPokerTasks $importPokerTasks,
+    ) {}
 
     public function handle(Team $team, User $creator, NewPokerGame $new): PokerGame
     {
@@ -49,6 +53,10 @@ class CreatePokerGame
 
             foreach ($new->tasks as $title) {
                 $this->addPokerTask->handle($game, $title, null);
+            }
+
+            if ($new->import !== null) {
+                $this->importPokerTasks->storeIssues($game, $new->import->integration, $new->import->externalIds, $new->import->issues);
             }
 
             return $game;

@@ -69,6 +69,9 @@ use App\Http\Controllers\Integrations\RetroActionItemLinkSyncsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
+use App\Http\Controllers\Integrations\TeamPokerImportContainersController;
+use App\Http\Controllers\Integrations\TeamPokerImportIterationsController;
+use App\Http\Controllers\Integrations\TeamPokerImportPreviewsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
 use App\Http\Controllers\Integrations\TrackerWebhooksController;
 use App\Http\Controllers\Integrations\WebhookDeliveriesController;
@@ -342,6 +345,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
+            Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index')->where('source', 'jira|linear|jira_dc|github');
+            Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
+            Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store')->where('source', 'jira|linear|jira_dc|github');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
