@@ -18,13 +18,13 @@ class GameStatementsController extends Controller
     {
         $player = GamePlayer::current($request);
 
+        GameRateLimit::hit("game-play:{$player->id}", 3, 1);
+
         $validated = $request->validate([
             'statements' => ['required', 'array', 'size:3'],
             'statements.*' => ['required', 'string', 'max:120', 'distinct:ignore_case'],
             'lie_index' => ['required', 'integer', 'between:0,2'],
         ]);
-
-        GameRateLimit::hit("game-play:{$player->id}", 3, 1);
 
         return response()->json([
             'mine' => $writeStatementSet->handle($room, $player, $validated['statements'], (int) $validated['lie_index']),

@@ -19,7 +19,9 @@ it('lets every player, guests included, write and replace their own set, and tel
     $this->actingAs($aUser)->putJson($uri, ['statements' => ['I ski', 'i SKI', 'I fly'], 'lie_index' => 2])->assertUnprocessable();
     $this->actingAs($aUser)->putJson($uri, ['statements' => ['I ski', 'I sing'], 'lie_index' => 1])->assertUnprocessable();
     $this->actingAs($aUser)->putJson($uri, [...$body, 'lie_index' => 3])->assertUnprocessable();
+    $this->travel(5)->seconds();
     $this->actingAs($aUser)->putJson($uri, ['statements' => ['I ski', 'I sing', str_repeat('a', 121)], 'lie_index' => 0])->assertUnprocessable();
+    $this->travel(5)->seconds();
     $this->actingAs($aUser)->putJson($uri, $body)
         ->assertOk()
         ->assertExactJson(['mine' => ['statements' => $body['statements'], 'lieIndex' => 2, 'played' => false]]);
@@ -48,6 +50,21 @@ it('removes a ready set, refuses to remove a played one, and makes a played set 
 
     expect(GameStatementSet::query()->count())->toBe(0);
     Event::assertDispatched(GameStatementsChanged::class, fn (GameStatementsChanged $event) => $event->ready === false);
+});
+
+it('counts refused sets against the rate limit', function () {
+    $room = GameRoom::factory()->game(GameKind::TwoTruths)->create();
+    gameRoomHost($room);
+    [$aUser] = gameRoomMember($room);
+    $uri = route('games.statements.update', $room);
+
+    foreach (range(1, 3) as $attempt) {
+        $this->actingAs($aUser)->putJson($uri, ['statements' => ['I ski'], 'lie_index' => 0])->assertUnprocessable();
+    }
+
+    $this->actingAs($aUser)->putJson($uri, ['statements' => ['I ski', 'I sing', 'I fly'], 'lie_index' => 2])
+        ->assertTooManyRequests()
+        ->assertJsonPath('message', __('Slow down a little.'));
 });
 
 it('refuses a set while the room plays another game', function () {

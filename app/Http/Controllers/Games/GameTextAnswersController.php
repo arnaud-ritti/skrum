@@ -25,11 +25,11 @@ class GameTextAnswersController extends Controller
     {
         $player = GamePlayer::current($request);
 
+        GameRateLimit::hit("game-text-answer:{$player->id}", self::Burst, 1);
+
         $validated = $request->validate([
             'text' => ['required', 'string', 'max:120'],
         ]);
-
-        GameRateLimit::hit("game-text-answer:{$player->id}", self::Burst, 1);
 
         return response()->json([
             'myAnswer' => $setTextAnswer->handle($room, $round, $player, $validated['text']),

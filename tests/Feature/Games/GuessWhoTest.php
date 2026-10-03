@@ -74,6 +74,19 @@ it('takes one answer per player, changeable or removable until the draw', functi
     $this->actingAs($aUser)->putJson($uri, ['text' => 'Late'])->assertConflict();
 });
 
+it('counts refused answers against the rate limit', function () {
+    ['room' => $room, 'round' => $round, 'aUser' => $aUser] = guessWhoTable();
+    $uri = route('games.rounds.textAnswer.update', [$room, $round]);
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($aUser)->putJson($uri, ['text' => str_repeat('a', 121)])->assertUnprocessable();
+    }
+
+    $this->actingAs($aUser)->putJson($uri, ['text' => 'Lifeguard'])
+        ->assertTooManyRequests()
+        ->assertJsonPath('message', __('Slow down a little.'));
+});
+
 it('draws one answer among at least two, for the host only, and shows it without its author', function () {
     ['room' => $room, 'round' => $round, 'hostUser' => $hostUser, 'aUser' => $aUser, 'a' => $a, 'b' => $b] = guessWhoTable();
     guessWhoAnswer($round, $a, 'Lifeguard');
