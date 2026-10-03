@@ -150,7 +150,7 @@ it('shows the new brand to another user on the request that follows the save', f
     $admin = User::factory()->create();
     $member = User::factory()->create();
 
-    $before = $this->actingAs($member)->get(route('profile.edit'))->assertOk()->getContent();
+    $before = $this->actingAs($member)->get(route('settings.edit'))->assertOk()->getContent();
 
     expect($before)->not->toContain('skrum-brand');
 
@@ -158,7 +158,7 @@ it('shows the new brand to another user on the request that follows the save', f
     nextRequestSettings()->setMany(['brand_color' => '#2B63B0', 'display_name' => 'Acme Retros']);
     app()->forgetScopedInstances();
 
-    $after = $this->actingAs($member)->get(route('profile.edit'))->assertOk();
+    $after = $this->actingAs($member)->get(route('settings.edit'))->assertOk();
 
     expect(brandStyleTag($after->getContent()))->toBe(BrandPalette::derive('#2B63B0')->css())
         ->and($after->getContent())->toContain('>Acme Retros</title>');

@@ -14,7 +14,7 @@ return [
             'top_picks' => 'Sélection',
             'question_note' => "Quel problème\nvoulons-nous\nrésoudre ?",
             'idea_note' => "Une idée\npar post-it",
-            'build_note' => "Rebondissez sur\nles autres idées",
+            'build_note' => "Rebondis sur\nles autres idées",
         ],
     ],
     'flowchart' => [
@@ -93,7 +93,7 @@ return [
     ],
     'matrix' => [
         'name' => 'Matrice 2×2',
-        'description' => "Triez les idées selon l'impact et l'effort.",
+        'description' => "Trie les idées selon l'impact et l'effort.",
         'texts' => [
             'quick_wins' => 'Gains rapides',
             'big_bets' => 'Gros paris',

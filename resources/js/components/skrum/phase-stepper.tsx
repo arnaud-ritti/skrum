@@ -31,11 +31,16 @@ export type PhaseStepperProps = {
     current: string;
     interactive?: boolean;
     /**
-     * Without `compact` or `mobile` the stepper follows its container: full
-     * rail from 56rem, markers with the current label from 36rem, "Phase n/m"
-     * with a progress bar below. `compact` never shows the full rail,
-     * `mobile` always shows the narrow form. Once completed the rail is its
-     * ticked markers beside the badge, and "Reopen" is the only action.
+     * Without `compact` or `mobile` the stepper follows two widths. Its own:
+     * markers with the current label from 36rem, "Phase n/m" with a progress
+     * bar below. That of the container named `session` (the session header):
+     * every label and the names of the actions from 105rem (`session-rail`),
+     * where they fit beside the title, the timer and the people present;
+     * without such a container around it the labels stay hidden. `compact`
+     * never shows the full rail. `mobile` is the rail of a phone at any
+     * width: a marker per step and the label of the current one, read only,
+     * the moves being left to the screen (its menu). Once completed the rail
+     * is its ticked markers beside the badge, and "Reopen" is the only action.
      */
     compact?: boolean;
     mobile?: boolean;
@@ -87,7 +92,8 @@ function StepMarker({
 
 /**
  * A label that stays in the accessibility tree when it is not shown: read
- * only by assistive tech until the container is wide enough for the full rail.
+ * only by assistive tech until the session header is wide enough for the full
+ * rail.
  */
 function StepLabel({
     visibility,
@@ -107,7 +113,7 @@ function StepLabel({
             className={cn(
                 'sr-only',
                 visibility === 'full' &&
-                    '@4xl/phases:not-sr-only @4xl/phases:flex @4xl/phases:min-w-0',
+                    '@session-rail/session:not-sr-only @session-rail/session:flex @session-rail/session:min-w-0',
             )}
         >
             <span
@@ -153,7 +159,7 @@ function ActionButton({
             className={cn(
                 'max-w-40 min-w-0 shrink-0',
                 labelVisibility === 'full' &&
-                    'w-8 px-0 has-[>svg]:px-0 @4xl/phases:w-auto @4xl/phases:px-3 @4xl/phases:has-[>svg]:px-2.5',
+                    'w-8 px-0 has-[>svg]:px-0 @session-rail/session:w-auto @session-rail/session:px-3 @session-rail/session:has-[>svg]:px-2.5',
                 unavailable && 'cursor-not-allowed opacity-50',
             )}
         >
@@ -195,23 +201,19 @@ export function PhaseStepper({
     const [focusedId, setFocusedId] = useState<string | null>(null);
 
     const mode: StepperMode = mobile ? 'mobile' : compact ? 'compact' : 'auto';
-    const hasRail = mode !== 'mobile';
+    const isMobile = mode === 'mobile';
     const isEnded = current === CompletedPhase;
     // Once ended no step is the current one: every label at once does not
     // fit a header, so the rail keeps its ticked markers.
     const otherLabels: LabelVisibility =
         mode === 'auto' && !isEnded ? 'full' : 'never';
-    const actionLabels: LabelVisibility = compact
-        ? 'never'
-        : mode === 'mobile'
-          ? 'always'
-          : 'full';
+    const actionLabels: LabelVisibility = compact ? 'never' : 'full';
 
     const total = phases.length;
     const foundIndex = phases.findIndex((phase) => phase.id === current);
     const currentIndex = isEnded ? total : foundIndex;
     const currentStep = phases[foundIndex];
-    const canChange = interactive && onPhaseChange !== undefined;
+    const canChange = interactive && onPhaseChange !== undefined && !isMobile;
 
     const previousStep = isEnded ? undefined : phases[currentIndex - 1];
     const nextStep = isEnded ? undefined : phases[currentIndex + 1];
@@ -348,16 +350,13 @@ export function PhaseStepper({
             <div
                 className={cn(
                     'flex min-w-0 flex-wrap items-center gap-2',
-                    hasRail && '@xl/phases:flex-nowrap @xl/phases:gap-3',
+                    !isMobile && '@xl/phases:flex-nowrap @xl/phases:gap-3',
                 )}
             >
-                {!isEnded && (
+                {!isEnded && !isMobile && (
                     <span
                         data-slot="phase-count"
-                        className={cn(
-                            'inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums',
-                            hasRail && '@xl/phases:hidden',
-                        )}
+                        className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @xl/phases:hidden"
                     >
                         {t('Phase :current/:total', {
                             current: progressValue,
@@ -380,9 +379,10 @@ export function PhaseStepper({
                     data-slot="phase-scroller"
                     className={cn(
                         'relative min-w-0 grow basis-0',
-                        hasRail &&
-                            '@xl/phases:shrink @xl/phases:grow-0 @xl/phases:basis-auto @xl/phases:overflow-x-auto',
-                        hasRail && isEnded && '@xl/phases:order-first',
+                        isMobile
+                            ? 'shrink grow-0 basis-auto overflow-x-auto'
+                            : '@xl/phases:shrink @xl/phases:grow-0 @xl/phases:basis-auto @xl/phases:overflow-x-auto',
+                        !isMobile && isEnded && '@xl/phases:order-first',
                     )}
                 >
                     <ol
@@ -390,17 +390,14 @@ export function PhaseStepper({
                         data-slot="phase-rail"
                         className={cn(
                             'flex min-w-0 items-center',
-                            hasRail &&
-                                '@xl/phases:w-max @xl/phases:gap-1 @xl/phases:rounded-full @xl/phases:border @xl/phases:border-border @xl/phases:bg-card @xl/phases:p-1 @xl/phases:shadow-card',
+                            isMobile
+                                ? 'w-max gap-0.5 rounded-full border border-border bg-card p-1'
+                                : '@xl/phases:w-max @xl/phases:gap-1 @xl/phases:rounded-full @xl/phases:border @xl/phases:border-border @xl/phases:bg-card @xl/phases:p-1 @xl/phases:shadow-card',
                         )}
                     >
                         {phases.map((phase, index) => {
                             const state = stateOf(index);
                             const isCurrent = state === 'current';
-
-                            if (!hasRail && !isCurrent) {
-                                return null;
-                            }
 
                             const reachable = isReachable(index);
                             const suffix = phase.skipped
@@ -413,14 +410,11 @@ export function PhaseStepper({
                                     <StepMarker
                                         state={state}
                                         number={index + 1}
-                                        className={cn(
-                                            isCurrent
-                                                ? 'hidden'
-                                                : 'inline-flex',
-                                            isCurrent &&
-                                                hasRail &&
-                                                '@xl/phases:inline-flex',
-                                        )}
+                                        className={
+                                            isCurrent && !isMobile
+                                                ? 'hidden @xl/phases:inline-flex'
+                                                : 'inline-flex'
+                                        }
                                     />
                                     <StepLabel
                                         visibility={
@@ -445,21 +439,28 @@ export function PhaseStepper({
                                     ? 'max-w-full font-semibold text-foreground'
                                     : 'max-w-40 shrink-0 px-1.5 font-medium text-foreground',
                                 isCurrent &&
-                                    hasRail &&
-                                    '@xl/phases:max-w-40 @xl/phases:bg-primary @xl/phases:pr-2.5 @xl/phases:pl-1.5 @xl/phases:font-medium @xl/phases:text-primary-foreground',
+                                    (isMobile
+                                        ? 'max-w-40 bg-primary pr-2.5 pl-1.5 font-medium text-primary-foreground'
+                                        : '@xl/phases:max-w-40 @xl/phases:bg-primary @xl/phases:pr-2.5 @xl/phases:pl-1.5 @xl/phases:font-medium @xl/phases:text-primary-foreground'),
+                                // A phone holds seven markers and a label in
+                                // its width only with tighter steps.
+                                !isCurrent && isMobile && 'px-1',
                                 !isCurrent &&
                                     otherLabels === 'full' &&
-                                    '@4xl/phases:pr-2.5',
+                                    '@session-rail/session:pr-2.5',
                             );
 
                             return (
                                 <Fragment key={phase.id}>
-                                    {index > 0 && hasRail && (
+                                    {index > 0 && (
                                         <li
                                             aria-hidden
                                             data-slot="phase-link"
                                             className={cn(
-                                                'hidden h-px w-3 shrink-0 @xl/phases:block',
+                                                'h-px shrink-0',
+                                                isMobile
+                                                    ? 'block w-2'
+                                                    : 'hidden w-3 @xl/phases:block',
                                                 index <= currentIndex
                                                     ? 'bg-skrum-success'
                                                     : 'bg-border',
@@ -473,7 +474,9 @@ export function PhaseStepper({
                                         className={cn(
                                             isCurrent
                                                 ? 'flex min-w-0'
-                                                : 'hidden @xl/phases:flex',
+                                                : isMobile
+                                                  ? 'flex'
+                                                  : 'hidden @xl/phases:flex',
                                         )}
                                     >
                                         {canChange ? (
@@ -543,7 +546,7 @@ export function PhaseStepper({
                         data-slot="phase-leader"
                         className={cn(
                             'inline-flex min-w-0 basis-full items-center gap-1.5 text-sm text-muted-foreground',
-                            hasRail && '@xl/phases:basis-auto',
+                            !isMobile && '@xl/phases:basis-auto',
                         )}
                     >
                         <Lock className="size-3.5 shrink-0" aria-hidden />
@@ -553,18 +556,17 @@ export function PhaseStepper({
                     </span>
                 )}
             </div>
-            <div
-                data-slot="phase-progress"
-                className={cn(hasRail && '@xl/phases:hidden')}
-            >
-                <Progress
-                    value={progressValue}
-                    max={Math.max(total, 1)}
-                    valueLabel=""
-                    aria-label={t('Retro phases')}
-                    className="h-1.5"
-                />
-            </div>
+            {!isMobile && (
+                <div data-slot="phase-progress" className="@xl/phases:hidden">
+                    <Progress
+                        value={progressValue}
+                        max={Math.max(total, 1)}
+                        valueLabel=""
+                        aria-label={t('Retro phases')}
+                        className="h-1.5"
+                    />
+                </div>
+            )}
             <p className="sr-only" aria-live="polite" role="status">
                 {announcement}
             </p>

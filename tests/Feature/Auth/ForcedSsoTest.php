@@ -165,32 +165,32 @@ it('alerts instance admins, and nobody else, while the setting is ignored', func
     $admin = User::factory()->instanceAdmin()->create();
     $member = User::factory()->create();
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
 
     config(['services.google.client_id' => null]);
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', 'sso_required_ignored'));
-    $this->actingAs($member)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', 'sso_required_ignored'));
+    $this->actingAs($member)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
 
     resolve(InstanceSettings::class)->set('sso_required', false);
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('signInAlert', null));
 });
 
 it('tells instance admins, and nobody else, that the setting is in force', function () {
     $admin = User::factory()->instanceAdmin()->create();
     $member = User::factory()->create();
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
 
     requireSso();
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', true));
-    $this->actingAs($member)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', true));
+    $this->actingAs($member)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
 
     config(['services.google.client_id' => null]);
 
-    $this->actingAs($admin)->get(route('appearance.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
+    $this->actingAs($admin)->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page->where('ssoInForce', false));
 });
 
 it('sends no magic link and keeps the uniform answer', function () {

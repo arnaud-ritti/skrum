@@ -70,7 +70,7 @@ it('answers the busy page to a browser, with the busy message and without the ma
         ->assertServiceUnavailable()
         ->assertHeader('Retry-After', '1')
         ->assertSee('data-slot="maintenance-page"', false)
-        ->assertSee('La base de données est occupée. Réessayez.')
+        ->assertSee('La base de données est occupée. Réessaie.')
         ->assertDontSee('Maintenance')
         ->assertDontSee('<script', false);
 });
@@ -81,7 +81,7 @@ it('marks the busy answer to an Inertia request, which shows the message instead
     $this->post($uri, [], ['X-Inertia' => 'true', 'Accept-Language' => 'fr'])
         ->assertServiceUnavailable()
         ->assertHeader('Retry-After', '1')
-        ->assertHeader(Transactions::BusyHeader, rawurlencode('La base de données est occupée. Réessayez.'));
+        ->assertHeader(Transactions::BusyHeader, rawurlencode('La base de données est occupée. Réessaie.'));
 });
 
 it('does not mark a 503 that is not a busy database', function () {

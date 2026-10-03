@@ -18,7 +18,7 @@ return [
     'choose' => 'Elegir',
     'choose_file' => 'Elegir archivo',
     'choose_image' => 'Elegir Imagen',
-    'click_to_copy' => 'Haga clic para copiar',
+    'click_to_copy' => 'Haz clic para copiar',
     'close' => 'Cerrar',
     'collapse' => 'Colapsar',
     'collapse_all' => 'Colapsar todo',

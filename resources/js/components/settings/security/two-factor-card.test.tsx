@@ -102,6 +102,24 @@ async function startSetup(): Promise<void> {
     await userEvent.click(screen.getByRole('button', { name: 'Enable 2FA' }));
 }
 
+function succeedVisit() {
+    return (_url: string, _data: unknown, options: VisitOptions) => {
+        options.onSuccess?.();
+        options.onFinish?.();
+    };
+}
+
+async function regenerateCodes(): Promise<void> {
+    await userEvent.click(
+        screen.getByRole('button', { name: 'Regenerate codes' }),
+    );
+    await userEvent.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', {
+            name: 'Regenerate codes',
+        }),
+    );
+}
+
 describe('TwoFactorCard, off', () => {
     it('says the second factor is off and offers to enable it', () => {
         renderWithProviders(
@@ -113,7 +131,7 @@ describe('TwoFactorCard, off', () => {
         );
 
         expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'Off',
+            'Two-factor off',
         );
         expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
         expect(
@@ -267,7 +285,7 @@ describe('TwoFactorCard, off', () => {
 
         expect(twoFactor.clearSetupData).toHaveBeenCalledTimes(1);
         expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'On',
+            'Two-factor on',
         );
         expect(screen.getByText('Added on 12 March 2026')).toBeTruthy();
     });
@@ -412,7 +430,7 @@ describe('TwoFactorCard, on', () => {
         );
 
         expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'On',
+            'Two-factor on',
         );
         expect(screen.getByText('Added on 12 March 2026')).toBeTruthy();
         expect(screen.getByText('7 of 8 recovery codes left')).toBeTruthy();
@@ -471,7 +489,7 @@ describe('TwoFactorCard, on', () => {
         ).toBeNull();
     });
 
-    it('offers to regenerate the codes on their row, beside "View recovery codes", and shows the new ones', async () => {
+    it('asks before regenerating the codes, on their row beside "View recovery codes", and sends nothing until confirmed', async () => {
         twoFactor.recoveryCodesList = codes;
         renderWithProviders(
             <TwoFactorCard enabled requiresConfirmation summary={on} />,
@@ -488,16 +506,47 @@ describe('TwoFactorCard, on', () => {
                 name: 'View recovery codes',
             }),
         ).toBeTruthy();
-        expect(regenerate.getAttribute('type')).toBe('submit');
-        expect(regenerate.closest('form')?.getAttribute('action')).toBe(
-            '/user/two-factor-recovery-codes',
+
+        await userEvent.click(regenerate);
+
+        const dialog = screen.getByRole('alertdialog', {
+            name: 'Regenerate the recovery codes?',
+        });
+
+        expect(
+            within(dialog).getByText(
+                'Your current codes stop working at once. Store the new ones in a safe place.',
+            ),
+        ).toBeTruthy();
+        expect(router.post).not.toHaveBeenCalled();
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Cancel' }),
         );
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(router.post).not.toHaveBeenCalled();
         expect(
             screen.queryByRole('list', { name: 'Recovery codes' }),
         ).toBeNull();
+    });
 
-        await act(async () => (form.props.onSuccess as () => void)());
+    it('regenerates the codes once confirmed and shows the new ones', async () => {
+        twoFactor.recoveryCodesList = codes;
+        router.post.mockImplementation(succeedVisit());
+        renderWithProviders(
+            <TwoFactorCard enabled requiresConfirmation summary={on} />,
+        );
 
+        await regenerateCodes();
+
+        expect(router.post).toHaveBeenCalledTimes(1);
+        expect(router.post.mock.calls[0][0]).toBe(
+            '/user/two-factor-recovery-codes',
+        );
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
         expect(twoFactor.fetchRecoveryCodes).toHaveBeenCalledTimes(1);
         expect(
             within(
@@ -514,11 +563,32 @@ describe('TwoFactorCard, on', () => {
         ).toBe(1);
     });
 
+    it('keeps the confirmation open with a message when the regeneration fails', async () => {
+        router.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) => {
+                options.onFinish?.();
+            },
+        );
+        renderWithProviders(
+            <TwoFactorCard enabled requiresConfirmation summary={on} />,
+        );
+
+        await regenerateCodes();
+
+        expect(
+            (await within(screen.getByRole('alertdialog')).findByRole('alert'))
+                .textContent,
+        ).toBe('Something went wrong. Please try again.');
+        expect(twoFactor.fetchRecoveryCodes).not.toHaveBeenCalled();
+    });
+
     it('announces the new codes after a regeneration, until they are hidden', async () => {
         twoFactor.recoveryCodesList = codes;
         renderWithProviders(
             <TwoFactorCard enabled requiresConfirmation summary={on} />,
         );
+
+        router.post.mockImplementation(succeedVisit());
 
         const announcement = (): string | null | undefined =>
             document.querySelector('[data-slot="recovery-codes-status"]')
@@ -526,7 +596,7 @@ describe('TwoFactorCard, on', () => {
 
         expect(announcement()).toBe('');
 
-        await act(async () => (form.props.onSuccess as () => void)());
+        await regenerateCodes();
 
         expect(announcement()).toBe('New recovery codes generated.');
 
@@ -635,7 +705,11 @@ describe('TwoFactorCard, on', () => {
             screen.queryByRole('button', { name: 'View recovery codes' }),
         ).toBeNull();
 
-        await act(async () => (form.props.onSuccess as () => void)());
+        router.post.mockImplementation(succeedVisit());
+        await regenerateCodes();
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
 
         expect(screen.getAllByRole('alert').length).toBe(1);
         expect(screen.queryByText('Failed to fetch recovery codes')).toBeNull();
@@ -746,7 +820,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         resendIn: 0,
     };
 
-    it('lists the two methods in one card, "Off" while neither is on', () => {
+    it('lists the two methods in one card, off while neither is on', () => {
         renderWithProviders(
             <TwoFactorCard
                 enabled={false}
@@ -757,7 +831,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         );
 
         expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'Off',
+            'Two-factor off',
         );
         expect(
             Array.from(
@@ -770,7 +844,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         ).toBeTruthy();
     });
 
-    it('says "On" when the e-mail code alone is on, without recovery codes', () => {
+    it('says it is on when the e-mail code alone is on, without recovery codes', () => {
         renderWithProviders(
             <TwoFactorCard
                 enabled={false}
@@ -781,7 +855,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         );
 
         expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'On',
+            'Two-factor on',
         );
         expect(screen.queryByText('Recovery codes')).toBeNull();
         expect(

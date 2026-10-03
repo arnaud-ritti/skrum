@@ -8,6 +8,7 @@ export default function SettingsLayout({
     description,
     nav,
     navLabel,
+    stuckNav,
     children,
 }: {
     title: string;
@@ -15,6 +16,8 @@ export default function SettingsLayout({
     nav: SubNavItem[];
     /** Accessible name of the sub-navigation; "Settings" when absent. */
     navLabel?: string;
+    /** Below `lg` the sub-navigation stays under the top bar while the page scrolls. */
+    stuckNav?: boolean;
     children: ReactNode;
 }) {
     const { t } = useTrans();
@@ -25,6 +28,7 @@ export default function SettingsLayout({
             description={description}
             nav={nav}
             navLabel={navLabel ?? t('Settings')}
+            stuckNav={stuckNav}
         >
             {children}
         </SettingsFrame>

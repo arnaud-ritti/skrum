@@ -752,6 +752,8 @@
 @theme {
   --color-whiteboard-paper: #ffffff;
   --color-whiteboard-paper-line: #ced4da;
+  /* Header width from which the phase rail shows every label: @session-rail/session: */
+  --container-session-rail: 105rem;
 }
 
 @layer utilities {

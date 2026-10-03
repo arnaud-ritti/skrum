@@ -156,7 +156,7 @@ export default function SettingsAccountSection() {
                                     shape="pill"
                                     icon={Check}
                                 >
-                                    {t('On')}
+                                    {t('Two-factor on')}
                                 </Badge>
                             </>
                         }

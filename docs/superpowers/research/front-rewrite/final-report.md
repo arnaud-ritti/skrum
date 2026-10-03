@@ -1,24 +1,24 @@
 # Front-end rewrite (plan 18) — final report
 
-Written on 2026-10-02 at the close of plan 18g, on branch `plan-18g-cleanup`. The branch holds plans 18a to 18g. **Nothing is merged into `main` and nothing is pushed: both are left to the owner.**
+Written on 2026-10-02 at the close of plan 18g, on branch `plan-18g-cleanup`; updated on 2026-10-03 with rework 3 (§12). The branch holds plans 18a to 18g and the three reworks. **Nothing is merged into `main` and nothing is pushed: both are left to the owner.**
 
 The rewrite is built and its automated suites are green. It has not been seen by a person, in a browser, on any screen. Read "What was not verified" before relying on anything else in this report.
 
 ## 1. Final gates
 
-Run on the last commit of code of this branch.
+Run on the last commit of code of this branch, after rework 3.
 
 | Gate | Result |
 |---|---|
-| Feature suite (`artisan test --parallel --processes=6 --exclude-testsuite=Browser`: Unit, Feature, Arch) | 5442 tests: 5441 passed, 1 skipped, 0 failed |
+| Feature suite (`artisan test --parallel --processes=6 --exclude-testsuite=Browser`: Unit, Feature, Arch) | 5659 tests: 5658 passed, 1 skipped, 0 failed |
 | Architecture suite alone (`--testsuite=Arch`) | 93 passed |
-| `tests/Arch` (front-end rules, page wiring) and `TranslationKeysTest` | 114 passed |
-| Vitest | 3580 passed, 334 files |
+| `tests/Arch` (front-end rules, page wiring), `TranslationKeysTest` and `InformalRegisterTest` | 93 + 22 + 6 passed |
+| Vitest (`npm run test`) | 3699 passed, 342 files |
 | `wayfinder:generate --with-form`, then `npm run types:check` | clean |
-| `npm run check` | 979 files formatted, 964 linted, no warning |
+| `npm run check` | 989 files formatted, 974 linted, no warning |
 | `npx vp build` | built |
 | `vendor/bin/pint --dirty` | passed |
-| Visual capture tests (`tests/Browser/Visual`, 14 files, 251 tests), light theme, 1440 px, French only | passed |
+| Visual capture tests (`tests/Browser/Visual`, 14 files, 251 tests), light theme, 1440 px, French only | passed before rework 3; **not run since**, and their captures are stale for the screens rework 3 changed (§12) |
 | Browser walkthroughs and smoke tests (`tests/Browser/Walkthroughs`, `tests/Browser/Smoke`) | **not run** (owner decision) |
 | `bin/front-old-components.mjs` | 0 old view component reached by a page |
 | `bin/front-unused.mjs --lang` | 0 unreached file, 0 local-only export, 0 unused package, 0 unused CSS, 0 unused key; exits 1 because one file is reached only by its test (`layouts/skrum/onboarding-layout.tsx`, kept on purpose) |
@@ -52,9 +52,9 @@ Tables: D-01 to D-127 in the 18e plan ("Deviations from the mockup"), V1 to V32 
 | Approved by the owner (an answer is recorded) | 72 of the D rows | Listed in `18e-report/README.md`. For 21 of them the owner asked for a rework: the row now describes what remains after it, and **the owner has not read that remainder** |
 | Ruled by the controller under the autonomy mandate (the owner has read none) | 35 D rows; the 28 V rows that are not an owner answer | `18e-report/README.md`; `18f-report.md` §5 |
 | Owner answers among the V rows | 4 | V1, V16, V24, V32 |
-| Still open in 18e (the built state is the default) | 15 | D-81, D-88, D-95, D-96, D-101, D-109, D-111, D-112, D-114, D-115, D-117, D-119, D-120, D-123, D-125 |
+| Still open in 18e (the built state is the default) | 9 (15 before rework 3) | D-88, D-96, D-115, D-117, D-119, D-125; D-95, D-101 and D-114 were reworked on the owner's word and stay for what remains (§12) |
 | Not classified by the 18e report | 1 | D-90 (branding: exact radius field, "Undo" on a staged image) |
-| New in 18g, to approve by the owner | 4 | D-128 to D-131 |
+| New in 18g, to approve by the owner | 2 (4 before rework 3) | D-129, D-131; D-128 fixed and D-130 reworked in rework 3 |
 | Roadmap (a later plan builds the element) | — | The rows whose last column names a feature: `feature-roadmap.md`, plans 19 to 27 and 29 |
 | Backlog (not asked for) | — | The rows marked "backlog", and everything of plans 28 and 30 and of scheduling, which the owner moved to the backlog (V14 and V15 point there now) |
 
@@ -147,8 +147,8 @@ The table of `18e-report/README.md`, "Decisions taken on the owner's behalf", st
 | Simple data added to the server where the mockup shows it (team tiles, "used n×", ticket key, "Join" / "Resume", team name in headers, votes per task) | Remove the prop and its line; each has a feature test |
 | Participation of the session end counts team members who joined; guests left out (spec B3 amended) | Revert `66bd5b52` and `0d625c51` |
 | The health check page opens on `view` (D-96) | `authorize('update', …)` in its controller |
-| "Regenerate codes" asks nothing (D-95) | Wrap the action in a `ConfirmDialog` |
-| Action items: "Reset" stores "every team" (D-120) | `reset` in `use-action-item-filters.ts` |
+| "Regenerate codes" asks nothing (D-95) | **Overturned by the owner** in rework 3: it asks first (R3-9) |
+| Action items: "Reset" stores "every team" (D-120) | **Overturned by the owner** in rework 3: Reset returns to the opening state, every team lasts one visit (R3-11) |
 | "Closed" badge only on a survey the facilitator closed | `closed` in `survey-result-list.tsx` |
 | French "Action items" is "Actions" | Change the value, or split the key |
 | "Remove from team" / "Remove from workspace" as two keys | Rename the keys |
@@ -164,10 +164,11 @@ The table of `18f-report.md` §4 stands as written: the second-factor condition 
 
 | Decision | To overturn |
 |---|---|
-| German says "du" everywhere (189 values, 70 of them older than plan 18e) | Revert `78935c16`; 78 new strings then say "Sie" next to older ones with "du" |
-| Spanish says "tú" on screen and keeps "usted" in mails; "baraja", "clave de acceso" | Revert `a67e4836` |
+| German says "du" everywhere (189 values, 70 of them older than plan 18e) | **Settled by the owner** (sixth round: informal address everywhere). Seven remaining "Sie" strings were changed too |
+| Spanish says "tú" on screen and keeps "usted" in mails; "baraja", "clave de acceso" | Register **settled by the owner** (sixth round): "tú" everywhere, mails included; French says "tu" everywhere. For "baraja" and "clave de acceso": revert `a67e4836` |
 | French takes the words of the mockups: "facilitateur", "deck", "icebreaker", "double authentification", "Enregistrer", "Synthèse", "Depuis toujours" | Revert `b7d2790b`; the last three are in `cabda665` and `5faee0d6` |
 | French: a non-breaking space before `: ; ? !` (469 values); the mail strings were left out so that they match their mockup to the letter | Revert `52945310` |
+| Participation of the session end (plan 18e close: team members only, guests left out) | **Settled by the owner** (sixth round): a guest counts. Everyone who joined out of everyone expected (team members plus the participants who are not members); never above 100%. Spec B3 amended |
 | The link of a team tile uses the key "Open team"; the key "Open" is removed | `team-tile.tsx`; restore the key |
 | The poker header shows the round alone below 110rem; "Anonymous votes" and "Auto-reveal" are then only in the settings and the facilitator panel | `OptionBadgesFrom` in `poker/poker-room.tsx` |
 | The unsaved line of the admin topbar shows only when something is unsaved | `unsaved-bar.tsx` (`md:data-[dirty]:not-sr-only`) |
@@ -217,3 +218,55 @@ From 18g: a deployment must build the front end (`npm run build`) after this bra
   - the PHP `^8.4` constraint in `composer.json`;
   - the `CLAUDE.md` pointer;
   - merge into `main` and push.
+
+## 12. Rework 3 (owner rounds 7 and 8)
+
+Brief: `.superpowers/sdd/2026-10-16-plan-18e-front-rewrite-screens/rework-3-brief.md`. Four lanes, each reviewed, merged with `--no-ff` in this order: `rw3/r3Misc`, `rw3/r3Integrations`, `rw3/r3Retro`, `rw3/r3Settings`. The only conflict was the end of the four `lang/*.json` files (retro and settings both appended keys): resolved by the union of the keys, `TranslationKeysTest` and `InformalRegisterTest` green.
+
+### What changed, per decision
+
+| Item | Row | What is built now |
+|---|---|---|
+| R3-1 "Add a card" | D-97 reworded | Each column ends with the dashed "Add a card" button; a click or N opens one card in editing with the key hints, "GIF", "Cancel" and "Save". Controller rulings on the lane's open questions: after "Save" the card stays open and focused for the next one; it sits at the foot of the column; a new card's button reads "Save". A card left in editing now goes when the column stops taking cards (locked board, phase over), so it no longer takes the focus back later |
+| R3-2 Reactions at session end | D-112 closed | The reaction bar is docked under the results (and under the "Board" tab); flying reactions are never stored; spec §9.1 and the board-engagement spec reworded. On a phone it is the compact bar above the sticky actions |
+| R3-3 ROTI wording | D-109 removed, D-110 closed | "Was this time together worth it?" and the five labels of the mockup in four languages; the ROTI screen lists no action item (a test guards it), spec §9.1 says where they are ticked |
+| R3-4 Phase rail labels | D-101 reworded, stays | Every label from 105rem of session header (container query, token `--container-session-rail`, now declared among the plan 18e additions so the design-system head of `app.css` stays untouched); below, markers and the current label. 1440 px still shows the markers |
+| R3-5 Compact health rows | D-111 closed | `HealthCheckCompact` rows on the session end; "Details" opens the full results (figures, radar, trend, one block per statement) in a dialog, titled "Health check" like the card |
+| R3-6 Phone compact rail | D-114 reworded, stays | Compact, read-only rail; the phase and its place under the title; "Previous" / "Next" ("Complete", "Reopen") in the facilitator menu |
+| R3-7 Surveys at the end | D-123 closed | `PresentSurvey` counts a survey left open on a completed retro as closed: everyone sees the results, the foot "Answer to join the discussion" is gone. Completion already closed open surveys (`CloseOpenSurveys`) |
+| R3-8 Settings on one page | D-130 reworded, stays | `/settings` holds Profile, Security, Appearance, Notifications and API tokens; the sub-navigation scrolls to anchors, marks the section in view and stays under the top bar on a phone; the old addresses redirect to their anchor. Every card is drawn on opening; the password is asked in a dialog at each protected action. The locked card of the first build and its test were deleted (approved by the controller) |
+| R3-9 Recovery codes, badge | D-95 reworded, D-81 removed | "Regenerate codes" asks first; no generation date; the badge has keys of its own ("Activée" / "Désactivée" in French, "Activada" / "Desactivada" in Spanish) |
+| R3-10 Integrations | D-85, D-86 reworded, stay | One card, one row per provider, status line under the name, a switch and "Configure" opening the existing forms in a sheet; pending steps call for action on the row ("Finish setup", "Reconnect"). No brand logo: the design system ships none, so lucide stays and no exception to "lucide only" was written |
+| R3-11 Action items Reset | D-120 settled | Reset returns to the opening state (current team, open items, no grouping) and hands the focus to the Team facet; every team lasts one visit |
+| R3-12 Games title | D-128 fixed | The team header button reads "Jeux d'équipe" through the key "Team games"; the sidebar entry and the games page title stay "Jeux" as their mockups |
+
+### Security of the one-page settings
+
+| Before rework 3 | Now | Tests |
+|---|---|---|
+| `/settings/security` and `/settings/api-tokens` behind `password.confirm` | Redirects to their anchor, still behind `password.confirm` and `verified` | `tests/Feature/Settings/AccountSettingsPageTest.php` |
+| Account state of the security page (`twoFactorEnabled`, `twoFactor.{confirmedAt, recoveryCodesRemaining, recoveryCodesTotal}`, `passkeys`, `emailSecondFactor.*`) sent with the protected page | `security.protected`: null unless the session confirmation is fresh (same key and timeout as the middleware) and the address verified; a partial reload cannot pull it. Before confirmation only instance configuration is sent (`SecuritySettings::offered()` takes no user) | `AccountSettingsPageTest.php` |
+| Token page props (`tokens`, `teamGroups`, `mcpUrl`) behind the protected page | `apiTokens.protected`, same rule. `expirationOptions` / `defaultExpiration` are code constants and are sent with the section (approved) | `AccountSettingsPageTest.php`, `tests/Feature/Mcp` |
+| Six Fortify two-factor routes, three passkey routes, three e-mail code routes, `apiTokens.store` guarded | Unchanged; `apiTokens.destroy` gains `password.confirm` | `tests/Feature/Settings/PasswordConfirmationGuardTest.php`: 17 actions x 3 accounts (password, SSO-only, SSO-only under `sso_required`), refused without confirmation, let through with it, 423 on JSON, refused after the timeout, wrong password never confirms, unverified account sent to verification; partial reloads, a forged longer confirmation, an SSO-only account sending anything to the dialog, someone else's token, a guest |
+| `two_factor_confirmed_at` and `two_factor_email_enabled_at` **shared with every page through `auth.user`** (a leak of the state the security section keeps behind the password) | Hidden on the `User` model | `AccountSettingsPageTest.php` ("missing auth.user.two_factor_*") |
+| Fortify's `POST /user/confirm-password`: no throttle; an array `password` gave a 500 | Six tries a minute per account (`throttle:passwordConfirmations`, refusal on the password field) and `password` must be text (`EnsurePasswordIsText`), both attached by route name in `FortifyServiceProvider` | `tests/Feature/Auth/PasswordConfirmationAttemptsTest.php` |
+| A reload of `/settings` during an authenticator setup dropped the pending secret | A visit made from the page itself keeps it; a new opening still drops it, as Fortify rules | `AccountSettingsPageTest.php` |
+
+Left as it was (existed before): an unverified account that has confirmed its password can reach Fortify's two-factor routes, which carry no `verified` middleware.
+
+### Totals
+
+Feature suite 5658 passed, 1 skipped (5441 before); Vitest 3699 in 342 files (3580 in 334); `tests/Arch` 93; `npm run check` 989 files; build, types, wayfinder and Pint clean (§1).
+
+### Not verified
+
+- Nothing of rework 3 was seen in a browser: the one-page settings (smooth scroll, the mark following the scroll, the return to the anchor after the confirm page), the password dialog, the sticky phone sub-navigation, the docked reaction bar (overlap with the last card and the phone's sticky foot), the compact phone rail, the integrations rows at 390 px, the "Add a card" flow.
+- `tests/Browser/Visual/SettingsPagesVisualTest.php` was edited blind by two lanes and not run; its captures, those of `CrossCuttingVisualTest` and those of the retro session end, ROTI, phone retro header and integrations are stale.
+
+### Items left for the owner
+
+- Retro: French "OK" now reads "Correct" app-wide (only the ROTI uses the key; a ROTI key of its own if refused); the Spanish and German ROTI wording; several columns may each hold a card in editing; whether "Complete" in the phone menu needs a confirmation; the place of "Details" and the warning sentence of the health card; the phone subtitle text ("Voting · 4/7" against the mockup's per-phase variants), tappable markers, the leader line; the "Closed" badge now on every survey card of a session end; `BuildSummaryInput` still reads the stored `is_closed` for the AI summary.
+- Settings: the Spanish feminine badge and the wording of the regeneration dialog (no mockup); English "On" / "Off" are the only values that differ from their key (listed in `TranslationKeysTest`).
+- Integrations: what the switch should be (mirror of the connection, a real paused state needing a spec, or none); brand logos (an asset set, the mockup's letter marks, or lucide; lucide's `Slack` glyph is deprecated, so Slack keeps `Hash`); the short purpose line of a provider that is not connected.
+- Action items: whether "no memory" means no stored filter at all (a picked team, status, assignee and grouping are still remembered); every team survives a reload only when the URL has a query; the phone drawer count still counts the team facet.
+- Games: whether English, Spanish and German should keep "Team games" on the team header (the English mockup says "Games"), and whether the games page title itself should read "Jeux d'équipe".

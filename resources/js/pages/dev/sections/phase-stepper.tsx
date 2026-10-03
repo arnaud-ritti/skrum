@@ -68,7 +68,7 @@ export default function PhaseStepperSection() {
     const name = t('Camille');
 
     return (
-        <div className="flex flex-col gap-8 p-4 md:p-6">
+        <div className="@container/session flex flex-col gap-8 p-4 md:p-6">
             <Example label={t('6 phases, writing active (interactive)')}>
                 <PhaseStepper
                     phases={six}

@@ -10,6 +10,7 @@ import { UrlChannelIntegration } from '@/components/integrations/url-channel-int
 import { WebhookIntegration } from '@/components/integrations/webhook-integration';
 import { TeamSettingsShell } from '@/components/integrations/team-settings-shell';
 import { TelegramIntegration } from '@/components/integrations/telegram-integration';
+import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     IntegrationProviderCard,
@@ -71,98 +72,100 @@ export default function TeamIntegrations({
                         })}
                     </p>
                 </div>
-                {providers.map((card) => {
-                    switch (card.provider) {
-                        case 'slack':
-                            return (
-                                <SlackIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                />
-                            );
-                        case 'telegram':
-                            return (
-                                <TelegramIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                    telegram={telegram}
-                                />
-                            );
-                        case 'jira':
-                            return (
-                                <JiraIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                />
-                            );
-                        case 'linear':
-                            return (
-                                <LinearIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                />
-                            );
-                        case 'msteams':
-                        case 'mattermost':
-                            return (
-                                <UrlChannelIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                    mattermost={mattermost}
-                                />
-                            );
-                        case 'webhook':
-                            return (
-                                <WebhookIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                    events={webhookEvents ?? []}
-                                />
-                            );
-                        case 'jira_dc':
-                            return (
-                                <JiraDataCenterIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                    statusSection={
-                                        card.connection && (
-                                            <StatusSyncSection
-                                                scope={scope}
-                                                card={card}
-                                                connection={card.connection}
-                                            />
-                                        )
-                                    }
-                                />
-                            );
-                        case 'github':
-                            return (
-                                <GitHubIntegration
-                                    key={card.provider}
-                                    card={card}
-                                    scope={scope}
-                                    statusSection={
-                                        card.connection && (
-                                            <StatusSyncSection
-                                                scope={scope}
-                                                card={card}
-                                                connection={card.connection}
-                                            />
-                                        )
-                                    }
-                                />
-                            );
-                        default:
-                            return null;
-                    }
-                })}
+                <Card data-test="integration-list" className="divide-y">
+                    {providers.map((card) => {
+                        switch (card.provider) {
+                            case 'slack':
+                                return (
+                                    <SlackIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                    />
+                                );
+                            case 'telegram':
+                                return (
+                                    <TelegramIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                        telegram={telegram}
+                                    />
+                                );
+                            case 'jira':
+                                return (
+                                    <JiraIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                    />
+                                );
+                            case 'linear':
+                                return (
+                                    <LinearIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                    />
+                                );
+                            case 'msteams':
+                            case 'mattermost':
+                                return (
+                                    <UrlChannelIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                        mattermost={mattermost}
+                                    />
+                                );
+                            case 'webhook':
+                                return (
+                                    <WebhookIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                        events={webhookEvents ?? []}
+                                    />
+                                );
+                            case 'jira_dc':
+                                return (
+                                    <JiraDataCenterIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                        statusSection={
+                                            card.connection && (
+                                                <StatusSyncSection
+                                                    scope={scope}
+                                                    card={card}
+                                                    connection={card.connection}
+                                                />
+                                            )
+                                        }
+                                    />
+                                );
+                            case 'github':
+                                return (
+                                    <GitHubIntegration
+                                        key={card.provider}
+                                        card={card}
+                                        scope={scope}
+                                        statusSection={
+                                            card.connection && (
+                                                <StatusSyncSection
+                                                    scope={scope}
+                                                    card={card}
+                                                    connection={card.connection}
+                                                />
+                                            )
+                                        }
+                                    />
+                                );
+                            default:
+                                return null;
+                        }
+                    })}
+                </Card>
             </section>
         </TeamSettingsShell>
     );

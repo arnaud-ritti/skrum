@@ -33,7 +33,7 @@ function results(stats: Partial<Results['stats']> = {}): Results {
         stats: {
             votesCast: 34,
             votesAvailable: 40,
-            participation: { participants: 8, teamMembers: 9 },
+            participation: { participants: 8, expected: 9 },
             durationSeconds: 3480,
             ...stats,
         },
@@ -60,7 +60,7 @@ describe('sessionEndStats', () => {
         expect(stats).toEqual({
             actions: 2,
             participants: 8,
-            teamMembers: 9,
+            expected: 9,
             participationRatio: 8 / 9,
             cards: 6,
             groups: 2,
@@ -69,12 +69,12 @@ describe('sessionEndStats', () => {
         });
     });
 
-    it('has no participation ratio for a team without members and never goes over the whole team', () => {
+    it('has no participation ratio when nobody is expected and never goes over the whole', () => {
         expect(
             sessionEndStats(
                 retroSnapshot({
                     results: results({
-                        participation: { participants: 2, teamMembers: 0 },
+                        participation: { participants: 2, expected: 0 },
                     }),
                 }),
             )?.participationRatio,
@@ -83,7 +83,7 @@ describe('sessionEndStats', () => {
             sessionEndStats(
                 retroSnapshot({
                     results: results({
-                        participation: { participants: 4, teamMembers: 3 },
+                        participation: { participants: 4, expected: 3 },
                     }),
                 }),
             )?.participationRatio,

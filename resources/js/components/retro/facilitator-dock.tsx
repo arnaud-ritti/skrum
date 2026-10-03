@@ -12,13 +12,14 @@ import {
     VenetianMask,
     Vote,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
 import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
+import { useHeightInRem } from '@/hooks/use-height-in-rem';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
@@ -284,40 +285,6 @@ function VoteLimitState({
     );
 }
 
-const RootFontSize = 16;
-
-/** Height of the bar in rem, so that the reaction bar sits a `space-3` above it. */
-function useHeightInRem(): [(node: HTMLDivElement | null) => void, number] {
-    const [node, setNode] = useState<HTMLDivElement | null>(null);
-    const [height, setHeight] = useState(0);
-    const observer = useRef<ResizeObserver | null>(null);
-
-    useEffect(() => {
-        if (node === null) {
-            return;
-        }
-
-        const measure = () => {
-            const root = parseFloat(
-                getComputedStyle(document.documentElement).fontSize,
-            );
-
-            setHeight(
-                node.getBoundingClientRect().height / (root || RootFontSize),
-            );
-        };
-
-        measure();
-        observer.current = new ResizeObserver(measure);
-        observer.current.observe(node);
-
-        return () => observer.current?.disconnect();
-    }, [node]);
-
-    return [setNode, node === null ? 0 : height];
-}
-
-/** Distance of the facilitator bar from the bottom of the screen: `bottom-6`. */
 const DockBottomRem = 1.5;
 
 /**
@@ -421,7 +388,8 @@ export function FacilitatorDock({
 
     return (
         <>
-            {showsRetroReactions(board.retro) && (
+            {/* Once completed, the session end docks its own bar. */}
+            {phase !== 'completed' && showsRetroReactions(board.retro) && (
                 <BoardReactions
                     compact={isMobile}
                     offsetBottom={

@@ -93,7 +93,7 @@ function results(overrides: Partial<Results> = {}): Results {
         stats: {
             votesCast: 3,
             votesAvailable: 10,
-            participation: { participants: 2, teamMembers: 3 },
+            participation: { participants: 2, expected: 3 },
             durationSeconds: 3480,
         },
         ...overrides,
@@ -255,6 +255,103 @@ describe('SessionEnd', () => {
                 .querySelector('[data-slot="stat-card"]')
                 ?.getAttribute('data-emphasis'),
         ).toBe('true');
+    });
+
+    describe('reactions', () => {
+        const channel = () => ({
+            presence: {
+                whisper: vi.fn(),
+                listen: vi.fn(),
+                stopListening: vi.fn(),
+            } as never,
+        });
+
+        it('docks the reaction bar under the results, which keep room for it', () => {
+            show(ended(), {}, channel());
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Reactions' }),
+            ).toBeTruthy();
+            expect(
+                screen.getByRole('button', { name: 'Send a reaction 🎉' }),
+            ).toBeTruthy();
+            expect(
+                document
+                    .querySelector('[data-slot="reaction-bar"]')
+                    ?.getAttribute('data-variant'),
+            ).toBe('floating');
+            expect(
+                document
+                    .querySelector('[data-slot="retro-session-end"]')
+                    ?.getAttribute('data-reactions'),
+            ).toBe('true');
+        });
+
+        it('sends a reaction as a whisper, nothing to the server', async () => {
+            const context = channel();
+
+            show(ended(), {}, context);
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Send a reaction 🎉' }),
+            );
+
+            expect(
+                (context.presence as { whisper: ReturnType<typeof vi.fn> })
+                    .whisper,
+            ).toHaveBeenCalled();
+            expect(retroRequest).not.toHaveBeenCalled();
+        });
+
+        it('has no bar when the reactions are off, nor without a channel', () => {
+            const off = show(
+                ended({}, { reactionsEnabled: false }),
+                {},
+                channel(),
+            );
+
+            expect(screen.queryByRole('toolbar')).toBeNull();
+            expect(
+                document
+                    .querySelector('[data-slot="retro-session-end"]')
+                    ?.hasAttribute('data-reactions'),
+            ).toBe(false);
+            off.unmount();
+
+            show();
+
+            expect(screen.queryByRole('toolbar')).toBeNull();
+        });
+
+        it('is compact on a phone, above the sticky actions', () => {
+            mobile.value = true;
+
+            const rect = vi
+                .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+                .mockReturnValue({ height: 64 } as DOMRect);
+
+            try {
+                show(ended(), {}, channel());
+
+                expect(
+                    screen.getByRole('button', { name: 'More reactions' }),
+                ).toBeTruthy();
+                expect(
+                    document.querySelector(
+                        '[data-slot="retro-session-end-actions"]',
+                    ),
+                ).not.toBeNull();
+                expect(
+                    (
+                        document.querySelector(
+                            '[data-slot="reaction-bar"]',
+                        ) as HTMLElement
+                    ).style.getPropertyValue('--reaction-offset'),
+                ).toBe('calc(4rem + 0.75rem)');
+            } finally {
+                rect.mockRestore();
+                mobile.value = false;
+            }
+        });
     });
 
     it('has the Results and Board tabs under the header, with their ids', () => {
@@ -474,7 +571,9 @@ describe('SessionEnd', () => {
                 roti.querySelector('li[data-rating="4"] b')?.textContent,
             ).toBe('2');
             expect(
-                screen.queryByRole('group', { name: 'How was this retro?' }),
+                screen.queryByRole('group', {
+                    name: 'Was this time together worth it?',
+                }),
             ).toBeNull();
         });
 
@@ -492,9 +591,11 @@ describe('SessionEnd', () => {
 
             expect(
                 screen
-                    .getByRole('group', { name: 'How was this retro?' })
+                    .getByRole('group', {
+                        name: 'Was this time together worth it?',
+                    })
                     .querySelector('button[aria-pressed="true"]')?.textContent,
-            ).toContain('Good use of time');
+            ).toContain('Useful');
         });
 
         it('says so when nobody has voted', () => {
@@ -540,22 +641,56 @@ describe('SessionEnd', () => {
             },
         ];
 
-        it('shows the figures, the radar, the trend and each statement with its move since the previous retro', () => {
+        const openDetails = async () => {
+            await userEvent.click(
+                within(section('Health check')).getByRole('button', {
+                    name: 'Details',
+                }),
+            );
+
+            return screen.getByRole('dialog', { name: 'Health check' });
+        };
+
+        it('is the compact card: answers, average, one row per statement with its move, the alert', () => {
             show(withHealth(trend));
 
-            const card = section('Team health');
+            const card = section('Health check');
             const row = (key: string) =>
                 card.querySelector(`[data-statement-key="${key}"]`);
 
+            expect(card.textContent).toContain('2 answers · avg 5.5');
+            expect(within(card).getAllByRole('listitem')).toHaveLength(2);
+            expect(
+                row('vision')?.querySelector(
+                    '[data-slot="health-compact-delta"]',
+                )?.textContent,
+            ).toBe('+0.5vs Sprint 41');
+            expect(row('processes')?.getAttribute('data-alert')).toBe('true');
             expect(
                 card.querySelector('svg[aria-label="Team health radar"]'),
+            ).toBeNull();
+            expect(screen.queryByRole('dialog')).toBeNull();
+        });
+
+        it('opens the full results from "Details": figures, radar, trend and each statement with its move since the previous retro', async () => {
+            show(withHealth(trend));
+
+            const dialog = await openDetails();
+            const row = (key: string) =>
+                dialog.querySelector(`[data-statement-key="${key}"]`);
+
+            expect(
+                dialog.querySelector('svg[aria-label="Team health radar"]'),
             ).not.toBeNull();
             expect(
-                card.querySelector('svg[aria-label="Trend across retros"]'),
+                dialog.querySelector('svg[aria-label="Trend across retros"]'),
             ).not.toBeNull();
-            expect(card.textContent).toContain(
+            expect(dialog.textContent).toContain(
                 '2 answers from 3 participants · compared with Sprint 41',
             );
+            expect(dialog.textContent).toContain('Top strength');
+            expect(dialog.textContent).toContain('High team consensus');
+            expect(dialog.textContent).toContain('Keep going.');
             expect(
                 row('vision')?.querySelector('[data-slot="health-trend"]')
                     ?.textContent,
@@ -564,19 +699,24 @@ describe('SessionEnd', () => {
                 row('processes')?.querySelector('[data-slot="health-trend"]'),
             ).toBeNull();
             expect(row('processes')?.textContent).toContain('Needs attention');
-            expect(card.textContent).toContain('-0.5 since the previous retro');
+            expect(row('processes')?.textContent).toContain(
+                'Nothing blocks me',
+            );
+            expect(dialog.textContent).toContain(
+                '-0.5 since the previous retro',
+            );
         });
 
-        it('has no trend across retros for a guest', () => {
+        it('has no trend across retros for a guest, in the details either', async () => {
             show(withHealth(null), {}, {});
 
-            const card = section('Team health');
+            const dialog = await openDetails();
 
             expect(
-                card.querySelector('svg[aria-label="Team health radar"]'),
+                dialog.querySelector('svg[aria-label="Team health radar"]'),
             ).not.toBeNull();
             expect(
-                card.querySelector('svg[aria-label="Trend across retros"]'),
+                dialog.querySelector('svg[aria-label="Trend across retros"]'),
             ).toBeNull();
         });
 
@@ -584,7 +724,7 @@ describe('SessionEnd', () => {
             show();
 
             expect(
-                screen.queryByRole('heading', { name: 'Team health' }),
+                screen.queryByRole('heading', { name: 'Health check' }),
             ).toBeNull();
         });
     });

@@ -166,20 +166,23 @@ function draftGif(gif: PickedGif | null) {
 }
 
 /**
- * The card being written at the foot of a column. It is always open, so that
- * writing takes one gesture; "Add a card" and N bring the focus to it.
+ * The card being written, which "Add a card" and N open at the foot of a
+ * column. It stays open after a card is published, ready for the next one,
+ * until "Cancel" or Esc.
  */
 export function CardComposer({
     columnId,
     color,
     autoFocus = false,
     onAdded,
+    onCancel,
 }: {
     columnId: string;
     color: ColumnColor;
     /** The editor takes the focus as soon as it shows: the composer of a drawer. */
     autoFocus?: boolean;
     onAdded?: () => void;
+    onCancel?: () => void;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -236,6 +239,11 @@ export function CardComposer({
         onAdded?.();
     };
 
+    const cancel = () => {
+        reset();
+        onCancel?.();
+    };
+
     return (
         <form
             data-slot="retro-card-composer"
@@ -266,16 +274,24 @@ export function CardComposer({
                 labels={{ editor: t('Add a card…') }}
                 className="not-focus-within:border-(--col-border) not-focus-within:ring-0"
                 onEdit={(text) => void submit(text)}
-                onEditCancel={reset}
+                onEditCancel={cancel}
                 editorTools={
                     <>
                         <GifTools gif={gif} onChange={setGif} />
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancel}
+                        >
+                            <span className="truncate">{t('Cancel')}</span>
+                        </Button>
                         <Button
                             type="submit"
                             size="sm"
                             disabled={sending || (isBlank && gif === null)}
                         >
-                            <span className="truncate">{t('Add')}</span>
+                            <span className="truncate">{t('Save')}</span>
                         </Button>
                     </>
                 }

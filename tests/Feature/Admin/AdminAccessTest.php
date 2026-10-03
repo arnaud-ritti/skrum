@@ -110,10 +110,10 @@ it('redirects the admin home to the branding page', function () {
 
 it('shares the admin link with instance admins only', function () {
     $this->actingAs(User::factory()->instanceAdmin()->create())
-        ->get(route('profile.edit'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('adminUrl', route('admin.branding.edit')));
 
     $this->actingAs(User::factory()->create())
-        ->get(route('profile.edit'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('adminUrl', null));
 });

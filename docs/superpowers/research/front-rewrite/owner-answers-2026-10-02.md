@@ -327,3 +327,10 @@ Plan 22: scheduling is removed ("Schedule…", session start time, "starts in 5 
 - No test runs during the work (feature, Vitest, browser), per task or per merge: types, lint and build only; one full run at the end of each phase. Risk accepted by the owner. Exceptions kept by the controller unless the owner says otherwise: the 18f security tests, and the database-portability plan (its purpose is to prove behaviour per driver).
 - Deviations between mockup and plan are put to the owner before a screen is built.
 - New requirement: the application must run on SQLite, MariaDB/MySQL and any database Eloquent supports. Audit: docs/superpowers/research/database-portability-audit.md.
+
+## Sixth round
+
+| Subject | Decision |
+|---|---|
+| Language register | "Langue : tutoiement partout." Every user-facing text addresses the user informally in every language that has the distinction: French "tu", Spanish "tú" (mails included, which said "usted"), German "du"; English unchanged. It applies to screens, validation messages, notifications, mails (subjects and bodies), error pages, the static 503 page and the MCP and API messages. The decision overrides the wording of the mockups. A plural "vous" stays only where the text addresses several people at once (listed in translations-review.md). |
+| Participation of a retro | "Invité compte dans les participants." In the session-end statistics a guest counts as a participant. Participation = everyone who joined (team members, guests, people outside the team) out of everyone expected (the members of the team plus the participants who are not members), so the ratio never exceeds 100%. It replaces the rule of the close of plan 18e (team members only). Spec B3 amended; `results.stats.participation` is `{participants, expected}`. |

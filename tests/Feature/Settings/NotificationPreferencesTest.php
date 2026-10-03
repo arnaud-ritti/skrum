@@ -21,13 +21,13 @@ it('shows the notification preferences', function () {
     $user->forceFill(['action_item_reminders_in_app' => false])->save();
 
     $this->actingAs($user)
-        ->get(route('notificationPreferences.edit'))
+        ->get(route('settings.edit'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/notifications', false)
-            ->where('preferences', ['action_item_reminders_by_email' => true, 'action_item_reminders_in_app' => false, 'recap_emails' => true, 'recap_in_app' => true])
-            ->where('reminderTime', '08:00')
-            ->where('remindersEnabled', true));
+            ->component('settings/account')
+            ->where('notificationPreferences.preferences', ['action_item_reminders_by_email' => true, 'action_item_reminders_in_app' => false, 'recap_emails' => true, 'recap_in_app' => true])
+            ->where('notificationPreferences.reminderTime', '08:00')
+            ->where('notificationPreferences.remindersEnabled', true));
 });
 
 it('saves the notification preferences', function () {

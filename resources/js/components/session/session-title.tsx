@@ -19,6 +19,8 @@ type SessionTitleProps = {
     overline?: ReactNode;
     /** The way to the title, "team › Whiteboards". It gives way below `md`. */
     crumbs?: SessionCrumb[];
+    /** The line under the title on a phone, where the overline gives way: the phase. */
+    subtitle?: ReactNode;
     /** Badges after the title (lock, deck, game). */
     badges?: ReactNode;
     children: ReactNode;
@@ -66,6 +68,7 @@ export function SessionTitle({
     backHref,
     overline,
     crumbs,
+    subtitle,
     badges,
     children,
 }: SessionTitleProps) {
@@ -99,6 +102,14 @@ export function SessionTitle({
                 >
                     {children}
                 </h1>
+                {subtitle && (
+                    <span
+                        data-slot="session-subtitle"
+                        className="truncate text-xs font-medium text-muted-foreground md:hidden"
+                    >
+                        {subtitle}
+                    </span>
+                )}
             </span>
             {badges}
         </span>

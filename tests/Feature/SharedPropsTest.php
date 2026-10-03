@@ -142,7 +142,7 @@ it('queries the visible teams once for both shared props', function () {
     $team->members()->attach($user);
 
     DB::enableQueryLog();
-    $this->actingAs($user)->get(route('profile.edit'));
+    $this->actingAs($user)->get(route('settings.edit'));
     $teamQueries = collect(DB::getQueryLog())
         ->pluck('query')
         ->map(function (string $sql): string {

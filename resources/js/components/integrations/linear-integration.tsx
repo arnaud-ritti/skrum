@@ -8,6 +8,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
@@ -53,9 +54,22 @@ export function LinearIntegration({ card, scope }: Props) {
         );
     }
 
+    const disconnect = (control?: DisconnectControl) => (
+        <DisconnectIntegrationDialog
+            scope={scope}
+            card={card}
+            connection={connection}
+            description={t(
+                'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. skrum revokes its Linear access.',
+            )}
+            control={control}
+        />
+    );
+
     return (
         <ProviderCard
             {...providerCardProps(card, ListTodo, t)}
+            disconnect={disconnect}
             details={
                 <ProviderDetails
                     connection={connection}
@@ -100,14 +114,7 @@ export function LinearIntegration({ card, scope }: Props) {
                             successMessage={t('The connection works.')}
                         />
                     )}
-                    <DisconnectIntegrationDialog
-                        scope={scope}
-                        card={card}
-                        connection={connection}
-                        description={t(
-                            'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. skrum revokes its Linear access.',
-                        )}
-                    />
+                    {disconnect()}
                 </>
             }
         >

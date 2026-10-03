@@ -155,6 +155,6 @@ it('keeps sanctum tokens away from every other route', function () {
     $token = issueTestMcpToken(User::factory()->create());
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->get(route('profile.edit'))
+        ->get(route('settings.edit'))
         ->assertRedirect(route('login'));
 });

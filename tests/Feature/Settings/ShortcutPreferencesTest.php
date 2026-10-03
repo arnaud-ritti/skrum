@@ -8,7 +8,7 @@ it('turns single-key shortcuts on by default and shares the preference with ever
 
     expect($user->single_key_shortcuts)->toBeTrue();
 
-    $this->actingAs($user)->get(route('appearance.edit'))
+    $this->actingAs($user)->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.user.single_key_shortcuts', true));
 });
 
@@ -25,7 +25,7 @@ it('saves the preference of the signed-in user only', function () {
     expect($user->fresh()->single_key_shortcuts)->toBeFalse()
         ->and($other->fresh()->single_key_shortcuts)->toBeTrue();
 
-    $this->actingAs($user)->get(route('appearance.edit'))
+    $this->actingAs($user)->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.user.single_key_shortcuts', false));
 });
 

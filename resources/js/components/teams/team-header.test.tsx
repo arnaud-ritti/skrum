@@ -125,7 +125,9 @@ describe('the team header', () => {
         header();
 
         expect(
-            screen.getByRole('link', { name: 'Games' }).getAttribute('href'),
+            screen
+                .getByRole('link', { name: 'Team games' })
+                .getAttribute('href'),
         ).toMatch(/\/games$/);
         expect(
             screen.queryByRole('link', { name: 'Team settings' }),
@@ -133,7 +135,7 @@ describe('the team header', () => {
         expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
     });
 
-    it('leads to the team settings with a gear named "Team settings", after "Games"', () => {
+    it('leads to the team settings with a gear named "Team settings", after "Team games"', () => {
         header({ settingsHref: '/w/nordlys/teams/team-1/integrations' });
 
         const gear = screen.getByRole('link', { name: 'Team settings' });
@@ -145,7 +147,7 @@ describe('the team header', () => {
         expect(gear.textContent).toBe('');
         expect(gear.querySelector('svg[aria-hidden]')).not.toBeNull();
         expect(links.indexOf(gear)).toBe(
-            links.indexOf(screen.getByRole('link', { name: 'Games' })) + 1,
+            links.indexOf(screen.getByRole('link', { name: 'Team games' })) + 1,
         );
         expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
     });

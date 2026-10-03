@@ -2,6 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RetroRequestError } from '@/lib/retro/api';
+import {
+    providerButtons,
+    providerPanel,
+    providerStatus,
+    renderProvider,
+} from '@/test/integrations';
 import { renderWithProviders } from '@/test/render';
 import type {
     IntegrationProviderCard,
@@ -167,29 +173,25 @@ beforeEach(() => {
 
 describe('WebhookIntegration', () => {
     it('says what a webhook sends and offers to connect while there is none', () => {
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration card={card()} scope={scope} events={events} />,
         );
 
-        const webhook = region('Webhook');
+        const webhook = providerPanel('Webhook');
 
-        expect(webhook.querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'Not connected',
-        );
+        expect(providerStatus('Webhook')).toBe('Not connected');
         expect(webhook.textContent).toContain(
             'Send board links, game invites, results and the events you choose to your own HTTPS endpoint, signed with a secret.',
         );
         expect(
-            within(webhook)
-                .getAllByRole('button')
-                .map((button) => button.textContent),
+            providerButtons(webhook).map((button) => button.textContent),
         ).toEqual(['Connect']);
     });
 
     it('connects with an endpoint URL and a label, then shows the secret once', async () => {
         request.mockResolvedValue({ ...connection(), secret: 'whsec_once' });
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration card={card()} scope={scope} events={events} />,
         );
 
@@ -237,7 +239,7 @@ describe('WebhookIntegration', () => {
             }),
         );
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration card={card()} scope={scope} events={events} />,
         );
 
@@ -265,7 +267,7 @@ describe('WebhookIntegration', () => {
     });
 
     it('shows what is connected, with its actions in the footer', () => {
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(connection())}
                 scope={scope}
@@ -273,17 +275,15 @@ describe('WebhookIntegration', () => {
             />,
         );
 
-        const webhook = region('Webhook');
+        const webhook = providerPanel('Webhook');
         const detailList = webhook.querySelector(
             '[data-slot="provider-details"]',
         );
         const footer = webhook.querySelector(
-            '[data-slot="provider-card-footer"]',
+            '[data-slot="sheet-footer"]',
         ) as HTMLElement;
 
-        expect(webhook.querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'Connected',
-        );
+        expect(providerStatus('Webhook')).toBe('Connected');
         expect(
             Array.from(detailList?.querySelectorAll('dt') ?? []).map(
                 (term) => term.textContent,
@@ -313,7 +313,7 @@ describe('WebhookIntegration', () => {
     it('replaces the URL without asking for one again when only the label changes', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(connection())}
                 scope={scope}
@@ -353,7 +353,7 @@ describe('WebhookIntegration', () => {
     it('re-enables a webhook that was turned off after its failures', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(
                     connection({
@@ -368,7 +368,7 @@ describe('WebhookIntegration', () => {
             />,
         );
 
-        const webhook = region('Webhook');
+        const webhook = providerPanel('Webhook');
 
         expect(within(webhook).getByRole('alert').textContent).toContain(
             'Disabled after 10 failed deliveries in a row.',
@@ -386,7 +386,7 @@ describe('WebhookIntegration', () => {
     });
 
     it('has no "Re-enable" while the webhook works', () => {
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(connection())}
                 scope={scope}
@@ -400,7 +400,7 @@ describe('WebhookIntegration', () => {
     it('rotates the secret after a confirmation, then shows the new one', async () => {
         request.mockResolvedValue({ secret: 'whsec_rotated' });
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(connection())}
                 scope={scope}
@@ -449,7 +449,7 @@ describe('WebhookIntegration', () => {
     it('keeps the secret it had when the rotation is refused', async () => {
         request.mockRejectedValue(new Error('down'));
 
-        renderWithProviders(
+        renderProvider(
             <WebhookIntegration
                 card={card(connection())}
                 scope={scope}

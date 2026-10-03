@@ -253,7 +253,9 @@ describe('Board', () => {
                 container.querySelector('[data-slot="retro-roti"]'),
             ).not.toBeNull();
             expect(
-                screen.getByRole('group', { name: 'How was this retro?' }),
+                screen.getByRole('group', {
+                    name: 'Was this time together worth it?',
+                }),
             ).toBeTruthy();
             expect(
                 screen.getByRole('heading', { name: 'Who has voted' }),
@@ -290,7 +292,7 @@ describe('Board', () => {
                     stats: {
                         votesCast: 0,
                         votesAvailable: 5,
-                        participation: { participants: 1, teamMembers: 1 },
+                        participation: { participants: 1, expected: 1 },
                         durationSeconds: null,
                     },
                 },

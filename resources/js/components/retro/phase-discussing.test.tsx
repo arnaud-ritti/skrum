@@ -291,7 +291,9 @@ describe('PhaseDiscussing', () => {
             within(panels).getByRole('complementary', { name: 'Suggestions' }),
         ).toBeTruthy();
         expect(
-            screen.queryByRole('group', { name: 'How was this retro?' }),
+            screen.queryByRole('group', {
+                name: 'Was this time together worth it?',
+            }),
         ).toBeNull();
         expect(screen.getByText('1 action so far')).toBeTruthy();
     });

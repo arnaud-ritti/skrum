@@ -96,12 +96,20 @@ function withGrouping(
     return grouping === 'none' ? query : { ...query, [GroupKey]: grouping };
 }
 
+function forgetFilters(workspaceId: string): void {
+    try {
+        window.localStorage.removeItem(filterStorageKey(workspaceId));
+    } catch {
+        // Nothing was stored where storage is disabled.
+    }
+}
+
 /**
- * The team of the stored entry: absent while the viewer chose none, so the
- * page follows the current team; `AllTeams` once they chose every team.
+ * The team of the stored entry: there only once the viewer picked a team.
+ * Every team is never stored, it lasts one visit and the next one follows
+ * the current team again.
  */
 const TeamKey = 'team';
-const AllTeams = '';
 
 function withTeamChoice(
     query: StoredEntry,
@@ -111,7 +119,17 @@ function withTeamChoice(
         Object.entries(query).filter(([key]) => key !== TeamKey),
     );
 
-    return team === undefined ? entry : { ...entry, [TeamKey]: team };
+    return team ? { ...entry, [TeamKey]: team } : entry;
+}
+
+/** The team the page opens on: the current one, when the viewer sees it. */
+function openingTeam(
+    currentTeamId: string | null,
+    teamIds: string[],
+): string | null {
+    return currentTeamId !== null && teamIds.includes(currentTeamId)
+        ? currentTeamId
+        : null;
 }
 
 /**
@@ -125,13 +143,9 @@ export function landingQuery(
     teamIds: string[],
 ): Record<string, string> | null {
     const left = stored === null ? {} : withoutGrouping(stored);
-    const followsCurrentTeam =
-        !(TeamKey in left) &&
-        currentTeamId !== null &&
-        teamIds.includes(currentTeamId);
     const query = withTeamChoice(
         left,
-        followsCurrentTeam ? currentTeamId : left[TeamKey] || undefined,
+        left[TeamKey] || (openingTeam(currentTeamId, teamIds) ?? undefined),
     );
 
     return Object.keys(query).length === 0 ? null : query;
@@ -226,7 +240,7 @@ export function useActionItemFilters({
     };
 
     const chosenTeam = (): string | undefined =>
-        readStoredFilters(workspace.id)?.[TeamKey];
+        readStoredFilters(workspace.id)?.[TeamKey] || undefined;
 
     const apply = (changes: ActionItemFilterChanges): void => {
         const query = filterQuery({ ...filters, ...changes });
@@ -235,17 +249,25 @@ export function useActionItemFilters({
             query,
             changes.team === undefined
                 ? chosenTeam()
-                : (changes.team ?? AllTeams),
+                : (changes.team ?? undefined),
             grouping,
         );
         visit(query);
     };
 
-    /** Back to every team and the open items, and it stays so. */
+    const landingTeam = openingTeam(
+        currentTeamId,
+        teamKey === '' ? [] : teamKey.split(','),
+    );
+
+    /**
+     * Back to how the page opens: the current team, the open items and no
+     * grouping. Nothing stays stored, so the next visits open the same way.
+     */
     const reset = (): void => {
         setGroupingState('none');
-        store({}, AllTeams, 'none');
-        visit({});
+        forgetFilters(workspace.id);
+        visit(landingTeam === null ? {} : { team: landingTeam });
     };
 
     const setGrouping = (next: ActionItemGrouping): void => {
@@ -259,7 +281,11 @@ export function useActionItemFilters({
         grouping,
         setGrouping,
         loading,
-        isDefault: activeFilterCount(filters) === 0,
+        isDefault:
+            filters.team === landingTeam &&
+            filters.assignee === null &&
+            filters.status === 'open' &&
+            grouping === 'none',
         activeCount: activeFilterCount(filters),
     };
 }

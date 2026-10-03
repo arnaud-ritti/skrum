@@ -444,7 +444,7 @@ it('says when the code was requested even without a known browser', function () 
     expect($html)->toContain('>Requested on 1 Oct, 2:02 pm (UTC)</p>');
 });
 
-it('writes every mail in French as the mockup', function (string $mail, ?string $subject, array $sentences) {
+it('writes every mail in French with the informal address', function (string $mail, ?string $subject, array $sentences) {
     app()->setLocale('fr');
 
     $mailable = mockupMails()[$mail]()->locale('fr');
@@ -460,20 +460,20 @@ it('writes every mail in French as the mockup', function (string $mail, ?string 
 
     expect($html)->toContain('<html lang="fr"');
 })->with([
-    ['magic link', 'Votre lien de connexion à Skrüm', [
-        'Utilisez le bouton ci-dessous pour vous connecter en tant que',
-        'Le bouton ne fonctionne pas ? Collez ce lien dans votre navigateur :',
-        "Vous n'avez rien demandé ? Ignorez cet e-mail : personne ne peut se connecter sans ce lien.",
-        'Vous recevez cet e-mail car vous avez un compte sur cette instance.',
+    ['magic link', 'Ton lien de connexion à Skrüm', [
+        'Utilise le bouton ci-dessous pour te connecter en tant que',
+        'Le bouton ne fonctionne pas ? Colle ce lien dans ton navigateur :',
+        "Tu n'as rien demandé ? Ignore cet e-mail : personne ne peut se connecter sans ce lien.",
+        'Tu reçois cet e-mail car tu as un compte sur cette instance.',
     ]],
-    ['invitation', 'Camille Roux vous invite à rejoindre Atlas', [
-        "Camille Roux vous invite à rejoindre l'espace Atlas",
+    ['invitation', "Camille Roux t'invite à rejoindre Atlas", [
+        "Camille Roux t'invite à rejoindre l'espace Atlas",
         '2 équipes · 11 membres',
         'Atlas fait ses rétros, son planning poker et ses icebreakers sur Skrüm.',
-        "L'invitation est valable 7 jours. Vous ne connaissez pas Camille ? Ignorez simplement cet e-mail.",
+        "L'invitation est valable 7 jours. Tu ne connais pas Camille ? Ignore simplement cet e-mail.",
     ]],
     ['reminder', '2 actions sont en retard', [
-        "Décidées par votre équipe en rétro. Marquez-les terminées, changez l'échéance ou confiez-les à quelqu'un.",
+        "Décidées par ton équipe en rétro. Marque-les terminées, change l'échéance ou confie-les à quelqu'un.",
         'Atlas · échéance 26 sept. · 5 jours de retard',
         'Atlas · échéance 30 sept. · 1 jour de retard',
         'Ouvrir mes actions',
@@ -487,10 +487,10 @@ it('writes every mail in French as the mockup', function (string $mail, ?string 
         'Ouvrir le compte rendu complet',
     ]],
     ['code', null, [
-        'Votre code de vérification',
+        'Ton code de vérification',
         'Demandé depuis Firefox sur macOS · 1 oct., 14:02 (UTC)',
-        "Ce n'est pas vous ? Quelqu'un connaît votre mot de passe :",
-        'changez-le maintenant',
+        "Ce n'est pas toi ? Quelqu'un connaît ton mot de passe :",
+        'change-le maintenant',
         'Sans ce code, il ne peut pas se connecter.',
     ]],
 ]);

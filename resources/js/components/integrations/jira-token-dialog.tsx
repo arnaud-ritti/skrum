@@ -78,6 +78,7 @@ export function JiraTokenDialog({ scope, label, variant = 'default' }: Props) {
                 size="sm"
                 variant={variant}
                 className="max-w-full"
+                data-test="integration-connect"
                 onClick={() => changeOpen(true)}
             >
                 <span className="truncate">{label}</span>

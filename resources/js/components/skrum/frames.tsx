@@ -101,7 +101,7 @@ export function SessionFrame({
 }) {
     const inset = (
         <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
-            <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+            <header className="@container/session z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
                 {sidebar && <SidebarTrigger className="-ml-1 md:hidden" />}
                 {logo}
                 <div className="min-w-0 truncate text-base font-semibold">
@@ -141,12 +141,15 @@ export function SettingsFrame({
     description,
     nav,
     navLabel,
+    stuckNav = false,
     children,
 }: {
     title: string;
     description?: string;
     nav: SubNavItem[];
     navLabel: string;
+    /** Below `lg` the sub-navigation stays under the top bar while the page scrolls. */
+    stuckNav?: boolean;
     children: ReactNode;
 }) {
     return (
@@ -162,7 +165,7 @@ export function SettingsFrame({
                 )}
             </div>
             <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:gap-10">
-                <SubNav items={nav} label={navLabel} />
+                <SubNav items={nav} label={navLabel} stuck={stuckNav} />
                 <div className="flex min-w-0 flex-1 flex-col gap-6">
                     {children}
                 </div>

@@ -12,7 +12,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { toast } from 'sonner';
 import { DeliveryLines } from '@/components/integrations/share/delivery-lines';
 import { StatCard } from '@/components/skrum/stat-card';
@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useHeightInRem } from '@/hooks/use-height-in-rem';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
@@ -33,8 +34,10 @@ import {
     sessionEndStats,
 } from '@/lib/retro/session-end';
 import type { Snapshot } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 import type { ShareChannel } from '@/types';
 import { useBoard } from './board-context';
+import { BoardReactions, showsRetroReactions } from './board-reactions';
 import { ActionsCreated } from './results/action-items';
 import { GamesPlayed } from './results/games-played';
 import { HealthResult } from './results/health';
@@ -102,7 +105,14 @@ function useEndedLine(): { text: string; completedAt: string | null } {
     };
 }
 
-function RecapActions({ onRecap }: { onRecap: (recap: Recap) => void }) {
+function RecapActions({
+    onRecap,
+    footerRef,
+}: {
+    onRecap: (recap: Recap) => void;
+    /** The sticky foot of the phone, which the reaction bar must clear. */
+    footerRef?: Ref<HTMLDivElement>;
+}) {
     const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
@@ -136,6 +146,7 @@ function RecapActions({ onRecap }: { onRecap: (recap: Recap) => void }) {
     if (isMobile && hasEmail) {
         return (
             <div
+                ref={footerRef}
                 data-slot="retro-session-end-actions"
                 className="sticky bottom-0 z-20 mt-auto flex min-w-0 items-center gap-2 border-t bg-background px-4 py-3"
             >
@@ -173,6 +184,7 @@ function RecapActions({ onRecap }: { onRecap: (recap: Recap) => void }) {
 
     return (
         <div
+            ref={isMobile ? footerRef : undefined}
             data-slot="retro-session-end-actions"
             className={
                 isMobile
@@ -225,7 +237,7 @@ function Stats() {
 
     const participation = t(':count of :total', {
         count: stats.participants,
-        total: stats.teamMembers,
+        total: stats.expected,
     });
 
     return (
@@ -336,7 +348,7 @@ export function SessionEnd({
     celebrates = false,
     children,
 }: Props) {
-    const { board } = useBoard();
+    const { board, presence } = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
     const [recap, setRecap] = useState<Recap | null>(null);
@@ -360,11 +372,16 @@ export function SessionEnd({
         );
     }, [celebrates, actions, t]);
 
-    const recapActions = <RecapActions onRecap={setRecap} />;
+    const [footerRef, footerHeight] = useHeightInRem();
+    const hasReactions = Boolean(presence) && showsRetroReactions(board.retro);
+    const recapActions = (
+        <RecapActions onRecap={setRecap} footerRef={footerRef} />
+    );
 
     return (
         <div
             data-slot="retro-session-end"
+            data-reactions={hasReactions || undefined}
             className="relative mx-auto flex w-full max-w-screen-2xl min-w-0 flex-1 flex-col"
         >
             {celebrates && (
@@ -375,7 +392,11 @@ export function SessionEnd({
             <Tabs<CompletedView>
                 value={view}
                 onValueChange={onViewChange}
-                className="relative z-10 flex-1 gap-4 pt-5"
+                className={cn(
+                    'relative z-10 flex-1 gap-4 pt-5',
+                    // Room for the docked reaction bar under the last card.
+                    hasReactions && 'pb-16',
+                )}
             >
                 <div className="flex min-w-0 flex-col gap-4 px-4 md:px-8">
                     <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:gap-6">
@@ -446,6 +467,12 @@ export function SessionEnd({
                 </TabsContent>
             </Tabs>
             {isMobile && recapActions}
+            <BoardReactions
+                compact={isMobile}
+                offsetBottom={
+                    isMobile && footerHeight > 0 ? footerHeight : undefined
+                }
+            />
             <RecapShareDialog
                 channel={recap?.kind === 'share' ? recap.channel : null}
                 onClose={() => setRecap(null)}

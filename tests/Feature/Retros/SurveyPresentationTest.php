@@ -62,6 +62,29 @@ it('shows counts to everyone once the survey is closed', function () {
         ->and(collect($payload['options'])->pluck('count')->all())->toBe([0, 0, 1]);
 });
 
+it('counts a survey left open as closed once the retro is completed, so everyone sees its results', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [, $viewer] = retroMember($retro);
+    [, $other] = retroMember($retro);
+    $choice = Survey::factory()->withOptions()->create(['retro_id' => $retro->id]);
+    $text = Survey::factory()->text()->create(['retro_id' => $retro->id, 'position' => 1]);
+    answerSurvey($choice, $other, 2);
+    SurveyTextAnswer::factory()->create(['survey_id' => $text->id, 'participant_id' => $other->id, 'content' => 'Theirs']);
+    SurveyReaction::factory()->create(['retro_id' => $retro->id, 'survey_id' => $choice->id, 'participant_id' => $other->id, 'emoji' => '🎉']);
+    SurveyComment::factory()->create(['retro_id' => $retro->id, 'survey_id' => $choice->id, 'participant_id' => $other->id, 'content' => 'Good one']);
+
+    $choicePayload = presentedSurvey($choice, $viewer);
+    $textPayload = presentedSurvey($text, $viewer);
+
+    expect($choicePayload)->toMatchArray(['resultsVisible' => true, 'isClosed' => true, 'myOptionIds' => []])
+        ->and(collect($choicePayload['options'])->pluck('count')->all())->toBe([0, 0, 1])
+        ->and($choicePayload['reactions'])->toHaveCount(1)
+        ->and($choicePayload['comments'][0]['content'])->toBe('Good one')
+        ->and($textPayload)->toMatchArray(['resultsVisible' => true, 'isClosed' => true, 'myText' => null])
+        ->and(collect($textPayload['textAnswers'])->pluck('text')->all())->toBe(['Theirs'])
+        ->and($choice->fresh()->is_closed)->toBeFalse();
+});
+
 it('never links a participant to an option when show who answered is off', function () {
     [$retro, $viewer, $other] = surveyAudience();
     $survey = Survey::factory()->withOptions()->create(['retro_id' => $retro->id]);
