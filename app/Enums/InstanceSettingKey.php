@@ -27,6 +27,9 @@ enum InstanceSettingKey: string
      */
     public static function branding(): array
     {
-        return array_values(array_filter(self::cases(), fn (self $key): bool => $key !== self::SsoRequired));
+        return collect(self::cases())
+            ->reject(fn (self $key): bool => $key === self::SsoRequired)
+            ->values()
+            ->all();
     }
 }

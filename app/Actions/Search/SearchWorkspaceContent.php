@@ -56,7 +56,7 @@ class SearchWorkspaceContent
             return [];
         }
 
-        $teamIds = $teams->modelKeys();
+        $teamIds = $teams->pluck('id')->all();
         $teamsById = $teams->keyBy('id');
         $workspace = $teams->first()->workspace;
         $termHasWildcard = SearchText::hasWildcard($term);

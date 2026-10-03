@@ -16,7 +16,14 @@ class PresentTeamHealthStatements
     /**
      * Every statement of the team, archived ones included, in its order.
      *
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array{
+     *     id: string,
+     *     key: string,
+     *     label: string,
+     *     text: string,
+     *     isBuiltin: bool,
+     *     isArchived: bool
+     * }>
      */
     public function handle(Team $team): Collection
     {

@@ -48,7 +48,10 @@ class PokerDecksController extends Controller
      */
     private function builtInDecks(Team $team): array
     {
-        $decks = array_values(array_filter(PokerDeck::cases(), fn (PokerDeck $deck): bool => $deck !== PokerDeck::Custom));
+        $decks = collect(PokerDeck::cases())
+            ->reject(fn (PokerDeck $deck): bool => $deck === PokerDeck::Custom)
+            ->values()
+            ->all();
         $defaultDeck = $team->default_saved_poker_deck_id === null
             ? ($team->default_poker_deck ?? $decks[0]->value)
             : null;

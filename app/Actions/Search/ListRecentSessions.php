@@ -45,30 +45,34 @@ class ListRecentSessions
             return [];
         }
 
-        $teamIds = $teams->modelKeys();
+        $teamIds = $teams->pluck('id')->all();
         $teamsById = $teams->keyBy('id');
 
+        $retroQuery = Retro::query()->whereIn('team_id', $teamIds);
         $retros = $this->recent(
-            Retro::query()->whereIn('team_id', $teamIds),
-            fn (Builder $query) => $query->where('phase', '!=', RetroPhase::Completed->value),
+            $retroQuery,
+            (clone $retroQuery)->where('phase', '!=', RetroPhase::Completed->value),
             fn (Retro $retro, bool $live): array => $this->session('retro', $retro, $retro->title, $teamsById[$retro->team_id], route('retros.show', $retro), $live),
         );
 
+        $gameQuery = PokerGame::query()->whereIn('team_id', $teamIds);
         $games = $this->recent(
-            PokerGame::query()->whereIn('team_id', $teamIds),
-            fn (Builder $query) => $query->whereNull('ended_at'),
+            $gameQuery,
+            (clone $gameQuery)->whereNull('ended_at'),
             fn (PokerGame $game, bool $live): array => $this->session('poker', $game, $game->title, $teamsById[$game->team_id], route('poker.show', $game), $live),
         );
 
+        $boardQuery = Whiteboard::query()->whereIn('team_id', $teamIds);
         $boards = $this->recent(
-            Whiteboard::query()->whereIn('team_id', $teamIds),
-            fn (Builder $query) => $query,
+            $boardQuery,
+            clone $boardQuery,
             fn (Whiteboard $board, bool $live): array => $this->session('whiteboard', $board, $board->title, $teamsById[$board->team_id], route('whiteboards.show', $board), $live),
         );
 
+        $roomQuery = GameRoom::query()->whereIn('team_id', $teamIds)->whereNotNull('name');
         $rooms = $this->recent(
-            GameRoom::query()->whereIn('team_id', $teamIds)->whereNotNull('name'),
-            fn (Builder $query) => $query->whereNotNull('current_round_id'),
+            $roomQuery,
+            (clone $roomQuery)->whereNotNull('current_round_id'),
             fn (GameRoom $room, bool $live): array => $this->session('game', $room, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room), $live),
         );
 
@@ -87,13 +91,13 @@ class ListRecentSessions
      * @template TModel of Model
      *
      * @param  Builder<TModel>  $query
-     * @param  Closure(Builder<TModel>): Builder<TModel>  $notEnded
+     * @param  Builder<TModel>  $notEnded  the same query narrowed to the sessions not ended
      * @param  Closure(TModel, bool): RecentSession  $present
      * @return Collection<int, RecentSession>
      */
-    private function recent(Builder $query, Closure $notEnded, Closure $present): Collection
+    private function recent(Builder $query, Builder $notEnded, Closure $present): Collection
     {
-        $live = $notEnded((clone $query)->where('updated_at', '>=', now()->subMinutes(self::LiveWithinMinutes)))
+        $live = $notEnded->where('updated_at', '>=', now()->subMinutes(self::LiveWithinMinutes))
             ->latest('updated_at')
             ->limit(self::Limit)
             ->get();

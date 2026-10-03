@@ -6,7 +6,6 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Arr;
 
 class PresentGameRoomSummary
 {
@@ -38,7 +37,7 @@ class PresentGameRoomSummary
      *     gameLabel: string,
      *     access: string,
      *     status: string,
-     *     players: list<array{id: string, name: string, avatarUrl: string}>,
+     *     players: array<int, array{id: string, name: string, avatarUrl: string}>,
      *     playersCount: int,
      *     roundsCount: int,
      *     roundStartedAt: ?string,
@@ -58,7 +57,11 @@ class PresentGameRoomSummary
             'status' => $activeRound === null ? 'waiting' : 'playing',
             'players' => $room->players
                 ->take(self::PlayersShown)
-                ->map(fn (GamePlayer $player): array => Arr::only($this->presentGamePlayer->handle($player), ['id', 'name', 'avatarUrl']))
+                ->map(function (GamePlayer $player): array {
+                    $presented = $this->presentGamePlayer->handle($player);
+
+                    return ['id' => $presented['id'], 'name' => $presented['name'], 'avatarUrl' => $presented['avatarUrl']];
+                })
                 ->values()
                 ->all(),
             'playersCount' => (int) $room->getAttribute('players_count'),

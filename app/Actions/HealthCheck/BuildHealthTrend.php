@@ -53,7 +53,7 @@ class BuildHealthTrend
         $previous = null;
 
         foreach ($retros as $point) {
-            $keys = $keysByRetro->get($point->id, []);
+            $keys = $keysByRetro->get($point->id)?->all() ?? [];
             $score = $scores->get($point->id);
 
             if ($score === null) {
@@ -110,14 +110,15 @@ class BuildHealthTrend
 
     /**
      * @param  Collection<int, string>  $retroIds
-     * @return Collection<string, array<int, string>>
+     * @return Collection<string, Collection<int, string>>
      */
     private function statementKeysByRetro(Collection $retroIds): Collection
     {
         return RetroHealthStatement::query()
             ->whereIn('retro_id', $retroIds)
             ->get(['retro_id', 'key'])
-            ->groupBy('retro_id')
-            ->map(fn (Collection $statements) => $statements->pluck('key')->sort()->values()->all());
+            ->toBase()
+            ->sortBy('key')
+            ->mapToGroups(fn (RetroHealthStatement $statement): array => [$statement->retro_id => $statement->key]);
     }
 }

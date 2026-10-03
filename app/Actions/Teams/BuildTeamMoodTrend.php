@@ -16,7 +16,7 @@ class BuildTeamMoodTrend
     public function __construct(private BuildHealthTrend $buildHealthTrend) {}
 
     /**
-     * @return list<array{
+     * @return array<int, array{
      *     retroId: string,
      *     title: string,
      *     completedAt: string,

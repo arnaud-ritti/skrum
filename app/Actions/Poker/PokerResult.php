@@ -213,7 +213,7 @@ class PokerResult
     }
 
     /**
-     * @param  array<int, array{value: string, count: int}>  $countable
+     * @param  non-empty-list<array{value: string, count: int}>  $countable
      */
     private static function agreement(array $countable): float
     {

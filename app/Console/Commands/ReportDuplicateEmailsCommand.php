@@ -7,6 +7,7 @@ use App\Support\Auth\LoginAddress;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 #[Description('List the accounts whose e-mail addresses differ only by case or surrounding spaces, without changing them')]
@@ -45,14 +46,14 @@ class ReportDuplicateEmailsCommand extends Command
         return self::SUCCESS;
     }
 
-    /** @return Collection<string, Collection<int, User>> */
+    /** @return Collection<string, EloquentCollection<int, User>> */
     private function duplicateGroups(): Collection
     {
         return User::query()
             ->orderBy('created_at')
             ->orderBy('id')
             ->get(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin', 'created_at'])
-            ->groupBy(fn (User $account): string => LoginAddress::normalise($account->email))
+            ->mapToGroups(fn (User $account): array => [LoginAddress::normalise($account->email) => $account])
             ->filter(fn (Collection $accounts): bool => $accounts->count() > 1)
             ->sortKeys();
     }

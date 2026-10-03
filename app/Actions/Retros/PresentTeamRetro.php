@@ -42,7 +42,7 @@ class PresentTeamRetro
     private function templateName(Retro $retro): string
     {
         if ($retro->template === TemplateCatalogue::Workspace) {
-            return $retro->workspaceTemplate?->name ?? __('Workspace template');
+            return $retro->workspaceTemplate->name ?? __('Workspace template');
         }
 
         return TemplateCatalogue::find($retro->template)?->name() ?? $retro->template;

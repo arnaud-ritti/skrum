@@ -17,7 +17,7 @@ class TopTeamTemplates
     /**
      * The templates a team used most, counted over its latest hundred retros.
      *
-     * @return list<string>
+     * @return array<int, string>
      */
     public function handle(Team $team): array
     {
@@ -30,7 +30,7 @@ class TopTeamTemplates
             ->all();
     }
 
-    /** @return list<string> */
+    /** @return array<int, string> */
     private function usedKeys(Team $team): array
     {
         $workspaceTemplateIds = WorkspaceTemplate::query()
