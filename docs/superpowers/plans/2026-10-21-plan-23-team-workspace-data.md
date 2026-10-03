@@ -2,27 +2,27 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 25 only).
 
-**Status: draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 1 B, 2 B, 4 C and 7 B differ from the first draft and are written in; 3, 5, 6, 8 and 9 confirm it). Nothing runs before the owner has approved the pre-build deviations (not asked yet).
+**Status: ready to run — draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 1 B, 2 B, 4 C and 7 B differ from the first draft and are written in; 3, 5, 6, 8 and 9 confirm it) **and with the owner's answers to the pre-build deviations** (2026-10-03: P23-04 as recommended, with a "You are observing" line; P23-07 ≠ recommendation, a global presence channel gives "Online" in the members table, Task 28; P23-01 and P23-05 obsolete, settled by decisions 1 B and 4 C; every other row approved as listed). No row waits for the owner.
 
-**Goal:** Teams get roles (owner, facilitator, member, observer), explicit sprints with "Start the next sprint" and a derived next retro, default facilitators that suggest who facilitates a retro, a default retro template, descriptions, an activity log and whiteboard thumbnails; a facilitator or owner can take control of any open session of the team; a workspace can be renamed; templates get a visibility; the team page, the workspace page and the four team-settings tabs show all of it as the mockups draw it, without taking a right away from anyone.
+**Goal:** Teams get roles (owner, facilitator, member, observer), explicit sprints with "Start the next sprint" and a derived next retro, default facilitators that suggest who facilitates a retro, a default retro template, descriptions, an activity log and whiteboard thumbnails; a facilitator or owner can take control of any open session of the team; a workspace can be renamed; templates get a visibility; the members table shows who is online; the team page, the workspace page and the four team-settings tabs show all of it as the mockups draw it, without taking a right away from anyone.
 
-**Architecture:** Roles live on the existing `team_user` pivot (a `TeamMembership` pivot model, `App\Enums\TeamRole`) and are read by `TeamPolicy`, by a `WorkspaceTemplatePolicy`, by `ActionItemPermissions`, by the MCP write tools, by `AccessRequestRecipients` (plan 29) and by one middleware, `RefuseObserverWrites`, placed after the participant middleware of the five session scopes. Taking control reuses the four existing hand-over endpoints, widened by one ability (`TeamPolicy::takeControl`). Sprints are rows (`team_sprints`) written only under the team's row lock; `App\Support\Teams\SprintCalendar` reads the rows of a window of days and answers "which sprint contains this day" and "when is the next retro". The default facilitators are a small ordered list (`team_facilitators`) read by `SuggestedFacilitator`, which the "New session" dialog shows and `CreateRetro` compares, under the team's row lock, to the person chosen, moving the rotation only when the suggestion was followed. The activity log is one append-only table written in the same transaction as the nine changes it records. Thumbnails are a cached JSON preview on `whiteboards`, built by a unique queued job with the template gallery's renderer. Everything else (recent sessions, open actions, retro counts, last activity) is read with relationship aggregates on bounded sets.
+**Architecture:** Roles live on the existing `team_user` pivot (a `TeamMembership` pivot model, `App\Enums\TeamRole`) and are read by `TeamPolicy`, by a `WorkspaceTemplatePolicy`, by `ActionItemPermissions`, by the MCP write tools, by `AccessRequestRecipients` (plan 29) and by one middleware, `RefuseObserverWrites`, placed after the participant middleware of the five session scopes. Taking control reuses the four existing hand-over endpoints, widened by one ability (`TeamPolicy::takeControl`). Sprints are rows (`team_sprints`) written only under the team's row lock; `App\Support\Teams\SprintCalendar` reads the rows of a window of days and answers "which sprint contains this day" and "when is the next retro". The default facilitators are a small ordered list (`team_facilitators`) read by `SuggestedFacilitator`, which the "New session" dialog shows and `CreateRetro` compares, under the team's row lock, to the person chosen, moving the rotation only when the suggestion was followed. The activity log is one append-only table written in the same transaction as the nine changes it records. Thumbnails are a cached JSON preview on `whiteboards`, built by a unique queued job with the template gallery's renderer. "Online" is one presence channel per workspace (`presence-workspace-online.{id}`, user id only), joined once for the whole application from Inertia's `navigate` event and read through `useOnlineUserIds`. Everything else (recent sessions, open actions, retro counts, last activity) is read with relationship aggregates on bounded sets.
 
-**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from this list.
+**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb through `@laravel/echo-react` (the existing presence channels); PostgreSQL through `bin/test-db` (owner, 2026-10-03: this plan verifies on PostgreSQL only; the four-engine matrix — PostgreSQL, SQLite, MariaDB, MySQL — runs once, after the last merge of the roadmap into `roadmap`; the code stays portable all the same); `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from this list.
 
 **Spec:** `docs/superpowers/specs/2026-10-21-plan-23-team-workspace-data-design.md` (renamed in Task 26). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenDashboard`, `ScreenTeam`, `ScreenWorkspace`, `ScreenSettings` (frame a), `ScreenSessionCreate`, `TemplateEditor`, `Card`, `ActionItem`, `MoodTrendChart`, `Sidebar`, `EmptyState`, `Table` — for each, the `README.md` and the `preview.html`.
 
-**Not in this plan:** spec §3 (scheduling and automatic sprint starts, team invitations and the invite link of plan 25, sprint grouping of action items, the Sessions page of plan 22, template defaults, a team colour, live updates of the team page, a survey take-over, a workspace slug change, retro exports and a team archive, plans 28 and 30); browser walkthroughs (owner's working rule: none is written or run).
+**Not in this plan:** spec §3 (scheduling and automatic sprint starts, team invitations and the invite link of plan 25, sprint grouping of action items (plan 24, which runs after this plan), the Sessions page of plan 22, template defaults, a team colour, live updates of the team page, a survey take-over, a workspace slug change, retro exports and a team archive, plans 28 and 30); browser walkthroughs (owner's working rule: none is written or run).
 
-**Tasks:** 27. Step A, roles, observer and take-over, single writer: 1 to 5. Step B, back end in three lanes cut from the head of Task 5: lane R (rituals) 6, 7, 8; lane T (templates) 9, 10; lane F (feed and page data) 11 to 15. Step C, single writer after the three lanes merge: 16 (team settings pages, back end), 17 (front foundation). Step D, screens in four lanes cut from the head of Task 17: Page 18; Settings 19, 20, 21; Workspace 22; Sessions 23. Final: 24 (translations), 25 (captures, light, 1440, French), 26 (deviations and documents), 27 (four-engine suites and report). The three tasks more than the first draft come from decision 1 B (Tasks 7 and 21) and decision 2 B (Task 5).
+**Tasks:** 28. Step A, roles, observer and take-over, single writer: 1 to 5. Step B, back end in three lanes cut from the head of Task 5: lane R (rituals) 6, 7, 8; lane T (templates) 9, 10; lane F (feed and page data) 11 to 15. Step C, single writer after the three lanes merge: 16 (team settings pages, back end), 17 (front foundation), **28 (the workspace presence channel, "Online"; numbered last, runs right after Task 17)**. Step D, screens in four lanes cut from the head of Task 28: Page 18; Settings 19, 20, 21; Workspace 22; Sessions 23. Final: 24 (translations), 25 (captures, light, 1440, French), 26 (deviations and documents), 27 (PostgreSQL suites and report). The three tasks more than the first draft come from decision 1 B (Tasks 7 and 21) and decision 2 B (Task 5); Task 28 comes from the owner's answer to P23-07.
 
 ## Branch and run
 
-- **Order (owner, 2026-10-03):** plans 20, 21, 24, 26, 27 and 29 run in parallel, then plan 22, then this plan, then plan 25. Base: `main` with **plan 22 merged** (and the six plans before it). Check before Task 1, and stop if one fails: `app/Actions/Sessions/ListTeamSessions.php`, `app/Actions/Teams/PresentNewSessionOptions.php` and `app/Enums/SessionState.php` exist (plan 22); `app/Actions/Teams/AccessRequestRecipients.php` exists (plan 29); the route `workspaces.actionItemCsvExports.show` exists (plan 24); `database/migrations` holds no migration dated `2026_10_23_…`; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `resources/js/components/teams/team-page.tsx` exports the type `TeamPageSlots` with the slots `schedule`, `recentSessions`, `openActions`, `activity`, `roleBadgeFor`, `retroStatsFor`, `whiteboardThumbnailFor`.
-- Plans merged before this one: 20, 21, 22, 24, 26, 27, 29. Each task re-reads the files it touches; a line quoted here that no longer matches (plans 21, 22 and 24 change `CreateRetro`, `NewRetro`, `TeamRetrosController`, `TeamsController@show`, `ActionItemPermissions`, `PresentActionItem` and the retro board) is followed in spirit and reported. If a merged plan already used a migration date of `2026_10_23_…`, re-date this plan's migrations to the first free day and say so in the commit.
-- Branch `plan-23-team-workspace-data` from that base. **No merge into `main`, no push.**
-- Step A runs on that branch with one writer. Lanes run in git worktrees on branches `lane/23-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs, after each merge, the gates `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and the whole suites on PostgreSQL and SQLite (`bin/test-db pgsql`, `bin/test-db sqlite`).
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it); MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
+- **Order (owner, 2026-10-03, updated with the pre-build deviation answers):** plans 20, 21, 26, 27 and 29 run in parallel, then plan 22, then **this plan**, then plans 24 and 25 (in parallel). Base: the integration branch `roadmap` with **plan 22 merged** (and the five plans of the first wave). Check before Task 1, and stop if one fails: `app/Actions/Sessions/ListTeamSessions.php`, `app/Actions/Teams/PresentNewSessionOptions.php` and `app/Enums/SessionState.php` exist (plan 22); `app/Actions/Teams/AccessRequestRecipients.php` exists (plan 29); `database/migrations` holds no migration dated `2026_10_23_…`; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `resources/js/components/teams/team-page.tsx` exports the type `TeamPageSlots` with the slots `schedule`, `recentSessions`, `openActions`, `activity`, `roleBadgeFor`, `retroStatsFor`, `whiteboardThumbnailFor`; `app/Http/Controllers/BroadcastAuthorizationsController.php` has no `presence-workspace-online.` branch.
+- Plans merged before this one: 20, 21, 22, 26, 27, 29. **Plan 24 runs after this plan** (owner, 2026-10-03, answer P24-03: it builds the "By sprint" grouping of action items on this plan's `SprintCalendar`): `ActionItemPermissions`, `PresentActionItem` and the action items page are read as they are on `roadmap`, and no plan 24 route is assumed. Each task re-reads the files it touches; a line quoted here that no longer matches (plans 21 and 22 change `CreateRetro`, `NewRetro`, `TeamRetrosController`, `TeamsController@show` and the retro board) is followed in spirit and reported. If a merged plan already used a migration date of `2026_10_23_…`, re-date this plan's migrations to the first free day and say so in the commit.
+- Branch `plan-23-team-workspace-data` from `roadmap`; the controller merges it into `roadmap` when Task 27 passes. **No merge into `main`, no push.**
+- Step A runs on that branch with one writer. Lanes run in git worktrees on branches `lane/23-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs, after each merge, the gates `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and the whole suites on PostgreSQL (`bin/test-db pgsql`). SQLite, MariaDB and MySQL are not run by this plan (owner, 2026-10-03: the four-engine matrix runs once, after plans 24 and 25 are merged into `roadmap`; the risk that an engine-specific regression is found late is accepted).
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it). Never run two whole suites at once in the shared container.
 
 ## Owner decisions
 
@@ -39,6 +39,17 @@ The nine questions of spec §15, **answered by the owner on 2026-10-03**. "≠ f
 | 7 | Workspace description | **B, ≠ first draft**: the description **and the rename** in the same small dialog of the workspace page, for managers; the slug stays | Task 11 (`WorkspaceDetailsController`), Task 22 (the dialog) |
 | 8 | Data & export | **A**: links to existing exports and a paragraph | Tasks 16, 19 |
 | 9 | Recent sessions and plan 22 | **A**: plan 22 first; Task 13 uses its state rules | Task 13 |
+
+The pre-build deviations, **answered by the owner on 2026-10-03** (progress file, line "P23: …"):
+
+| Row | Answer | Where it lands |
+|---|---|---|
+| P23-04 | as recommended: each session's existing read-only mode, with the line "You are observing this session." | Task 23 (one notice on the five screens), Task 24 |
+| P23-07 | **≠ recommendation**: a **global presence channel** gives "Online" in the Last activity column of the members table | **Task 28** (new: channel authorisation, the app-wide join, `useOnlineUserIds`), Task 20 (the column), Task 25 (capture) |
+| P23-01, P23-05 | **obsolete**: settled by decisions 1 B (explicit sprints and their card) and 4 C (the facilitator suggestion and its select); built as written | Tasks 21, 23 |
+| every other row | approved as listed | — |
+
+Rulings taken in this revision without a question to the owner (each in the report of Task 27): the presence channel is **per workspace** (`presence-workspace-online.{id}`), joined on every signed-in page of the application for the current workspace — "global" read as app-wide, not instance-wide, so that nobody learns who is online in a workspace they do not belong to; it carries the user id only. The German word for the facilitator role is **"Moderator"** (Task 24: the existing value "Moderation" of the key `Facilitator` is corrected, since 26 existing German strings already call the person "Moderator"). Access requests (plan 29) reach who holds `manageMembers` — workspace owners and admins and the team's owners; plan 25 widens *invitations* to facilitators on its own, not the approval of access requests. Data & export links the team's action items page (`workspaces.actionItems.index?team=`), since plan 24's CSV export comes after this plan and lives on that page.
 
 ## File structure
 
@@ -68,22 +79,22 @@ Back end, created:
 | `app/Http/Requests/Teams/TeamSprintRequest.php`, `TeamRitualsRequest.php`, `TeamFacilitatorsRequest.php` | validation |
 | `app/Http/Controllers/TeamMemberRolesController.php`, `TeamSprintsController.php`, `TeamSprintStartsController.php`, `TeamRitualsController.php`, `TeamFacilitatorsController.php`, `TeamDefaultRetroTemplatesController.php`, `TeamSettingsController.php`, `TeamDataController.php`, `WorkspaceDetailsController.php` | HTTP |
 
-Back end, modified: `app/Models/Team.php`, `User.php`, `Workspace.php`, `WorkspaceTemplate.php`, `Whiteboard.php`, `TeamSurvey.php`; `app/Policies/TeamPolicy.php`, `WorkspacePolicy.php`; `app/Http/Controllers/TeamsController.php`, `TeamMembersController.php`, `TeamRetrosController.php`, `WorkspacesController.php`, `WorkspaceTemplatesController.php`, `WorkspaceMembersController.php`, `Retros/RetroFacilitatorsController.php`, `Games/GameHostsController.php`, `Poker/PokerStatusesController.php`, `TeamSurveys/TeamSurveyStatusesController.php`, `Integrations/TeamIntegrationsController.php`; `app/Http/Middleware/ResolvePokerPlayer.php`, `HandleInertiaRequests.php`; `app/Http/Requests/WorkspaceTemplateRequest.php`; `app/Actions/Poker/ResolvePlayer.php`, `BuildPokerSnapshot.php`; `app/Actions/Retros/CreateRetro.php`, `NewRetro.php`, `ChangeRetroPhase.php`, `BuildBoardSnapshot.php`, `BuildResults.php`, `BuildTemplateCatalogue.php`, `PresentTeamRetro.php`, `TopTeamTemplates.php`; `app/Actions/Teams/PresentNewSessionOptions.php` (plan 22), `AccessRequestRecipients.php` (plan 29); `app/Actions/Whiteboards/BuildWhiteboardSnapshot.php`, `CreateWhiteboard.php`, `WriteWhiteboardElements.php`, `PresentWhiteboardSummary.php`; `app/Actions/Games/BuildGameSnapshot.php`; `app/Actions/TeamSurveys/BuildTeamSurveySnapshot.php`; `app/Actions/Poker/CreatePokerGame.php`; `app/Actions/ActionItems/ActionItemPermissions.php`, `SetActionItemStatus.php`; `app/Actions/Teams/BuildTeamMoodTrend.php`; `app/Mcp/Tools/SkrumTool.php` and its thirteen write tools, `Retro/ListTeamMembers.php`; `routes/web.php`; `tests/Pest.php`.
+Back end, modified: `app/Http/Controllers/BroadcastAuthorizationsController.php` (the `presence-workspace-online.` channel, Task 28); `app/Models/Team.php`, `User.php`, `Workspace.php`, `WorkspaceTemplate.php`, `Whiteboard.php`, `TeamSurvey.php`; `app/Policies/TeamPolicy.php`, `WorkspacePolicy.php`; `app/Http/Controllers/TeamsController.php`, `TeamMembersController.php`, `TeamRetrosController.php`, `WorkspacesController.php`, `WorkspaceTemplatesController.php`, `WorkspaceMembersController.php`, `Retros/RetroFacilitatorsController.php`, `Games/GameHostsController.php`, `Poker/PokerStatusesController.php`, `TeamSurveys/TeamSurveyStatusesController.php`, `Integrations/TeamIntegrationsController.php`; `app/Http/Middleware/ResolvePokerPlayer.php`, `HandleInertiaRequests.php`; `app/Http/Requests/WorkspaceTemplateRequest.php`; `app/Actions/Poker/ResolvePlayer.php`, `BuildPokerSnapshot.php`; `app/Actions/Retros/CreateRetro.php`, `NewRetro.php`, `ChangeRetroPhase.php`, `BuildBoardSnapshot.php`, `BuildResults.php`, `BuildTemplateCatalogue.php`, `PresentTeamRetro.php`, `TopTeamTemplates.php`; `app/Actions/Teams/PresentNewSessionOptions.php` (plan 22), `AccessRequestRecipients.php` (plan 29); `app/Actions/Whiteboards/BuildWhiteboardSnapshot.php`, `CreateWhiteboard.php`, `WriteWhiteboardElements.php`, `PresentWhiteboardSummary.php`; `app/Actions/Games/BuildGameSnapshot.php`; `app/Actions/TeamSurveys/BuildTeamSurveySnapshot.php`; `app/Actions/Poker/CreatePokerGame.php`; `app/Actions/ActionItems/ActionItemPermissions.php`, `SetActionItemStatus.php`; `app/Actions/Teams/BuildTeamMoodTrend.php`; `app/Mcp/Tools/SkrumTool.php` and its thirteen write tools, `Retro/ListTeamMembers.php`; `routes/web.php`; `tests/Pest.php`.
 
-Tests, created besides each task's feature files: `tests/Unit/Support/Teams/SprintCalendarTest.php`; `tests/Upgrade/TeamRolesBackfillTest.php`, `WorkspaceTemplateVisibilityBackfillTest.php`; `tests/Concurrency/TeamSprintStartsTest.php`, `RetroRotationTest.php`, `TeamFacilitatorsTest.php`; `tests/Browser/Visual/TeamWorkspaceDataVisualTest.php` (captures only).
+Tests, created besides each task's feature files: `tests/Unit/Support/Teams/SprintCalendarTest.php`; `tests/Feature/Workspaces/WorkspaceOnlineChannelTest.php` (Task 28); `tests/Upgrade/TeamRolesBackfillTest.php`, `WorkspaceTemplateVisibilityBackfillTest.php`; `tests/Concurrency/TeamSprintStartsTest.php`, `RetroRotationTest.php`, `TeamFacilitatorsTest.php`; `tests/Browser/Visual/TeamWorkspaceDataVisualTest.php` (captures only).
 
-Front end, created: `resources/js/lib/teams/{roles,sprint,activity,session-rows,facilitator}.ts` (+ tests); `resources/js/components/teams/{team-schedule,team-recent-sessions,team-open-actions-card,team-activity-card,team-role-badge,whiteboard-thumbnail}.tsx` (+ tests); `resources/js/components/team-settings/{general-settings,data-export,members-table,sprints-card,default-facilitators-card,retro-templates-card,default-columns-card}.tsx` (+ tests); `resources/js/components/workspaces/workspace-details-dialog.tsx` (+ test); `resources/js/components/teams/session-create/retro-facilitator-field.tsx` (+ test); `resources/js/pages/teams/{settings,members,data}.tsx`. `components/team-settings/` is a domain folder under `components/`, as spec §6.1 of the parent allows; `TeamSettingsShell` moves there from `components/integrations/` (Task 17). Modified: the team page components named by the slots, `team-header.tsx`, `team-members-card.tsx`, `skrum/session-card.tsx` (`groups`), `skrum/template-editor.tsx` (team select), `workspaces/{team-tile,workspace-overview,templates-page,template-card,template-editor-sheet}.tsx`, `lib/teams/settings-href.ts`, `skrum/app-sidebar.tsx` (role line), `teams/session-create/retro-session-fields.tsx`, the five session screens' read-only switches, the retro board menu ("Take control"), `types/workspaces.ts`.
+Front end, created: `resources/js/lib/teams/{roles,sprint,activity,session-rows,facilitator}.ts` (+ tests); `resources/js/lib/realtime/workspace-presence.ts`, `resources/js/hooks/use-online-user-ids.ts` (+ tests; Task 28); `resources/js/components/teams/{team-schedule,team-recent-sessions,team-open-actions-card,team-activity-card,team-role-badge,whiteboard-thumbnail}.tsx` (+ tests); `resources/js/components/team-settings/{general-settings,data-export,members-table,sprints-card,default-facilitators-card,retro-templates-card,default-columns-card}.tsx` (+ tests); `resources/js/components/workspaces/workspace-details-dialog.tsx` (+ test); `resources/js/components/teams/session-create/retro-facilitator-field.tsx` (+ test); `resources/js/pages/teams/{settings,members,data}.tsx`. `components/team-settings/` is a domain folder under `components/`, as spec §6.1 of the parent allows; `TeamSettingsShell` moves there from `components/integrations/` (Task 17). Modified: `resources/js/app.tsx` (the app-wide join of the presence channel, Task 28); the team page components named by the slots, `team-header.tsx`, `team-members-card.tsx`, `skrum/session-card.tsx` (`groups`), `skrum/template-editor.tsx` (team select), `workspaces/{team-tile,workspace-overview,templates-page,template-card,template-editor-sheet}.tsx`, `lib/teams/settings-href.ts`, `skrum/app-sidebar.tsx` (role line), `teams/session-create/retro-session-fields.tsx`, the five session screens' read-only switches, the retro board menu ("Take control"), `types/workspaces.ts`.
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, and a row is put to the owner before its screen is built. Captures are taken once, in Task 25, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 26.
+- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations** (all answered by the owner on 2026-10-03); a difference found later that fits no approved row is fixed, or stops the task (Task 26). Captures are taken once, in Task 25, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 26.
 - **Existing features kept** (owner's rule): a member keeps every right they have today (including "Take control" of poker games and whiteboards); every existing permission test passes unchanged at the end of each task of Step A.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale (no arbitrary size), no overflow from 20rem to 60rem, visible focus, contrast, motion with `prefers-reduced-motion`, lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers live in `resources/js/components/<domain>/`. Reuse what exists: `skrum/session-card`, `skrum/action-item`, `skrum/empty-state`, `skrum/template-editor`, `skrum/column-color-picker`, `skrum/confirm-dialog`, `skrum/sub-nav`, `skrum/date-picker`, `ui/table`, `ui/select`, `ui/switch`, `ui/drawer`, `teams/session-create/*`.
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md`, rules 1 to 12, apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them with no allowed list. In short: no raw query of any form; no driver test; what SQL cannot say the same way on the four engines is done in PHP on bounded sets, aggregates cast in PHP; migrations with the Schema builder only, `up` only, dated `2026_10_23_…`, nullable `timestamp()` or `dateTime()`, no `enum()`, no collation, no JSON default, index names within 64 characters; a transaction locks the aggregate root first (the team row for sprints, facilitators, rotation and every retro creation; the workspace row for templates and the workspace rename; the session row for a take-over) and is retried with `Transactions::Attempts` only when it touches nothing but the database; an explicit tie-breaker on every sort; lists read by people sorted with `Alphabetical::sort()`; tests never read SQL text and never change the schema; a legacy row written with `DB::table()` in a test sets the derived columns of its table (`users.email_key`, `users.name_search`); JSON compared with `toBeIgnoringKeyOrder`; writes never skip model events (`$model->timestamps = false` before `save()` is allowed: it skips no event).
-- **Tests per task (owner's working rule).** Every task writes its tests first and runs the tests it wrote or touched on **PostgreSQL and SQLite**: `bin/test-db pgsql -- <paths>`, then `bin/test-db sqlite -- <paths>`. The red step ("see it fail") may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. **Data migrations (Upgrade tests) and races run on the four engines:** `bin/test-db <pgsql|mariadb|mysql|sqlite> -- <upgrade path>`, races with `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency`, never in parallel. The **whole suites** run at each lane merge (PostgreSQL and SQLite) and on the four engines in Task 27.
-- **Races** are proved with `Tests\Concurrency\Support\Race` (`Race::run`, `Race::request`; static closures capturing scalars only); each case states the protection it proves, and removing it makes the case fail: two "Start the next sprint" (Task 7), two retro creations following the same suggestion (Task 8), two saves of the facilitator list (Task 8).
+- **Tests per task (owner's working rule, 2026-10-03).** Every task writes its tests first and runs the tests it wrote or touched on **PostgreSQL**: `bin/test-db pgsql -- <paths>`. The red step ("see it fail") may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. Upgrade tests run with `bin/test-db pgsql -- <upgrade path>`, races with `bin/test-db pgsql --concurrency -- <path>`, never in parallel. The **whole suites** run on PostgreSQL at each lane merge and in Task 27. **SQLite, MariaDB and MySQL are not run by this plan**: the owner ruled that the four-engine matrix runs once, after the last merge of the roadmap (plans 24 and 25); the portability rules above still bind every line, so that matrix passes.
+- **Races** are proved with `Tests\Concurrency\Support\Race` (`Race::run`, `Race::request`; static closures capturing scalars only); each case states the protection it proves, and removing it makes the case fail: two "Start the next sprint" (Task 7), two retro creations following the same suggestion (Task 8), two saves of the facilitator list (Task 8). They run on PostgreSQL in this plan, on the four engines in the roadmap's final matrix.
 - **Data migrations** (Tasks 1, 9) are proved in `tests/Upgrade` in the pattern of `GamePointsWeekStartBackfillTest`: `migrate:fresh` up to the migration before, legacy rows written with `DB::table()`, the real migration run, the rows read back.
-- **No browser walkthrough** is written, edited or run (owner). Vitest is written and run per front task (`npm run test -- <pattern>`), the whole Vitest suite in Tasks 17 and 27. **Captures only, light, 1440, French**, in Task 25.
+- **No browser walkthrough** is written, edited or run (owner). Vitest is written and run per front task (`npm run test -- <pattern>`), the whole Vitest suite in Tasks 17, 28 and 27. **Captures only, light, 1440, French**, in Task 25.
 - **No new dependency**, PHP or JS, without the owner's approval.
 - **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), in the informal register (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). A key that exists keeps its value. Task 24 holds the values of every key this plan names; in `en.json` the value is the key.
 - **No test is deleted** without the owner's approval; an existing test whose expectation changes is listed in its task with the reason.
@@ -104,26 +115,26 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-**To approve by the owner** (not asked yet): put to the owner before the screen is built (owner's rule of the fifth round). Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** the spec, **O** an owner's answer.
+**Answered by the owner on 2026-10-03**: P23-04 as recommended (with the line "You are observing this session."); P23-07 against the recommendation (a global presence channel, "Online", Task 28); P23-01 and P23-05 obsolete (decisions 1 B and 4 C settle them; the elements are built as described); every other row approved as listed. Nothing waits for the owner before a screen is built. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** the spec, **O** an owner's answer.
 
-| # | Screen | Mockup element | Built | Reason |
-|---|---|---|---|---|
-| P23-01 | Members & rituals | no card for sprints | a "Sprints" card: the current sprint, "Start the next sprint" with its preview line, the list of sprints (edit, delete), "Add a sprint", and the settings (default length, retro day, time, next-retro preview, Save), designed from the settings cards of ScreenSettings a | O: decision 1 B (explicit sprints and a management card) |
-| P23-02 | Data & export | the tab only | an "Exports" card (survey CSVs, estimates, plan 24's action items export) and a "What is kept" card | N: no content drawn; decision 8 |
-| P23-03 | Workspace page | no workspace description, no rename | the description under the facts line; an "Edit" ghost button opening a dialog "Workspace" with Name and Description, for managers | O: decision 7 B |
-| P23-04 | Retro, poker, whiteboard, game, survey | no observer view | each screen's existing read-only mode with an info line | N |
-| P23-05 | "New session", retro form | no facilitator field | a "Facilitator" select under the settings (the viewer first, then owners, facilitators and members), preselected with the suggested person, "(suggested)" after their name, "Suggested by the rotation." when the rotation is on | O: decision 4 C (the owner chose it knowing it has no mockup) |
-| P23-06 | Team header | "Next retro Thu 2 Oct, 2 pm" (a scheduled retro) | derived from the sprints and the retro day; the time only when set; "Start the first sprint" for who may when the team has no sprint | O: scheduling is backlog |
-| P23-07 | Members table | "En ligne" in Last activity | the relative date of the last session joined; "Never" | N: no presence outside a session (D-91) |
-| P23-08 | Activity feed | "Nadia K a répondu au sondage « … »" | no line about survey answers; a tracker's sync shows the tracker's name with initials | F: a team survey is anonymous (plan 19 spec §6.3) |
-| P23-09 | Recent sessions | a whiteboard "Brouillon"; four kinds | a whiteboard is live, upcoming (no element) or finished by plan 22's rules; game rooms are listed too; "All sessions" leads to plan 22's Sessions page | N: a whiteboard has no draft |
-| P23-10 | Team settings | "Modifications enregistrées" in the topbar | explicit "Save" per card, toasts | O: 10-D6; D-87 |
-| P23-11 | Retro templates card | three templates | the team's top five plus the default, "Create" and "Browse" | S: §6.5 |
-| P23-12 | Default facilitators | chips of any person | only owners and facilitators can be added; "Add" lists them; the switch reads "Rotate the suggestion at every retro" | S: §6.4 |
-| P23-13 | Members card (team page), Members table | "Invite", "Lien d'invitation", "Renvoyer", the pending invitation row | places left | N: plan 25 |
-| P23-14 | Team settings header | "Équipe produit · 11 membres · créée en mars 2025" | the same when a description exists; without it, ":count members · created in :month" | — (D-88 cleared) |
-| P23-15 | Templates editor | Visibility "Équipe" without a team | "Team" followed by a team select when the person may create for several teams | S: §6.6 |
-| P23-16 | Retro board menu | no "Take control" for a retro | the entry "Take control" (as on poker and whiteboards) for a team facilitator, owner or manager while the retro is open | O: decision 2 B |
+| # | Screen | Mockup element | Built | Reason | Owner, 2026-10-03 |
+|---|---|---|---|---|---|
+| P23-01 | Members & rituals | no card for sprints | a "Sprints" card: the current sprint, "Start the next sprint" with its preview line, the list of sprints (edit, delete), "Add a sprint", and the settings (default length, retro day, time, next-retro preview, Save), designed from the settings cards of ScreenSettings a | O: decision 1 B (explicit sprints and a management card) | obsolete: decision 1 B settles it; built as described |
+| P23-02 | Data & export | the tab only | an "Exports" card (survey CSVs, estimates, the team's action items page — plan 24, after this plan, adds its CSV export there) and a "What is kept" card | N: no content drawn; decision 8 | approved |
+| P23-03 | Workspace page | no workspace description, no rename | the description under the facts line; an "Edit" ghost button opening a dialog "Workspace" with Name and Description, for managers | O: decision 7 B | approved |
+| P23-04 | Retro, poker, whiteboard, game, survey | no observer view | each screen's existing read-only mode with the info line "You are observing this session." | N | approved (recommendation), with "You are observing this session." |
+| P23-05 | "New session", retro form | no facilitator field | a "Facilitator" select under the settings (the viewer first, then owners, facilitators and members), preselected with the suggested person, "(suggested)" after their name, "Suggested by the rotation." when the rotation is on | O: decision 4 C (the owner chose it knowing it has no mockup) | obsolete: decision 4 C settles it; built as described |
+| P23-06 | Team header | "Next retro Thu 2 Oct, 2 pm" (a scheduled retro) | derived from the sprints and the retro day; the time only when set; "Start the first sprint" for who may when the team has no sprint | O: scheduling is backlog | approved |
+| P23-07 | Members table | "En ligne" in Last activity | **"Online" as the mockup** while the member has a signed-in page of the workspace open (an app-wide presence channel per workspace, Task 28; the viewer's own row always), else the relative date of the last session joined, "Never" | O: the owner's answer (a new app-wide presence channel) | **≠ recommendation**: replaced, see the row's new text |
+| P23-08 | Activity feed | "Nadia K a répondu au sondage « … »" | no line about survey answers; a tracker's sync shows the tracker's name with initials | F: a team survey is anonymous (plan 19 spec §6.3) | approved |
+| P23-09 | Recent sessions | a whiteboard "Brouillon"; four kinds | a whiteboard is live, upcoming (no element) or finished by plan 22's rules; game rooms are listed too; "All sessions" leads to plan 22's Sessions page | N: a whiteboard has no draft | approved |
+| P23-10 | Team settings | "Modifications enregistrées" in the topbar | explicit "Save" per card, toasts | O: 10-D6; D-87 | approved |
+| P23-11 | Retro templates card | three templates | the team's top five plus the default, "Create" and "Browse" | S: §6.5 | approved |
+| P23-12 | Default facilitators | chips of any person | only owners and facilitators can be added; "Add" lists them; the switch reads "Rotate the suggestion at every retro" | S: §6.4 | approved |
+| P23-13 | Members card (team page), Members table | "Invite", "Lien d'invitation", "Renvoyer", the pending invitation row | places left | N: plan 25 | approved |
+| P23-14 | Team settings header | "Équipe produit · 11 membres · créée en mars 2025" | the same when a description exists; without it, ":count members · created in :month" | — (D-88 cleared) | approved |
+| P23-15 | Templates editor | Visibility "Équipe" without a team | "Team" followed by a team select when the person may create for several teams | S: §6.6 | approved |
+| P23-16 | Retro board menu | no "Take control" for a retro | the entry "Take control" (as on poker and whiteboards) for a team facilitator, owner or manager while the retro is open | O: decision 2 B | approved |
 
 ## Review Focus
 
@@ -137,19 +148,21 @@ The inputs the spec implies and that are most likely to bite, each pinned by a t
 6. **A personal template key posted by someone else** (copied from a URL or a network log) to create a retro: refused. Test in Task 9.
 7. **A sprint's day read across a daylight-saving change** (a session created at 00:30 in `Europe/Paris` on the first day of a sprint, 23:30 UTC the day before), and the next retro on the retro day itself before and after its time. Unit tests in Task 6.
 8. **The thumbnail job moving a board's "edited" date**: the tile line "edited today" and the recent sessions order would lie. Test in Task 15.
+9. **Someone outside a workspace joining its presence channel** (a member of another workspace who guesses the id, a guest of a session, a visitor): they would learn who is online. Refused (403) and the signed data holds the user id only. Test in Task 28.
+10. **Moving between pages of the same workspace** leaving and re-joining the presence channel: every navigation would flash the member "offline" for the others. The join follows the `navigate` event and does nothing when the workspace is unchanged. Vitest in Task 28.
 
 ## Lanes
 
 | Lane | Tasks | Cut from | Shares with other lanes |
 |---|---|---|---|
-| main | 1 to 5, then 16, 17, then 24 to 27 | — | — |
+| main | 1 to 5, then 16, 17, 28, then 24 to 27 | — | — |
 | R (rituals) | 6, 7, 8 | head of Task 5 | `TeamsController.php` (props `schedule`, `hasSprints`), `CreateRetro.php` and `NewRetro.php` (facilitator choice; lane F adds one line), `TeamRetrosController.php` (`facilitator_user_id`; lane T changes the template rule), `PresentNewSessionOptions.php` (lane T adds `defaultRetroTemplate`), `WorkspacesController.php` (`openRetroSprint`), `BuildBoardSnapshot.php`, `BuildTeamMoodTrend.php`, `routes/web.php`, `tests/Pest.php`, `lang/*.json` |
 | T (templates) | 9, 10 | head of Task 5 | `TeamsController.php` (`catalogue` arguments), `TeamRetrosController.php`, `PresentNewSessionOptions.php`, `routes/web.php`, `lang/*.json` |
 | F (feed and page data) | 11 to 15 | head of Task 5 | `TeamsController.php` (`activity`, `recentSessions`, `openActionItems`, retro counts, previews), `WorkspacesController.php` (descriptions, whiteboard line), `CreateRetro.php`, `CreatePokerGame.php`, `CreateWhiteboard.php`, `routes/web.php`, `tests/Pest.php`, `lang/*.json` |
-| Page | 18 | head of Task 17 | `lang/*.json` |
-| Settings | 19, 20, 21 | head of Task 17 | `lang/*.json`, `pages/teams/members.tsx` (Tasks 20 and 21 in order) |
-| Workspace | 22 | head of Task 17 | `skrum/template-editor.tsx` (this lane only), `lang/*.json` |
-| Sessions | 23 | head of Task 17 | `teams/session-create/retro-session-fields.tsx`, `skrum/app-sidebar.tsx`, the session screens and the retro board menu (this lane only), `lang/*.json` |
+| Page | 18 | head of Task 28 | `lang/*.json` |
+| Settings | 19, 20, 21 | head of Task 28 | `lang/*.json`, `pages/teams/members.tsx` (Tasks 20 and 21 in order) |
+| Workspace | 22 | head of Task 28 | `skrum/template-editor.tsx` (this lane only), `lang/*.json` |
+| Sessions | 23 | head of Task 28 | `teams/session-create/retro-session-fields.tsx`, `skrum/app-sidebar.tsx`, the session screens and the retro board menu (this lane only), `lang/*.json` |
 
 `TeamsController@show` is the hot spot of Step B: each lane adds its props as one line each at the end of the props array and one private method each at the end of the class; the controller resolves the conflicts at merge by keeping every line. `PresentNewSessionOptions::handle` (plan 22) gets one block per lane at the end of its array (R: `suggestedFacilitatorId`, `retroFacilitators`, `currentSprintNumber`; T: `defaultRetroTemplate`). `CreateRetro::handle` gets one line per lane (R: the facilitator choice before `participants()->create`; F: the activity after it). `tests/Pest.php`: Task 1 adds the role helper; each lane adds its helpers in one block at the end of the file. `lang/*.json` conflicts are resolved by the controller (keys appended in alphabetical blocks per lane). Merge order: R, T, F (F's `TeamsController` lines are the most numerous).
 
@@ -462,10 +475,10 @@ function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
 }
 ```
 
-- [ ] **Step 5: Run the tests on PostgreSQL and SQLite, the Upgrade test on the four engines**
+- [ ] **Step 5: Run the tests and the Upgrade test on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams/TeamRolesTest.php tests/Feature/Teams tests/Feature/Workspaces`, then the same with `sqlite`.
-Run: `bin/test-db pgsql -- tests/Upgrade/TeamRolesBackfillTest.php`, then `mariadb`, `mysql`, `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams/TeamRolesTest.php tests/Feature/Teams tests/Feature/Workspaces`.
+Run: `bin/test-db pgsql -- tests/Upgrade/TeamRolesBackfillTest.php` (the other three engines run once, in the roadmap's final matrix).
 Expected: PASS on each; the existing team and workspace tests pass unchanged.
 
 - [ ] **Step 6: Commit**
@@ -887,9 +900,9 @@ it('sends an access request to the workspace admins and the team owners only', f
 
 Its docblock line "Team roles (plan 23) change this one place." becomes "The people who may approve the request: who manages the team's members." The plan 29 tests of the recipients pass unchanged (no team owner in their fixtures); list any that changed.
 
-- [ ] **Step 6: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 6: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Integrations tests/Feature/Mcp tests/Feature/Workspaces tests/Feature/TeamAccessRequests`, then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Integrations tests/Feature/Mcp tests/Feature/Workspaces tests/Feature/TeamAccessRequests`.
 Expected: PASS. An existing test that asserted a team owner role could not exist is none; an existing test asserting a plain member gets 403 on integrations still passes (member is not owner).
 
 - [ ] **Step 7: Commit** — `feat(teams): policies read the team role; owners manage their team; change a member's role; access requests reach team owners` (with the two trailer lines).
@@ -1224,9 +1237,9 @@ In each builder's returned array, one top-level key:
 
 A builder whose snapshot test compares the whole payload with `toBe` gets the key in its expected array (list each such test in the commit).
 
-- [ ] **Step 6: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 6: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams/ObserverSessionsTest.php tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/Games tests/Feature/TeamSurveys`, then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams/ObserverSessionsTest.php tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/Games tests/Feature/TeamSurveys`.
 Expected: PASS; the session suites pass unchanged (nobody in their fixtures is an observer).
 
 - [ ] **Step 7: Commit** — `feat(teams): observers follow sessions read-only; poker makes them spectators` (trailer lines).
@@ -1433,9 +1446,9 @@ Each of the thirteen write tools calls `$this->refuseObserver($team)` right afte
 
 `TeamSurvey::audienceCount()` and `participantCount()`: `$memberIds` becomes `$this->team->members()->wherePivot('role', '!=', TeamRole::Observer->value)->pluck('users.id')` in both.
 
-- [ ] **Step 6: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 6: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/ActionItems tests/Feature/Mcp tests/Feature/Retros tests/Feature/TeamSurveys`, then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/ActionItems tests/Feature/Mcp tests/Feature/Retros tests/Feature/TeamSurveys`.
 Expected: PASS; the results and survey tests pass unchanged (no observer in their fixtures).
 
 - [ ] **Step 7: Commit** — `feat(teams): observers cannot write action items or MCP changes, and are not counted in participation` (trailer lines).
@@ -1696,9 +1709,9 @@ A snapshot test that compares the whole `viewer` block gains `canTakeControl` (l
 
 `BuildGameSnapshot`: `canBecomeHost` reads a new `$canTakeHosting = $canTakeOver || ($viewer->account()?->can('takeControl', $room->team) ?? false);` — `canDelete` keeps `$canTakeOver` (the creator and admins only).
 
-- [ ] **Step 5: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 5: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams/TakeControlTest.php tests/Feature/Retros tests/Feature/Games tests/Feature/Poker tests/Feature/Whiteboards`, then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams/TakeControlTest.php tests/Feature/Retros tests/Feature/Games tests/Feature/Poker tests/Feature/Whiteboards`.
 Expected: PASS; the existing hand-over tests pass unchanged (a member who is not the facilitator still gets 403 on the retro endpoint).
 
 - [ ] **Step 6: Commit** — `feat(teams): team facilitators and owners take control of an open retro or game room` (trailer lines).
@@ -2280,9 +2293,9 @@ and the tile's `activity` gains, with `$openRetro = $openRetros->get($team->id)`
                     'openRetroSprint' => $openRetro === null ? null : SprintCalendar::ofRows($sprintsByTeam->get($team->id, collect()))->numberOn($openRetro->created_at),
 ```
 
-- [ ] **Step 8: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 8: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Unit/Support/Teams tests/Feature/Teams tests/Feature/Workspaces tests/Feature/Sessions tests/Feature/Retros/BoardSnapshotTest.php`, then `sqlite` (find the board snapshot test file with `grep -rln "retros.snapshot.show" tests/Feature/Retros | head -3`).
+Run: `bin/test-db pgsql -- tests/Unit/Support/Teams tests/Feature/Teams tests/Feature/Workspaces tests/Feature/Sessions tests/Feature/Retros/BoardSnapshotTest.php` (find the board snapshot test file with `grep -rln "retros.snapshot.show" tests/Feature/Retros | head -3`).
 Expected: PASS.
 
 - [ ] **Step 9: Commit** — `feat(teams): explicit sprints; the current sprint and the next retro read from them` (trailer lines).
@@ -2778,10 +2791,10 @@ Routes, in the team scope:
 
 `{sprint}` is bound through the scoped binding of the team scope (`Team::sprints()`), so a sprint of another team is a 404.
 
-- [ ] **Step 5: Run the tests on PostgreSQL and SQLite, the race on the four engines**
+- [ ] **Step 5: Run the tests and the race on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams`, then `sqlite`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/TeamSprintStartsTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/TeamSprintStartsTest.php`.
 Expected: PASS on each. Then remove the `lockForUpdate()` of `StartNextSprint::handle` once, run the race on PostgreSQL, see it fail, and put it back.
 
 - [ ] **Step 6: Commit** — `feat(teams): add, edit and delete sprints, start the next sprint, the retro day` (trailer lines).
@@ -3297,10 +3310,10 @@ Clean-up of the list:
 
 Route: `Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');`.
 
-- [ ] **Step 5: Run the tests on PostgreSQL and SQLite, the races on the four engines**
+- [ ] **Step 5: Run the tests and the races on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Retros tests/Feature/Sessions tests/Feature/Workspaces`, then `sqlite`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/RetroRotationTest.php tests/Concurrency/TeamFacilitatorsTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
+Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Retros tests/Feature/Sessions tests/Feature/Workspaces`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/RetroRotationTest.php tests/Concurrency/TeamFacilitatorsTest.php`.
 Expected: PASS on each; the existing retro creation tests pass unchanged (no `facilitator_user_id`: the creator facilitates). Then remove the `lockForUpdate()` of `CreateRetro` once, run `RetroRotationTest` on PostgreSQL, see it fail (the position moved twice), and put it back.
 
 - [ ] **Step 6: Commit** — `feat(teams): default facilitators suggest who facilitates a retro; the rotation follows the choices` (trailer lines).
@@ -3729,10 +3742,10 @@ and `isAvailable()` is deleted.
             ->all();
 ```
 
-- [ ] **Step 6: Run the tests on PostgreSQL and SQLite, the Upgrade test and the template races on the four engines**
+- [ ] **Step 6: Run the tests, the Upgrade test and the template races on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Workspaces tests/Feature/Teams tests/Feature/Retros`, then `sqlite`.
-Run: `bin/test-db <engine> -- tests/Upgrade/WorkspaceTemplateVisibilityBackfillTest.php` on `pgsql`, `mariadb`, `mysql`, `sqlite`; `bin/test-db <engine> --concurrency -- tests/Concurrency/WorkspaceTemplateLimitsTest.php` on `pgsql`, `mariadb`, `mysql`, `sqlite-file`.
+Run: `bin/test-db pgsql -- tests/Feature/Workspaces tests/Feature/Teams tests/Feature/Retros`.
+Run: `bin/test-db pgsql -- tests/Upgrade/WorkspaceTemplateVisibilityBackfillTest.php`; `bin/test-db pgsql --concurrency -- tests/Concurrency/WorkspaceTemplateLimitsTest.php`.
 Expected: PASS on each; the existing template tests pass unchanged (a manager without `visibility` keeps today's behaviour).
 
 - [ ] **Step 7: Commit** — `feat(templates): personal, team and workspace visibility` (trailer lines).
@@ -4029,7 +4042,7 @@ Route: `Route::put('teams/{team}/default-retro-template', [TeamDefaultRetroTempl
 
 Plan 22's `NewSessionOptionsTest` (exact key list) gains the key; list it in the commit.
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces tests/Feature/Sessions`, then `sqlite` — Expected: PASS.
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces tests/Feature/Sessions` — Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(teams): a default retro template, with each template's usage by the team` (trailer lines).
 
@@ -4215,7 +4228,7 @@ Route, in the workspace scope: `Route::put('details', [WorkspaceDetailsControlle
 
 `WorkspacesController::show`: `'workspace' => $workspace->only(['id', 'name', 'slug', 'description'])`, `'canEditDetails' => $request->user()->can('update', $workspace)`, and each tile `...$team->only(['id', 'name', 'description'])`.
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces`, then `sqlite` — Expected: PASS (a test comparing the whole `workspace` prop gains `description => null`; list it).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces` — Expected: PASS (a test comparing the whole `workspace` prop gains `description => null`; list it).
 
 - [ ] **Step 5: Commit** — `feat(workspaces): descriptions of a team and of a workspace; a workspace can be renamed` (trailer lines).
 
@@ -4646,7 +4659,7 @@ class ListTeamActivity
 
 `TeamsController@show` gains `'activity' => $listTeamActivity->handle($team),` (inject `ListTeamActivity` in `show`).
 
-- [ ] **Step 6: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys tests/Feature/ActionItems tests/Feature/Integrations`, then `sqlite` — Expected: PASS; a test that counts the queries of one of the nine writers gains one insert (list it with its new count).
+- [ ] **Step 6: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys tests/Feature/ActionItems tests/Feature/Integrations` — Expected: PASS; a test that counts the queries of one of the nine writers gains one insert (list it with its new count).
 
 - [ ] **Step 7: Commit** — `feat(teams): an activity log of nine kinds, written with the change it records` (trailer lines).
 
@@ -4989,7 +5002,7 @@ Each kind reads at most ten rows with their aggregates: bounded (rule 2). The or
 
 `TeamsController@show` gains `'recentSessions' => $listRecentTeamSessions->handle($team, $request->user()),`.
 
-- [ ] **Step 5: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams/RecentTeamSessionsTest.php tests/Feature/Teams`, then `sqlite` — Expected: PASS.
+- [ ] **Step 5: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams/RecentTeamSessionsTest.php tests/Feature/Teams` — Expected: PASS.
 
 - [ ] **Step 6: Commit** — `feat(teams): the recent sessions of a team, live first, with participants and outcome` (trailer lines).
 
@@ -5131,7 +5144,7 @@ with (inject `PresentActionItem` in `show`):
 
 `WorkspacesController::show`: `loadCount` gains `'whiteboards as whiteboards_edited_today_count' => fn ($boards) => $boards->where('updated_at', '>=', ActionItem::today()->startOfDay())`, and the tile's `activity` gains `'whiteboardsEditedToday' => (int) $team->whiteboards_edited_today_count` (`Team` docblock: `@property-read int|null $whiteboards_edited_today_count`).
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces`, then `sqlite` — Expected: PASS; `TeamRetroCardsTest` cases that compare a whole retro summary gain `stats` (list them).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Workspaces` — Expected: PASS; `TeamRetroCardsTest` cases that compare a whole retro summary gain `stats` (list them).
 
 - [ ] **Step 5: Commit** — `feat(teams): open action items overdue first, retro counts, whiteboards edited today` (trailer lines).
 
@@ -5343,7 +5356,7 @@ class RefreshStaleWhiteboardPreviews
 
 `TeamsController@show`: the whiteboards are read once into `$whiteboards = $team->whiteboards()->with('facilitator.user')->latest('updated_at')->orderByDesc('id')->get();`, passed to `$refreshStaleWhiteboardPreviews->handle($whiteboards)`, and mapped as today. `PresentWhiteboardSummary::handle` adds `'preview' => $board->preview` (docblock updated).
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Whiteboards tests/Feature/Teams`, then `sqlite` — Expected: PASS; whiteboard summary tests comparing whole arrays gain `preview` (list them).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Whiteboards tests/Feature/Teams` — Expected: PASS; whiteboard summary tests comparing whole arrays gain `preview` (list them).
 
 - [ ] **Step 5: Commit** — `feat(whiteboards): a cached thumbnail per board, built by the queue` (trailer lines).
 
@@ -5439,11 +5452,11 @@ it('gives each member the date of their latest session row in this team', functi
             && collect($members)->firstWhere('id', $facilitator->id)['lastActiveAt'] === null));
 });
 
-it('links Data & export to plan 24 action items CSV of the team', function () {
+it('links Data & export to the action items page filtered on the team', function () {
     $team = Team::factory()->create();
 
     $this->actingAs(teamMember($team, TeamRole::Owner))->get(route('teams.data.show', [$team->workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->where('actionItemsExportUrl', route('workspaces.actionItemCsvExports.show', ['workspace' => $team->workspace, 'team' => $team->id])));
+        ->assertInertia(fn (Assert $page) => $page->where('actionItemsUrl', route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'team' => $team->id])));
 });
 
 it('lists on Data & export the closed surveys the viewer may export', function () {
@@ -5695,7 +5708,7 @@ class TeamDataController extends Controller
                     'exportUrl' => route('surveys.export.show', $survey),
                 ]),
             'estimatesUrl' => route('teams.estimates.index', [$workspace, $team]),
-            'actionItemsExportUrl' => route('workspaces.actionItemCsvExports.show', ['workspace' => $workspace, 'team' => $team->id]),
+            'actionItemsUrl' => route('workspaces.actionItems.index', ['workspace' => $workspace, 'team' => $team->id]),
         ]);
     }
 }
@@ -5854,7 +5867,7 @@ export default function TeamSettingsPage() {
 }
 ```
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/SharedPropsTest.php tests/Feature/Integrations tests/Arch`, then `sqlite` — Expected: PASS (`SharedPropsTest` gains the two keys if it compares `currentTeam` whole; list it).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/SharedPropsTest.php tests/Feature/Integrations tests/Arch` — Expected: PASS (`SharedPropsTest` gains the two keys if it compares `currentTeam` whole; list it).
 
 - [ ] **Step 5: Gates and commit** — `npm run types:check`, `npm run check`, `npm run build:front`; commit `feat(teams): the General, Members & rituals and Data & export pages of the team settings` (trailer lines).
 
@@ -6150,7 +6163,7 @@ export function sessionStateLabel(row: RecentSessionRow, t: Translate): string {
 
 ---
 
-## Step D — screens (four lanes cut from the head of Task 17)
+## Step D — screens (four lanes cut from the head of Task 28)
 
 Every screen task follows the "Screen task procedure" of plan 18e (mockup open beside the code, the hooks kept for later tests, Vitest for each state) with this plan's working rules: no walkthrough, no capture before Task 25. Composition tables name the mockup element, what is built, and the hooks (`data-test`, labels, ids).
 
@@ -6199,7 +6212,7 @@ Every screen task follows the "Screen task procedure" of plan 18e (mockup open b
 | card "Team" | Name (`#team-name`, 100), Description (`#team-description`, `ui/textarea`, 200, help "Shown on the workspace page."), footer "Save" | `useForm` to `TeamsController.update` (`name`, `description`); field errors under each field; success toast from the server | button "Save" |
 | card "Delete team" | only when `canDelete`; the sentence and "Delete team" with the existing confirmation | unchanged behaviour | button "Delete team" |
 | `data.tsx` | `TeamSettingsShell active="data"` | — | — |
-| card "Exports" | rows: "Survey results (CSV)" with the closed surveys (title, closed date, "Download CSV" link with `download`), "No closed survey yet." when empty; "Estimates" with a link to the estimation history; "Action items (CSV)" with a link to `actionItemsExportUrl` (plan 24's CSV export of the action items page, filtered on the team) | links only | `data-test="survey-export"`, `data-test="action-items-export"` |
+| card "Exports" | rows: "Survey results (CSV)" with the closed surveys (title, closed date, "Download CSV" link with `download`), "No closed survey yet." when empty; "Estimates" with a link to the estimation history; "Action items" with the sentence "The team's action items, on the action items page." and a link to `actionItemsUrl` (the action items page filtered on the team; plan 24, which runs after this plan, adds its CSV export to that page) | links only | `data-test="survey-export"`, `data-test="action-items-link"` |
 | card "What is kept" | one paragraph: "Deleting the team deletes its sessions, action items and settings. Guests' names live only in the sessions they joined." | — | — |
 
 - [ ] **Step 1: Failing Vitest:** the shell's active tab; the form posts both fields and shows a server error on `description`; the delete card absent when `canDelete` is false; the survey rows and the empty state.
@@ -6208,31 +6221,31 @@ Every screen task follows the "Screen task procedure" of plan 18e (mockup open b
 
 ### Task 20 (lane Settings): Team settings — Members & rituals
 
-**Mockup:** `ScreenSettings` frame a, tab "Membres & rituels": Members card, Default facilitators, Retro templates, Default columns (the eight named colours). Deviations P23-07, P23-11, P23-12, P23-13. The Sprints card is Task 21 (its place in the page is left here: a `sprints` slot between the Members card and the Default facilitators card).
+**Mockup:** `ScreenSettings` frame a, tab "Membres & rituels": Members card (with "En ligne" in Last activity), Default facilitators, Retro templates, Default columns (the eight named colours). Deviations P23-07 (answered: "Online" built through Task 28), P23-11, P23-12, P23-13. The Sprints card is Task 21 (its place in the page is left here: a `sprints` slot between the Members card and the Default facilitators card).
 
 **Files:**
 - Replace: `resources/js/pages/teams/members.tsx`
 - Create: `resources/js/components/team-settings/members-table.tsx`, `default-facilitators-card.tsx`, `retro-templates-card.tsx`, `default-columns-card.tsx` (+ tests)
 
 **Interfaces:**
-- Consumes: the props of `teams.members.index` (Task 16); `TeamMemberRolesController.update`, `TeamMembersController.store|destroy`, `TeamFacilitatorsController.update`, `TeamDefaultRetroTemplatesController.update`, `WorkspaceTemplatesController.store|update` (Wayfinder); `skrum/template-editor` through `workspaces/template-editor-sheet.tsx`, `skrum/retro-template-picker` (Browse), `skrum/column-color-picker`, `teams/session-create/retro-columns-editor.tsx` (reorderable columns with dnd-kit), `ui/drawer`.
+- Consumes: the props of `teams.members.index` (Task 16); `useOnlineUserIds()` (Task 28); `TeamMemberRolesController.update`, `TeamMembersController.store|destroy`, `TeamFacilitatorsController.update`, `TeamDefaultRetroTemplatesController.update`, `WorkspaceTemplatesController.store|update` (Wayfinder); `skrum/template-editor` through `workspaces/template-editor-sheet.tsx`, `skrum/retro-template-picker` (Browse), `skrum/column-color-picker`, `teams/session-create/retro-columns-editor.tsx` (reorderable columns with dnd-kit), `ui/drawer`.
 - Produces: the page with a `sprints` slot that Task 21 fills.
 
 | Part | Content (mockup) | Behaviour | Hooks |
 |---|---|---|---|
-| Members card | header ":count members" (places of "Invitation link" and "Invite" left, plan 25); `Table`: Member (avatar, name, "(you)", email), Role (`Select` of the four roles for `canManageMembers`, text otherwise), Last activity (relative; "Never"), row menu "Remove from team" (confirmation, "Retirer" key of the fifth round); footer: "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote." | a role change saves at once and shows the toast; removing reloads `members` only | `table[data-test="team-members"]`, `select[name="role-{id}"]`, menu "Member actions" |
+| Members card | header ":count members" (places of "Invitation link" and "Invite" left, plan 25); `Table`: Member (avatar, name, "(you)", email), Role (`Select` of the four roles for `canManageMembers`, text otherwise), Last activity (muted: "Online" when the member's id is in `useOnlineUserIds()` or the row is the viewer's — the viewer is always online, as the mockup's "(toi) · En ligne" row; else the relative date of `lastActiveAt`; "Never" when null), row menu "Remove from team" (confirmation, "Retirer" key of the fifth round); footer: "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote." | a role change saves at once and shows the toast; removing reloads `members` only; "Online" appears and disappears live as people join and leave the presence channel, without a reload | `table[data-test="team-members"]`, `select[name="role-{id}"]`, `[data-test="member-last-activity"]`, menu "Member actions" |
 | narrow | below 40rem a list; the role opens in a `Drawer` with the four options as radios | — | — |
 | Default facilitators card | chips (avatar, first name, remove ×), "Add" (a menu of `candidates` not in the list), the switch "Rotate the suggestion at every retro" (`#facilitator-rotation`), the line "Suggested next: :name · retro of :date" (`facilitators.suggested` and `sprints.nextRetro`; "Suggested next: :name" without a next retro), the help line "The person creating a retro can always choose someone else." | each change saves the whole list (`user_ids` in chip order, `rotation`); the switch is disabled with "Add a facilitator first." while the list is empty; failed save restores the chips | `section#facilitators` |
 | Retro templates card | radio list: name, "Default" badge, the column colour strip, "Used :count×" / "Never used"; "Create" (opens the template editor sheet in create mode with visibility Team and this team); "Browse" (the catalogue picker of the session dialog) | choosing saves the default; a default no longer available shows "This template is no longer available. Choose another." | `section#retro-templates`, radios by template name |
 | Default columns card | "Default columns · template “:name”"; editable rows (handle, colour button opening `ColumnColorPicker`, title, delete) when `templates[default].canEdit`, "Save" (posts the template's update with its name, category, visibility, team and columns); read-only rows with "Duplicate as a team template" otherwise (store with visibility team, then set it as the default) | "Save" disabled while nothing changed; errors per column as `TemplateEditor` shows them | `section#default-columns` |
 
-- [ ] **Step 1: Failing Vitest:** every row of the table and the states of spec §9.3 that are not the Sprints card's (facilitator: members read-only; owner: selects; rotation with empty list; the suggested line with and without a next retro; default gone; saving; errors per field).
+- [ ] **Step 1: Failing Vitest:** every row of the table and the states of spec §9.3 that are not the Sprints card's ("Online" for a member whose id the mocked `useOnlineUserIds` returns and for the viewer, the relative date for another, "Never" for one without a session, "Online" replaced by the date when the id leaves the set; facilitator: members read-only; owner: selects; rotation with empty list; the suggested line with and without a next retro; default gone; saving; errors per field).
 - [ ] **Step 2: Build.**
-- [ ] **Step 3: Gates and commit** — `npm run test -- team-settings`, `npm run types:check`, `npm run check`, `npm run build:front`; commit `feat(team-settings): Members & rituals — roles, last activity, suggested facilitators, default template and columns` (trailer lines).
+- [ ] **Step 3: Gates and commit** — `npm run test -- team-settings`, `npm run types:check`, `npm run check`, `npm run build:front`; commit `feat(team-settings): Members & rituals — roles, online and last activity, suggested facilitators, default template and columns` (trailer lines).
 
 ### Task 21 (lane Settings): Team settings — the Sprints card (decision 1 B)
 
-**Mockup:** none for the card (P23-01): designed from the settings cards of `ScreenSettings` frame a (`st-card` with grey footer, the rows and menus of the Members table, the segmented control and selects of the existing settings), put to the owner with the other pre-build deviations before it is built.
+**Mockup:** none for the card (P23-01, obsolete: the owner's decision 1 B asked for this card knowing it has no mockup): designed from the settings cards of `ScreenSettings` frame a (`st-card` with grey footer, the rows and menus of the Members table, the segmented control and selects of the existing settings), built as described below.
 
 **Files:**
 - Create: `resources/js/components/team-settings/sprints-card.tsx`, `sprint-form.tsx` (+ tests)
@@ -6279,18 +6292,19 @@ States (spec §9.3): no sprint (the list empty, "No sprint in progress.", start 
 
 ### Task 23 (lane Sessions): Observers in sessions, "Take control" of a retro, the retro form's facilitator, the header sprint, the user card role
 
-**Mockups:** none for the observer views (P23-04), none for the Facilitator select (P23-05), none for the retro's "Take control" (P23-16: built as the poker and whiteboard entries); `ScreenSessionCreate` (name prefill), `ScreenRetroWriting` header line ("Atlas · Sprint 42"), `Sidebar` (user card "Facilitateur · Admin").
+**Mockups:** none for the observer views (P23-04, approved: the existing read-only modes with the line "You are observing this session."), none for the Facilitator select (P23-05, obsolete: decision 4 C), none for the retro's "Take control" (P23-16, approved: built as the poker and whiteboard entries); `ScreenSessionCreate` (name prefill), `ScreenRetroWriting` header line ("Atlas · Sprint 42"), `Sidebar` (user card "Facilitateur · Admin").
 
 **Files:**
+- Create: `resources/js/components/session/observer-notice.tsx` (+ test): the one line "You are observing this session." shown by the five screens
 - Modify: the retro board container and its write controls (read `components/retro/` and `hooks/use-retro-board.ts`: where `isLocked` and `canVote` reach the composer, vote buttons, reactions, ROTI widget, health-check button and retro survey answers), `components/poker/` (the spectator switch), `components/whiteboard/` (the read/edit mode of 7-D7), `components/games/` (the input controls), `components/surveys/survey-answer-flow.tsx` (+ tests of each); `components/teams/session-create/retro-session-fields.tsx` and a new `retro-facilitator-field.tsx` (+ tests; the options reach the form through plan 22's "New session" options: `currentSprintNumber`, `defaultRetroTemplate`, `retroFacilitators`, `suggestedFacilitatorId`, `facilitatorRotation`); the retro board menu (read `components/retro/` after plans 21 and 22: the menu that holds the hand-over entry of `board-dialogs.tsx`) (+ test: "Take control"); `components/session/session-shell.tsx` or the retro header (sprint line) (+ test); `components/skrum/app-sidebar.tsx` (+ test: role line)
 
 | Part | Content | Behaviour | Hooks |
 |---|---|---|---|
-| retro, observer | the board rendered as when it is locked for this viewer, plus no vote buttons, no reactions, no ROTI vote, no health-check submission, no retro survey answers; an info line under the header "You follow this retrospective as an observer." | driven by `snapshot.viewerIsObserver` | `[data-slot="observer-notice"]` |
-| poker, observer | the spectator view; the "Watch only" switch shown on and disabled with the same notice | — | — |
-| whiteboard, observer | read mode forced; "Modifier" hidden | — | — |
-| game room, observer | input controls (letters, guess field, drawing tools, answer and vote controls) hidden; the notice "You follow this session as an observer." | — | — |
-| team survey, observer | questions read-only, "Observers do not answer surveys." | — | — |
+| retro, observer | the board rendered as when it is locked for this viewer, plus no vote buttons, no reactions, no ROTI vote, no health-check submission, no retro survey answers; the info line under the header "You are observing this session." (`eye` icon, muted, `role="status"`) | driven by `snapshot.viewerIsObserver` | `[data-slot="observer-notice"]` |
+| poker, observer | the spectator view; the "Watch only" switch shown on and disabled; the same notice | — | `[data-slot="observer-notice"]` |
+| whiteboard, observer | read mode forced; "Modifier" hidden; the same notice | — | `[data-slot="observer-notice"]` |
+| game room, observer | input controls (letters, guess field, drawing tools, answer and vote controls) hidden; the same notice | — | `[data-slot="observer-notice"]` |
+| team survey, observer | questions read-only; the same notice | — | `[data-slot="observer-notice"]` |
 | retro, "Take control" | an entry "Take control" (the icon of the poker and whiteboard entries) in the retro's board menu when `snapshot.viewer.canTakeControl` | a direct call of `RetroFacilitatorsController.update` with the viewer's own `user_id` (as `room-topbar.tsx` does for poker's "Take control"); success: the next snapshot gives the facilitator's controls; failure: the server's message as a toast | menu item "Take control" |
 | retro form | name prefilled with `retroNamePrefill(currentSprintNumber)` when the user has not typed; the template preselected from `defaultRetroTemplate` ahead of `topTemplates[0]`; under the settings, `retro-facilitator-field.tsx`: a `Select` "Facilitator" (`#new-retro-facilitator`) listing `facilitatorChoices(retroFacilitators, viewerId)` (the viewer as "Me"), preselected with `initialFacilitatorId(…, suggestedFacilitatorId, viewerId)`, "(suggested)" after the suggested person's name, and the help line "Suggested by the rotation." when `facilitatorRotation` and the suggestion is shown | the form posts `facilitator_user_id` (the viewer's id is posted as null: the server's default); a 422 on it shows "Choose a facilitator from the team." under the select | `#new-retro-title` (exists), `#new-retro-facilitator` |
 | retro header line | "team · Sprint 42" when `retro.sprintNumber` is set (D-100), unchanged otherwise | — | — |
@@ -6306,16 +6320,14 @@ States (spec §9.3): no sprint (the list empty, "No sprint in progress.", start 
 
 ### Task 24: Translations
 
-Every key this plan names, in the four languages, informal (French "tu", Spanish "tú", German "du"). A key that already exists keeps its value: check with `jq 'has("<key>")' lang/fr.json` before adding, and skip it (keys known to exist at `0c294632`: Owner, Facilitator, Member, Observer, Team, Members, Description, General, Integrations, Team settings, Last activity, Sprint, :count members, Recent sessions, Personal, Workspace, Live, Ended, Draft, Join, Role, Save, Edit, Delete, Add, Me, Take control, Become host, Data & export, Members & rituals, Delete team, Team name, Choose a template from the list.). In `en.json` the value is the key. The lane tasks added their keys with these values; this task reviews them against `docs/superpowers/research/front-rewrite/translations-review.md` (glossary, lengths, register) and fixes drift.
+Every key this plan names, in the four languages, informal (French "tu", Spanish "tú", German "du"). A key that already exists keeps its value: check with `jq 'has("<key>")' lang/fr.json` before adding, and skip it (keys known to exist at `0c294632`: Owner, Facilitator, Member, Observer, Team, Members, Description, General, Integrations, Team settings, Last activity, Sprint, :count members, Recent sessions, Personal, Workspace, Live, Ended, Draft, Join, Role, Save, Edit, Delete, Add, Me, Take control, Become host, Data & export, Members & rituals, Delete team, Team name, Choose a template from the list., Online, Action items). In `en.json` the value is the key. The lane tasks added their keys with these values; this task reviews them against `docs/superpowers/research/front-rewrite/translations-review.md` (glossary, lengths, register) and fixes drift.
 
 | Key (en) | fr | es | de |
 |---|---|---|---|
 | Role changed. | Rôle modifié. | Rol cambiado. | Rolle geändert. |
 | Observers can follow this session but not take part. | Les observateurs peuvent suivre cette session sans y participer. | Los observadores pueden seguir esta sesión, pero no participar. | Beobachter können dieser Sitzung folgen, aber nicht mitmachen. |
 | Observers cannot start sessions. | Les observateurs ne peuvent pas lancer de session. | Los observadores no pueden iniciar sesiones. | Beobachter können keine Sitzungen starten. |
-| You follow this retrospective as an observer. | Tu suis cette rétrospective en tant qu'observateur. | Sigues esta retrospectiva como observador. | Du verfolgst diese Retrospektive als Beobachter. |
-| You follow this session as an observer. | Tu suis cette session en tant qu'observateur. | Sigues esta sesión como observador. | Du verfolgst diese Sitzung als Beobachter. |
-| Observers do not answer surveys. | Les observateurs ne répondent pas aux sondages. | Los observadores no responden encuestas. | Beobachter beantworten keine Umfragen. |
+| You are observing this session. | Tu observes cette session. | Estás observando esta sesión. | Du beobachtest diese Sitzung. |
 | Add as | Ajouter comme | Añadir como | Hinzufügen als |
 | (you) | (toi) | (tú) | (du) |
 | Never | Jamais | Nunca | Nie |
@@ -6327,7 +6339,7 @@ Every key this plan names, in the four languages, informal (French "tu", Spanish
 | Next retro :date, :time | Prochaine rétro :date à :time | Próxima retro :date a las :time | Nächste Retro :date um :time |
 | 1 week | 1 semaine | 1 semana | 1 Woche |
 | :count weeks | :count semaines | :count semanas | :count Wochen |
-| Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote. | Facilitateur : pilote phases, timer et révélation, et peut prendre la main sur toute session ouverte. Observateur : lecture seule, ne vote pas. | Facilitador: dirige las fases, el temporizador y la revelación, y puede tomar el control de cualquier sesión abierta. Observador: solo lectura, no vota. | Moderation: steuert Phasen, Timer und Aufdecken und kann jede offene Sitzung übernehmen. Beobachter: nur lesen, stimmt nicht ab. |
+| Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote. | Facilitateur : pilote phases, timer et révélation, et peut prendre la main sur toute session ouverte. Observateur : lecture seule, ne vote pas. | Facilitador: dirige las fases, el temporizador y la revelación, y puede tomar el control de cualquier sesión abierta. Observador: solo lectura, no vota. | Moderator: steuert Phasen, Timer und Aufdecken und kann jede offene Sitzung übernehmen. Beobachter: nur lesen, stimmt nicht ab. |
 | Start the first sprint | Lancer le premier sprint | Iniciar el primer sprint | Ersten Sprint starten |
 | Sprints | Sprints | Sprints | Sprints |
 | No sprint in progress. | Aucun sprint en cours. | Ningún sprint en curso. | Kein Sprint läuft gerade. |
@@ -6360,20 +6372,20 @@ Every key this plan names, in the four languages, informal (French "tu", Spanish
 | Suggested next: :name · retro of :date | Suggestion suivante : :name · rétro du :date | Siguiente sugerencia: :name · retro del :date | Nächster Vorschlag: :name · Retro am :date |
 | Suggested next: :name | Suggestion suivante : :name | Siguiente sugerencia: :name | Nächster Vorschlag: :name |
 | The person creating a retro can always choose someone else. | La personne qui crée une rétro peut toujours choisir quelqu'un d'autre. | Quien crea una retro siempre puede elegir a otra persona. | Wer eine Retro erstellt, kann immer jemand anderen wählen. |
-| Only owners and facilitators of the team can be suggested. | Seuls les propriétaires et facilitateurs de l'équipe peuvent être suggérés. | Solo se puede sugerir a propietarios y facilitadores del equipo. | Nur Inhaber und Moderation des Teams können vorgeschlagen werden. |
+| Only owners and facilitators of the team can be suggested. | Seuls les propriétaires et facilitateurs de l'équipe peuvent être suggérés. | Solo se puede sugerir a propietarios y facilitadores del equipo. | Nur Inhaber und Moderatoren des Teams können vorgeschlagen werden. |
 | :name (suggested) | :name (suggéré) | :name (sugerido) | :name (vorgeschlagen) |
 | Suggested by the rotation. | Suggéré par la rotation. | Sugerido por la rotación. | Von der Rotation vorgeschlagen. |
-| Choose a facilitator from the team. | Choisis un facilitateur dans l'équipe. | Elige un facilitador del equipo. | Wähle eine Moderation aus dem Team. |
+| Choose a facilitator from the team. | Choisis un facilitateur dans l'équipe. | Elige un facilitador del equipo. | Wähle einen Moderator aus dem Team. |
 | Workspace saved. | Espace de travail enregistré. | Espacio de trabajo guardado. | Arbeitsbereich gespeichert. |
 | Edit the workspace name and description | Modifier le nom et la description de l'espace de travail | Editar el nombre y la descripción del espacio de trabajo | Name und Beschreibung des Arbeitsbereichs bearbeiten |
 | The workspace address does not change. | L'adresse de l'espace de travail ne change pas. | La dirección del espacio de trabajo no cambia. | Die Adresse des Arbeitsbereichs ändert sich nicht. |
-| Action items (CSV) | Actions (CSV) | Acciones (CSV) | Maßnahmen (CSV) |
+| The team's action items, on the action items page. | Les actions de l'équipe, sur la page des actions. | Las acciones del equipo, en la página de acciones. | Die Maßnahmen des Teams, auf der Seite der Maßnahmen. |
 | Retro day | Jour de la rétro | Día de la retro | Retro-Tag |
 | Time | Heure | Hora | Uhrzeit |
 | None | Aucun | Ninguno | Keiner |
-| Default facilitators | Facilitateurs par défaut | Facilitadores por defecto | Standard-Moderation |
-| Add a facilitator first. | Ajoute d'abord un facilitateur. | Añade primero un facilitador. | Füge zuerst eine Moderation hinzu. |
-| Facilitators saved. | Facilitateurs enregistrés. | Facilitadores guardados. | Moderation gespeichert. |
+| Default facilitators | Facilitateurs par défaut | Facilitadores por defecto | Standard-Moderatoren |
+| Add a facilitator first. | Ajoute d'abord un facilitateur. | Añade primero un facilitador. | Füge zuerst einen Moderator hinzu. |
+| Facilitators saved. | Facilitateurs enregistrés. | Facilitadores guardados. | Moderatoren gespeichert. |
 | Retro templates | Modèles de rétro | Plantillas de retro | Retro-Vorlagen |
 | Default | Par défaut | Por defecto | Standard |
 | Used :count× | Utilisé :count× | Usada :count× | :count× verwendet |
@@ -6431,9 +6443,9 @@ Every key this plan names, in the four languages, informal (French "tu", Spanish
 | What is kept | Ce qui est conservé | Qué se conserva | Was aufbewahrt wird |
 | Deleting the team deletes its sessions, action items and settings. Guests' names live only in the sessions they joined. | Supprimer l'équipe supprime ses sessions, ses actions et ses réglages. Les noms des invités ne vivent que dans les sessions qu'ils ont rejointes. | Eliminar el equipo elimina sus sesiones, acciones y ajustes. Los nombres de los invitados solo existen en las sesiones a las que se unieron. | Wenn du das Team löschst, werden seine Sitzungen, Maßnahmen und Einstellungen gelöscht. Die Namen von Gästen gibt es nur in den Sitzungen, denen sie beigetreten sind. |
 
-German "Facilitator" is "Moderation" in `lang/de.json` today (it names the activity, not the person); the table keeps that word so that the role select and the existing screens agree, and the report asks the owner whether "Moderator·in" should replace it everywhere (a change of an existing key, out of this plan's rule).
+German "Facilitator": the key exists with the value "Moderation" (the activity), while its seven uses (the role select of this plan, `presence-stack`, `facilitator-dock`, `share-dialog`, `poker-table`, the badge sections of the dev page) all name the person, and 26 German strings already call the person "Moderator" ("Das kann nur der Moderator tun."). **Ruling of this revision:** the one exception to "a key that exists keeps its value": `lang/de.json` `"Facilitator": "Moderator"`, in this task's commit, with the reason in its body; the role word is then "Moderator" everywhere, as the table above writes it. "Take control" ("Moderation übernehmen") keeps its value: there it names the activity. Before the change, `grep -rn "Moderation" tests resources/js --include=*.php --include=*.ts --include=*.tsx` lists any test that reads the German value; each is updated in the same commit and listed in its body.
 
-- [ ] **Step 1:** `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`, then `sqlite` — Expected: PASS.
+- [ ] **Step 1:** `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` — Expected: PASS.
 - [ ] **Step 2:** Commit `chore(i18n): team and workspace data strings in four languages, informal` (trailer lines).
 
 ### Task 25: Captures (light, 1440, French)
@@ -6450,14 +6462,14 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 |---|---|
 | `team-page-data` | the team page of a team with sprints 41 to 43 (sprint 42 current, retro Thursday 14:00), five recent sessions of four kinds, seven open action items (two overdue), ten activity lines, three retros in Writing, Voting and Completed with counts, three whiteboards with previews, members with roles |
 | `team-settings-general` | General, as an owner |
-| `team-settings-members` | Members & rituals, as an owner: members with roles and last activity, the Sprints card (sprints 40 to 42, 42 current, retro Thursday 14:00, "Start the next sprint" enabled), two default facilitators with the rotation on, the template list with a default, editable default columns |
+| `team-settings-members` | Members & rituals, as an owner: members with roles and last activity (the viewer's row "Online", the others with relative dates, as the mockup draws them; no presence seeding is needed), the Sprints card (sprints 40 to 42, 42 current, retro Thursday 14:00, "Start the next sprint" enabled), two default facilitators with the rotation on, the template list with a default, editable default columns |
 | `team-settings-sprints-planned` | the Sprints card with sprint 43 planned (start disabled with its reason) and the edit dialog open |
 | `team-settings-data` | Data & export with two closed surveys |
 | `workspace-page-descriptions` | the workspace page with a description and three team tiles (descriptions, a live retro with its sprint, whiteboards edited today) |
 | `workspace-details-dialog` | the same page, as an admin, with the "Workspace" dialog open (name and description) |
 | `workspace-templates-visibility` | the templates page with a personal, a team and a workspace template |
 | `template-editor-visibility` | the template editor of a facilitator, Team chosen, team select open |
-| `retro-observer` | a retro in Voting seen by an observer |
+| `retro-observer` | a retro in Voting seen by an observer, with the line "You are observing this session." |
 | `retro-take-control` | a retro in Writing seen by a team facilitator who does not facilitate it, the board menu open on "Take control" |
 | `new-retro-facilitator` | the "New session" dialog, retro form, with the name "Sprint 42 retro", the default template and the Facilitator select open on the suggested person (rotation on) |
 
@@ -6473,31 +6485,457 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-18 reduced to "Invite" (IN-4); D-19 keeps the grouping (plan 24) and notes the sprint data exists; D-24 reduced to template defaults and poker template settings (backlog); D-27 removed; D-77 and D-100 lose their TM-1 part; D-88 removed; D-91's whiteboard line and sprint removed; D-94's visibility badge removed; and `docs/superpowers/research/front-rewrite/deviations.md` D-129: the role line built;
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: the team settings sub-navigation (10-D4) and the team page sections amended with a pointer to the new spec;
   - `docs/database.md`: nothing unless a task found a new rule;
-  - `README.md`: one paragraph in the upgrade notes — every existing team member becomes "Member"; workspace admins keep managing every team and can now take control of any open retro; give owners and facilitators their roles in Team settings › Members & rituals; a team has no sprint until someone presses "Start the next sprint" (or adds sprints) there; a workspace admin can rename the workspace, its address stays.
+  - `README.md`: one paragraph in the upgrade notes — every existing team member becomes "Member"; workspace admins keep managing every team and can now take control of any open retro; give owners and facilitators their roles in Team settings › Members & rituals; a team has no sprint until someone presses "Start the next sprint" (or adds sprints) there; a workspace admin can rename the workspace, its address stays; the members table of the team settings shows who is online when Reverb runs (without it, the last session date only).
 - [ ] Commit `docs: plan 23 — spec and plan in place, roadmap and deviation rows updated` (trailer lines).
 
-### Task 27: Four-engine suites and report
+### Task 27: PostgreSQL suites and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check` (PHPStan level 7); `vendor/bin/sail composer rector:check`.
-- [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (Unit, Feature, Upgrade and Arch; one engine at a time) — Expected: `test-db <engine>: PASS` on each.
-- [ ] `bin/test-db pgsql --concurrency`, `bin/test-db mariadb --concurrency`, `bin/test-db mysql --concurrency`, `bin/test-db sqlite-file --concurrency` — Expected: PASS on each.
+- [ ] `bin/test-db pgsql` (Unit, Feature, Upgrade and Arch) — Expected: `test-db pgsql: PASS`.
+- [ ] `bin/test-db pgsql --concurrency` — Expected: PASS.
+- [ ] SQLite, MariaDB and MySQL are **not** run here (owner, 2026-10-03): the four-engine matrix runs once, after plans 24 and 25 are merged into `roadmap`. `tests/Arch/DatabasePortabilityTest.php` (in the Arch suite above) is the per-plan guard that keeps that matrix green.
 - [ ] `bin/check-pg-upgrade` — Expected: PASS (the upgraded schema equals a fresh install's).
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS.
-- [ ] Report `docs/superpowers/research/plan-23-report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it and the engines it passed on; the differences that remain with each mockup; every existing test whose expectation changed and why; the non-GET routes of the five session scopes and how the observer middleware treats each; translation keys added outside Task 24's table; the German "Moderation" question; every decision taken on the owner's behalf; what plan 25 and later plans can now read from this plan (`TeamRole` and `TeamPolicy::manageMembers`, the Members tab's places, the General tab, `SprintCalendar::sprintOn` for a grouping of action items by sprint); what changed in plans 22, 24 and 29's files (`PresentNewSessionOptions`, `ListTeamSessions` reuse or duplication, `AccessRequestRecipients`); the existing "Take control" rights of members on poker games and whiteboards, kept.
-- [ ] Commit `docs: plan 23 report` (trailer lines). Then ask the owner to read the report. **No merge into `main`, no push.**
+- [ ] Report `docs/superpowers/research/plan-23-report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it (PostgreSQL; the other engines wait for the roadmap's final matrix); the differences that remain with each mockup; every existing test whose expectation changed and why; the non-GET routes of the five session scopes and how the observer middleware treats each; translation keys added outside Task 24's table; the German "Facilitator" value changed to "Moderator" (Task 24) and the tests it touched; the presence channel's scope (per workspace, user id only) and the pages that join it; every decision taken on the owner's behalf; what plan 25 and later plans can now read from this plan (`TeamRole` and `TeamPolicy::manageMembers`, the Members tab's places, the General tab, `SprintCalendar::sprintOn` for a grouping of action items by sprint); what changed in plans 22 and 29's files (`PresentNewSessionOptions`, `ListTeamSessions` reuse or duplication, `AccessRequestRecipients`); what plan 24 (next) reads: `SprintCalendar::forTeam/sprintOn` for its "By sprint" grouping, the observer refusals of `ActionItemPermissions`, the Data & export link to the action items page where its CSV export lands; the existing "Take control" rights of members on poker games and whiteboards, kept.
+- [ ] Commit `docs: plan 23 report` (trailer lines). Then the controller merges the branch into `roadmap` (PostgreSQL suite only at that merge) and notifies the owner. **No merge into `main`, no push.**
+
+### Task 28: "Online" — the workspace presence channel (P23-07, owner's answer; runs in Step C right after Task 17)
+
+Numbered last so that the numbers other documents cite stay; it runs on the main branch, single writer, **after Task 17 and before the Step D lanes are cut** (they are cut from its head: Task 20 reads `useOnlineUserIds`).
+
+**Spec:** §6.11, §8, §9.3 (Last activity), criterion 25.
+
+**Files:**
+- Modify: `app/Http/Controllers/BroadcastAuthorizationsController.php` (the `presence-workspace-online.` branch), `resources/js/app.tsx` (the app-wide join)
+- Create: `resources/js/lib/realtime/workspace-presence.ts` (+ `workspace-presence.test.ts`), `resources/js/hooks/use-online-user-ids.ts` (+ `use-online-user-ids.test.ts`)
+- Test: `tests/Feature/Workspaces/WorkspaceOnlineChannelTest.php`
+
+Read first: `BroadcastAuthorizationsController` (the order of its prefixes, `authorizeTeamGamesChannel` for the signed-in-user pattern, `authorizeRetroChannel` for `authorizePresenceChannel`), `tests/Feature/Retros/BroadcastAuthorizationTest.php` and `tests/Feature/Games/TeamGamesChannelTest.php` (the Reverb test config and the request shape), `WorkspacePolicy::view`, `hooks/use-notifications.test.ts` (how `@laravel/echo-react` is mocked), `hooks/use-retro-channel.ts` (`join`, `here`, `joining`, `leaving`, `leave`), `resources/js/app.tsx`, the shared props types (`auth.user`, `currentWorkspace`) in `resources/js/types`.
+
+**Interfaces:**
+- Produces: the presence channel `presence-workspace-online.{workspaceId}` (Echo name `workspace-online.{workspaceId}`), signed for a signed-in user who may view the workspace, member data `{id: <user id>}` and nothing else; `followWorkspace(workspaceId: string | null): void`, `onlineWorkspaceId(props): string | null`, `subscribeOnline`, `onlineSnapshot` (`lib/realtime/workspace-presence.ts`); `useOnlineUserIds(): ReadonlySet<string>` (`hooks/use-online-user-ids.ts`), read by Task 20.
+
+- [ ] **Step 1: Write the failing feature test**
+
+`tests/Feature/Workspaces/WorkspaceOnlineChannelTest.php`:
+
+```php
+<?php
+
+use App\Enums\TeamRole;
+use App\Models\Team;
+
+beforeEach(function () {
+    config([
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.key' => 'test-key',
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.app_id' => 'test-app',
+    ]);
+});
+
+function workspaceOnlineChannel(string $channel): array
+{
+    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
+}
+
+it('signs the user id alone for a member of the workspace', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    $response = $this->actingAs($member)
+        ->postJson(route('broadcasting.auth'), workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}"))
+        ->assertOk();
+
+    $channelData = json_decode($response->json('channel_data'), true);
+
+    expect($response->json('auth'))->toStartWith('test-key:')
+        ->and($channelData['user_id'])->toBe($member->id)
+        ->and($channelData['user_info'])->toBe(['id' => $member->id]);
+});
+
+it('lets an observer and a workspace admin outside every team in', function () {
+    $team = Team::factory()->create();
+    $channel = workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}");
+
+    $this->actingAs(teamMember($team, TeamRole::Observer))->postJson(route('broadcasting.auth'), $channel)->assertOk();
+    $this->actingAs(workspaceManager($team->workspace))->postJson(route('broadcasting.auth'), $channel)->assertOk();
+});
+
+it('keeps members of other workspaces and visitors out', function (string $who) {
+    $team = Team::factory()->create();
+    $request = match ($who) {
+        'other workspace' => $this->actingAs(teamMember(Team::factory()->create())),
+        'visitor' => $this,
+    };
+
+    $request->postJson(route('broadcasting.auth'), workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}"))
+        ->assertForbidden();
+})->with(['other workspace', 'visitor']);
+
+it('refuses a channel that names no workspace', function (string $channel) {
+    $member = teamMember(Team::factory()->create());
+
+    $this->actingAs($member)->postJson(route('broadcasting.auth'), workspaceOnlineChannel($channel))->assertForbidden();
+})->with([
+    'not a uuid' => 'presence-workspace-online.nope',
+    'unknown workspace' => 'presence-workspace-online.00000000-0000-4000-8000-000000000000',
+    'placeholder' => 'presence-workspace-online.{workspace}',
+]);
+```
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/Workspaces/WorkspaceOnlineChannelTest.php` — Expected: FAIL (the first two cases get 403: no branch for the prefix).
+
+- [ ] **Step 2: Authorise the channel**
+
+In `BroadcastAuthorizationsController::store`, before the final `abort(403)`:
+
+```php
+        if (str_starts_with($validated['channel_name'], 'presence-workspace-online.')) {
+            return $this->authorizeWorkspaceOnlineChannel($request, $validated);
+        }
+```
+
+and the method, after `authorizeTeamGamesChannel` (import `App\Models\Workspace`):
+
+```php
+    /**
+     * Who has a page of the workspace open, for "Online" in the team
+     * members table: signed-in members of the workspace only, and nothing
+     * about them but their user id; a guest cookie never grants it.
+     *
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeWorkspaceOnlineChannel(Request $request, array $validated): JsonResponse
+    {
+        $workspaceId = Str::after($validated['channel_name'], 'presence-workspace-online.');
+
+        abort_unless(Str::isUuid($workspaceId), 403);
+
+        $user = $request->user();
+
+        abort_if($user === null, 403);
+
+        $workspace = Workspace::query()->find($workspaceId);
+
+        abort_if($workspace === null, 403);
+        abort_unless($workspace->id === $workspaceId, 403);
+        abort_unless($user->can('view', $workspace), 403);
+
+        $signature = $this->pusher()->authorizePresenceChannel(
+            $validated['channel_name'],
+            $validated['socket_id'],
+            $user->id,
+            ['id' => $user->id],
+        );
+
+        return response()->json(json_decode($signature, true));
+    }
+```
+
+Run: `bin/test-db pgsql -- tests/Feature/Workspaces/WorkspaceOnlineChannelTest.php tests/Feature/Retros/BroadcastAuthorizationTest.php tests/Feature/Games/TeamGamesChannelTest.php` — Expected: PASS.
+
+- [ ] **Step 3: The presence store, test first**
+
+`resources/js/lib/realtime/workspace-presence.test.ts`:
+
+```ts
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    followWorkspace,
+    onlineSnapshot,
+    onlineWorkspaceId,
+    subscribeOnline,
+} from './workspace-presence';
+
+type Member = { id: string };
+type Handlers = {
+    here?: (members: Member[]) => void;
+    joining?: (member: Member) => void;
+    leaving?: (member: Member) => void;
+};
+
+const joined: Record<string, Handlers> = {};
+const joins: string[] = [];
+const leaves: string[] = [];
+let configured = true;
+
+vi.mock('@laravel/echo-react', () => ({
+    echoIsConfigured: () => configured,
+    echo: () => ({
+        join: (name: string) => {
+            const handlers: Handlers = {};
+            const channel = {
+                here: (callback: Handlers['here']) => {
+                    handlers.here = callback;
+
+                    return channel;
+                },
+                joining: (callback: Handlers['joining']) => {
+                    handlers.joining = callback;
+
+                    return channel;
+                },
+                leaving: (callback: Handlers['leaving']) => {
+                    handlers.leaving = callback;
+
+                    return channel;
+                },
+            };
+
+            joined[name] = handlers;
+            joins.push(name);
+
+            return channel;
+        },
+        leave: (name: string) => leaves.push(name),
+    }),
+}));
+
+beforeEach(() => {
+    configured = true;
+    followWorkspace(null);
+    joins.length = 0;
+    leaves.length = 0;
+});
+
+describe('workspace presence', () => {
+    it('joins the workspace channel and follows who is here, joins and leaves', () => {
+        followWorkspace('w1');
+        joined['workspace-online.w1'].here?.([{ id: 'a' }, { id: 'b' }]);
+        joined['workspace-online.w1'].joining?.({ id: 'c' });
+        joined['workspace-online.w1'].leaving?.({ id: 'a' });
+
+        expect(joins).toEqual(['workspace-online.w1']);
+        expect([...onlineSnapshot()].sort()).toEqual(['b', 'c']);
+    });
+
+    it('does nothing when the workspace does not change', () => {
+        followWorkspace('w1');
+        followWorkspace('w1');
+
+        expect(joins).toEqual(['workspace-online.w1']);
+        expect(leaves).toEqual([]);
+    });
+
+    it('leaves the old channel and forgets its people when the workspace changes', () => {
+        followWorkspace('w1');
+        joined['workspace-online.w1'].here?.([{ id: 'a' }]);
+        followWorkspace('w2');
+
+        expect(leaves).toEqual(['workspace-online.w1']);
+        expect(joins).toEqual(['workspace-online.w1', 'workspace-online.w2']);
+        expect(onlineSnapshot().size).toBe(0);
+    });
+
+    it('joins nothing without Echo', () => {
+        configured = false;
+        followWorkspace('w1');
+
+        expect(joins).toEqual([]);
+        expect(onlineSnapshot().size).toBe(0);
+    });
+
+    it('tells its subscribers when the set changes', () => {
+        const listener = vi.fn();
+        const unsubscribe = subscribeOnline(listener);
+
+        followWorkspace('w1');
+        joined['workspace-online.w1'].joining?.({ id: 'a' });
+        unsubscribe();
+        joined['workspace-online.w1'].joining?.({ id: 'b' });
+
+        expect(listener).toHaveBeenCalledTimes(2);
+    });
+
+    it('follows the current workspace of a signed-in user only', () => {
+        expect(onlineWorkspaceId({ auth: { user: { id: 'u' } }, currentWorkspace: { id: 'w' } })).toBe('w');
+        expect(onlineWorkspaceId({ auth: { user: null }, currentWorkspace: { id: 'w' } })).toBeNull();
+        expect(onlineWorkspaceId({ auth: { user: { id: 'u' } }, currentWorkspace: null })).toBeNull();
+        expect(onlineWorkspaceId({})).toBeNull();
+    });
+});
+```
+
+`resources/js/lib/realtime/workspace-presence.ts`:
+
+```ts
+import { echo, echoIsConfigured } from '@laravel/echo-react';
+
+type OnlineMember = { id: string };
+
+type PresenceProps = {
+    auth?: { user?: { id: string } | null };
+    currentWorkspace?: { id: string } | null;
+};
+
+/**
+ * Who has a signed-in page of the current workspace open. One channel per
+ * workspace, joined once for the whole application (not per page), so that
+ * moving between pages never shows anyone leaving.
+ */
+let followedWorkspaceId: string | null = null;
+let onlineUserIds: ReadonlySet<string> = new Set();
+const listeners = new Set<() => void>();
+
+function channelName(workspaceId: string): string {
+    return `workspace-online.${workspaceId}`;
+}
+
+function publish(next: ReadonlySet<string>): void {
+    onlineUserIds = next;
+    listeners.forEach((listener) => listener());
+}
+
+export function onlineWorkspaceId(props: PresenceProps): string | null {
+    if (!props.auth?.user) {
+        return null;
+    }
+
+    return props.currentWorkspace?.id ?? null;
+}
+
+export function followWorkspace(workspaceId: string | null): void {
+    if (workspaceId === followedWorkspaceId) {
+        return;
+    }
+
+    if (followedWorkspaceId !== null && echoIsConfigured()) {
+        echo().leave(channelName(followedWorkspaceId));
+    }
+
+    followedWorkspaceId = workspaceId;
+    publish(new Set());
+
+    if (workspaceId === null || !echoIsConfigured()) {
+        return;
+    }
+
+    echo<'reverb'>()
+        .join(channelName(workspaceId))
+        .here((members: OnlineMember[]) =>
+            publish(new Set(members.map((member) => member.id))),
+        )
+        .joining((member: OnlineMember) =>
+            publish(new Set([...onlineUserIds, member.id])),
+        )
+        .leaving((member: OnlineMember) =>
+            publish(
+                new Set([...onlineUserIds].filter((id) => id !== member.id)),
+            ),
+        );
+}
+
+export function subscribeOnline(listener: () => void): () => void {
+    listeners.add(listener);
+
+    return () => {
+        listeners.delete(listener);
+    };
+}
+
+export function onlineSnapshot(): ReadonlySet<string> {
+    return onlineUserIds;
+}
+```
+
+(The module state is front-end state of one browser tab; the Octane rule concerns PHP only.)
+
+- [ ] **Step 4: The hook, test first**
+
+`resources/js/hooks/use-online-user-ids.test.ts`:
+
+```ts
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { useOnlineUserIds } from './use-online-user-ids';
+
+let here: ((members: { id: string }[]) => void) | undefined;
+
+vi.mock('@laravel/echo-react', () => ({
+    echoIsConfigured: () => true,
+    echo: () => ({
+        join: () => {
+            const channel = {
+                here: (callback: typeof here) => {
+                    here = callback;
+
+                    return channel;
+                },
+                joining: () => channel,
+                leaving: () => channel,
+            };
+
+            return channel;
+        },
+        leave: () => {},
+    }),
+}));
+
+describe('useOnlineUserIds', () => {
+    it('renders again with the people the channel reports', async () => {
+        const { followWorkspace } = await import('@/lib/realtime/workspace-presence');
+        const { result } = renderHook(() => useOnlineUserIds());
+
+        expect(result.current.size).toBe(0);
+
+        act(() => {
+            followWorkspace('w1');
+            here?.([{ id: 'a' }]);
+        });
+
+        expect(result.current.has('a')).toBe(true);
+    });
+});
+```
+
+`resources/js/hooks/use-online-user-ids.ts`:
+
+```ts
+import { useSyncExternalStore } from 'react';
+import { onlineSnapshot, subscribeOnline } from '@/lib/realtime/workspace-presence';
+
+const nobody: ReadonlySet<string> = new Set();
+
+/** The user ids that have a signed-in page of the current workspace open. */
+export function useOnlineUserIds(): ReadonlySet<string> {
+    return useSyncExternalStore(subscribeOnline, onlineSnapshot, () => nobody);
+}
+```
+
+- [ ] **Step 5: Join from the whole application**
+
+`resources/js/app.tsx`: import `router` from `@inertiajs/react` and `followWorkspace`, `onlineWorkspaceId` from `@/lib/realtime/workspace-presence`; in the existing `if (typeof window !== 'undefined')` block, after `loadDocumentOnMaintenance()`:
+
+```ts
+    router.on('navigate', (event) =>
+        followWorkspace(onlineWorkspaceId(event.detail.page.props)),
+    );
+```
+
+Registered at module level, before `createInertiaApp`, so that the first page's `navigate` event (fired by Inertia on the initial load, `fireInitialEvents`) is not missed; every later visit, back/forward and session page fires it too, and `followWorkspace` ignores an unchanged workspace. A signed-out page (login, a guest in a session) passes null and leaves the channel. If `event.detail.page.props` does not satisfy `PresenceProps` under the shared props type, narrow it with a typed local, not `any`.
+
+- [ ] **Step 6: Gates and commit** — `npm run test -- workspace-presence use-online-user-ids`, then the whole Vitest suite `npm run test`; `bin/test-db pgsql -- tests/Feature/Workspaces tests/Feature/Retros/BroadcastAuthorizationTest.php tests/Feature/Games/TeamGamesChannelTest.php`; `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS. Commit `feat(workspaces): a presence channel per workspace for who is online` (body: the channel is per workspace and carries the user id only; owner's answer to P23-07), ending with:
+
+```
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
+```
 
 ---
 
-## Self-review (done while writing, and again after the owner's answers; kept for the reader)
+## Self-review (done while writing, again after the owner's answers to §15, and again after the answers to the pre-build deviations; kept for the reader)
 
-**Spec coverage.** §6.1 roles: Tasks 1, 2 (policy, role changes), 16 (Members tab), 18, 20, 23. §6.2 descriptions and the workspace rename: Tasks 11, 16, 19, 22. §6.3 sprints and next retro: Tasks 6 (table, calendar, readers), 7 (add, edit, delete, start the next sprint, retro day), 16 (props), 18, 21, 22, 23. §6.4 the suggested facilitator: Tasks 8, 16, 20, 23. §6.5 default template and columns: Tasks 10, 16, 20, 23. §6.6 visibility: Tasks 9, 22. §6.7 activity: Tasks 12, 18. §6.8 thumbnails: Tasks 15, 18. §6.9 reads: Tasks 13 (recent sessions), 14 (open actions, retro counts, tile line), 16 (last activity), 6 (tile sprint). §6.10 take control: Tasks 2 (`takeControl`), 5, 23. §7 permissions: Tasks 2 (matrix, access-request recipients), 3 (session scopes), 4 (action items, MCP, participation), 5 (take-over), 9 (templates), 11 (workspace), 16 (settings pages). §8 real time: nothing to build (stated). §9 screens: Tasks 18 to 23. §10 routes: Tasks 2, 5, 7, 8, 10, 11, 16. §11 migrations: Tasks 1, 6, 8, 9, 10, 11, 12, 15 (Upgrade tests in 1 and 9). §12 testing: every task; races in Tasks 7 and 8; captures in Task 25. §13 criteria: 1 → 1, 9; 2, 3, 4 → 2; 5 → 3, 4, 5, 23; 6 → 5, 23; 7 → 3; 8 → 6, 18; 9 → 7, 21; 10 → 6, 18, 22, 23; 11 → 8, 23; 12 → 8; 13 → 10, 23; 14 → 9, 22; 15 → 12, 18; 16 → 13, 18; 17, 18 → 14, 18; 19 → 15, 18; 20 → 11, 19, 22; 21 → 16, 17, 19, 20; 22 → 2, 16, 23; 23 → 24, 25, 26; 24 → 27.
+**Spec coverage.** §6.1 roles: Tasks 1, 2 (policy, role changes), 16 (Members tab), 18, 20, 23. §6.2 descriptions and the workspace rename: Tasks 11, 16, 19, 22. §6.3 sprints and next retro: Tasks 6 (table, calendar, readers), 7 (add, edit, delete, start the next sprint, retro day), 16 (props), 18, 21, 22, 23. §6.4 the suggested facilitator: Tasks 8, 16, 20, 23. §6.5 default template and columns: Tasks 10, 16, 20, 23. §6.6 visibility: Tasks 9, 22. §6.7 activity: Tasks 12, 18. §6.8 thumbnails: Tasks 15, 18. §6.9 reads: Tasks 13 (recent sessions), 14 (open actions, retro counts, tile line), 16 (last activity), 6 (tile sprint). §6.11 "Online": Tasks 28, 20. §6.10 take control: Tasks 2 (`takeControl`), 5, 23. §7 permissions: Tasks 2 (matrix, access-request recipients), 3 (session scopes), 4 (action items, MCP, participation), 5 (take-over), 9 (templates), 11 (workspace), 16 (settings pages). §8 real time: the one new channel (Task 28); nothing else to build. §9 screens: Tasks 18 to 23 (the observer line of §9.7 in Task 23, "Online" of §9.3 in Task 20). §10 routes: Tasks 2, 5, 7, 8, 10, 11, 16; the channel: Task 28. §11 migrations: Tasks 1, 6, 8, 9, 10, 11, 12, 15 (Upgrade tests in 1 and 9). §12 testing: every task, on PostgreSQL; races in Tasks 7 and 8; captures in Task 25. §13 criteria: 1 → 1, 9; 2, 3, 4 → 2; 5 → 3, 4, 5, 23; 6 → 5, 23; 7 → 3; 8 → 6, 18; 9 → 7, 21; 10 → 6, 18, 22, 23; 11 → 8, 23; 12 → 8; 13 → 10, 23; 14 → 9, 22; 15 → 12, 18; 16 → 13, 18; 17, 18 → 14, 18; 19 → 15, 18; 20 → 11, 19, 22; 21 → 16, 17, 19, 20; 22 → 2, 16, 23; 23 → 24, 25, 26; 24 → 27; 25 → 28, 20.
 
-**Owner's answers.** Each "≠ first draft" answer is written into the tasks that the first draft's table named: decision 1 B replaces the rhythm columns and the arithmetic calendar by `team_sprints` rows and `SprintCalendar` over rows (Task 6), adds the management endpoints and "Start the next sprint" with its race (Task 7) and the Sprints card (Task 21); decision 2 B adds `TeamPolicy::takeControl` (Task 2) and one take-over task (Task 5) instead of one per session type, because poker games and whiteboards already let every team member take control (read on `0c294632`: `PokerFacilitatorsController::ensureTakesControl`, `WhiteboardFacilitatorsController::ensureTakesControl`) — only the retro (no take-over today) and the game room (creator and admins only) change, and the front gains one entry (Task 23); decision 4 C replaces `NextRotationFacilitator` (automatic assignment) by `SuggestedFacilitator` and `facilitator_user_id` (Task 8) and the dialog line by a select (Task 23); decision 7 B turns `WorkspaceDescriptionsController` into `WorkspaceDetailsController` (name and description, slug kept; Task 11) and the dialog (Task 22). Decision 9 A (plan 22 first) moves the dialog's props (`defaultRetroTemplate`, the facilitator options, `currentSprintNumber`, the catalogue) into plan 22's `PresentNewSessionOptions` (Tasks 6, 8, 9, 10) and the recent sessions onto plan 22's rules (Task 13). Plan 29's answer "access requests to workspace owners and admins until plan 23" is honoured in Task 2 (`AccessRequestRecipients` gains the team's owners). Plan 24 (merged before) gives the action items CSV that Data & export links (Task 16).
+**Owner's answers.** Each "≠ first draft" answer is written into the tasks that the first draft's table named: decision 1 B replaces the rhythm columns and the arithmetic calendar by `team_sprints` rows and `SprintCalendar` over rows (Task 6), adds the management endpoints and "Start the next sprint" with its race (Task 7) and the Sprints card (Task 21); decision 2 B adds `TeamPolicy::takeControl` (Task 2) and one take-over task (Task 5) instead of one per session type, because poker games and whiteboards already let every team member take control (read on `0c294632`: `PokerFacilitatorsController::ensureTakesControl`, `WhiteboardFacilitatorsController::ensureTakesControl`) — only the retro (no take-over today) and the game room (creator and admins only) change, and the front gains one entry (Task 23); decision 4 C replaces `NextRotationFacilitator` (automatic assignment) by `SuggestedFacilitator` and `facilitator_user_id` (Task 8) and the dialog line by a select (Task 23); decision 7 B turns `WorkspaceDescriptionsController` into `WorkspaceDetailsController` (name and description, slug kept; Task 11) and the dialog (Task 22). Decision 9 A (plan 22 first) moves the dialog's props (`defaultRetroTemplate`, the facilitator options, `currentSprintNumber`, the catalogue) into plan 22's `PresentNewSessionOptions` (Tasks 6, 8, 9, 10) and the recent sessions onto plan 22's rules (Task 13). Plan 29's answer "access requests to workspace owners and admins until plan 23" is honoured in Task 2 (`AccessRequestRecipients` gains the team's owners). Plan 24 now runs after this plan (answer P24-03): Data & export links the action items page filtered on the team, where plan 24's CSV export lands (Tasks 16, 19), and nothing here reads a plan 24 file.
 
-**Placeholders.** Back-end tasks carry their tests and code. Where a body depends on a file this plan did not read line by line, or that plans 21, 22, 24 and 29 change before this plan runs (`CreateRetro`, `NewRetro`, `PresentNewSessionOptions`, `ListTeamSessions`, `AccessRequestRecipients`, the retro board menu, the factories' states, the bodies of `teams.pokerGames.store` and `poker.status.update`, a valid whiteboard element), the step names the file to read and what to adapt; the expectations do not change. Screen tasks carry composition tables, behaviours, hooks and states, and the code of their pure logic (Task 17), not full component code: the mockup, or the deviation the owner approves, is the specification of the markup (plan 18e's screen procedure).
+**Pre-build deviation answers.** P23-07 (≠ recommendation) is Task 28 (channel, authorisation test, app-wide join, store and hook with Vitest) plus Task 20's column and Vitest; P23-04's line is one shared `observer-notice.tsx` in Task 23 and one key in Task 24; P23-01 and P23-05 are built as written (Tasks 21, 23) without a gate. The engine rule (PostgreSQL per plan) is applied to every run step, the lane merges and Task 27; the portability rules are unchanged. The execution order (20, 21, 26, 27, 29 → 22 → 23 → 24 and 25) is in **Branch and run**: no step of this plan assumes plan 24 or 25.
 
-**Type consistency.** `TeamRole` (Task 1) is the name plans 25 and 29 expect. `Team::members()` gives `teamMembership` (Tasks 1, 2, 16); `defaultFacilitators()` gives `pivot` (Task 8). `TeamSprint::present()` (Task 6) is the `Sprint` shape of `SprintCalendar::sprintOn` (Tasks 6, 16), of `StartNextSprint::preview` minus `id` plus `refusal` (Tasks 7, 16) and of the front's `Sprint`, `NextSprintStart`, `TeamSprintsPanel` (Task 17). `SprintCalendar::forTeam/fromToday/ofRows/sprintOn/numberOn/shortLabelOn/nextRetro/dayOf` (Task 6) are the calls of Tasks 6 and 16. `SuggestedFacilitator::for/follow` (Task 8) are called by `CreateRetro`, `PresentNewSessionOptions` and `TeamMembersController::index` (Task 16); the dialog's `retroFacilitators`, `suggestedFacilitatorId`, `facilitatorRotation` (Task 8) match `FacilitatorOption` and `initialFacilitatorId` (Task 17). `viewer.canTakeControl` (Task 5) is read by Task 23. `TeamTemplateUsage` rows (Task 10) are what Task 20 reads. `ListRecentTeamSessions` rows (Task 13) match `RecentSessionRow` (Task 17). `ListTeamActivity` lines (Task 12) match `TeamActivityLine`. `PresentTeamRetro.stats` (Task 14) matches `RetroStats`. `PresentWhiteboardSummary.preview` (Task 15) matches `WhiteboardSummary.preview`. `TeamSettingsSections` (Task 16) matches the type of Task 17 and the shell's `sections`. `BuildTemplateCatalogue::handle(Workspace, User, ?Team)` (Task 9) is called so by Tasks 9 and 16. Route names: `teams.sprints.*`, `teams.sprintStarts.store`, `teams.rituals.update` (Task 7), `workspaces.details.update` (Task 11) are the ones Tasks 21 and 22 call through Wayfinder.
+**Placeholders.** Back-end tasks carry their tests and code. Where a body depends on a file this plan did not read line by line, or that plans 21, 22 and 29 change before this plan runs (`CreateRetro`, `NewRetro`, `PresentNewSessionOptions`, `ListTeamSessions`, `AccessRequestRecipients`, the retro board menu, the factories' states, the bodies of `teams.pokerGames.store` and `poker.status.update`, a valid whiteboard element), the step names the file to read and what to adapt; the expectations do not change. Screen tasks carry composition tables, behaviours, hooks and states, and the code of their pure logic (Task 17), not full component code: the mockup, or the deviation the owner approved, is the specification of the markup (plan 18e's screen procedure).
 
-**Review Focus.** Each line has its test: the facilitator turned observer (Task 3), the admin with an observer row (Tasks 1, 3), a member's retro take-over refused while poker and whiteboards keep theirs (Task 5), two "Start the next sprint" (Task 7, `Race`), two creations following one suggestion (Task 8, `Race`), someone else's personal template (Task 9), daylight saving and the retro day's time (Task 6), the thumbnail job and `updated_at` (Task 15).
+**Type consistency.** `TeamRole` (Task 1) is the name plans 25 and 29 expect. `Team::members()` gives `teamMembership` (Tasks 1, 2, 16); `defaultFacilitators()` gives `pivot` (Task 8). `TeamSprint::present()` (Task 6) is the `Sprint` shape of `SprintCalendar::sprintOn` (Tasks 6, 16), of `StartNextSprint::preview` minus `id` plus `refusal` (Tasks 7, 16) and of the front's `Sprint`, `NextSprintStart`, `TeamSprintsPanel` (Task 17). `SprintCalendar::forTeam/fromToday/ofRows/sprintOn/numberOn/shortLabelOn/nextRetro/dayOf` (Task 6) are the calls of Tasks 6 and 16. `SuggestedFacilitator::for/follow` (Task 8) are called by `CreateRetro`, `PresentNewSessionOptions` and `TeamMembersController::index` (Task 16); the dialog's `retroFacilitators`, `suggestedFacilitatorId`, `facilitatorRotation` (Task 8) match `FacilitatorOption` and `initialFacilitatorId` (Task 17). `viewer.canTakeControl` (Task 5) is read by Task 23. `TeamTemplateUsage` rows (Task 10) are what Task 20 reads. `ListRecentTeamSessions` rows (Task 13) match `RecentSessionRow` (Task 17). `ListTeamActivity` lines (Task 12) match `TeamActivityLine`. `PresentTeamRetro.stats` (Task 14) matches `RetroStats`. `PresentWhiteboardSummary.preview` (Task 15) matches `WhiteboardSummary.preview`. `TeamSettingsSections` (Task 16) matches the type of Task 17 and the shell's `sections`. `BuildTemplateCatalogue::handle(Workspace, User, ?Team)` (Task 9) is called so by Tasks 9 and 16. Route names: `teams.sprints.*`, `teams.sprintStarts.store`, `teams.rituals.update` (Task 7), `workspaces.details.update` (Task 11) are the ones Tasks 21 and 22 call through Wayfinder. `useOnlineUserIds(): ReadonlySet<string>` (Task 28) is what Task 20 reads; the channel `presence-workspace-online.{id}` (PHP) is `workspace-online.{id}` for Echo (`join` adds the prefix). Task 16's prop is `actionItemsUrl`, the name Task 19 reads.
 
-**Known weak points of this draft.** Nothing was run. The observer middleware refuses every non-read request of the five scopes; Task 3's "Read first" lists them before it lands, and the commit body records the list. The front tasks assume the read-only switches of the session screens can take one more source flag (spec §16 item 5). Task 13 may duplicate plan 22's state rules when plan 22 exposes none (decision 9). The Sprints card, the Facilitator select, the workspace dialog and the retro's "Take control" entry have no mockup: P23-01, P23-03, P23-05 and P23-16 are put to the owner before Tasks 21, 22 and 23 build them. The German role word is an open question for the owner.
+**Review Focus.** Each line has its test: the facilitator turned observer (Task 3), the admin with an observer row (Tasks 1, 3), a member's retro take-over refused while poker and whiteboards keep theirs (Task 5), two "Start the next sprint" (Task 7, `Race`), two creations following one suggestion (Task 8, `Race`), someone else's personal template (Task 9), daylight saving and the retro day's time (Task 6), the thumbnail job and `updated_at` (Task 15), the presence channel refused outside the workspace (Task 28), navigation without leave and re-join (Task 28, Vitest).
+
+**Known weak points of this draft.** Nothing was run. The observer middleware refuses every non-read request of the five scopes; Task 3's "Read first" lists them before it lands, and the commit body records the list. The front tasks assume the read-only switches of the session screens can take one more source flag (spec §16 item 5). Task 13 may duplicate plan 22's state rules when plan 22 exposes none (decision 9). The Sprints card, the Facilitator select, the workspace dialog and the retro's "Take control" entry have no mockup; the owner answered their rows on 2026-10-03 (P23-01 and P23-05 obsolete by decisions 1 B and 4 C, P23-03 and P23-16 approved), so they are built as described. The presence channel adds one websocket subscription per signed-in tab and tells every member of a workspace who else has it open (owner's answer to P23-07); Task 28 limits it to members and to the user id. The German role word is ruled ("Moderator", Task 24).

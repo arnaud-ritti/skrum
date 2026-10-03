@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 18 only).
 
-**Status: draft of 2026-10-03, revised the same day with the owner's answers.** The seven questions of spec §15 are answered, each with the recommended option this plan was written on, and the test removals are approved (see **Owner decisions**). Execution still waits for the owner's approval of the **Pre-build deviations** and of the plan (the autonomy mandate covered plans 18, database portability and 19 only).
+**Status: ready to execute (2026-10-03).** The seven questions of spec §15 are answered, each with the recommended option this plan was written on; the test removals are approved (see **Owner decisions**); every pre-build deviation row P20-01 to P20-10 is approved by the owner on 2026-10-03 (see **Pre-build deviations**). The owner's "Oui vas y" of 2026-10-03 covers running this plan autonomously: rulings logged in the report, a notice to the owner at the end of the plan, no push.
 
 **Goal:** The whiteboard shows the four floating bars of ScreenWhiteboard — a vertical tool bar with sub-bars, a selection bar with an element count, the history at the bottom left, the zoom and a minimap at the bottom right — and the compact bottom bar of MobileRituals on a phone, in place of Excalidraw's own chrome, with every tool, style, menu entry and shortcut of today still reachable.
 
@@ -14,12 +14,14 @@
 
 **Not in this plan:** anything of the former plan 28 (comments, follow a person, sticky authors, convert to actions) — backlog, no place reserved; the `selectionActions` slot of `canvas-colors.tsx` goes with that component; any back-end change; an Excalidraw upgrade; browser walkthroughs (owner's working rule: none is written, edited or run).
 
+**Roadmap order (owner, 2026-10-03):** wave A runs plans 20, 21, 26, 27 and 29 in parallel; then 22; then 23; then 24 and 25. Plan 20 depends on no other roadmap plan and none of the wave-A plans touches the whiteboard files of this plan; the only shared files are `lang/*.json` (keys appended; the controller keeps both sides on a merge conflict into `roadmap`).
+
 **Tasks:** 20. Step A, single writer: 1 to 6 (library contract, pure logic, snapshot hook). Step B, three lanes in worktrees: Tools (7, 8), View (9, 10), Selection (11, 12). Step C, single writer: 13 (board integration), 14 (board menu), 15 (phone), 16 (keyboard), 17 (translations), 18 (captures), 19 (deviations and documents), 20 (full suites and report).
 
 ## Branch and run
 
-- Base: `main` at `18d3637e` or later (plans 18, database portability and 19 merged). Check before Task 1, and stop if one fails: `resources/js/components/whiteboard/board.tsx` mounts `CanvasColors` and `StickyTool`; `resources/js/hooks/use-whiteboard-toolbar-slot.ts` exists; `resources/js/lib/whiteboard/excalidraw.ts` exports `ToolbarDom`; `node_modules/@excalidraw/excalidraw/package.json` says `0.18.1`.
-- Branch `plan-20-whiteboard-toolbars` from that base. **Never push; never merge into `main`.**
+- Base: the integration branch `roadmap` at `19db587f` or later (it holds `main` at `18d3637e`: plans 18, database portability and 19). Check before Task 1, and stop if one fails: `resources/js/components/whiteboard/board.tsx` mounts `CanvasColors` and `StickyTool`; `resources/js/hooks/use-whiteboard-toolbar-slot.ts` exists; `resources/js/lib/whiteboard/excalidraw.ts` exports `ToolbarDom`; `node_modules/@excalidraw/excalidraw/package.json` says `0.18.1`.
+- Branch `plan-20-whiteboard-toolbars` from that base; at the end (Task 20) the controller merges it into `roadmap` and runs the PostgreSQL suite there. **Never push; never merge into `main`** (main is fast-forwarded only when the owner asks).
 - Step A runs on the branch with one writer. Lanes run in git worktrees on branches `lane/20-tools`, `lane/20-view`, `lane/20-selection`, cut from the head after Task 6; the controller merges one lane at a time and runs after each merge: `npm run types:check`, `npm run check`, `npm run test -- whiteboard`, `npm run build:front`, and `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`.
 - From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR` (see `docs/database.md`, "Running the tests on an engine"). Never run two whole suites at once in the shared container.
 - **Every task re-reads the files it touches**; a line number or a method body quoted here that no longer matches is followed in spirit and reported.
@@ -82,7 +84,7 @@ Deleted (Task 13): `resources/js/components/whiteboard/canvas-colors.tsx` and it
 - **Front rules** of the parent spec §5 on every front file: tokens only (no hex in components; the canvas-data exemption of ruling 36 covers the five canvas background picks of Task 14 and nothing else), rem, Tailwind scale (no arbitrary size; sizes missing from the scale go to `@theme`), no overflow from 20rem to 60rem, visible focus `outline-2 outline-ring outline-offset-2`, contrast, `prefers-reduced-motion`, lucide icons only, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router, no Excalidraw import: they receive values and callbacks).
 - **Front only.** No route, controller, policy, model, migration, event, channel or prop changes; no PHP outside `lang/*.json`, `tests/Browser/Support/InteractsWithWhiteboards.php` and `tests/Browser/Visual/WhiteboardVisualTest.php`. **Database (owner rule):** Eloquent only — this plan writes no database code; the rule binds any fixture the capture task adds (factories and the helpers of `tests/Pest.php`, no raw SQL, `docs/database.md` rules 1–12).
 - **Library internals.** Every selector, test id, class name or shortcut of Excalidraw 0.18.1 that the code relies on is a named constant of `lib/whiteboard/excalidraw.ts` or `lib/whiteboard/canvas-commands.ts`, with the sentence "Check this when the library is upgraded." No hand-written replacement of a library action (no own align, group or delete).
-- **Tests, per task (owner's working rules).** Vitest is written first and run per task: `npm run test -- <pattern>`, the red step once, the green step after. A task that adds translation keys runs the PHP translation tests on PostgreSQL and SQLite: `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`, then `bin/test-db sqlite -- …`. There is no data migration and no race in this plan, so nothing runs on MariaDB and MySQL per task; the four engines run the whole PHP suite at the merges into the plan branch and in Task 20.
+- **Tests, per task (owner's working rules).** Vitest is written first and run per task: `npm run test -- <pattern>`, the red step once, the green step after. A task that adds translation keys runs the PHP translation tests on PostgreSQL: `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`. **Engines (owner, 2026-10-03, "Lance les 4 bases seulement à la fin"):** every run of this plan — per task, after each lane merge, in Task 20 and at the merge into `roadmap` — is on PostgreSQL only; the four-engine matrix (pgsql, sqlite, mariadb, mysql) runs once for the whole roadmap, after the last merge into `roadmap` (plans 24 and 25), not in this plan. The portability rules still bind: Eloquent only, no raw SQL (this plan writes no database code anyway).
 - **No browser walkthrough** is written, edited or run (`tests/Browser/Walkthroughs`). Captures only, in Task 18, light, 1440, French. The shared browser helper and the whiteboard visual test are updated in Task 18 because the captures and the smoke test use them.
 - **No new dependency**, PHP or JS, without the owner's approval. None is needed: `Tooltip`, `Kbd`, `ToggleGroup`, `DropdownMenu`, `Drawer`, `Separator` exist in `components/ui/`.
 - **Four languages, informal.** Every new `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it, in the informal register (French "tu", Spanish "tú", German "du"); a key that exists keeps its value; Task 17 holds the values of every key and reviews them.
@@ -109,20 +111,20 @@ The inputs the spec implies and no task would exercise without being told, most 
 
 ## Pre-build deviations
 
-Put to the owner before the screens are built (owner's rule of the fifth round). Spec §16. Status of every row: **to approve by the owner** (not asked yet; Task 7 does not start before the answers).
+Put to the owner before the screens are built (owner's rule of the fifth round). Spec §16. **Answered by the owner on 2026-10-03: every row approved as listed** — P20-07 with the recommendation ("Fit to screen" and the Edit button in the read dock), P20-08 and P20-10 approved by name, the others approved as listed. Nothing to build changes; Task 7 may start after Task 6. Task 19 copies these rows, with this status, into the 18e deviation table.
 
-| # | Mockup element | Built | Reason |
-|---|---|---|---|
-| P20-01 | Topbar "Commentaires"; selection bar "Convertir en actions"; author line on stickies; "Suivre Camille"; "is typing" ring | not rendered, no place reserved | O: backlog (former plan 28) |
-| P20-02 | Canvas content of the mockup (SVG shapes, `wb-sel` frame with eight handles and a rotation dot) | the library's canvas and selection frame, themed in `--primary` | S §3 |
-| P20-03 | "Post-it (S)" in ScreenWhiteboard | "Sticky note (N)" | O: decision 1 |
-| P20-04 | no "Styles" in the selection bar | "Styles" | O: decision 2 (no feature lost) |
-| P20-05 | no shape or connector sub-bar, no "More tools" | sub-bars and "More tools" | O: decision 4 |
-| P20-06 | one "Aligner" icon | the icon opens a menu of six commands | S: one icon cannot be six commands |
-| P20-07 | phone read dock: "Déplacer la vue", "Réagir", "Commentaires" | "Fit to screen" and "Modifier"; reactions keep their own strip; no hand | O: D-58; N (comments) |
-| P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the hidden library tool bar) | S §5 rule 3 |
-| P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 % | F |
-| P20-10 | minimap at every desktop width | from `lg` only | A (no overlap) |
+| # | Mockup element | Built | Reason | Owner (2026-10-03) |
+|---|---|---|---|---|
+| P20-01 | Topbar "Commentaires"; selection bar "Convertir en actions"; author line on stickies; "Suivre Camille"; "is typing" ring | not rendered, no place reserved | O: backlog (former plan 28) | approved as listed |
+| P20-02 | Canvas content of the mockup (SVG shapes, `wb-sel` frame with eight handles and a rotation dot) | the library's canvas and selection frame, themed in `--primary` | S §3 | approved as listed |
+| P20-03 | "Post-it (S)" in ScreenWhiteboard | "Sticky note (N)" | O: decision 1 | approved as listed |
+| P20-04 | no "Styles" in the selection bar | "Styles" | O: decision 2 (no feature lost) | approved as listed |
+| P20-05 | no shape or connector sub-bar, no "More tools" | sub-bars and "More tools" | O: decision 4 | approved as listed |
+| P20-06 | one "Aligner" icon | the icon opens a menu of six commands | S: one icon cannot be six commands | approved as listed |
+| P20-07 | phone read dock: "Déplacer la vue", "Réagir", "Commentaires" | "Fit to screen" and "Modifier"; reactions keep their own strip; no hand | O: D-58; N (comments) | approved (rec.: Fit + Edit dock) |
+| P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the hidden library tool bar) | S §5 rule 3 | approved |
+| P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 % | F | approved as listed |
+| P20-10 | minimap at every desktop width | from `lg` only | A (no overlap) | approved |
 
 ---
 
@@ -1194,7 +1196,7 @@ export function CanvasTools(props: {
 
 - [ ] Step 1: write the cases; `npm run test -- canvas-tools sticky-tool` — FAIL.
 - [ ] Step 2: implement `addSticky` (extract the body of `StickyTool.add` into it; `StickyTool` calls it) and `CanvasTools`. The sticky placement subscribes `api.onPointerDown((activeTool, state) => …)` in an effect and ignores every tool but the sticky one.
-- [ ] Step 3: new keys (`Tools`, `Sticky note colours`, `Shapes`, `Connectors`, `Diamond`, `Ellipse`, `Line`, `Frame`, `More tools`, `Laser pointer`, `Keep the tool`, `Pen mode`) in the four `lang/*.json`, values from Task 17's table; run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` and `bin/test-db sqlite -- …` — PASS.
+- [ ] Step 3: new keys (`Tools`, `Sticky note colours`, `Shapes`, `Connectors`, `Diamond`, `Ellipse`, `Line`, `Frame`, `More tools`, `Laser pointer`, `Keep the tool`, `Pen mode`) in the four `lang/*.json`, values from Task 17's table; run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` — PASS.
 - [ ] Step 4: `npm run test -- canvas-tools sticky-tool` — PASS; front gates.
 - [ ] Step 5: commit `feat(whiteboard): the tool bar of the board, sticky placement and its keys`.
 
@@ -1259,7 +1261,7 @@ All three build on `WhiteboardToolbar` (Task 7 is in another lane: this lane bui
 8. M toggles the minimap while the focus is in the canvas wrapper or a bar, never while typing (Review Focus 1), and obeys `singleKeyShortcutsEnabled()`;
 9. a follower (Review Focus 5): with `useWhiteboardFollow` running on the same fake API, a zoom from the bar triggers the fake's `onScrollChange` listeners with a view the hook did not apply, and `paused` becomes true — written in `resources/js/hooks/use-whiteboard-follow.test.ts` if that file exists, otherwise in `canvas-view.test.tsx` with both hooks rendered.
 
-- [ ] Step 1: tests; `npm run test -- canvas-view use-whiteboard-follow` — FAIL. Step 2: implement — PASS. Step 3: keys `Zoom`, `Reset zoom to 100 %`, `Fit to screen`, `Minimap`, `Shows the whole board; the frame is the part you see.`, `Move the view` in the four files; PHP translation tests on pgsql and sqlite — PASS. Step 4: front gates. Step 5: commit `feat(whiteboard): zoom, minimap and history over the canvas`.
+- [ ] Step 1: tests; `npm run test -- canvas-view use-whiteboard-follow` — FAIL. Step 2: implement — PASS. Step 3: keys `Zoom`, `Reset zoom to 100 %`, `Fit to screen`, `Minimap`, `Shows the whole board; the frame is the part you see.`, `Move the view` in the four files; PHP translation tests on PostgreSQL (`bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`) — PASS. Step 4: front gates. Step 5: commit `feat(whiteboard): zoom, minimap and history over the canvas`.
 
 ### Task 11 (lane Selection): `WhiteboardSelectionBar`, `WhiteboardSelectionCount`
 
@@ -1310,7 +1312,7 @@ export function WhiteboardSelectionCount(props: { count: number; style?: CSSProp
 7. the bar is hidden while `selectedElementsAreBeingDragged` and comes back at the new place on the next snapshot;
 8. the place kept by 18e for "Convert to actions" is gone: no `selectionActions` prop exists (spec §3).
 
-- [ ] Step 1: tests — FAIL. Step 2: implement — PASS. Step 3: keys `Selection` (exists), `Group`, `Align`, `Align left`, `Align right`, `Align top`, `Align bottom`, `Distribute horizontally`, `Distribute vertically`, `Lock`, `Unlock`, `Styles`, `1 element`, `:count elements` in the four files; PHP translation tests on pgsql and sqlite — PASS. Step 4: front gates. Step 5: commit `feat(whiteboard): the selection bar of the board`.
+- [ ] Step 1: tests — FAIL. Step 2: implement — PASS. Step 3: keys `Selection` (exists), `Group`, `Align`, `Align left`, `Align right`, `Align top`, `Align bottom`, `Distribute horizontally`, `Distribute vertically`, `Lock`, `Unlock`, `Styles`, `1 element`, `:count elements` in the four files; PHP translation tests on PostgreSQL (`bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`) — PASS. Step 4: front gates. Step 5: commit `feat(whiteboard): the selection bar of the board`.
 
 ---
 
@@ -1373,7 +1375,7 @@ Canvas background choices (canvas data, ruling 36): `[{key: 'Paper', value: CANV
 
 **Behaviours (Vitest, written first):** the menu shows "Save as image", "Find on canvas", "Canvas help", "Clear canvas" and the "Canvas background" sub-menu (`menuitemradio`, the current one checked) to a member, a guest and the facilitator alike, after the existing entries and before "Delete this board"; each calls its action; the entries are absent while `canvasActions` is undefined (canvas not ready).
 
-- [ ] Steps: tests — FAIL; implement — PASS; keys `Save as image`, `Find on canvas`, `Canvas help`, `Clear canvas`, `Canvas background`, `Paper`, `Light grey`, `Light blue`, `Light yellow`, `Light beige` (`White` exists) in the four files; PHP translation tests on pgsql and sqlite; front gates; commit `feat(whiteboard): the canvas entries move into the board menu`.
+- [ ] Steps: tests — FAIL; implement — PASS; keys `Save as image`, `Find on canvas`, `Canvas help`, `Clear canvas`, `Canvas background`, `Paper`, `Light grey`, `Light blue`, `Light yellow`, `Light beige` (`White` exists) in the four files; PHP translation tests on PostgreSQL (`bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`); front gates; commit `feat(whiteboard): the canvas entries move into the board menu`.
 
 ### Task 15: The phone — compact bar in edit mode, "Fit" in read mode
 
@@ -1454,7 +1456,7 @@ Every key this plan adds, with its values (informal register; French typography 
 | Light beige | Beige clair | Beige claro | Hellbeige |
 
 - [ ] Check every key of the table is in the four files with these values (a task earlier may have written a first value: this table wins); check no key that existed changed value (`git diff main -- lang/` shows additions only, except none).
-- [ ] Run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`, then `bin/test-db sqlite -- …` — Expected: PASS on both.
+- [ ] Run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` — Expected: PASS (PostgreSQL only: the owner's rule of 2026-10-03, see **Global Constraints**).
 - [ ] Commit `feat(whiteboard): translations of the rebuilt toolbars`.
 
 ### Task 18: Captures (light, 1440, French)
@@ -1476,14 +1478,14 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 | `whiteboard-locked-guest` | a guest on a locked board: zoom and minimap only |
 
 - [ ] **Step 2: Run.** `npm run build:front`, then `docker compose exec -e VISUAL_ONLY=light-1440-fr laravel.test php artisan test --compact tests/Browser/Visual/WhiteboardVisualTest.php` (from a worktree, the container and working directory as `bin/test-db` documents them). The overflow check of the harness must pass. Only `-light-1440-fr.png` files are written.
-- [ ] **Step 3:** Run once `tests/Browser/Smoke/WhiteboardHarnessTest.php` (it draws a rectangle through `selectWhiteboardTool` and checks the server stores it: the one browser proof that a tool of the new bar reaches the canvas and the sync) — Expected: PASS. If the owner counts the smoke test as a walkthrough, this step is skipped and noted in the report.
+- [ ] **Step 3:** Run once `tests/Browser/Smoke/WhiteboardHarnessTest.php` (it draws a rectangle through `selectWhiteboardTool` and checks the server stores it: the one browser proof that a tool of the new bar reaches the canvas and the sync) — Expected: PASS. Ruling (2026-10-03, on the owner's behalf, logged in the report): the smoke test is not a walkthrough — it lives in `tests/Browser/Smoke`, not `tests/Browser/Walkthroughs`, and the owner's rule names walkthroughs — so it is run.
 - [ ] **Step 4:** Commit `test(visual): whiteboard toolbars, light, 1440, French`.
 
 ### Task 19: Deviations and documents
 
 - [ ] For each capture of Task 18, open it beside ScreenWhiteboard's or WhiteboardToolbar's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** with the owner's word. A difference that fits no reason stops the task.
 - [ ] Documents, in one commit:
-  - rename the spec `docs/superpowers/specs/2026-10-21-plan-20-whiteboard-toolbars-design.md` to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` (this plan stays where it is); the owner's answers to spec §15 are already in both, so only the answers to the pre-build deviations are folded in;
+  - rename the spec `docs/superpowers/specs/2026-10-21-plan-20-whiteboard-toolbars-design.md` to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` (this plan stays where it is); the owner's answers to spec §15 and to the pre-build deviations are already in both, so only the differences found in the step above are folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: row WB-1 marked done, plan 20; rows WB-2 to WB-5 untouched (backlog by the owner's note at the top);
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-21 reduced to "comments, convert to actions, follow; sticky authors — backlog (former plan 28)"; D-49 removed; the P20 rows approved by the owner added after D-127 with their status; `docs/superpowers/research/front-rewrite/deviations.md` counts updated;
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: §3 non-goal "Recoding the Excalidraw toolbar" and §6.4 "Whiteboard", rulings 5 and 29, each with a pointer to the new spec;
@@ -1494,11 +1496,12 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 ### Task 20: Full suites and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check` (nothing in PHP changed: it must stay green).
-- [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (one engine at a time) — Expected: `test-db <engine>: PASS` on each.
+- [ ] `bin/test-db pgsql` — Expected: `test-db pgsql: PASS`. PostgreSQL only (owner, 2026-10-03): sqlite, mariadb and mysql are not run here; the four-engine matrix runs once after the last merge into `roadmap` (plans 24 and 25).
 - [ ] `bin/test-db pgsql --concurrency` (unchanged code; run because the owner's rule asks for the whole suites at the end of a plan) — Expected: PASS.
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS; and `grep -l "excalidraw" public/build/assets/*.js` lists only the whiteboard chunk(s) (spec criterion 21).
 - [ ] Report `docs/superpowers/research/plan-20-report.md`: per acceptance criterion of spec §13 the test or capture that proves it; the differences that remain with each mockup; every existing test edited or removed and why (the removals approved by the owner on 2026-10-03); every library internal the board now relies on (`NativeChrome` and `CommandKeys` of `canvas-commands.ts`); the stale walkthrough files; every decision taken on the owner's behalf.
-- [ ] Commit `docs: plan 20 report`. Then ask the owner to read the report. **No merge into `main`, no push.**
+- [ ] Commit `docs: plan 20 report`.
+- [ ] The controller merges `plan-20-whiteboard-toolbars` into `roadmap` (other wave-A plans may have merged first: on a `lang/*.json` conflict keep both sides, then re-run `npm run test`, `npm run build:front` and `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`), runs `bin/test-db pgsql` on `roadmap` — Expected: PASS — and sends the owner the end-of-plan notice pointing at the report. **No merge into `main`, no push.**
 
 ---
 
@@ -1512,6 +1515,8 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 
 **Type consistency.** `CanvasSnapshot` (Task 6) is what Tasks 8, 10, 12, 13, 15 take; `CanvasView` and `Rect` come from `viewport.ts` (Task 3) everywhere; `CanvasCommand` gains `clearCanvas` in Task 14 (the table and its test, in `canvas-commands.ts`); `AlignCommand` (Task 11) is a subset of `CanvasCommand`; `ToolKeys.sticky` = `StickyKey` is read by Tasks 7, 8, 16 and 18.
 
-**Revision with the owner's answers (2026-10-03).** All seven answers of spec §15 equal the option the plan was written on; the test removals are approved. Changed: the status line, the **Owner decisions** table (answers and the tasks carrying them, in place of the "otherwise" column), the test-deletion global constraint, the spec path (the committed `docs/` copy), Task 19 (the spec is renamed, the plan stays) and Task 20's report line. No task, code block, test case, lane or task count changed: still 20 tasks. Pre-build deviations stay to approve by the owner. Fixed while revising: **Owner decisions** said all five cases of `canvas-colors.test.tsx` move, while "Gaps found" and Tasks 8 and 12 move three; the list now names each of the five cases, checked against the file on `main`.
+**Revision with the owner's answers (2026-10-03).** All seven answers of spec §15 equal the option the plan was written on; the test removals are approved. Changed: the status line, the **Owner decisions** table (answers and the tasks carrying them, in place of the "otherwise" column), the test-deletion global constraint, the spec path (the committed `docs/` copy), Task 19 (the spec is renamed, the plan stays) and Task 20's report line. No task, code block, test case, lane or task count changed: still 20 tasks. Pre-build deviations stayed to approve at that point (approved since: see the next paragraph). Fixed while revising: **Owner decisions** said all five cases of `canvas-colors.test.tsx` move, while "Gaps found" and Tasks 8 and 12 move three; the list now names each of the five cases, checked against the file on `main`.
+
+**Second revision with the pre-build deviation answers (2026-10-03).** Every row P20-01 to P20-10 is approved (P20-07 with the recommendation, P20-08 and P20-10 by name, the rest as listed): no task, code block, test case or lane changes; still 20 tasks. Changed: the status line (no gate left), the **Pre-build deviations** table (an owner column, Task 7 no longer waits), the base and merge target (`roadmap`), the roadmap order note (wave A: 20, 21, 26, 27, 29 in parallel), the engines (PostgreSQL only per task, per lane merge, in Task 20 and at the merge into `roadmap`; the four-engine matrix runs once at the end of the roadmap), Task 18 Step 3 (the smoke test is run, ruled not a walkthrough), Task 19 (nothing left to fold from the deviations) and Task 20 (merge into `roadmap`, end-of-plan notice). Checked against the spec: criteria 22 and 24 now say PostgreSQL, matching Tasks 8, 10, 12, 14, 17 and 20.
 
 **Known weak points of this draft.** Nothing was run. The library facts were read in `dist/dev`; the browser build uses the `production` export condition (`dist/prod`, minified), which holds the same code: the contract test reads `dist/dev` because it is legible, and Task 1 checks that `package.json`'s `exports` point both conditions at the same version. Between 48rem and 64rem the history, reactions and zoom bars share the bottom edge and no capture covers that width (owner's rule: 1440 only).

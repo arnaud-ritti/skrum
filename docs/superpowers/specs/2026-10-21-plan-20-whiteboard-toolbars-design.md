@@ -1,7 +1,7 @@
 # Skrüm — Whiteboard toolbars rebuilt to the mockup (WB-1) — Design
 
 Date: 2026-10-03
-Status: **Draft — §15 answered by the owner on 2026-10-03 (every answer is the recommended option); the pre-build deviations of §16 are still to approve by the owner** (the autonomy mandate covered plans 18, database portability and 19 only)
+Status: **Approved for execution — §15 answered by the owner on 2026-10-03 (every answer is the recommended option); every pre-build deviation of §16 approved by the owner on 2026-10-03** (P20-07 with the recommendation, P20-08 and P20-10 by name, the others as listed). The owner's "Oui vas y" of 2026-10-03 covers running the plan autonomously. Roadmap order: wave A, in parallel with plans 21, 26, 27 and 29; integration branch `roadmap`.
 Roadmap: plan 20, row WB-1 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`; clears the "toolbars" part of deviation **D-21** and deviation **D-49** (`docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup").
 Parent specs: `docs/superpowers/specs/2026-10-01-whiteboard-design.md` (the board: canvas, sync, access, facilitation) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (rules §5, rulings §6.5). Final location once approved: `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.
 Mockups (README and `preview.html` of each): `ScreenWhiteboard` (binding for the desktop board), `WhiteboardToolbar` (anatomy, states, keyboard), `MobileRituals` frame 1 (phone), `ExcalidrawTheme` (palette and theme, which stay), `KeyboardShortcuts` (the whiteboard section).
@@ -45,6 +45,8 @@ This spec reverses, for the toolbars only, three earlier rulings: the non-goal "
 | Captures | light, 1440, French only; no browser walkthrough written, edited or run | owner's working rules (plan 19) |
 | No new dependency | none needed | owner |
 | The seven questions of §15 | answered: sticky key N; "Styles" shows the themed native property panel; the hamburger's entries move into the board menu (with a "Canvas background" sub-menu); Shape / Connector sub-bars and "More tools"; the phone's compact bar of the mockup; minimap open from `lg`, remembered; with the single-key preference off, every single-character key is blocked except while typing | owner, 2026-10-03 |
+| Pre-build deviations P20-01 to P20-10 | all approved: P20-07 "Fit to screen" + "Modifier" in the phone read dock (rec.), P20-08 and P20-10 approved, the others as listed | owner, 2026-10-03 |
+| Database engines | per-plan verification on PostgreSQL only; the four-engine matrix runs once, after the last merge of the roadmap | owner, 2026-10-03 |
 | Obsolete component tests | the deletion of `canvas-colors.test.tsx` and of the popover cases of `sticky-tool.test.tsx` is approved, their cases moved where a successor exists (plan, "Owner decisions") | owner, 2026-10-03 |
 
 ## 5. Rules (constraints on the build)
@@ -187,9 +189,9 @@ Each criterion names its proof: **V** Vitest (jsdom), **C** a capture of the fin
 19. The keyboard shortcuts dialog's Whiteboard section lists the board's keys as built, without the old note. (V)
 20. A board created before this plan opens with the same scene and its stickies show their swatch selected in the selection bar. (V with a fixture of today's elements)
 21. No new dependency; `npm run types:check`, `npm run check`, `npm run build:front` and `npm run test` pass; `@excalidraw/excalidraw` still loads only on the whiteboard page. (gates)
-22. Every new key is in `lang/en.json`, `fr.json`, `es.json`, `de.json`, informal. (P: `TranslationKeysTest`, `InformalRegisterTest` on pgsql and sqlite)
+22. Every new key is in `lang/en.json`, `fr.json`, `es.json`, `de.json`, informal. (P: `TranslationKeysTest`, `InformalRegisterTest` on PostgreSQL)
 23. The captures of the final task match ScreenWhiteboard and the WhiteboardToolbar mockup, apart from the deviation rows the owner approved; D-21 (toolbars) and D-49 are removed from the 18e table. (C, docs)
-24. The whole PHP suite passes on the four engines and the Vitest suite passes at the final task (nothing in PHP changes; the run proves it). (gates)
+24. The whole PHP suite passes on PostgreSQL and the Vitest suite passes at the final task and after the merge into `roadmap` (nothing in PHP changes; the run proves it). The four-engine matrix is not run by this plan: it runs once after the last merge of the roadmap (owner, 2026-10-03). (gates)
 
 ## 14. Risks
 
@@ -203,7 +205,7 @@ Each criterion names its proof: **V** Vitest (jsdom), **C** a capture of the fin
 | Minimap cost on a 5 000-element board | slow frames | items recomputed only when the scene stamp changes (`sceneStamp`), drawn as one SVG, throttled to one frame |
 | The bottom-centre reactions bar, the bottom-left history and the bottom-right zoom between 48rem and 64rem | overlap | minimap and zoom bar collapse to the zoom bar alone below `lg`; the reaction bar's offsets of `app.css` recomputed; no capture at those widths (owner's rule), proved by a Vitest of the layout classes only — a residual risk |
 | The browser walkthroughs `Plan17a`–`Plan17c`, `Plan18eWhiteboardTest` click the library's tool bar, menu and zoom buttons | they go stale | not edited or run (owner's rule); listed in the report; the shared helper `selectWhiteboardTool` of `tests/Browser/Support/InteractsWithWhiteboards.php` and the visual test are updated, since the smoke test and the captures use them |
-| Excalidraw's hint line ("Click to start…") lives in the hidden tool bar island | the hints disappear | deviation row P20-08; the shortcut dialog and tooltips carry the help |
+| Excalidraw's hint line ("Click to start…") lives in the hidden tool bar island | the hints disappear | deviation row P20-08 (approved 2026-10-03); the shortcut dialog and tooltips carry the help |
 
 ## 15. Decisions for the owner
 
@@ -247,27 +249,27 @@ Each question is a product choice the mockups and the standing rules do not sett
    - A. With the preference off, the board swallows every single-character key before the library sees it (a capture listener on the canvas wrapper), except while text is being typed. *Recommended* (the preference then means what it says).
    - B. Only our own keys (N, C, M) obey it; the library's stay on (a deviation recorded as accepted).
 
-## 16. Deviations expected (to approve before the screens are built)
+## 16. Deviations expected (approved before the screens are built)
 
-Status of every row: **to approve by the owner** (not asked yet; the answers of §15 do not approve them).
+Status of every row: **answered by the owner on 2026-10-03 — approved**: P20-07 with the recommendation ("Fit to screen" and "Modifier" in the read dock), P20-08 and P20-10 approved by name, every other row approved as listed. No row changes what is built.
 
 Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
-| # | Mockup element | Built | Reason |
-|---|---|---|---|
-| P20-01 | Topbar "Commentaires"; selection bar "Convertir en actions"; author line on stickies; "Suivre Camille"; "is typing" ring | not rendered, no place reserved | O: backlog (former plan 28) |
-| P20-02 | Canvas content drawn by the mockup (SVG shapes, `wb-sel` frame with eight handles and rotation dot) | the library's canvas and selection frame, themed in `--primary` | S §3 |
-| P20-03 | "Post-it (S)" (ScreenWhiteboard) | "Sticky note (N)" | O: decision 1 |
-| P20-04 | No "Styles" in the selection bar | "Styles" (decision 2) | O / parity |
-| P20-05 | No sub-bars for shapes and connectors; no "More tools" | Shape and Connector sub-bars, "More tools" (decision 4) | O / parity |
-| P20-06 | Align icon alone | a menu of six commands (the mockup's icon opens it) | S: one icon cannot be six commands |
-| P20-07 | Phone read dock: "Déplacer la vue", "Réagir", "Commentaires" | "Fit to screen" and "Modifier" in the dock; reactions keep their own strip (D-58); no hand (read mode only pans); comments backlog | O: D-58; N |
-| P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the library's hidden tool bar) | S §5 rule 3 |
-| P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 %, the library's range (a wheel zoom reaches it anyway) | F: a bar that stops at 400 % while the canvas is at 900 % would show a false state |
-| P20-10 | Minimap shown at every width (desktop frame) | from `lg` (64rem) only; below, the zoom bar alone | A: no overlap with the reactions bar (§5 rule 4) |
+| # | Mockup element | Built | Reason | Owner, 2026-10-03 |
+|---|---|---|---|---|
+| P20-01 | Topbar "Commentaires"; selection bar "Convertir en actions"; author line on stickies; "Suivre Camille"; "is typing" ring | not rendered, no place reserved | O: backlog (former plan 28) | approved as listed |
+| P20-02 | Canvas content drawn by the mockup (SVG shapes, `wb-sel` frame with eight handles and rotation dot) | the library's canvas and selection frame, themed in `--primary` | S §3 | approved as listed |
+| P20-03 | "Post-it (S)" (ScreenWhiteboard) | "Sticky note (N)" | O: decision 1 | approved as listed |
+| P20-04 | No "Styles" in the selection bar | "Styles" (decision 2) | O / parity | approved as listed |
+| P20-05 | No sub-bars for shapes and connectors; no "More tools" | Shape and Connector sub-bars, "More tools" (decision 4) | O / parity | approved as listed |
+| P20-06 | Align icon alone | a menu of six commands (the mockup's icon opens it) | S: one icon cannot be six commands | approved as listed |
+| P20-07 | Phone read dock: "Déplacer la vue", "Réagir", "Commentaires" | "Fit to screen" and "Modifier" in the dock; reactions keep their own strip (D-58); no hand (read mode only pans); comments backlog | O: D-58; N | approved (rec.) |
+| P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the library's hidden tool bar) | S §5 rule 3 | approved |
+| P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 %, the library's range (a wheel zoom reaches it anyway) | F: a bar that stops at 400 % while the canvas is at 900 % would show a false state | approved as listed |
+| P20-10 | Minimap shown at every width (desktop frame) | from `lg` (64rem) only; below, the zoom bar alone | A: no overlap with the reactions bar (§5 rule 4) | approved |
 
 ## 17. Not determined by reading
 
 - Whether every hidden-chrome selector of §14 and every command of `canvas-commands.ts` behaves in a real browser as the 0.18.1 source read for this spec says (keydown handler on the container, `actionManager.handleKeyDown` with no `isTrusted` check, `[data-testid="button-undo"]` with `disabled`, `setActiveTool({type: 'image'})` opening the picker, `{type: 'custom'}` with `onPointerDown`): Task 1 of the plan re-reads the source and the final task's captures and smoke test exercise them; no walkthrough will.
 - The exact place of the library's property panel once moved beside the tool bar at heights under 900 px.
-- Whether the owner counts `tests/Browser/Smoke/WhiteboardHarnessTest.php` as a walkthrough (the plan updates its helper and runs it once in the capture task; it is not in `tests/Browser/Walkthroughs`).
+- Ruled (2026-10-03, on the owner's behalf, logged in the plan's report): `tests/Browser/Smoke/WhiteboardHarnessTest.php` is not a walkthrough — it is not in `tests/Browser/Walkthroughs`, which is what the owner's rule names — so the plan updates its helper and runs it once in the capture task.

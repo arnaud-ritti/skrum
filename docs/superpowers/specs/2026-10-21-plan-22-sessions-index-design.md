@@ -1,7 +1,7 @@
 # Skrum — Sessions index, advanced creation options, ticket details in the poker room — Design
 
-Date: 2026-10-03 (draft for plan 22; revised the same day with the owner's answers to §15)
-Status: §15 answered by the owner on 2026-10-03 (decisions 3 and 6 differ from the recommendation; the body follows the answers). Nothing is built before the owner has approved the pre-build deviations of the plan (P22-01 to P22-15, not asked yet).
+Date: 2026-10-03 (draft for plan 22; revised the same day with the owner's answers to §15, then with the owner's answers to the pre-build deviations)
+Status: approved for execution. §15 answered by the owner on 2026-10-03 (decisions 3 and 6 differ from the recommendation; the body follows the answers). The pre-build deviations of the plan (P22-01 to P22-15) answered by the owner on 2026-10-03: all approved as listed, P22-14 obsolete (§17). §16.2 and §16.8 ruled on the owner's behalf from those answers (§16). Plan 22 runs after plans 20, 21, 26, 27 and 29 are merged into `roadmap`, and before plan 23.
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rules, rule 13 "rewrite first, features after", §6.4 session creation, §10 backlog).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — first round (1-D2 one "New session" trigger, 1-D4 five types, X5 one timer list 1/3/5/10, 3-D8 the poker dock), third round (point 2 "start of a retro = first activity", points 3/4 "poker keeps Custom… beside 1/3/5/10", the list of features to specify), fourth round (D-37 to D-39 deck tiles, D-41 AI summary and anonymous votes live in the session settings, D-44 server defaults), fifth round (D-70 poker settings popover, D-71 import and source, D-72 ticket key and "across n games", roadmap change: **scheduling is backlog**), sixth round (informal register; a guest counts as a participant).
 Roadmap rows: SE-1, SE-3 and PK-1 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. SE-2 (scheduling: "Schedule…", a start time, "starts in 5 min") is **backlog** by the owner's word and is not specified here.
@@ -65,6 +65,8 @@ Corrections to the roadmap's "Back end" lines, from the code:
 | §15 of this spec | Answered: 1 A, 2 A, 3 **B**, 4 A, 5 A, 6 **B**, 7 A, 8 A | owner, 2026-10-03 |
 | Register | Informal: French "tu", Spanish "tú", German "du" | owner, sixth round |
 | Database | Eloquent only, four engines, `docs/database.md` rules | owner |
+| Verification engines | Per plan: PostgreSQL only (feature, unit, arch, concurrency). The four-engine matrix (PostgreSQL, SQLite, MariaDB, MySQL) runs once, after the last merge of the roadmap into `roadmap` (plans 24 and 25), not in this plan. The portability rules still bind every line | owner, 2026-10-03 ("Lance les 4 bases seulement à la fin") |
+| Pre-build deviations | P22-01 to P22-15 approved as listed; P22-14 obsolete (§17) | owner, 2026-10-03 |
 | Tests | Unit, feature, arch and concurrency tests written and run; no browser walkthrough; captures light, 1440, French | owner, working rules |
 
 ## 5. Rules
@@ -161,7 +163,7 @@ The creation request carries `import_source` and `import_ids` (1 to 100 external
 
 Rules of the split, numbered so that no implementer widens or narrows them without the owner:
 
-- **AC-1 The heading.** A line is the criteria heading when, after removing its markup (and outside a list item, a quote or a table row), its text folded (`Alphabetical::key`, spaces collapsed, one trailing `:` removed) equals one entry of `AcceptanceCriteriaSection::Headings`, which holds exactly `acceptance criteria` (§16.8 asks the owner about translated headings). Three markups are recognised: a Markdown ATX heading of any level (`#` to `######`, closing `#`s allowed) — what the ADF and wiki-markup converters produce for Jira headings; a line made only of bold text (`**…**` or `__…__`); a plain line holding only the words and a trailing colon (`Acceptance criteria:`). Setext headings (a line underlined with `===` or `---`) are not recognised.
+- **AC-1 The heading.** A line is the criteria heading when, after removing its markup (and outside a list item, a quote or a table row), its text folded (`Alphabetical::key`, spaces collapsed, one trailing `:` removed) equals one entry of `AcceptanceCriteriaSection::Headings`, which holds exactly `acceptance criteria` (English only: §16.8, ruled from the owner's answer). Three markups are recognised: a Markdown ATX heading of any level (`#` to `######`, closing `#`s allowed) — what the ADF and wiki-markup converters produce for Jira headings; a line made only of bold text (`**…**` or `__…__`); a plain line holding only the words and a trailing colon (`Acceptance criteria:`). Setext headings (a line underlined with `===` or `---`) are not recognised.
 - **AC-2 First one only.** Only the first criteria heading is used; a later one stays in the section's body.
 - **AC-3 Code is not read.** Lines inside fenced code blocks (``` or ~~~) are never a heading, neither for the start nor for the end.
 - **AC-4 The end.** A repeated criteria heading never ends the section (AC-2). After an ATX heading of level L, the section ends before the next ATX heading of level L or less. After a bold or a colon heading, it ends before the next ATX heading of any level or the next bold-only line. Otherwise it runs to the end of the description.
@@ -263,13 +265,13 @@ Validation added:
 
 1. The sidebar's "Sessions" (and the phone tab bar's) opens `teams.sessions.index` for the current team, with the Live tab; a user who cannot view the team gets 403; a guest cookie gives no access.
 2. With one session of each kind in each state of §6.1, each tab lists exactly the sessions of its state, newest `updated_at` first, ties by id; a retro created before `started_at` existed, with cards and no start time, is Live; a draft poll appears in Upcoming for its editor and for no other member.
-3. With 45 sessions spread over the five kinds in one tab, the first page has 20 rows, "Load more" brings rows 21 to 40 with no duplicate and no gap, the third brings 5 and the end line reads "45 sessions"; the result is the same on the four engines.
+3. With 45 sessions spread over the five kinds in one tab, the first page has 20 rows, "Load more" brings rows 21 to 40 with no duplicate and no gap, the third brings 5 and the end line reads "45 sessions"; proved on PostgreSQL in this plan (the same walk runs on SQLite, MariaDB and MySQL in the roadmap's final four-engine matrix).
 4. Each row shows its kind's icon and colour, its title, the meta line of §6.1 (retro participants counting guests), and links to the session; the icebreaker rooms of retros and the polls attached to retros are never listed.
 5. "New session" on the Sessions page opens the same dialog as the team page with the same types and permissions, and `?new=poker` opens it on poker.
 6. Creating a retro with "Standard" stores `{writing: 7, grouping: 5, voting: 3, discussing: 15, actions: 5}` and the board snapshot carries them; a value of 0 or 61, or an unknown phase, is refused. Entering a phase with a duration starts no timer and announces no `TimerChanged` (the phase change still marks the retro started, as today); a running timer runs on and a paused one stays paused across the change. The facilitator changes the durations in the settings popover; a member cannot (403).
 7. In a phase with a duration, the facilitator's timer control shows the one-click "<n> min" button while no timer runs or is paused, and the first menu entry "<Phase> · <n> min" (in Discussing "… per topic") followed by 1, 3, 5, 10; taking it sends `seconds` = minutes × 60 to the existing start endpoint; a participant sees no button and no menu; a phase without a duration shows the timer as today; no other screen's timer list changes.
 8. A poker game created with "Timer per task: 3 minutes" starts each new round with a timer ending 180 seconds after its start; at expiry it reveals when auto reveal is on and does not otherwise.
-9. With "Change vote after reveal" on, a player changes their card after reveal until the estimate is saved, every client refetches, and the result follows; once the estimate is saved, or a new round started, a change is refused with "Voting is closed for this round."; withdrawing a card after reveal is refused; the reveal and timer endpoints still refuse a revealed round; with the setting off, a change after reveal is refused as today; a change and a "Save estimate" at the same moment end with the change either applied before or refused (race on four engines).
+9. With "Change vote after reveal" on, a player changes their card after reveal until the estimate is saved, every client refetches, and the result follows; once the estimate is saved, or a new round started, a change is refused with "Voting is closed for this round."; withdrawing a card after reveal is refused; the reveal and timer endpoints still refuse a revealed round; with the setting off, a change after reveal is refused as today; a change and a "Save estimate" at the same moment end with the change either applied before or refused (race on PostgreSQL in this plan; on the other engines in the roadmap's final matrix).
 10. With "Write estimates" off, saving an estimate of an imported task queues no write, the task shows "Estimates are not written back in this game.", and the retry is refused with it; with a field chosen, the write goes to that field; a field id that is not among the connection's number fields is refused at creation and in the settings.
 11. Creating a game with `import_source=jira` and three ids fetches them from Jira, creates the game with the three tasks in the source's order, with their key, link, description and ticket details, and redirects to it; an id the source does not return is skipped and reported; a tracker error creates no game and shows the tracker's message on the import tab; `import_ids` with `tasks` is refused; a member of another team gets 403 on the browse routes.
 12. The team-scoped browse routes return the same containers, iterations and previews as the game-scoped ones for the same connection, with no "already imported" mark, and count against the user's browse limit.
@@ -278,12 +280,13 @@ Validation added:
 15. A task whose description holds a section headed "Acceptance criteria" (an ATX heading of any level, a bold-only line or "Acceptance criteria:", any case) presents `descriptionHtml` without the section and `acceptanceCriteriaHtml` with its body, for an imported task of each tracker and for a task typed by hand, to members and guests; the stored `description` is unchanged and the edit dialog shows it whole; the section ends as rule AC-4 says; a heading inside a code block, a second heading, an empty section, or another wording ("Definition of done", "Critères d'acceptation") splits nothing beyond rules AC-1 to AC-5; HTML cached before the change is not served for the shorter description.
 16. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest`, `TranslationKeysTest` pass).
 17. Captures in light, at 1440, in French of the Sessions page (Live tab), the dialog on retro and on poker (import tab), the retro topbar with the phase timer offer, the poker room's story card, compared with the mockup; the overflow check passes.
-18. The unit, feature, upgrade and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL; the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+18. The unit, feature, upgrade, arch and concurrency suites pass on PostgreSQL; `tests/Arch/DatabasePortabilityTest.php` passes (no raw SQL, no driver test). SQLite, MariaDB and MySQL are not run by this plan: the owner's four-engine matrix runs once at the end of the roadmap (§4).
 
 ## 13. Testing
 
-- Feature tests for every route, guard, state rule and setting; the state matrix of §6.1 written by hand; the cursor walk of criterion 3 on the four engines (the cursor compares timestamps: SQLite compares them as text, which `updated_at` stored by Eloquent orders correctly).
-- One race in `tests/Concurrency` (`Race`): a card change after reveal against "Save estimate", on PostgreSQL, MariaDB, MySQL and a SQLite file.
+- Feature tests for every route, guard, state rule and setting; the state matrix of §6.1 written by hand; the cursor walk of criterion 3 (the cursor compares timestamps: SQLite compares them as text, which `updated_at` stored by Eloquent orders correctly — written portable now, run on SQLite in the roadmap's final matrix).
+- One race in `tests/Concurrency` (`Race`): a card change after reveal against "Save estimate", on PostgreSQL.
+- Engines (owner, 2026-10-03): every test of this plan runs on PostgreSQL; the four-engine matrix (SQLite, MariaDB, MySQL as well) runs once after the roadmap's last merge, outside this plan.
 - Tracker tests with `Http::fake` and the helpers of `tests/Pest.php` (`fakeJiraTrackerApi`, `jiraTrackerIssue`, `fakeLinearGraphql`, `trackerTable`).
 - Unit tests for `AcceptanceCriteriaSection` (rules AC-1 to AC-6, one case per rule and per markup), written by hand.
 - Vitest for the state helpers of the Sessions page, the phase-duration summary and offer, the timer's `suggestion`, the poker settings rows, the import tab's selection, the story card details.
@@ -292,13 +295,14 @@ Validation added:
 
 ## 14. Risks
 
-- **Plan 21 shapes the retro part.** "Max per card" is plan 21's entirely; plan 21's pause (RT-2) and time per topic (RT-5) change the timer control the offer sits on (`BoardTimer`, the facilitator bar) and what a start does in Discussing. The retro part of plan 22 starts after plan 21 is merged and re-reads `Retro`, `RetroTimersController`, `RetroSettingsController`, `board-topbar.tsx` and plan 21's facilitator bar.
+- **Plan 21 shapes the retro part.** "Max per card" is plan 21's entirely; plan 21's pause (RT-2) and time per topic (RT-5) change the timer control the offer sits on (`BoardTimer`, the facilitator bar) and what a start does in Discussing. Plan 22 runs after plan 21 (and 20, 26, 27, 29) is merged into `roadmap`, and re-reads `Retro`, `RetroTimersController`, `RetroSettingsController`, `board-topbar.tsx` and plan 21's facilitator bar.
+- **Engine regressions found late.** Only PostgreSQL runs during this plan; an engine-specific failure (SQLite, MariaDB, MySQL) surfaces at the roadmap's final matrix. Accepted by the owner (2026-10-03); the portability rules and `DatabasePortabilityTest` are the guard meanwhile.
 - **The offer is easy to miss.** Nothing starts by itself (owner's answer): a facilitator who ignores the button runs the phase untimed. Accepted; the dialog's help says the durations are offered.
 - **The cursor across five tables.** A merge in PHP of five ordered queries is correct only if every kind uses the same order and the same cursor test; the walk test of criterion 3 is the guard. `updated_at` moves when a session is touched: a session can jump to the first page between two "Load more" (accepted: the list is "last activity").
 - **"Live" for things that never end** (whiteboards, rooms) is a product choice (decision 2).
 - **Revote after reveal** changes a rule that several components read (`PokerGuard::openRound`, the dock's `isClosed`, auto reveal). The guard stays the one place; the race proves the boundary with "Save estimate".
 - **Outbound calls during creation.** The import fetches from the tracker inside the creation request; a slow tracker slows the dialog (the client's timeouts apply). No game is created when it fails.
-- **The criteria section is fragile, by choice.** It depends on the writer's wording and heading style (rule AC-7); teams writing in French, Spanish or German see no block until §16.8 is answered. A Jira site that keeps its criteria in a custom field shows none. The owner accepted both; the rules are numbered and tested so that they are not widened silently.
+- **The criteria section is fragile, by choice.** It depends on the writer's wording and heading style (rule AC-7); teams writing their heading in French, Spanish or German see no block (§16.8, ruled: English only). A Jira site that keeps its criteria in a custom field shows none. The owner accepted both; the rules are numbered and tested so that they are not widened silently.
 - **The split runs at each presentation.** It is a linear scan of at most 10 000 characters (the description cap), cached with the rendered HTML; a snapshot of a 100-task game splits 100 descriptions once per description change.
 - **Shared files.** `routes/web.php`, `TeamsController`, `team-page.tsx`, `poker-session-fields.tsx`, `retro-session-fields.tsx`, `board-topbar.tsx`, `skrum/timer.tsx`, `PokerSettingsController`, `RetroSettingsController`, `lang/*.json` are also touched by plans 21 and 23: the plan's lanes keep them in one lane each.
 
@@ -360,10 +364,33 @@ The options as they were put:
 ## 16. Not determined by reading
 
 1. Resolved by reading plan 21's draft spec (2026-10-03, §6.1, §6.3, §9.7): the column is `max_votes_per_card` and plan 21 sets it at creation and in the dialog. Plan 22 builds nothing for it; Task 7 checks plan 21 as merged.
-2. How plan 21's facilitator bar and topic timer (RT-5) present the timer in Discussing. Plan 21's draft says a start in Discussing sets `topic_seconds` (its criterion 10), so the Discussing duration is offered per topic (§6.2). **Open for the owner:** is "Discussing 15" of the "Standard" set (the mockup's help line) meant per topic, or for the whole discussion? If the whole discussion, the offer in Discussing needs a start that bypasses plan 21's per-topic rule, which plan 21 does not provide.
+2. How plan 21's facilitator bar and topic timer (RT-5) present the timer in Discussing. Plan 21's draft says a start in Discussing sets `topic_seconds` (its criterion 10), so the Discussing duration is offered per topic (§6.2). **Ruled 2026-10-03:** per topic. The owner approved deviation P22-15 as listed, and that row draws the offer as "… per topic" in Discussing; plan 21's rule (any timer started in Discussing is the time per topic) is the owner's own answer. "Discussing 15" of the "Standard" set is therefore 15 minutes per topic; no start that bypasses plan 21's rule is built.
 3. Whether the GitHub REST and GraphQL responses the tracker reads carry an issue type (`type` / `issueType`) for the installations Skrüm supports; the plan reads it when present.
 4. Whether the headings Jira users write reach the description Markdown in a form rule AC-1 reads: the ADF converter writes headings as `#` lines and bold as `**…**` (`AdfToMarkdown` lines 76 and 150), the wiki-markup converter `h1.`–`h6.` as `#` lines and `*bold*` as `**bold**` (`WikiMarkupToMarkdown` lines 73 and 114); a bold run with a trailing colon inside it (`**Acceptance criteria:**`) is read; a heading split over several marks (`**Acceptance** criteria`) is not.
 5. Whether `updated_at` of a retro, a whiteboard and a room moves on every activity (cards, elements, rounds) — `PokerTask` touches its game (`#[Touches]`), the others were not checked line by line; the "last activity" order depends on it.
 6. Whether the current `RetroSettingsController` (or plan 21's version of it) restricts settings per phase in a way phase durations must follow.
 7. Whether an Inertia merge prop (`Inertia::merge`) would append across a tab change as well as on "Load more"; the plan avoids the question: a partial reload of `sessions` and `nextCursor` with `before`, appended in the page's own state, reset when the tab changes.
-8. **Open for the owner:** whether the criteria heading should also be recognised in French, Spanish and German ("Critères d'acceptation", "Criterios de aceptación", "Akzeptanzkriterien"). The answer names "Acceptance criteria" only, and §6.5 holds to it; adding them is one line of `AcceptanceCriteriaSection::Headings` and one test case each.
+8. Whether the criteria heading should also be recognised in French, Spanish and German ("Critères d'acceptation", "Criterios de aceptación", "Akzeptanzkriterien"). **Ruled 2026-10-03:** English only. The owner's answer names "Acceptance criteria" (decision 6) and, answering P22-14, repeats "acceptance criteria from a description section"; the fragility in language was in the option he chose (AC-7). Adding a translation later is one line of `AcceptanceCriteriaSection::Headings` and one test case each, on the owner's word only.
+
+## 17. Pre-build deviations — answered 2026-10-03
+
+The plan's table "Pre-build deviations" lists each row in full. The owner's answers of 2026-10-03: "P22: 03 + 05 approved, 11 Markdown, 12 + 13 editable in session, P22-14 obsolete (acceptance criteria from a description section), others approved." Rows marked "O:" follow from an owner's decision and are approved by it. No answer differs from the plan's proposal, so nothing in §§6–12 changes because of them.
+
+| Row | What it covers | Answer (2026-10-03) |
+|---|---|---|
+| P22-01 | last-activity date on Upcoming and Finished rows | approved (O: decision 8) |
+| P22-02 | Upcoming = created, not started | approved (O: decision 1) |
+| P22-03 | empty states per tab, "Load more" and its end line | approved |
+| P22-04 | no "ROTI at the end" switch | approved (backlog) |
+| P22-05 | "Timer per phase": No timer / Standard / Custom with five steppers | approved |
+| P22-06 | "Timer per task": Off, 1, 3, 5, 10 minutes | approved (O: X5) |
+| P22-07 | no "Schedule…" in the footer | approved (backlog) |
+| P22-08 | "Import from <source>" with a source select | approved (O: decision 7) |
+| P22-09 | "Write" / "Don't write" for Linear and GitHub | approved |
+| P22-10 | invitation link still not in the dialog | approved |
+| P22-11 | the criteria section rendered as Markdown under the app's heading | approved: **Markdown** |
+| P22-12 | three rows in the poker room settings popover | approved: **editable in session** |
+| P22-13 | "Timer per phase" row in the retro settings popover | approved: **editable in session** |
+| P22-14 | (an "Acceptance criteria field" select) | **obsolete**: the criteria come from a section of the description (decision 6, B); nothing built |
+| P22-15 | the phase timer offer on the facilitator's topbar timer, "… per topic" in Discussing | approved (O: decision 3, B); settles §16.2 |
+

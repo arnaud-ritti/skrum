@@ -1,16 +1,16 @@
 # Skrüm — Team and workspace data (roadmap plan 23) — Design
 
 Date: 2026-10-03 (draft, revised the same day with the owner's answers)
-Status: Draft — the nine decisions of §15 are **answered** (owner, 2026-10-03). Four answers differ from the option the first draft was written on (decisions 1, 2, 4, 7); the body below is rewritten on the chosen options. The pre-build deviations (P23-01 to P23-16 of the plan) are not asked yet; nothing is built before the owner approves them.
+Status: Approved for building — the nine decisions of §15 are **answered** (owner, 2026-10-03). Four answers differ from the option the first draft was written on (decisions 1, 2, 4, 7); the body below is rewritten on the chosen options. The pre-build deviations (P23-01 to P23-16 of the plan) are **answered** too (owner, 2026-10-03, §15.2): P23-04 as recommended with a "You are observing" line; P23-07 against the recommendation — a new app-wide presence channel gives "Online" in the members table (§6.11); P23-01 and P23-05 obsolete (settled by decisions 1 B and 4 C); every other row approved as listed. Nothing waits for the owner.
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13 "rewrite first, features after", §6.1 domain folders, §9.2 back-end conventions).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — third round ("Team page: sprint and next retro, recent sessions table, aggregated open actions, activity feed, per-retro counts, member role, whiteboard thumbnails"; "Workspace and team: descriptions, template usage and visibility, remaining team-settings tabs"), fourth round (D-51, D-73), fifth round (D-73, D-76, D-77, the roadmap change: plans 28 and 30 and scheduling are backlog; the working rules), sixth round (informal register; a guest counts as a participant); the answers of 2026-10-03 to §15 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 23").
 Roadmap rows: TM-1 to TM-7 and WS-1 to WS-3 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`.
 Deviation rows cleared, wholly or in part: D-18, D-19 (sprint part: only the sprint data; the grouping stays a later plan's), D-24, D-27, D-77 (sprint labels), D-88 (team creation date), D-91 (whiteboard line, sprint), D-94 (visibility badge), D-100 (sprint in the header line), D-129 (role line of the user card) of plan 18e / 18g.
 Mockups (binding for presentation): `docs/design-system/components/ScreenDashboard`, `ScreenTeam`, `ScreenWorkspace` (frames a to d), `ScreenSettings` (frame a), `ScreenSessionCreate`, `TemplateEditor`, `Card` (`SessionCard`), `ActionItem`, `MoodTrendChart`, `Sidebar` (user card), `EmptyState`, `Table`, `Select`, `Badge` — the `README.md` and `preview.html` of each.
 Database rules: `docs/database.md`, "Rules for database code" 1 to 12.
-Sibling specs read for names they expect from this plan: `docs/superpowers/specs/2026-10-21-plan-22-sessions-index-design.md` (`ListTeamSessions`, `PresentNewSessionOptions`, §6.1), `2026-10-21-plan-24-action-items-design.md` (sprint grouping left as D-19), `2026-10-21-plan-25-invitations-onboarding-design.md` (`App\Enums\TeamRole`, `team_user.role`, `TeamPolicy::manageMembers`, `teams.description`, the Members tab, the General tab that takes the team slug), `2026-10-21-plan-29-administration-errors-design.md` (access-request recipients).
+Sibling specs read for names they expect from this plan: `docs/superpowers/specs/2026-10-21-plan-22-sessions-index-design.md` (`ListTeamSessions`, `PresentNewSessionOptions`, §6.1), `2026-10-21-plan-24-action-items-design.md` (its "By sprint" grouping, answer P24-03, reads this plan's sprints: plan 24 runs after this plan), `2026-10-21-plan-25-invitations-onboarding-design.md` (`App\Enums\TeamRole`, `team_user.role`, `TeamPolicy::manageMembers`, `teams.description`, the Members tab, the General tab that takes the team slug), `2026-10-21-plan-29-administration-errors-design.md` (access-request recipients).
 
-Execution order (owner, 2026-10-03): plans 20, 21, 24, 26, 27 and 29 in parallel, then plan 22, then **this plan**, then plan 25. This plan therefore runs on a `main` that holds plan 22 (`ListTeamSessions`, `PresentNewSessionOptions`, the Sessions page) and plan 24 (`ActionItemPermissions` and `PresentActionItem` as plan 24 leaves them).
+Execution order (owner, 2026-10-03, updated with the pre-build deviation answers): plans 20, 21, 26, 27 and 29 in parallel, then plan 22, then **this plan**, then plans 24 and 25. This plan therefore runs on the integration branch `roadmap` holding plan 22 (`ListTeamSessions`, `PresentNewSessionOptions`, the Sessions page) and plan 29 (`AccessRequestRecipients`); plan 24 is **not** merged yet: `ActionItemPermissions`, `PresentActionItem` and the action items page are read as they are today, and plan 24 rebases on this plan (its "By sprint" grouping uses `SprintCalendar`).
 
 What was read, and what was not: `main` at `18d3637e` (front rewrite, database portability, plan 19), and, for the revision, `0c294632`. Read: `Team`, `User`, `Workspace` (`#[RouteKey('slug')]`, fillable `name`, `slug`), `WorkspaceMembership`, `WorkspaceTemplate`, `Retro`, `Card`, `Whiteboard`, `PokerPlayer`, `GameRoom` (`isHost`, `isCreator`, `isManager`), `TeamSurvey` (`facilitator`, `isEditor`), `ActionItem`; the `team_user` and `workspace_templates` migrations; `TeamPolicy`, `WorkspacePolicy`; `TeamsController`, `TeamMembersController`, `TeamRetrosController` (`store` and its validation), `WorkspacesController` (`store`, `show`), `WorkspaceTemplatesController`, `WorkspaceTemplateRequest`, `RecentSessionsController`, the four hand-over controllers `Retros\RetroFacilitatorsController`, `Poker\PokerFacilitatorsController`, `Whiteboards\WhiteboardFacilitatorsController`, `Games\GameHostsController`, `Retros\CardVotesController`; `GameGuard`; the middlewares `ResolveRetroParticipant` and the four other `Resolve*`; `ResolveParticipant`, `Poker\ResolvePlayer`, `Whiteboards\ResolveMember`, `RetroGuard`, `CreateRetro`, `NewRetro`, `PresentTeamRetro`, `TopTeamTemplates`, `BuildTemplateCatalogue`, `BuildBoardSnapshot` (its `viewer` block), `BuildPokerSnapshot` and `BuildWhiteboardSnapshot` (`canTakeControl`), `BuildGameSnapshot` (`canBecomeHost`), `ActionItemQuery`, `ActionItemPermissions`, `ActionItemActor`, `BuildTeamMoodTrend`, `BuildResults::participation`, `TeamSurvey::audienceCount`, `PresentWhiteboardPreview`, `PresentWhiteboardSummary`, `WriteWhiteboardElements`, `ReadWhiteboardScene`, `SetPokerSpectator`, `ListRecentSessions`, the domain events `ActionItemCompleted` and `RetroCompleted` and their webhook listeners, `HandleInertiaRequests` (`currentTeam`, `currentWorkspace`), the MCP tool list; `routes/web.php` (team, workspace and the five session scopes); on the front `components/teams/team-page.tsx` (its `TeamPageSlots`), `team-header.tsx`, `team-members-card.tsx`, `team-retros-section.tsx`, `team-whiteboards-section.tsx`, `team-settings-card.tsx`, `whiteboard-template-preview.tsx`, `components/integrations/team-settings-shell.tsx`, `lib/teams/settings-href.ts`, `components/workspaces/team-tile.tsx`, `workspace-overview.tsx`, `template-card.tsx`, `components/skrum/template-editor.tsx` (its `TemplateVisibility`), `skrum/session-card.tsx` (`stats`), `components/poker/room-topbar.tsx` and `components/whiteboard/board-menu.tsx` ("Take control"), `components/games/room-menu.tsx` (`canBecomeHost`), `types/workspaces.ts`; `lang/*.json` for the keys that exist. Nothing was run. Every "Back end" line of the roadmap was checked against this code (§1).
 
@@ -35,11 +35,11 @@ The rewrite (plans 18e to 18g) left a place in the screens for every mockup elem
 
 1. A team has roles: owner, facilitator, member, observer. They decide who manages the team, who sets its rituals and may take control of its sessions, who takes part in sessions and who only watches.
 2. A team has explicit sprints (numbered rows with a start and an end, started one after the other with "Start the next sprint") and a retro day, from which the team page, the trend and the session headers name the current sprint and the next retro.
-3. The team page shows what the mockup shows: the current sprint and next retro, the recent sessions table, the open action items (overdue first), the activity feed, the counts of each retro card, the role of each member and a thumbnail of each whiteboard.
+3. The team page and the team settings show what the mockups show — on the team page the current sprint and next retro, the recent sessions table, the open action items (overdue first), the activity feed, the counts of each retro card, the role of each member and a thumbnail of each whiteboard; in the members table of the settings, "Online" for who has the application open (§6.11).
 4. Teams and workspaces have a description; a workspace can be renamed; templates have a visibility (personal, team, workspace).
 5. The team settings have the four tabs of the mockup: General, Members & rituals, Integrations, Data & export.
 6. Every existing feature keeps working for every existing user: a member keeps every right they have today (owner's rule: existing features kept).
-7. Database code is Eloquent and the standard query builder only and runs unchanged on PostgreSQL, MySQL, MariaDB and SQLite; every test that touches the database passes on the four.
+7. Database code is Eloquent and the standard query builder only and runs unchanged on PostgreSQL, MySQL, MariaDB and SQLite. This plan verifies on PostgreSQL; the four-engine matrix runs once, after the last plan of the roadmap is merged (owner, 2026-10-03), and must pass there.
 
 ## 3. Non-goals
 
@@ -48,11 +48,11 @@ Backlog, by the owner's word or because no row asks for it:
 - **Scheduling** (owner, 2026-10-02): no scheduled session, no "starts in 5 min" notification, no scheduled start time on a session. The next retro of §6.3 is a date computed from the team's sprints and retro day, shown only.
 - Starting a sprint automatically at a date: a sprint starts when someone presses "Start the next sprint" or when its stored start date arrives; nothing runs on a schedule.
 - Team invitations, the invite link, "Invitation link", "Invite", "Resend" and the pending-invitation rows of the Members card: plan 25 (IN-1 to IN-4). This plan leaves their places.
-- Grouping action items by sprint: D-19 keeps it for a later plan (plan 24 left it); `SprintCalendar::sprintOn` is the reader it will use.
+- Grouping action items by sprint: plan 24 builds it ("By sprint", its default grouping, answer P24-03) after this plan; `SprintCalendar::forTeam` and `sprintOn` are the readers it uses.
 - The Sessions index page (SE-1): plan 22, merged before this plan.
 - Template defaults (votes per person, max per card, anonymous cards, timer per phase in `TemplateEditor`) and poker template settings: backlog (D-24 as written).
 - A template description, a "modified by … 2 days ago" line and concurrent-edit detection in `TemplateEditor`: no reader in the mockups for the first, no row for the others.
-- A team colour (the coral mark of ScreenTeam), "Online" in the last-activity column (no presence outside a session, D-91), live updates of the team page or the activity feed, an activity-log retention policy, an activity line for sprints or for a take-over.
+- A team colour (the coral mark of ScreenTeam), "Online" anywhere but the members table of the team settings (§6.11: not on the team page's Members card, the tiles or the sidebar), live updates of the team page or the activity feed, an activity-log retention policy, an activity line for sprints or for a take-over.
 - Survey answers in the activity feed ("Nadia K answered the survey…"): a team survey is anonymous (plan 19 spec §6.3); the line is a deviation (P23-08).
 - Changing a workspace's slug (its address): a rename keeps the slug, so every link stays valid.
 - Taking over the editing of a team survey: a survey has editors (its creator and workspace admins), not a live facilitator; "Take control" is for the four session kinds that have one (§6.10).
@@ -74,10 +74,11 @@ Backlog, by the owner's word or because no row asks for it:
 | Guests | A guest counts as a participant | owner, sixth round |
 | Register | Informal everywhere: French "tu", Spanish "tú", German "du"; English unchanged | owner, sixth round |
 | Scheduling, plans 28 and 30 | Backlog | owner, 2026-10-02 |
-| Order of plans | Plan 22 before plan 23; plan 25 after | owner, 2026-10-03 |
+| Order of plans | 20, 21, 26, 27, 29 → 22 → **23** → 24 and 25 | owner, 2026-10-03 |
+| Pre-build deviations P23-01 to P23-16 | Answered (§15.2) | owner, 2026-10-03 |
 | §15 decisions 1 to 9 | Answered: 1 B, 2 B, 3 A, 4 C, 5 A, 6 A, 7 B, 8 A, 9 A | owner, 2026-10-03 |
 | Database | Eloquent and the standard query builder only; four engines | owner; `docs/database.md` |
-| Tests | Unit, feature, upgrade, arch and concurrency tests written and run per task on PostgreSQL and SQLite, all four engines for data migrations and races, the whole suites at merges; no browser walkthrough; captures in light, 1440, French | owner, working rules |
+| Tests | Unit, feature, upgrade, arch and concurrency tests written and run per task on PostgreSQL, the whole PostgreSQL suites at merges; the four-engine matrix (PostgreSQL, SQLite, MariaDB, MySQL) once, after the roadmap's last merge, the risk of finding an engine-specific regression late accepted; no browser walkthrough; captures in light, 1440, French | owner, working rules; owner, 2026-10-03 ("Lance les 4 bases seulement à la fin") |
 
 ## 5. Rules and vocabulary
 
@@ -164,7 +165,7 @@ Readers: the team header (current sprint and next retro), the ROTI trend labels 
 
 - `team_facilitators`: `team_id` (cascade), `user_id` (cascade), `position`, timestamps; primary key `(team_id, user_id)`. `Team::defaultFacilitators()`, ordered by position.
 - The list holds 0 to 10 members whose team role is owner or facilitator.
-- **The list never assigns anyone.** The "New session" dialog's retro form has a **Facilitator** select (no mockup: P23-05), preselected with the **suggested facilitator**:
+- **The list never assigns anyone.** The "New session" dialog's retro form has a **Facilitator** select (no mockup; P23-05 obsolete, the owner's decision 4 C asked for it), preselected with the **suggested facilitator**:
   - the rotation on and the list not empty: `list[rotation_position mod count]`;
   - the rotation off and the list not empty: the first person of the list;
   - an empty list: the person creating the retro.
@@ -246,6 +247,18 @@ A team facilitator, a team owner and a manager may make **themselves** the facil
 - A retro's take-over is refused (403, the existing "Only the facilitator can do this.") on a completed retro and to a guest; the target is always the person asking (a facilitator who wants to give the session to someone else uses the existing hand-over, which stays the current facilitator's).
 - A team survey is not taken over (§3).
 
+### 6.11 "Online" in the members table (P23-07, owner's answer ≠ recommendation)
+
+The members table of Members & rituals (ScreenSettings a) shows "En ligne" in its Last activity column. The owner chose a new app-wide presence channel over the recommendation (the last session date only).
+
+1. **One presence channel per workspace**, `presence-workspace-online.{workspaceId}` (Echo name `workspace-online.{workspaceId}`). "Global" is read as *app-wide*: every signed-in page of the application (team pages, settings, the action items page, a session page) joins the channel of the current workspace (the shared `currentWorkspace`), once, and stays in it while the person moves between pages of that workspace. It is not one instance-wide channel: nobody learns who is online in a workspace they do not belong to.
+2. **Authorisation** (`BroadcastAuthorizationsController`, as the other channels): a signed-in user who may view the workspace (`WorkspacePolicy::view`: any member, observers and managers included). A guest cookie, a visitor or a member of another workspace gets 403.
+3. **What travels:** the user id only (`{id}`); the members table already has the names and avatars.
+4. **Join and leave:** the client follows Inertia's `navigate` event (fired on the first page and on every visit): a new current workspace leaves the old channel and joins the new one; an unchanged one does nothing (no flicker for the others); a signed-out page leaves. Several tabs of the same person count once (presence channels key members by user id).
+5. **Reading:** the Last activity cell reads "Online" (the existing key) when the member's id is in the channel, and always on the viewer's own row (the viewer is here, as the mockup's "(toi) · En ligne" row); otherwise the relative date of the last session joined (§6.9), "Never" when none. It changes live as people join and leave, without a reload.
+6. **Without Reverb** (Echo not configured) nothing is joined and the column shows dates, the viewer's row still "Online".
+7. Nothing is stored: no "last seen" column, no event, no log.
+
 ## 7. Permissions
 
 Managers (workspace owners and admins) can do everything on every team of their workspace, whatever their pivot row. Guests (session cookies, no account) are not team members: nothing here changes what they can do.
@@ -272,7 +285,9 @@ Managers (workspace owners and admins) can do everything on every team of their 
 
 Decision 2 (B: owner ≈ manager except delete; facilitator: rituals, templates, rotation, and taking control of any open session) and decision 3 (A: observer read-only everywhere) are answered; the table is written on them.
 
-`TeamPolicy`: `update`, `manageMembers` and `manageIntegrations` become `managesTeam`; `manageRituals` and `takeControl` are new (`managesRitualsOf`); the five `create*` abilities add "not an observer"; `view` and `delete` are unchanged. `WorkspacePolicy::update` (new) is `canManage`, for the workspace name and description. Plan 25 reads `manageMembers` as "who may invite to a team" and widens it to facilitators for invitations (its own decision). **Access requests (plan 29, merged before):** the owner's answer to plan 29 sends them to the workspace's owners and admins "until plan 23"; this plan switches `AccessRequestRecipients::for(Team)` to the people who may approve one, that is who holds `manageMembers` on the team: the workspace's owners and admins and the team's owners (plan 29 already authorises the answer with `manageMembers`, so a team owner can approve without another change).
+The workspace presence channel of §6.11 is open to every signed-in member of the workspace, whatever their team role; the members table that reads it is shown to who may open Members & rituals.
+
+`TeamPolicy`: `update`, `manageMembers` and `manageIntegrations` become `managesTeam`; `manageRituals` and `takeControl` are new (`managesRitualsOf`); the five `create*` abilities add "not an observer"; `view` and `delete` are unchanged. `WorkspacePolicy::update` (new) is `canManage`, for the workspace name and description. Plan 25 reads `manageMembers` as "who may invite to a team" and widens it to facilitators for invitations (its own decision). **Access requests (plan 29, merged before):** the owner's answer to plan 29 sends them to the workspace's owners and admins "until plan 23"; this plan switches `AccessRequestRecipients::for(Team)` to the people who may approve one, that is who holds `manageMembers` on the team: the workspace's owners and admins and the team's owners (plan 29 already authorises the answer with `manageMembers`, so a team owner can approve without another change). Ruling of this revision: team facilitators do not receive them; plan 25's answer ("inviters = members managers plus facilitators") widens who may *invite*, which plan 25 builds on its own, not who approves an access request.
 
 ### 7.1 The observer
 
@@ -285,11 +300,11 @@ Decision 2 (B: owner ≈ manager except delete; facilitator: rituals, templates,
 
 ## 8. Real time
 
-No new channel and no new event. Role and settings changes apply at the next request of the person concerned; an open board that becomes read-only for a new observer learns it at its next snapshot (any `settings.changed`, reconnect or reload). A take-over sends the session's existing settings event (§6.10). The activity feed, the recent sessions table and the current sprint are read when the team page loads, like the rest of the page.
+One new channel, the workspace presence channel of §6.11 (joined app-wide, user id only); no new event. Role and settings changes apply at the next request of the person concerned; an open board that becomes read-only for a new observer learns it at its next snapshot (any `settings.changed`, reconnect or reload). A take-over sends the session's existing settings event (§6.10). The activity feed, the recent sessions table and the current sprint are read when the team page loads, like the rest of the page.
 
 ## 9. Screens
 
-Each screen follows its mockup. "Omitted" means: not built, place left, row of the plan's pre-build deviations. Where no mockup exists, the screen is designed from the neighbours named, and the plan puts the design to the owner before it is built (owner's rule of the fifth round).
+Each screen follows its mockup. "Omitted" means: not built, place left, row of the plan's pre-build deviations. Where no mockup exists, the screen is designed from the neighbours named; each such design is a pre-build deviation row the owner answered on 2026-10-03 (§15.2).
 
 ### 9.1 Team page — `teams/show`
 
@@ -320,8 +335,8 @@ States: saved (toast), validation error per field, a viewer who may only read (4
 
 Mockup: ScreenSettings frame a, tab "Members & rituals".
 
-- **Members** card: header ":count members"; the places of "Invitation link" and "Invite" are left (plan 25). `Table`: Member (avatar, name, "(you)", email), Role (a `Select` with the four roles for an owner or manager; text otherwise), Last activity (relative, "Never" when null), and the row menu with "Remove from team" (confirmation, "Retirer"). Footer: "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote." Below 40rem the table becomes a list and the role opens in a `Drawer`.
-- **Sprints** card (no mockup: P23-01), `section#sprints`:
+- **Members** card: header ":count members"; the places of "Invitation link" and "Invite" are left (plan 25). `Table`: Member (avatar, name, "(you)", email), Role (a `Select` with the four roles for an owner or manager; text otherwise), Last activity ("Online" while the member is in the workspace presence channel and always on the viewer's row, §6.11; else relative, "Never" when null), and the row menu with "Remove from team" (confirmation, "Retirer"). Footer: "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote." Below 40rem the table becomes a list and the role opens in a `Drawer`.
+- **Sprints** card (no mockup: P23-01, obsolete — decision 1 B asked for it), `section#sprints`:
   - the current sprint in a highlighted row ("Sprint 42 · 21 Sep → 4 Oct · current"), or "No sprint in progress.";
   - the primary button **"Start the next sprint"** with the line under it "Sprint 43 · from today to 13 Oct" (computed from the default length), disabled with the reason when rule 3 of §6.3 refuses (a sprint starts today; a sprint is already planned);
   - the list of sprints, latest first, ten shown and "Show all" (a sprint per row: number, first and last day, "current" badge, a row menu "Edit" and "Delete" with confirmation "Sessions keep their content; they lose this sprint's label.");
@@ -337,7 +352,7 @@ States: a facilitator (members read-only, rituals editable); an owner; no sprint
 
 No mockup content (the tab only). Designed from the settings cards (P23-02), decision 8 A:
 
-- "Exports" card, one row per export that exists, each with a short sentence and a link or button: "Survey results (CSV)" with the closed standalone surveys of the team and their CSV (plan 19's route); "Estimates" to the estimation history (`teams.estimates.index`); "Action items" to plan 24's CSV export of the action items page filtered on the team when its route exists, its place left otherwise.
+- "Exports" card, one row per export that exists, each with a short sentence and a link or button: "Survey results (CSV)" with the closed standalone surveys of the team and their CSV (plan 19's route); "Estimates" to the estimation history (`teams.estimates.index`); "Action items" with the sentence "The team's action items, on the action items page." linking to the action items page filtered on the team (`workspaces.actionItems.index?team=`); plan 24, after this plan, adds its CSV export ("CSV of the whole filter") to that page, so the link reaches it without a change here.
 - "What is kept" card: one paragraph saying that deleting the team deletes its sessions, action items and settings, and that guests' names live only in the sessions they joined.
 
 States: no closed survey ("No closed survey yet."); viewer without the right (403).
@@ -363,19 +378,19 @@ States: a member (personal only, or team for an owner or facilitator); a manager
 
 ### 9.7 Sessions for an observer, and "Take control"
 
-No mockup for the observer views (P23-04): each session screen renders its existing read-only mode.
+No mockup for the observer views (P23-04, approved as recommended): each session screen renders its existing read-only mode, with one info line under its header, the same on the five screens: "You are observing this session." (`eye` icon, muted, a polite status).
 
-- Retro: the board as when it is locked for this viewer (no composer, no vote buttons, no reactions, no ROTI or health-check submission), with an info line under the header "You follow this retrospective as an observer.".
+- Retro: the board as when it is locked for this viewer (no composer, no vote buttons, no reactions, no ROTI or health-check submission).
 - Poker: the spectator view of plan 18e (the "Watch only" switch shown on and disabled).
 - Whiteboard: read mode (7-D7), without "Modifier".
-- Game room: the room without the input controls, with the same info line.
-- Team survey: the questions read-only with "Observers do not answer surveys."; results as for any member.
+- Game room: the room without the input controls.
+- Team survey: the questions read-only; results as for any member.
 
 "Take control" (P23-16): the retro's board menu gains the entry "Take control" (the icon and confirmation-free behaviour of the poker and whiteboard entries) when the snapshot's `viewer.canTakeControl` is true; the game room menu's existing "Become host" entry appears for team facilitators and owners through the widened `canBecomeHost`; poker and whiteboard menus are unchanged. Success: the viewer's controls switch to the facilitator's at the next snapshot; failure: the toast of the server's message.
 
 ### 9.8 Other places
 
-- "New session" dialog, retro form (props through plan 22's `PresentNewSessionOptions`): the name is prefilled "Sprint 42 retro" when a sprint contains today; the template preselected from the team's default; a **Facilitator** `Select` under the settings (P23-05): the viewer first ("Me"), then the team's owners, facilitators and members by name, preselected with the suggested facilitator of §6.4, with "(suggested)" after that person's name and, when the rotation is on, the help line "Suggested by the rotation."; the dialog posts `facilitator_user_id`.
+- "New session" dialog, retro form (props through plan 22's `PresentNewSessionOptions`): the name is prefilled "Sprint 42 retro" when a sprint contains today; the template preselected from the team's default; a **Facilitator** `Select` under the settings (no mockup: P23-05, obsolete — decision 4 C asked for it): the viewer first ("Me"), then the team's owners, facilitators and members by name, preselected with the suggested facilitator of §6.4, with "(suggested)" after that person's name and, when the rotation is on, the help line "Suggested by the rotation."; the dialog posts `facilitator_user_id`.
 - Sidebar user card (D-129): the second line reads "<team role> · <workspace role>" for the current team ("Facilitator · Admin"), the workspace role alone when the user is not in the current team.
 - Retro session header: "Atlas · Sprint 42" when the retro was created inside a sprint (D-100), unchanged otherwise.
 - Team page ROTI card: x labels "S35"… and "since S35" when every point has a sprint, the day otherwise (D-77).
@@ -405,6 +420,8 @@ Team scope (prefix `w/{workspace}`, `can:view,workspace`, scoped bindings):
 
 Session scopes (existing routes, widened by §6.10): `PUT retros/{retro}/facilitator` (`retros.facilitator.update`) and `PUT games/{room}/host` (`games.host.update`).
 
+Broadcasting (existing route `POST broadcasting/auth`, `BroadcastAuthorizationsController@store`): the new prefix `presence-workspace-online.{workspace}` of §6.11, a UUID of an existing workspace that the signed-in user may view.
+
 Validation, in Form Requests with array rules: `description` nullable, string, max 200; workspace `name` required, string, max 100; `role` `Rule::enum(TeamRole::class)`; sprint: `number` integer 1–9999, distinct per team, `starts_on` and `ends_on` dates `Y-m-d`, `ends_on` after or equal to `starts_on` and at most 55 days after it, no overlap with another sprint of the team (checked under the lock); rituals: `sprint_length_weeks` nullable integer 1–4, `retro_weekday` nullable integer 1–7, `retro_time` nullable `date_format:H:i` and prohibited without `retro_weekday`; facilitators: `user_ids` array max 10, distinct, each a member of the team with role owner or facilitator; `rotation` boolean, accepted only with at least one facilitator; retro creation: `facilitator_user_id` nullable UUID, a person who may take part in the team's sessions; default template: a key available to the team and the person, not personal (§6.6); template: `visibility` enum, `team_id` required with `team` and prohibited otherwise, a team the person may create team templates for.
 
 Transactions lock the aggregate root first: the team row for the sprints (store, update, start), the facilitators, the rotation and a retro creation (always, since the suggestion is compared under the lock), the role changes; the workspace row for template creation and the workspace rename; the template row on update; the retro or game room row on a take-over (as the hand-over does today).
@@ -413,13 +430,13 @@ Transactions lock the aggregate root first: the team row for the sprints (store,
 
 | Migration | Existing rows | Proof |
 |---|---|---|
-| `add_role_to_team_user_table` | every membership reads `member` (column default) | Upgrade test, four engines |
+| `add_role_to_team_user_table` | every membership reads `member` (column default) | Upgrade test (PostgreSQL in this plan; the four engines in the roadmap's final matrix) |
 | `add_descriptions_to_teams_and_workspaces` | null | none needed |
 | `add_rituals_to_teams_table` | no default length, no retro day, rotation off, position 0 | none needed |
 | `create_team_sprints_table` | empty: no team has a sprint until someone starts one | none needed |
 | `add_default_retro_template_to_teams_table` | no default template: the dialog chooses as today | none needed |
 | `create_team_facilitators_table` | empty | none needed |
-| `add_visibility_to_workspace_templates_table` | every template reads `workspace`, `team_id` null: visible as today | Upgrade test, four engines |
+| `add_visibility_to_workspace_templates_table` | every template reads `workspace`, `team_id` null: visible as today | Upgrade test (PostgreSQL in this plan; the four engines in the roadmap's final matrix) |
 | `create_team_activities_table` | empty: the feed starts at the release (no backfill: nothing records who did what before) | none needed |
 | `add_preview_to_whiteboards_table` | null; built lazily (§6.8) | feature test of the lazy build |
 
@@ -427,14 +444,14 @@ No existing member becomes owner: managers keep managing every team as today, an
 
 ## 12. Testing
 
-- Every test touching the database runs per task on PostgreSQL and SQLite (`bin/test-db pgsql -- <paths>`, `bin/test-db sqlite -- <paths>`); the Upgrade tests and the races run on the four engines (`mariadb`, `mysql` too; races on `sqlite-file`); the whole suites run on the four engines at each merge and at the end.
-- Pest feature tests for every route, policy and role (the matrix of §7 walked as a dataset), the observer middleware on each of the five scopes (refused write, allowed read, facilitator exception, manager exception, guest unaffected), the poker spectator switch, action item permissions and MCP refusals, participation without observers, the take-over on the four kinds (allowed and refused by role, a completed retro, a guest, an observer).
+- Every test touching the database runs per task on PostgreSQL (`bin/test-db pgsql -- <paths>`), the Upgrade tests and the races too (`bin/test-db pgsql --concurrency`); the whole PostgreSQL suites run at each lane merge and at the end of the plan. SQLite, MariaDB and MySQL run once, in the four-engine matrix after the roadmap's last merge (owner, 2026-10-03); `tests/Arch/DatabasePortabilityTest.php`, in every Arch run, keeps the code portable meanwhile.
+- Pest feature tests for every route, policy and role (the matrix of §7 walked as a dataset), the observer middleware on each of the five scopes (refused write, allowed read, facilitator exception, manager exception, guest unaffected), the poker spectator switch, action item permissions and MCP refusals, participation without observers, the take-over on the four kinds (allowed and refused by role, a completed retro, a guest, an observer), the workspace presence channel (a member, an observer and an admin signed with their user id only; another workspace's member, a visitor, a malformed or unknown workspace refused).
 - Unit tests for `SprintCalendar` with hand-built sprint rows (inside a sprint, between two sprints, the first and last day, the next retro on the day before, the day of before and after the time, in the next sprint, none when no next sprint exists, a sprint shorter than a week without the retro weekday, a day read across a daylight-saving change).
 - Feature tests for the sprint rules of §6.3 (overlap, numbers, "Start the next sprint" cutting the current sprint, refused when a sprint starts today or is planned).
 - Races (`tests/Concurrency`, `Race`): two "Start the next sprint" at once create one sprint; two retros created at once that both chose the suggested facilitator move the rotation once; saving the facilitator list twice at once leaves one consistent list.
 - Upgrade tests (`tests/Upgrade`) for the two migrations of existing rows.
-- Vitest for the pure logic (sprint formatting and the "Start the next sprint" preview, role labels, activity sentence, session row state labels, the suggested facilitator of the dialog) and for each new or changed component.
-- No browser walkthrough is written or run. Captures in light, 1440, French of: the team page, the three new settings tabs, the workspace page and its dialog, the templates page with badges and the editor with visibility, a retro seen by an observer, the retro form with the Facilitator select.
+- Vitest for the pure logic (sprint formatting and the "Start the next sprint" preview, role labels, activity sentence, session row state labels, the suggested facilitator of the dialog, the presence store: join, here, joining, leaving, an unchanged workspace ignored, a changed one left) and for each new or changed component (the members table's "Online").
+- No browser walkthrough is written or run. Captures in light, 1440, French of: the team page, the three new settings tabs, the workspace page and its dialog, the templates page with badges and the editor with visibility, a retro seen by an observer (with "You are observing this session."), the retro form with the Facilitator select.
 
 ## 13. Acceptance criteria
 
@@ -442,7 +459,7 @@ No existing member becomes owner: managers keep managing every team as today, an
 2. An owner or a manager changes a member's role on the Members & rituals tab; a facilitator, a member and an observer get 403; a non-member target gets 404; an unknown role gets 422.
 3. A team owner who is not a manager can rename the team, change its description, add and remove members, change roles, manage health statements and integrations, and cannot delete the team.
 4. A facilitator can change the ritual settings and nothing of §7 marked owner.
-5. An observer gets 403 on every non-read request of the five session scopes of a team session, sees each session read-only, cannot create a session, an action item, a comment or a completion (web and MCP), cannot take control of a session, and is not counted in participation; a manager whose pivot row says observer is not restricted; a guest is unaffected; an observer who facilitated a session before keeps facilitating it.
+5. An observer gets 403 on every non-read request of the five session scopes of a team session, sees each session read-only, cannot create a session, an action item, a comment or a completion (web and MCP), cannot take control of a session, and is not counted in participation; each of the five screens shows "You are observing this session."; a manager whose pivot row says observer is not restricted; a guest is unaffected; an observer who facilitated a session before keeps facilitating it.
 6. A team facilitator, a team owner and a manager take control of an open retro and of a standalone game room of the team; a member gets 403 on the retro (and keeps today's right on poker games and whiteboards, and the creator's on their game room); a completed retro refuses the take-over; a guest is refused; the retro's snapshot says `canTakeControl` to exactly who may.
 7. An observer opening a poker game becomes a spectator and loses their unrevealed votes.
 8. With sprints 41 (7 to 20 Sep 2026), 42 (21 Sep to 4 Oct) and 43 (5 to 18 Oct) and a retro on Thursday at 14:00: on Wednesday 2026-09-30 the team page shows "Sprint 42" and "Next retro Thu 1 Oct, 2 pm"; on Thursday 2026-10-01 at 15:00 it shows the next retro on Thursday 2026-10-15 (the last Thursday of sprint 43); without sprint 43 it shows "Sprint 42" and no next retro; on 2026-09-06 (before sprint 41) it shows no sprint.
@@ -461,7 +478,8 @@ No existing member becomes owner: managers keep managing every team as today, an
 21. The team settings have General, Members & rituals, Integrations (when enabled) and Data & export, each reachable by who may see it and refused (403) to others; the settings card is no longer on the team page.
 22. The sidebar user card shows the team role and the workspace role; an access request to a team (plan 29) reaches the workspace's owners and admins and the team's owners, and not its facilitators, members or observers.
 23. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest`, `TranslationKeysTest`); the captures of §12 are taken without horizontal overflow and compared with their mockups, each difference fixed or a row of the plan's deviations.
-24. The unit, feature, upgrade and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL, the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+24. The unit, feature, upgrade, arch and concurrency suites pass on PostgreSQL at the end of the plan; `tests/Arch/DatabasePortabilityTest.php` passes. (SQLite, MariaDB and MySQL are proved once, by the roadmap's final four-engine matrix, not by this plan.)
+25. In the members table of Members & rituals, a member who has a signed-in page of the workspace open reads "Online", and the viewer's own row always does; when they close their last page the cell turns back to their last session date without a reload; moving between pages of the workspace does not make anyone leave the channel; a member of another workspace, a guest and a visitor cannot join the channel (403), and the channel tells its members nothing but user ids.
 
 ## 14. Risks
 
@@ -474,11 +492,15 @@ No existing member becomes owner: managers keep managing every team as today, an
 - **The rotation is advisory.** A team that always overrides the suggestion never moves the rotation; this is the owner's choice (decision 4 C) and the dialog says the suggestion comes from the rotation.
 - **Name uniqueness and personal templates.** Two people cannot both have a personal template called "Our retro"; the second gets "A template with this name already exists." without seeing the first. Accepted for now (§6.6).
 - **Lazy previews on the team page.** The first visit after the release dispatches one job per board without a preview; the job is unique per board and reads at most 5 000 elements (`Whiteboard::MaxLiveElements`). On SQLite, one writer at a time: the jobs queue behind requests.
-- **Shared files with plans 22, 24, 25, 29.** `ListTeamSessions` and `PresentNewSessionOptions` (plan 22, merged before), `ActionItemPermissions` and `PresentActionItem` (plan 24, merged before), `TeamMembersController`, `TeamPolicy`, the General tab and the Members tab (plan 25, after), `AccessRequestRecipients` (plan 29, merged before: its recipients gain the team's owners here, §7). This plan rebases on 22 and 24; plan 25 rebases on this one; migration dates are spaced (§5).
-- **Translations of roles.** "Facilitator" is "Moderation" in German today (`lang/de.json`), which reads as the activity, not the person; the plan's translation task decides it with the glossary of `translations-review.md`.
+- **Shared files with plans 22, 24, 25, 29.** `ListTeamSessions` and `PresentNewSessionOptions` (plan 22, merged before), `AccessRequestRecipients` (plan 29, merged before: its recipients gain the team's owners here, §7); `ActionItemPermissions` and `PresentActionItem` (plan 24, **after**: it rebases on this plan's observer refusals), `TeamMembersController`, `TeamPolicy`, the General tab and the Members tab (plan 25, after). This plan rebases on 22 and 29; plans 24 and 25 rebase on this one; migration dates are spaced (§5).
+- **Translations of roles.** "Facilitator" is "Moderation" in German today (`lang/de.json`), the activity, while every use of the key names the person and 26 German strings already say "Moderator". Ruled in this revision: the value becomes "Moderator" (the plan's translation task, the one exception to "an existing key keeps its value"); "Take control" ("Moderation übernehmen") keeps its value.
 - **No live updates on the team page.** The activity feed, the counts and the current sprint are as fresh as the last load.
+- **Who is online is visible to the whole workspace** (§6.11, the owner's answer). Any member of a workspace can learn which members have it open, through the channel even where no screen shows it; limited to members of that workspace and to user ids. Each signed-in tab holds one more websocket subscription; Reverb's presence bookkeeping grows with the number of signed-in people per workspace (bounded by the workspace's members).
+- **Engines proved late.** Per the owner (2026-10-03), SQLite, MariaDB and MySQL run only in the roadmap's final matrix; a non-portable line in this plan is found then. The portability rules and `DatabasePortabilityTest` are the guard meanwhile.
 
 ## 15. Decisions for the owner — answered 2026-10-03
+
+### 15.1 The nine questions
 
 **1. What is a sprint?** — **Answered: B** (≠ the first draft's recommendation A).
 - A. A rhythm on the team: length and one known sprint; sprints derived by arithmetic.
@@ -510,7 +532,28 @@ No existing member becomes owner: managers keep managing every team as today, an
 
 **9. The recent sessions table and plan 22.** — **Answered: A** (the recommendation). Plan 22 runs first; this plan reads the team's recent sessions with its state rules.
 
-Not decisions, but to confirm with the pre-build deviations (not asked yet): the Sprints card, the Data & export content, the workspace dialog, the observer screens, the Facilitator select of the retro form and the retro's "Take control" entry have no mockup and are designed from their neighbours (P23-01 to P23-05, P23-16).
+### 15.2 Pre-build deviations — answered 2026-10-03
+
+The rows P23-01 to P23-16 of the plan (`.superpowers/sdd/roadmap/progress.md`, line "P23: …"). Rows not named by the owner are approved as listed.
+
+| Row | Subject | Answer (owner, 2026-10-03) | Written in |
+|---|---|---|---|
+| P23-01 | Sprints card (no mockup) | **Obsolete**: decision 1 B (explicit sprints and a management card) settles it; built as §9.3 describes | §9.3 |
+| P23-02 | Data & export content | Approved as listed (the action items row links the action items page, where plan 24 adds its CSV after this plan) | §9.4 |
+| P23-03 | Workspace dialog (name and description) | Approved as listed | §9.5 |
+| P23-04 | Observer views | **Approved as recommended**: each screen's read-only mode, plus the line "You are observing this session." | §9.7, criterion 5 |
+| P23-05 | Facilitator select of the retro form (no mockup) | **Obsolete**: decision 4 C (a suggestion in a select) settles it; built as §9.8 describes | §6.4, §9.8 |
+| P23-06 | Next retro derived from the sprints | Approved as listed | §6.3, §9.1 |
+| P23-07 | "En ligne" in the members table | **≠ recommendation**: a **global presence channel** gives "Online" (the recommendation was the last session date only) | §6.11, §8, §9.3, §10, criterion 25 |
+| P23-08 | No survey answers in the feed | Approved as listed | §6.7 |
+| P23-09 | Recent sessions: whiteboard states, game rooms | Approved as listed | §6.9, §9.1 |
+| P23-10 | Explicit "Save" per card | Approved as listed | §9.2, §9.3 |
+| P23-11 | Retro templates card: top five plus the default | Approved as listed | §6.5 |
+| P23-12 | Default facilitators: owners and facilitators only | Approved as listed | §6.4 |
+| P23-13 | Invitation places left for plan 25 | Approved as listed | §9.1, §9.3 |
+| P23-14 | Team settings header without a description | Approved as listed | §9.2 |
+| P23-15 | Team select in the template editor | Approved as listed | §9.6 |
+| P23-16 | "Take control" in the retro's menu | Approved as listed | §6.10, §9.7 |
 
 ## 16. Not determined by reading
 
@@ -520,5 +563,5 @@ Not decisions, but to confirm with the pre-build deviations (not asked yet): the
 4. Whether plan 22's `ListTeamSessions` exposes the state of one session as a public method (the plan reuses it when it does).
 5. Whether the retro board's "locked" rendering covers every write control (composer, votes, reactions, ROTI, health-check button, survey answers) once driven by `viewerIsObserver` instead of `isLocked`.
 6. How the session snapshots of poker, whiteboard and games name their viewer block (where `viewerIsObserver` goes): the plan reads each builder.
-7. The German word for the facilitator role (today "Moderation").
+7. ~~The German word for the facilitator role (today "Moderation").~~ Ruled in the 2026-10-03 revision: "Moderator" (§14).
 8. Where the retro's board menu lives after plans 21 and 22 (the "Take control" entry goes beside the hand-over entry); the plan reads `components/retro/` first.

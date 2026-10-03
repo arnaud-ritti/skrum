@@ -2,26 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Security rules S1 to S9** (spec §5.1), **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 34 only).
 
-**Status: revised 2026-10-03 with the owner's answers to the ten decisions of spec §16** (decisions 1 and 2 differ from the drafts' recommendation; the others confirm it). Nothing starts before the owner approves the spec and the pre-build deviations (still to put to him).
+**Status: revised 2026-10-03 with the owner's answers to the ten decisions of spec §16** (decisions 1 and 2 differ from the drafts' recommendation; the others confirm it) **and to the pre-build deviations** (second pass, same day: P29-03, P29-05 and P29-11 as recommended, P29-02 obsolete because SSO and SMTP are editable, the other rows approved as listed). Ready to build; the owner's go-ahead for the roadmap ("Oui vas y", 2026-10-03) covers it.
 
 **Goal:** The instance admin gets the nine sections of the mockup (General, Branding, SSO, SMTP, Integrations, MCP keys, Licence, Users, Audit log, plus the existing Admins) with SSO providers, SMTP and integration apps editable and stored encrypted under the safeguards S1 to S9; the project is declared AGPL-3.0; the instance shows its version and, on request, whether it is up to date; a public status page exists; a workspace member who meets a 403 on a team can ask for access through the bell; and the 503 page shows "Back at" and the admin's message.
 
 **Architecture:** New instance settings go through `App\Support\InstanceSettings` (stored value over environment default). The editable configuration (spec §6.8) is one `instance_settings` row per section (secrets encrypted), described by `ConfigurationCatalogue`, written only by `UpdateInstanceConfiguration` (fresh confirmation, audit, alert mail), and laid over `config()` by `InstanceConfiguration::apply()` per web request (global middleware), per queued job (`JobProcessing`) and per console command (`CommandStarting`) — never at boot; an immutable `InstanceConfigurationBaseline` captured at boot holds the environment values to return to. Two new tables (`team_access_requests`, `audit_events`) and two nullable `users` columns. The status page and the 503 page are static Blade views outside the `web` middleware group or rendered by the exception handler, so they survive a dead database. Maintenance details are written into Laravel's maintenance payload by a listener of `MaintenanceModeEnabled`, so the 503 page reads no database. The access request rides on the bell (database notifications, presenters per kind).
 
-**Tech Stack:** Laravel 13, PHP 8.4, Fortify, Sanctum, Socialite with `socialiteproviders/openidconnect`, Octane, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1; stop if a major differs from this list.
+**Tech Stack:** Laravel 13, PHP 8.4, Fortify, Sanctum, Socialite with `socialiteproviders/openidconnect`, Octane, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL through `bin/test-db` for this plan's verification (the code stays portable to MariaDB, MySQL and SQLite: the roadmap's four-engine matrix runs once, after the last plan of the roadmap is merged); `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1; stop if a major differs from this list.
 
 **Spec:** `docs/superpowers/specs/2026-10-21-plan-29-administration-errors-design.md`. Mockups: `docs/design-system/components/ScreenSettings` (frame b), `ScreenErrors`, `NotificationsPanel`, `Table`, `Pagination`, `Badge`, `Sidebar` — for each, the `README.md` and the `preview.html`.
 
 **Not in this plan:** spec §3 (backlog): the "Help" link, the environment-only keys of rule S8, licence keys, deleting users, uptime history, team roles, revoked-token rows, the former plans 28 and 30, scheduling. Browser walkthroughs (owner's rule: none is written or run).
 
-**Tasks:** 36. Step A0, single writer: 1 to 3. Step A, back end, four lanes: V (4 to 8), R (9 to 11), U (12 to 16), C (17 to 22). Step B, screens: 23 (single writer), then lanes (24 to 32). Final: 33 (translations), 34 (captures), 35 (deviations and documents), 36 (four-engine suites and report). Against the draft (32 tasks): +3 for the editable configuration (17, 18, 19), +1 for the licence declaration (15); Tasks 20, 21, 22, 25, 26, 27 grow from read-only to editable.
+**Tasks:** 37. Step A0, single writer: 1 to 3. Step A, back end, four lanes: V (4 to 8), R (9 to 11), U (12 to 16), C (17 to 22, then 37). Step B, screens: 23 (single writer), then lanes (24 to 32). Final: 33 (translations), 34 (captures), 35 (deviations and documents), 36 (PostgreSQL suites and report). Against the draft (32 tasks): +3 for the editable configuration (17, 18, 19), +1 for the licence declaration (15); Tasks 20, 21, 22, 25, 26, 27 grow from read-only to editable. Second pass (pre-build deviations answered): +1, Task 37 (the mockup's "Secret changed :relative" on the SSO cards, back end), numbered last so that Tasks 1 to 36 keep the numbers other documents cite; it runs in lane C right after Task 22, before Step B.
 
 ## Branch and run
 
-- Base: `main` at or after `0c294632` (front rewrite, database portability, plan 19, the roadmap drafts). Check before Task 1 and stop if one fails: `app/Support/InstanceSettings.php` exists and is bound `scoped` in `AppServiceProvider`; `app/Http/ErrorPageResponder.php` has `Statuses = [403, 404, 419, 429, 500]`; `resources/views/errors/503.blade.php` holds the comments `Place left (AD-2)`, `(AD-3)`, `(AD-5)`; `resources/js/components/auth/error-page.tsx` has the props `headerLinks`, `accessRequest`, `version`; `vendor/socialiteproviders/openidconnect/OpenIDConnectServiceProvider.php` copies `oidc.connections.*` into `services.oidc_*` in `boot()`; `composer.json` says `"license": "MIT"` and no `LICENSE` file exists; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists. If plan 26 is merged before this plan starts, re-read its rule S-1 (`RequirePasswordUnlessNoneKnown`, `PasswordConfirmation::isSatisfied()`): it must not write `auth.password_confirmed_at` and must leave `routes/admin.php` on `RequirePassword` (Task 19, rule S2); both plans edit `app/Support/Auth/PasswordConfirmation.php`.
-- Branch `plan-29-admin-errors` from that base. Never push; never merge into `main` (the owner merges).
+- Base: the integration branch `roadmap`, at or after the commit of the second revision pass (on top of `19db587f`). Execution order of the roadmap (owner, 2026-10-03): plans 20, 21, 26, 27 and 29 in parallel → 22 → 23 → 24 and 25. This plan therefore runs beside plan 26 (shared file: `app/Support/Auth/PasswordConfirmation.php`, see below) and **before** plan 23: the access-request recipients are the workspace's owners and admins (decision 8), and plan 23 later widens `AccessRequestRecipients` (its own Task 2) — nothing here waits for plan 23. Check before Task 1 and stop if one fails: `app/Support/InstanceSettings.php` exists and is bound `scoped` in `AppServiceProvider`; `app/Http/ErrorPageResponder.php` has `Statuses = [403, 404, 419, 429, 500]`; `resources/views/errors/503.blade.php` holds the comments `Place left (AD-2)`, `(AD-3)`, `(AD-5)`; `resources/js/components/auth/error-page.tsx` has the props `headerLinks`, `accessRequest`, `version`; `vendor/socialiteproviders/openidconnect/OpenIDConnectServiceProvider.php` copies `oidc.connections.*` into `services.oidc_*` in `boot()`; `composer.json` says `"license": "MIT"` and no `LICENSE` file exists; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists. If plan 26 is merged into `roadmap` before this plan's branch is (it runs in the same wave), rebase on it and re-read its rule S-1 (`RequirePasswordUnlessNoneKnown`, `PasswordConfirmation::isSatisfied()`): it must not write `auth.password_confirmed_at` and must leave `routes/admin.php` on `RequirePassword` (Task 19, rule S2); both plans edit `app/Support/Auth/PasswordConfirmation.php`.
+- Branch `plan-29-admin-errors` from that base, merged into `roadmap` when Task 36 is green (PostgreSQL suite after the merge). Never push; never merge into `main` (the owner asks for that).
 - Lanes run in git worktrees on branches `lane/29-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and `bin/test-db pgsql -- tests/Feature/Admin tests/Feature/InstanceConfiguration tests/Feature/ErrorPagesTest.php tests/Feature/TeamAccessRequests tests/Arch`.
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR`; MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR`. This plan runs PostgreSQL only: MariaDB and MySQL are not started (owner, 2026-10-03). Never run two whole suites at once in the shared container — plans 20, 21, 26 and 27 run beside this one.
 - **Every task re-reads the files it touches**; a line or a body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
@@ -30,7 +30,7 @@ The ten questions of spec §16, all answered on 2026-10-03. "≠ rec." marks the
 
 | # | Question | Answer | Tasks it shaped |
 |---|---|---|---|
-| 1 | Where SSO, SMTP and integration-app settings live | **B (≠ rec.)**: editable, stored encrypted in `instance_settings`, environment fallback, applied per request and per job (and per command); confirmed by the owner after the takeover risk was spelled out, with safeguards: password confirmation, audit of every change, mail to every instance admin when SSO or SMTP changes → spec §5.1 rules S1 to S9 | 1 (section keys), 2 (`ConfigurationUpdated`), 17 (catalogue, storage), 18 (applying), 19 (safeguards), 20, 21, 22 (editable back ends), 25, 26, 27 (editable screens); P29-02 and P29-03 reworded |
+| 1 | Where SSO, SMTP and integration-app settings live | **B (≠ rec.)**: editable, stored encrypted in `instance_settings`, environment fallback, applied per request and per job (and per command); confirmed by the owner after the takeover risk was spelled out, with safeguards: password confirmation, audit of every change, mail to every instance admin when SSO or SMTP changes → spec §5.1 rules S1 to S9 | 1 (section keys), 2 (`ConfigurationUpdated`), 17 (catalogue, storage), 18 (applying), 19 (safeguards), 20, 21, 22 (editable back ends), 25, 26, 27 (editable screens), 37 ("Secret changed"); P29-02 obsolete, P29-03 reworded and approved |
 | 2 | Licence | **B with AGPL-3.0 (≠ rec. on the licence)**: informational card naming AGPL-3.0; the project's declared licence changes from MIT (`composer.json` and a `LICENSE` file) — the owner's legal decision | 15 (declaration), 16 (card data), 30 (card) |
 | 3 | Users section | **B** (rec.): list, search, deactivate, reactivate | 3, 13, 29 |
 | 4 | Audit scope | **B** (rec.): admin actions and security events, 365 days | 2, 16, 30 |
@@ -40,6 +40,16 @@ The ten questions of spec §16, all answered on 2026-10-03. "≠ rec." marks the
 | 8 | Recipients before TM-6 | **B** (rec.): workspace owners and admins until plan 23 | 9, 10, 11 |
 | 9 | "Back at" and message | **A** (rec.): `artisan down --retry` and the prepared message | 5, 8, 12, 24 |
 | 10 | Update check | **B** (rec.): off by default, a switch in General | 1, 4, 12, 24 |
+
+Pre-build deviations, answered 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, line "P27: … P29: …"): P29-03 instance-level state (rec.); P29-05 and P29-11 as proposed (rec.); **P29-02 obsolete** (SSO and SMTP are editable) — the screens follow the mockup instead: the masked secret with its eye, the "Keep sign-in by e-mail as fallback" switch and "Secret changed :relative" (Tasks 25, 26, 27, 37; P29-13 records the one remaining difference, the four provider cards, under the existing-features rule); every other row approved as listed. Rulings made in this pass where the answers left a gap (the owner may overturn them; none blocks the build):
+
+| Gap | Ruling | Where |
+|---|---|---|
+| The mockup's eye on a secret that the server never sends (rule S5) | The eye reveals what the admin is typing, never the stored secret; a stored secret shows as the mockup's dots in the empty field's placeholder | spec §9 "Configuration forms", Task 25 |
+| The mockup's "Keep sign-in by e-mail as fallback" switch against the third-round security answer ("instance admins can always sign in with password") | Drawn as the mockup, on and locked (`disabled`, `aria-describedby` its help line "Instance admins can always sign in with their password."); it changes nothing | spec §9.3, Task 25 |
+| "Secret changed 12 days ago" in the SSO card footer | Read from the latest `ConfigurationUpdated` event that changed `client_secret` of the section (no new column); nothing when the secret comes from the environment or the event is older than the audit retention | spec §9.3, Task 37 |
+| Licence identifier (spec §17 item 1) | `AGPL-3.0-only` (SPDX for the owner's "AGPL-3.0"); no "Source code" link for every user (the owner asked for an informative licence card) | spec §9.7, §17 |
+| Plans 26 and 29 together (spec §17 item 11) | Accepted as the sum of two risks the owner accepted after they were spelled out; S4's alert mail is the detection; the test "an admin without a known password and without a confirmation cannot save SSO" is added by whichever of plans 26 and 29 merges second | spec §14, Task 20 |
 
 ## Security rules (spec §5.1) — what each task must keep
 
@@ -71,6 +81,7 @@ Back end, created:
 | `LICENSE` | the GNU AGPL v3 text |
 | `app/Http/Controllers/Admin/GeneralSettingsController.php`, `SsoProvidersController.php`, `SsoConnectionTestsController.php`, `MailSettingsController.php`, `MailTestsController.php`, `IntegrationSettingsController.php`, `IntegrationAppsController.php`, `McpKeysController.php`, `LicencesController.php`, `UsersController.php`, `UserDeactivationsController.php`, `AuditEventsController.php` | admin HTTP |
 | `app/Http/Requests/Admin/GeneralSettingsUpdateRequest.php`, `SsoProviderUpdateRequest.php`, `MailSettingsUpdateRequest.php`, `IntegrationAppUpdateRequest.php`, `MailTestStoreRequest.php`, `SsoConnectionTestStoreRequest.php`, `IntegrationSettingsUpdateRequest.php`, `UsersIndexRequest.php`, `AuditEventsIndexRequest.php` | validation |
+| `app/Actions/Admin/SecretChangeTimes.php` | when each section's secret last changed, read from the audit log (Task 37) |
 | `app/Actions/Admin/TestOidcDiscovery.php`, `PresentSsoProviders.php`, `PresentMailSettings.php`, `PresentIntegrationSettings.php`, `PresentMcpKeys.php`, `PresentAuditEvents.php` | section data |
 | `app/Mail/InstanceTestMail.php`, `resources/views/mail/instance-test.blade.php` | test e-mail |
 
@@ -79,7 +90,7 @@ Back end, modified: `app/Enums/InstanceSettingKey.php`, `app/Support/InstanceSet
 Front end, created: `resources/js/pages/admin/{general,mail,integrations,mcp-keys,licence,users,audit-log}.tsx`; `resources/js/components/admin/{general,sso,mail,integrations,mcp-keys,licence,users,audit-log}/*` with tests; `resources/js/components/admin/configuration/{configuration-field,secret-field,confirmation-line,use-configuration-form}.tsx` with tests (shared by SSO, SMTP, integrations); `resources/js/components/auth/access-request-block.tsx` and test; `resources/js/lib/admin/types.ts`.
 Front end, modified: `resources/js/components/admin/admin-shell.tsx`, `resources/js/pages/admin/sign-in.tsx`, `resources/js/components/admin/sign-in-settings-form.tsx`, `resources/js/components/auth/error-page.tsx`, `resources/js/pages/errors/error.tsx`, `resources/js/components/skrum/notifications-panel.tsx`, `resources/js/hooks/use-notifications.ts`, `resources/js/types/*` (shared `instanceVersion`).
 
-Tests, created: `tests/Unit/Support/InstanceVersionTest.php`; `tests/Feature/Admin/{GeneralSettingsTest,UpdateCheckTest,SsoSectionTest,MailSectionTest,IntegrationSettingsTest,McpKeysTest,LicenceTest,UsersSectionTest,UserDeactivationTest,AuditLogTest}.php`; `tests/Feature/InstanceConfiguration/{ConfigurationStorageTest,ApplyInstanceConfigurationTest,ConfigurationSafeguardsTest}.php`; `tests/Feature/LicenceDeclarationTest.php`; `tests/Feature/MaintenanceDetailsTest.php`, `StatusPageTest.php`; `tests/Feature/TeamAccessRequests/{RequestTeamAccessTest,AnswerTeamAccessRequestTest,AccessRequestNotificationsTest,ForbiddenTeamPageTest}.php`; `tests/Concurrency/{TeamAccessRequestTest,LastActiveAdminTest,InstanceConfigurationTest}.php`; `tests/Browser/Visual/AdminAndErrorPagesVisualTest.php` (captures only).
+Tests, created: `tests/Unit/Support/InstanceVersionTest.php`; `tests/Feature/Admin/{GeneralSettingsTest,UpdateCheckTest,SsoSectionTest,MailSectionTest,IntegrationSettingsTest,McpKeysTest,LicenceTest,UsersSectionTest,UserDeactivationTest,AuditLogTest}.php`; `tests/Feature/InstanceConfiguration/{ConfigurationStorageTest,ApplyInstanceConfigurationTest,ConfigurationSafeguardsTest,ConfigurationRoutesTest,SecretChangeTimesTest}.php`; `tests/Feature/LicenceDeclarationTest.php`; `tests/Feature/MaintenanceDetailsTest.php`, `StatusPageTest.php`; `tests/Feature/TeamAccessRequests/{RequestTeamAccessTest,AnswerTeamAccessRequestTest,AccessRequestNotificationsTest,ForbiddenTeamPageTest}.php`; `tests/Concurrency/{TeamAccessRequestTest,LastActiveAdminTest,InstanceConfigurationTest}.php`; `tests/Browser/Visual/AdminAndErrorPagesVisualTest.php` (captures only).
 
 ## Lanes
 
@@ -89,7 +100,7 @@ Tests, created: `tests/Unit/Support/InstanceVersionTest.php`; `tests/Feature/Adm
 | V — version, maintenance, status | 4, 5, 6, 7, 8 | head after Task 3 | `routes/console.php`, `bootstrap/app.php` (U: Task 13 web middleware; C: Task 18 global middleware, Task 19 `dontFlash`), `config/skrum.php` (U: Task 15 adds `licence`), `lang/*.json` |
 | R — access requests | 9, 10, 11 | head after Task 3 | `routes/web.php` (none other), `app/Http/ErrorPageResponder.php` (Task 11 also adds `version`), `tests/Pest.php` (helpers), `lang/*.json` |
 | U — admin back end | 12 to 16 | head after Task 3 | `routes/admin.php` (C), `bootstrap/app.php` (V, C), `config/skrum.php` (V), `lang/*.json`, `tests/Pest.php` |
-| C — instance configuration | 17 to 22 (in order) | head after Task 3 | `routes/admin.php` (U), `bootstrap/app.php` (V, U), `app/Providers/AppServiceProvider.php` (only C), `app/Support/Auth/PasswordConfirmation.php` (only C), `tests/Arch/ArchTest.php` (only C), `lang/*.json`, `tests/Pest.php` |
+| C — instance configuration | 17 to 22, then 37 (in order) | head after Task 3 | `routes/admin.php` (U), `bootstrap/app.php` (V, U), `app/Providers/AppServiceProvider.php` (only C), `app/Support/Auth/PasswordConfirmation.php` (only C), `tests/Arch/ArchTest.php` (only C), `lang/*.json`, `tests/Pest.php` |
 | S0 (single writer) | 23 | head after the four back-end lanes are merged | — |
 | S-admin | 24, 25, 26, 27 (in order: 25 creates the shared configuration components) | head after Task 23 | `lang/*.json`, `resources/js/lib/admin/types.ts` (append) |
 | S-super | 28, 29, 30 | head after Task 23 | `lang/*.json`, `resources/js/lib/admin/types.ts` |
@@ -100,10 +111,10 @@ Tests, created: `tests/Unit/Support/InstanceVersionTest.php`; `tests/Feature/Adm
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 34, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 35.
+- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations** (all answered on 2026-10-03; a new difference found while building is added there and reported, see Task 35). Captures are taken once, in Task 34, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 35.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale (no arbitrary size), no overflow from 20rem to 60rem, visible focus, contrast, motion with `prefers-reduced-motion`, lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers in `resources/js/components/<domain>/`. Reuse: `AdminShell`, `ui/table`, `ui/pagination`, `ui/switch`, `ui/radio-group`, `ui/textarea`, `ui/badge`, `ui/alert`, `ui/dialog`, `settings/settings-card` (the `.st-card` pattern), `auth/error-page`, `skrum/notifications-panel`, `useHttp` for JSON calls.
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md` rules 1 to 12 apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. No raw query of any form, no driver test, Schema-builder migrations with `up` only, `dateTime()` for non-null times, UUID keys, no partial index, lock the aggregate root first in a transaction, explicit tie-breakers, `Alphabetical::sort` for lists read by people on bounded sets, JSON compared with `toBeIgnoringKeyOrder`.
-- **Tests per task on two engines, four at merges.** Every task runs the tests it wrote or touched on PostgreSQL and SQLite: `bin/test-db pgsql -- <paths>` and `bin/test-db sqlite -- <paths>`. Races (`tests/Concurrency`) run with `bin/test-db <engine> --concurrency` on `pgsql`, `mariadb`, `mysql` and `sqlite-file`, never in memory, never in parallel. Whole suites on the four engines at each lane merge and in Task 36. The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`.
+- **Tests on PostgreSQL only (owner, 2026-10-03: "Lance les 4 bases seulement à la fin").** Every task runs the tests it wrote or touched with `bin/test-db pgsql -- <paths>`. Races (`tests/Concurrency`) run with `bin/test-db pgsql --concurrency -- <paths>`, never in parallel. The whole PostgreSQL suite runs at each lane merge and in Task 36. The four-engine matrix (pgsql, sqlite, mariadb, mysql) is **not** part of this plan: it runs once, after the last merge into `roadmap` (plans 24 and 25); an engine-specific regression found there is fixed then (risk accepted by the owner). Portability is still written in: Eloquent and the query builder only, `docs/database.md` rules 1 to 12, `tests/Arch/DatabasePortabilityTest.php` green. The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`.
 - **Working rules (owner):** unit, feature, arch and concurrency tests are written and run; Vitest is written and run (`npm run test -- <pattern>` per task, the whole suite in Task 36); no browser walkthrough is written, edited or run; captures only (Task 34), light / 1440 / French.
 - **No new dependency**, PHP or JS, without the owner's approval. The OIDC test uses `Http`, the status probe `stream_socket_client`, the test mail `Mail`, the configuration `Crypt`.
 - **Four languages, informal.** Every new `__('…')` and `t('…')` key goes to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), informal (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`), the static 503 and status pages and the alert mail included. In `en.json` the value is the key.
@@ -129,27 +140,29 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 5. **A secret leaking into props, the session, the audit log or the alert mail (S5).** Tasks 2, 19, 20, 21 and 22 assert that the JSON of the page props, the flashed session, every `audit_events.properties` row and the mail body contain none of the configured secret strings.
 6. **The safeguards S2 to S4 and S9.** Task 19 tests each: a stale confirmation stores nothing; one audit event per write with names only; one alert per active admin, through the previous mailer; no lock-out under `sso_required`.
 7. **The overlay leaking or going stale.** Task 18 tests a queue worker that sees a change between two jobs and returns a cleared field to the environment value, a Socialite driver and a mailer resolved before a change and not reused after it, and existing tests that set `config()` directly still passing (the overlay touches only stored fields and the fields it wrote before).
+8. **The mockup's eye turned into a leak.** The eye of `SecretField` (Task 25) only switches the input between `password` and `text` on what the admin typed; no prop carries a stored secret to reveal (Task 20's "without any secret" test stays the proof), and the dots of a stored secret are a placeholder, never a value. Task 37's `secretChangedAt` is a date read from the audit log, which holds field names only (S3).
 
 ---
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built (not asked yet). Reasons: **F** false or unsafe, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+Answered by the owner on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`). Reasons: **F** false or unsafe, **N** no such data or concept, **S** this spec, **O** an owner's answer, **E** the owner's rule "existing features kept". A difference found in Task 35 that is not in this table is fixed, or added as a new row and reported (the build does not stop for it).
 
 | # | Screen | Mockup element | Built | Reason | Status |
 |---|---|---|---|---|---|
-| P29-01 | Admin nav | no "Admins" entry | "Admins" kept under Supervision, after Users | existing feature kept | to approve by the owner |
-| P29-02 | SSO, SMTP, integration dialog | "eye" on the masked secret; "Keep sign-in by e-mail as fallback" as a setting | the secret field is write-only (always empty, "Set"/"Not set" badge, "Leave blank to keep it"), no eye; the e-mail fallback is the existing break-glass sentence, not a switch; one card per SSO provider (four) where the mockup draws one OIDC form | S: rule S5 (a stored secret never reaches the browser), third-round break-glass | to approve by the owner |
-| P29-03 | Integrations | "Connected · workspace atlas-corp · #atlas-retro", "Connect" | "Available · n teams connected", "Not configured", "Turned off"; "Configure" opens the instance's app credentials for the provider (configured or not); no "Connect" | N: those are team-level states and actions | to approve by the owner |
-| P29-04 | Licence | "Skrüm Entreprise", seats progress 38/50, expiry, "Update the key" | badge "AGPL-3.0", accounts in use, "every feature included", links to the licence text and the source; no progress, no key | O: decision 2 (B, AGPL-3.0) | to approve by the owner |
-| P29-05 | 503 | "Your admin is installing version 1.9.0" | not rendered; the existing sentence stays | N: the target version is not known | to approve by the owner |
-| P29-06 | 403, 404, 500, 503 | "Help" link | not rendered | roadmap backlog | to approve by the owner |
-| P29-07 | Error pages | version in the footer for everyone | signed-in users only; none on 503 and status | O: decision 6 B | to approve by the owner |
-| P29-08 | MCP keys | revoked row struck and greyed | not rendered (revoke deletes) | plan 26 backlog | to approve by the owner |
-| P29-09 | MCP keys | "skr_live_…9f2a" | `skrum_…9f2a` | F: the real prefix | to approve by the owner |
-| P29-10 | Status page | no mockup | built from the 503 frame | N | to approve by the owner |
-| P29-11 | Admin topbar | domain `retro.atlas-corp.fr` in the topbar | host in the nav footer (as today) | existing (18e) | to approve by the owner |
-| P29-12 | SSO, SMTP, integration dialog | no source line, no confirmation line | under each field its source ("From the environment" / "Saved here") and "Use the environment value"; above the form "Confirm your password to change these settings." while the confirmation is older than 5 minutes; the card footer "Every change is recorded in the audit log and mailed to every instance admin." | O: decision 1 B and its safeguards (S2, S4, S7) | to approve by the owner |
+| P29-01 | Admin nav | no "Admins" entry | "Admins" kept under Supervision, after Users | existing feature kept | approved 2026-10-03 (as listed) |
+| P29-02 | SSO, SMTP | (draft: read-only values instead of the mockup's editable fields) | **obsolete**: the fields are editable (decision 1 B), and the secret field follows the mockup — masked dots, eye revealing what is typed, never the stored secret (rule S5); the "Keep sign-in by e-mail as fallback" switch drawn on and locked; "Secret changed :relative" in the SSO card footer (Tasks 25, 37) | O: decision 1 B | obsolete 2026-10-03 (owner: "SSO/SMTP editable") |
+| P29-03 | Integrations | "Connected · workspace atlas-corp · #atlas-retro", "Connect" | instance-level state: "Available · n teams connected", "Not configured", "Turned off"; "Configure" opens the instance's app credentials for the provider (configured or not); no "Connect" | N: those are team-level states and actions | approved 2026-10-03 (instance state, rec.) |
+| P29-04 | Licence | "Skrüm Entreprise", seats progress 38/50, expiry, "Update the key" | badge "AGPL-3.0", accounts in use, "every feature included", links to the licence text and the source; no progress, no key | O: decision 2 (B, AGPL-3.0) | approved 2026-10-03 (as listed) |
+| P29-05 | 503 | "Your admin is installing version 1.9.0" | not rendered; the existing sentence stays | N: the target version is not known | approved 2026-10-03 (as proposed, rec.) |
+| P29-06 | 403, 404, 500, 503 | "Help" link | not rendered | roadmap backlog | approved 2026-10-03 (as listed) |
+| P29-07 | Error pages | version in the footer for everyone | signed-in users only; none on 503 and status | O: decision 6 B | approved 2026-10-03 (as listed) |
+| P29-08 | MCP keys | revoked row struck and greyed | not rendered (revoke deletes) | plan 26 backlog | approved 2026-10-03 (as listed) |
+| P29-09 | MCP keys | "skr_live_…9f2a" | `skrum_…9f2a` | F: the real prefix | approved 2026-10-03 (as listed) |
+| P29-10 | Status page | no mockup | built from the 503 frame | N | approved 2026-10-03 (as listed) |
+| P29-11 | Admin topbar | domain `retro.atlas-corp.fr` in the topbar | host in the nav footer (as today) | existing (18e) | approved 2026-10-03 (as proposed, rec.) |
+| P29-12 | SSO, SMTP, integration dialog | no source line, no confirmation line | under each field its source ("From the environment" / "Saved here") and "Use the environment value"; above the form "Confirm your password to change these settings." while the confirmation is older than 5 minutes; the card footer "Every change is recorded in the audit log and mailed to every instance admin." | O: decision 1 B and its safeguards (S2, S4, S7) | approved 2026-10-03 (as listed) |
+| P29-13 | SSO | one "SSO / OIDC" card | one card per existing provider (Google, GitHub, Microsoft Entra, OIDC), each in the mockup's card layout (secret with its eye, the locked fallback switch row, the "Secret changed" footer line); "Test the connection" on Entra and OIDC only (Google and GitHub publish no discovery document to test) | E: four providers exist today; split out of the obsolete P29-02 | approved 2026-10-03 (O/E row, by the owner's rule) |
 
 ---
 
@@ -475,9 +488,9 @@ In `normalise()`, before the `match`, arrays are not trimmed; extend the `match`
 
 (`$value === []` reaches `objectFrom` because `normalise()` returns null only for null and `''`; an emptied section is deleted by `write()`.) `sort()` here is a byte sort of ASCII domain names and enum values, not a list read by people (rule 7 does not apply). Extend `all()` and its docblock with the new readers.
 
-- [ ] **Step 4: Run the tests on PostgreSQL and SQLite**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Unit/Enums/InstanceSettingKeyTest.php tests/Feature/InstanceSettingsTest.php tests/Feature/Admin/BrandingSettingsTest.php` then the same with `sqlite`.
+Run: `bin/test-db pgsql -- tests/Unit/Enums/InstanceSettingKeyTest.php tests/Feature/InstanceSettingsTest.php tests/Feature/Admin/BrandingSettingsTest.php`.
 Expected: PASS on both (`BrandingSettingsTest` proves the reset is unchanged).
 
 - [ ] **Step 5: Commit** — `feat(admin): instance setting keys for the new sections`
@@ -736,7 +749,7 @@ class RecordFailedSignInListener
 
 Hooks: in `BrandingController@update` after the transaction, `SettingsUpdated` with `['section' => 'branding', 'keys' => array_keys($changed)]` (only keys whose stored value changed; re-read how the controller computes them); `destroy` → `BrandingReset`; `AdminsController@store` → `AdminGranted` (subject the user), `destroy` → `AdminRevoked` when the revoke happened; `SignInSettingsController@update` → `SsoRequiredChanged` with `['value' => $required]` when it changed; `IssueMcpToken` → `TokenCreated` (subject the token, `['name' => …, 'scopes' => …]`), `RevokeMcpToken` → `TokenRevoked`. Add `AuditEvent::class` to the `model:prune` list of `routes/console.php`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/Admin tests/Feature/Settings tests/Feature/Auth`, then `sqlite`. Expected: PASS (existing admin, token and auth tests stay green).
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Admin tests/Feature/Settings tests/Feature/Auth`. Expected: PASS (existing admin, token and auth tests stay green).
 
 - [ ] **Step 5: Commit** — `feat(admin): audit log of admin actions and security events`
 
@@ -889,7 +902,7 @@ class InstanceVersion
 
 `HandleInertiaRequests::share()`: `'instanceVersion' => fn (): ?string => $request->user() === null ? null : resolve(InstanceVersion::class)->current(),` and, for admins only, `'instanceVersionStatus' => fn (): ?array => $request->user()?->can('manageInstance') ? resolve(InstanceVersion::class)->status() : null,`. `User`: casts and `isDeactivated(): bool { return $this->deactivated_at !== null; }`. Factory state `deactivated()` sets `deactivated_at => now()`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Unit/Support/InstanceVersionTest.php tests/Feature/Auth tests/Feature/AboutPageTest.php`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/InstanceVersionTest.php tests/Feature/Auth tests/Feature/AboutPageTest.php`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(admin): last sign-in, deactivation column and the instance version`
 
@@ -1023,7 +1036,7 @@ class CheckForUpdateCommand extends Command
 
 `Dockerfile`, in the `runtime` stage before the `ENV` block: `ARG SKRUM_VERSION=dev` and add `SKRUM_VERSION=${SKRUM_VERSION}` to the `ENV`. Workflow `docker/build-push-action` step: `build-args: SKRUM_VERSION=${{ steps.meta.outputs.version }}`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite**; then `docker build --build-arg SKRUM_VERSION=9.9.9 -t skrum-version-check . && docker run --rm skrum-version-check php artisan config:show skrum.version` — expected `9.9.9` (spec criterion 21; skip and report if Docker is not available to the agent).
+- [ ] **Step 4: Run on PostgreSQL**; then `docker build --build-arg SKRUM_VERSION=9.9.9 -t skrum-version-check . && docker run --rm skrum-version-check php artisan config:show skrum.version` — expected `9.9.9` (spec criterion 21; skip and report if Docker is not available to the agent).
 
 - [ ] **Step 5: Commit** — `feat(admin): opt-in update check and the image's version`
 
@@ -1169,7 +1182,7 @@ class AddMaintenanceDetailsListener
 }
 ```
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite**, plus `tests/Feature/ErrorPagesTest.php` (unchanged behaviour).
+- [ ] **Step 4: Run on PostgreSQL**, plus `tests/Feature/ErrorPagesTest.php` (unchanged behaviour).
 - [ ] **Step 5: Commit** — `feat(errors): maintenance message and time of return in the maintenance payload`
 
 ### Task 6: Status checks and heartbeats
@@ -1368,7 +1381,7 @@ class InstanceStatus
 
 `HeartbeatCommand` (`skrum:heartbeat`): writes `Cache::forever(InstanceStatus::SchedulerHeartbeat, now()->toIso8601String())`, dispatches `RecordQueueHeartbeat`, comments "Heartbeat recorded.". `RecordQueueHeartbeat` (`ShouldQueue`) writes the queue key. `routes/console.php`: `Schedule::command('skrum:heartbeat')->everyMinute()->onOneServer();`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite**, plus `tests/Feature/ErrorPagesTest.php` (the moved helper).
+- [ ] **Step 4: Run on PostgreSQL**, plus `tests/Feature/ErrorPagesTest.php` (the moved helper).
 - [ ] **Step 5: Commit** — `feat(status): component checks and heartbeats`
 
 ### Task 7: Status page
@@ -1470,7 +1483,7 @@ class StatusPagesController extends Controller
 
 `resources/views/partials/static-page-head.blade.php`: the `<meta>` lines, `<title>`, and the whole `<style>` block of today's 503 page (tokens light and dark, header, main, footer, `.retry`, `.trema`), plus the rules the status list needs (`.components`, `.component`, `.dot`), all with tokens of the block. `503.blade.php` includes it with its title. `status.blade.php`: header (logo SVG of the 503 page, wordmark), `main` with overline "Instance status", `h1` overall sentence (`__('All systems operational')`, `__('Some systems are degraded')`, `__('Maintenance in progress')`), `<ul class="components">` with `<li data-slot="status-component" data-state="{{ $state->value }}">` holding an icon (inline SVG check / alert / cross / dash / wrench, `aria-hidden`), the component name (`__('Application')`, `__('Database')`, `__('Cache')`, `__('Background jobs')`, `__('Scheduled tasks')`, `__('Real time')`, `__('E-mail')`) and the state in words (`__('Operational')`, `__('Degraded')`, `__('Down')`, `__('Not configured')`, `__('Maintenance')`); a line `__('Checked at :time UTC', ['time' => $checkedAt])`; the `.retry` link "Refresh" to `/status` and a link "Back to my teams" to `/`. No script.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite**, plus `tests/Feature/ErrorPagesTest.php`.
+- [ ] **Step 4: Run on PostgreSQL**, plus `tests/Feature/ErrorPagesTest.php`.
 - [ ] **Step 5: Commit** — `feat(status): public status page, served during maintenance`
 
 ### Task 8: The 503 page — "Back at", message, status link
@@ -1600,7 +1613,7 @@ if (zone && time) {
 
 CSS in the page's `<style>` (tokens of the block; `--sky*` are the info-soft tokens already copied): `.back-at { width: 100%; padding: 0.75rem 1rem; border-radius: 0.75rem; background: var(--sky); border: 1px solid var(--sky-border); }`, display size for `.back-at-time` (`font-family` display, `1.75rem`), `.message blockquote { margin: 0; font-style: italic; }`, `figcaption { font-size: 0.75rem; color: var(--muted-foreground); }`, `.link { margin-left: auto; font-size: 0.75rem; color: var(--primary-text); }`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/ErrorPagesTest.php tests/Feature/MaintenanceDetailsTest.php tests/Feature/Database/ConcurrencyErrorResponseTest.php`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/ErrorPagesTest.php tests/Feature/MaintenanceDetailsTest.php tests/Feature/Database/ConcurrencyErrorResponseTest.php`.
 - [ ] **Step 5: Commit** — `feat(errors): time of return, admin message and status link on the 503 page`
 
 ### Lane R
@@ -1889,7 +1902,7 @@ class AccessRequestRecipients
 }
 ```
 
-- [ ] **Step 4: Run** the feature files on PostgreSQL and SQLite; the race file with `bin/test-db pgsql --concurrency -- tests/Concurrency/TeamAccessRequestTest.php`, then `mariadb`, `mysql`, `sqlite-file`. Expected: PASS on each; removing `lockForUpdate()` in `RequestTeamAccess` makes the first case fail on pgsql (check once, then restore).
+- [ ] **Step 4: Run** the feature files on PostgreSQL; the race file with `bin/test-db pgsql --concurrency -- tests/Concurrency/TeamAccessRequestTest.php`. Expected: PASS; removing `lockForUpdate()` in `RequestTeamAccess` makes the first case fail on pgsql (check once, then restore).
 - [ ] **Step 5: Commit** — `feat(teams): access requests and their answers`
 
 ### Task 10: Access requests — routes, notifications, bell
@@ -2050,7 +2063,7 @@ class TeamAccessRequestsController extends Controller
 
 `PresentAccessRequestNotifications::handle(User $user, Collection $notifications): array` loads the requests (`with(['team.workspace', 'user', 'decidedBy'])`) and presents `access_request` only when `$user->can('manageMembers', $request->team)`, `access_answered` only for the request's own user; excerpt = `Str::limit($message, 120)`; `actor` built like `PresentInvitationNotifications::actor()` (re-read it and reuse its method by extracting it to a shared private-free helper if it is private: `App\Actions\Notifications\PresentActor`). `ListNotifications`: add the presenter to the constructor and the `$presented` spread, and both kinds to `hasPresenter()`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/TeamAccessRequests tests/Feature/Notifications`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/TeamAccessRequests tests/Feature/Notifications`.
 - [ ] **Step 5: Commit** — `feat(teams): access requests in the bell`
 
 ### Task 11: The 403 page knows the team; version on error pages
@@ -2245,7 +2258,7 @@ class PresentAccessRequestOffer
 
 `ErrorPageResponder::props()`: add `'statusUrl' => route('status.show')` always; `version` when `$response->request->user() !== null` (inside `rescue`, report false); for status 403, `$team = rescue(fn () => resolve(ResolveDeniedTeam::class)->handle($request), null, false)` and when non-null `'accessRequest' => resolve(PresentAccessRequestOffer::class)->handle($request->user(), $team)`. The props are computed inside `throughPageMiddleware` so the session user is known for a request that matched no route (move the `props()` call into the closure). `serverError()`: add `'version' => config('skrum.version')` when the session holds a user id (`$request->hasSession() && $request->session()->has(Auth::guard()->getName())` — re-read how the 500 path reaches the session; no database read) and `'statusUrl' => '/status'`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/TeamAccessRequests tests/Feature/ErrorPagesTest.php`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/TeamAccessRequests tests/Feature/ErrorPagesTest.php`.
 - [ ] **Step 5: Commit** — `feat(errors): access-request offer on the 403 page, version and status link`
 
 ### Lane U
@@ -2359,7 +2372,7 @@ Controller `update()`: build `$values` from the validated keys present (`signup_
 
 `SignupGate`: inject `InstanceSettings`; `SignupMode::tryFrom($this->settings->signupMode() ?? '') ?? SignupMode::fromConfig()` in both methods; `hasAllowedDomain()` reads `$this->settings->allowedEmailDomains() ?? config('skrum.allowed_email_domains')`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/Admin tests/Feature/Auth`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/Admin tests/Feature/Auth`.
 - [ ] **Step 5: Commit** — `feat(admin): general section (sign-up, maintenance message, updates)`
 
 ### Task 13: Users — listing, deactivation, enforcement
@@ -2619,7 +2632,7 @@ $users = User::query()
 
 (The SQL `LIKE` gives near misses for a term with a wildcard character; the page shows at most 25 rows and a near miss there is acceptable for an admin search — say so in the report.) `hasSecondFactor` from `SecondFactors` (re-read). Routes: `admin/users` GET, `admin/users/{user}/deactivation` POST / DELETE (`whereUuid('user')`), all under `RequirePassword`. `UserDeactivationsController@store` throws `ValidationException::withMessages(['user' => __('You cannot deactivate your own account or the last active admin.')])` when the action returns false.
 
-- [ ] **Step 4: Run** on PostgreSQL and SQLite: `tests/Feature/Admin tests/Feature/Auth tests/Feature/Mcp`; the race with `--concurrency` on `pgsql`, `mariadb`, `mysql`, `sqlite-file`.
+- [ ] **Step 4: Run** on PostgreSQL: `tests/Feature/Admin tests/Feature/Auth tests/Feature/Mcp`; the race with `bin/test-db pgsql --concurrency -- tests/Concurrency/LastActiveAdminTest.php`.
 - [ ] **Step 5: Commit** — `feat(admin): users section, deactivation and its enforcement`
 
 ### Task 14: MCP keys section — back end
@@ -2676,7 +2689,7 @@ it('revokes any token, which stops authenticating', function () {
 
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement** — `PersonalAccessToken::query()->where('tokenable_type', (new User)->getMorphClass())->with(['tokenable', 'team'])->orderByDesc('created_at')->orderByDesc('id')->paginate(25)`; fingerprint `config('sanctum.token_prefix').'…'.$token->token_hint`; destroy: find by id or 404, record `TokenRevokedByAdmin` then `$token->delete()`; `createUrl` = the admin's own token settings route (re-read its name); `mcpEnabled` = `config('skrum.mcp.enabled')`. Routes under `RequirePassword`: `admin/mcp-keys` GET, `admin/mcp-keys/{token}` DELETE (`whereUuid('token')`).
-- [ ] **Step 4: Run on PostgreSQL and SQLite.**
+- [ ] **Step 4: Run on PostgreSQL.**
 - [ ] **Step 5: Commit** — `feat(admin): MCP keys of the instance`
 
 ### Task 15: Licence declaration — AGPL-3.0
@@ -2727,7 +2740,7 @@ it('declares the AGPL-3.0 in composer.json, the LICENSE file and the configurati
 
 (No `env()`: the licence belongs to the project, not to a deployment. The two URLs assume the repository of spec §17 item 2; a different public address is a one-line change here.)
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/LicenceDeclarationTest.php`, then `sqlite`; `vendor/bin/sail composer validate --no-check-publish` (the SPDX identifier is accepted). Expected: PASS.
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/LicenceDeclarationTest.php`; `vendor/bin/sail composer validate --no-check-publish` (the SPDX identifier is accepted). Expected: PASS.
 
 - [ ] **Step 5: Commit** — `chore: declare the project under the GNU AGPL v3` (body: "Owner's decision of 2026-10-03 (plan 29, decision 2): the declared licence changes from MIT to AGPL-3.0.")
 
@@ -2773,7 +2786,7 @@ it('lists audit events newest first, 50 a page, filtered by group', function () 
 
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement** — `LicencesController@show` reads the three keys of Task 15 (no environment variable: the licence is the project's, not the deployer's). Accounts in use: `User::query()->whereNull('deactivated_at')->count()`. Audit index: `whereIn('action', AuditAction::inGroup($group))` when filtered, actor filter by `actor_user_id` (uuid), `orderByDesc('created_at')->orderByDesc('id')->paginate(50)`, `with('actor')`; subject label resolved for `User` subjects in one `whereIn` query on the page's ids. Routes `admin/licence` GET, `admin/audit-log` GET under `RequirePassword`.
-- [ ] **Step 4: Run on PostgreSQL and SQLite.**
+- [ ] **Step 4: Run on PostgreSQL.**
 - [ ] **Step 5: Commit** — `feat(admin): licence card and audit log page`
 
 ### Lane C — instance configuration
@@ -3163,7 +3176,7 @@ function withEnvironmentConfiguration(array $config): void
 }
 ```
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `bin/test-db pgsql -- tests/Feature/InstanceConfiguration tests/Feature/InstanceSettingsTest.php tests/Feature/Admin/BrandingSettingsTest.php tests/Arch`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/InstanceConfiguration tests/Feature/InstanceSettingsTest.php tests/Feature/Admin/BrandingSettingsTest.php tests/Arch`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(admin): catalogue and encrypted storage of the instance configuration`
 
@@ -3392,7 +3405,7 @@ class ApplyInstanceConfigurationListener
 
 Then re-read each class that reads `services.*` of a catalogue key (`grep -rln "services\.\(slack\|telegram\|jira\|linear\|jira_dc\|github_app\|msteams\|mattermost\|outgoing_webhooks\)" app`) and check that it reads `config()` at call time, not once in a constructor of an object that lives longer than a request or a job (a singleton binding, a static). List the result in the task report; one that caches is changed to read at call time (spec §17 item 9). Check also that a closure scheduled with `Schedule::call` runs after `CommandStarting` of `schedule:run` (spec §17 item 10); if not, note it.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/InstanceConfiguration tests/Feature/Integrations tests/Feature/Auth tests/Feature/ErrorPagesTest.php tests/Feature/Mcp`. Expected: PASS, the existing integration and SSO tests unchanged (they set `config()` directly and store nothing).
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/InstanceConfiguration tests/Feature/Integrations tests/Feature/Auth tests/Feature/ErrorPagesTest.php tests/Feature/Mcp`. Expected: PASS, the existing integration and SSO tests unchanged (they set `config()` directly and store nothing).
 
 - [ ] **Step 5: Commit** — `feat(admin): apply the stored configuration per request, job and command`
 
@@ -3676,11 +3689,11 @@ abstract class InstanceConfigurationUpdateRequest extends FormRequest
 }
 ```
 
-S2 is not waived for an account without a known password: the check reads the session's confirmation time and nothing else. Plan 26's rule S-1 (its spec §5.12) is a middleware bypass in the account settings that does not write the session's confirmation time and leaves the admin area out; if the merged plan 26 does otherwise (writes `auth.password_confirmed_at`, or puts `routes/admin.php` under its bypass), stop and report — S2 would be bypassed. Plan 26 also edits `PasswordConfirmation` (`isSatisfied()`): keep both methods; `isFresh()` gains the optional window only. The passkey a passwordless admin may register without confirmation under S-1 satisfies S2: spec §17 item 11, open for the owner — do not change it here.
+S2 is not waived for an account without a known password: the check reads the session's confirmation time and nothing else. Plan 26's rule S-1 (its spec §5.12) is a middleware bypass in the account settings that does not write the session's confirmation time and leaves the admin area out; if the merged plan 26 does otherwise (writes `auth.password_confirmed_at`, or puts `routes/admin.php` under its bypass), stop and report — S2 would be bypassed. Plan 26 also edits `PasswordConfirmation` (`isSatisfied()`): keep both methods; `isFresh()` gains the optional window only. The passkey a passwordless admin may register without confirmation under S-1 satisfies S2: spec §17 item 11, ruled on 2026-10-03 as the sum of two accepted risks (S4's alert is the detection) — do not change it here.
 
 `bootstrap/app.php` `dontFlash`: add `client_secret`, `password` (already flashed out by the framework's default list — re-read), `bot_token`, `webhook_secret`, `private_key`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/InstanceConfiguration tests/Feature/Admin/AuditLogTest.php tests/Feature/Settings`; the race with `bin/test-db <engine> --concurrency -- tests/Concurrency/InstanceConfigurationTest.php` on `pgsql`, `mariadb`, `mysql`, `sqlite-file`. Expected: PASS on each; without the cache lock the race loses one field on pgsql (check once, then restore).
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/InstanceConfiguration tests/Feature/Admin/AuditLogTest.php tests/Feature/Settings`; the race with `bin/test-db pgsql --concurrency -- tests/Concurrency/InstanceConfigurationTest.php`. Expected: PASS; without the cache lock the race loses one field on pgsql (check once, then restore).
 
 - [ ] **Step 5: Commit** — `feat(admin): safeguards of the instance configuration (confirmation, audit, alert mail)`
 
@@ -3693,7 +3706,7 @@ S2 is not waived for an account without a known password: the check reads the se
 
 **Interfaces:**
 - Consumes: Tasks 17, 18, 19.
-- Produces: `admin/sign-in` prop `providerDetails: array<int, {key: 'google'|'github'|'entra'|'oidc', label: string, configured: bool, redirectUri: string, fields: <describe() of its section>, testable: bool, updateUrl: string}>`, prop `confirmedUntil: ?string` (ISO time the fresh confirmation of S2 ends, null when stale), prop `confirmUrl: string` (the confirmation page, back to this section), prop `lastTest: ?{provider, at, ok, ms, issuer}`; route `admin.ssoProviders.update` (PUT `admin/sign-in/providers/{provider}`, fields of the section + `clear[]`) redirecting back with a toast; route `admin.ssoTests.store` (POST `{provider}`) redirecting back with flash `ssoTest: {ok, ms, issuer, error}`.
+- Produces: `admin/sign-in` prop `providerDetails: array<int, {key: 'google'|'github'|'entra'|'oidc', label: string, configured: bool, redirectUri: string, fields: <describe() of its section>, testable: bool, updateUrl: string}>` (Task 37 adds `secretChangedAt: ?string` to each row), prop `confirmedUntil: ?string` (ISO time the fresh confirmation of S2 ends, null when stale), prop `confirmUrl: string` (the confirmation page, back to this section), prop `lastTest: ?{provider, at, ok, ms, issuer}`; route `admin.ssoProviders.update` (PUT `admin/sign-in/providers/{provider}`, fields of the section + `clear[]`) redirecting back with a toast; route `admin.ssoTests.store` (POST `{provider}`) redirecting back with flash `ssoTest: {ok, ms, issuer, error}`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3859,7 +3872,7 @@ it('S5: keeps no secret in the session after a refused write', function (Closure
 
 `TestOidcDiscovery::handle(SsoProvider $provider): array{ok: bool, ms: ?int, issuer: ?string, error: ?string}`: base URL = `config('oidc.connections.generic.base_url')` for `Oidc` (the value in force: the middleware of Task 18 has applied the stored one), `https://login.microsoftonline.com/{tenant}/v2.0` for `Entra`; GET `{base}/.well-known/openid-configuration` with `Http::timeout(5)->acceptJson()`, measure with `hrtime(true)`; `unreachable` on a connection error or a non-2xx; `not_oidc` when `issuer`, `authorization_endpoint` or `token_endpoint` is missing; `issuer_mismatch` when `rtrim(issuer, '/') !== rtrim(base, '/')` for `Oidc` (Entra's issuer holds the tenant id: compare host only); stores `sso_last_test`; records `SsoTested` with `['provider' => …, 'ok' => …]`. `PresentSsoProviders` builds the four rows from `SsoProvider::cases()` with `InstanceConfiguration::describe()` of each section (`ConfigurationCatalogue::section($provider)`), `configured` = `$provider->isEnabled()`, `redirectUri` from the provider's `redirect` configuration key, `testable` for Entra and OIDC, `updateUrl`. `SignInSettingsController@edit` adds `providerDetails`, `lastTest`, `confirmedUntil` (`auth.password_confirmed_at` + 300 s when still in the future, else null) and `confirmUrl` (`route('password.confirm')`; re-read how the confirmation page returns to the intended URL and set `url.intended` to `admin.signIn.edit` on the "Confirm" link's route if needed). Route under `RequirePassword`: `Route::post('admin/sign-in/tests', [SsoConnectionTestsController::class, 'store'])->middleware('throttle:10,1,ssoTests')->name('admin.ssoTests.store');`.
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/Admin tests/Feature/InstanceConfiguration tests/Feature/Auth`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/Admin tests/Feature/InstanceConfiguration tests/Feature/Auth`.
 - [ ] **Step 5: Commit** — `feat(admin): SSO providers editable, with a connection test`
 
 ### Task 21: SMTP section — back end (editable, test e-mail)
@@ -3960,7 +3973,7 @@ Add to the dataset of `ConfigurationRoutesTest.php`: `'smtp' => [fn () => route(
 
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement** — `MailSettingsUpdateRequest extends InstanceConfigurationUpdateRequest` (`section()` = `Smtp`); `MailSettingsController@update` calls `UpdateInstanceConfiguration` and toasts as Task 20. `PresentMailSettings`: `delivering` = `! in_array(config('mail.default'), ['log', 'array'], true)` (the value in force), `fields` = `describe(Smtp)`. `MailTestsController@store`: `Mail::to($to)->send(new InstanceTestMail($instanceName))` inside `try` — the configuration in force for this request (saved values included, Task 18); catch `TransportExceptionInterface` → `error = 'transport'`; any other `Throwable` → report, `error = 'unknown'`; store `mail_last_test = ['at' => now()->toIso8601String(), 'ok' => $ok, 'to' => $to]`; audit `MailTested` with `['ok' => $ok]` (no address in the audit: the address is personal data the admin typed, kept in the setting only); flash `mailTest`. `InstanceTestMail` (not queued) uses the existing mail layout (re-read `resources/views/mail/`), subject `__('Test e-mail from :name', ['name' => …])`. Routes under `RequirePassword`: `admin/mail` GET and PUT, `admin/mail/tests` POST with `throttle:5,10,mailTests`.
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/Admin tests/Feature/InstanceConfiguration`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/Admin tests/Feature/InstanceConfiguration`.
 - [ ] **Step 5: Commit** — `feat(admin): SMTP editable, with a test e-mail`
 
 ### Task 22: Integrations section — back end (on/off, app credentials)
@@ -4062,8 +4075,142 @@ Add to the dataset of `ConfigurationRoutesTest.php`: `'integration app' => [fn (
 
 `isConfigured()` is unchanged: it reads `config()`, which Task 18 has laid the stored credentials over. `tests/Arch/ArchTest.php`: `->ignoring([McpFeature::class, IntegrationProvider::class])` and the test's description gains ", and IntegrationProvider which asks the instance settings whether the admin turned it off". `PresentIntegrationSettings` counts active integrations per provider in PHP over `TeamIntegration::query()->get(['id', 'provider', …])` filtered by `isActive()` (bounded: teams × providers), adds `fields` = `describe()` of `ConfigurationCatalogue::section($provider)`, the provider's callback URL (the `redirect` configuration key, OAuth providers) and inbound webhook URL (Linear, GitHub: re-read `routes/webhooks.php`), `updateUrl`. Update (on/off): validated `disabled.*` in provider values; store; audit `SettingsUpdated` `['section' => 'integrations', 'keys' => ['disabled_integrations'], 'disabled' => $list]` (provider names are not secrets). `IntegrationAppUpdateRequest extends InstanceConfigurationUpdateRequest` (`section()` from the route's provider); `IntegrationAppsController@update` calls `UpdateInstanceConfiguration` (no alert: `alertsAdmins()` is false for integration sections) and toasts `__(':provider settings saved.')`. Routes under `RequirePassword`: `admin/integrations` GET and PUT, `admin/integrations/{provider}/app` PUT (`whereIn('provider', …)`).
 
-- [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/Admin tests/Feature/InstanceConfiguration tests/Feature/Integrations tests/Arch`.
+- [ ] **Step 4: Run on PostgreSQL** — `tests/Feature/Admin tests/Feature/InstanceConfiguration tests/Feature/Integrations tests/Arch`.
 - [ ] **Step 5: Commit** — `feat(admin): integration apps editable and turned off per instance`
+
+### Task 37: "Secret changed" on the SSO cards (runs here: lane C, after Task 22, before Step B)
+
+Added by the second revision pass (P29-02 obsolete: the SSO card follows the mockup, whose footer reads "Secret modifié il y a 12 jours"). Numbered last so that Tasks 1 to 36 keep their numbers; it runs right after Task 22 in lane C and is merged with the lane, before Task 23.
+
+**Files:**
+- Create: `app/Actions/Admin/SecretChangeTimes.php`
+- Modify: `app/Actions/Admin/PresentSsoProviders.php` (one key per provider)
+- Test: `tests/Feature/InstanceConfiguration/SecretChangeTimesTest.php`
+
+**Interfaces:**
+- Consumes: Task 2 (`AuditEvent`, `AuditAction::ConfigurationUpdated`, index `(action, created_at)`), Task 19 (the event's `properties`: `section`, `changed`, `cleared`, `alertSent`), Task 20 (`providerDetails`).
+- Produces: `SecretChangeTimes::handle(InstanceSettingKey $section, string $field): ?CarbonInterface`; `admin/sign-in` prop `providerDetails[].secretChangedAt: ?string` (ISO 8601; null when the secret is not stored here, or its last change is older than what the audit log keeps). Read by Task 25.
+
+- [ ] **Step 1: Write the failing tests**
+
+```php
+<?php
+// tests/Feature/InstanceConfiguration/SecretChangeTimesTest.php
+
+use App\Actions\Admin\SecretChangeTimes;
+use App\Enums\AuditAction;
+use App\Enums\InstanceSettingKey;
+use App\Models\AuditEvent;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
+
+function configurationEvent(string $section, array $changed, DateTimeInterface $at): AuditEvent
+{
+    return AuditEvent::factory()->create([
+        'action' => AuditAction::ConfigurationUpdated,
+        'properties' => ['section' => $section, 'changed' => $changed, 'cleared' => [], 'alertSent' => true],
+        'created_at' => $at,
+    ]);
+}
+
+it('gives the time of the latest event that changed the secret of the section', function () {
+    $this->freezeSecond();
+    configurationEvent('sso_oidc', ['client_secret'], now()->subDays(12));
+    configurationEvent('sso_oidc', ['label'], now()->subDay());
+    configurationEvent('sso_entra', ['client_secret'], now());
+
+    expect(resolve(SecretChangeTimes::class)->handle(InstanceSettingKey::SsoOidc, 'client_secret')?->toIso8601String())
+        ->toBe(now()->subDays(12)->toIso8601String());
+});
+
+it('gives nothing when no event changed the secret', function () {
+    configurationEvent('sso_oidc', ['client_id'], now());
+
+    expect(resolve(SecretChangeTimes::class)->handle(InstanceSettingKey::SsoOidc, 'client_secret'))->toBeNull();
+});
+
+it('shows when a stored secret changed, and nothing for an environment or cleared secret', function () {
+    Mail::fake();
+    withEnvironmentConfiguration(['oidc.connections.entra.client_secret' => 'env-secret-value']);
+    $this->actingAs(User::factory()->instanceAdmin()->create())->withSession(['auth.password_confirmed_at' => time()]);
+    $this->freezeSecond();
+
+    $this->put(route('admin.ssoProviders.update', 'oidc'), ['client_secret' => 'stored-secret-value'])->assertSessionHasNoErrors();
+
+    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('providerDetails.3.key', 'oidc')
+        ->where('providerDetails.3.secretChangedAt', now()->toIso8601String())
+        ->where('providerDetails.2.key', 'entra')
+        ->where('providerDetails.2.secretChangedAt', null));
+
+    $this->put(route('admin.ssoProviders.update', 'oidc'), ['clear' => ['client_secret']])->assertSessionHasNoErrors();
+
+    $this->get(route('admin.signIn.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('providerDetails.3.secretChangedAt', null));
+});
+```
+
+(The provider order `google, github, entra, oidc` is the one Task 20's test reads; if `SsoProvider::cases()` orders them differently, take the indexes from Task 20's test.)
+
+- [ ] **Step 2: Run to see them fail** — `vendor/bin/sail artisan test --compact tests/Feature/InstanceConfiguration/SecretChangeTimesTest.php`. Expected: FAIL, class `SecretChangeTimes` not found.
+
+- [ ] **Step 3: Implement**
+
+```php
+<?php
+
+namespace App\Actions\Admin;
+
+use App\Enums\AuditAction;
+use App\Enums\InstanceSettingKey;
+use App\Models\AuditEvent;
+use Carbon\CarbonInterface;
+
+class SecretChangeTimes
+{
+    public const int Scanned = 500;
+
+    public function handle(InstanceSettingKey $section, string $field): ?CarbonInterface
+    {
+        $event = AuditEvent::query()
+            ->where('action', AuditAction::ConfigurationUpdated)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(self::Scanned)
+            ->get(['id', 'properties', 'created_at'])
+            ->first(fn (AuditEvent $event): bool => $this->changes($event, $section, $field));
+
+        return $event?->created_at;
+    }
+
+    private function changes(AuditEvent $event, InstanceSettingKey $section, string $field): bool
+    {
+        $properties = $event->properties ?? [];
+
+        if (($properties['section'] ?? null) !== $section->value) {
+            return false;
+        }
+
+        return in_array($field, $properties['changed'] ?? [], true);
+    }
+}
+```
+
+The JSON is filtered in PHP over a bounded set (the 500 latest configuration events, newest first with `id` as tie-breaker): no JSON path query, no `whereJsonContains` (`docs/database.md` rule 4). Beyond 500 later configuration events, or after the 365-day pruning, the line is simply absent.
+
+`PresentSsoProviders` (Task 20): inject `SecretChangeTimes` by constructor promotion and add to each row
+
+```php
+'secretChangedAt' => $fields['client_secret']['source'] === 'stored'
+    ? $this->secretChangeTimes->handle($section, 'client_secret')?->toIso8601String()
+    : null,
+```
+
+where `$fields` is the row's `describe()` and `$section` its `ConfigurationCatalogue::section($provider)` (both already computed there). Update Task 20's `Produces` line in the code's PHPDoc array shape (`secretChangedAt: ?string`).
+
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/InstanceConfiguration tests/Feature/Admin/SsoSectionTest.php`. Expected: PASS.
+- [ ] **Step 5: Commit** — `feat(admin): when each SSO secret last changed`, ending with the trailer of **Global Constraints** (`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and the session line).
 
 ---
 
@@ -4095,17 +4242,17 @@ Commit: `feat(admin): general screen`.
 
 ### Task 25: SSO screen (editable providers) and the shared configuration form
 
-**Files:** create `resources/js/components/admin/configuration/{configuration-field,secret-field,confirmation-line,use-configuration-form}.tsx` and their tests (shared by Tasks 25, 26, 27; this task creates them), `resources/js/components/admin/sso/{provider-card,connection-test-result}.tsx` and tests; modify `resources/js/pages/admin/sign-in.tsx`; `sign-in-settings-form.tsx` unchanged below the cards.
+**Files:** create `resources/js/components/admin/configuration/{configuration-field,secret-field,confirmation-line,use-configuration-form}.tsx` and their tests (shared by Tasks 25, 26, 27; this task creates them), `resources/js/components/admin/sso/{provider-card,connection-test-result,email-fallback-row}.tsx` and tests; modify `resources/js/pages/admin/sign-in.tsx` (reads `providerDetails[].secretChangedAt` of Task 37); `sign-in-settings-form.tsx` unchanged below the cards.
 
 Shared configuration form (spec §9 "Configuration forms", rules S2, S5, S6, S7):
 - `ConfigurationField` — label, `Input` with the field's value (non-secret), the hint line under it: "From the environment (`:env`)" muted, "Saved here", or nothing for `none`; a "Use the environment value" link button on a stored field, which adds the field to `clear` and shows "Back to the environment value when you save." until saved or undone.
-- `SecretField` — `Input type="password"`, always empty (never prefilled, `autoComplete="new-password"`), placeholder "Leave blank to keep it" when `secretSet`, the badge "Set" (`success`) / "Not set" (outline), no reveal button (P29-02); `unreadable` shows the S7 `Alert` (warning) "A saved secret can't be read any more (the application key changed). Enter it again."; the same clear link when stored.
+- `SecretField` — the mockup's masked input with its eye (P29-02 obsolete): `Input` in `font-mono`, `type="password"` by default, always empty (never prefilled, `autoComplete="new-password"`); when `secretSet`, the placeholder is the mockup's dots `••••••••••••••••••` and the help line under the field reads "Saved. Leave blank to keep it." (stored) or "From the environment (`:env`). Type a value to save one here." (environment); when not set, no placeholder and no help line. The eye is a ghost icon button inside the input's end (lucide `eye` / `eye-off`, `aria-label` "Show what you typed" / "Hide what you typed", `aria-pressed`), switching the input between `password` and `text`: it shows only what the admin typed — there is no stored value in the browser to reveal (rule S5); it is disabled while the field is empty. `unreadable` shows the S7 `Alert` (warning) "A saved secret can't be read any more (the application key changed). Enter it again."; the same "Use the environment value" link when stored. A `multiline` variant (`Textarea`, the GitHub private key) has no eye (a PEM is pasted, not typed) and the same placeholder and help lines.
 - `ConfirmationLine` — while `confirmedUntil` is null or past: "Confirm your password to change these settings." and a "Confirm" button linking to `confirmUrl`; the fields are `readOnly` and Save is disabled; while fresh: nothing visible, a timer turns the line back on when `confirmedUntil` passes (no polling, one `setTimeout`).
 - `useConfigurationForm(fields, updateUrl)` — `useForm` with the non-secret values and empty secrets, `clear: []`; `dirtyCount` (secrets count when typed, clears count), `reset()`, `submit()` sending only changed fields, typed secrets and `clear`; `preserveScroll`; on the `confirmation` error, keeps the typed non-secret values, empties the secrets, and shows the `ConfirmationLine`; other errors land under their fields.
 
-Composition (SSO): one card per provider in the mockup's two-column field grid (base URL / tenant, client ID, label, client secret), redirect URI read-only with a Copy button (`useClipboard`, "Copied" 2 s); status badge "Configured" (`success`) / "Not configured" (outline); the card's own "Save" and "Cancel" in its footer, and the topbar's "n unsaved changes · Cancel · Save" acting on the card being edited (one card dirty at a time: editing a second card asks to save or cancel the first); the footer sentence "Every change is recorded in the audit log and mailed to every instance admin."; "Test the connection" (`Form` POST to `admin.ssoTests.store`, pending spinner) on testable providers — it tests the saved values, so it is disabled while the card has unsaved changes ("Save first to test these values."); result `Alert` success "Connected · :ms ms · issuer :issuer" or destructive with the error sentence per code (`unreachable`, `not_oidc`, `issuer_mismatch`); last test line "Last test :relative". A not-configured provider shows the same card with empty fields (a provider is configured from here now). Then the existing `sso_required` form.
+Composition (SSO): one card per provider in the mockup's two-column field grid (base URL / tenant, client ID, label, client secret), redirect URI read-only with a Copy button (`useClipboard`, "Copied" 2 s); status badge "Configured" (`success`) / "Not configured" (outline); the card's own "Save" and "Cancel" in its footer, and the topbar's "n unsaved changes · Cancel · Save" acting on the card being edited (one card dirty at a time: editing a second card asks to save or cancel the first); the footer sentence "Every change is recorded in the audit log and mailed to every instance admin."; "Test the connection" (`Form` POST to `admin.ssoTests.store`, pending spinner) on testable providers — it tests the saved values, so it is disabled while the card has unsaved changes ("Save first to test these values."); result `Alert` success "Connected · :ms ms · issuer :issuer" or destructive with the error sentence per code (`unreachable`, `not_oidc`, `issuer_mismatch`); last test line "Last test :relative". The card footer, as the mockup: the test button on the left, and on the right "Secret changed :relative" in `text-xs` muted from the provider's `secretChangedAt` (Task 37; nothing when null). Above the result alert, the mockup's row "Keep sign-in by e-mail as fallback" with its help "For the admin if the provider is unavailable." and a `Switch` that is on and `disabled`, `aria-describedby` a second help line "Instance admins can always sign in with their password." (the third-round break-glass: the switch changes nothing, there is nothing to save). A not-configured provider shows the same card with empty fields (a provider is configured from here now). Then the existing `sso_required` form.
 
-Behaviours to test: no secret input ever holds a value, also after a refused save; a blank secret is not sent; "Use the environment value" sends `clear`; the confirmation line makes the fields read-only and links to `confirmUrl`, and comes back when `confirmedUntil` passes (fake timers); a `confirmation` error keeps the typed client id; Copy writes the URI; the test button posts the provider and is disabled with unsaved changes; each error code renders its sentence; the unreadable-secret warning.
+Behaviours to test: no secret input ever holds a value, also after a refused save; the eye switches the typed secret between hidden and shown, is disabled while the field is empty, and a stored secret shows only the placeholder dots (the input's `value` stays `''`); the fallback switch is checked and disabled; "Secret changed" renders from `secretChangedAt` and is absent when null; a blank secret is not sent; "Use the environment value" sends `clear`; the confirmation line makes the fields read-only and links to `confirmUrl`, and comes back when `confirmedUntil` passes (fake timers); a `confirmation` error keeps the typed client id; Copy writes the URI; the test button posts the provider and is disabled with unsaved changes; each error code renders its sentence; the unreadable-secret warning.
 
 Commit: `feat(admin): SSO providers screen, editable`.
 
@@ -4115,7 +4262,7 @@ Commit: `feat(admin): SSO providers screen, editable`.
 
 Composition: card "SMTP" with status badge ("Operational" success / "Not configured" warning with "Mails are written to the log."), the form (mailer `RadioGroup` "Send through SMTP" / "Don't send: write mails to the log"; host, port, encryption `Select` — none, "TLS on connect (smtps)", "STARTTLS when offered (smtp)" —, user, password as `SecretField`, sender address and name), each with its source line; topbar "n unsaved changes · Cancel · Save"; the footer sentence "Every change is recorded in the audit log and mailed to every instance admin."; footer row "Send a test e-mail" (`Input type=email` prefilled with `defaultRecipient`, "Send", disabled while the form has unsaved changes: "Save first to test these values."), result line from `lastTest` ("Last test delivered :relative" / "Last test failed :relative: :sentence"), 429 shown as "Wait a few minutes before the next test.".
 
-Behaviours to test: the result line's three states; the form posts `to`; the 429 message; the password field never holds a value; switching the mailer to the log keeps the SMTP fields but greys them; the confirmation line.
+Behaviours to test: the result line's three states; the form posts `to`; the 429 message; the password field never holds a value and its eye shows only what was typed (the mockup's SMTP password); switching the mailer to the log keeps the SMTP fields but greys them; the confirmation line.
 
 Commit: `feat(admin): SMTP screen, editable`.
 
@@ -4123,9 +4270,9 @@ Commit: `feat(admin): SMTP screen, editable`.
 
 **Files:** `resources/js/pages/admin/integrations.tsx`, `resources/js/components/admin/integrations/{integration-row,turn-off-dialog,integration-app-dialog}.tsx` and tests (reusing `components/admin/configuration/*` of Task 25).
 
-Composition: card "Integrations" with one `.st-int` row per provider: provider mark (initial on a tile, as the mockup's "J"/"L"), name, state line ("Available · :count teams connected" in `text-skrum-success-text`, "Turned off", "Not configured"), "Configure" (ghost sm, the mockup's button) opening `IntegrationAppDialog`, and the `Switch` (disabled when not configured, `aria-describedby` the state line). `IntegrationAppDialog`: title ":provider app", the provider's fields as `ConfigurationField` / `SecretField` (the GitHub private key as a `Textarea` secret: empty, "Set"/"Not set"), the callback and webhook URLs to copy, the `ConfirmationLine`, the sentence "Every change is recorded in the audit log.", "Save" (PUT `updateUrl`) and "Cancel"; clearing the credentials of a provider teams use asks "Clear :name's app? :count teams lose it until it is configured again. Their settings are kept." before the PUT. Turning off a provider with teams opens a confirm dialog "Turn :name off? :count teams lose it until you turn it back on. Their settings are kept."; the save happens on confirm (PUT with the full `disabled` list) — the switches save one by one, no topbar Save.
+Composition: card "Integrations" with one `.st-int` row per provider: provider mark (initial on a tile, as the mockup's "J"/"L"), name, state line ("Available · :count teams connected" in `text-skrum-success-text`, "Turned off", "Not configured"), "Configure" (ghost sm, the mockup's button) opening `IntegrationAppDialog`, and the `Switch` (disabled when not configured, `aria-describedby` the state line). `IntegrationAppDialog`: title ":provider app", the provider's fields as `ConfigurationField` / `SecretField` (the GitHub private key as the `multiline` `SecretField`: empty, the placeholder dots when set, no eye), the callback and webhook URLs to copy, the `ConfirmationLine`, the sentence "Every change is recorded in the audit log.", "Save" (PUT `updateUrl`) and "Cancel"; clearing the credentials of a provider teams use asks "Clear :name's app? :count teams lose it until it is configured again. Their settings are kept." before the PUT. Turning off a provider with teams opens a confirm dialog "Turn :name off? :count teams lose it until you turn it back on. Their settings are kept."; the save happens on confirm (PUT with the full `disabled` list) — the switches save one by one, no topbar Save.
 
-Behaviours to test: switch disabled when unconfigured; the dialog for a used provider, none for an unused one; the PUT body; "Configure" opens the dialog with the provider's fields; secrets empty; the clear confirmation for a used provider; the confirmation line in the dialog.
+Behaviours to test: switch disabled when unconfigured; the dialog for a used provider, none for an unused one; the PUT body; "Configure" opens the dialog with the provider's fields; secrets empty, each single-line secret with its eye; the clear confirmation for a used provider; the confirmation line in the dialog.
 
 Commit: `feat(admin): integrations screen with app credentials`.
 
@@ -4189,34 +4336,36 @@ Every key added by Tasks 1 to 32 exists in `lang/en.json`, `fr.json`, `es.json`,
 
 ### Task 34: Captures (light, 1440, French)
 
-Create `tests/Browser/Visual/AdminAndErrorPagesVisualTest.php` in the pattern of `tests/Browser/Visual/SettingsPagesVisualTest.php` and `AccessPagesVisualTest.php` (re-read both): the nine admin sections (General, Branding, SSO, SMTP, Integrations, MCP keys, Licence, Users, Audit log) with seeded data close to the mockup (eleven users, three tokens, two integrations configured, audit events of four groups, the OIDC provider with a stored client id and an environment issuer so both source lines show), the SSO section once more with a stale confirmation (the confirmation line), the Integrations "Configure" dialog of Slack, the 403 with the block (form and sent states), the 503 in maintenance with `--retry=1800` and a message, the status page. Run with `VISUAL_ONLY=light-1440-fr` (re-read `bin/test-browser` for the exact switch); the harness's overflow check must pass. No walkthrough. Commit the captures as the harness stores them.
+Create `tests/Browser/Visual/AdminAndErrorPagesVisualTest.php` in the pattern of `tests/Browser/Visual/SettingsPagesVisualTest.php` and `AccessPagesVisualTest.php` (re-read both): the nine admin sections (General, Branding, SSO, SMTP, Integrations, MCP keys, Licence, Users, Audit log) with seeded data close to the mockup (eleven users, three tokens, two integrations configured, audit events of four groups, the OIDC provider with a stored client id and an environment issuer so both source lines show), the SSO section once more with a stale confirmation (the confirmation line), the Integrations "Configure" dialog of Slack, the OIDC card with a stored secret (placeholder dots, eye, locked fallback switch, "Secret changed" line), the 403 with the block (form and sent states), the 503 in maintenance with `--retry=1800` and a message, the status page. Run with `VISUAL_ONLY=light-1440-fr` (re-read `bin/test-browser` for the exact switch); the harness's overflow check must pass. No walkthrough. Commit the captures as the harness stores them.
 
 ### Task 35: Deviations and documents
 
-- Compare each capture with its mockup's `preview.html`; each difference is fixed (a commit in the owning component) or a row added to **Pre-build deviations** above with its reason and the status "to approve by the owner".
+- Compare each capture with its mockup's `preview.html`; each difference is fixed (a commit in the owning component) or a row added to **Pre-build deviations** above with its reason and the status "found at capture, reported to the owner" (listed in the report; the merge does not wait for it). The rows answered on 2026-10-03 keep their status.
 - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: AD-1 to AD-5 rows get "done, plan 29" (and the corrected AD-2 "Back end" line); the owner note at the top stays.
 - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`: D-31 and D-35 rows say what plan 29 cleared and what stays ("Help": backlog).
 - The spec and this plan keep their paths (`docs/superpowers/specs/2026-10-21-plan-29-administration-errors-design.md`, `docs/superpowers/plans/2026-10-21-plan-29-administration-errors.md`); add to the spec's header the line "Built: plan 29, branch `plan-29-admin-errors`".
 - The self-hosting notes of `README.md` (re-read; edit only existing sections, and the licence line if the README has one): `artisan down --retry=<seconds>` and the maintenance message; `SKRUM_VERSION`, `SKRUM_UPDATE_FEED`; the `/status` page and the `skrum:heartbeat` schedule; that SSO, SMTP and integration-app settings can now be set in the admin over the environment variables, which stay the defaults, that every SSO or SMTP change is mailed to the instance admins, and that rotating `APP_KEY` makes the saved secrets unreadable (enter them again); the environment-only keys of rule S8; the project's licence is AGPL-3.0 (see `LICENSE`).
 Commit `docs: plan 29 deviations, roadmap rows and spec`.
 
-### Task 36: Four-engine suites and report
+### Task 36: PostgreSQL suites and report
 
 - [ ] `vendor/bin/pint --format agent`, `vendor/bin/sail composer types:check`, `npm run types:check`, `npm run check`, `npm run build:front`.
-- [ ] `bin/test-db pgsql`, `bin/test-db mariadb`, `bin/test-db mysql`, `bin/test-db sqlite` — the whole unit, feature, upgrade and arch suites; each must pass.
-- [ ] `bin/test-db pgsql --concurrency`, `mariadb`, `mysql`, `sqlite-file` — the whole concurrency suite, one engine at a time.
+- [ ] `bin/test-db pgsql` — the whole unit, feature, upgrade and arch suites; must pass (including `tests/Arch/DatabasePortabilityTest.php`).
+- [ ] `bin/test-db pgsql --concurrency` — the whole concurrency suite.
+- [ ] No MariaDB, MySQL or SQLite run here: the roadmap's four-engine matrix runs once after plans 24 and 25 are merged into `roadmap`; this plan's report lists its race files (`tests/Concurrency/{TeamAccessRequestTest,LastActiveAdminTest,InstanceConfigurationTest}.php`) for that run.
 - [ ] `npm run test` — the whole Vitest suite.
-- [ ] Report in `.superpowers/sdd/plan-29/report.md`: tasks done, spec acceptance criteria 1 to 30 each with its evidence (test name or capture), the security rules S1 to S9 each with its test name, deviations added, what was found different from the plan (Task 18's list of integration clients and the scheduler check), open points (spec §17 items answered or still open).
+- [ ] Report in `.superpowers/sdd/plan-29/report.md`: tasks done, spec acceptance criteria 1 to 31 each with its evidence (test name or capture), the security rules S1 to S9 each with its test name, deviations added, what was found different from the plan (Task 18's list of integration clients and the scheduler check), open points (spec §17 items answered or still open).
 - [ ] Commit `docs: plan 29 report`. Do not merge into `main`, do not push.
 
 ---
 
 ## Self-review
 
-Run against `superpowers:writing-plans` after the revision of 2026-10-03.
+Run against `superpowers:writing-plans` after the revision of 2026-10-03, and again after the second pass (pre-build deviations answered, PostgreSQL-only verification).
 
-1. **Spec coverage.** §5.1 S1 → Tasks 20, 21 (the "S1:" tests); S2 → Tasks 19 (window), 20 to 22 (`ConfigurationRoutesTest` dataset), 25 to 27 (confirmation line); S3 → Task 19; S4 → Task 19 (and Tasks 20, 21 assert the mail on the route); S5 → Tasks 17, 19, 20 to 22, 25 to 27; S6 → Tasks 17, 20, 25; S7 → Tasks 17, 25; S8 → Task 17; S9 → Task 19. §6.1 → Task 1; §6.2 → Tasks 3, 13; §6.3 → Tasks 3, 4, 23; §6.4 → Tasks 5, 8; §6.5 → Tasks 9, 10, 11; §6.6 → Tasks 2, 16, 19, 30; §6.7 → Tasks 6, 7; §6.8 → Tasks 1, 17, 18, 19; §9.1 → 23; §9.2 → 12, 24; §9.3 → 20, 25; §9.4 → 21, 26; §9.5 → 22, 27; §9.6 → 14, 28; §9.7 → 15, 16, 30; §9.8 → 13, 29; §9.9 → 16, 30; §9.10 → 11, 31; §9.11 → 8; §9.12 → 7; §9.13 → 10, 32; §9.14 → 19, 33; §12 → every task and 34, 36; criteria 1 to 30 → the report of Task 36 maps each. Criterion 21 (image version) → Task 4 Step 4; criterion 24 → Task 18; 25 → Tasks 17, 19, 20; 26 → Tasks 19, 20 to 22; 27 → Task 19; 28 → Tasks 17, 19; 29 → Tasks 20, 21; 30 → Tasks 15, 16, 30.
+1. **Spec coverage.** §5.1 S1 → Tasks 20, 21 (the "S1:" tests); S2 → Tasks 19 (window), 20 to 22 (`ConfigurationRoutesTest` dataset), 25 to 27 (confirmation line); S3 → Task 19; S4 → Task 19 (and Tasks 20, 21 assert the mail on the route); S5 → Tasks 17, 19, 20 to 22, 25 to 27; S6 → Tasks 17, 20, 25; S7 → Tasks 17, 25; S8 → Task 17; S9 → Task 19. §6.1 → Task 1; §6.2 → Tasks 3, 13; §6.3 → Tasks 3, 4, 23; §6.4 → Tasks 5, 8; §6.5 → Tasks 9, 10, 11; §6.6 → Tasks 2, 16, 19, 30; §6.7 → Tasks 6, 7; §6.8 → Tasks 1, 17, 18, 19; §9.1 → 23; §9.2 → 12, 24; §9.3 → 20, 25, 37; §9.4 → 21, 26; §9.5 → 22, 27; §9.6 → 14, 28; §9.7 → 15, 16, 30; §9.8 → 13, 29; §9.9 → 16, 30; §9.10 → 11, 31; §9.11 → 8; §9.12 → 7; §9.13 → 10, 32; §9.14 → 19, 33; §12 → every task and 34, 36; criteria 1 to 30 → the report of Task 36 maps each. Criterion 21 (image version) → Task 4 Step 4; criterion 24 → Task 18; 25 → Tasks 17, 19, 20; 26 → Tasks 19, 20 to 22; 27 → Task 19; 28 → Tasks 17, 19; 29 → Tasks 20, 21; 30 → Tasks 15, 16, 30; 31 → Tasks 25, 37 (and 26, 27 for the eye).
 2. **Placeholders.** None left: every test step holds its code; Task 17 spells out two sections of the catalogue and names every other field with its environment variable and kind. The "re-read" notes name the exact file to read and what to take from it; they are there because the plan was written without running code, and each names the fallback. Task 15 refuses to type the licence text: it is fetched and checked, or the task stops.
-3. **Type consistency.** `RequestTeamAccess::handle(User, Team, ?string)`, `AnswerTeamAccessRequest::handle(User, TeamAccessRequest, bool): TeamAccessRequestStatus`, `AccessRequestRecipients::for(Team)`, `ResolveDeniedTeam::handle(Request): ?Team`, `PresentAccessRequestOffer::handle(User, Team): array`, `MaintenanceDetails::read()`/`attachTo()`, `InstanceStatus::check()`/`overall()`, `InstanceVersion::current()`/`status()`, `RecordAuditEvent::handle(AuditAction, ?User, ?Model, array, ?string)`, `DeactivateUser::handle(User $admin, User $user): bool`, `InstanceSettings::configuration(InstanceSettingKey): array`, `InstanceConfiguration::stored()/value()/describe()/merge()/apply()`, `ConfigurationCatalogue::fields()/field()/section()/alertsAdmins()/configKeys()`, `InstanceConfigurationBaseline::capture()/get()`, `UpdateInstanceConfiguration::handle(User, InstanceSettingKey, array, array, ?string): ConfigurationChange`, `PasswordConfirmation::isFresh(Request, ?int)` — used with these signatures in every later task. The test helpers `withEnvironmentConfiguration()` (Task 17) and `withUnreachableDatabase()` (moved to `tests/Pest.php` in Task 6) are the only shared helpers lanes C and V both need: lane C notes the fallback if V is not merged.
-4. **Review Focus.** Seven lines above; each has its test in Tasks 11, 13, 1/12/17, 7/8/18, 2/19/20/21/22, 19, 18.
-5. **Owner's answers.** Decisions 1 and 2 (≠ recommendation) rewrote Tasks 1, 2, 15 to 22 and 25 to 27, the lanes, the task count (32 → 36) and deviations P29-02, P29-03, P29-04, P29-12; decisions 3 to 10 confirmed the draft and are marked answered in the table. The pre-build deviations stay "to approve by the owner".
+3. **Type consistency.** `RequestTeamAccess::handle(User, Team, ?string)`, `AnswerTeamAccessRequest::handle(User, TeamAccessRequest, bool): TeamAccessRequestStatus`, `AccessRequestRecipients::for(Team)`, `ResolveDeniedTeam::handle(Request): ?Team`, `PresentAccessRequestOffer::handle(User, Team): array`, `MaintenanceDetails::read()`/`attachTo()`, `InstanceStatus::check()`/`overall()`, `InstanceVersion::current()`/`status()`, `RecordAuditEvent::handle(AuditAction, ?User, ?Model, array, ?string)`, `DeactivateUser::handle(User $admin, User $user): bool`, `InstanceSettings::configuration(InstanceSettingKey): array`, `InstanceConfiguration::stored()/value()/describe()/merge()/apply()`, `ConfigurationCatalogue::fields()/field()/section()/alertsAdmins()/configKeys()`, `InstanceConfigurationBaseline::capture()/get()`, `UpdateInstanceConfiguration::handle(User, InstanceSettingKey, array, array, ?string): ConfigurationChange`, `PasswordConfirmation::isFresh(Request, ?int)`, `SecretChangeTimes::handle(InstanceSettingKey, string): ?CarbonInterface` — used with these signatures in every later task. The test helpers `withEnvironmentConfiguration()` (Task 17) and `withUnreachableDatabase()` (moved to `tests/Pest.php` in Task 6) are the only shared helpers lanes C and V both need: lane C notes the fallback if V is not merged.
+4. **Review Focus.** Eight lines above; each has its test in Tasks 11, 13, 1/12/17, 7/8/18, 2/19/20/21/22, 19, 18, 20/25/37.
+5. **Owner's answers.** Decisions 1 and 2 (≠ recommendation) rewrote Tasks 1, 2, 15 to 22 and 25 to 27, the lanes, the task count (32 → 36) and deviations P29-02, P29-03, P29-04, P29-12; decisions 3 to 10 confirmed the draft and are marked answered in the table. The pre-build deviations were answered in the second pass (item 6).
+6. **Second pass (2026-10-03).** Pre-build deviations answered: P29-02 obsolete → Task 25 builds the mockup's secret field (eye on typed text only, placeholder dots), the locked fallback switch and the "Secret changed" line; Task 37 (new, lane C after Task 22) supplies `secretChangedAt`; P29-13 records the four provider cards under the existing-features rule; every other row marked answered. Verification is PostgreSQL only in every task, at each lane merge and in Task 36 (owner: the four-engine matrix runs once at the end of the roadmap); no step starts MariaDB or MySQL. Base and order: `roadmap`, wave with plans 20, 21, 26, 27; plan 23 (later) widens `AccessRequestRecipients`. Rulings of this pass are in **Owner decisions**; none needs the owner before the build.

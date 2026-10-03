@@ -2,26 +2,27 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 24 only).
 
-**Status: draft of 2026-10-03, revised the same day on the owner's answers to spec §15** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", "Plan 26"). Four answers differ from the drafted recommendation (1, 2, 3, 4); the tasks below are written on the answers. The **Pre-build deviations** are still to approve by the owner (not asked yet): nothing of a screen is built before its rows are approved. Rule S-1 of spec §5.12 is an accepted security risk: read it before Tasks 13, 15, 16, 17, 18, 19, and do not add a confirmation back.
+**Status: draft of 2026-10-03, revised the same day on the owner's answers to spec §15** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", "Plan 26"). Four answers differ from the drafted recommendation (1, 2, 3, 4); the tasks below are written on the answers. Revised a second time on 2026-10-03 with the owner's answers to the **Pre-build deviations** (progress.md, "Pre-build deviations (owner, 2026-10-03)", "P26"): every row P26-01 to P26-15 is **approved** (04 and 06 as recommended, 03 with the full IP address and no location, the others as listed); none changes what is built, so screens are built without waiting. Per-plan verification runs on **PostgreSQL only** (owner, 2026-10-03: the four-engine matrix runs once at the end of the roadmap). Rule S-1 of spec §5.12 is an accepted security risk: read it before Tasks 13, 15, 16, 17, 18, 19, and do not add a confirmation back.
 
 **Goal:** A member chooses a presence colour and a photo, reduces animations, sees whether a new password is breached while typing it, lists and signs out their devices, links and unlinks SSO identities without ever losing the last way in; a guest picks a colour when joining; every guest-joinable session has a short code entered at `/join`.
 
 **Architecture:** Four columns on `users` (one task, single writer), then five lanes. *Presence*: `PresenceColor` derives or reads a colour per user and per participant row (`HasGuestIdentity`), sent in the member data of the five presence channels and in the join pages' taken colours; the front reads it instead of hashing ids. *Photo*: a browser-side square crop, a server-side metadata stripper (`ImageMetadata`, pure PHP, no GD), a private file served publicly under a random name, read by `AvatarUrl` while the admin switch "Profile photos" is on. *Motion*: a user flag rendered as a class on `<html>`, honoured by the CSS, Tailwind's motion variants and one JS helper. *Security*: a k-anonymity proxy for the breach check, `BrowserSession` over the framework's `sessions` table (device, IP address, last activity), `SignInMethods` (what still signs a user in), `RequirePasswordUnlessNoneKnown` (rule S-1: an account without a known password is asked no confirmation in the account settings), an SSO intent that lets the one callback route link for a signed-in user. *Codes*: a `session_join_codes` table issued lazily per session, rotated with the guest link, resolved at `/join`.
 
-**Tech Stack:** Laravel 13, PHP 8.4, Fortify, Socialite, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from this list.
+**Tech Stack:** Laravel 13, PHP 8.4, Fortify, Socialite, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL through `bin/test-db` for this plan (MariaDB, MySQL and SQLite in the roadmap's final matrix); `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from this list.
 
-**Spec:** `.superpowers/sdd/roadmap/plan-26/spec.md` (moves to `docs/superpowers/specs/2026-10-26-account-and-guests-design.md` in Task 25). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenUserSettings`, `ScreenSecurity`, `GuestJoin`, `MobileAccess`, `ShareDialog`, `Input` — for each, the `README.md` and the `preview.html`.
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md` (it stays there; this plan stays at `docs/superpowers/plans/2026-10-21-plan-26-account-guests.md`). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenUserSettings`, `ScreenSecurity`, `GuestJoin`, `MobileAccess`, `ShareDialog`, `Input` — for each, the `README.md` and the `preview.html`.
 
 **Not in this plan:** the backlog of spec §3; browser walkthroughs (owner's working rule: none is written or run); anything of the former plans 28 and 30 and scheduling.
 
-**Tasks:** 26. Step A, single writer: 1. Step B, five lanes: Presence 2–6, Motion 7–8, Photo 9–11, Security 12–19, Codes 20–22. Final, single writer: 23 (translations), 24 (captures: light, 1440, French), 25 (deviations and documents), 26 (four-engine suites and report).
+**Tasks:** 26. Step A, single writer: 1. Step B, five lanes: Presence 2–6, Motion 7–8, Photo 9–11, Security 12–19, Codes 20–22. Final, single writer: 23 (translations), 24 (captures: light, 1440, French), 25 (deviations and documents), 26 (PostgreSQL suites and report).
 
 ## Branch and run
 
-- Base: `main` at `18d3637e` or later (front-end rewrite, database portability, plan 19). Check before Task 1, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Support/Auth/UserAgentSummary.php`, `app/Support/Auth/SignInPolicy.php`, `app/Support/Avatars/AvatarUrl.php` exist; `resources/js/components/skrum/guest-join.tsx` has the props `takenColors` and `initialPresence`; `resources/js/components/skrum/share-dialog.tsx` has `invite.code` and `invite.joinUrl`; the last migration of `database/migrations` is dated before `2026_10_26_100000` (if a plan merged meanwhile uses that date, take the next free day and say so in the report).
-- Branch `plan-26-account-guests` from that base. **Never push, never merge into `main`.**
+- Execution order of the roadmap (owner, 2026-10-03): plans 20, 21, **26**, 27 and 29 in parallel, then 22, then 23, then 24 and 25. This plan depends on no other roadmap plan. Plan 25 (registration, invitations) runs **after** it and builds on its `password_set_at` and its `CreateNewUser` change; plan 29 runs **beside** it and also edits `app/Support/Auth/PasswordConfirmation.php` (plan 29 adds its configuration-write check; this plan adds `isNotNeeded` / `isSatisfied`): whichever merges second keeps both, and `routes/admin.php` stays plan 29's alone (S-1.3: this plan does not touch it).
+- Base: the head of the integration branch `roadmap` (it holds `main` at `18d3637e` or later: front-end rewrite, database portability, plan 19). Check before Task 1, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Support/Auth/UserAgentSummary.php`, `app/Support/Auth/SignInPolicy.php`, `app/Support/Avatars/AvatarUrl.php` exist; `resources/js/components/skrum/guest-join.tsx` has the props `takenColors` and `initialPresence`; `resources/js/components/skrum/share-dialog.tsx` has `invite.code` and `invite.joinUrl`; the last migration of `database/migrations` is dated before `2026_10_26_100000` (if a plan merged meanwhile uses that date, take the next free day and say so in the report).
+- Branch `plan-26-account-guests` from that base; at the end the controller merges it into `roadmap` (PostgreSQL suite after the merge). **Never push, never merge into `main`.**
 - Task 1 runs on that branch. Lanes run in git worktrees on branches `lane/26-<name>`, cut from the head of Task 1; the controller merges one lane at a time and runs after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Auth tests/Arch`.
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR` (header of `bin/test-db`); MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR` (header of `bin/test-db`). This plan runs PostgreSQL only: MariaDB and MySQL are not started for it. Never run two whole suites at once in the shared container (four other plans run beside this one: at most five lanes testing at once).
 - **Every task re-reads the files it touches**; a line number or a method body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
@@ -40,7 +41,9 @@ The nine questions of spec §15, answered by the owner on 2026-10-03. "≠ rec."
 | 8 | Guest colours | **A, as recommended**: taken = everyone who joined; advisory | Tasks 3, 6 (unchanged) |
 | 9 | Where "join with a code" is offered | **A, as recommended**: `/join` and a link on the login page | Task 22 (unchanged) |
 
-Chosen while revising, for the owner to confirm in the report (spec §16, items 8 to 10): "Profile photos" off by default and independent of the member style choice; rule S-1 stops at the account settings (the admin area keeps its confirmation).
+Settled on 2026-10-03 (spec §16, items 8 to 10, no longer open): "Profile photos" is independent of the member style choice (the owner approved P26-13 and P26-15, which build exactly that) and **off by default** (ruled: the safe default, stated in the README upgrade note); rule S-1 stops at the account settings and the admin area keeps its confirmation (ruled: the owner's words were "to open security or act there"); the consequences of S-1 beyond the three the owner was told (a passkey added, an SSO identity linked, devices signed out, a password set) follow from the same answer and are recorded in spec §5.12 point 5. The report restates them; nothing waits on them.
+
+Pre-build deviations, answered 2026-10-03: P26-01 to P26-15 all approved (see the table's last column).
 
 ## File structure
 
@@ -68,10 +71,10 @@ Front end, created: `resources/js/lib/presence/presence-color.ts`, `resources/js
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built.
+- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations** (all answered by the owner on 2026-10-03).
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale, no overflow from 20rem to 60rem, visible focus, contrast, motion through `motion-reduce` / `motion-safe` or `prefersReducedMotion()` (Task 8), lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers live in `resources/js/components/<domain>/`. Reuse: `settings/settings-card`, `settings/password-gate`, `skrum/confirm-dialog`, `skrum/loading-button`, `skrum/guest-join`, `skrum/share-dialog`, `session/guest-join-page`, `ui/*`.
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md` rules 1 to 12 on every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. No raw query of any form, no driver test, migrations with the Schema builder only, `up` only, dated `2026_10_26_…`, nullable `dateTime()`, no `enum()` column, no collation, names within 64 characters; a transaction locks the aggregate root first (here: the user row for link, unlink and sign-outs) and is not retried when it does more than database work; an explicit tie-breaker on every sort; tests never read SQL text and never change the schema; a legacy `users` row written with `DB::table()` sets `email_key` and `name_search`.
-- **Tests per task (owner):** every task writes its tests first and runs them on **PostgreSQL and SQLite**: `bin/test-db pgsql -- <paths>` and `bin/test-db sqlite -- <paths>`. The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. **Data migrations and races run on the four engines**: the Upgrade test of Task 13 with `bin/test-db <pgsql|mariadb|mysql|sqlite> -- tests/Upgrade/PasswordSetAtBackfillTest.php`; the race files of Tasks 15, 16 and 20 with `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- <file>`, never on SQLite in memory, never in parallel. **Whole suites on the four engines at the end (Task 26).**
+- **Tests per task (owner, as amended 2026-10-03: "the four engines only at the end"):** every task writes its tests first and runs them on **PostgreSQL**: `bin/test-db pgsql -- <paths>`. The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. The Upgrade test of Task 13 runs with `bin/test-db pgsql -- tests/Upgrade/PasswordSetAtBackfillTest.php`; the race files of Tasks 15, 16 and 20 with `bin/test-db pgsql --concurrency -- <file>`, never in parallel. **Whole suites on PostgreSQL at the end (Task 26).** SQLite, MariaDB and MySQL (unit, feature, upgrade, arch, and the concurrency suite on a SQLite file) run **once, in the roadmap's final four-engine matrix** after plans 24 and 25 are merged into `roadmap`; that run covers this plan's Upgrade test and races. The portability rules below do not relax: the code is written for the four engines and `tests/Arch/DatabasePortabilityTest.php` runs in every task that touches PHP.
 - **Races** are proved with `Tests\Concurrency\Support\Race` (static closures capturing scalars only; a contender runs in another process, so it sets the config it needs itself): one identity per provider per account (Task 15), never the last way in removed by two unlinks (Task 16), one code per session (Task 20). Each case states the protection it proves.
 - **No browser walkthrough** is written, edited or run. Vitest is written and run per task (`npm run test -- <pattern>`). **Captures only in Task 24: light, 1440, French.**
 - **No new dependency**, PHP or JS, without the owner's approval. No PHP image extension is added (decision 1: the browser crops).
@@ -90,25 +93,25 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built (fifth round). **Every row is still to approve by the owner (not asked yet)**; the answers to spec §15 did not approve them. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+**Answered by the owner on 2026-10-03** (progress.md, "Pre-build deviations (owner, 2026-10-03)", "P26: 04 + 06 browser/OS and linked date (rec.); 03 now shows the IP (owner's earlier answer), no location; others approved"). Every row is approved as listed; none changes what is built, and no screen waits. A difference found later (Task 25) that fits none of these rows is fixed to the mockup. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
-| # | Screen | Mockup element | Built | Reason |
-|---|---|---|---|---|
-| P26-01 | Profile | "Used for your avatar, live cursor and card lock." | "Used for your avatar and your live cursor." | N: no card lock exists |
-| P26-02 | Security, password | "Last changed 8 months ago." | not rendered | O: roadmap backlog ("last changed") |
-| P26-03 | Security, Active sessions | "Location is estimated from the IP address, to the city.", the Approximate location column (map pin, city), "Unusual location"; the mockup's README: "never the full IP" | the sentence is "Devices signed in to your account."; the column is "IP address" with the full address (`font-mono`, "Unknown" when none); no pin, no location, no "Unusual location" | O: decision 3 (IP and browser shown, no location) |
-| P26-04 | Security, Active sessions | "MacBook Pro · Firefox 131 / macOS 15" | "Firefox on macOS" | F: `UserAgentSummary` copies no part of the header (privacy rule of plan 18f) |
-| P26-05 | Security, Active sessions | "Sign out other sessions" asks for the password again | the security section's fresh confirmation (password or passkey; none for an account without a known password, rule S-1) and a confirmation dialog | S/O: the section is already behind a confirmation; no password rehash is needed (spec §5.9); decision 4 |
-| P26-06 | Security, Linked accounts | the account's address and "used for your last sign-in" | "Linked :date" only | N: neither is stored |
-| P26-07 | Guest join | taken colours live (`Echo.join().here()`) | read when the page loads | F: a visitor cannot be authorised on the session's channel |
-| P26-08 | Join with a code | no mockup | the GuestJoin card's frame with the `Input` mockup's "Session code" field and states | designed from neighbours |
-| P26-09 | Login | no "join with a code" entry (the MobileAccess landing has one; `/` has no landing) | a link "Join a session with a code" under the form | O: decision 9 |
-| P26-10 | Share dialog | `ATL-4821` (team letters + digits) | `K7Q-P4M2` | S: decision 7 |
-| P26-11 | Security, Linked accounts | no state for a provider turned off | the row with "Not available on this instance" and "Unlink" | S: spec §5.10 |
-| P26-12 | Security, password | no state for an account without a password | title "Set a password", no current-password field, button "Set the password"; no confirmation asked (rule S-1) | S/O: spec §5.10, decision 4 |
-| P26-13 | Profile | "Use initials" always | "Remove photo" (shown only with a photo) when members cannot choose their style; "Use initials" otherwise | S: decision 1B makes photos independent of the style choice (spec §5.6) |
-| P26-14 | Security | the Active sessions card always present | no card at all when sessions are not in the database | O: decision 2C |
-| P26-15 | Administration › Branding | no "Profile photos" switch | a `Switch` "Profile photos" with its help line, under "Members can choose their own style" | O: decision 1B (no mockup holds it; designed from the neighbouring switch) |
+| # | Screen | Mockup element | Built | Reason | Owner, 2026-10-03 |
+|---|---|---|---|---|---|
+| P26-01 | Profile | "Used for your avatar, live cursor and card lock." | "Used for your avatar and your live cursor." | N: no card lock exists | approved |
+| P26-02 | Security, password | "Last changed 8 months ago." | not rendered | O: roadmap backlog ("last changed") | approved |
+| P26-03 | Security, Active sessions | "Location is estimated from the IP address, to the city.", the Approximate location column (map pin, city), "Unusual location"; the mockup's README: "never the full IP" | the sentence is "Devices signed in to your account."; the column is "IP address" with the full address (`font-mono`, "Unknown" when none); no pin, no location, no "Unusual location" | O: decision 3 (IP and browser shown, no location) | approved: the full IP is shown (the owner's earlier answer overrides the README's "never the full IP"), no location |
+| P26-04 | Security, Active sessions | "MacBook Pro · Firefox 131 / macOS 15" | "Firefox on macOS" | F: `UserAgentSummary` copies no part of the header (privacy rule of plan 18f) | approved, as recommended (browser and system) |
+| P26-05 | Security, Active sessions | "Sign out other sessions" asks for the password again | the security section's fresh confirmation (password or passkey; none for an account without a known password, rule S-1) and a confirmation dialog | S/O: the section is already behind a confirmation; no password rehash is needed (spec §5.9); decision 4 | approved |
+| P26-06 | Security, Linked accounts | the account's address and "used for your last sign-in" | "Linked :date" only | N: neither is stored | approved, as recommended (linked date) |
+| P26-07 | Guest join | taken colours live (`Echo.join().here()`) | read when the page loads | F: a visitor cannot be authorised on the session's channel | approved |
+| P26-08 | Join with a code | no mockup | the GuestJoin card's frame with the `Input` mockup's "Session code" field and states | designed from neighbours | approved |
+| P26-09 | Login | no "join with a code" entry (the MobileAccess landing has one; `/` has no landing) | a link "Join a session with a code" under the form | O: decision 9 | approved |
+| P26-10 | Share dialog | `ATL-4821` (team letters + digits) | `K7Q-P4M2` | S: decision 7 | approved |
+| P26-11 | Security, Linked accounts | no state for a provider turned off | the row with "Not available on this instance" and "Unlink" | S: spec §5.10 | approved |
+| P26-12 | Security, password | no state for an account without a password | title "Set a password", no current-password field, button "Set the password"; no confirmation asked (rule S-1) | S/O: spec §5.10, decision 4 | approved |
+| P26-13 | Profile | "Use initials" always | "Remove photo" (shown only with a photo) when members cannot choose their style; "Use initials" otherwise | S: decision 1B makes photos independent of the style choice (spec §5.6) | approved |
+| P26-14 | Security | the Active sessions card always present | no card at all when sessions are not in the database | O: decision 2C | approved |
+| P26-15 | Administration › Branding | no "Profile photos" switch | a `Switch` "Profile photos" with its help line, under "Members can choose their own style" | O: decision 1B (no mockup holds it; designed from the neighbouring switch) | approved |
 
 ## Review Focus
 
@@ -124,7 +127,7 @@ Put to the owner before the screen is built (fifth round). **Every row is still 
 
 | Lane | Tasks | Cut from | Shares with other lanes |
 |---|---|---|---|
-| main | 1, then 23 to 26 | — | — |
+| plan branch (`plan-26-account-guests`) | 1, then 23 to 26 | — | — |
 | Presence (P) | 2, 3, 4, 5, 6 | head of Task 1 | `app/Models/User.php` (method `presenceColor` only, written in Task 1), `AccountSettingsController::profile()` (one key), `ProfileUpdateRequest`, `components/settings/account-settings.tsx` (one mount), `lang/*.json` |
 | Motion (M) | 7, 8 | head of Task 1 | `routes/settings.php` (one route), `resources/views/app.blade.php`, `resources/css/app.css`, `components/settings/account-settings.tsx` (one mount), `lang/*.json` |
 | Photo (Ph) | 9, 10, 11 | head of Task 1 | `app/Support/Avatars/AvatarUrl.php`, `app/Concerns/HasGuestIdentity.php` (`avatarUrl` only; lane P edits `presenceColor` in the same file), `ProfileController::destroy`, `routes/settings.php`, `routes/web.php`, `tests/Pest.php` (one block), `components/settings/account-settings.tsx` (one mount), `lang/*.json`; alone on `InstanceSettingKey`, `InstanceSettings`, the Branding controller, request and front files |
@@ -268,9 +271,9 @@ class PresenceColor
 
 `UserFactory::definition()`: add `'password_set_at' => now(),`.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Unit/Support/Avatars tests/Feature/Settings/AccountColumnsTest.php $(grep -rl MailBrand tests | tr '\n' ' ')` then the same with `sqlite`.
+Run: `bin/test-db pgsql -- tests/Unit/Support/Avatars tests/Feature/Settings/AccountColumnsTest.php tests/Arch $(grep -rl MailBrand tests | tr '\n' ' ')`.
 Expected: PASS on both.
 
 - [ ] **Step 5: Commit**
@@ -470,9 +473,9 @@ The five models: add `'presence_color'` to `#[Fillable]`, `@property int|null $p
 
 and the rest of the method keeps its avatar-style branch on `$rules`. `AccountSettingsController::profile()` adds `'presenceColor' => $user->presenceColor(),`. In `BroadcastAuthorizationsController`, each of the five `authorizePresenceChannel(…, [ … ])` arrays gains `'presence' => $x->presenceColor(),` after `'isGuest'`. `PresentGamePlayer::handle()` gains `'presence' => $player->presenceColor(),` (docblock shape too).
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Realtime tests/Feature/Games` then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Realtime tests/Feature/Games`.
 Expected: PASS. A games test asserting the exact player shape gains `presence` (list it in the report).
 
 - [ ] **Step 5: Commit** — `feat(presence): one colour per person, chosen in the profile and sent on every presence channel` (with the two trailer lines).
@@ -591,7 +594,7 @@ If a factory needs a team or a status the dataset does not give (the survey's `o
 
 Each join controller's `show` adds the spread, loading what `presenceColor()` reads — retro: `...$presentJoinSession->colours($retro->participants()->with('user')->get(), $request->user())`; poker: `$game->players()->with('user')->get()`; whiteboard: `$board->members()->with('user')->get()`; survey: `$survey->respondents()->with('user')->get()`; game: `$room->players()->with(['user', 'participant.user'])->get()`. Each `store` validates `'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count]` and adds `'presence_color' => $validated['presence'] ?? null` to the `create([...])`.
 
-- [ ] **Step 4: Run on pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Feature/Retros/RetroJoinTest.php tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys/TeamSurveyJoinTest.php tests/Feature/Games`, then `sqlite` → PASS (the existing join tests are untouched by the new keys; a test that asserts the page props exactly gains the two keys — list it).
+- [ ] **Step 4: Run on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Feature/Retros/RetroJoinTest.php tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys/TeamSurveyJoinTest.php tests/Feature/Games` → PASS (the existing join tests are untouched by the new keys; a test that asserts the page props exactly gains the two keys — list it).
 
 - [ ] **Step 5: Commit** — `feat(guests): taken colours on the join pages and the colour a guest picks`.
 
@@ -761,7 +764,7 @@ class MotionPreferencesController extends Controller
 
 `routes/settings.php`, in the `auth`, `verified` group beside the shortcut preferences: `Route::patch('settings/motion', [MotionPreferencesController::class, 'update'])->name('motionPreferences.update');`. `app.blade.php`: `@class(['dark' => ($appearance ?? 'system') == 'dark', 'reduce-motion' => (bool) auth()->user()?->reduce_motion])` on `<html>`. `AccountSettingsController::edit`: `'appearance' => $verified ? ['reduceMotion' => $user->reduce_motion] : false,` — and in `account-settings.tsx` the truthiness test of `appearance` keeps working (an object is truthy); the type changes in Task 8.
 
-- [ ] **Step 4: pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Settings` then `sqlite` → PASS (`AccountSettingsPageTest` asserting `appearance` true becomes the object: list it).
+- [ ] **Step 4: PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Settings` → PASS (`AccountSettingsPageTest` asserting `appearance` true becomes the object: list it).
 - [ ] **Step 5: Commit** — `feat(settings): reduce animations on the account`.
 
 ### Task 8: The front honours it
@@ -1021,7 +1024,7 @@ class ImageMetadata
 }
 ```
 
-- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Unit/Support/Avatars` and `sqlite` → PASS.
+- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Unit/Support/Avatars` → PASS.
 - [ ] **Step 5: Commit** — `feat(avatars): strip image metadata without an image library`.
 
 ### Task 10: Uploading, serving and showing a photo, behind the switch "Profile photos"
@@ -1391,7 +1394,7 @@ The switch. `InstanceSettingKey`: `case ProfilePhotos = 'profile_photos';` (afte
 
 `User::avatarUrl()` passes `fn (): ?string => $this->avatar_photo_path`; `HasGuestIdentity::avatarUrl()` passes `fn (): ?string => $this->avatarOwner()?->avatar_photo_path`. `ProfileController::destroy`: read `$path = $user->avatar_photo_path` before the transaction, call `resolve(AvatarPhotos::class)->delete($path)` after it. Routes: in `routes/settings.php` (`auth` group, beside `profile.update`) `Route::post('settings/profile/photo', [ProfilePhotosController::class, 'store'])->middleware('throttle:10,1')->name('profilePhotos.store');` and `Route::delete('settings/profile/photo', [ProfilePhotosController::class, 'destroy'])->name('profilePhotos.destroy');`; in `routes/web.php` beside the avatar routes `Route::get('avatar-photos/{file}', [AvatarPhotosController::class, 'show'])->where('file', AvatarPhotos::FilePattern)->name('avatarPhotos.show');`. `AccountSettingsController::profile()`: `$photosAllowed = $this->settings->profilePhotos();` then `'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null, 'photosAllowed' => $photosAllowed,` (the existing `avatarMemberChoice` key stays and tells Task 11 which button to show). `ProfilePhotosController::destroy` keeps `$useInitials = $request->boolean('initials') && $settings->avatarMemberChoice()`: without the style choice it only removes the photo.
 
-- [ ] **Step 4: pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Admin tests/Feature/Avatars` (or the folder of the avatar tests) then `sqlite` → PASS (a test asserting the exact keys of `InstanceSettings::all()` or of the Branding props gains `profile_photos` / `profilePhotos`: list it).
+- [ ] **Step 4: PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Admin tests/Feature/Avatars` (or the folder of the avatar tests) → PASS (a test asserting the exact keys of `InstanceSettings::all()` or of the Branding props gains `profile_photos` / `profilePhotos`: list it).
 - [ ] **Step 5: Commit** — `feat(settings): profile photo behind the admin switch, stored without metadata and shown as the avatar`.
 
 ### Task 11: The photo block of the profile, and the Branding switch
@@ -1663,7 +1666,7 @@ class PasswordBreachRangesController extends Controller
 
 Route in `routes/settings.php` (`auth`, `verified` group): `Route::post('settings/password/breach-range', [PasswordBreachRangesController::class, 'store'])->middleware('throttle:30,1')->name('passwordBreachRanges.store');`. `SecuritySettings::offered()` adds `'liveBreachCheck' => Password::defaults()->appliedRules()['uncompromised'],` (docblock shape too). `.env.example`: `# SKRUM_PASSWORD_BREACH_CHECK=false   # an instance without outbound access`.
 
-- [ ] **Step 4: pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/Auth tests/Feature/Settings` then `sqlite` → PASS (`AccountSettingsPageTest`'s list of `offered()` keys gains `liveBreachCheck`: list it).
+- [ ] **Step 4: PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/Auth tests/Feature/Settings` → PASS (`AccountSettingsPageTest`'s list of `offered()` keys gains `liveBreachCheck`: list it).
 - [ ] **Step 5: Commit** — `feat(security): breach check by k-anonymity, with a switch and a short timeout`.
 
 ### Task 13: Known passwords, the ways in, setting a password, and rule S-1
@@ -1866,7 +1869,7 @@ it('tells the security section whether the password is known and allowed', funct
 });
 ```
 
-If plan 25 has changed the registration form (a workspace and a team at sign-up) before this plan runs, add its new required fields to the registration test's payload; the assertion stays.
+Plan 25 (a workspace and a team at sign-up) runs after this plan in the roadmap order, so the registration form is still today's when this task runs; plan 25 carries this test forward with its own fields. If the form on `roadmap` has changed anyway, add its new required fields to the payload and report it; the assertion stays.
 
 `tests/Feature/Settings/PasswordConfirmationGuardTest.php` — the S-1 cases, added to the file so they use its helpers `guardedAccountActions()` and `accountAction()` (its `beforeEach` turns on two-factor, passkeys, MCP and mail). Test names carry the rule's number; no comment is added:
 
@@ -2161,7 +2164,7 @@ class RequirePasswordUnlessNoneKnown extends RequirePassword
 
 `SecurityController::update`: `$request->user()->forceFill(['password' => $request->password, 'password_set_at' => now()])->save();` (the rest unchanged). `CreateNewUser`: after the user is created, `$user->forceFill(['password_set_at' => now()])->save();` (inside its transaction if it has one). `ResetUserPassword`: `$user->forceFill(['password' => $input['password'], 'password_set_at' => now()])->save();`. `SecuritySettings::protected()` adds `'password' => ['isSet' => $user->password_set_at !== null, 'allowed' => $this->policy->allowsPassword($user)]` (inject `SignInPolicy`; docblock shape).
 
-- [ ] **Step 4: Run** — `bin/test-db <pgsql|mariadb|mysql|sqlite> -- tests/Upgrade/PasswordSetAtBackfillTest.php` on the **four** engines; `bin/test-db pgsql -- tests/Feature/Auth tests/Feature/Settings tests/Feature/Admin` and `sqlite` → PASS. Every existing case of `PasswordConfirmationGuardTest` for an account with a known password passes unchanged (the alias still answers 423 / redirect for it).
+- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Upgrade/PasswordSetAtBackfillTest.php` (the other three engines run it in the roadmap's final matrix); `bin/test-db pgsql -- tests/Feature/Auth tests/Feature/Settings tests/Feature/Admin tests/Arch` → PASS. Every existing case of `PasswordConfirmationGuardTest` for an account with a known password passes unchanged (the alias still answers 423 / redirect for it).
 - [ ] **Step 5: Commit** — `feat(security): know which passwords were chosen, what still signs a user in, set a password; no confirmation without a known password (accepted risk S-1)`. The commit body names spec §5.12 and the owner's answer of 2026-10-03.
 
 ### Task 14: Active sessions — read, sign out one, sign out the others
@@ -2457,7 +2460,7 @@ class BrowserSessions
 
 Controllers: `BrowserSessionsController::destroy(Request $request, string $sessionKey, BrowserSessions $sessions)` — `abort_unless($sessions->available(), 404); abort_unless($sessions->signOut($request->user(), $sessionKey, $request->session()->getId()), 404);` toast "Device signed out.", `back()`. `OtherBrowserSessionsController::destroy` — 404 when not available; toast "Other sessions signed out."; `back()`. Routes in `routes/settings.php` (`auth`, `verified`): `Route::delete('settings/sessions/{sessionKey}', …)->where('sessionKey', '[0-9a-f]{64}')->middleware(RequirePasswordUnlessNoneKnown::class)->name('browserSessions.destroy');` and `Route::delete('settings/sessions', …)->middleware(RequirePasswordUnlessNoneKnown::class)->name('otherBrowserSessions.destroy');`. `SecuritySettings::protected()` gains `'browserSessions' => $this->sessions->available() ? $this->sessions->of($user, $currentSessionId) : null` (docblock shape: the row list or null).
 
-- [ ] **Step 4: pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/Auth tests/Feature/Settings` then `sqlite` → PASS.
+- [ ] **Step 4: PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/Auth tests/Feature/Settings` → PASS.
 - [ ] **Step 5: Commit** — `feat(security): active sessions, sign one out or all the others`.
 
 ### Task 15: Linking an identity from the one callback
@@ -2752,7 +2755,7 @@ class LinkSocialAccount
 
 Routes: in `routes/web.php` move `Route::get('auth/{provider}/callback', …)->name('sso.callback');` out of the `guest` group (the redirect route stays in it). In `routes/settings.php`: `Route::get('settings/linked-accounts/{provider}', [LinkedAccountsController::class, 'create'])->middleware(RequirePasswordUnlessNoneKnown::class)->name('linkedAccounts.create');` (`auth`, `verified`).
 
-- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Feature/Auth tests/Feature/Settings` and `sqlite`; the race on the four engines: `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- tests/Concurrency/SocialAccountLinkTest.php` → PASS everywhere. The existing `SsoLoginTest`, `InvitationSsoTest`, `ForcedSsoTest` must pass unchanged.
+- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Feature/Auth tests/Feature/Settings`; the race on PostgreSQL: `bin/test-db pgsql --concurrency -- tests/Concurrency/SocialAccountLinkTest.php` → PASS (the other three engines run it in the roadmap's final matrix). The existing `SsoLoginTest`, `InvitationSsoTest`, `ForcedSsoTest` must pass unchanged.
 - [ ] **Step 5: Commit** — `feat(security): link an identity from the one callback`.
 
 ### Task 16: Unlinking, and the linked accounts of the security section
@@ -2947,7 +2950,7 @@ class UnlinkSocialAccount
 
 `LinkedAccounts::of()` walks `SsoProvider::cases()` in order: a provider is listed when enabled or linked; `account` is the user's first account of it (`id`, `linkedAt` = `created_at?->toIso8601String()`, `isManaged` = `isManagedByAdmin`, `canUnlink` = not managed and `remaining($user, $account) !== []`); `lastWayIn` is true when at least one account is linked and every linked, unmanaged one has `canUnlink` false. `SecuritySettings::protected()` adds `'linkedAccounts' => $this->linkedAccounts->of($user)`.
 
-- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Auth` and `sqlite`; the race on the four engines (`--concurrency`, pgsql, mariadb, mysql, sqlite-file) → PASS.
+- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Feature/Settings tests/Feature/Auth`; the race with `bin/test-db pgsql --concurrency -- <the race file>` → PASS (the other three engines in the roadmap's final matrix).
 - [ ] **Step 5: Commit** — `feat(security): unlink an identity, never the last way in`.
 
 ### Task 17: The password card — live breach line, set mode, hidden when refused; the gate under rule S-1
@@ -3399,7 +3402,7 @@ class JoinCodes
 
 Each snapshot builder: inject `JoinCodes` and add, beside `'guestUrl' => …`, `'joinCode' => <the same condition> ? $this->joinCodes->for($x) : null,` (compute the URL once into a local and test it for null). Each `*GuestTokensController::store`: after its transaction, `'joinCode' => $joinCodes->rotate($locked)` in the JSON (for the game room, only when its `guestUrl` is not null). Check the five events or MCP presenters that copy the snapshot's `guestUrl` and add nothing to them.
 
-- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Unit/Support/Sessions tests/Feature/Sessions tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys tests/Feature/Games tests/Feature/Mcp` and `sqlite` (a snapshot test asserting its exact keys gains `joinCode`: list each); the race on the four engines (`--concurrency`, pgsql, mariadb, mysql, sqlite-file) → PASS.
+- [ ] **Step 4: Run** — `bin/test-db pgsql -- tests/Unit/Support/Sessions tests/Feature/Sessions tests/Feature/Retros tests/Feature/Poker tests/Feature/Whiteboards tests/Feature/TeamSurveys tests/Feature/Games tests/Feature/Mcp` (a snapshot test asserting its exact keys gains `joinCode`: list each); the race with `bin/test-db pgsql --concurrency -- <the race file>` → PASS (the other three engines in the roadmap's final matrix).
 - [ ] **Step 5: Commit** — `feat(guests): a short join code per session, rotated with its link`.
 
 ### Task 21: Joining by code — the route and its page
@@ -3505,7 +3508,7 @@ class JoinCodesController extends Controller
 
 Routes in `routes/web.php`, outside the `auth` groups: `Route::get('join', [JoinCodesController::class, 'create'])->name('joinCodes.create');` and `Route::post('join', [JoinCodesController::class, 'store'])->middleware('throttle:joinCodes')->name('joinCodes.store');`, with `RateLimiter::for('joinCodes', fn (Request $request) => Limit::perMinute(10)->by($request->ip()))` where the project defines its named limiters (read `FortifyServiceProvider` and `AppServiceProvider`). Check the order against `join/{guestToken}` (no conflict: different segment counts).
 
-- [ ] **Step 4: pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Arch` then `sqlite` → PASS.
+- [ ] **Step 4: PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Arch` → PASS.
 - [ ] **Step 5: Commit** — `feat(guests): join a session with its code`.
 
 ### Task 22: The code in the Share dialogs, the join-by-code page, the login link
@@ -3593,30 +3596,31 @@ No browser walkthrough is written, edited or run. Captures only, through the vis
 
 ### Task 25: Deviations and documents
 
-- [ ] For each capture of Task 24, open it beside the mockup's `preview.html` (light, 1440, French) and list the remaining differences. Each is fixed, or is a row of **Pre-build deviations** with the owner's word. A difference that fits no reason stops the task.
+- [ ] For each capture of Task 24, open it beside the mockup's `preview.html` (light, 1440, French) and list the remaining differences. Each is either one of the approved rows P26-01 to P26-15 or is fixed to the mockup in this task (its own commit, `fix(settings): …` or `fix(guests): …`). A difference that can be neither (it needs data or a concept that does not exist) is listed in the report as a new row for the owner; the plan is not held for it.
 - [ ] Documents, in one commit:
-  - move the spec to `docs/superpowers/specs/2026-10-26-account-and-guests-design.md` and this plan to `docs/superpowers/plans/2026-10-26-plan-26-account-and-guests.md`, with the owner's answers to spec §15 (already folded in on 2026-10-03) and to the pre-build deviations;
+  - the spec and this plan stay at their paths (`docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md`, `docs/superpowers/plans/2026-10-21-plan-26-account-guests.md`); update only what the build changed (a deviation fixed in the first step, a rule found false while building), the owner's answers being already folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: rows AC-1 to AC-6, GU-1, GU-2 marked "done, plan 26"; the "Back end" lines of AC-4 and AC-6 corrected as spec §1.1 says; the backlog line completed with spec §3;
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup": D-25 reduced to what stays backlog (other notification events, "last changed", "Change device", "last used", revoked-token rows, location); D-32 removed; D-79 removed (decision 6B, answered);
   - `docs/database.md`: under SQLite, one sentence — with `SESSION_DRIVER=file` the security page shows no Active sessions card;
   - `README.md` (upgrade notes): `SKRUM_PASSWORD_BREACH_CHECK` and `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT`; the SSO callback now also serves signed-in users (no provider change needed); profile photos are **off** until an admin turns on "Profile photos" in Branding, and are stored on the `local` disk under `avatars/` (back it up with the rest of `storage/app`); Active sessions show each device's IP address as the framework stored it, so an instance behind a reverse proxy sets `TRUSTED_PROXIES`; an account created by SSO, without a password of its own, is asked no confirmation in the account settings until it sets one (the owner's accepted risk, spec §5.12, rule S-1).
-- [ ] Commit `docs: plan 26 — spec and plan in place, roadmap and deviation rows updated`.
+- [ ] Commit `docs: plan 26 — roadmap and deviation rows updated`.
 
-### Task 26: Full suites on four engines, and report
+### Task 26: Full suites on PostgreSQL, and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check`; `vendor/bin/sail composer rector:check`.
-- [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (one engine at a time) — Expected: `test-db <engine>: PASS` on each.
-- [ ] `bin/test-db pgsql --concurrency`, `mariadb --concurrency`, `mysql --concurrency`, `sqlite-file --concurrency` — Expected: PASS on each.
+- [ ] `bin/test-db pgsql` — Expected: `test-db pgsql: PASS`.
+- [ ] `bin/test-db pgsql --concurrency` — Expected: PASS.
+- [ ] SQLite, MariaDB and MySQL are **not** run here (owner, 2026-10-03): the roadmap's final four-engine matrix, after plans 24 and 25 are merged into `roadmap`, runs them once for every plan. The report says so.
 - [ ] `bin/check-pg-upgrade` — Expected: PASS.
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS.
-- [ ] Report `docs/superpowers/research/plan-26-report.md` (asked for by this plan): rule S-1 restated in one paragraph with its accepted risk and the tests that hold it (criterion 21), so the owner reads it again; the points chosen while revising for the owner to confirm (spec §16, items 8 to 10); per acceptance criterion of spec §12, the test that proves it and the engines it passed on; the differences left with each mockup; every existing test edited and why; the outcome of the Tailwind variant check (Task 8); the translation keys added outside Task 23's table; every decision taken on the owner's behalf; spec §16's open points with what was learnt.
-- [ ] Commit `docs: plan 26 report`. Then ask the owner to read the report. **No merge into `main`, no push.**
+- [ ] Report `docs/superpowers/research/plan-26-report.md` (asked for by this plan): rule S-1 restated in one paragraph with its accepted risk and the tests that hold it (criterion 21), so the owner reads it again; the points ruled while revising (spec §16, items 8 to 10: "Profile photos" off by default and independent, S-1 stopping at the account settings, its consequences beyond the three the owner was told), restated so the owner can overturn them; per acceptance criterion of spec §12, the test that proves it (PostgreSQL; criterion 20's other engines are left to the roadmap's final matrix); the differences left with each mockup; every existing test edited and why; the outcome of the Tailwind variant check (Task 8); the translation keys added outside Task 23's table; every decision taken on the owner's behalf; spec §16's open points with what was learnt.
+- [ ] Commit `docs: plan 26 report`. Then the controller merges the branch into `roadmap`, runs `bin/test-db pgsql` there, and notifies the owner that plan 26 is done (report path). **No merge into `main`, no push.**
 
 ---
 
 ## Self-review (done while writing; kept for the reader)
 
-**Spec coverage.** §5.1 columns: Task 1. §5.2 participant colour: Task 2. §5.3 codes table: Task 20. §5.4 presence colour: Tasks 1, 2, 4, 5. §5.5 taken colours: Tasks 3, 6. §5.6 photo: Tasks 9, 10, 11. §5.7 motion: Tasks 7, 8. §5.8 breach: Tasks 12, 17. §5.1 bis the switch "Profile photos": Tasks 10, 11. §5.9 sessions (IP, hidden card): Tasks 14, 18. §5.10 ways in, link, unlink, managed, set a password: Tasks 13, 15, 16, 17, 19. §5.11 codes: Tasks 20, 21, 22. §5.12 rule S-1: Task 13 (middleware, alias, props, tests), Task 17 (the gate), used by the routes of Tasks 14, 15, 16. §6 permissions: the route middleware of Tasks 7, 10, 12, 14, 15, 16, 21 and the tests that refuse. §7 real time: Task 2 (member data), Task 6 (static taken colours), Task 22 (regenerate). §8 screens: Tasks 5, 6, 8, 11 (profile photo and Branding switch), 17 (password card and gate), 18, 19, 22. §9 routes: Tasks 7, 10, 12, 13 (the middleware swap), 14, 15, 16, 21. §10 migrations: Tasks 1, 2, 13 (Upgrade test on four engines), 20. §11 testing: every task; races in 15, 16, 20; captures in 24. §12 criteria: 1 → 1, 2, 5; 2 → 2; 3 → 4; 4 → 9, 10; 5 → 10, 11; 6 → 7, 8; 7 → 12; 8 → 17; 4 and 5 also → 10, 11 (the switch); 9 → 14, 18; 10 → 14; 11 → 14, 18; 12 → 15, 19; 13 → 13, 16; 14 → 13, 16; 15 → 13, 17; 16 → 3, 6; 17 → 20, 22; 18 → 20, 21; 19 → 23, 24, 25; 20 → 26; 21 (rule S-1) → 13, 17.
+**Spec coverage.** §5.1 columns: Task 1. §5.2 participant colour: Task 2. §5.3 codes table: Task 20. §5.4 presence colour: Tasks 1, 2, 4, 5. §5.5 taken colours: Tasks 3, 6. §5.6 photo: Tasks 9, 10, 11. §5.7 motion: Tasks 7, 8. §5.8 breach: Tasks 12, 17. §5.1 bis the switch "Profile photos": Tasks 10, 11. §5.9 sessions (IP, hidden card): Tasks 14, 18. §5.10 ways in, link, unlink, managed, set a password: Tasks 13, 15, 16, 17, 19. §5.11 codes: Tasks 20, 21, 22. §5.12 rule S-1: Task 13 (middleware, alias, props, tests), Task 17 (the gate), used by the routes of Tasks 14, 15, 16. §6 permissions: the route middleware of Tasks 7, 10, 12, 14, 15, 16, 21 and the tests that refuse. §7 real time: Task 2 (member data), Task 6 (static taken colours), Task 22 (regenerate). §8 screens: Tasks 5, 6, 8, 11 (profile photo and Branding switch), 17 (password card and gate), 18, 19, 22. §9 routes: Tasks 7, 10, 12, 13 (the middleware swap), 14, 15, 16, 21. §10 migrations: Tasks 1, 2, 13 (Upgrade test on PostgreSQL; the other engines in the roadmap's final matrix), 20. §11 testing: every task; races in 15, 16, 20; captures in 24. §12 criteria: 1 → 1, 2, 5; 2 → 2; 3 → 4; 4 → 9, 10; 5 → 10, 11; 6 → 7, 8; 7 → 12; 8 → 17; 4 and 5 also → 10, 11 (the switch); 9 → 14, 18; 10 → 14; 11 → 14, 18; 12 → 15, 19; 13 → 13, 16; 14 → 13, 16; 15 → 13, 17; 16 → 3, 6; 17 → 20, 22; 18 → 20, 21; 19 → 23, 24, 25; 20 → 26 (PostgreSQL) and the roadmap's final matrix (SQLite, MariaDB, MySQL); 21 (rule S-1) → 13, 17.
 
 **Placeholders.** Back-end tasks carry their tests and code, except the four other kinds of the share-data cases of Task 20, whose snapshot route names and JSON paths must be read from each builder (the retro case is written out), and the survey and standalone-game cases of Task 2's channel test, which follow its poker case with the survey and game guest helpers. Screen tasks carry composition tables, behaviours and states, and the code of their pure logic, as plan 19 did; the mockup is the markup's specification.
 
@@ -3624,6 +3628,8 @@ No browser walkthrough is written, edited or run. Captures only, through the vis
 
 **Review Focus.** Each line has its test: SSO callback intents (Task 15, the dataset "none / someone else / another provider"), Exif sent past the browser (Tasks 9, 10), the last way in and two unlinks (Task 16, with `Race`), codes as typed and look-alikes (Tasks 20, 21), a remembered device signed out (Task 14, the remember token), rule S-1 both ways (Task 13, the S-1 cases of `PasswordConfirmationGuardTest`), the IP of the user's own sessions only (Task 14).
 
-**Revision of 2026-10-03 (owner's answers).** Decisions 1, 2, 3 and 4 differ from the draft: Tasks 10, 11 (switch), 13 (S-1), 14, 15, 17, 18, 19 rewritten; no task added or removed (26). Decisions 5 to 9 were the recommended options: their tasks are unchanged. The pre-build deviations P26-13 to P26-15 are new; every row is still to approve by the owner.
+**Revision of 2026-10-03 (owner's answers).** Decisions 1, 2, 3 and 4 differ from the draft: Tasks 10, 11 (switch), 13 (S-1), 14, 15, 17, 18, 19 rewritten; no task added or removed (26). Decisions 5 to 9 were the recommended options: their tasks are unchanged. The pre-build deviations P26-13 to P26-15 are new.
+
+**Second revision of 2026-10-03 (pre-build deviations, PostgreSQL only, execution order).** The owner approved P26-01 to P26-15 (04 and 06 as recommended, 03 with the full IP and no location): no row changes what is built, so no task changes its code; the "to approve" gates are gone and Task 25 fixes any further difference to the mockup. Every per-task run, the Upgrade test and the three races now run on PostgreSQL only; Task 26 runs the PostgreSQL suites; the four-engine matrix belongs to the roadmap's end. The plan now branches from `roadmap` and is merged into it; plan 25 runs after it (Task 13's registration note reversed) and plan 29 beside it (`PasswordConfirmation.php` shared). Spec §16 items 8 to 10 are ruled, not open. The spec path is the docs path; nothing is moved. Task count unchanged: 26.
 
 **Known weak points of this draft.** Nothing was run. The Tailwind override of a built-in variant is unproven (Task 8 checks the build). The `Socialite::fake` behaviour for a signed-in callback and for `redirect()` was read from its use in `InvitationSsoTest`, not run. `RequirePassword` answering 423 to a JSON request is the framework's behaviour as read. Re-pointing the `password.confirm` alias with `$middleware->alias()` in `bootstrap/app.php` relies on custom aliases overriding the framework's default ones (read, not run): the S-1 cases of Task 13 over Fortify's two-factor and passkey routes prove it or fail. The backfill's 60-second rule is a heuristic, stated as such in the spec; under S-1 a wrong null also skips confirmation (spec §5.12, item 6).

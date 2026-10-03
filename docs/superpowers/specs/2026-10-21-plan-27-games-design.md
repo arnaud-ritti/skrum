@@ -1,10 +1,10 @@
 # Skrum — Games: room settings, turns and rounds, GIF captions and podium, the whole-word guess, and four new games — Design
 
 Date: 2026-10-03
-Status: Draft, revised 2026-10-03 with the owner's answers to §15 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 27"). Every question of §15 is answered: nine as recommended, one otherwise (question 9, option B: prepared statement sets for Two truths and a lie, one drawn answer per round for Guess who?). The body below follows the answers. Nothing is built before the owner has approved the pre-build deviations of the plan (P27-01 to P27-14, not asked yet).
+Status: Approved for build, 2026-10-03. Revised twice that day: with the owner's answers to §15 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 27"; nine as recommended, one otherwise: question 9, option B, prepared statement sets for Two truths and a lie, one drawn answer per round for Guess who?), then with the owner's answers to the pre-build deviations P27-01 to P27-14 (same file, "Pre-build deviations (owner, 2026-10-03)", line "P27"; §17). Two answers add work against the recommendation: the game cards show a duration and players min–max (P27-04, §9.1), and the Draw & Guess extras and Decoded's list of puzzles are built (P27-08 and P27-14, §6.15, §6.16, §9.5). Nothing waits for the owner. Execution: wave A of the roadmap, in parallel with plans 20, 21, 26 and 29, on its own branch merged into `roadmap`; per-plan verification on PostgreSQL only, the four-engine matrix once at the end of the roadmap (owner, 2026-10-03).
 Parent specs: `docs/superpowers/specs/2026-09-29-games-design.md` (the game engine; every rule of it holds unless this spec changes it, and §4.9 lists what it changes) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13: the mockup is binding for presentation).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — group 6 (6-D1 cards, 6-D3 reactions in rooms, 6-D8 keyboard by locale), third round ("Games: settings card, turn order and rounds, GIF captions and podium, the four games the engine lacks"), round 4b (D-59: the whole-word guess goes to the games roadmap), fifth round (working rules, database portability, roadmap change: "the four extra games (GM-4) stay in plan 27", whole-word guess joins plan 27), sixth round (informal register fr tu / es tú / de du; a guest counts as a participant). Owner note at the top of the roadmap: plans 28 and 30 and scheduling are backlog.
-Roadmap rows: GM-1 to GM-4 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`, plus the whole-word guess of hangman (owner's roadmap change). Deviation rows cleared: D-20 (wholly, except the elements the roadmap keeps in the backlog, §3), D-59 (the whole-word field), D-61 (no caption) and the caption part of D-62's "no title or caption" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`.
+Roadmap rows: GM-1 to GM-4 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`, plus the whole-word guess of hangman (owner's roadmap change), plus, by the owner's answers to P27-04, P27-08 and P27-14, the game cards' duration and players, the Draw & Guess extras ("found · time", "Found by n/m", points per finder, "New word", Redo) and Decoded's list of puzzles. Deviation rows cleared: D-20 (wholly, except the elements §3 keeps in the backlog), D-57 (Decoded's list of puzzles), D-59 (the whole-word field), D-61 (no caption) and the caption part of D-62's "no title or caption" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`.
 Mockups (binding for presentation): `docs/design-system/components/ScreenIcebreaker` (hangman, game picker of six games, settings card, turn order, last moves, whole-word guess), `ScreenIcebreakerDraw` (settings card of a drawing round, drawing order, "Round 3 / 6", turn timer, "next letter in 0:12"), `ScreenIcebreakerEmoji` (settings card: categories, timer, auto hints; "Round 4 / 8"), `ScreenIcebreakerGif` (caption with counter, "Send my GIF", votes budget, hidden authors, winner card, ranking with ties), `IcebreakerGameCard` (the cards and "Two truths, one lie"), `GamesLeaderboard` (game tiles of a room row). For each: `README.md` and `preview.html`.
 Database rules: `docs/database.md` ("Rules for database code" 1 to 12; JSON columns without a database default; `Race` for concurrency; the `tests/Upgrade` pattern).
 
@@ -18,6 +18,7 @@ The four games of the engine (Draw & Guess, Sprint in one GIF, Hangman, Decoded)
 - **GM-2** Turns and rounds: "Round 2 of 3", "Round 3 / 6"; a turn order ("Speaking order", "Drawing order", "Next: Inès · 30 s per turn"); a turn timer on the stage; in hangman, "Your turn, Arnaud — pick a letter" and a keyboard disabled out of turn. Hangman has no turns, a room has no number of rounds, and the only timer is the host's room timer (games spec §5, Decision 2: "no `turn_seconds`, no auto-start").
 - **GM-3** Sprint in one GIF: a 60-character caption sent with the GIF, two votes per person, authors hidden until the votes close, the winner's card and a ranking with ties. An answer has no caption, a player has one vote, there is no ranking, and authors are shown from the reveal.
 - **Whole-word guess** in hangman ("Guess the whole word (+50 pts, −1 life if wrong)"). The engine has none (D-59).
+- **Draw & Guess extras and Decoded's puzzles** (owner's answers P27-08 and P27-14, against the recommendation): ScreenIcebreakerDraw shows several finders per round ("found · 0:18" beside each finder, "Found by · 2 / 5", the points of each finder and of the drawer per finder), "New word (1)" for the drawer and a Redo key; ScreenIcebreakerEmoji shows the list of the game's puzzles (done, current, coming hidden). The engine ends a Draw & Guess round at the first correct guess, has no word change and no redo, and Decoded has no list.
 - **GM-4** The game picker of ScreenIcebreaker lists six games: Hangman, Two truths and a lie, Mood weather, Guess who?, Sprint in emojis, Quick question. "Sprint in emojis" is the existing Decoded (an emoji clue, guessed in a chat); the other three and Two truths and a lie do not exist.
 
 Verification of the roadmap's "Back end" lines:
@@ -35,12 +36,13 @@ Verification of the roadmap's "Back end" lines:
 2. A round has a number ("Round 2 of 3") and, when the room times turns, a turn timer the server enforces. Hangman can be played in turns; the drawing order and the speaking order are shown.
 3. In hangman a player can guess the whole word: right, the word is solved; wrong, it costs a life.
 4. Sprint in one GIF has a caption per GIF, a vote budget, authors hidden until the close when the room says so, and a ranking with the winner.
-5. Four new games: Two truths and a lie, Mood weather, Guess who?, Quick question, playable in standalone rooms and as a retro's icebreaker, with the engine's guarantees (the server is the only authority on secrets; points only at the end of a round; constant query count of the snapshot).
-6. Nothing existing is lost: every existing room plays exactly as before until its host changes a setting; every existing test passes; database code is Eloquent only and runs on PostgreSQL, MariaDB, MySQL and SQLite.
+5. Draw & Guess lets every guesser find the word in the same round, with the time and points of each finder, one word change for the drawer and a redo; Decoded shows the list of its puzzles; every game card shows its duration and players.
+6. Four new games: Two truths and a lie, Mood weather, Guess who?, Quick question, playable in standalone rooms and as a retro's icebreaker, with the engine's guarantees (the server is the only authority on secrets; points only at the end of a round; constant query count of the snapshot).
+7. Nothing existing is lost: every existing room plays exactly as before until its host changes a setting; every existing test passes; database code is Eloquent only and runs on PostgreSQL, MariaDB, MySQL and SQLite (verified per plan on PostgreSQL, on the four engines once at the end of the roadmap).
 
 ## 3. Non-goals (what stays in the backlog)
 
-From the roadmap ("Not requested, staying backlog") and D-20: "needs n more players" and the players min–max line of a game card; "found by" chips and "found · 0:18" (a time per finder); Redo and "New word" in Draw & Guess; the emoji riddle bank with progressive timed hints and the "−20" hint (ScreenIcebreakerEmoji's engine; Decoded keeps its clue giver); "Pin to the retro" of the GIF winner; the duration on a game card. Also out of scope:
+From the roadmap ("Not requested, staying backlog") and D-20, minus what the owner's answers to P27-04, P27-08 and P27-14 brought in (§6.15, §6.16, §9.1): "needs n more players" (a card made unavailable by the number of participants); the emoji riddle bank with progressive timed hints and the "−20" hint (ScreenIcebreakerEmoji's engine; Decoded keeps its clue giver, its first finder still ends the round); several finders in Decoded; "Pin to the retro" of the GIF winner. Also out of scope:
 
 - GIFs as looping video, a still under reduced motion, a GIF title (D-62: the proxy gives none; backlog "proxy").
 - The GIF game's "Theme: Sprint 42" setting (no theme entity; the host already shuffles or types the question).
@@ -68,6 +70,7 @@ From the roadmap ("Not requested, staying backlog") and D-20: "needs n more play
 - §4.5: a room can restrict words to themes (§6.3).
 - §5 and Decision 2: a room can time each turn (`turn_seconds`); the server ends a turn when its time is up. The host's room timer is unchanged.
 - §4.6: the scores table gains the rows of §6.12.
+- §4.1 (Draw & Guess): a round started with its guessers goes on after the first correct guess until every guesser has found or time is up; the drawer can change the word once (§6.15).
 
 ## 5. Rules
 
@@ -197,6 +200,8 @@ For Draw & Guess and Decoded with `auto_hints`, the round copies `hint_seconds` 
 | Game | Outcome | Points |
 |---|---|---|
 | Hangman | `Solved` by a whole-word guess | the guesser: their letter points plus 5, `is_win`; a wrong word guess alone: 0 |
+| Draw & Guess (round with guessers, §6.15) | `Guessed` | each finder: `10 − 2 × hints shown when they found` (floor 4), `is_win`; the drawer: 5 per finder; other guessers 0 |
+| Draw & Guess (round with guessers) | `TimedOut`, `Passed` with no finder | unchanged (drawer and guessers 0) |
 | Sprint in one GIF | `Revealed` | unchanged (2 per vote received); authors of rank 1 with ≥ 1 vote: `is_win` (not in an anonymous retro's icebreaker) |
 | Two truths | `Revealed` | voter who found the lie: 5, `is_win`; teller: 2 per voter fooled; other voters 0 |
 | Two truths | `Passed` | 0 for the teller and every voter |
@@ -215,6 +220,7 @@ Migrations dated `2026_10_27_…`, Schema builder only, `up` only:
 - `game_gif_votes`: unique (`game_round_id`, `voter_player_id`, `answer_id`) added, then unique (`game_round_id`, `voter_player_id`) dropped (in that order, so that MySQL always has an index for the round's foreign key).
 - `game_choices` (new): `id`, `game_round_id` (cascade), `player_id` (cascade), `choice` (string 36: a player id for Guess who?), timestamps; unique (`game_round_id`, `player_id`). Two truths (the lie), Mood weather (the weather), Guess who? (the named author).
 - `game_text_answers` (new): `id` (random UUID, not time-ordered), `game_round_id` (cascade), `player_id` (cascade), `text` (string 120), `is_drawn` (boolean, default false), timestamps; unique (`game_round_id`, `player_id`). The drawn answer is a flag on the answer rather than a key on the round, so that no foreign key runs from `game_rounds` to a table that cascades from it.
+- `game_rounds` (Draw & Guess, §6.15; migration `2026_10_27_100200_add_draw_finders`, the plan's lane Draw): `guessers_total` (small unsigned, nullable; null = the first correct guess ends the round, as before), `word_changes` (tiny unsigned, default 0); `game_guesses.hints` (tiny unsigned, nullable: letters shown when a correct guess was made).
 - `game_statement_sets` (new): `id`, `game_room_id` (cascade), `player_id` (cascade), `statements` (JSON list, nullable without default, always written with three strings), `lie_index` (tiny unsigned), `played_at` (`dateTime`, nullable; null = ready), timestamps; unique (`game_room_id`, `player_id`). Room state, not round state: kept across rounds and game switches, deleted with the room or the player.
 
 JSON columns are nullable without a database default (rule 5); the model reads null as an empty list. Round pruning (last 20) takes the round rows with it by cascade; statement sets are not round rows and are not pruned.
@@ -225,7 +231,23 @@ JSON columns are nullable without a database default (rule 5); the model reads n
 - A Mood weather pick never leaves the server with its author. A Guess who? answer leaves the server without its author only once drawn, with its author only once the round closed; an answer that is not drawn never leaves the server (beyond its author's own `myAnswer`). A Guess who? vote is known to its author only until the close, and no payload says who has voted before the close (the count only).
 - GIF answers, captions included, are never serialised before the reveal; with hidden authors, a revealed answer has no author until the close.
 - Hangman whole-word guesses that are correct are never serialised.
+- Draw & Guess: a correct guess is never serialised; `game.word.found` carries who found, when and their points, never the word or the guess text; the word reaches the drawer and, once they found it, each finder (their snapshot and their guess response), never another guesser before the end; `game.word.changed` carries the new mask (all letters hidden), never the word.
 - Every new payload goes through the rules' `presentActive`, `presentEnded` and `endedPayload`, and every new test walks the snapshot of each viewer and each broadcast (the `gamePayloadExposesWord` pattern).
+
+### 6.15 Draw & Guess: several finders, "New word", Redo (owner's answer P27-08)
+
+- **Guessers.** The host's client sends, with the start of a Draw & Guess round, `guesser_player_ids`: the online players other than the drawer, as it sends the turn order (§6.4). The server checks they are distinct players of the room (0 to 50) and stores their number without the drawer as `guessers_total` (null when the list is absent or empty). A round with `guessers_total` null plays as before the release: the first correct guess ends it (rounds in play at the upgrade, and Decoded always).
+- **Finding.** With `guessers_total`, a correct guess makes its author a **finder** and the round goes on: the guess is stored (`is_correct`, `hints` = letters shown at that moment), never broadcast, and `game.word.found {roundId, playerId, seconds, points}` goes to the others (`seconds` = whole seconds since `started_at`; `points` = the finder's points, below). The finder's response carries the same entry and the word; from then on the word is part of the finder's own round payload, and a new guess from them → 409 "You have already found the word.". When the finders reach `guessers_total`, the round ends `Guessed` at once (the first finder is the round's `winner_player_id`, as today).
+- **End.** The room timer, the turn deadline (§6.4), the host's "Pass" and the next start end a round with at least one finder as `Guessed` (points are kept), one without as today (`TimedOut`, `Passed`, refused start).
+- **Points** (owner: "per-finder points on the CURRENT point scale — not +40"): each finder gets the existing guesser formula with the hints shown when they found (`10 − 2 × hints`, floor 4) and `is_win`; the drawer gets 5 (today's leader bonus) **per finder**; a guesser who did not find gets 0. A round with one finder therefore scores exactly as today. The mockup's "+120", "+90" and "+40 per finder" read "+10", "+8" and "+5 per finder" (deviation row of the plan, under P27-08).
+- **Payload.** The active round gains, for every viewer, `finders: [{playerId, seconds, points}]` (in the order found), `guessersTotal: ?int` and `pointsPerFinder: 5`; for the drawer, `wordChangesLeft` (1 or 0). "Found by · n / m" uses `m = max(guessersTotal, finders)` (a player who joined after the start can still find).
+- **New word.** `POST rounds/{round}/word-changes`: the drawer only (403), once per round (409 "You have already changed the word."), while nobody has found it (409 "Someone has already found the word."). The server draws another word from the room's themes (§6.3; the current word stays used), clears the revealed letters and the drawing, counts the change, and broadcasts `game.word.changed {roundId, mask, maxHints}`; the drawer's response carries the new word. Auto hints already scheduled (§6.5) keep their times and reveal letters of the new word.
+- **Redo.** On the drawer's client only: the operations the drawer undid in this round are kept in order and "Redo" (⌘⇧Z / Ctrl+Y) sends the last one again through the existing drawing endpoint as a new operation; a new stroke, "Clear" or a new word empties the redo list. The server is unchanged.
+
+### 6.16 Decoded: the list of puzzles (owner's answer P27-14)
+
+- The history entries of Decoded rounds gain `clue` (the emoji clue, public once the round ended; null for other games).
+- The left column lists the puzzles of the game in progress: the ended Decoded rounds of the current run (the newest history entries of the room that are Decoded rounds with a number, from the current round's number − 1 down to 1), each with its clue, its word and "Found by Inès" or "Not found" (Decoded keeps one finder per round, so the mockup's "5/6" reads as the finder's name); then the current round, highlighted, with its clue so far and the masked word; then, with a number of rounds, the coming rounds as dashed empty slots ("Puzzle 6"), with nothing of their content (there is none yet). An endless game shows no coming slot. A round without a number (before the release) gives no list.
 
 ## 7. Permissions
 
@@ -239,10 +261,12 @@ JSON columns are nullable without a database default (rule 5); the model reads n
 | Vote the lie | any player but the teller |
 | Vote for the author of the drawn answer (Guess who?) | any player but that answer's author, guests included |
 | Pick a weather, answer Guess who?, vote a GIF | any player, guests included (not one's own GIF) |
+| Guess in Draw & Guess | any player but the drawer, guests included, until they have found the word |
+| Change the word (Draw & Guess) | the drawer, once per round, while nobody has found it |
 
 ## 8. Real time
 
-New events (on the room's channel, `game.*`): `game.turn.changed {roundId, turnPlayerId, turnEndsAt}` (a turn ended by act, skip or time), `game.statements.changed {playerId, ready}` (a Two truths set written, replaced or removed; room-level, no round), `game.votes.counted {roundId, voted}` (Guess who? votes: a count, no player). Reused with new uses: `game.letter.picked` (adds `turnPlayerId`, `turnEndsAt`), `game.guess.made` (hangman wrong word guesses), `game.answer.changed` (Mood pick, Guess who answer), `game.vote.changed` (GIF budget, Two truths vote), `game.round.revealed` (the drawn Guess who answer and its candidates), `game.round.started` (a Two truths round: its teller's set leaves the ready list), `game.question.changed` (Guess who, Quick question), `game.hint.revealed` (auto hints), `game.room.changed` (settings). The client adds the three new events to `use-game-channel.ts` and handles every reused event by the round's game.
+New events (on the room's channel, `game.*`): `game.turn.changed {roundId, turnPlayerId, turnEndsAt}` (a turn ended by act, skip or time), `game.statements.changed {playerId, ready}` (a Two truths set written, replaced or removed; room-level, no round), `game.votes.counted {roundId, voted}` (Guess who? votes: a count, no player), `game.word.found {roundId, playerId, seconds, points}` (a Draw & Guess finder; no word), `game.word.changed {roundId, mask, maxHints}` (the drawer took another word; the drawing is cleared). Reused with new uses: `game.letter.picked` (adds `turnPlayerId`, `turnEndsAt`), `game.guess.made` (hangman wrong word guesses), `game.answer.changed` (Mood pick, Guess who answer), `game.vote.changed` (GIF budget, Two truths vote), `game.round.revealed` (the drawn Guess who answer and its candidates), `game.round.started` (a Two truths round: its teller's set leaves the ready list), `game.question.changed` (Guess who, Quick question), `game.hint.revealed` (auto hints), `game.room.changed` (settings). The client adds the five new events to `use-game-channel.ts` and handles every reused event by the round's game.
 
 ## 9. Screens
 
@@ -250,7 +274,20 @@ All in the existing room page (`games/show`) and the retro's icebreaker stage, t
 
 ### 9.1 Game picker (ScreenIcebreaker, IcebreakerGameCard)
 
-Eight cards (the six of the mockup — Decoded as "Sprint in emojis" is the existing game — plus Draw & Guess and Sprint in one GIF, which the mockup's room screens show chosen upstream). Each card has the mockup's icon and colour (pre-build deviation for the colours, where the mockups disagree). An unavailable card shows its reason ("Not available"; Guess who? in an anonymous retro: "Not in an anonymous retro"). The same eight in the "New session" dialog's icebreaker fields (pitches), the team page's room rows and the leaderboard tiles, the history and "Games we played".
+Eight cards (the six of the mockup — Decoded as "Sprint in emojis" is the existing game — plus Draw & Guess and Sprint in one GIF, which the mockup's room screens show chosen upstream). Each card has the mockup's icon and colour (pre-build deviation for the colours, where the mockups disagree), and its duration and players min–max (owner's answer P27-04), static per game in a front catalogue (`lib/games/catalogue.ts`):
+
+| Game | Duration | Players |
+|---|---|---|
+| Hangman | "5–10 min" (ScreenIcebreaker) | 1–30 |
+| Draw & Guess | "10 min" (IcebreakerGameCard) | 2–12 |
+| Decoded | "5 min" | 2–30 |
+| Sprint in one GIF | "5 min" (no mockup) | 1–30 |
+| Two truths and a lie | "10 min" (ScreenIcebreaker) | 3–15 |
+| Mood weather | "3 min · anonymous" | 1–30 |
+| Guess who? | "8 min" | 3–15 |
+| Quick question | "2 min / person" | 1–12 |
+
+The minimum is the Start rule of §6.1 (what the product enforces), the maximum the IcebreakerGameCard mockup's where it gives one (12 for the games a standalone room plays with its 12 online players at most, `GameRoom::MaxOnlinePlayers`, else 30 or 15). The card never becomes unavailable for the number of participants ("needs n more players" stays backlog, §3): the line is information. An unavailable card shows its reason ("Not available"; Guess who? in an anonymous retro: "Not in an anonymous retro"). The same eight in the "New session" dialog's icebreaker fields (pitches), the team page's room rows and the leaderboard tiles, the history and "Games we played".
 
 ### 9.2 Settings card (GM-1)
 
@@ -270,6 +307,10 @@ In turns: the banner "Your turn, Arnaud — pick a letter" (`ib-turn`, primary s
 ### 9.5 Draw & Guess and Decoded (ScreenIcebreakerDraw, ScreenIcebreakerEmoji)
 
 Settings card, drawing order, round line, turn timer; under the mask "next letter in 0:12" when auto hints are on ("Hint · 2 words" stays). The manual hint button stays for the leader.
+
+Draw & Guess (§6.15): in the players column each finder reads "found · 0:18" (success text, check icon), the drawer "drawing", the others "guessing…"; in the guesses column a system line "Inès found it! +10" (`role="status"`) when someone finds, and the block "Found by · 2 / 5" with a row per finder (avatar, name, time, points) and, for the drawer, "You earn +5 per finder"; a finder's field is replaced by "You found it: ROCKET" and the word shows above the drawing. The drawer's word card has "New word (1)" (shuffle icon, ghost button; "New word (0)" disabled after use or once someone found); the drawing toolbar has Redo (`redo-2`) after Undo.
+
+Decoded (§6.16): the left column's "Puzzles" list (`em-round` rows: done with the clue, the word and the finder; current highlighted; coming dashed), above the settings card; on the phone it folds into the round line ("4 / 8").
 
 ### 9.6 Sprint in one GIF (ScreenIcebreakerGif)
 
@@ -299,7 +340,8 @@ States of every new screen: waiting to start (host: Start with its leader or ord
 - Existing rooms receive the "Existing rooms" values of §6.2 by the columns' defaults and nulls: they play exactly as before (no turns, untimed turns, no themes, no auto hints, endless, one vote, authors at the reveal).
 - Existing rounds get `number` null, no turn, `votes_allowed` 1, `authors_hidden` false: an active round at the upgrade finishes as it started.
 - Existing GIF votes stay; the new unique key holds them (one per round and voter is a stricter case of one per round, voter and answer).
-- Existing points, leaderboards and histories are unchanged. No backfill is needed: no derived column, no data rewritten. An `Upgrade` test proves the migration on legacy rows on the four engines.
+- Existing Draw & Guess rounds get `guessers_total` null and `word_changes` 0, and existing guesses `hints` null: a round in play at the upgrade ends at its first correct guess, as it started; a legacy correct guess without `hints` is scored from the round's revealed letters, as today.
+- Existing points, leaderboards and histories are unchanged. No backfill is needed: no derived column, no data rewritten. `Upgrade` tests prove the migrations on legacy rows (on PostgreSQL in the plan; on the four engines in the roadmap's final matrix).
 - The word files change format; `game_used_words` rows stay valid (the words are the same strings).
 
 ## 11. Routes
@@ -313,12 +355,13 @@ New, under `games/{room}` (middleware `ResolveGamePlayer`, JSON, `whereUuid`):
 | PUT, DELETE | `statements` (room-level: the viewer's own set) | `GameStatementsController@update`, `@destroy` | `games.statements.update`, `.destroy` |
 | PUT, DELETE | `rounds/{round}/choice` | `GameChoicesController@update`, `@destroy` | `games.rounds.choice.update`, `.destroy` |
 | PUT, DELETE | `rounds/{round}/text-answer` | `GameTextAnswersController@update`, `@destroy` | `games.rounds.textAnswer.update`, `.destroy` |
+| POST | `rounds/{round}/word-changes` | `GameWordChangesController@store` | `games.rounds.wordChanges.store` |
 
-Changed: `PATCH /games/{room}` (settings), `POST rounds` (`turn_order`), `PUT rounds/{round}/answer` (`caption`), `PUT / DELETE rounds/{round}/vote` (budget, `answer_id` on delete), `POST rounds/{round}/reveal` and `POST rounds/{round}/close` (any staged game), `PUT rounds/{round}/question` (any game that asks questions). Rate limits: the per-player `game-play` bucket (3 then 1/s) for votes, choices, text answers, statement sets, word guesses and turns; letters keep theirs. The snapshot gains a top-level `truthSets: {ready: playerIds, mine: ?{statements, lieIndex, played}}`, present (not null) only while the room's game is Two truths.
+Changed: `PATCH /games/{room}` (settings), `POST rounds` (`turn_order`; `guesser_player_ids` for Draw & Guess), `POST rounds/{round}/guesses` (several finders, §6.15), `PUT rounds/{round}/answer` (`caption`), `PUT / DELETE rounds/{round}/vote` (budget, `answer_id` on delete), `POST rounds/{round}/reveal` and `POST rounds/{round}/close` (any staged game), `PUT rounds/{round}/question` (any game that asks questions). Rate limits: the per-player `game-play` bucket (3 then 1/s) for votes, choices, text answers, statement sets, word guesses, turns and word changes; letters and guesses keep theirs. The snapshot gains a top-level `truthSets: {ready: playerIds, mine: ?{statements, lieIndex, played}}`, present (not null) only while the room's game is Two truths.
 
 ## 12. Testing
 
-Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit tests for pure rules, `tests/Upgrade/GameSettingsUpgradeTest.php`, and races under `tests/Concurrency`: the GIF vote budget under concurrent votes; two "Done"/"Next" at once advance one turn; a double click on a hangman letter in turns picks one letter; two first picks of a weather keep one row; two Guess who? draws at once draw one answer. Per task: the tests run on PostgreSQL and SQLite; the Upgrade test and the races on the four engines; whole suites at merges and on the four engines at the end. Vitest for every new component and pure function. No browser walkthrough; captures in light, 1440, French only.
+Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit tests for pure rules, `tests/Upgrade/GameSettingsUpgradeTest.php`, and races under `tests/Concurrency`: the GIF vote budget under concurrent votes; two "Done"/"Next" at once advance one turn; a double click on a hangman letter in turns picks one letter; two first picks of a weather keep one row; two Guess who? draws at once draw one answer; one Draw & Guess player's correct guess sent twice at once makes one finder. Per task and at each merge: PostgreSQL only (owner, 2026-10-03), Upgrade tests and races included; SQLite, MariaDB and MySQL run once, in the four-engine matrix after the last merge of the roadmap. Vitest for every new component and pure function. No browser walkthrough; captures in light, 1440, French only.
 
 ## 13. Acceptance criteria
 
@@ -337,7 +380,11 @@ Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit t
 13. The settings card, round line, turn timer, turn order, hangman turn banner and word field, GIF caption, votes and podium match their mockups (captures light/1440/fr), and every other difference is a pre-build deviation approved by the owner.
 14. The eight games appear in the picker, the session-create icebreaker fields, the team page, the leaderboard, the history and "Games we played".
 15. The snapshot keeps a constant query count with the new games.
-16. Every new string exists in en, fr, es, de, in the informal register; suites, PHPStan, type-check, lint and build pass; the migration passes the Upgrade test on the four engines.
+16. Every new string exists in en, fr, es, de, in the informal register; suites, PHPStan, type-check, lint and build pass on PostgreSQL; the migrations pass their Upgrade tests on PostgreSQL (and on the four engines in the roadmap's final matrix).
+17. Every game card shows its duration and players min–max from the catalogue of §9.1, and no card becomes unavailable for the number of participants.
+18. In a Draw & Guess round started with its guessers, every guesser can find the word; each finder appears to everyone with their time and points ("found · 0:18", "Found by n / m"), gets the word, cannot guess again, and earns the existing guesser points for the hints shown when they found; the drawer earns 5 per finder; the round ends when every guesser has found, or by time, pass or next start with the finders' points kept; a round without guessers (and Decoded) ends at the first find as before; no payload gives the word to a guesser who has not found it.
+19. The drawer can take another word once per round while nobody has found it (drawing and hints cleared, the new mask to everyone, the word to the drawer only), and can redo what they undid.
+20. Decoded's left column lists the done puzzles of the game (clue, word, finder), the current one and, with a number of rounds, the coming ones as empty slots.
 
 ## 14. Risks
 
@@ -345,13 +392,16 @@ Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit t
 - **The interface grows.** `GameRules` gains three methods and two optional interfaces; every existing rules class changes. Mitigation: the existing feature tests of the four games run after the foundation tasks, unchanged.
 - **Turn timing.** Jobs, lazy checks and two timers (room and turn) interact; an off-by-one or a stale job could skip a turn. Mitigation: the job compares `turn_ends_at`; races and `travelTo` tests.
 - **Turn order from the client.** A host's client that sends a wrong order (a player offline) stalls a turn until it expires or is skipped. Accepted, as the drawer proposal today; the host's "Skip" and the turn timer recover.
-- **MySQL unique swap** on `game_gif_votes`: dropping the index the foreign key uses would fail. Mitigation: add the new unique first, then drop the old; Upgrade test on MySQL.
+- **MySQL unique swap** on `game_gif_votes`: dropping the index the foreign key uses would fail. Mitigation: add the new unique first, then drop the old; the Upgrade test meets MySQL in the roadmap's final four-engine matrix.
 - **Content.** Word themes in four languages and a 60-prompt bank in four languages are content work, reviewed by the translation pass; the dictionary tests pin counts, lengths and characters.
 - **Anonymity.** Mood weather with few players tells who picked what by elimination; the threshold of 3 reduces, not removes, it (accepted as for the GIF game).
 - **Guess who? by elimination.** The drawn answer's author is the one player who cannot vote; a per-player "voted" mark, or a player who never votes in the UI, would name them. Mitigation: votes are broadcast and presented as a count only; the author's screen shows no choice but nothing others can see. Residual: in a room of three, a player can still reason from the answers they know; accepted (the game's point is to guess).
 - **Prepared sets.** A set written long before its round may be stale, and a player who never writes one never tells. Accepted: "Edit" and "Remove" until played; the host sees who is ready. A set written in a room keeps its lie on the server until the room or the player is deleted (no retention rule beyond the room's, as answers today).
 - **Shared files** across lanes: `routes/web.php`, `AppServiceProvider` (the registry list), `lang/*.json`, `tests/Pest.php`, `game-stage.tsx`, `round-detail.tsx`, `room-reducer.ts`; `BuildGameSnapshot.php` (the Two truths lane adds `truthSets`). Mitigation: the foundation registers routes and maps for every game; each lane adds its own lines in marked blocks.
-- **Plans 21 to 26 run before or beside** this one and touch `lang/*.json`, `routes/web.php` and the retro board; conflicts at merge only.
+- **Draw & Guess finders.** The number of guessers comes from the host's client (who is online), as the drawer and the turn order do; a guesser who leaves keeps the round open until time is up or the host passes, with the finders' points kept. Accepted, as the turn order.
+- **Several finders and the chat.** A finder sees the word and the chat goes on; nothing stops a finder from typing the word elsewhere (reactions are emojis only; there is no free chat in a room). Accepted.
+- **Engines.** Per-plan runs use PostgreSQL only; an engine-specific failure (the MySQL unique swap, a JSON column) is found in the roadmap's final four-engine matrix. Accepted by the owner.
+- **Plans run beside this one**: wave A runs plans 20, 21, 26, 27 and 29 in parallel; plans 22, 23, 24 and 25 come after. Plans 20, 21, 26 and 29 touch `lang/*.json`, `routes/web.php` and shared front components; conflicts at the merge into `roadmap` only.
 
 ## 15. Decisions for the owner — answered 2026-10-03
 
@@ -370,7 +420,7 @@ All ten are answered (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 202
 | 9 | **B** (differs from the recommendation) | prepared sets for Two truths (one player's set per round) and one drawn answer per round for Guess who? with one vote for its author — §6.8, §6.10 |
 | 10 | **A** (as recommended) | Quick question = spoken turns |
 
-Points of the two games under answer 9 B were not stated by the owner; this spec keeps the scale of the recommended option (finder 5 and a win; the teller or the author 2 per player fooled) — to confirm with the owner (plan, Owner decisions).
+Points of the two games under answer 9 B were not stated by the owner; this spec keeps the scale of the recommended option (finder 5 and a win; the teller or the author 2 per player fooled), the product's current scale, which the owner asked for again in the answer to P27-08 (§17): settled.
 
 The options as they were put:
 
@@ -424,5 +474,29 @@ The options as they were put:
 - Whether `ReverbGamePresenceRoster` could tell the server who is online in an icebreaker (it is used for the standalone cap); this spec does not depend on it.
 - The existing `Timer` (`components/skrum/timer.tsx`) takes `remainingSeconds`, `totalSeconds` and optional handlers; whether it renders no control at all when no handler is given was not checked line by line (the plan's Task 16 checks it).
 - Whether the six-game grid of the mockup's picker (two columns of 340 px) keeps eight cards on screen at 1440 without scrolling; the capture will tell (a deviation row otherwise).
-- Whether the owner wants the existing French labels ("Pendu", "Dessine et devine") aligned with the mockups ("Le pendu", "Dessin à deviner"): a key keeps its value unless the owner says so (pre-build deviation P27-02).
+- The existing French labels ("Pendu", "Dessine et devine") keep their values; the owner approved P27-02 as listed.
 - Whether the retro's icebreaker stage shows the settings card to the facilitator in the same place as a room (the plan follows `useRoomPanels`, which both share).
+
+## 17. Pre-build deviations — answered 2026-10-03
+
+The plan's rows P27-01 to P27-14 (`docs/superpowers/plans/2026-10-21-plan-27-games.md`, **Pre-build deviations**) were put to the owner and answered on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Pre-build deviations (owner, 2026-10-03)", line "P27"). Rows not named in the answer are approved as listed; rows of reason "O" follow the owner's answers to §15.
+
+| Row | Answer (2026-10-03) | What changes |
+|---|---|---|
+| P27-01 | approved as listed | — |
+| P27-02 | approved as listed | — |
+| P27-03 | approved as listed | — |
+| P27-04 | **build** (≠ rec.): duration and players min–max on the game cards, static per game in the catalogue | §3, §9.1, criterion 17 |
+| P27-05 | approved as listed | — |
+| P27-06 | approved as listed | — |
+| P27-07 | approved (O: decision 1) | — |
+| P27-08 | **build** (≠ rec.): "found · time", "Found by n/m", per-finder points on the current scale (not "+40"), "New word", Redo | §3, §6.15, §6.12, §6.13, §6.14, §7, §8, §9.5, §11, criteria 18 and 19 |
+| P27-09 | approved as listed | — |
+| P27-10 | approved as listed | — |
+| P27-11 | approved as listed | — |
+| P27-12 | approved as listed | — |
+| P27-13 | approved as listed | — |
+| P27-14 | **build** (≠ rec.): Decoded's list of coming puzzles | §6.16, §9.5, criterion 20 |
+
+The owner's answers leave three points to rule; the spec rules them (the plan lists them under **Owner decisions**): the drawer's points per finder are 5 (today's leader bonus, so a round with one finder scores as before); the players line uses the Start minimum of §6.1 and the mockup's maximum; Decoded keeps one finder per round, so its list names the finder instead of "5/6". Points of the two games of answer 9 B (finder 5 and a win; teller or author 2 per player fooled) follow the same principle, the product's current scale (owner: "on the CURRENT point scale … consistent with decision 1"), and are no longer open.
+

@@ -1,7 +1,7 @@
 # Skrüm — Account, and what a guest picks — Design
 
 Date: 2026-10-03
-Status: the owner answered the nine questions of §15 on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", "Plan 26"). Four answers differ from the drafted recommendation (1: an admin switch "Profile photos"; 2: the Active sessions card hidden without database sessions; 3: the IP address shown; 4: no confirmation for an account without a known password, an accepted risk, §5.12); the body below is written on the answers. The pre-build deviations of the plan are still to approve by the owner (not asked yet).
+Status: the owner answered the nine questions of §15 on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", "Plan 26"). Four answers differ from the drafted recommendation (1: an admin switch "Profile photos"; 2: the Active sessions card hidden without database sessions; 3: the IP address shown; 4: no confirmation for an account without a known password, an accepted risk, §5.12); the body below is written on the answers. The owner answered the plan's pre-build deviations the same day (progress.md, "Pre-build deviations (owner, 2026-10-03)", "P26"): P26-01 to P26-15 approved (04 and 06 as recommended, 03 with the full IP and no location, the others as listed; §15 bis). Nothing waits on the owner. Verification per plan runs on PostgreSQL only; the four engines run once at the end of the roadmap (owner, 2026-10-03). Execution: in parallel with plans 20, 21, 27 and 29, before 22, 23, 24 and 25.
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13, §10).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — third round ("Account: photo upload, active sessions, linked accounts, presence colours, 'reduce animations', breach check"; "Guest colour picker and short session code"; the 18f security answers on `sso_required`), sixth round (informal register; a guest counts as a participant), the working rules of the fifth round as amended for plan 19.
 Roadmap rows: AC-1 to AC-6, GU-1, GU-2 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Deviation rows cleared: D-25 (in part: the account features; "other notification events", "last changed", "Change device" and revoked-token rows stay backlog by the owner's word), D-32, D-79.
@@ -37,7 +37,7 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 6. **AC-3** A member links and unlinks SSO identities of the enabled providers; the last way in can never be removed; an account without a known password opens the security section without any confirmation (the owner's accepted risk, rule S-1 of §5.12) and can set a password.
 7. **GU-1** A guest picks a colour on the join page; colours already used in the session are disabled while free ones remain.
 8. **GU-2** Every guest-joinable session has a short code, shown in the Share dialog, entered at `/join`; regenerating the link replaces the code.
-9. All database code is Eloquent and the standard query builder, unchanged on PostgreSQL, MySQL, MariaDB and SQLite; every test that touches the database passes on the four.
+9. All database code is Eloquent and the standard query builder, unchanged on PostgreSQL, MySQL, MariaDB and SQLite; every test that touches the database passes on PostgreSQL in this plan, and on the four in the roadmap's final matrix.
 
 ## 3. Non-goals (stay backlog)
 
@@ -59,12 +59,13 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 | Topic | Decision | Source |
 |---|---|---|
 | Scope | the eight features, all built | owner, third round |
-| Presentation | the mockups are binding; a difference is fixed or is a pre-build deviation put to the owner before its screen is built | parent spec §5 rule 13; fifth round |
+| Presentation | the mockups are binding; a difference is fixed or is a pre-build deviation approved by the owner (P26-01 to P26-15, approved 2026-10-03, §15 bis) | parent spec §5 rule 13; fifth round |
 | Register | informal in every language (fr tu, es tú, de du), screens, validation, mails | sixth round |
 | `sso_required` | only SSO signs in; instance admins keep password + second factor; ignored when no provider is enabled | 18f security answers |
 | Guests | a guest counts as a participant | sixth round |
-| Database | Eloquent only; four engines; races proved with `Race`; data migrations proved in `tests/Upgrade` | database portability, plan 19 |
-| Working rules | tests written and run per task (pgsql and sqlite per task; four engines for data migrations and races; whole suites at the end); no browser walkthrough; captures light / 1440 / fr only; no new dependency without approval | owner, plan 19 rules |
+| Database | Eloquent only, portable to the four engines; races proved with `Race`; data migrations proved in `tests/Upgrade` | database portability, plan 19 |
+| Working rules | tests written and run per task on PostgreSQL (data migrations and races included); whole PostgreSQL suites at the end of the plan; the four-engine matrix (pgsql, sqlite, mariadb, mysql) once, after the last roadmap merge; no browser walkthrough; captures light / 1440 / fr only; no new dependency without approval | owner, plan 19 rules, amended 2026-10-03 |
+| Pre-build deviations | P26-01 to P26-15 approved; 03: the full IP shown, no location (overrides the `ScreenSecurity` README's "never the full IP"); 04: browser and system; 06: the linked date | owner, 2026-10-03 |
 | The nine questions of §15 | answered: 1 browser crop + admin switch "Profile photos"; 2 card hidden without database sessions; 3 IP and browser, no location; 4 no confirmation for an account without a known password (accepted risk, §5.12); 5 managed while `sso_required`; 6 live breach check; 7 `XXX-XXXX` random, 10 tries a minute; 8 taken = everyone who joined; 9 `/join` and a link on the login page | owner, 2026-10-03 |
 
 ## 5. Domain and data
@@ -205,7 +206,7 @@ The owner chose these rules on 2026-10-03 after the risk was spelled out to them
 
 ## 8. Screens
 
-Each screen follows its mockup; the plan lists the deviations (P26-xx) for the owner before the screen is built.
+Each screen follows its mockup; the plan's deviations P26-01 to P26-15 are the only differences, all approved by the owner on 2026-10-03 (§15 bis).
 
 ### 8.1 Profile card — `ScreenUserSettings`, Profile
 
@@ -281,8 +282,8 @@ Transactions lock the aggregate root first: the user row for link, unlink and si
 ## 11. Testing
 
 - Feature tests for every route, guard and refusal; unit tests for `PresenceColor`, `ImageMetadata`, `JoinCode` (generation, normalisation), `SignInMethods`, `UserAgentSummary::deviceKind`.
-- Races (`tests/Concurrency`, `Race`, on pgsql, mariadb, mysql and a SQLite file): two links of one user at once make one; two unlinks that would each leave one way in make one; two first uses of a session's code make one code.
-- Upgrade test of the `password_set_at` backfill on the four engines.
+- Races (`tests/Concurrency`, `Race`, on PostgreSQL in this plan; MariaDB, MySQL and a SQLite file in the roadmap's final matrix): two links of one user at once make one; two unlinks that would each leave one way in make one; two first uses of a session's code make one code.
+- Upgrade test of the `password_set_at` backfill on PostgreSQL in this plan, on the other three engines in the roadmap's final matrix.
 - Vitest for the pure front logic (photo crop rectangle, SHA-1 range split and match, code normalisation, presence lookup, motion helper) and for every changed component.
 - Rule S-1 has tests of its own that assert the **absence** of a confirmation for an account without a known password, and its presence for an account with one and in the admin area (criterion 21).
 - No browser walkthrough. Captures (light, 1440, fr) of the Profile card, the Appearance card, the Security section with both new cards, the Branding avatar group with "Profile photos", a guest join page, the Share dialog with its code and the join-by-code page.
@@ -307,8 +308,8 @@ Transactions lock the aggregate root first: the user row for link, unlink and si
 16. A visitor of each of the five join pages sees the colours taken in that session disabled, joins with a free one, and their row stores it; with twelve taken nothing is disabled; 0 and 13 are refused.
 17. A session's share data carries a code of the form `XXX-XXXX` from the alphabet of §5.11 for a viewer who sees the link, and none for a guest; regenerating the link changes the code and the old one stops resolving.
 18. `POST join` with the code, in any case, with or without the hyphen, redirects to the session's join page; an unknown code, a code of a session that no longer accepts guests and a code of a deleted session all answer the same error; the eleventh attempt in a minute is throttled.
-19. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest` passes); the captures of §11 are taken without horizontal overflow and compared with their mockups, the differences being rows of the plan's deviations table or fixed.
-20. The unit, feature, upgrade and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL through `bin/test-db`, and the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+19. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest` passes); the captures of §11 are taken without horizontal overflow and compared with their mockups, the differences being the approved rows P26-01 to P26-15 or fixed.
+20. The unit, feature, upgrade and arch suites pass on PostgreSQL through `bin/test-db`, and the concurrency suite on PostgreSQL; `tests/Arch/DatabasePortabilityTest.php` passes. SQLite, MariaDB and MySQL (and the concurrency suite on a SQLite file) are proved once by the roadmap's final four-engine matrix, not by this plan (owner, 2026-10-03; risk accepted: an engine-specific regression is found late).
 21. **Rule S-1 holds, both ways.** For an account whose `password_set_at` is null, with no confirmation in the session: `settings/security` leads to the section; the security and API-token props are sent (`locked` false); enabling two-factor authentication, showing and regenerating recovery codes, disabling it, creating an API token, adding the e-mail second factor, signing a session out, linking and unlinking all pass without a 423 or a redirect to `password.confirm`. For an account with a known password, each of these still asks (423 or redirect). For the null account, `admin/branding` (an instance admin) still redirects to `password.confirm`, and deleting the account still asks for the current password.
 
 ## 13. Risks
@@ -379,6 +380,30 @@ The options are kept as they were put; the owner's answer follows each question.
 - B. The page `/join` only.
 - C. A code field on the login page itself (the MobileAccess landing's button, on a page that has no mockup for it).
 
+## 15 bis. Pre-build deviations — answered 2026-10-03
+
+The rows are listed in full in the plan ("Pre-build deviations"). The owner's answer (progress.md, "P26: 04 + 06 browser/OS and linked date (rec.); 03 now shows the IP (owner's earlier answer), no location; others approved"):
+
+| Row | Subject | Answer, 2026-10-03 |
+|---|---|---|
+| P26-01 | Profile sentence without "card lock" | approved as listed |
+| P26-02 | "Last changed" not rendered | approved as listed |
+| P26-03 | Active sessions: "IP address" column, full address, no location, no "Unusual location" | approved: the IP is shown in full (the owner's earlier answer, over the mockup README's "never the full IP"), no location |
+| P26-04 | Device label "Firefox on macOS" (browser and system) | approved, as recommended |
+| P26-05 | "Sign out other sessions" behind the section's confirmation and a dialog | approved as listed |
+| P26-06 | Linked accounts: "Linked :date" only | approved, as recommended |
+| P26-07 | Taken colours read at page load | approved as listed |
+| P26-08 | Join-with-a-code page designed from neighbours | approved as listed |
+| P26-09 | Login link "Join a session with a code" | approved as listed |
+| P26-10 | Code `K7Q-P4M2` in place of `ATL-4821` | approved as listed |
+| P26-11 | Provider turned off: "Not available on this instance" and "Unlink" | approved as listed |
+| P26-12 | "Set a password" mode, no confirmation | approved as listed |
+| P26-13 | "Remove photo" when members cannot choose their style | approved as listed |
+| P26-14 | No Active sessions card without database sessions | approved as listed |
+| P26-15 | Branding switch "Profile photos" | approved as listed |
+
+No answer changes what is built: every row already described the build. No screen waits on the owner.
+
 ## 16. Not determined by reading
 
 1. Whether Tailwind 4 accepts `@custom-variant motion-reduce` over its built-in variant with a block holding both the media query and the class selector (plan Task 8 checks the compiled CSS).
@@ -388,6 +413,7 @@ The options are kept as they were put; the owner's answer follows each question.
 5. Whether any provider configured by an operator rejects the callback URL being called for a signed-in user (it is the same URL; nothing changes on the provider's side).
 6. What `ProfileDeleteRequest` should ask of an account without a known password: it still asks for the current password (S-1.3), so such an account sets a password first (now possible without confirmation), then deletes. Out of scope, reported.
 7. Whether the icebreaker players of a retro (game players carrying a `participant_id`) should show the participant's colour: they do through `HasGuestIdentity` of the participant; the plan verifies with a test.
-8. **Chosen while writing, for the owner to confirm:** the switch "Profile photos" is **off by default** (like "Members can choose their own style"), so an upgraded instance shows no photo until an admin allows it; and it is **independent** of the member style choice (a photo may show while members cannot pick a style; "Use initials" then reads "Remove photo", P26-13).
-9. **Chosen while writing, for the owner to confirm:** rule S-1 stops at the account settings; the admin area keeps its confirmation (an SSO-born admin without a password sets one first, or uses a passkey). The owner's words were "to open security or act there".
-10. The owner was told three consequences of S-1 (2FA off, recovery codes, API tokens); the rule also lets a stolen session add a passkey, link an SSO identity of its own and set a password (S-1.5). Listed so the owner can confirm they fall under the same answer.
+8. **Ruled 2026-10-03.** The switch "Profile photos" is **independent** of the member style choice (a photo may show while members cannot pick a style; "Use initials" then reads "Remove photo"): the owner approved P26-13 and P26-15, which build exactly that. It is **off by default** (like "Members can choose their own style"): the safe default for an upgrade, so an upgraded instance shows no photo until an admin allows it; the README upgrade note says so. The report restates it; an admin turns it on in one click.
+9. **Ruled 2026-10-03.** Rule S-1 stops at the account settings; the admin area keeps its confirmation (an SSO-born admin without a password sets one first, or uses a passkey). The owner's words were "to open security or act there", which name the security section, not the admin area (S-1.3).
+10. **Ruled 2026-10-03.** The owner was told three consequences of S-1 (2FA off, recovery codes, API tokens); the rule also lets a stolen session add a passkey, link an SSO identity of its own, sign the other devices out and set a password (S-1.5). They follow from the same answer ("or act there") and are built as such; the report lists them again.
+11. Plan 29 (built beside this plan) asks a fresh confirmation, by password or passkey, before an instance admin changes SSO or SMTP settings. Under S-1 a passwordless SSO-born admin can register a passkey with no confirmation, and that passkey then satisfies plan 29's check. This plan changes nothing in the admin area (S-1.3); the combination is recorded in plan 29's spec as its own open point and does not hold this plan.

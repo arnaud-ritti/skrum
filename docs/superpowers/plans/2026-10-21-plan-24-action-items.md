@@ -2,27 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 16 only).
 
-**Status: revised 2026-10-03 on the owner's answers to spec §15** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 24"). Answers 2 (C) and 6 (B) differ from the draft's recommendation; the plan is rewritten on them (Tasks 2, 3, 4 and 8 are new or rewritten; Tasks 6, 7, 10, 13, 14 changed). The pre-build deviations are still to approve by the owner (not asked yet): nothing of a screen is built before they are answered.
+**Status: revised 2026-10-03 on the owner's answers to spec §15** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 24"). Answers 2 (C) and 6 (B) differ from the draft's recommendation; the plan is rewritten on them (Tasks 2, 3, 4 and 8 are new or rewritten; Tasks 6, 7, 10, 13, 14 changed). **Second revision, 2026-10-03, on the pre-build deviation answers** (`progress.md`, "Pre-build deviations (owner, 2026-10-03)", line "P24"): P24-03 adds a "By sprint" grouping, the default (Tasks 21, 23), and moves this plan after plan 23; P24-07 builds the topbar search field (Tasks 20, 24); P24-08 words the sidebar badge (Task 22); every other row approved as listed. Per-plan verification is PostgreSQL only (owner: the four-engine matrix runs once at the end of the roadmap). Nothing waits for the owner.
 
-**Goal:** On the action items page a member selects rows — or every item matching the filters — and changes their status, assignee, due date or priority, sends them to the team's tracker, or deletes them, each item checked on its own; filters by several statuses, priorities, a due-date bucket and a source; marks items "In progress" anywhere an item's status is shown, synced both ways with Jira and Linear through a configurable start status; and downloads the filtered list as CSV.
+**Goal:** On the action items page a member selects rows — or every item matching the filters — and changes their status, assignee, due date or priority, sends them to the team's tracker, or deletes them, each item checked on its own; filters by several statuses, priorities, a due-date bucket, a source and a topbar search; groups the list by sprint by default; marks items "In progress" anywhere an item's status is shown, synced both ways with Jira and Linear through a configurable start status; and downloads the filtered list as CSV. The sidebar names the overdue count in words.
 
-**Architecture:** "In progress" is a nullable `action_items.started_at` beside `completed_at`, which stays the one source of completion; `ActionItemStatus` gains `Doing`, `ActionItem::currentStatus()` derives the status, `SetActionItemStatus` handles the six transitions and fires a new domain event `ActionItemProgressChanged` on start and stop. The tracker sync gains a third state: `ExternalIssueState::Started`, `DoneMapping::state()` reads it from the in-progress category of Jira and Linear, `DoneMapping::itemState()` gives an item's state per provider, and the existing conflict rules, push job and transition choosers carry it, with a `startStatusId` / `startStateId` target per project or team saved by the status mapping settings. `ActionItemFilters` becomes lists and buckets read from the query or from an array (old single values mapped), and `ActionItemQuery` applies them to the list, the counters, the CSV export and the "all matching" bulk target. Two bulk endpoints loop over the single-item actions (`ApplyActionItemChanges`, `DeleteActionItem`), one transaction and one lock per item, over ids or over the ids the filters match (count checked, cap 500), and report refusals per item. The front fills the places plan 18e left in `ActionItemsPage` (`selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`, `withDoing`, `NewActionItemButton.before`) and adds "Start to" to the status mapping panel.
+**Architecture:** "In progress" is a nullable `action_items.started_at` beside `completed_at`, which stays the one source of completion; `ActionItemStatus` gains `Doing`, `ActionItem::currentStatus()` derives the status, `SetActionItemStatus` handles the six transitions and fires a new domain event `ActionItemProgressChanged` on start and stop. The tracker sync gains a third state: `ExternalIssueState::Started`, `DoneMapping::state()` reads it from the in-progress category of Jira and Linear, `DoneMapping::itemState()` gives an item's state per provider, and the existing conflict rules, push job and transition choosers carry it, with a `startStatusId` / `startStateId` target per project or team saved by the status mapping settings. `ActionItemFilters` becomes lists and buckets read from the query or from an array (old single values mapped), and `ActionItemQuery` applies them to the list, the counters, the CSV export and the "all matching" bulk target. Two bulk endpoints loop over the single-item actions (`ApplyActionItemChanges`, `DeleteActionItem`), one transaction and one lock per item, over ids or over the ids the filters match (count checked, cap 500), and report refusals per item. The front fills the places plan 18e left in `ActionItemsPage` (`selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`, `withDoing`, `NewActionItemButton.before`) and adds "Start to" to the status mapping panel. A search parameter `q` (the item's folded text, or a ticket key through a new `external_key_search` column) joins `ActionItemFilters`; the page's `items` prop carries `sprints` (plan 23's `team_sprints` containing the rows' creation days), from which the front groups by sprint by default; the topbar's search place holds the page's own field on this page; the sidebar badge is worded.
 
-**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb, Octane; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs.
+**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb, Octane; PostgreSQL through `bin/test-db pgsql` (the code stays portable to MariaDB, MySQL and SQLite; their matrix runs at the end of the roadmap, not here); `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs.
 
 **Spec:** `docs/superpowers/specs/2026-10-21-plan-24-action-items-design.md`. Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenActions`, `ActionItem`, `MobileDashboard`, `Checkbox`, `Popover`, `Command`, `DatePicker`, `DropdownMenu`, `Sonner` — for each, the `README.md` and the `preview.html`. The status mapping panel has no mockup (P24-12).
 
-**Not in this plan:** the backlog of spec §3 (grouping by sprint, whiteboard and survey sources, the topbar search field, "all matching" beyond 500, a queued bulk change and exclusions, "Sync to :tracker" for an "all matching" selection, bulk on the retro board, "In progress" on GitHub, a webhook event for it, other export formats); browser walkthroughs (owner's working rule: none is written, edited or run); anything of the former plans 28 and 30 and scheduling.
+**Not in this plan:** the backlog of spec §3 (whiteboard and survey sources, a search of comments or sub-tasks, a server-side grouping by sprint, "all matching" beyond 500, a queued bulk change and exclusions, "Sync to :tracker" for an "all matching" selection, bulk on the retro board, "In progress" on GitHub, a webhook event for it, other export formats); browser walkthroughs (owner's working rule: none is written, edited or run); anything of the former plans 28 and 30 and scheduling.
 
-**Tasks:** 19. Step A, back end, single writer: 1 to 9 (4 also touches the integrations front). Step B, front foundation, single writer: 10. Step C, screens, lanes: Status (11), Filters (12), Bulk (13, 14), Export (15). Final: 16 (bench and captures), 17 (translations), 18 (deviations and documents), 19 (four-engine suites and report).
+**Tasks:** 24, numbered in the order they were written; they **run** in this order:
+- Step A, back end, single writer: 1 to 9, then **20** (search `q`) and **21** (sprints of the page). Task 4 also touches the integrations front.
+- Step B, front foundation, single writer: 10, then **22** (sidebar badge in words).
+- Step C, screens, lanes cut from the head of Task 22: Status (11), Filters (12), Bulk (13, 14), Export (15), Grouping (**23**), Search (**24**).
+- Final: 16 (bench and captures), 17 (translations), 18 (deviations and documents), 19 (PostgreSQL suites and report).
 
 ## Branch and run
 
-- Base: `main` at `0c294632` or later (plans 18e to 18g, database portability, plan 19, and the drafts of plans 20 to 29). Check before Task 1, and stop if one fails: `app/Enums/ActionItemStatus.php` has exactly `Open` and `Completed`; `app/Enums/ExternalIssueState.php` has exactly `Open` and `Done`; `app/Support/Integrations/Trackers/DoneMapping.php` has `state`, `category` and `configured`; `resources/js/components/action-items/action-items-page.tsx` declares the slots `selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`; `resources/js/components/skrum/action-item.tsx` exports `nextActionStatus` and accepts `withDoing`; `resources/js/components/integrations/status-mapping-panel.tsx` has the "Complete to" and "Reopen to" selects; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; the last migration of `database/migrations` is dated before `2026_10_21_100000`. If plan 21 or plan 23 was merged since, re-read `ActionItem`, `PresentActionItem`, `ActionItemPermissions`, `ApplyIssueChanges` and the action-items components, and take the next free migration date.
-- Branch `plan-24-action-items` from that base. No merge into `main`, no push.
-- Steps A and B run on that branch with one writer. Lanes run in git worktrees on branches `lane/24-<name>`, cut from the head of Task 10; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `npm run test -- resources/js/components/action-items resources/js/lib/action-items`, and `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`.
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it); MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
-- Between Task 5 (the `filters` prop becomes lists) and Task 10 (the front reads them) the page's filters misbehave at runtime on this branch. Nothing is merged in between.
+- Base: the head of `roadmap` once plan 23 is merged into it (execution order of 2026-10-03: parallel 20, 21, 26, 27, 29 → 22 → 23 → 24 and 25). Plans 20, 21, 22, 23, 26, 27 and 29 are then merged; plan 25 runs in parallel on its own branch. Check before Task 1, and stop if one fails: plan 23 is merged (`app/Models/TeamSprint.php` with `present()`, `Team::sprints()`, the helper `teamSprint()` of `tests/Pest.php`, `TeamRole` read by `ActionItemPermissions`); plan 21 is merged (`resources/js/lib/action-items/bulk-export.ts` exports `runBulkExport` and `itemsToExport`, `components/action-items/export-target-fields.tsx` exists); `app/Enums/ActionItemStatus.php` has exactly `Open` and `Completed`; `app/Enums/ExternalIssueState.php` has exactly `Open` and `Done`; `app/Support/Integrations/Trackers/DoneMapping.php` has `state`, `category` and `configured`; `resources/js/components/action-items/action-items-page.tsx` declares the slots `selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`; `resources/js/components/skrum/action-item.tsx` exports `nextActionStatus` and accepts `withDoing`; `resources/js/components/integrations/status-mapping-panel.tsx` has the "Complete to" and "Reopen to" selects; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; no file `database/migrations/2026_10_24_*` exists (plan 23's migrations are dated `2026_10_23_…`, plan 25's `2026_10_25_…`; if a merged plan took `2026_10_24_…`, take the first free `2026_10_24_1xxxxx` numbers and rename the two migrations of this plan and the upgrade tests' `$migration` with them). Plans 21 and 23 changed `ActionItem`, `PresentActionItem` (`cardId`), `ActionItemPermissions` (team roles, the observer), `SetActionItemStatus` and the action-items components: every task re-reads them before editing.
+- Branch `plan-24-action-items` from that base. Merged into `roadmap` when Task 19 passes (the controller's merge; `main` is fast-forwarded only when the owner asks); no push. Whichever of plans 24 and 25 merges second rebases on the other (`lang/*.json`, `routes/web.php`, `tests/Pest.php`) and runs the PostgreSQL suites again.
+- Steps A and B run on that branch with one writer. Lanes run in git worktrees on branches `lane/24-<name>`, cut from the head of Task 22; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `npm run test -- resources/js/components/action-items resources/js/lib/action-items resources/js/components/skrum resources/js/layouts`, and `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`.
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it). Only PostgreSQL is used in this plan: MariaDB and MySQL are not started. Never run two whole suites at once in the shared container.
+- Between Task 5 (the `filters` prop becomes lists) and Task 10 (the front reads them) the page's filters misbehave at runtime on this branch. Nothing is merged in between. Tasks 20 and 21 run between Task 9 and Task 10 for the same reason (they change the `filters` and `items` props).
 - Every task re-reads the files it touches; a line number or a method body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
@@ -39,13 +43,24 @@ The seven questions of spec §15, answered by the owner on 2026-10-03. Every row
 | 6 | How far a selection reaches | **B** (differs from the recommendation A): "Select all n matching", sent as filters to the server | Task 5 (`ActionItemFilters::fromQuery`), Task 8 (filters target, count check, cap 500, race, measurement), Task 10 (bulk client and selection modes), Task 13 ("Select all :count matching", confirmation naming the count, changed-count answer), Task 14 (the phone "…" entry) |
 | 7 | Phone selection | **A** (as recommended): long press and a "Select" button | Task 14 |
 
+The pre-build deviation rows, answered by the owner on 2026-10-03 (`progress.md`, "Pre-build deviations (owner, 2026-10-03)", line "P24"):
+
+| Row | Answer | Where the plan carries it |
+|---|---|---|
+| P24-03 | **Add the "By sprint" grouping, the default** (≠ the row as drafted); plan 24 runs after plan 23 | Task 21 (`items.sprints`), Task 23 (grouping, header, table and list group rows), Task 16 (state `sprint-groups`), Task 18 (D-19) |
+| P24-07 | **Build the mockup's topbar search field, filtering action items** (≠ the row as drafted) | Task 20 (`q`, `external_key_search`), Task 24 (field, ⌘K, drawer), Task 16 (state `search`), Task 18 (PB-12) |
+| P24-08 | **"Actions · n overdue" in the sidebar, as the mockup** (≠ the row as drafted; settles D-129 for this entry) | Task 22, Task 18 (D-129) |
+| P24-01, 02, 04, 05, 06, 09, 10, 11, 12 | Approved as listed | unchanged |
+
+Open points of the first revision, ruled on 2026-10-03 (spec §14, last risk): the "Automatic" start target, "both ways" moving a started item back to "to do", the release case, the Jira reopen fallback and the two-tab case are kept as specified; the 500 cap follows the rule of Task 8, Step 5 (lower the cap, never stop); "Sync to :tracker" stays disabled in "all matching" mode (P24-06, P24-11 approved); whether the team integrations page is captured is decided by reading in Task 16.
+
 ## File structure
 
 Back end, created:
 
 | File | Responsibility |
 |---|---|
-| `database/migrations/2026_10_21_100000_add_started_at_to_action_items.php` | the `started_at` column |
+| `database/migrations/2026_10_24_100000_add_started_at_to_action_items.php` | the `started_at` column |
 | `app/Events/ActionItems/ActionItemProgressChanged.php` | start and stop of an item (domain event, not broadcast) |
 | `app/Listeners/QueueProgressedActionItemStatusPushesListener.php` | queues the tracker pushes of a start or stop |
 | `app/Actions/ActionItems/ActionItemBulkChanges.php` | the per-item loop for updates and deletions, and the "all matching" ids |
@@ -53,30 +68,33 @@ Back end, created:
 | `app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php`, `WorkspaceActionItemBulkDeletionsController.php` | the two bulk routes |
 | `app/Support/CsvCell.php`, `app/Support/CsvDownload.php` | formula neutralisation and the streamed download, shared with the survey CSV |
 | `app/Actions/ActionItems/ExportActionItemsCsv.php`, `app/Http/Controllers/WorkspaceActionItemCsvExportsController.php` | the list export |
+| `database/migrations/2026_10_24_100100_add_external_key_search_to_action_item_external_links.php` | the folded ticket key the search reads (Task 20) |
+| `app/Actions/ActionItems/ActionItemSprints.php` | the sprints of the page's rows (Task 21) |
 
-Back end, modified: `app/Enums/ActionItemStatus.php`, `app/Enums/ExternalIssueState.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/{SetActionItemStatus,ActionItemSubtaskRules,ActionItemFilters,ActionItemQuery}.php`, `app/Actions/Retros/PresentActionItem.php`, `app/Actions/Integrations/{ApplyIssueChanges,LinkStatusSync,UpdateStatusSyncSettings}.php`, `app/Support/Integrations/Trackers/{DoneMapping,LinearTracker}.php`, `app/Support/Integrations/Jira/JiraTransitions.php`, `app/Exceptions/Integrations/StatusPushRejected.php`, `app/Jobs/Integrations/PushActionItemState.php`, `app/Actions/TeamSurveys/ExportSurveyCsv.php`, `app/Http/Controllers/TeamSurveys/TeamSurveyExportsController.php`, `app/Http/Controllers/WorkspaceActionItemsController.php` (no change of code: the props follow `ActionItemFilters::toArray()`), `app/Mcp/Tools/Retro/ListActionItems.php`, `routes/web.php`.
+Back end, modified: `app/Enums/ActionItemStatus.php`, `app/Enums/ExternalIssueState.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/{SetActionItemStatus,ActionItemSubtaskRules,ActionItemFilters,ActionItemQuery}.php`, `app/Actions/Retros/PresentActionItem.php`, `app/Actions/Integrations/{ApplyIssueChanges,LinkStatusSync,UpdateStatusSyncSettings}.php`, `app/Support/Integrations/Trackers/{DoneMapping,LinearTracker}.php`, `app/Support/Integrations/Jira/JiraTransitions.php`, `app/Exceptions/Integrations/StatusPushRejected.php`, `app/Jobs/Integrations/PushActionItemState.php`, `app/Actions/TeamSurveys/ExportSurveyCsv.php`, `app/Http/Controllers/TeamSurveys/TeamSurveyExportsController.php`, `app/Http/Controllers/WorkspaceActionItemsController.php` (Task 21: `items.sprints`; the `filters` prop follows `ActionItemFilters::toArray()`), `app/Models/ActionItemExternalLink.php` (Task 20: `HasSearchColumns`), `app/Mcp/Tools/Retro/ListActionItems.php`, `routes/web.php`.
 
-Tests, created: `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `ActionItemFiltersTest.php`, `ActionItemBulkUpdatesTest.php`, `ActionItemBulkDeletionsTest.php`, `ActionItemBulkMatchingTest.php`, `ActionItemCsvExportTest.php`; `tests/Upgrade/ActionItemStartedAtTest.php`; `tests/Concurrency/ActionItemBulkTest.php`. Modified: `tests/Feature/Integrations/ApplyIssueChangesTest.php` (new cases; one existing test's input, Task 2), `tests/Feature/Integrations/IssueStatusReadsTest.php` (two dataset rows, Task 2), `tests/Feature/Integrations/StatusSyncSettingsTest.php` (one expectation and new cases, Task 4), `tests/Feature/Integrations/IssueTransitionsTest.php` and `ActionItemStatusPushTest.php` (new cases, Task 3), `tests/Feature/Mcp/RetroListToolsTest.php` (one new case).
+Tests, created: `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `ActionItemFiltersTest.php`, `ActionItemBulkUpdatesTest.php`, `ActionItemBulkDeletionsTest.php`, `ActionItemBulkMatchingTest.php`, `ActionItemCsvExportTest.php`, `ActionItemSearchTest.php` (Task 20), `ActionItemSprintsTest.php` (Task 21); `tests/Upgrade/ActionItemStartedAtTest.php`, `tests/Upgrade/ExternalKeySearchTest.php` (Task 20); `tests/Concurrency/ActionItemBulkTest.php`. Modified by Task 20: `tests/Feature/ActionItems/ActionItemFiltersTest.php` (two expectations of Task 5 gain `'q' => null`). Modified: `tests/Feature/Integrations/ApplyIssueChangesTest.php` (new cases; one existing test's input, Task 2), `tests/Feature/Integrations/IssueStatusReadsTest.php` (two dataset rows, Task 2), `tests/Feature/Integrations/StatusSyncSettingsTest.php` (one expectation and new cases, Task 4), `tests/Feature/Integrations/IssueTransitionsTest.php` and `ActionItemStatusPushTest.php` (new cases, Task 3), `tests/Feature/Mcp/RetroListToolsTest.php` (one new case).
 
-Front end, created: `resources/js/lib/action-items/{selection,bulk,status}.ts` and their `.test.ts`; `resources/js/components/action-items/{use-action-item-selection.ts,action-item-select-cell.tsx,action-items-bulk-bar.tsx,bulk-assign-menu.tsx,bulk-result-toast.tsx,bulk-delete-confirm.tsx,bulk-matching-confirm.tsx,use-bulk-tracker-export.ts,use-long-press.ts,action-item-facets.tsx,export-action-items-button.tsx}` and their tests. Modified: `lib/retro/types.ts`, `types/integrations.ts`, `components/integrations/status-mapping-panel.tsx` and `trackers.test.tsx`, `components/action-items/{action-items-page,action-items-table,action-items-list,action-item-sheet,action-item-filters,action-item-filters-drawer,use-action-item-filters,action-items-header}.tsx|ts`, `components/skrum/{action-item,action-sheet}.tsx` (only if a prop is missing; each such change is its own commit), `components/retro/{board-dialogs,action-item-rows,carried-items-sheet}.tsx`, `pages/action-items/index.tsx`, `pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php` (captures only), `lang/{en,fr,es,de}.json`.
+Front end, created: `resources/js/lib/action-items/{selection,bulk,status}.ts` and their `.test.ts`; `resources/js/components/action-items/{use-action-item-selection.ts,action-item-select-cell.tsx,action-items-bulk-bar.tsx,bulk-assign-menu.tsx,bulk-result-toast.tsx,bulk-delete-confirm.tsx,bulk-matching-confirm.tsx,use-bulk-tracker-export.ts,use-long-press.ts,action-item-facets.tsx,export-action-items-button.tsx}` and their tests. Modified: `lib/retro/types.ts`, `types/integrations.ts`, `components/integrations/status-mapping-panel.tsx` and `trackers.test.tsx`, `components/action-items/{action-items-page,action-items-table,action-items-list,action-item-sheet,action-item-filters,action-item-filters-drawer,use-action-item-filters,action-items-header}.tsx|ts`, `components/skrum/{action-item,action-sheet}.tsx` (only if a prop is missing; each such change is its own commit), `components/retro/{board-dialogs,action-item-rows,carried-items-sheet}.tsx`, `pages/action-items/index.tsx`, `pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php` (captures only), `lang/{en,fr,es,de}.json`. Second revision: created `components/action-items/action-item-search-field.tsx`, `action-item-group-meta.tsx` and `lib/action-items/search.ts` (+ tests); modified `lib/action-items/grouping.ts` (+ test), `components/action-items/{action-items-page,action-items-table,action-items-list,action-item-filters-drawer}.tsx`, `pages/action-items/index.tsx`, `components/action-items/{action-items-header,use-action-item-filters}.ts(x)` (+ tests), `components/skrum/app-sidebar.tsx` (+ test), `layouts/skrum/app-layout.tsx`, `components/workspaces/command-menu.tsx`, `components/ui/command.tsx` (one option of `CommandPalette`), and their tests.
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows ScreenActions and ActionItem: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 16, in light, at 1440, in French, and compared with the mockup's `preview.html`.
+- **Mockup first** (parent spec §5 rule 13). A screen follows ScreenActions and ActionItem: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations** (all answered by the owner on 2026-10-03; a difference found later follows Task 16's rule: a new row, listed in the report, without stopping the plan). Captures are taken once, in Task 16, in light, at 1440, in French, and compared with the mockup's `preview.html`.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale (no arbitrary size), no overflow from 20rem to 60rem, visible focus, contrast, motion with `prefers-reduced-motion`, lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers live in `resources/js/components/action-items/`. Reuse what exists: `ActionItem`, `ActionSheet`, `ActionStatusBadge`, `ActionPriorityMark`, `Table`, `Checkbox` (it has the `indeterminate` state), `Popover` + `Command`, `DropdownMenu`, `Calendar`, `Dialog`, `Drawer`, `Tooltip`, `sonner`, `ItemDeleteConfirm`, `ItemExport`, `useActionItemMutations`, `useActionItemsRealtime`.
-- **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md`, rules 1 to 12, apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. In short: no raw query of any form; no driver test; migrations with the Schema builder only, `up` only, dated `2026_10_21_…`, nullable `timestamp()`; a transaction locks the aggregate root first (here: the action item row, `WorkspaceActionItemGuard::lockWritable`); transactions that broadcast are not retried (`Transactions::Attempts` is not used here); an explicit tie-breaker on every sort (`ActionItemQuery::order` has one); dates bound as `Y-m-d` strings; `action_items.sort_rank` is written by `ActionItem::save()` only, so a legacy row inserted with `DB::table()` in a test sets `sort_rank` itself; tests never read SQL text and never change the schema; writes never skip model events.
-- **Four engines.** Every task runs the tests it wrote or touched on PostgreSQL, MariaDB, MySQL and SQLite: `bin/test-db pgsql -- <paths>`, then `mariadb`, `mysql`, `sqlite`. A step "Run the tests on the four engines" means exactly that; its "Expected" holds on each. The red step of a task ("see it fail") may run once, on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. Races (`tests/Concurrency`) run with `bin/test-db <engine> --concurrency -- tests/Concurrency/ActionItemBulkTest.php` on `pgsql`, `mariadb`, `mysql` and `sqlite-file`, never on SQLite in memory, never in parallel. The data migration test (`tests/Upgrade`) runs on the four engines.
+- **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md`, rules 1 to 12, apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. In short: no raw query of any form; no driver test; migrations with the Schema builder only, `up` only, dated `2026_10_24_…`, nullable `timestamp()`; a transaction locks the aggregate root first (here: the action item row, `WorkspaceActionItemGuard::lockWritable`); transactions that broadcast are not retried (`Transactions::Attempts` is not used here); an explicit tie-breaker on every sort (`ActionItemQuery::order` has one); dates bound as `Y-m-d` strings; `action_items.sort_rank` is written by `ActionItem::save()` only, so a legacy row inserted with `DB::table()` in a test sets `sort_rank` itself; tests never read SQL text and never change the schema; writes never skip model events.
+- **PostgreSQL per plan; four engines at the end of the roadmap** (owner, 2026-10-03: "Lance les 4 bases seulement à la fin"). Every task runs the tests it wrote or touched on PostgreSQL: `bin/test-db pgsql -- <paths>`. A step "Run the tests on PostgreSQL" means exactly that. The red step of a task ("see it fail") may run once, on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. Races (`tests/Concurrency`) run with `bin/test-db pgsql --concurrency -- tests/Concurrency/ActionItemBulkTest.php`, never on SQLite in memory, never in parallel. The upgrade tests (`tests/Upgrade`) run on PostgreSQL. MariaDB, MySQL, SQLite and `sqlite-file` are not run by this plan: the controller runs the four-engine matrix once, after the last merge of the roadmap into `roadmap` (plans 24 and 25). Portability is still a rule of every line (the database rule above; `tests/Arch/DatabasePortabilityTest.php`).
 - **Races** are proved with `Tests\Concurrency\Support\Race` (static closures capturing scalars only; `Race::request`); each case states the protection it proves (the row lock of `lockWritable` and the early return of `SetActionItemStatus` on an unchanged status; the unique `previous_occurrence_id`; the count check of an "all matching" request).
 - **Working rules (owner):** unit, feature, upgrade, arch and concurrency tests are written and run per task; Vitest is written and run per task (`npm run test -- <pattern>`), the whole suite in Task 19; whole suites at merges into the plan branch (the gates above) and at the end; browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run — a walkthrough whose selector this plan changes is listed in the report, not edited; captures only, in Task 16, light, 1440, French.
 - **No new dependency**, PHP or JS, without the owner's approval. Long press is written with pointer events, not a library.
 - **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), in the informal register (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). A key that exists keeps its value ("In progress", "Mark as in progress", "Export", "Priority", "Due date", "Source", "To do", "Done", "No due date", "Today", "Later", "Select", "Assign", ":count selected", "Added outside a retro", ":count of :total", ":name (guest)", "Automatic", "Complete to", "Reopen to", "Status mapping saved." exist). Task 17 lists the values of every new key.
-- **No test is deleted** without the owner's approval. The existing expectations this plan changes are named in Tasks 2 and 4, and nowhere else; any other existing test that fails is reported, not edited.
+- **No test is deleted** without the owner's approval. The existing expectations this plan changes are named in Tasks 2, 4 and 23 (and the fixtures of Task 10), and nowhere else; any other existing test that fails is reported, not edited.
 - Primary and foreign keys are UUIDs. Create files with `vendor/bin/sail artisan make:… --no-interaction`.
 - Controllers: plural name, CRUD method names only (`arch()->preset()->laravel()`). Route names camelCase, URLs kebab-case, tuple notation. Form Requests with array rules.
 - Arch facts: models do not use `App\Actions`, `App\Http` or `App\Mcp`; actions do not use `App\Http`; `App\Support` does not use `App\Http` or `App\Mcp`; enums use nothing of the application; no class is `final`.
 - PHP style: early returns, no `else`, happy path last, typed everything, PascalCase constants, constructor promotion, no comment that restates code; before each commit `vendor/bin/pint --dirty --format agent` and `vendor/bin/sail composer types:check` (PHPStan).
-- Octane is installed: no static or per-request singleton state in new classes. A request stops at 30 seconds (`config/octane.php`); Task 8's measurement guards the 500-item cap.
+- Octane is installed: no static or per-request singleton state in new classes. A request stops at 30 seconds (`config/octane.php`); Task 8's measurement guards the 500-item cap and lowers it by rule if needed.
 - Front gates after every task that touches the front: `npm run types:check`, `npm run check`, `npm run build:front` (it runs `wayfinder:generate --with-form`, needed after Tasks 6, 7 and 9 before the front uses their routes).
+- **Plans merged before this one** are built on, not redone: plan 21's `runBulkExport`, `itemsToExport` and `ExportTargetFields` (Task 14), plan 23's `TeamSprint` and team roles (Tasks 21, 23; `ActionItemPermissions`).
 - One commit per task, in the repository's style (`feat(action-items): …`, `test: …`), ending with the trailer lines:
 
 ```
@@ -88,22 +106,22 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built (owner's rule of the fifth round). **Every row is to approve by the owner (not asked yet).** Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+Put to the owner before the screen is built (owner's rule of the fifth round). **Every row was answered on 2026-10-03** (`progress.md`, "Pre-build deviations (owner, 2026-10-03)", line "P24"): P24-03, P24-07 and P24-08 were answered against the drafted row and are now built as the mockup draws them; every other row is approved as listed. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
-| # | Screen | Mockup element | Built | Reason |
-|---|---|---|---|---|
-| P24-01 | Filter bar | "Statut · 3 sur 4" | "Status · 2 of 3" (three statuses) | N: there are three statuses |
-| P24-02 | Filter bar, rows | Source "Whiteboard · …", "Sondage · …" and their icons | Source facet "From a retro" / "Added outside a retro"; rows keep the retro link or "Added outside a retro" | N: roadmap backlog (former plan 28; plan 19 §13) |
-| P24-03 | Header, table | "Grouper par Sprint" (default), sprint group rows with "en cours" / "terminé" badges, dates and late counts | None / Team / Assignee, None by default; group rows with label, count and a selection box | N: no sprint (TM-1); D-19 keeps it |
-| P24-04 | Table | a box on every row | a disabled box, with a tooltip, on a row the viewer can neither complete nor manage | F otherwise: a selection the server would refuse entirely |
-| P24-05 | Bulk bar | no feedback drawn | a toast after each action ("n updated, m not changed" with "Details") and "Exporting n of m…" during a tracker sync | O: per-item outcome (decision 1) |
-| P24-06 | Bulk bar | "Synchroniser vers Jira" always shown | "Sync to :tracker", named after the team's tracker, shown only for a selection of rows of one team with a writable tracker; disabled in "all matching" mode | N/F: a tracker belongs to a team; several trackers or teams have no single target; the browser loop needs ids (decisions 3 and 6) |
-| P24-07 | Topbar | search field "Rechercher une action, un ticket… ⌘K" | not rendered | PB-12 of plan 18e stands |
-| P24-08 | Sidebar | "Actions · 2 en retard" | the number alone | D-129, still to approve |
-| P24-09 | Phone and tablet list | long press only | long press and a "Select" button in the header | O: keyboard and screen-reader route into selection (decision 7) |
-| P24-10 | Phone chips | "Ouvertes", "Terminées" | "To do n" (To do + In progress), "Done", as D-118 | D-118 stands for the wording |
-| P24-11 | Bulk bar | "n sélectionnées" only | "Select all :count matching" after the page is selected, "All :count matching selected", and the "Apply to :count action items?" confirmation (with the changed-count sentence) | O: decision 6 |
-| P24-12 | Team integrations, status mapping | no mockup | a "Start to" select before "Complete to" and "Reopen to", same layout | O: decision 2 |
+| # | Screen | Mockup element | Built | Reason | Answer (2026-10-03) |
+|---|---|---|---|---|---|
+| P24-01 | Filter bar | "Statut · 3 sur 4" | "Status · 2 of 3" (three statuses) | N: there are three statuses | Approved as listed |
+| P24-02 | Filter bar, rows | Source "Whiteboard · …", "Sondage · …" and their icons | Source facet "From a retro" / "Added outside a retro"; rows keep the retro link or "Added outside a retro" | N: roadmap backlog (former plan 28; plan 19 §13) | Approved as listed |
+| P24-03 | Header, table, list | "Grouper par Sprint" (default), sprint group rows with "en cours" / "terminé" badges, dates and late counts | **As the mockup:** Sprint (default) / Team / Assignee / None; sprint group rows with "In progress" / "Finished", ":count action items · start → end" or ":count carried over", ":count overdue"; "No sprint" last | was N (no sprint before plan 23) | **Add, default** (≠ the drafted row); built in Tasks 21 and 23; plan 24 runs after plan 23 |
+| P24-04 | Table | a box on every row | a disabled box, with a tooltip, on a row the viewer can neither complete nor manage | F otherwise: a selection the server would refuse entirely | Approved as listed |
+| P24-05 | Bulk bar | no feedback drawn | a toast after each action ("n updated, m not changed" with "Details") and "Exporting n of m…" during a tracker sync | O: per-item outcome (decision 1) | Approved as listed |
+| P24-06 | Bulk bar | "Synchroniser vers Jira" always shown | "Sync to :tracker", named after the team's tracker, shown only for a selection of rows of one team with a writable tracker; disabled in "all matching" mode | N/F: a tracker belongs to a team; several trackers or teams have no single target; the browser loop needs ids (decisions 3 and 6) | Approved as listed |
+| P24-07 | Topbar | search field "Rechercher une action, un ticket… ⌘K" | **As the mockup:** "Search an action item, a ticket…" with "⌘K", filtering the list (`q`); ⌘K focuses it on this page, "/" opens the palette; below 48rem in the "Filters" drawer | was PB-12 | **Build** (≠ the drafted row); Tasks 20 and 24 |
+| P24-08 | Sidebar | "Actions · 2 en retard" | **As the mockup:** ":count overdue" in the badge ("99+ overdue" above 99) | was D-129 | **Words, as the mockup** (≠ the drafted row; settles D-129 for this entry); Task 22 |
+| P24-09 | Phone and tablet list | long press only | long press and a "Select" button in the header | O: keyboard and screen-reader route into selection (decision 7) | Approved as listed |
+| P24-10 | Phone chips | "Ouvertes", "Terminées" | "To do n" (To do + In progress), "Done", as D-118 | D-118 stands for the wording | Approved as listed |
+| P24-11 | Bulk bar | "n sélectionnées" only | "Select all :count matching" after the page is selected, "All :count matching selected", and the "Apply to :count action items?" confirmation (with the changed-count sentence) | O: decision 6 | Approved as listed |
+| P24-12 | Team integrations, status mapping | no mockup | a "Start to" select before "Complete to" and "Reopen to", same layout | O: decision 2 | Approved as listed |
 
 ## Review Focus
 
@@ -114,18 +132,22 @@ The inputs the spec implies that are most likely to bite, each pinned by a test 
 3. **Two bulk requests over the same items at once** (a double click, two tabs), with ids or with "all matching", **or an "all matching" request after the list changed** (an item added in another tab between the count and "Apply"): one next occurrence per recurring item, no 500, and a changed list refused with its new number, nothing changed. Race cases in Tasks 6, 7 and 8; "changes nothing when the list changed since the member counted it" in Task 8.
 4. **A tracker read of an issue "To Do" on an item a member just started, and of an issue "In Review" on an item still to do**: the member's unpushed newer start wins and is pushed; an older start yields to the source; the to-do item becomes started without a push. Tests in Task 2. **A start push on a Jira workflow whose in-progress transition requires a field**: a failed write with its sentence, the item stays started. Test in Task 3.
 5. **A CSV cell typed as `=HYPERLINK(…)`** in an item's text, a retro title or a team name: shown as text by a spreadsheet. Test in Task 9.
+6. **A search for a ticket key in another case** (`proj-12` for `PROJ-12`), **a link written before the search column**, **and a search sent as `filters.q` of an "all matching" request by a member of another team**: found, found after the migration, and never reaching a team the viewer cannot see. Tests in Task 20 ("finds an item by its ticket key in any case", the upgrade test, "never searches a team the viewer cannot see").
+7. **An item created on the last day of a sprint, one created the day after it ended (between two sprints), and a row created live while the page is open**: grouped in the sprint, in "No sprint", and in its team's current sprint. Tests in Task 21 (server) and Task 23 (Vitest "places a live row in its team's current sprint").
 
 ## Lanes
 
 | Lane | Tasks | Cut from | Shares with other lanes |
 |---|---|---|---|
-| main | 1 to 10, 16 to 19 | — | — |
-| Status | 11 | head of Task 10 | `components/action-items/action-items-table.tsx` (status cell only), `lang/*.json` |
-| Filters | 12 | head of Task 10 | `components/action-items/action-items-page.tsx` (the `extraFacets` line and the drawer props only), `lang/*.json` |
-| Bulk | 13, then 14 | head of Task 10 | `components/action-items/action-items-page.tsx` (the `selectionCell`, `selectionHead`, `bulkBar` lines and the list's selection props), `action-items-table.tsx` (first column and group rows only), `action-items-list.tsx`, `action-items-header.tsx` ("Select" button), `lang/*.json` |
-| Export | 15 | head of Task 10 | `pages/action-items/index.tsx` (the `before` prop only), `lang/*.json` |
+| main | 1 to 9, 20, 21, 10, 22, then 16 to 19 | — | — |
+| Status | 11 | head of Task 22 | `components/action-items/action-items-table.tsx` (status cell only), `lang/*.json` |
+| Filters | 12 | head of Task 22 | `components/action-items/action-items-page.tsx` (the `extraFacets` line and the drawer props only), `action-item-filters-drawer.tsx` (facets), `lang/*.json` |
+| Bulk | 13, then 14 | head of Task 22 | `components/action-items/action-items-page.tsx` (the `selectionCell`, `selectionHead`, `bulkBar` lines and the list's selection props), `action-items-table.tsx` (first column and the box of group rows only), `action-items-list.tsx`, `action-items-header.tsx` ("Select" button), `lang/*.json` |
+| Export | 15 | head of Task 22 | `pages/action-items/index.tsx` (the `before` prop only), `lang/*.json` |
+| Grouping | 23 | head of Task 22 | `lib/action-items/grouping.ts`, `use-action-item-filters.ts` (grouping default only), `action-items-header.tsx` (the segmented control only), `action-items-table.tsx` and `action-items-list.tsx` (the label part of group rows only, through `ActionItemGroupMeta`), `action-items-page.tsx` (the `groupItems` call only), `lang/*.json` |
+| Search | 24 | head of Task 22 | `layouts/skrum/app-layout.tsx`, `components/workspaces/command-menu.tsx`, `components/ui/command.tsx`, `pages/action-items/index.tsx` (the layout's `search` prop only), `action-item-filters-drawer.tsx` (the field at its top only), `use-action-item-filters.ts` (`q` only), `action-items-page.tsx` (the search subscription and the empty-state condition only), `lib/action-items/search.ts`, `lang/*.json` |
 
-The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `action-items-page.tsx` and `action-items-table.tsx` are edited by several lanes in named regions; the controller resolves the conflicts at each merge. `lang/*.json` conflicts are resolved by the controller (keys appended in one alphabetical block per lane). A lane that needs a change in `components/skrum/` stops and asks: Task 10 makes the only planned one. The status mapping panel (Task 4) is done in Step A and touched by no lane.
+The six lanes run in parallel. Merge order: Status, Filters, Bulk, Export, Grouping, Search. `action-items-page.tsx`, `action-items-table.tsx`, `action-items-list.tsx`, `action-items-header.tsx`, `action-item-filters-drawer.tsx`, `use-action-item-filters.ts` and `pages/action-items/index.tsx` are edited by several lanes in named regions; the controller resolves the conflicts at each merge (the group row of the table holds Bulk's box, then Grouping's `ActionItemGroupMeta`). `lang/*.json` conflicts are resolved by the controller (keys appended in one alphabetical block per lane). A lane that needs a change in `components/skrum/` stops and asks: Tasks 10 and 22 make the only planned ones. The status mapping panel (Task 4) is done in Step A and touched by no lane.
 
 ---
 
@@ -134,7 +156,7 @@ The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `act
 ### Task 1: "In progress" — column, status, transitions, presentation
 
 **Files:**
-- Create: `database/migrations/2026_10_21_100000_add_started_at_to_action_items.php`, `app/Events/ActionItems/ActionItemProgressChanged.php`, `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `tests/Upgrade/ActionItemStartedAtTest.php`
+- Create: `database/migrations/2026_10_24_100000_add_started_at_to_action_items.php`, `app/Events/ActionItems/ActionItemProgressChanged.php`, `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `tests/Upgrade/ActionItemStartedAtTest.php`
 - Modify: `app/Enums/ActionItemStatus.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/SetActionItemStatus.php`, `app/Actions/ActionItems/ActionItemSubtaskRules.php`, `app/Actions/Retros/PresentActionItem.php`, `lang/{en,fr,es,de}.json`
 
 **Interfaces:**
@@ -302,7 +324,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('reads every row from before the column as to do or done, with its rank unchanged', function () {
-    $migration = '2026_10_21_100000_add_started_at_to_action_items.php';
+    $migration = '2026_10_24_100000_add_started_at_to_action_items.php';
     $earlier = collect(glob(database_path('migrations/*.php')))
         ->filter(fn (string $path): bool => basename($path) < $migration)
         ->values()
@@ -349,7 +371,7 @@ Expected: FAIL — `Call to undefined method …ActionItemFactory::started()`, t
 
 - [ ] **Step 3: Implement**
 
-`database/migrations/2026_10_21_100000_add_started_at_to_action_items.php`:
+`database/migrations/2026_10_24_100000_add_started_at_to_action_items.php`:
 
 ```php
 <?php
@@ -532,15 +554,15 @@ and in the docblock shape: `status: string` stays, add `startedAt: ?string,` aft
 
 `ApplyActionItemChanges` and `ActionItemRules::update()` need no change: `Rule::enum(ActionItemStatus::class)` accepts `doing`, and `ActionItemStatus::from()` reads it.
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Upgrade/ActionItemStartedAtTest.php tests/Feature/Integrations tests/Feature/Mcp`, then `mariadb`, `mysql`, `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Upgrade/ActionItemStartedAtTest.php tests/Feature/Integrations tests/Feature/Mcp`.
 Expected: PASS. `tests/Feature/ActionItems/PresentActionItemTest.php` and the MCP item-shape tests pass with the extra `startedAt` key; if one compares the whole payload with `toBe`, add `'startedAt' => null` to its expected array and list the file in the commit message.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add database/migrations/2026_10_21_100000_add_started_at_to_action_items.php app/Events/ActionItems/ActionItemProgressChanged.php app/Enums/ActionItemStatus.php app/Models/ActionItem.php database/factories/ActionItemFactory.php app/Actions/ActionItems/SetActionItemStatus.php app/Actions/ActionItems/ActionItemSubtaskRules.php app/Actions/Retros/PresentActionItem.php tests/Feature/ActionItems/ActionItemInProgressTest.php tests/Upgrade/ActionItemStartedAtTest.php lang
+git add database/migrations/2026_10_24_100000_add_started_at_to_action_items.php app/Events/ActionItems/ActionItemProgressChanged.php app/Enums/ActionItemStatus.php app/Models/ActionItem.php database/factories/ActionItemFactory.php app/Actions/ActionItems/SetActionItemStatus.php app/Actions/ActionItems/ActionItemSubtaskRules.php app/Actions/Retros/PresentActionItem.php tests/Feature/ActionItems/ActionItemInProgressTest.php tests/Upgrade/ActionItemStartedAtTest.php lang
 git commit -m "feat(action-items): status In progress (AI-3)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
@@ -784,9 +806,9 @@ Add:
 
 `PushActionItemState`, `JiraTransitions`, `LinearTracker` and `StatusPushRejected` are Task 3's.
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Feature/Poker tests/Arch`, then `mariadb`, `mysql`, `sqlite`; then `npm run types:check`.
+Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Feature/Poker tests/Arch`; then `npm run types:check`.
 Expected: PASS. If a test of `tests/Feature/Integrations` other than the three changes above fails, stop and report it.
 
 - [ ] **Step 5: Commit**
@@ -1100,9 +1122,9 @@ and its docblock: "else the first `completed` state, for a start the first `star
 
 `lang/*.json`: "Jira requires more fields to start :key. Start it in Jira.", "No transition to an in-progress status is available for :key." (values in Task 17's table; add them now).
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Arch`, then `mariadb`, `mysql`, `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Arch`.
 Expected: PASS, the existing transition and push tests unchanged.
 
 - [ ] **Step 5: Commit**
@@ -1203,9 +1225,9 @@ Expected: FAIL — `start_status_id` is refused by the `array:` rule; no "Start 
 
 `lang/*.json`: "Start to" (values in Task 17's table).
 
-- [ ] **Step 4: Run the tests on the four engines, and the gates**
+- [ ] **Step 4: Run the tests on PostgreSQL, and the gates**
 
-Run: `bin/test-db pgsql -- tests/Feature/Integrations/StatusSyncSettingsTest.php tests/Feature/Integrations/IssueTransitionsTest.php tests/Feature/Integrations/ActionItemStatusPushTest.php`, then `mariadb`, `mysql`, `sqlite`; `npm run test -- resources/js/components/integrations`; `npm run types:check`, `npm run check`, `npm run build:front`.
+Run: `bin/test-db pgsql -- tests/Feature/Integrations/StatusSyncSettingsTest.php tests/Feature/Integrations/IssueTransitionsTest.php tests/Feature/Integrations/ActionItemStatusPushTest.php`; `npm run test -- resources/js/components/integrations`; `npm run types:check`, `npm run check`, `npm run build:front`.
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1715,9 +1737,9 @@ The schema and the validation keep reading `ActionItemFilters::Statuses`, which 
 
 `WorkspaceActionItemsController::index` needs no change: `filters` is `$filters->toArray()`.
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Feature/Mcp tests/Feature/Database/ActionItemOrderTest.php`, then `mariadb`, `mysql`, `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Feature/Mcp tests/Feature/Database/ActionItemOrderTest.php`.
 Expected: PASS. `ActionItemsPageTest` ("filters by status, assignee and team") passes unchanged: it sends single values. If a test of that file reads `props.filters.status` as a string, change its expectation to the list and list the file in the commit message.
 
 - [ ] **Step 5: Commit**
@@ -2135,9 +2157,9 @@ with `use App\Http\Controllers\WorkspaceActionItemBulkUpdatesController;` in alp
 
 `lang/*.json`: the key "This action item no longer exists." (values in Task 17's table; add them now).
 
-- [ ] **Step 4: Run the tests on the four engines, and the race**
+- [ ] **Step 4: Run the tests on PostgreSQL, and the race**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`, then `mariadb`, `mysql`, `sqlite`; then `bin/test-db pgsql --concurrency -- tests/Concurrency/ActionItemBulkTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`; then `bin/test-db pgsql --concurrency -- tests/Concurrency/ActionItemBulkTest.php`.
 Expected: PASS. If the refusal sentence of a locked board or of a missing right differs from the one written in the test, the test follows the code's sentence (they are the single-item endpoint's) and the commit message says so.
 
 - [ ] **Step 5: Commit**
@@ -2314,9 +2336,9 @@ class WorkspaceActionItemBulkDeletionsController extends Controller
             Route::post('action-items/bulk-deletions', [WorkspaceActionItemBulkDeletionsController::class, 'store'])->name('workspaces.actionItemBulkDeletions.store');
 ```
 
-- [ ] **Step 4: Run the tests on the four engines, and the race**
+- [ ] **Step 4: Run the tests on PostgreSQL, and the race**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems`, then `mariadb`, `mysql`, `sqlite`; then `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- tests/Concurrency/ActionItemBulkTest.php`, one engine after the other.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems`; then `bin/test-db pgsql --concurrency -- tests/Concurrency/ActionItemBulkTest.php`.
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -2623,14 +2645,16 @@ Expected: FAIL — 422 on `ids` (required) for every filters body.
 
 `lang/*.json`: "More than :cap action items match. Narrow the filters.", "The list changed: :count action items match now." (values in Task 17's table).
 
-- [ ] **Step 4: Run the tests on the four engines, and the race**
+- [ ] **Step 4: Run the tests on PostgreSQL, and the race**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`, then `mariadb`, `mysql`, `sqlite`; then `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- tests/Concurrency/ActionItemBulkTest.php`, one engine after the other.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`; then `bin/test-db pgsql --concurrency -- tests/Concurrency/ActionItemBulkTest.php`.
 Expected: PASS.
 
 - [ ] **Step 5: Measure the cap (spec §14, §16.4)**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemBulkMatchingTest.php --filter="changes the cap" --profile`, then `mysql`. Read the time of the test (it creates 500 items, completes them in one request with the queue faked, then creates 501 more). Write both numbers in the commit message. If the request part takes more than 15 seconds on either engine (half of Octane's 30), stop and report to the owner before going on: the choice is a lower `MatchingCap` or a queued bulk change, neither of which this plan decides.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemBulkMatchingTest.php --filter="changes the cap" --profile`. Read the time of the request part of the test (it creates 500 items, completes them in one request with the queue faked, then creates 501 more; wrap the first `postBulkMatching` call in `$started = hrtime(true)` … `dump((hrtime(true) - $started) / 1e9)` for this run only, and remove the two lines before the commit). Write the number in the commit message.
+
+Rule (spec §14, "Request time"; no stop for the owner): if the request takes more than 15 seconds (half of Octane's 30), set `ActionItemBulkChanges::MatchingCap` to the largest multiple of 50 at or below `500 × 15 / seconds`, at least 50, set the front's `MatchingCap` (Task 10, `lib/action-items/selection.ts`) to the same number, change the test's `count(500)`, `'count' => 500`, `changedCount` 500, `count(501)` and the 500 / 501 of the dataset "count above the cap" to the new cap and cap + 1, run this step again at the new cap, and write both numbers in the commit message and in the report (Task 19). A queued bulk change stays in the backlog (spec §3).
 
 - [ ] **Step 6: Commit**
 
@@ -2638,7 +2662,7 @@ Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemBulkMatchingTest.
 git add app/Actions/ActionItems/ActionItemBulkChanges.php app/Http/Requests/ActionItems app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php app/Http/Controllers/WorkspaceActionItemBulkDeletionsController.php tests/Feature/ActionItems/ActionItemBulkMatchingTest.php tests/Concurrency/ActionItemBulkTest.php lang
 git commit -m "feat(action-items): bulk changes over every matching item (AI-1)
 
-500-item completion: <n> s on PostgreSQL, <n> s on MySQL.
+500-item completion: <n> s on PostgreSQL (cap <500, or the lowered cap and its time>).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
@@ -2956,9 +2980,9 @@ class WorkspaceActionItemCsvExportsController extends Controller
 
 `lang/*.json`: "Tickets" (new). The other header keys exist ("Action", "Status", "Team", "Assignee", "Priority", "Due date", "Source", "Created", "Completed", "Link"); check each in the four files and add what is missing.
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemCsvExportTest.php tests/Feature/TeamSurveys/TeamSurveyExportTest.php tests/Arch`, then `mariadb`, `mysql`, `sqlite`.
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemCsvExportTest.php tests/Feature/TeamSurveys/TeamSurveyExportTest.php tests/Arch`.
 Expected: PASS (the survey export tests unchanged).
 
 - [ ] **Step 5: Commit**
@@ -3438,7 +3462,7 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 - Row box (`action-item-select-cell.tsx`): `Checkbox` named "Select :title"; disabled with a tooltip "You cannot change this action item" when `selectable(item)` is false (the viewer may neither complete nor manage it). A selected row gets `data-selected` and the selected background.
 - Header box: `head(selectableIds)`; ticking selects the page's selectable rows, unticking clears; name "Select all on this page" / "Clear selection". A group row box selects its group's selectable rows.
 - `keepListed` runs when `rows` change (a row that left the list leaves the selection).
-- **All matching** (spec §9.3, decision 6): when `offer` is `'offer'`, the bar shows a link button "Select all :count matching" (`:count` = `items.total`) after "n selected"; pressing it calls `selectMatching()`: the bar reads "All :count matching selected", every row box reads ticked (the header box too), group boxes too. When `offer` is `'too-many'` the button is disabled with the tooltip "Up to 500 at once. Narrow the filters.". Unticking a row in that mode calls `leaveMatching(selectableIds, id)`; ticking the header box off clears everything.
+- **All matching** (spec §9.3, decision 6): when `offer` is `'offer'`, the bar shows a link button "Select all :count matching" (`:count` = `items.total`) after "n selected"; pressing it calls `selectMatching()`: the bar reads "All :count matching selected", every row box reads ticked (the header box too), group boxes too. When `offer` is `'too-many'` the button is disabled with the tooltip "Up to :cap at once. Narrow the filters." (`:cap` = `MatchingCap`). Unticking a row in that mode calls `leaveMatching(selectableIds, id)`; ticking the header box off clears everything.
 - Bar (`action-items-bulk-bar.tsx`), mockup order: "**n** selected" (polite live region), separator, Status ▾ (To do, In progress, Done), Assign ▾ (`bulk-assign-menu.tsx`: "Unassigned" then the members common to every team of the selection, with avatars; a search field from eight people), Due date ▾ (calendar and "No due date"), Priority ▾ (High, Medium, Low with marks), "Sync to :tracker" (Task 14), Delete (destructive ghost), separator, ✕ "Clear selection". `role="toolbar"`, name "Bulk actions", fixed at the bottom centre of the content, `z-chrome`, `shadow-modal`, enter/leave motion off with reduced motion.
 - Enabled actions: Status when one selected row of the page may be completed by the viewer; Assign, Due date, Priority and Delete when one may be managed; otherwise disabled with a tooltip. In "all matching" mode the same reading over the page's rows (the server checks each item); Assign lists the members common to the filter's team, else to every team of `filterTeams` (spec §7).
 - A change on rows: buttons disabled, spinner on the pressed one; `bulkUpdate(workspace, { ids }, changes)`; each returned item through `saveRow`; then `bulk-result-toast.tsx`: "n action items updated." (one: "1 action item updated.") when nothing was refused, else "n updated, m not changed." (`changedCount`, `refused.length`) with a "Details" action opening a dialog listing each refused item's title — or its sentence alone when `title` is null — and message. Full success clears the selection; a partial one removes the changed ids from it.
@@ -3447,7 +3471,7 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 - A request that fails as a whole (network, 503, 422) shows the existing error toast of `useActionItemMutations.run` and resyncs; the selection stays.
 - Escape clears the selection when no sheet, menu or dialog is open.
 
-**Vitest (written first):** a row box toggles and marks the row; a disabled box for a row the viewer cannot change; the header box reads none / mixed / all and selects the page; a group box selects its rows; the bar appears with "3 selected" and disappears when cleared; Status → In progress posts `{ ids, changes: { status: 'doing' } }`; Assign lists only the common members; a partial answer shows "1 updated, 1 not changed." and the details list the refused title and sentence (and the sentence alone for a null title), and only the changed id leaves the selection; Delete asks first and Cancel sends nothing; Escape clears; a filter change clears. All matching: with the page selected and `items.total` 137, "Select all 137 matching" shows and enters the mode ("All 137 matching selected"); it is disabled above 500; Priority → High asks "Apply to 137 action items?" and Cancel sends nothing; Apply posts `{ filters, count: 137, changes: { priority: 'high' } }` and reloads `items` and `counts`; a 422 on `count` keeps the dialog with its sentence and the next Apply sends the reloaded total; unticking a row leaves the mode with the other page rows selected; a page change keeps the mode and a filter change clears it.
+**Vitest (written first):** a row box toggles and marks the row; a disabled box for a row the viewer cannot change; the header box reads none / mixed / all and selects the page; a group box selects its rows; the bar appears with "3 selected" and disappears when cleared; Status → In progress posts `{ ids, changes: { status: 'doing' } }`; Assign lists only the common members; a partial answer shows "1 updated, 1 not changed." and the details list the refused title and sentence (and the sentence alone for a null title), and only the changed id leaves the selection; Delete asks first and Cancel sends nothing; Escape clears; a filter change clears. All matching: with the page selected and `items.total` 137, "Select all 137 matching" shows and enters the mode ("All 137 matching selected"); it is disabled above `MatchingCap` (its tooltip reads "Up to 500 at once. Narrow the filters." with the default cap); Priority → High asks "Apply to 137 action items?" and Cancel sends nothing; Apply posts `{ filters, count: 137, changes: { priority: 'high' } }` and reloads `items` and `counts`; a 422 on `count` keeps the dialog with its sentence and the next Apply sends the reloaded total; unticking a row leaves the mode with the other page rows selected; a page change keeps the mode and a filter change clears it.
 
 **Commit:** `feat(action-items): selection, all matching and bulk bar on the table`
 
@@ -3456,14 +3480,14 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 **Files:** create `components/action-items/use-bulk-tracker-export.ts` and its test, `use-long-press.ts` and its test (in `components/action-items/`); modify `action-items-list.tsx` (selection mode), `action-items-header.tsx` ("Select" / "Done" button), `action-items-bulk-bar.tsx` (docked layout, "…" menu, sync button and progress), `action-items-page.tsx` (selection mode state).
 
 **Interfaces:**
-- Consumes: Task 13's hook and bar; `ItemExport`'s target form and `endpoints.exportItem` / `endpoints.exportPreview` (read `item-export.tsx` to reuse its target step as a component, or extract it into `ExportTargetForm` in its own commit if it is not separable); `exportSources` of the page.
-- Produces: `useLongPress(onLongPress, { delayMs = 500, moveTolerancePx = 10 })` returning pointer handlers; `useBulkTrackerExport({ endpoints, run }): { start(items, source, target); stop(); progress: { done: number; total: number } | null; result: { exported: string[]; skipped: string[]; failed: BulkRefusal[] } | null }`.
+- Consumes: Task 13's hook and bar; plan 21's browser loop, merged before this plan (Task 18 of plan 21, RT-10): `runBulkExport(itemIds, exportOne, onProgress, shouldStop)` and `itemsToExport(items, source)` of `lib/action-items/bulk-export.ts`, and `ExportTargetFields({ source, scope, teamId, value, onChange })` of `components/action-items/export-target-fields.tsx` (read both first; use them as they are — the loop, its outcomes and the reconnect stop are plan 21's, not rewritten here); `endpoints.exportItem` of the workspace page (`lib/action-items/endpoints.ts`); `exportSources` of the page.
+- Produces: `useLongPress(onLongPress, { delayMs = 500, moveTolerancePx = 10 })` returning pointer handlers; `useBulkTrackerExport({ endpoints, run }): { start(items, source, target); stop(); progress: { done: number; total: number } | null; result: { exported: string[]; skipped: string[]; failed: BulkRefusal[] } | null }`, a thin hook over `runBulkExport` (progress state, `stop` through `shouldStop`, `skipped` = the selected items `itemsToExport` leaves out, `failed` mapped from the loop's failed outcomes to `BulkRefusal`).
 
 **Composition and behaviours (spec §9.4, §9.5):**
 - Header button "Select" (below 80rem only, after "Group by"); in selection mode it reads "Finish selecting" and leaves the mode (and clears the selection).
-- Selection mode in the list: a box (20 px, 44 px target) before each item's status button; a tap on the item toggles it; the bulk bar docks at the bottom (`layout="docked"`, safe-area padding), full width, with Status, Assign, Due date and "…" (Priority, Sync, Delete, and "Select all :count matching" when `items.total` is above the rows shown — it selects the page's selectable rows and enters "all matching" mode in one step, disabled above 500 as in Task 13).
+- Selection mode in the list: a box (20 px, 44 px target) before each item's status button; a tap on the item toggles it; the bulk bar docks at the bottom (`layout="docked"`, safe-area padding), full width, with Status, Assign, Due date and "…" (Priority, Sync, Delete, and "Select all :count matching" when `items.total` is above the rows shown — it selects the page's selectable rows and enters "all matching" mode in one step, disabled above `MatchingCap` as in Task 13).
 - Long press (touch and pen pointers only, 500 ms without moving more than 10 px) on an item enters selection mode with that item selected; a short tap still opens it; the context menu of a long press is prevented on the item.
-- "Sync to :tracker" (`:tracker` = the source label, e.g. "Jira"): in "all matching" mode, disabled with the tooltip "Select rows on this page to sync them." (the loop needs ids; spec §3, P24-06); otherwise shown when every selected item has the same `teamId` and `sourcesOf(teamId)` has one source (a menu of sources when it has several); opens the existing export target step for the first unlinked item; on confirm, exports the unlinked items one after the other through `endpoints.exportItem(id)` with the target; items already linked to that source are skipped; the bar shows "Exporting :done of :total…" with a `progress` bar and "Stop"; "reconnect required" (the error the export answers today; read `item-export.tsx` for how it is recognised) stops the loop; each exported item goes through `saveRow`; the end toast: ":count exported, :skipped already linked" plus failures in "Details".
+- "Sync to :tracker" (`:tracker` = the source label, e.g. "Jira"): in "all matching" mode, disabled with the tooltip "Select rows on this page to sync them." (the loop needs ids; spec §3, P24-06); otherwise shown when every selected item has the same `teamId` and `sourcesOf(teamId)` has one source (a menu of sources when it has several); opens a small dialog holding `ExportTargetFields` for the selection's team (the target chosen once); on confirm, `runBulkExport` exports the unlinked items (`itemsToExport`) one after the other through `endpoints.exportItem(id)` with the target; items already linked to that source are skipped; the bar shows "Exporting :done of :total…" with a `progress` bar and "Stop"; "reconnect required" (the error the export answers today; read `item-export.tsx` for how it is recognised) stops the loop; each exported item goes through `saveRow`; the end toast: ":count exported, :skipped already linked" plus failures in "Details".
 
 **Vitest (written first):** "Select" enters the mode and shows boxes; "Finish selecting" leaves it and clears; a long press of 500 ms enters the mode with the item selected, a 200 ms press opens it, a move cancels; the docked bar shows three actions and "…" holding the rest; the "…" menu offers "Select all 137 matching" and enters the mode; the sync button is hidden for a two-team selection and for a team without a source, and disabled with its tooltip in "all matching" mode; the loop exports two unlinked items in order, skips a linked one, shows "Exporting 1 of 2…", and stops on a reconnect answer; "Stop" ends after the current item.
 
@@ -3489,16 +3513,16 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 
 **Files:** modify `resources/js/pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php`.
 
-- [ ] Add the states of spec §9.9 to the bench section, built from the page's pieces as the section does today (it does not mount `ActionItemsPage`): `selection` (three of six rows selected, header box mixed, the floating bar with "Select all 137 matching" once the page is selected), `all-matching` (the bar reading "All 137 matching selected", every row ticked, "Sync to Jira" disabled), `confirm-matching` (the "Apply to 137 action items?" dialog), `bulk-result` (the partial toast open on "Details"), `bulk-delete` (the confirmation), `facets` (Status "2 of 3", Priority High, Due date "Next 7 days", Source "From a retro", the overdue shortcut), `in-progress` (one row per status, with the sheet open on a started item), `phone-selection` (rendered at its own narrow frame: the list in selection mode with the docked bar).
-- [ ] Add the captures to `ActionsPageVisualTest.php` for those states and for the real page of a manager with an "Export" button, in light, at 1440, in French only (`VISUAL_ONLY=light-1440-fr`), and run them: `vendor/bin/sail artisan test --compact tests/Browser/Visual/ActionsPageVisualTest.php` with that variable. The harness's overflow check must pass. If `tests/Browser/Visual` already captures the team integrations page, add its status mapping state with "Start to" (light, 1440, French) the same way; if it does not, add none and say so in the report (spec §9.9).
-- [ ] Compare each capture with `docs/design-system/components/ScreenActions/preview.html` (and ActionItem's preview for the status button): every difference is fixed in the lane's component, or added as a row to **Pre-build deviations** with its reason and put to the owner.
+- [ ] Add the states of spec §9.9 to the bench section, built from the page's pieces as the section does today (it does not mount `ActionItemsPage`): `selection` (three of six rows selected, header box mixed, the floating bar with "Select all 137 matching" once the page is selected), `all-matching` (the bar reading "All 137 matching selected", every row ticked, "Sync to Jira" disabled), `confirm-matching` (the "Apply to 137 action items?" dialog), `bulk-result` (the partial toast open on "Details"), `bulk-delete` (the confirmation), `facets` (Status "2 of 3", Priority High, Due date "Next 7 days", Source "From a retro", the overdue shortcut), `in-progress` (one row per status, with the sheet open on a started item), `phone-selection` (rendered at its own narrow frame: the list in selection mode with the docked bar), `sprint-groups` (grouped by sprint: "Sprint 42" current with ":count action items · 21 Sep → 4 Oct", "Sprint 41" finished with ":count carried over" and ":count overdue", then "No sprint"; built with `ActionItemGroupMeta` of Task 23), `search` (the page's topbar field of Task 24 holding "runbook", the list narrowed to two rows).
+- [ ] Add the captures to `ActionsPageVisualTest.php` for those states and for the real page of a manager with an "Export" button, the topbar search field, the grouping by sprint (a team with two sprints, `teamSprint()`) and the sidebar's "Actions · n overdue", in light, at 1440, in French only (`VISUAL_ONLY=light-1440-fr`), and run them: `vendor/bin/sail artisan test --compact tests/Browser/Visual/ActionsPageVisualTest.php` with that variable. The harness's overflow check must pass. If `tests/Browser/Visual` already captures the team integrations page, add its status mapping state with "Start to" (light, 1440, French) the same way; if it does not, add none and say so in the report (spec §9.9).
+- [ ] Compare each capture with `docs/design-system/components/ScreenActions/preview.html` (and ActionItem's preview for the status button): every difference is fixed in the lane's component; one that cannot be (no data, accessibility) is added as a row to **Pre-build deviations** with its reason and listed in the report for the owner, without stopping the plan (autonomy mandate of 2026-10-03).
 - [ ] Commit: `test(action-items): bench states and captures of bulk changes, facets and In progress`.
 
 ### Task 17: Translations
 
 **Files:** `lang/{en,fr,es,de}.json`.
 
-- [ ] Check that every key added by Tasks 1 to 15 is in the four files, with these values (English is the key). Existing keys keep their values.
+- [ ] Check that every key added by Tasks 1 to 15 and 20 to 24 is in the four files, with these values (English is the key). Existing keys keep their values.
 
 | Key | fr | es | de |
 |---|---|---|---|
@@ -3531,12 +3555,25 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 | No transition to an in-progress status is available for :key. | Aucune transition vers un statut en cours n’est disponible pour :key. | No hay ninguna transición a un estado en curso disponible para :key. | Für :key ist kein Übergang in einen laufenden Status verfügbar. |
 | Select all :count matching | Sélectionner les :count correspondantes | Seleccionar las :count que coinciden | Alle :count Treffer auswählen |
 | All :count matching selected | Les :count correspondantes sont sélectionnées | Las :count que coinciden están seleccionadas | Alle :count Treffer ausgewählt |
-| Up to 500 at once. Narrow the filters. | 500 au maximum à la fois. Affine les filtres. | Hasta 500 a la vez. Ajusta los filtros. | Höchstens 500 auf einmal. Grenze die Filter ein. |
+| Up to :cap at once. Narrow the filters. | :cap au maximum à la fois. Affine les filtres. | Hasta :cap a la vez. Ajusta los filtros. | Höchstens :cap auf einmal. Grenze die Filter ein. |
 | Apply to :count action items? | Appliquer à :count actions ? | ¿Aplicar a :count acciones? | Auf :count Aktionen anwenden? |
 | Every action item matching the filters is changed: :count in all. | Chaque action qui correspond aux filtres est modifiée : :count en tout. | Se modifica cada acción que coincide con los filtros: :count en total. | Jede Aktion, die zu den Filtern passt, wird geändert: insgesamt :count. |
 | The list changed: :count action items match now. | La liste a changé : :count actions correspondent maintenant. | La lista cambió: ahora coinciden :count acciones. | Die Liste hat sich geändert: Jetzt passen :count Aktionen. |
 | More than :cap action items match. Narrow the filters. | Plus de :cap actions correspondent. Affine les filtres. | Coinciden más de :cap acciones. Ajusta los filtros. | Mehr als :cap Aktionen passen. Grenze die Filter ein. |
 | Select rows on this page to sync them. | Sélectionne des lignes de cette page pour les synchroniser. | Selecciona filas de esta página para sincronizarlas. | Wähle Zeilen auf dieser Seite aus, um sie zu synchronisieren. |
+| Sprint | Sprint | Sprint | Sprint |
+| Sprint :number | Sprint :number | Sprint :number | Sprint :number |
+| :team · Sprint :number | :team · Sprint :number | :team · Sprint :number | :team · Sprint :number |
+| Finished | Terminé | Terminado | Beendet |
+| No sprint | Sans sprint | Sin sprint | Ohne Sprint |
+| 1 action item · :start → :end | 1 action · :start → :end | 1 acción · :start → :end | 1 Aktion · :start → :end |
+| :count action items · :start → :end | :count actions · :start → :end | :count acciones · :start → :end | :count Aktionen · :start → :end |
+| 1 carried over | 1 reportée | 1 aplazada | 1 übertragen |
+| :count carried over | :count reportées | :count aplazadas | :count übertragen |
+| Search an action item, a ticket… | Rechercher une action, un ticket… | Buscar una acción, un ticket… | Aktion oder Ticket suchen… |
+| Search action items | Rechercher des actions | Buscar acciones | Aktionen suchen |
+
+  The worded sidebar badge reuses ":count overdue" (it exists: "4 en retard" in French). "In progress" exists ("En cours"); a sprint's badge reuses it. ":count action items" and "1 action item" exist if the table's group count uses them; check, and do not duplicate.
 
   Keys that may already exist ("Any", "Details", "Stop", "Clear selection", "Apply"): keep the existing value if there is one, and do not duplicate the key. The French values use the typographic apostrophe (’) where the neighbouring Jira sentences do.
 - [ ] Run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` and `npm run test -- resources/js/lib/i18n` (if the front has a key test).
@@ -3544,32 +3581,1517 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 
 ### Task 18: Deviations and documents
 
-- [ ] `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`: D-19 — strike what this plan built (selection and bulk bar, priority / due date / source facets, "In progress", topbar "Export"); what remains: grouping by sprint (TM-1), whiteboard and survey sources (backlog). D-118 — "no long press" removed; the chips' wording stays.
+- [ ] `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`: D-19 — strike what this plan built (selection and bulk bar, priority / due date / source facets, "In progress", topbar "Export", the grouping by sprint as the default, the topbar search field); what remains: whiteboard and survey sources (backlog). D-118 — "no long press" removed; the chips' wording stays.
+- [ ] `docs/superpowers/research/front-rewrite/deviations.md`, D-129: the Actions badge wording is built (plan 24, P24-08); the row keeps what other plans own ("Sessions" current entry, the role line of plan 23). `docs/superpowers/research/front-rewrite/pre-build-deviations.md`, PB-12: on the action items page the topbar holds the page's search field (plan 24, P24-07); every other page keeps the palette's field.
 - [ ] `docs/superpowers/research/front-rewrite/feature-roadmap.md`: AI-1 to AI-4 "done, plan 24"; the backlog line under the table lists spec §3.
 - [ ] `docs/superpowers/research/front-rewrite/deviations.md`: the rows P24-01 to P24-12 (with the owner's answers) and those Task 16 added.
-- [ ] `docs/database.md`: in "The database holds keys, not rules", nothing changes (`started_at` is not derived); in the upgrade list of the release, add "`started_at` on action items (empty)" and "`started` as a value of `action_item_external_links.external_state` and `last_pushed_state` (no migration; links are corrected by their next read)".
-- [ ] The release note (where the project keeps it; read `docs/` for the release notes of plans 18 and 19, and ask if there is none): the status button now starts a to-do item (spec §14, "A gesture that changes"); "In progress" moves linked Jira and Linear issues, with "Start to" per project or team; the first read after the release may move an issue with an unpushed reopening back to its reopen target (spec §14, "The release").
+- [ ] `docs/database.md`: in "The database holds keys, not rules", nothing changes (`started_at` is not derived); in the upgrade list of the release, add "`started_at` on action items (empty)", "`external_key_search` on `action_item_external_links` (filled by its migration, outside a transaction, re-runnable; run in maintenance mode as the other search-column fills)" and "`started` as a value of `action_item_external_links.external_state` and `last_pushed_state` (no migration; links are corrected by their next read)"; in the list of `*_search` columns (rule 4, rule 9), add `action_item_external_links.external_key_search`.
+- [ ] The release note (where the project keeps it; read `docs/` for the release notes of plans 18 and 19, and ask if there is none): the status button now starts a to-do item (spec §14, "A gesture that changes"); "In progress" moves linked Jira and Linear issues, with "Start to" per project or team; the first read after the release may move an issue with an unpushed reopening back to its reopen target (spec §14, "The release"); the list groups by sprint by default and searches from the topbar, where ⌘K focuses the page's field and "/" opens the palette (spec §14, "The search takes ⌘K on one page").
 - [ ] Commit: `docs: plan 24 — roadmap, deviation rows, database notes and release note`.
 
-### Task 19: Full suites on the four engines, and the report
+### Task 19: Full suites on PostgreSQL, and the report
 
 - [ ] `npm run test` (the whole Vitest suite), `npm run types:check`, `npm run check`, `npm run build:front`.
 - [ ] `vendor/bin/sail composer types:check` and `vendor/bin/pint --dirty --format agent`.
-- [ ] `bin/test-db pgsql`, then `sqlite`, then `mariadb`, then `mysql` (Unit, Feature, Upgrade and Arch; one at a time).
-- [ ] `bin/test-db pgsql --concurrency`, then `mariadb`, `mysql`, `sqlite-file`.
-- [ ] Write `.superpowers/sdd/roadmap/plan-24/report.md`: tasks and commits; each acceptance criterion of spec §13 with the test that proves it; the four suites' result lines; the deviations added; the walkthrough files whose selectors changed and were not edited (`grep -rln "aria-label=\"Status\"\|Mark as done\|status=overdue" tests/Browser/Walkthroughs`); what was not determined (spec §16) and what was learnt.
+- [ ] `bin/test-db pgsql` (Unit, Feature, Upgrade and Arch), then `bin/test-db pgsql --concurrency`, one at a time. No other engine: the four-engine matrix (pgsql, sqlite, mariadb, mysql, and `sqlite-file` for the races) runs once after the last merge of the roadmap into `roadmap` (plans 24 and 25), by the controller, outside this plan.
+- [ ] Write `.superpowers/sdd/roadmap/plan-24/report.md`: tasks and commits; each acceptance criterion of spec §13 (1 to 30) with the test that proves it; the PostgreSQL suites' result lines; the cap measured in Task 8 (and the lowered cap if the rule applied); the deviations added; the walkthrough files whose selectors changed and were not edited (`grep -rln "aria-label=\"Status\"\|Mark as done\|status=overdue" tests/Browser/Walkthroughs`); what was not determined (spec §16) and what was learnt.
 - [ ] Commit: `docs: plan 24 report`.
 
 ---
 
-## Self-review (done while revising on the owner's answers; kept for the reader)
+## Added by the second revision (2026-10-03): Tasks 20 to 24
 
-**Spec coverage.** §5 rules 1, 2 → Tasks 6, 7, 8; rule 3 → Task 1; rule 4 → Tasks 5, 8, 9; rule 5 → Task 9; rule 6 → Tasks 2, 3; rule 7 → Task 8. §6.1 status, transitions and `ActionItemProgressChanged` → Task 1; sub-tasks → Task 1; §6.2 three-state reads and sync state → Task 2, pushes and start targets → Task 3, release note → Task 18; §6.3 filters, old values, counters, MCP → Task 5, `fromQuery` → Task 5; §6.4 readers → Task 1 (presenter), Task 2 (link state, front type), Task 4 (settings presentation), Task 5 (MCP list); §6.5 bulk → Tasks 6, 7 (ids), 8 (filters and count), 13, 14 (front, sync loop); §6.6 export → Task 9 (server), 15 (button); §6.7 start settings → Task 4; §7 permissions → Tasks 6, 7, 8 (per item), 4 (settings), 13 (selectable rows, enabled actions, assignees in "all matching" mode); §8 real time → Tasks 6, 7, 8 (events per item asserted), 13 (`saveRow` / `removeRow`, reload after "all matching"); §9.1 → 15; §9.2 → 12 and 10 (chips); §9.3, §9.4 → 13, 14; §9.5 → 14; §9.6, §9.7 → 11; §9.8 → 4; §9.9 → 16; §10 → Task 1's Upgrade test, Task 18 (database notes); §12 measurement → Task 8 step 5. Acceptance criteria 1–4 → Task 1; 5 → 2 (its GitHub part through `DoneMapping::itemState`, the one place GitHub differs); 6 → 3; 7 → 4; 8–11 → 5; 12, 13 → 6; 14 → 6 (ids, changes) and 8 (`ids` with `filters`, `filters` without `count`); 15 → 8; 16 → 6, 7, 8 (races); 17 → 7; 18 → 9; 19 → 13; 20 → 13, 14; 21, 22 → 14; 23 → 11; 24 → 16, 17; 25 → 19.
+The owner's answers to P24-03, P24-07 and P24-08 add five tasks. They keep their numbers but run where **Tasks** (top of the plan) says: 20 and 21 in Step A after Task 9 and before Task 10; 22 in Step B after Task 10; 23 and 24 as two more lanes of Step C, cut from the head of Task 22.
 
-**Placeholder scan.** Each back-end step carries its code and tests. The screen tasks carry composition, behaviours and test lists, as the project's screen tasks do; their components are new files named with their props. Reading checks are written as instructions with the exact file to read and the alternative to apply: the search column of a legacy row (Task 1), the registration of listeners (Task 3), the page-props reading of "presents the sync state without secrets" and the "Complete to" Vitest case (Task 4), the external-link factory (Task 9), `retroRequest`'s error (Task 13). The only blanks are the two measured numbers of Task 8's commit message, which the measurement fills.
+### Task 20 (Step A, after Task 9): Search `q` — text and ticket key (P24-07)
 
-**Type consistency.** `ActionItem::currentStatus()` (not `status()`) everywhere; `ActionItemStatus::Doing` value `doing` on both sides; `ExternalIssueState::Started` value `started` (fits `string(10)`), in PHP and in `ExternalLink.state`; `DoneMapping::itemState(ActionItem, IntegrationProvider)` in `ApplyIssueChanges`, `LinkStatusSync` and `PushActionItemState`; settings keys `startStatusId` / `startStateId` stored by Task 4 and read by Task 3 (`DoneMapping::configured`), request keys `start_status_id` / `start_state_id`; `ActionItemProgressChanged($actionItem, $origin, $actor)` fired in Task 1, listened in Task 3; filter token `todo` (server and front) distinct from the status value `open`; `ActionItemFilters::fromQuery()` (Task 5) used by `ActionItemBulkChanges::matching()` (Task 8); `ActionItemBulkChanges::update/delete` return `changed` and `refused` (`{id, title, message}`), the controllers answer `actionItems`, `changedCount` / `deleted` and `refused`, and `bulk.ts` types match (`BulkRefusal.title: string | null`, `BulkUpdateResult.changedCount`); `BulkTarget` (`{ids}` or `{filters, count}`) built by `matchingTarget()` and sent by `bulkUpdate` / `bulkDelete`; `MatchingCap` 500 on both sides; route names `workspaces.actionItemBulkUpdates.store`, `workspaces.actionItemBulkDeletions.store`, `workspaces.actionItemCsvExports.show` in routes, tests and Wayfinder imports.
+**Files:**
+- Create: `database/migrations/2026_10_24_100100_add_external_key_search_to_action_item_external_links.php`, `tests/Feature/ActionItems/ActionItemSearchTest.php`, `tests/Upgrade/ExternalKeySearchTest.php`
+- Modify: `app/Models/ActionItemExternalLink.php`, `app/Actions/ActionItems/ActionItemFilters.php`, `app/Actions/ActionItems/ActionItemQuery.php`, `app/Actions/ActionItems/ActionItemBulkChanges.php` (`FilterKeys`), `tests/Feature/ActionItems/ActionItemFiltersTest.php` (two expectations of Task 5)
 
-**Review Focus.** 1 → Task 5 ("reads the single values of before") and Task 10 (stored entry sent unchanged); 2 → Task 6 ("changes what it can and refuses the rest", titles); 3 → Tasks 6, 7, 8 races and Task 8 ("changes nothing when the list changed since the member counted it"); 4 → Task 2 ("puts a started item back to do…", "keeps a newer unpushed start and pushes it", "starts an open item when its issue is in progress…") and Task 3 ("refuses a start transition that needs other fields", "records a start the workflow cannot take…"); 5 → Task 9 ("neutralises formulas").
+Read first: `docs/database.md` rules 4 and 9; `app/Concerns/HasSearchColumns.php`; `app/Support/Database/SearchText.php`; `database/migrations/2026_10_19_100700_add_search_columns_for_workspace_search.php` (the fill this migration copies); `ActionItem::searchColumns()`; the `filterByScope()` Task 5 wrote. Run `grep -rn "action_item_external_links')" app database tests` : a write that inserts or updates a link without the model must set `external_key_search` too (rule 9); list each one you find in the commit message and fix it the same way.
 
-**What the answers changed, by task.** New: Task 2 (replaces the read-only promotion), Task 3, Task 4, Task 8. Changed: Task 1 (the event), Task 5 (`fromQuery`), Task 6 (refusal titles, `changedCount`), Task 10 (bulk targets, "all matching" helpers), Task 13 ("all matching", confirmation), Task 14 (the "…" entry, sync disabled in that mode), Tasks 16 to 18 (states, keys, release note). Task count: 16 → 19.
+**Interfaces:**
+- Consumes: `ActionItemFilters::fromQuery()` (Task 5), `ActionItemQuery::filter()`, `counts()` (Task 5), `ActionItemBulkChanges::FilterKeys` (Task 8), `ExportActionItemsCsv` (Task 9, reads the page's filters), `actionItemCsvRows()` (Task 9's test helper).
+- Produces: `ActionItemFilters::$search` (`?string`, constructor's last argument `search`), `ActionItemFilters::SearchMaxLength = 100`, `toArray()` gains `q` after `source` (`array{status, priority, due, source, q, assignee, team, item}`); `ActionItemExternalLink` uses `HasSearchColumns` (`external_key` → `external_key_search`); `ActionItemBulkChanges::FilterKeys` gains `q`. The `filters` prop carries `q` (string or null), read by Task 24.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/ActionItems/ActionItemSearchTest.php`:
+
+```php
+<?php
+
+use App\Enums\ActionItemPriority;
+use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
+use App\Models\Team;
+use App\Models\User;
+
+/**
+ * @param  array<string, string>  $query
+ * @return array<int, string>
+ */
+function searchedContents(Team $team, User $user, array $query): array
+{
+    $items = test()->actingAs($user)
+        ->get(route('workspaces.actionItems.index', ['workspace' => $team->workspace, ...$query]))
+        ->assertOk()
+        ->viewData('page')['props']['items']['data'];
+
+    return collect($items)->pluck('content')->sort()->values()->all();
+}
+
+it('finds an item by its text in any case, and respects accents', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Write the on-call RUNBOOK']);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Été planning']);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Other']);
+
+    expect(searchedContents($team, $user, ['q' => 'runbook']))->toBe(['Write the on-call RUNBOOK'])
+        ->and(searchedContents($team, $user, ['q' => 'ÉTÉ']))->toBe(['Été planning'])
+        ->and(searchedContents($team, $user, ['q' => 'ete']))->toBe([]);
+});
+
+it('finds an item by its ticket key in any case', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $linked = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Linked']);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Not linked']);
+    ActionItemExternalLink::factory()->create(['action_item_id' => $linked->id, 'external_key' => 'PROJ-12']);
+
+    expect(searchedContents($team, $user, ['q' => 'proj-12']))->toBe(['Linked'])
+        ->and(searchedContents($team, $user, ['q' => 'PROJ-1']))->toBe(['Linked']);
+});
+
+it('combines the search with the other filters and narrows the counters', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'runbook high', 'priority' => ActionItemPriority::High]);
+    ActionItem::factory()->withoutRetro($team, $user)->completed()->create(['content' => 'runbook done']);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'other high', 'priority' => ActionItemPriority::High]);
+
+    $counts = $this->actingAs($user)
+        ->get(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'q' => 'runbook']))
+        ->viewData('page')['props']['counts'];
+
+    expect(searchedContents($team, $user, ['q' => 'runbook', 'priority' => 'high']))->toBe(['runbook high'])
+        ->and(searchedContents($team, $user, ['q' => 'runbook', 'status' => 'todo,doing,completed']))->toBe(['runbook done', 'runbook high'])
+        ->and($counts)->toBe(['open' => 1, 'overdue' => 0, 'completed' => 1, 'mine' => 0, 'rituals' => 0]);
+});
+
+it('gives the search back trimmed and cut, and an empty search as none', function (string $given, ?string $expected) {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    $filters = $this->actingAs($user)
+        ->get(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'q' => $given]))
+        ->viewData('page')['props']['filters'];
+
+    expect($filters['q'])->toBe($expected);
+})->with([
+    'trimmed' => ['  runbook  ', 'runbook'],
+    'cut at 100' => [str_repeat('a', 120), str_repeat('a', 100)],
+    'blank' => ['   ', null],
+]);
+
+it('never searches a team the viewer cannot see, on the page or through "all matching"', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $hidden = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $mine = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'runbook mine']);
+    $theirs = ActionItem::factory()->withoutRetro($hidden, User::factory()->create())->create(['content' => 'runbook theirs']);
+
+    expect(searchedContents($team, $user, ['q' => 'runbook']))->toBe(['runbook mine']);
+
+    $this->actingAs($user)
+        ->postJson(route('workspaces.actionItemBulkUpdates.store', $team->workspace), ['filters' => ['q' => 'runbook'], 'count' => 1, 'changes' => ['priority' => 'low']])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1);
+
+    expect($mine->fresh()->priority)->toBe(ActionItemPriority::Low)
+        ->and($theirs->fresh()->priority)->toBe(ActionItemPriority::Medium);
+});
+
+it('exports what the search finds', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'runbook']);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'other']);
+
+    $rows = actionItemCsvRows($this->actingAs($user)->get(route('workspaces.actionItemCsvExports.show', ['workspace' => $team->workspace, 'q' => 'RUNBOOK'])));
+
+    expect(collect($rows)->skip(1)->pluck(0)->values()->all())->toBe(['runbook']);
+});
+
+it('keeps the folded key of a link up to date', function () {
+    $link = ActionItemExternalLink::factory()->create(['external_key' => 'ABC-1']);
+
+    expect(ActionItemExternalLink::query()->whereContains('external_key', 'abc-1')->exists())->toBeTrue();
+
+    $link->update(['external_key' => 'XYZ-2']);
+
+    expect(ActionItemExternalLink::query()->whereContains('external_key', 'abc')->exists())->toBeFalse()
+        ->and(ActionItemExternalLink::query()->whereContains('external_key', 'xyz-2')->exists())->toBeTrue();
+});
+```
+
+`tests/Upgrade/ExternalKeySearchTest.php`:
+
+```php
+<?php
+
+use App\Models\ActionItemExternalLink;
+use App\Support\Database\SearchText;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+it('finds a link written before the column by its key', function () {
+    $migration = '2026_10_24_100100_add_external_key_search_to_action_item_external_links.php';
+    $earlier = collect(glob(database_path('migrations/*.php')))
+        ->filter(fn (string $path): bool => basename($path) < $migration)
+        ->values()
+        ->all();
+
+    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+
+    $workspace = (string) Str::uuid7();
+    $team = (string) Str::uuid7();
+    $item = (string) Str::uuid7();
+    DB::table('workspaces')->insert(['id' => $workspace, 'name' => 'Acme', 'slug' => 'acme', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('teams')->insert(['id' => $team, 'workspace_id' => $workspace, 'name' => 'Platform', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('action_items')->insert([
+        'id' => $item,
+        'team_id' => $team,
+        'content' => 'Linked',
+        'content_search' => SearchText::fold('Linked'),
+        'priority' => 'medium',
+        'sort_rank' => 1_000_000_001,
+        'created_at' => '2026-09-01 10:00:00',
+        'updated_at' => '2026-09-01 10:00:00',
+    ]);
+    DB::table('action_item_external_links')->insert([
+        'id' => (string) Str::uuid7(),
+        'action_item_id' => $item,
+        'source' => 'jira',
+        'external_site' => 'cloud-1',
+        'external_id' => '10012',
+        'external_key' => 'PROJ-12',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-12',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+
+    expect(ActionItemExternalLink::query()->whereContains('external_key', 'proj-12')->pluck('action_item_id')->all())->toBe([$item]);
+});
+```
+
+Write the `action_items` row as Task 1's upgrade test does (if that test had to fold `content_search` or set another column, do the same here). The second `migrate` call proves the migration can run again (it is skipped as already run; the `hasColumn` guard covers a run stopped midway).
+
+In `tests/Feature/ActionItems/ActionItemFiltersTest.php` (Task 5's file), two expectations gain the new key, in its place after `source`: "gives the filters back in their canonical form" (`'source' => null, 'q' => null, 'assignee' => null, …`) and "reads the same filters from an array as from the query" (the same line). Name both in the commit message.
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/ActionItems/ActionItemSearchTest.php`
+Expected: FAIL — every item is listed (`q` is ignored), then `Call to undefined method …whereContains()` on the link.
+
+- [ ] **Step 3: Implement**
+
+`database/migrations/2026_10_24_100100_add_external_key_search_to_action_item_external_links.php`:
+
+```php
+<?php
+
+use App\Support\Database\SearchText;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Off, so that no table stays locked while its rows are filled. The work can then stop midway:
+     * up() adds only what is missing and can be run again.
+     */
+    public $withinTransaction = false;
+
+    /**
+     * The folded ticket key the action items search reads (plan 24, P24-07), as the earlier
+     * search-column migrations do. Existing links are filled here, one update per link to fill.
+     */
+    public function up(): void
+    {
+        if (! Schema::hasColumn('action_item_external_links', 'external_key_search')) {
+            Schema::table('action_item_external_links', function (Blueprint $table): void {
+                $table->text('external_key_search')->nullable();
+            });
+        }
+
+        DB::table('action_item_external_links')
+            ->select(['id', 'external_key'])
+            ->whereNull('external_key_search')
+            ->lazyById(500)
+            ->each(fn (object $row) => DB::table('action_item_external_links')
+                ->where('id', $row->id)
+                ->update(['external_key_search' => SearchText::fold($row->external_key)]));
+    }
+};
+```
+
+`app/Models/ActionItemExternalLink.php`: `use App\Concerns\HasSearchColumns;` and `use HasSearchColumns;` (one trait per line, after `use HasUuids;`); the docblock gains `@property string|null $external_key_search`; add
+
+```php
+    /**
+     * @return array<string, string>
+     */
+    public function searchColumns(): array
+    {
+        return ['external_key' => 'external_key_search'];
+    }
+```
+
+`app/Actions/ActionItems/ActionItemFilters.php`:
+- `public const SearchMaxLength = 100;` after `Sources`.
+- The constructor gains a last argument `public ?string $search = null,` (docblock line `@param  ?string  $search  the topbar search, trimmed, cut at SearchMaxLength`).
+- `fromQuery()` passes `search: self::search($query['q'] ?? null),` after `source:`.
+- `toArray()`: `'q' => $this->search,` after `'source' => $this->source,`; its docblock shape gains `q: ?string` at the same place.
+- New private method:
+
+```php
+    private static function search(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $term = trim(mb_substr(trim($value), 0, self::SearchMaxLength));
+
+        return $term === '' ? null : $term;
+    }
+```
+
+`app/Actions/ActionItems/ActionItemQuery.php`: at the end of `filterByScope()`, before `return $query;`:
+
+```php
+        if ($filters->search !== null) {
+            $this->filterBySearch($query, $filters->search);
+        }
+```
+
+and the method:
+
+```php
+    /**
+     * Spec 24 §6.3: the item's text or one of its ticket keys contains the term, case ignored
+     * (the folded columns of docs/database.md rule 4). The rows are not checked again in PHP:
+     * the list, its counters, its export and "all matching" must stay one set.
+     *
+     * @param  Builder<ActionItem>  $query
+     */
+    private function filterBySearch(Builder $query, string $term): void
+    {
+        $query->where(function (Builder $query) use ($term): void {
+            $query->whereContains('content', $term)
+                ->orWhereHas('externalLinks', fn (Builder $links) => $links->whereContains('external_key', $term));
+        });
+    }
+```
+
+`app/Actions/ActionItems/ActionItemBulkChanges.php`: `public const FilterKeys = ['status', 'priority', 'due', 'source', 'q', 'assignee', 'team'];`.
+
+`ExportActionItemsCsv` and the controllers need no change: they read the page's parameters through `ActionItemFilters`.
+
+- [ ] **Step 4: Run the tests on PostgreSQL**
+
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Upgrade/ExternalKeySearchTest.php tests/Feature/Integrations tests/Arch`.
+Expected: PASS (`DatabasePortabilityTest` included: `whereContains` is the rule-4 scope, the migration uses the Schema builder and the query builder only).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add database/migrations/2026_10_24_100100_add_external_key_search_to_action_item_external_links.php app/Models/ActionItemExternalLink.php app/Actions/ActionItems/ActionItemFilters.php app/Actions/ActionItems/ActionItemQuery.php app/Actions/ActionItems/ActionItemBulkChanges.php tests/Feature/ActionItems/ActionItemSearchTest.php tests/Feature/ActionItems/ActionItemFiltersTest.php tests/Upgrade/ExternalKeySearchTest.php
+git commit -m "feat(action-items): search by text or ticket key (P24-07)
+
+ActionItemFiltersTest: two expectations of plan 24 Task 5 gain q.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 21 (Step A, after Task 20): The sprints of the page (P24-03)
+
+**Files:**
+- Create: `app/Actions/ActionItems/ActionItemSprints.php`, `tests/Feature/ActionItems/ActionItemSprintsTest.php`
+- Modify: `app/Http/Controllers/WorkspaceActionItemsController.php` (`items()` and the constructor)
+
+Read first: plan 23's `app/Models/TeamSprint.php` (`present()`, the `DateOnly` casts), `Team::sprints()`, the helper `teamSprint()` of `tests/Pest.php`, `ActionItem::today()`, `WorkspaceActionItemsController::items()`.
+
+**Interfaces:**
+- Consumes: `TeamSprint` and `teamSprint()` (plan 23), `ActionItem::today()`.
+- Produces: `ActionItemSprints::forPage(iterable $items): array{sprints: array<int, array{id: string, number: int, startsOn: string, endsOn: string, teamId: string, state: string, itemIds: array<int, string>}>, withoutSprint: array<int, string>}`; the `items` prop of `action-items/index` gains `sprints` and `withoutSprint` (spec §6.8), read by Task 23.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/ActionItems/ActionItemSprintsTest.php`:
+
+```php
+<?php
+
+use App\Models\ActionItem;
+use App\Models\Team;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+
+/**
+ * @return array{sprints: array<int, array<string, mixed>>, withoutSprint: array<int, string>}
+ */
+function pageSprints(Team $team, User $user): array
+{
+    $items = test()->actingAs($user)
+        ->get(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'status' => 'todo,doing,completed']))
+        ->assertOk()
+        ->viewData('page')['props']['items'];
+
+    return ['sprints' => $items['sprints'], 'withoutSprint' => $items['withoutSprint']];
+}
+
+function actionItemCreatedOn(Team $team, User $user, string $day, string $content): ActionItem
+{
+    test()->travelTo(CarbonImmutable::parse("{$day} 10:00:00"));
+
+    return ActionItem::factory()->withoutRetro($team, $user)->create(['content' => $content]);
+}
+
+it('places each row in the sprint of its team that contains its creation day', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $sprint41 = teamSprint($team, 41, '2026-09-07', '2026-09-20');
+    $sprint42 = teamSprint($team, 42, '2026-09-21', '2026-10-04');
+    $before = actionItemCreatedOn($team, $user, '2026-09-05', 'before the first sprint');
+    $last41 = actionItemCreatedOn($team, $user, '2026-09-20', 'last day of 41');
+    $first42 = actionItemCreatedOn($team, $user, '2026-09-21', 'first day of 42');
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 12:00:00'));
+
+    expect(pageSprints($team, $user))->toBe([
+        'sprints' => [
+            ['id' => $sprint42->id, 'number' => 42, 'startsOn' => '2026-09-21', 'endsOn' => '2026-10-04', 'teamId' => $team->id, 'state' => 'current', 'itemIds' => [$first42->id]],
+            ['id' => $sprint41->id, 'number' => 41, 'startsOn' => '2026-09-07', 'endsOn' => '2026-09-20', 'teamId' => $team->id, 'state' => 'finished', 'itemIds' => [$last41->id]],
+        ],
+        'withoutSprint' => [$before->id],
+    ]);
+});
+
+it('lists the current sprint of a team even when no row of the page is in it', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $sprint41 = teamSprint($team, 41, '2026-09-07', '2026-09-20');
+    $sprint42 = teamSprint($team, 42, '2026-09-21', '2026-10-04');
+    $old = actionItemCreatedOn($team, $user, '2026-09-10', 'in 41');
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 12:00:00'));
+
+    expect(collect(pageSprints($team, $user)['sprints'])->map(fn (array $sprint): array => [$sprint['id'], $sprint['state'], $sprint['itemIds']])->all())->toBe([
+        [$sprint42->id, 'current', []],
+        [$sprint41->id, 'finished', [$old->id]],
+    ]);
+});
+
+it('lists no sprint between two sprints, nor a planned one', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    teamSprint($team, 41, '2026-09-07', '2026-09-20');
+    teamSprint($team, 43, '2026-10-05', '2026-10-18');
+    $between = actionItemCreatedOn($team, $user, '2026-09-25', 'between');
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 12:00:00'));
+
+    expect(pageSprints($team, $user))->toBe(['sprints' => [], 'withoutSprint' => [$between->id]]);
+});
+
+it('keeps the sprints of each team apart and brings none of a team the viewer cannot see', function () {
+    $atlas = Team::factory()->create();
+    $nova = Team::factory()->create(['workspace_id' => $atlas->workspace_id]);
+    $member = teamMember($atlas);
+    $manager = workspaceManager($atlas->workspace);
+    $atlasSprint = teamSprint($atlas, 42, '2026-09-21', '2026-10-04');
+    $novaSprint = teamSprint($nova, 42, '2026-09-21', '2026-10-04');
+    $atlasItem = actionItemCreatedOn($atlas, $member, '2026-09-22', 'atlas');
+    $novaItem = actionItemCreatedOn($nova, User::factory()->create(), '2026-09-22', 'nova');
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 12:00:00'));
+
+    $forManager = collect(pageSprints($atlas, $manager)['sprints'])->mapWithKeys(fn (array $sprint): array => [$sprint['id'] => [$sprint['teamId'], $sprint['itemIds']]])->all();
+
+    expect($forManager)->toEqual([
+        $atlasSprint->id => [$atlas->id, [$atlasItem->id]],
+        $novaSprint->id => [$nova->id, [$novaItem->id]],
+    ])->and(collect(pageSprints($atlas, $member)['sprints'])->pluck('id')->all())->toBe([$atlasSprint->id]);
+});
+
+it('sends no sprint for an empty page', function () {
+    $team = Team::factory()->create();
+    teamSprint($team, 42, '2026-09-21', '2026-10-04');
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 12:00:00'));
+
+    expect(pageSprints($team, teamMember($team)))->toBe(['sprints' => [], 'withoutSprint' => []]);
+});
+```
+
+The manager case uses `toEqual` on a map: two sprints that start the same day come in descending `id` order, which the test does not pin. A request without `team` lists every team the viewer may see (the front's landing choice of a team is not involved), which is what this test reads.
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/ActionItems/ActionItemSprintsTest.php`
+Expected: FAIL — `Undefined array key "sprints"`.
+
+- [ ] **Step 3: Implement**
+
+`app/Actions/ActionItems/ActionItemSprints.php` (`vendor/bin/sail artisan make:class Actions/ActionItems/ActionItemSprints --no-interaction`, then the body):
+
+```php
+<?php
+
+namespace App\Actions\ActionItems;
+
+use App\Models\ActionItem;
+use App\Models\TeamSprint;
+use Illuminate\Support\Collection;
+
+class ActionItemSprints
+{
+    /**
+     * Spec 24 §6.8: the sprint of each row of the page is the sprint of its team that contains
+     * the day the row was created (plan 23 rule 5). The current sprint of each team on the page
+     * is listed too, so that a row created live finds its group before the next reload.
+     *
+     * @param  iterable<int, ActionItem>  $items
+     * @return array{
+     *     sprints: array<int, array{id: string, number: int, startsOn: string, endsOn: string, teamId: string, state: string, itemIds: array<int, string>}>,
+     *     withoutSprint: array<int, string>
+     * }
+     */
+    public function forPage(iterable $items): array
+    {
+        $rows = collect($items);
+
+        if ($rows->isEmpty()) {
+            return ['sprints' => [], 'withoutSprint' => []];
+        }
+
+        $today = ActionItem::today()->toDateString();
+        $sprints = TeamSprint::query()
+            ->whereIn('team_id', $rows->pluck('team_id')->unique()->values()->all())
+            ->where('ends_on', '>=', $rows->map(fn (ActionItem $item): string => $this->createdOn($item))->min())
+            ->where('starts_on', '<=', $today)
+            ->orderBy('starts_on')
+            ->orderBy('id')
+            ->get();
+        $itemIds = $rows
+            ->groupBy(fn (ActionItem $item): string => $this->sprintOf($sprints, $item)?->id ?? '')
+            ->map(fn (Collection $group): array => $group->pluck('id')->values()->all());
+
+        return [
+            'sprints' => $sprints
+                ->filter(fn (TeamSprint $sprint): bool => $itemIds->has($sprint->id) || $this->state($sprint, $today) === 'current')
+                ->reverse()
+                ->map(fn (TeamSprint $sprint): array => [
+                    ...$sprint->present(),
+                    'teamId' => $sprint->team_id,
+                    'state' => $this->state($sprint, $today),
+                    'itemIds' => $itemIds->get($sprint->id, []),
+                ])
+                ->values()
+                ->all(),
+            'withoutSprint' => $itemIds->get('', []),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, TeamSprint>  $sprints
+     */
+    private function sprintOf(Collection $sprints, ActionItem $item): ?TeamSprint
+    {
+        $day = $this->createdOn($item);
+
+        return $sprints->first(fn (TeamSprint $sprint): bool => $sprint->team_id === $item->team_id
+            && $sprint->starts_on->toDateString() <= $day
+            && $sprint->ends_on->toDateString() >= $day);
+    }
+
+    /**
+     * Only sprints that started are read: one that ended before today is finished.
+     */
+    private function state(TeamSprint $sprint, string $today): string
+    {
+        return $sprint->ends_on->toDateString() < $today ? 'finished' : 'current';
+    }
+
+    /**
+     * The day in the application's time zone, as ActionItem::today() reads today.
+     */
+    private function createdOn(ActionItem $item): string
+    {
+        return ($item->created_at ?? now())->timezone(config('app.timezone'))->toDateString();
+    }
+}
+```
+
+The key `''` holds the rows created outside every sprint (`withoutSprint`).
+
+`WorkspaceActionItemsController`: inject `private ActionItemSprints $actionItemSprints` in the constructor (after `ListExportSources`); in `items()`, after `'nextPageUrl' => …`, spread the sprints:
+
+```php
+            ...$this->actionItemSprints->forPage($page->items()),
+```
+
+and add `sprints: array<int, array<string, mixed>>, withoutSprint: array<int, string>` to its docblock shape (`use App\Actions\ActionItems\ActionItemSprints;`).
+
+- [ ] **Step 4: Run the tests on PostgreSQL**
+
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`.
+Expected: PASS. An existing page test that compares the whole `items` prop with `toBe` (none at drafting time; `grep -rn "\['items'\]" tests/Feature/ActionItems`) fails on the two new keys: report it, do not edit it.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/Actions/ActionItems/ActionItemSprints.php app/Http/Controllers/WorkspaceActionItemsController.php tests/Feature/ActionItems/ActionItemSprintsTest.php
+git commit -m "feat(action-items): the sprints of the page's rows (P24-03)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 22 (Step B, after Task 10): "Actions · n overdue" in the sidebar (P24-08)
+
+**Files:** modify `resources/js/components/skrum/app-sidebar.tsx` and `app-sidebar.test.tsx`.
+
+**Mockup:** ScreenActions, sidebar: `<span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span>`.
+
+- [ ] **Step 1: Write the failing tests** — append to `app-sidebar.test.tsx`, in the describe block that holds "shows the overdue badge with an accessible name" (reuse its `renderSidebar`):
+
+```tsx
+    it('words the overdue count in the badge, as the mockup', () => {
+        renderSidebar({ overdueActions: 3 });
+
+        expect(screen.getByText('3 overdue').className).not.toContain('sr-only');
+    });
+
+    it('words a count above 99 as 99+ and keeps the full count for screen readers', () => {
+        renderSidebar({ overdueActions: 120 });
+
+        expect(screen.getByText('99+ overdue')).toBeTruthy();
+        expect(screen.getByText('120 overdue').className).toContain('sr-only');
+    });
+```
+
+The existing cases ("shows the overdue badge with an accessible name", "caps the visible overdue count and keeps the full count for screen readers", "hides the badge when nothing is overdue", the dot cases) keep passing unchanged: each text is found once.
+
+- [ ] **Step 2: Run them to see them fail** — `npm run test -- resources/js/components/skrum/app-sidebar`. Expected: FAIL (the visible badge reads `3`; `3 overdue` is the screen-reader span).
+
+- [ ] **Step 3: Implement** — in `NavEntries`, replace the content of `SidebarMenuBadge` and add `whitespace-nowrap` to its class:
+
+```tsx
+                        {hasOverdue && (
+                            <SidebarMenuBadge className="rounded-full bg-destructive px-1.5 whitespace-nowrap text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground">
+                                {overdueActions > 99 ? (
+                                    <>
+                                        <span aria-hidden>
+                                            {t(':count overdue', {
+                                                count: '99+',
+                                            })}
+                                        </span>
+                                        <span className="sr-only">
+                                            {overdueLabel}
+                                        </span>
+                                    </>
+                                ) : (
+                                    overdueLabel
+                                )}
+                            </SidebarMenuBadge>
+                        )}
+```
+
+The link's `aria-label` ("Actions, 3 overdue") and the collapsed dot do not change. The menu label "Actions" truncates before the badge if a language makes it long (the label already has `truncate`).
+
+- [ ] **Step 4: Gates** — `npm run test -- resources/js/components/skrum/app-sidebar resources/js/layouts`, `npm run types:check`, `npm run check`, `npm run build:front`. Expected: PASS.
+
+- [ ] **Step 5: Commit** — `feat(skrum): the sidebar names the overdue actions in words (P24-08)` with the trailer lines of **Global Constraints**.
+
+### Task 23 (lane Grouping): "By sprint" grouping, the default (P24-03)
+
+**Mockup:** ScreenActions: "Grouper par" Sprint / Équipe / Responsable / Aucun (Sprint on); group rows `Sprint 42 · en cours · 6 actions · 22 sept. → 3 oct.` and `Sprint 41 · terminé · 4 actions reportées · 2 en retard`; phone: "liste d'ActionItem groupée par sprint".
+
+**Files:** create `components/action-items/action-item-group-meta.tsx` and its test; modify `lib/action-items/grouping.ts` and `grouping.test.ts`, `components/action-items/use-action-item-filters.ts` and its test, `action-items-header.tsx` and its test, `action-items-table.tsx`, `action-items-list.tsx` (the count of a group row becomes `ActionItemGroupMeta`), `action-items-page.tsx` (the `groupItems` call and the `items` type), and the tests of the table and the list.
+
+**Interfaces:**
+- Consumes: `items.sprints` and `items.withoutSprint` (Task 21); `formatShortDate(iso, locale)` (`lib/action-items/format.ts`); `Badge` (`variant` `info`, `muted`, `destructive`, `shape="pill"`); `ActionItem.isOverdue`, `isOpenStatus` (Task 10).
+- Produces (`lib/action-items/grouping.ts`): `ActionItemGrouping = 'sprint' | 'team' | 'assignee' | 'none'`; `ActionItemGroupings` in that order; `DefaultGrouping = 'sprint'`; `ActionItemSprint = { id; number; startsOn; endsOn; teamId; state: 'current' | 'finished'; itemIds: string[] }`; `SprintPage = { sprints: ActionItemSprint[]; withoutSprint: string[] }`; `sprintOfItem(item, page): ActionItemSprint | null`; `ActionItemGroup.sprint?: ActionItemSprint | null`; `ActionItemGroupLabels.sprint?` and `noSprint?` (optional, so the existing label fixtures still type); `groupItems(items, by, labels, page = { sprints: [], withoutSprint: [] })`; `ActionItemGroupMeta({ group, countLabel })`.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `resources/js/lib/action-items/grouping.test.ts` (import `sprintOfItem` and the type `ActionItemSprint` with the others):
+
+```ts
+describe('grouping by sprint', () => {
+    const sprint = (
+        id: string,
+        number: number,
+        teamId: string,
+        state: ActionItemSprint['state'],
+        itemIds: string[],
+    ): ActionItemSprint => ({
+        id,
+        number,
+        startsOn: '2026-09-21',
+        endsOn: '2026-10-04',
+        teamId,
+        state,
+        itemIds,
+    });
+    const sprintLabels: ActionItemGroupLabels = {
+        ...labels,
+        sprint: (found, withTeam) =>
+            withTeam ? `${found.teamId} · Sprint ${found.number}` : `Sprint ${found.number}`,
+        noSprint: 'No sprint',
+    };
+    const rows = [
+        actionItemFixture({ id: 'a', teamId: 't1' }),
+        actionItemFixture({ id: 'b', teamId: 't1' }),
+        actionItemFixture({ id: 'c', teamId: 't1' }),
+        actionItemFixture({ id: 'd', teamId: 't1' }),
+    ];
+
+    it('groups in the order of the sprints, keeps the order of the rows, and puts "No sprint" last', () => {
+        const page = {
+            sprints: [sprint('s42', 42, 't1', 'current', ['c']), sprint('s41', 41, 't1', 'finished', ['a', 'd'])],
+            withoutSprint: ['b'],
+        };
+
+        expect(shape(groupItems(rows, 'sprint', sprintLabels, page))).toEqual([
+            { key: 'sprint-s42', label: 'Sprint 42', ids: ['c'] },
+            { key: 'sprint-s41', label: 'Sprint 41', ids: ['a', 'd'] },
+            { key: 'no-sprint', label: 'No sprint', ids: ['b'] },
+        ]);
+    });
+
+    it('names the team when the page spans several teams', () => {
+        const page = {
+            sprints: [sprint('s42', 42, 't1', 'current', ['a']), sprint('n42', 42, 't2', 'current', ['e'])],
+            withoutSprint: [],
+        };
+        const twoTeams = [rows[0], actionItemFixture({ id: 'e', teamId: 't2' })];
+
+        expect(shape(groupItems(twoTeams, 'sprint', sprintLabels, page)).map((group) => group.label)).toEqual([
+            't1 · Sprint 42',
+            't2 · Sprint 42',
+        ]);
+    });
+
+    it('places a live row in its team\'s current sprint', () => {
+        const page = { sprints: [sprint('s42', 42, 't1', 'current', [])], withoutSprint: ['a'] };
+
+        expect(sprintOfItem(rows[0], page)).toBeNull();
+        expect(sprintOfItem(rows[1], page)?.id).toBe('s42');
+        expect(sprintOfItem(actionItemFixture({ id: 'x', teamId: 't9' }), page)).toBeNull();
+    });
+
+    it('draws no group row when no row of the page has a sprint', () => {
+        expect(shape(groupItems(rows, 'sprint', sprintLabels, { sprints: [], withoutSprint: ['a', 'b', 'c', 'd'] }))).toEqual([
+            { key: 'all', label: '', ids: ['a', 'b', 'c', 'd'] },
+        ]);
+    });
+});
+```
+
+(`shape` and `labels` are the helpers at the top of the file; if `shape` does not keep `key`, compare the fields it keeps. If `actionItemFixture` does not take `teamId`, pass it the way the existing cases build team rows.)
+
+In the same file, the existing case "accepts the three groupings and nothing else" becomes "accepts the four groupings and nothing else" and gains `expect(isActionItemGrouping('sprint')).toBe(true);` — name it in the commit message.
+
+`components/action-items/action-item-group-meta.test.tsx`:
+
+```tsx
+import { screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { ActionItemGroupMeta } from '@/components/action-items/action-item-group-meta';
+import { actionItemFixture } from '@/test/action-items';
+import { renderWithProviders } from '@/test/render';
+
+const countLabel = (count: number) => `${count} items`;
+const sprint = {
+    id: 's42',
+    number: 42,
+    startsOn: '2026-09-21',
+    endsOn: '2026-10-04',
+    teamId: 't1',
+    itemIds: [],
+};
+
+describe('ActionItemGroupMeta', () => {
+    it('reads a current sprint as in progress, with its count and days', () => {
+        renderWithProviders(
+            <ActionItemGroupMeta
+                countLabel={countLabel}
+                group={{
+                    key: 'sprint-s42',
+                    label: 'Sprint 42',
+                    sprint: { ...sprint, state: 'current' },
+                    items: [actionItemFixture({ id: 'a' }), actionItemFixture({ id: 'b' })],
+                }}
+            />,
+        );
+
+        expect(screen.getByText('In progress')).toBeTruthy();
+        expect(screen.getByText(/^2 action items · /)).toBeTruthy();
+    });
+
+    it('reads a finished sprint with what was carried over and what is overdue', () => {
+        renderWithProviders(
+            <ActionItemGroupMeta
+                countLabel={countLabel}
+                group={{
+                    key: 'sprint-s41',
+                    label: 'Sprint 41',
+                    sprint: { ...sprint, id: 's41', number: 41, state: 'finished' },
+                    items: [
+                        actionItemFixture({ id: 'a', status: 'open', isOverdue: true }),
+                        actionItemFixture({ id: 'b', status: 'doing', isOverdue: false }),
+                        actionItemFixture({ id: 'c', status: 'completed', isOverdue: false }),
+                    ],
+                }}
+            />,
+        );
+
+        expect(screen.getByText('Finished')).toBeTruthy();
+        expect(screen.getByText('2 carried over')).toBeTruthy();
+        expect(screen.getByText('1 overdue')).toBeTruthy();
+    });
+
+    it('counts the rows of any other group as today', () => {
+        renderWithProviders(
+            <ActionItemGroupMeta
+                countLabel={countLabel}
+                group={{ key: 'no-sprint', label: 'No sprint', sprint: null, items: [actionItemFixture({ id: 'a' })] }}
+            />,
+        );
+
+        expect(screen.getByText('1 items')).toBeTruthy();
+        expect(screen.queryByText('In progress')).toBeNull();
+    });
+});
+```
+
+(Read `resources/js/test/` for the exact names of the render helper and the fixture; the paths above are the ones the existing action-items tests import.)
+
+`use-action-item-filters.test.ts`, the existing expectations that change (name each in the commit message):
+- "reads the grouping and falls back to none" becomes "reads the grouping and falls back to sprint": `storedGrouping({ group: 'status' })` and `storedGrouping(null)` are `'sprint'`.
+- The case that ends with `setGrouping('none')` and expects `{ team: 'team-1' }` now calls `setGrouping('sprint')` (the default is not stored), and gains `act(() => result.current.setGrouping('none'));` then `expect(stored()).toEqual({ team: 'team-1', group: 'none' });`.
+- The reset case expects `result.current.grouping` to be `'sprint'`.
+
+`action-items-header.test.tsx`: "offers Team, Assignee and None, in that order, and no Status" becomes "offers Sprint, Team, Assignee and None, in that order, and no Status", expecting `['Sprint', 'Team', 'Assignee', 'None']`.
+
+Table and list tests (`action-items-table.test.tsx`, `action-items-list.test.tsx`), one case each: with a sprint group (`sprint` set, `state: 'finished'`, one overdue open row), the group row shows the label, "Finished", "1 carried over" and "1 overdue", and the fold button still folds its rows.
+
+- [ ] **Step 2: Run them to see them fail** — `npm run test -- resources/js/lib/action-items/grouping resources/js/components/action-items`. Expected: FAIL.
+
+- [ ] **Step 3: Implement**
+
+`resources/js/lib/action-items/grouping.ts` (whole file):
+
+```ts
+import { assigneeValue } from '@/lib/action-items/assignees';
+import type { ActionItem, ActionItemAssignee } from '@/lib/retro/types';
+
+export type ActionItemGrouping = 'sprint' | 'team' | 'assignee' | 'none';
+
+/** In the order of the control: the mockup starts on "Sprint" and ends on "None". */
+export const ActionItemGroupings: ActionItemGrouping[] = [
+    'sprint',
+    'team',
+    'assignee',
+    'none',
+];
+
+/** The page lands grouped by sprint (P24-03). */
+export const DefaultGrouping: ActionItemGrouping = 'sprint';
+
+/** A sprint of the page, as `items.sprints` sends it (spec 24 §6.8). */
+export type ActionItemSprint = {
+    id: string;
+    number: number;
+    startsOn: string;
+    endsOn: string;
+    teamId: string;
+    state: 'current' | 'finished';
+    itemIds: string[];
+};
+
+export type SprintPage = {
+    sprints: ActionItemSprint[];
+    withoutSprint: string[];
+};
+
+export type ActionItemGroup = {
+    key: string;
+    label: string;
+    items: ActionItem[];
+    /** Set when grouped by sprint: the sprint, or null for "No sprint". */
+    sprint?: ActionItemSprint | null;
+};
+
+export type ActionItemGroupLabels = {
+    team: (teamId: string) => string;
+    assignee: (assignee: ActionItemAssignee | null) => string;
+    sprint?: (sprint: ActionItemSprint, withTeam: boolean) => string;
+    noSprint?: string;
+};
+
+const NoSprints: SprintPage = { sprints: [], withoutSprint: [] };
+
+export function isActionItemGrouping(
+    value: unknown,
+): value is ActionItemGrouping {
+    return ActionItemGroupings.some((grouping) => grouping === value);
+}
+
+/**
+ * The sprint the server placed the row in; a row it did not send (created live)
+ * goes to its team's current sprint until the next reload.
+ */
+export function sprintOfItem(
+    item: ActionItem,
+    page: SprintPage,
+): ActionItemSprint | null {
+    const placed = page.sprints.find((sprint) =>
+        sprint.itemIds.includes(item.id),
+    );
+
+    if (placed !== undefined) {
+        return placed;
+    }
+
+    if (page.withoutSprint.includes(item.id)) {
+        return null;
+    }
+
+    return (
+        page.sprints.find(
+            (sprint) =>
+                sprint.teamId === item.teamId && sprint.state === 'current',
+        ) ?? null
+    );
+}
+
+function groupBySprint(
+    items: ActionItem[],
+    labels: ActionItemGroupLabels,
+    page: SprintPage,
+): ActionItemGroup[] {
+    const placed = items.map((item) => ({
+        item,
+        sprint: sprintOfItem(item, page),
+    }));
+
+    if (placed.every(({ sprint }) => sprint === null)) {
+        return [{ key: 'all', label: '', items }];
+    }
+
+    const withTeam = new Set(items.map((item) => item.teamId)).size > 1;
+    const groups: ActionItemGroup[] = page.sprints
+        .map((sprint) => ({
+            key: `sprint-${sprint.id}`,
+            label:
+                labels.sprint?.(sprint, withTeam) ?? String(sprint.number),
+            sprint,
+            items: placed
+                .filter((entry) => entry.sprint?.id === sprint.id)
+                .map(({ item }) => item),
+        }))
+        .filter((group) => group.items.length > 0);
+    const rest = placed
+        .filter(({ sprint }) => sprint === null)
+        .map(({ item }) => item);
+
+    if (rest.length === 0) {
+        return groups;
+    }
+
+    return [
+        ...groups,
+        {
+            key: 'no-sprint',
+            label: labels.noSprint ?? '',
+            sprint: null,
+            items: rest,
+        },
+    ];
+}
+
+/**
+ * The rows of the current page under one header per sprint, team or assignee.
+ * By team and by assignee, groups come in the order of their first row; by
+ * sprint, in the order of the page's sprints (latest first), "No sprint" last.
+ * Rows keep the order the server gave; "none" is one group without a label.
+ */
+export function groupItems(
+    items: ActionItem[],
+    by: ActionItemGrouping,
+    labels: ActionItemGroupLabels,
+    page: SprintPage = NoSprints,
+): ActionItemGroup[] {
+    if (items.length === 0) {
+        return [];
+    }
+
+    if (by === 'none') {
+        return [{ key: 'all', label: '', items }];
+    }
+
+    if (by === 'sprint') {
+        return groupBySprint(items, labels, page);
+    }
+
+    const groups = new Map<string, ActionItemGroup>();
+
+    for (const item of items) {
+        const key = by === 'team' ? item.teamId : assigneeValue(item.assignee);
+        const group = groups.get(key);
+
+        if (group) {
+            group.items.push(item);
+
+            continue;
+        }
+
+        groups.set(key, {
+            key,
+            label:
+                by === 'team'
+                    ? labels.team(item.teamId)
+                    : labels.assignee(item.assignee),
+            items: [item],
+        });
+    }
+
+    return [...groups.values()];
+}
+```
+
+`components/action-items/action-item-group-meta.tsx`:
+
+```tsx
+import { Badge } from '@/components/ui/badge';
+import { useTrans } from '@/hooks/use-trans';
+import { formatShortDate } from '@/lib/action-items/format';
+import type { ActionItemGroup } from '@/lib/action-items/grouping';
+import { isOpenStatus } from '@/lib/action-items/status';
+
+/**
+ * What follows the label of a group row. A sprint reads as the mockup's
+ * "en cours · 6 actions · 22 sept. → 3 oct." or "terminé · 4 actions
+ * reportées · 2 en retard"; any other group counts its rows.
+ */
+export function ActionItemGroupMeta({
+    group,
+    countLabel,
+}: {
+    group: ActionItemGroup;
+    countLabel: (count: number) => string;
+}) {
+    const { t, locale } = useTrans();
+    const sprint = group.sprint ?? null;
+
+    if (sprint === null) {
+        return (
+            <span className="font-medium text-muted-foreground">
+                {countLabel(group.items.length)}
+            </span>
+        );
+    }
+
+    const open = group.items.filter((item) => isOpenStatus(item.status));
+    const overdue = open.filter((item) => item.isOverdue).length;
+    const isCurrent = sprint.state === 'current';
+    const days = `${formatShortDate(sprint.startsOn, locale)} → ${formatShortDate(sprint.endsOn, locale)}`;
+    const count = group.items.length;
+    let summary = countLabel(count);
+
+    if (isCurrent) {
+        summary =
+            count === 1
+                ? t('1 action item · :start → :end', {
+                      start: formatShortDate(sprint.startsOn, locale),
+                      end: formatShortDate(sprint.endsOn, locale),
+                  })
+                : t(':count action items · :start → :end', {
+                      count,
+                      start: formatShortDate(sprint.startsOn, locale),
+                      end: formatShortDate(sprint.endsOn, locale),
+                  });
+    }
+
+    if (!isCurrent && open.length > 0) {
+        summary =
+            open.length === 1
+                ? t('1 carried over')
+                : t(':count carried over', { count: open.length });
+    }
+
+    return (
+        <>
+            <Badge variant={isCurrent ? 'info' : 'muted'} shape="pill">
+                {isCurrent ? t('In progress') : t('Finished')}
+            </Badge>
+            <span className="font-medium text-muted-foreground" title={days}>
+                {summary}
+            </span>
+            {overdue > 0 && (
+                <Badge variant="destructive" shape="pill">
+                    {t(':count overdue', { count: overdue })}
+                </Badge>
+            )}
+        </>
+    );
+}
+```
+
+Read `hooks/use-trans` for how the locale is exposed (the table formats its due dates with it) and `formatShortDate`'s output ("21 Sep"); the mockup's "22 sept." is that format in French. The `let summary` with two overriding `if` keeps the happy path last; rewrite it as a small pure function `sprintSummary(...)` in the same file if the linter prefers.
+
+`action-items-table.tsx` and `action-items-list.tsx`: the group row's `<span className="font-medium text-muted-foreground">{countLabel(group.items.length)}</span>` becomes `<ActionItemGroupMeta group={group} countLabel={countLabel} />`. Nothing else of the row changes (the Bulk lane adds its box in the first cell; the controller keeps both at the merge).
+
+`use-action-item-filters.ts`: import `DefaultGrouping`; `storedGrouping()` falls back to `DefaultGrouping`; `withGrouping()` stores nothing when `grouping === DefaultGrouping`; `reset()` sets `DefaultGrouping`; `isDefault` compares with `DefaultGrouping`. The doc comment of `reset` reads "the current team, the open items and the grouping by sprint".
+
+`action-items-header.tsx`: `groupingLabels` gains `sprint: t('Sprint')`; the doc comment drops the sentence about a later sprint grouping.
+
+`action-items-page.tsx`: the `items` prop type gains `sprints?: ActionItemSprint[]; withoutSprint?: string[]` (optional: a page fixture without them still types); the `groupItems` call becomes
+
+```tsx
+    const groups = groupItems(
+        rows,
+        filtering.grouping,
+        {
+            team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
+            assignee: (assignee) => {
+                const owner = toActionItemOwner(assignee);
+
+                return owner === null
+                    ? t('Unassigned')
+                    : labels.ownerName(owner);
+            },
+            sprint: (sprint, withTeam) =>
+                withTeam
+                    ? t(':team · Sprint :number', {
+                          team: teamsById.get(sprint.teamId)?.name ?? t('Team'),
+                          number: sprint.number,
+                      })
+                    : t('Sprint :number', { number: sprint.number }),
+            noSprint: t('No sprint'),
+        },
+        {
+            sprints: items.sprints ?? [],
+            withoutSprint: items.withoutSprint ?? [],
+        },
+    );
+```
+
+`lang/*.json`: "Sprint", "Sprint :number", ":team · Sprint :number", "Finished", "No sprint", "1 action item · :start → :end", ":count action items · :start → :end", "1 carried over", ":count carried over" (values in Task 17).
+
+- [ ] **Step 4: Run the tests and the gates** — `npm run test -- resources/js/lib/action-items resources/js/components/action-items`, `npm run types:check`, `npm run check`, `npm run build:front`. Expected: PASS.
+
+- [ ] **Step 5: Commit** — `feat(action-items): group by sprint, the default (P24-03)`, listing in the message the five existing expectations changed (grouping, filters hook ×3, header), with the trailer lines.
+
+### Task 24 (lane Search): The topbar search field (P24-07)
+
+**Mockup:** ScreenActions, topbar: `sk-input-group` 18.75rem, lucide `search`, placeholder "Rechercher une action, un ticket…", `sk-kbd` "⌘K" at the end.
+
+**Files:** create `lib/action-items/search.ts` and its test, `components/action-items/action-item-search-field.tsx` and its test; modify `layouts/skrum/app-layout.tsx`, `components/workspaces/command-menu.tsx`, `components/ui/command.tsx` (`CommandPalette` gains `toggleShortcut`), `pages/action-items/index.tsx`, `components/action-items/action-items-page.tsx` (subscription and empty-state condition), `action-item-filters-drawer.tsx` (the field at its top), `use-action-item-filters.ts` (`q`) and their tests.
+
+**Interfaces:**
+- Consumes: `filters.q` (Task 20); `useActionItemFilters().apply` (`{ q }` is one more change); `detectPlatform` (`components/skrum/keyboard-shortcuts`), `Kbd`, `useShortcut(keys, handler, { enabled, enableOnFormTags })`, `useEffectEvent` (React 19.2).
+- Produces: `actionItemsSearchEvent`, `requestActionItemsSearch(term: string | null): void`, `useActionItemsSearchRequests(onSearch: (term: string | null) => void): void` (`lib/action-items/search.ts`); `ActionItemSearchField({ value, onSearch, shortcut = true, className })`; `AppLayout`'s new prop `search?: ReactNode`; `CommandMenu`'s new props `wideTrigger = true`, `toggleShortcut = true`; `CommandPalette`'s new prop `toggleShortcut = true`; `ActionItemFilters.q?: string | null` in `use-action-item-filters.ts`.
+
+- [ ] **Step 1: Write the failing tests**
+
+`resources/js/lib/action-items/search.test.ts`:
+
+```ts
+import { renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import {
+    requestActionItemsSearch,
+    useActionItemsSearchRequests,
+} from '@/lib/action-items/search';
+
+describe('action items search requests', () => {
+    it('hands the term from the topbar to the page', () => {
+        const onSearch = vi.fn();
+        const { unmount } = renderHook(() => useActionItemsSearchRequests(onSearch));
+
+        requestActionItemsSearch('runbook');
+        requestActionItemsSearch(null);
+
+        expect(onSearch.mock.calls).toEqual([['runbook'], [null]]);
+
+        unmount();
+        requestActionItemsSearch('later');
+
+        expect(onSearch).toHaveBeenCalledTimes(2);
+    });
+});
+```
+
+`components/action-items/action-item-search-field.test.tsx`:
+
+```tsx
+import { act, fireEvent, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
+import { renderWithProviders } from '@/test/render';
+
+describe('ActionItemSearchField', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const field = () =>
+        screen.getByRole('searchbox', { name: 'Search action items' });
+
+    it('shows the mockup placeholder and the shortcut', () => {
+        renderWithProviders(<ActionItemSearchField value={null} onSearch={vi.fn()} />);
+
+        expect(field().getAttribute('placeholder')).toBe('Search an action item, a ticket…');
+        expect(screen.getByText(/K$/)).toBeTruthy();
+    });
+
+    it('applies the term 300 ms after the last key, trimmed', () => {
+        const onSearch = vi.fn();
+        renderWithProviders(<ActionItemSearchField value={null} onSearch={onSearch} />);
+
+        fireEvent.change(field(), { target: { value: 'run' } });
+        act(() => vi.advanceTimersByTime(200));
+        fireEvent.change(field(), { target: { value: 'runbook ' } });
+        act(() => vi.advanceTimersByTime(299));
+
+        expect(onSearch).not.toHaveBeenCalled();
+
+        act(() => vi.advanceTimersByTime(1));
+
+        expect(onSearch).toHaveBeenCalledExactlyOnceWith('runbook');
+    });
+
+    it('applies at once on Enter, and Escape clears', () => {
+        const onSearch = vi.fn();
+        renderWithProviders(<ActionItemSearchField value="runbook" onSearch={onSearch} />);
+
+        fireEvent.change(field(), { target: { value: 'wiki' } });
+        fireEvent.keyDown(field(), { key: 'Enter' });
+
+        expect(onSearch).toHaveBeenLastCalledWith('wiki');
+
+        fireEvent.keyDown(field(), { key: 'Escape' });
+
+        expect(onSearch).toHaveBeenLastCalledWith(null);
+        expect((field() as HTMLInputElement).value).toBe('');
+    });
+
+    it('focuses on mod+K, a field included, unless its shortcut is off', () => {
+        const { unmount } = renderWithProviders(
+            <>
+                <input aria-label="Other" />
+                <ActionItemSearchField value={null} onSearch={vi.fn()} />
+            </>,
+        );
+
+        screen.getByLabelText('Other').focus();
+        fireEvent.keyDown(screen.getByLabelText('Other'), { key: 'k', metaKey: true, ctrlKey: true });
+
+        expect(document.activeElement).toBe(field());
+
+        unmount();
+        renderWithProviders(<ActionItemSearchField value={null} onSearch={vi.fn()} shortcut={false} />);
+        fireEvent.keyDown(document.body, { key: 'k', metaKey: true, ctrlKey: true });
+
+        expect(document.activeElement).not.toBe(field());
+    });
+
+    it('takes a value changed elsewhere (Reset) without losing what is being typed', () => {
+        const onSearch = vi.fn();
+        const { rerender } = renderWithProviders(<ActionItemSearchField value={null} onSearch={onSearch} />);
+
+        fireEvent.change(field(), { target: { value: 'runbook' } });
+        act(() => vi.advanceTimersByTime(300));
+        fireEvent.change(field(), { target: { value: 'runbook wiki' } });
+        rerender(<ActionItemSearchField value="runbook" onSearch={onSearch} />);
+
+        expect((field() as HTMLInputElement).value).toBe('runbook wiki');
+
+        rerender(<ActionItemSearchField value={null} onSearch={onSearch} />);
+
+        expect((field() as HTMLInputElement).value).toBe('');
+    });
+});
+```
+
+(`fireEvent.keyDown` with both `metaKey` and `ctrlKey` matches `mod` on either platform; read `hooks/use-shortcut.ts` and use the event shape its own tests use if it differs. `renderWithProviders` returns `rerender` as Testing Library's `render` does; if it wraps providers, rerender through the same wrapper.)
+
+`use-action-item-filters.test.ts`, new case:
+
+```ts
+it('writes the search into the query and counts it as a filter', () => {
+    const base: ActionItemFilters = {
+        status: ['todo', 'doing'],
+        priority: [],
+        due: null,
+        source: null,
+        assignee: null,
+        team: null,
+        item: null,
+    };
+
+    expect(filterQuery({ ...base, q: 'runbook' })).toEqual({ q: 'runbook' });
+    expect(filterQuery({ ...base, q: null })).toEqual({});
+    expect(activeFilterCount({ ...base, q: 'runbook' })).toBe(1);
+});
+```
+
+(`import type { ActionItemFilters } from '@/components/action-items/use-action-item-filters';` at the top if the file does not import it yet.)
+
+`app-layout` (a new `resources/js/layouts/skrum/app-layout.test.tsx` if none exists, else a case in it): with `search={<input aria-label="Page search" />}` the topbar holds that field and the palette's compact button, not the wide "Search…" button; pressing `/` still opens the palette (`screen.getByRole('dialog')`), and mod+K does not; without `search` the topbar is as before (the wide button is there and mod+K opens the palette). Mock `usePage` as the existing layout or command-menu tests do (read `command-menu.test.tsx`).
+
+`action-items-page.test.tsx`, new case: `requestActionItemsSearch('runbook')` visits the page with `q=runbook` (assert on the mocked `router.get` URL as the existing filter cases do); with `filters.q` set and no item, the empty state is "Nothing matches these filters.".
+
+- [ ] **Step 2: Run them to see them fail** — `npm run test -- resources/js/lib/action-items/search resources/js/components/action-items resources/js/layouts resources/js/components/workspaces/command-menu`. Expected: FAIL.
+
+- [ ] **Step 3: Implement**
+
+`resources/js/lib/action-items/search.ts`:
+
+```ts
+import { useEffect, useEffectEvent } from 'react';
+
+/**
+ * The topbar is drawn by the layout, outside the page that owns the filters:
+ * its field hands the term over through a window event, as the palette and the
+ * shortcuts dialog are opened (`lib/shortcuts/events`).
+ */
+export const actionItemsSearchEvent = 'skrum:action-items-search';
+
+export function requestActionItemsSearch(term: string | null): void {
+    window.dispatchEvent(
+        new CustomEvent<string | null>(actionItemsSearchEvent, {
+            detail: term,
+        }),
+    );
+}
+
+export function useActionItemsSearchRequests(
+    onSearch: (term: string | null) => void,
+): void {
+    const handle = useEffectEvent((term: string | null) => onSearch(term));
+
+    useEffect(() => {
+        const listener = (event: Event) =>
+            handle((event as CustomEvent<string | null>).detail);
+
+        window.addEventListener(actionItemsSearchEvent, listener);
+
+        return () =>
+            window.removeEventListener(actionItemsSearchEvent, listener);
+    }, []);
+}
+```
+
+`components/action-items/action-item-search-field.tsx`:
+
+```tsx
+import { Search } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
+import type { KeyboardEvent } from 'react';
+import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
+import { Kbd } from '@/components/ui/kbd';
+import { useShortcut } from '@/hooks/use-shortcut';
+import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
+
+const SearchDelayMs = 300;
+
+function subscribeToNothing(): () => void {
+    return () => {};
+}
+
+function termOf(text: string): string | null {
+    const term = text.trim();
+
+    return term === '' ? null : term;
+}
+
+/**
+ * The mockup's search of the action items page (P24-07): the list follows the
+ * field 300 ms after the last key; mod+K focuses it on this page.
+ */
+export function ActionItemSearchField({
+    value,
+    onSearch,
+    shortcut = true,
+    className,
+}: {
+    value: string | null;
+    onSearch: (term: string | null) => void;
+    shortcut?: boolean;
+    className?: string;
+}) {
+    const { t } = useTrans();
+    const input = useRef<HTMLInputElement>(null);
+    const [draft, setDraft] = useState(value ?? '');
+    const [sent, setSent] = useState<string | null>(value);
+    const [seen, setSeen] = useState<string | null>(value);
+    const platform = useSyncExternalStore(
+        subscribeToNothing,
+        detectPlatform,
+        () => 'mac' as const,
+    );
+
+    if (seen !== value) {
+        setSeen(value);
+
+        if (value !== sent) {
+            setSent(value);
+            setDraft(value ?? '');
+        }
+    }
+
+    const submit = (term: string | null): void => {
+        setSent(term);
+        onSearch(term);
+    };
+    const submitLater = useEffectEvent((term: string | null) => submit(term));
+
+    useEffect(() => {
+        const term = termOf(draft);
+
+        if (term === sent) {
+            return;
+        }
+
+        const timer = window.setTimeout(
+            () => submitLater(term),
+            SearchDelayMs,
+        );
+
+        return () => window.clearTimeout(timer);
+    }, [draft, sent]);
+
+    useShortcut(
+        'mod+k',
+        () => {
+            input.current?.focus();
+            input.current?.select();
+        },
+        { enabled: shortcut, enableOnFormTags: true },
+    );
+
+    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
+        if (event.key === 'Enter') {
+            submit(termOf(draft));
+
+            return;
+        }
+
+        if (event.key !== 'Escape' || draft === '') {
+            return;
+        }
+
+        event.stopPropagation();
+        setDraft('');
+        submit(null);
+    };
+
+    return (
+        <div
+            className={cn(
+                'relative flex w-full min-w-0 items-center',
+                className,
+            )}
+        >
+            <Search
+                aria-hidden
+                className="pointer-events-none absolute start-3 size-4 text-muted-foreground"
+            />
+            <input
+                ref={input}
+                type="search"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={onKeyDown}
+                aria-label={t('Search action items')}
+                aria-keyshortcuts={shortcut ? 'Meta+K Control+K' : undefined}
+                placeholder={t('Search an action item, a ticket…')}
+                className="h-9 w-full min-w-0 rounded-md border border-input bg-background ps-9 pe-14 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+            />
+            {shortcut && (
+                <Kbd aria-hidden className="pointer-events-none absolute end-2">
+                    {platform === 'mac' ? '⌘K' : 'Ctrl K'}
+                </Kbd>
+            )}
+        </div>
+    );
+}
+```
+
+Match the input's classes to `components/ui/input.tsx` (read it; use its class list for border, radius, height and focus ring rather than the list above when they differ) and the width to the palette's button (`AppTopbar` gives the place 10rem to 16.25rem). Setting state during render on a changed `value` is React's documented pattern for "adjusting state when a prop changes"; if the linter refuses it, move the three lines into the `key` of the field instead (`key={value ?? ''}` on the layout's side would lose the focus while typing, so prefer the pattern).
+
+`components/ui/command.tsx`, `CommandPalette`: a new prop `toggleShortcut?: boolean` (default `true`, documented "mod+K opens and closes the palette; off where a page gives mod+K to its own field"); the line `useShortcut("mod+k", () => onOpenChange(!open), { enableInOverlays: true })` gains `enabled: toggleShortcut`. Its test gains one case: with `toggleShortcut={false}`, mod+K does not open it and "/" still does.
+
+`components/workspaces/command-menu.tsx`: `CommandMenu({ links, wideTrigger = true, toggleShortcut = true })`; the wide outline button renders only when `wideTrigger`; `<CommandPalette … toggleShortcut={toggleShortcut} />`.
+
+`layouts/skrum/app-layout.tsx`: a prop `search?: ReactNode` ("The page's own search, in the topbar's search place; the palette stays on '/' and its compact button."); the topbar's `search` becomes
+
+```tsx
+                    search={
+                        search === undefined ? (
+                            <CommandMenu links={sidebar.links} />
+                        ) : (
+                            <>
+                                {search}
+                                <CommandMenu
+                                    links={sidebar.links}
+                                    wideTrigger={false}
+                                    toggleShortcut={false}
+                                />
+                            </>
+                        )
+                    }
+```
+
+`pages/action-items/index.tsx`: `<AppLayout … search={<ActionItemSearchField value={filters.q ?? null} onSearch={requestActionItemsSearch} className="hidden md:flex" />}>`.
+
+`action-items-page.tsx`: `useActionItemsSearchRequests((term) => filtering.apply({ q: term }));` after `filtering` is built; `nothingOpen` gains `&& !filters.q`. The selection's `filtersKey` (Task 13) must change with `q` so that a search clears the selection and "all matching" mode (spec §9.1): if Task 13 built it from `filterQuery(filters)`, it does already; otherwise add `q` to it, with a case in `action-items-page.test.tsx`.
+
+`action-item-filters-drawer.tsx`: at the top of the drawer's body, `<ActionItemSearchField value={filters.q ?? null} onSearch={(term) => onChange({ q: term })} shortcut={false} />` (use the drawer's own change callback name; read the file).
+
+`use-action-item-filters.ts`: `ActionItemFilters` gains `q?: string | null`; `filterQuery()` writes `q` when it is a non-empty string; `activeFilterCount()` counts it; `isDefault` requires `!filters.q`. `ActionItemFilterChanges` accepts `q` (it is `Partial<ActionItemFilters>` or lists its keys; follow it).
+
+`lang/*.json`: "Search an action item, a ticket…", "Search action items" (values in Task 17).
+
+- [ ] **Step 4: Run the tests and the gates** — `npm run test -- resources/js/lib/action-items resources/js/components/action-items resources/js/layouts resources/js/components/workspaces resources/js/components/ui/command`, `npm run types:check`, `npm run check`, `npm run build:front`. Expected: PASS.
+
+- [ ] **Step 5: Commit** — `feat(action-items): the topbar search filters the list (P24-07)`, with the trailer lines.
+
+---
+
+## Self-review (done while revising on the owner's answers, then again on the pre-build deviation answers; kept for the reader)
+
+**Spec coverage.** §5 rules 1, 2 → Tasks 6, 7, 8; rule 3 → Task 1; rule 4 → Tasks 5, 8, 9, 20 (`q`); rule 5 → Task 9 (and Task 20, "exports what the search finds"); rule 6 → Tasks 2, 3; rule 7 → Task 8 (and Task 20, `filters.q`). §6.1 status, transitions and `ActionItemProgressChanged` → Task 1; sub-tasks → Task 1; §6.2 three-state reads and sync state → Task 2, pushes and start targets → Task 3, release note → Task 18; §6.3 filters, old values, counters, MCP → Task 5, `fromQuery` → Task 5, the search and `external_key_search` → Task 20; §6.4 readers → Task 1 (presenter), Task 2 (link state, front type), Task 4 (settings presentation), Task 5 (MCP list); §6.5 bulk → Tasks 6, 7 (ids), 8 (filters and count), 13, 14 (front, sync loop on plan 21's `runBulkExport`); §6.6 export → Task 9 (server), 15 (button); §6.7 start settings → Task 4; §6.8 sprint of an item → Task 21 (server), Task 23 (front); §7 permissions → Tasks 6, 7, 8 (per item, through `ActionItemPermissions` with plan 23's roles), 4 (settings), 13 (selectable rows, enabled actions, assignees in "all matching" mode), 20 and 21 (search and sprints never reach an invisible team); §8 real time → Tasks 6, 7, 8 (events per item asserted), 13 (`saveRow` / `removeRow`, reload after "all matching"), 23 (a live row in its team's current sprint); §9.1 → 15 (Export), 24 (search field); §9.2 → 12 and 10 (chips), 23 and 24 (Reset with grouping and search); §9.3 → 13 (selection), 23 (group by sprint); §9.4 → 13, 14; §9.5 → 14, 23 (list grouped); §9.6, §9.7 → 11; §9.8 → 4; §9.9 → 16; §9.10 → 22; §10 → Task 1's and Task 20's upgrade tests, Task 18 (database notes); §12 measurement → Task 8 step 5 (with the cap rule). Acceptance criteria 1–4 → Task 1; 5 → 2; 6 → 3; 7 → 4; 8–11 → 5 (10 also Task 20); 12, 13 → 6; 14 → 6 and 8; 15 → 8; 16 → 6, 7, 8 (races, PostgreSQL); 17 → 7; 18 → 9; 19 → 13; 20 → 13, 14; 21, 22 → 14; 23 → 11; 24 → 16, 17; 25 → 19; 26 → 20 (and 24 for the front); 27 → 21; 28 → 23; 29 → 24; 30 → 22.
+
+**Placeholder scan.** Each back-end step carries its code and tests (Tasks 20 and 21 included). The screen tasks carry composition, behaviours and test lists, as the project's screen tasks do; Tasks 22, 23 and 24 carry their code. Reading checks are written as instructions with the exact file to read and the alternative to apply: the search column of a legacy row (Tasks 1 and 20), the registration of listeners (Task 3), the page-props reading of "presents the sync state without secrets" and the "Complete to" Vitest case (Task 4), the external-link factory (Task 9), `retroRequest`'s error (Task 13), plan 21's loop (Task 14), writes of links past the model (Task 20), plan 23's `TeamSprint` (Task 21), the render helper, fixture, `useTrans` locale and input classes (Tasks 23, 24), the shortcut event shape (Task 24). The only blanks are the measured number(s) of Task 8's commit message, which the measurement fills; the cap rule decides without the owner.
+
+**Type consistency.** `ActionItem::currentStatus()` (not `status()`) everywhere; `ActionItemStatus::Doing` value `doing` on both sides; `ExternalIssueState::Started` value `started` (fits `string(10)`), in PHP and in `ExternalLink.state`; `DoneMapping::itemState(ActionItem, IntegrationProvider)` in `ApplyIssueChanges`, `LinkStatusSync` and `PushActionItemState`; settings keys `startStatusId` / `startStateId` stored by Task 4 and read by Task 3 (`DoneMapping::configured`), request keys `start_status_id` / `start_state_id`; `ActionItemProgressChanged($actionItem, $origin, $actor)` fired in Task 1, listened in Task 3; filter token `todo` (server and front) distinct from the status value `open`; `ActionItemFilters::fromQuery()` (Task 5) used by `ActionItemBulkChanges::matching()` (Task 8); the search: query key `q` on the server (`ActionItemFilters::$search`, `toArray()['q']`, `FilterKeys`) and in the front (`ActionItemFilters.q`, `filterQuery`), so the export link and `matchingTarget` carry it with no change of Task 10's code; `ActionItemBulkChanges::update/delete` return `changed` and `refused` (`{id, title, message}`), the controllers answer `actionItems`, `changedCount` / `deleted` and `refused`, and `bulk.ts` types match; `BulkTarget` built by `matchingTarget()`; `MatchingCap` the same number on both sides (500, or the cap Task 8's rule sets on both); `items.sprints[]` keys `id, number, startsOn, endsOn, teamId, state ('current' | 'finished'), itemIds` and `items.withoutSprint` from `ActionItemSprints::forPage` (Task 21) to `ActionItemSprint` / `SprintPage` (Task 23); grouping value `sprint` and `DefaultGrouping` in `grouping.ts`, `use-action-item-filters.ts` and the header; route names `workspaces.actionItemBulkUpdates.store`, `workspaces.actionItemBulkDeletions.store`, `workspaces.actionItemCsvExports.show` in routes, tests and Wayfinder imports; migrations `2026_10_24_100000_…` and `2026_10_24_100100_…` in the files, the upgrade tests and the file list.
+
+**Review Focus.** 1 → Task 5 ("reads the single values of before") and Task 10 (stored entry sent unchanged); 2 → Task 6 ("changes what it can and refuses the rest", titles); 3 → Tasks 6, 7, 8 races and Task 8 ("changes nothing when the list changed since the member counted it"); 4 → Task 2 and Task 3; 5 → Task 9 ("neutralises formulas"); 6 → Task 20; 7 → Tasks 21 and 23.
+
+**Verification.** Every "Run the tests" step and Task 19 run PostgreSQL only (owner, 2026-10-03); no step starts MariaDB or MySQL; the four-engine matrix belongs to the controller after the last merge of the roadmap. Portability stays a rule of every line (Global Constraints) and `DatabasePortabilityTest` runs in every task that touches PHP.
+
+**Dependencies.** The plan's base is `roadmap` after plan 23 (execution order 20, 21, 26, 27, 29 → 22 → 23 → 24 and 25): plan 23's sprints and roles, and plan 21's export loop, are consumed, not rebuilt; plan 25 runs beside it and only shares the translation, route and Pest helper files.
+
+**What the answers changed, by task.** First revision (answers to §15): new Tasks 2, 3, 4, 8; changed Tasks 1, 5, 6, 10, 13, 14, 16 to 18; 16 → 19 tasks. Second revision (pre-build answers, PostgreSQL per plan, order after plan 23): new Tasks 20 (search, server), 21 (sprints, server), 22 (sidebar), 23 (grouping), 24 (search field); changed: Branch and run (base, checks, migration dates, merge into `roadmap`), Global Constraints (PostgreSQL only, migration date), every "Run the tests" step and Tasks 8 (cap rule), 13 (`:cap`), 14 (plan 21's loop), 16 (states, captures), 17 (keys), 18 (D-19, D-129, PB-12, database notes, release note), 19 (PostgreSQL suites); the Pre-build deviations table carries the answers. Task count: 19 → 24.

@@ -2,27 +2,28 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 20 only).
 
-**Status: draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 3 and 6 answered B, not the recommended A; the others as recommended). Nothing starts before the owner has approved the pre-build deviations (P22-01 to P22-15, to approve by the owner, not asked yet). Lanes S and K may start before plan 21 is merged; lane C may not (see **Branch and run**).
+**Status: approved for execution, 2026-10-03.** Revised the same day with the owner's answers to spec §15 (decisions 3 and 6 answered B, not the recommended A; the others as recommended), then with the owner's answers to the pre-build deviations (P22-01 to P22-15: all approved as listed, P22-14 obsolete; spec §17). Spec §16.2 (Discussing per topic) and §16.8 (English heading only) are ruled. Runs after plans 20, 21, 26, 27 and 29 are merged into `roadmap`, before plan 23 (see **Branch and run**). Verification per task and per merge is PostgreSQL only (owner, 2026-10-03); the four-engine matrix runs once at the end of the roadmap, not in this plan.
 
 **Goal:** A team member opens the team's Sessions page (Upcoming, Live, Finished, every session kind, "Load more", "New session"); the "New session" dialog sets phase durations for a retro (offered to the facilitator, never started by themselves), and a task timer, "change vote after reveal", the estimate write-back and a tracker import for poker, all editable again inside the session; the poker story card shows the ticket's type and labels, and the description's "Acceptance criteria" section apart.
 
 **Architecture:** No new aggregate. The Sessions page reads the five session tables through one action (`ListTeamSessions`) that computes a state per kind from stored data and merges five ordered queries in PHP behind a `(updated_at, id)` cursor. The "New session" dialog's props move out of `TeamsController@show` into `PresentNewSessionOptions`, used by the team page and the Sessions page. Creation options are columns on `retros` (one JSON column, `phase_durations`) and `poker_games` (four columns); behaviour sits where the rule already lives: the retro's durations travel in the board snapshot and the facilitator's `BoardTimer` offers the current phase's one (no back-end timer change: the offer calls the existing start endpoint), `StartPokerRound` starts a task timer, a new `PokerGuard::acceptsCard` opens a revealed round to card changes, `RequestEstimateSync` and `JiraIssueTracker::writeEstimate` read the per-game write-back. The creation import fetches tickets before the game exists, then writes them in the creation transaction through the code that imports inside a game. Ticket type and labels are two `external_*` columns of `poker_tasks`, filled by every tracker through `TrackerIssue`; acceptance criteria are not stored: `AcceptanceCriteriaSection` splits them out of the description when `PresentPokerTask` renders it.
 
-**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major version differs from these.
+**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; code portable to PostgreSQL, MariaDB, MySQL and SQLite, tested on PostgreSQL through `bin/test-db pgsql`; `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major version differs from these.
 
 **Spec:** `.superpowers/sdd/roadmap/plan-22/spec.md` (moves to `docs/superpowers/specs/2026-10-22-sessions-index-and-creation-options-design.md` in Task 21). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenSessionCreate`, `ScreenPokerBefore`, `SessionTypePicker`, `Pagination`, `EmptyState`, `MobileDashboard` — for each, the `README.md` and the `preview.html`.
 
 **Not in this plan:** scheduling (SE-2: "Schedule…", a start time, "starts in 5 min"), which is backlog by the owner's word, with no place reserved; the "ROTI at the end" switch; the invitation link inside the dialog (D-08); the team dashboard's recent sessions table and next retro (TM-1, TM-2: plan 23, which calls `ListTeamSessions`); the rest of spec §3; browser walkthroughs (owner's working rule).
 
-**Tasks:** 22 (unchanged by the answers: tasks 5, 6, 7, 15 and 16 were rewritten in place). Step A, single writer: 1. Lane S (Sessions page): 2, 3, 4, 14. Lane K (ticket details and criteria section): 5, 6, 15. Lane C (creation options, after plan 21): 7 to 12, 16, 17, 18. Step C foundation, single writer: 13. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
+**Tasks:** 22 (unchanged by the answers: tasks 5, 6, 7, 15 and 16 were rewritten in place). Step A, single writer: 1. Lane S (Sessions page): 2, 3, 4, 14. Lane K (ticket details and criteria section): 5, 6, 15. Lane C (creation options): 7 to 12, 16, 17, 18. Step C foundation, single writer: 13. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (PostgreSQL suites and report). The pre-build deviation answers changed no task.
 
 ## Branch and run
 
-- Base: `main` once plan 21 (retro facilitation, RT-1 to RT-10) is merged — lane C needs RT-3 (the per-card cap `max_votes_per_card`, which plan 21 also puts in the dialog: plan 22 adds nothing for it), the retro timer and its controls as RT-2 (pause) and RT-5 (time per topic) leave them (the phase timer offer sits on them), and plan 21's edits of `RetroSettingsController` and `retro-session-fields.tsx`. Before Task 1 check, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Actions/Search/ListRecentSessions.php`, `app/Actions/Integrations/ImportPokerTasks.php` and `resources/js/components/teams/session-create/new-session-dialog.tsx` exist; the last migration of `database/migrations` is dated before `2026_10_22_100000` (plan 21 may have used `2026_10_21_…`; if it used `2026_10_22_…`, date this plan's migrations `2026_10_23_…` and say so in the report).
-- **If plan 21 is not merged yet**, Task 1 and lanes S and K may run from `main` as it is; lane C waits. Record in `.superpowers/sdd/roadmap/plan-22/progress.md` which base each lane was cut from.
-- Branch `plan-22-sessions` from that base. No merge into `main`, no push.
+- Execution order of the roadmap (owner, 2026-10-03): plans 20, 21, 26, 27 and 29 in parallel → **22** → 23 → 24 and 25. Plan 23 reuses `ListTeamSessions` (Task 2) and runs after this plan.
+- Base: the integration branch `roadmap` once plans 20, 21, 26, 27 and 29 are merged into it. Lane C needs plan 21 (retro facilitation, RT-1 to RT-10): RT-3 (the per-card cap `max_votes_per_card`, which plan 21 also puts in the dialog: plan 22 adds nothing for it), the retro timer and its controls as RT-2 (pause) and RT-5 (time per topic) leave them (the phase timer offer sits on them), and plan 21's edits of `RetroSettingsController` and `retro-session-fields.tsx`. Before Task 1 check, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Actions/Search/ListRecentSessions.php`, `app/Actions/Integrations/ImportPokerTasks.php` and `resources/js/components/teams/session-create/new-session-dialog.tsx` exist; plan 21 is merged into `roadmap` (`git log roadmap --oneline` shows its merge; if not, stop: plan 22 does not start before it); the last migration of `database/migrations` is dated before `2026_10_22_100000` (plans of the first wave may have used later dates: if any migration is dated `2026_10_22_100000` or later, date this plan's two migrations one day after the last one and say so in the report). Record the base commit in `.superpowers/sdd/roadmap/plan-22/progress.md`.
+- Plans 20, 26, 27 and 29 may have edited files this plan touches (`routes/web.php`, `lang/*.json`, `hooks/use-sidebar-model.ts`, `mobile-tab-bar.tsx`, `board-topbar.tsx`, the poker room files): the re-read rule below covers them.
+- Branch `plan-22-sessions` from that base; it is merged into `roadmap` at the end, with the PostgreSQL suite only. No merge into `main`, no push.
 - Lanes run in git worktrees on branches `lane/22-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and `bin/test-db pgsql -- tests/Feature/Sessions tests/Feature/Poker tests/Feature/Retros tests/Feature/Integrations tests/Arch`.
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR`; MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never two whole suites at once in the shared container.
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR`. Only `pgsql` (and `pgsql --concurrency`) is run by this plan; MariaDB and MySQL are not started. Never two whole suites at once in the shared container.
 - This plan was written from `main` at `18d3637e`, before plan 21 existed. **Every task re-reads the files it touches**; a line or a method body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
@@ -39,6 +40,16 @@ Spec §15, **answered by the owner on 2026-10-03**. The plan follows the answers
 | 6 | Acceptance criteria source | **B**: a section of the description headed "Acceptance criteria" (≠ recommendation A) | No `external_acceptance_criteria` column (Task 1), no Jira text-field detection, no `ensureTextFields`, no integration setting or select (Tasks 5, 12, 15). Task 5 now carries type and labels for all three trackers; Task 6 adds `AcceptanceCriteriaSection` (spec rules AC-1 to AC-7) and splits the description at presentation, for every task. P22-11 reworded; P22-14 withdrawn |
 | 7 | Trackers offered by the creation import | **A**: every connected tracker (= recommendation) | none: Tasks 12 and 18 as drafted |
 | 8 | Dates on rows | **A**: last activity on Upcoming and Finished rows (= recommendation) | none: Task 14 as drafted |
+
+Later answers and rulings of 2026-10-03:
+
+| Topic | Answer or ruling | Effect on the plan |
+|---|---|---|
+| Pre-build deviations P22-01 to P22-15 | "03 + 05 approved, 11 Markdown, 12 + 13 editable in session, P22-14 obsolete (acceptance criteria from a description section), others approved" | none: every row is built as listed; P22-14 builds nothing. No "waits for the owner" gate is left |
+| Spec §16.2, "Discussing 15" | ruled: **per topic** — P22-15, approved as listed, draws "… per topic" in Discussing, and plan 21's per-topic rule is the owner's | none: Task 16's `offerFor` (`perTopic` in Discussing) as drafted |
+| Spec §16.8, translated criteria headings | ruled: **English only** — the owner's answers name "Acceptance criteria" twice; AC-7 accepts the language fragility | none: `AcceptanceCriteriaSection::Headings = ['acceptance criteria']` (Task 6) |
+| Database engines | owner: "Lance les 4 bases seulement à la fin" — per task and per merge **PostgreSQL only**; the four-engine matrix runs once after the roadmap's last merge | every test step runs `bin/test-db pgsql`; Task 8's race runs on `pgsql --concurrency`; Task 22 runs the PostgreSQL suites only. Portability rules unchanged |
+| Execution order | parallel 20, 21, 26, 27, 29 → 22 → 23 → 24 and 25 | plan 21 is merged before Task 1: no lane starts early; lane C is cut like S and K |
 
 ## File structure
 
@@ -70,7 +81,7 @@ Front end, created: `resources/js/pages/teams/sessions.tsx`; `resources/js/compo
 - **Mockup first** (parent spec §5 rule 13). A screen follows its mockup; a difference is fixed or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 20, in light, at 1440, in French.
 - **Front rules** of the parent spec §5: tokens only, rem, Tailwind scale, no overflow from 20rem to 60rem, visible focus, contrast, reduced motion, lucide icons, literal `t('…')`, presentational `skrum/` components (no network, no router). Reuse: `teams/session-create/*` (`SettingRow`, `FieldError`, `SessionFormFooter`), `skrum/empty-state`, `skrum/skeletons` ("Loading sessions"), `ui/pagination` (`LoadMore`, `LoadMoreFeed`), `ui/tabs`, `ui/select`, `ui/switch`, `skrum/session-type-picker` (kind colours and icons).
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md` rules 1 to 12 on every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. No raw query of any form; no driver test; migrations with the Schema builder, `up` only, nullable `timestamp()`, no `enum()`, no collation, no JSON default (defaults in the model's `$attributes`), names within 64 characters; a transaction locks the aggregate root first (poker: the game; retro: the retro) and is retried with `Transactions::Attempts` only when it touches nothing but the database (the ones here broadcast or call a tracker: no retry); an explicit tie-breaker on every sort; JSON columns compared with `toBeIgnoringKeyOrder`; writes never skip model events.
-- **Tests per task, on pgsql and sqlite.** Each task runs the tests it wrote or touched on PostgreSQL and SQLite: `bin/test-db pgsql -- <paths>`, then `bin/test-db sqlite -- <paths>`. The red step ("see it fail") may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. The race of Task 8 runs on the four engines (`bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- tests/Concurrency/RevoteAfterRevealTest.php`), never in memory, never in parallel. The whole suites run on the four engines at lane merges (`bin/test-db pgsql` then `sqlite`; `mariadb` and `mysql` at the last lane merge) and in Task 22.
+- **Tests per task, on PostgreSQL only** (owner, 2026-10-03: the four-engine matrix runs once, after the roadmap's last merge, outside this plan). Each task runs the tests it wrote or touched with `bin/test-db pgsql -- <paths>`. The red step ("see it fail") may run once in memory: `vendor/bin/sail artisan test --compact <path>`. The race of Task 8 runs with `bin/test-db pgsql --concurrency -- tests/Concurrency/RevoteAfterRevealTest.php`, never in memory, never in parallel. The whole PostgreSQL suite runs at each lane merge (`bin/test-db pgsql`) and in Task 22. No task runs `sqlite`, `sqlite-file`, `mariadb` or `mysql`; the code is still written for all four (rules above, `DatabasePortabilityTest`).
 - **No data migration.** The new columns have defaults that keep today's behaviour; no `tests/Upgrade` test is needed. A task that finds it must backfill stops and asks.
 - **Working rules (owner):** unit, feature, arch and concurrency tests are written and run; Vitest is written and run (`npm run test -- <pattern>` per task, the whole suite in Task 22); **no browser walkthrough** is written, edited or run; **captures light/1440/fr only**, in Task 20.
 - **No new dependency**, PHP or JS, without the owner's approval.
@@ -92,30 +103,30 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-**Status: to approve by the owner (not asked yet).** Every row below, P22-01 to P22-15, is put to the owner before its screen is built; the answers to spec §15 settle the decisions, not these rows. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+**Status: answered by the owner on 2026-10-03** — "03 + 05 approved, 11 Markdown, 12 + 13 editable in session, P22-14 obsolete (acceptance criteria from a description section), others approved". Rows marked "O:" are approved by the owner's decisions they follow from. Every row is built as listed; no screen task waits. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
-| # | Screen | Mockup element | Built | Reason |
-|---|---|---|---|---|
-| P22-01 | Sessions page | rows without a date | the last activity date ends the meta line on Upcoming and Finished rows | O: decision 8, answered A |
-| P22-02 | Sessions page | the Upcoming tab | sessions created and not started (spec §6.1) | N: no scheduling (backlog); O: decision 1, answered A |
-| P22-03 | Sessions page | — (Live tab only drawn) | empty states per tab, "Load more" and its end line from the `Pagination` mockup | N: no frame for them |
-| P22-04 | Dialog, retro | "ROTI at the end" switch | not rendered | O: backlog (ROTI is always a phase) |
-| P22-05 | Dialog, retro | "Timer per phase" select showing "Custom (5 phases)" | options "No timer", "Standard", "Custom (5 phases)"; Custom opens five minute steppers under the row | N: the mockup draws the closed select only |
-| P22-06 | Dialog, poker | "Timer per task: 2 minutes" | the choices Off, 1, 3, 5, 10 minutes | O: X5 (one list 1/3/5/10) |
-| P22-07 | Dialog, poker | "Schedule…" in the footer | not rendered, no place | O: scheduling is backlog |
-| P22-08 | Dialog, poker | "Import from Jira" | "Import from <source>", with a source select when the team has two trackers or more | O: decision 7, answered A |
-| P22-09 | Dialog, poker | "Write estimates to Jira · Story points" | for Linear and GitHub the row reads "Write estimates to <source>" with "Write" / "Don't write" | N: no field choice on those sources |
-| P22-10 | Dialog, retro and poker | the invitation link "skrum.atlas.dev/j/R7K-42Q · Copy link" | unchanged (still not rendered: D-08) | N: the link exists only once the session does |
-| P22-11 | Poker room | acceptance criteria as a plain list | the description's "Acceptance criteria" section rendered as Markdown (a list when the writer wrote one), under the heading "Acceptance criteria" of the app; nothing when the description has no such section | N: the source's own format; O: decision 6, B (a section of the description) |
-| P22-12 | Poker room | settings popover (D-70) | three more rows: Timer per task, Change vote after reveal, Write estimates | S: spec §9.4 ("les réglages restent modifiables dans la session") |
-| P22-13 | Retro | settings popover | one more row: Timer per phase | S: spec §9.4 |
-| P22-14 | — | — | **withdrawn**: no "Acceptance criteria field" select (decision 6 answered B: no setting). The number is kept so that the other rows keep theirs | — |
-| P22-15 | Retro board | the topbar `Timer` with its menu 1, 3, 5, 10 (`Timer`, `FacilitatorBar`) | facilitator only, in a phase with a duration: a one-click "<n> min" start button while no timer runs or is paused, and the first menu entry "<Phase> · <n> min" ("… per topic" in Discussing) before the list | O: decision 3, B (offered, nothing starts by itself); no mockup draws the offer |
+| # | Screen | Mockup element | Built | Reason | Owner (2026-10-03) |
+|---|---|---|---|---|---|
+| P22-01 | Sessions page | rows without a date | the last activity date ends the meta line on Upcoming and Finished rows | O: decision 8, answered A | approved |
+| P22-02 | Sessions page | the Upcoming tab | sessions created and not started (spec §6.1) | N: no scheduling (backlog); O: decision 1, answered A | approved |
+| P22-03 | Sessions page | — (Live tab only drawn) | empty states per tab, "Load more" and its end line from the `Pagination` mockup | N: no frame for them | approved |
+| P22-04 | Dialog, retro | "ROTI at the end" switch | not rendered | O: backlog (ROTI is always a phase) | approved |
+| P22-05 | Dialog, retro | "Timer per phase" select showing "Custom (5 phases)" | options "No timer", "Standard", "Custom (5 phases)"; Custom opens five minute steppers under the row | N: the mockup draws the closed select only | approved |
+| P22-06 | Dialog, poker | "Timer per task: 2 minutes" | the choices Off, 1, 3, 5, 10 minutes | O: X5 (one list 1/3/5/10) | approved |
+| P22-07 | Dialog, poker | "Schedule…" in the footer | not rendered, no place | O: scheduling is backlog | approved |
+| P22-08 | Dialog, poker | "Import from Jira" | "Import from <source>", with a source select when the team has two trackers or more | O: decision 7, answered A | approved |
+| P22-09 | Dialog, poker | "Write estimates to Jira · Story points" | for Linear and GitHub the row reads "Write estimates to <source>" with "Write" / "Don't write" | N: no field choice on those sources | approved |
+| P22-10 | Dialog, retro and poker | the invitation link "skrum.atlas.dev/j/R7K-42Q · Copy link" | unchanged (still not rendered: D-08) | N: the link exists only once the session does | approved |
+| P22-11 | Poker room | acceptance criteria as a plain list | the description's "Acceptance criteria" section rendered as Markdown (a list when the writer wrote one), under the heading "Acceptance criteria" of the app; nothing when the description has no such section | N: the source's own format; O: decision 6, B (a section of the description) | approved: Markdown |
+| P22-12 | Poker room | settings popover (D-70) | three more rows: Timer per task, Change vote after reveal, Write estimates | S: spec §9.4 ("les réglages restent modifiables dans la session") | approved: editable in session |
+| P22-13 | Retro | settings popover | one more row: Timer per phase | S: spec §9.4 | approved: editable in session |
+| P22-14 | — | — | **withdrawn**: no "Acceptance criteria field" select (decision 6 answered B: no setting). The number is kept so that the other rows keep theirs | — | obsolete (acceptance criteria from a description section) |
+| P22-15 | Retro board | the topbar `Timer` with its menu 1, 3, 5, 10 (`Timer`, `FacilitatorBar`) | facilitator only, in a phase with a duration: a one-click "<n> min" start button while no timer runs or is paused, and the first menu entry "<Phase> · <n> min" ("… per topic" in Discussing) before the list | O: decision 3, B (offered, nothing starts by itself); no mockup draws the offer | approved (settles spec §16.2: per topic) |
 
 ## Review Focus
 
-1. **A session that sits on a page boundary** ("Load more" twice while sessions of five kinds share timestamps): no duplicate, no gap. Walk test in Task 2, on pgsql and sqlite in the task, on the four engines in Task 22.
-2. **A card changed after reveal while the facilitator saves the estimate**: either applied before the save or refused after it, never after. Race in Task 8.
+1. **A session that sits on a page boundary** ("Load more" twice while sessions of five kinds share timestamps): no duplicate, no gap. Walk test in Task 2, on PostgreSQL (in the task and in Task 22); the other engines run it in the roadmap's final matrix.
+2. **A card changed after reveal while the facilitator saves the estimate**: either applied before the save or refused after it, never after. Race in Task 8, on PostgreSQL.
 3. **The reveal and the timer endpoints after `acceptsCard`**: a revealed round must still refuse a second reveal and a timer. Test in Task 8.
 4. **An import at creation whose tracker fails** (expired token, a 500): no game is left behind, the message is on the import tab. Test in Task 12.
 5. **A guest reading a poker payload**: type, labels and the criteria section yes, assignee and sync errors no. Test in Task 6.
@@ -129,7 +140,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 | main | 1, 13, 19 to 22 | — | — |
 | S (Sessions page) | 2, 3, 4, then 14 | head of Task 1 (14 after Task 13 is merged into it) | `routes/web.php` (one block), `app/Http/Controllers/TeamsController.php` (Task 3 only), `lang/*.json` |
 | K (ticket details) | 5, 6, then 15 | head of Task 1 (15 after Task 13) | `app/Actions/Integrations/ImportPokerTasks.php` and `ApplyPokerTaskIssues.php` (also lane C, Task 12: K merges first), `app/Actions/Poker/PresentPokerTask.php`, `lang/*.json` |
-| C (creation options) | 7 to 12, then 16, 17, 18 | head of Task 1 **with plan 21 merged** and lanes S and K merged (Task 12 needs K's `ImportPokerTasks`, Task 11's props go through S's `PresentNewSessionOptions`) | `routes/web.php`, `PokerSettingsController`, `RetroSettingsController`, `retro-session-fields.tsx`, `poker-session-fields.tsx`, `board-topbar.tsx`, `skrum/timer.tsx`, `session/session-timer.tsx`, `lang/*.json` |
+| C (creation options) | 7 to 12, then 16, 17, 18 | head of Task 1 (plan 21 is in the base) with lanes S and K merged (Task 12 needs K's `ImportPokerTasks`, Task 11's props go through S's `PresentNewSessionOptions`) | `routes/web.php`, `PokerSettingsController`, `RetroSettingsController`, `retro-session-fields.tsx`, `poker-session-fields.tsx`, `board-topbar.tsx`, `skrum/timer.tsx`, `session/session-timer.tsx`, `lang/*.json` |
 
 Task 13 (front foundation: `TeamNewSessionDialog`, kind tones, shared types) runs on main after lanes S and K's back-end tasks are merged and before any screen task. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in alphabetical blocks per lane). `tests/Pest.php`: lane C adds its helpers, if any, in one block at the end of the file (lane K needs none since decision 6 was answered B).
 
@@ -298,10 +309,10 @@ and in `casts()`: `'revote_after_reveal' => 'boolean'`, `'task_timer_seconds' =>
 
 `app/Models/PokerTask.php`: `@property` lines for the two columns (not fillable); in `casts()` `'external_labels' => 'array'`. Extend the class docblock sentence: "The external_*, needs_sync, sync_error and synced_at columns — ticket details included — are written only by the tracker imports, refreshes and write-back".
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Poker/PokerGameOptionsTest.php tests/Feature/Poker/PokerModelTest.php tests/Arch`, then the same with `sqlite`.
-Expected: PASS on both. Then `bin/test-db mariadb -- tests/Feature/Poker/PokerGameOptionsTest.php` and `mysql` once (the JSON column and the defaults are engine-sensitive). Expected: PASS.
+Run: `bin/test-db pgsql -- tests/Feature/Poker/PokerGameOptionsTest.php tests/Feature/Poker/PokerModelTest.php tests/Arch`.
+Expected: PASS. (The JSON column and the defaults are engine-sensitive: they are written to the rules — no JSON default, defaults in `$attributes` — and checked on MariaDB, MySQL and SQLite by the roadmap's final matrix, not here.)
 
 - [ ] **Step 5: Commit**
 
@@ -837,9 +848,9 @@ class ListTeamSessions
 
 Check while writing: the relation names (`TeamSurvey::respondents`, `TeamSurvey::facilitator`, `TeamSurveyRespondent::answers`, `Whiteboard::facilitator` → `displayName()`), the `TeamSurveyStatus` cases, the `url` rule of `PresentTeamSurveySummary` (follow it if it differs). `Collection` import is used by `collect()` typing only; drop it if PHPStan says it is unused. A `HasManyThrough` (`PokerGame::rounds`) supports `whereHas`/`whereDoesntHave`; if PHPStan or the query disagrees, use `whereHas('tasks.rounds')`.
 
-- [ ] **Step 5: Run the tests on pgsql and sqlite**
+- [ ] **Step 5: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Unit/Support/SessionCursorTest.php tests/Feature/Sessions/ListTeamSessionsTest.php tests/Arch`, then `sqlite`.
+Run: `bin/test-db pgsql -- tests/Unit/Support/SessionCursorTest.php tests/Feature/Sessions/ListTeamSessionsTest.php tests/Arch`.
 Expected: PASS on both.
 
 - [ ] **Step 6: Commit** — `feat(sessions): one list of a team's sessions, by state, with a cursor` (with the two trailer lines).
@@ -892,7 +903,7 @@ it('gives the team page the options of the dialog from one place', function () {
 
 - [ ] **Step 3: Move the code.** Create the action with the constructor dependencies the moved lines use (`Llm`, `BuildTemplateCatalogue`, `IcebreakerGameOptions`, `BuildWhiteboardGallery`, `TopTeamTemplates`, `GameRulesRegistry`, `SurveyTemplateCatalogue`, `PresentTeamSurveySummary`); move the keys listed above out of `TeamsController@show` **verbatim**, with the private `pokerDecks()` method; `$request->user()` becomes `$viewer`. In `TeamsController@show`, replace them with `...$presentNewSessionOptions->handle($request->user(), $workspace, $team)` and remove the constructor and method parameters that only those lines used. The other keys of the team page (members, retros, poker games, whiteboards, trend, presence, …) stay in the controller. `surveys` is used by both the team page's Surveys block and the survey form: it moves to the action and keeps its name.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Sessions/NewSessionOptionsTest.php tests/Feature/Teams tests/Feature/Poker/TeamPokerSectionTest.php tests/Feature/TeamSurveys tests/Feature/Whiteboards`, then `sqlite`. Expected: PASS (the team page's existing tests unchanged).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Sessions/NewSessionOptionsTest.php tests/Feature/Teams tests/Feature/Poker/TeamPokerSectionTest.php tests/Feature/TeamSurveys tests/Feature/Whiteboards`. Expected: PASS (the team page's existing tests unchanged).
 
 - [ ] **Step 5: Commit** — `refactor(teams): the New session options in one action` (trailers).
 
@@ -1046,7 +1057,7 @@ export default function TeamSessions() {
 }
 ```
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Arch`, then `sqlite`; `npm run types:check`, `npm run build:front`. Expected: PASS.
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Arch`; `npm run types:check`, `npm run build:front`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(sessions): the team Sessions page and its route` (trailers).
 
@@ -1189,7 +1200,7 @@ it('imports the labels of a Linear issue and no type', function () {
 - `GitHubTracker::IssueFields` gains `labels(first: 10) { nodes { name } } issueType { name }`; the GraphQL mapping passes `labels: TrackerIssue::labels(array_column((array) data_get($raw, 'labels.nodes', []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'issueType.name'), TrackerIssue::TypeLength)`; the REST mapping passes `labels: TrackerIssue::labels(array_column((array) ($raw['labels'] ?? []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'type.name'), TrackerIssue::TypeLength)`. If GitHub's GraphQL refuses `issueType` on the supported API version (a 200 with `errors`), drop it from the fragment and say so in the report (spec §16.3).
 - `ImportPokerTasks::store()`: the `forceFill` gains `'external_type' => $issue->type` and `'external_labels' => $issue->labels === [] ? null : $issue->labels`.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/TrackerIssueLabelsTest.php tests/Feature/Integrations tests/Arch`, then `sqlite`. Expected: PASS (all existing integration tests included).
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/TrackerIssueLabelsTest.php tests/Feature/Integrations tests/Arch`. Expected: PASS (all existing integration tests included).
 
 - [ ] **Step 5: Commit** — `feat(integrations): ticket type and labels from Jira, Linear and GitHub` (trailers).
 
@@ -1362,7 +1373,7 @@ use App\Support\Alphabetical;
  */
 class AcceptanceCriteriaSection
 {
-    /** Folded heading texts. English only until the owner answers spec §16.8. */
+    /** Folded heading texts. English only: spec §16.8, ruled from the owner's answers of 2026-10-03. */
     public const array Headings = ['acceptance criteria'];
 
     private const string AtxHeading = '/^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/u';
@@ -1505,7 +1516,7 @@ class AcceptanceCriteriaSection
 
   The key hashes the text rendered (AC-6): a description without a section keeps the key and the HTML it has today; a split one gets a new key. A private `details(PokerTask $task): array` returns `type` and `labels` (`external_labels ?? []`), spread into **both** branches of `external()` (with and without a `PokerTaskSync`). Add `acceptanceCriteriaHtml: string` to the `Task` phpstan type and `type: ?string, labels: list<string>` to `TaskExternal`.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/AcceptanceCriteriaSectionTest.php tests/Feature/Integrations tests/Feature/Poker tests/Arch`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/AcceptanceCriteriaSectionTest.php tests/Feature/Integrations tests/Feature/Poker tests/Arch`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(poker): acceptance criteria from the description, ticket details for every viewer` (trailers).
 
@@ -1736,7 +1747,7 @@ Validated integers arrive as integers from JSON and as strings from a form post:
 - `BuildBoardSnapshot`: `'phaseDurations' => $retro->phase_durations` beside `timerEndsAt`.
 - `ChangeRetroPhase`, `RetroTimersController`: **not modified**.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/PhaseDurationsTest.php tests/Feature/Retros`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests on PostgreSQL** — `bin/test-db pgsql -- tests/Unit/Support/PhaseDurationsTest.php tests/Feature/Retros`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(retro): durations per phase, offered to the facilitator` (trailers).
 
@@ -1923,7 +1934,7 @@ The protection this proves: `PlayPokerCard` locks the game row, then reads the t
 
 `PlayPokerCard::handle()`: `PokerGuard::acceptsCard($locked, $lockedRound, $value)` replaces `PokerGuard::openRound(...)`; the `currentTask` is read inside the transaction after the game lock (`$locked->load('currentTask')` before the guard, so that a cached relation from before the lock is never read). When the round is revealed and the card changed, announce `(new PokerRoundChanged($locked->id))->sendToOthers()` instead of `PokerVoteChanged`, and return `'revealed' => $lockedRound->isRevealed()`. `PokerVotesController@update` calls `AutoRevealPokerRound` after the vote: it does nothing on a revealed round (`isOpenForAutoReveal`), keep it.
 
-- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker`, then `sqlite`; then the race on the four engines: `bin/test-db pgsql --concurrency -- tests/Concurrency/RevoteAfterRevealTest.php`, and `mariadb`, `mysql`, `sqlite-file`. Expected: PASS on each.
+- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker`; then the race: `bin/test-db pgsql --concurrency -- tests/Concurrency/RevoteAfterRevealTest.php`. Expected: PASS on both. (MariaDB, MySQL and a SQLite file run it in the roadmap's final matrix.)
 
 - [ ] **Step 5: Commit** — `feat(poker): change a card after reveal until the estimate is saved` (trailers).
 
@@ -2041,7 +2052,7 @@ class StartPokerRound
 
 `timer_ends_at` must be fillable on `PokerRound` (it is written by `update()` in `PokerTimersController`: check, and add it if the model guards it).
 
-- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(poker): a task timer that starts with every round` (trailers).
 
@@ -2129,7 +2140,7 @@ If `PokerEstimateSyncTest.php` runs the job another way (for example `app()->cal
   - `SyncTaskEstimate` passes `$task->game->estimate_field_id` when it calls `writeEstimate`.
   - `PokerTaskSync::storyPointsReason()`: a game with an `estimate_field_id` is not refused for "No story points field found." when the connection lists that field in `numberFields`.
 
-- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/Poker`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/Poker`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(poker): write estimates back per game, to the field it names` (trailers).
 
@@ -2263,7 +2274,7 @@ class PokerGameSettingsRules
 - `ListPokerSources`: the two keys per row, as described in **Interfaces**.
 - `PresentNewSessionOptions`: `'pokerSources' => $viewer->can('createPokerGame', $team) && IntegrationProvider::anyEnabled() ? $listPokerSources->handle($team) : []`.
 
-- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker tests/Feature/Sessions tests/Feature/Integrations`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Poker tests/Feature/Sessions tests/Feature/Integrations`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(poker): the game options at creation and in the room settings` (trailers).
 
@@ -2470,7 +2481,7 @@ Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPrevi
 
 (inside the integrations-enabled group of the team routes if there is one: read how `teams.integrations.*` are grouped and follow it.)
 
-- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/Poker tests/Feature/Mcp tests/Arch`, then `sqlite`. Expected: PASS.
+- [ ] **Step 4: Run the tests** — `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/Poker tests/Feature/Mcp tests/Arch`. Expected: PASS.
 
 - [ ] **Step 5: Commit** — `feat(poker): import tickets while creating the game` (trailers).
 
@@ -2586,7 +2597,7 @@ The real `t` handles plurals (`:count people` with a plural form): use `t(':coun
 
 Decision 3 was answered **B**: the board offers the phase's duration to the facilitator; nothing starts by itself. "Max per card" is plan 21's row: this task does not touch it.
 
-**Mockup:** `ScreenSessionCreate` frames a and c, the "Settings" rows; `Timer` and `FacilitatorBar` for the offer (no frame draws it: deviation P22-15, to approve by the owner before this task).
+**Mockup:** `ScreenSessionCreate` frames a and c, the "Settings" rows; `Timer` and `FacilitatorBar` for the offer (no frame draws it: deviation P22-15, approved by the owner on 2026-10-03, "… per topic" in Discussing).
 
 **Files:**
 - Create: `resources/js/lib/retro/phase-durations.ts` (+ test), `resources/js/components/teams/session-create/phase-timers-field.tsx` (+ test)
@@ -2717,7 +2728,7 @@ Vitest for it: `choiceOf` of null, of the standard set, of one changed value; `t
 ### Task 19: Translations
 
 - [ ] List every key added by Tasks 2 to 18 (`git diff main -- lang/en.json`) and review `fr.json`, `es.json`, `de.json` for each: informal register (tu / tú / du), the glossary of `docs/superpowers/research/front-rewrite/translations-review.md` (session, poll ↔ sondage / encuesta / Umfrage, facilitator, estimate), the mockup's French where it exists: "Sessions", "À venir", "En cours", "Terminées", "Rétros, poker, whiteboards, sondages et icebreakers de :team", "Timer par phase", "Personnalisé (5 phases)", "Proposé au facilitateur, jamais lancé tout seul", ":phase · :count min", ":phase · :count min par sujet", "Lancer le timer :phase, :count minutes", "Lancer le timer :phase, :count minutes par sujet", "Timer par tâche", "Relance après le délai", "Revoter après révélation", "Avant l'enregistrement", "Écrire l'estimation dans :source", "Champ utilisé pour l'estimation", "Les estimations sont écrites dans :source quand le facilitateur clique sur « Enregistrer l'estimation ». Les tickets non cochés restent dans le backlog.", "Importer de :source", "Saisie manuelle", "Plus tard", ":selected sur :total sélectionnés", "Tout sélectionner", "Critères d'acceptation".
-- [ ] `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`, then `sqlite`. Expected: PASS.
+- [ ] `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`. Expected: PASS.
 - [ ] Commit `chore(lang): plan 22 strings in four languages, informal` (trailers).
 
 ### Task 20: Captures (light, 1440, French)
@@ -2742,30 +2753,31 @@ No browser walkthrough is written, edited or run. Captures only, through `tests/
 
 - [ ] Open each capture of Task 20 beside its mockup's `preview.html` (light, 1440, French); each remaining difference is fixed or becomes a row of **Pre-build deviations** with the owner's word; a difference that fits no reason stops the task.
 - [ ] Documents, one commit:
-  - the spec to `docs/superpowers/specs/2026-10-22-sessions-index-and-creation-options-design.md` and this plan to `docs/superpowers/plans/2026-10-22-plan-22-sessions-and-creation-options.md`, with the owner's answers to §15 folded in;
+  - the spec to `docs/superpowers/specs/2026-10-22-sessions-index-and-creation-options-design.md` and this plan to `docs/superpowers/plans/2026-10-22-plan-22-sessions-and-creation-options.md`, with the owner's answers to §15, to the pre-build deviations (spec §17) and the rulings of §16.2 and §16.8 folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: SE-1, SE-3, PK-1 marked done (plan 22); SE-2 marked backlog (owner, 2026-10-02); the dependency lines updated (TM-1 and ON-1 no longer wait on SE-2; TM-2 reads `ListTeamSessions`);
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup": D-06 reduced to "Schedule…" (backlog); D-07 reduced to the ROTI switch (backlog); D-16 reduced to the spectator eye and the Share roles (backlog);
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §6.4 and §10 with a pointer to the new spec;
   - `docs/database.md`: nothing, unless a task found a new rule.
 - [ ] Commit `docs: plan 22 — spec and plan in place, roadmap and deviation rows updated` (trailers).
 
-### Task 22: Full suites on four engines, and report
+### Task 22: Full suites on PostgreSQL, and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check`; `vendor/bin/sail composer rector:check`.
-- [ ] `bin/test-db pgsql`, then `sqlite`, `mariadb`, `mysql` (Unit, Feature, Upgrade and Arch; one engine at a time). Expected: `test-db <engine>: PASS` on each.
-- [ ] `bin/test-db pgsql --concurrency`, `mariadb --concurrency`, `mysql --concurrency`, `sqlite-file --concurrency`. Expected: PASS on each.
+- [ ] `bin/test-db pgsql` (Unit, Feature, Upgrade and Arch). Expected: `test-db pgsql: PASS`.
+- [ ] `bin/test-db pgsql --concurrency`. Expected: PASS.
+- [ ] Do not run `sqlite`, `sqlite-file`, `mariadb` or `mysql`: the owner's four-engine matrix runs once after the roadmap's last merge (plans 24 and 25), outside this plan. `tests/Arch/DatabasePortabilityTest.php` (in the Arch run above) is the portability guard here.
 - [ ] `bin/check-pg-upgrade`. Expected: PASS.
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front`. Expected: PASS.
-- [ ] Report `docs/superpowers/research/plan-22-report.md`: each acceptance criterion of spec §12 with the test that proves it and the engines it passed on; the differences left with each mockup; existing tests edited and why; plan 21's names used (column, timer method, the per-topic start in Discussing) and any plan-21 task this plan skipped; whether GitHub's `issueType` was kept (spec §16.3); the owner's answers to spec §16.2 (Discussing per topic or whole phase) and §16.8 (translated criteria headings) if given meanwhile; the decisions taken on the owner's behalf.
-- [ ] Commit `docs: plan 22 report` (trailers). Ask the owner to read the report. No merge into `main`, no push.
+- [ ] Report `docs/superpowers/research/plan-22-report.md`: each acceptance criterion of spec §12 with the test that proves it (PostgreSQL; criteria 3, 9 and 18 noted as "other engines at the roadmap's final matrix"); the differences left with each mockup; existing tests edited and why; plan 21's names used (column, timer method, the per-topic start in Discussing) and any plan-21 task this plan skipped; whether GitHub's `issueType` was kept (spec §16.3); the rulings of spec §16.2 (per topic) and §16.8 (English heading only) as applied; the decisions taken on the owner's behalf.
+- [ ] Commit `docs: plan 22 report` (trailers). Ask the owner to read the report. The merge into `roadmap` runs the PostgreSQL suite only. No merge into `main`, no push.
 
 ---
 
-## Self-review (done while writing, redone after the owner's answers of 2026-10-03; kept for the reader)
+## Self-review (done while writing, redone after the owner's answers of 2026-10-03 and again after the deviation answers; kept for the reader)
 
-**Answers folded in.** Decision 3 (B): Task 7 stores and sends durations and proves a phase change starts nothing; Task 16 builds the offer; P22-15 added; capture `retro-phase-timer-offer` added; no task writes the retro timer. Decision 6 (B): no criteria column, no detection, no setting; Task 5 = type and labels for the three trackers, Task 6 = `AcceptanceCriteriaSection` and the presenter; Task 12 no longer calls the detection; Task 15 has no integration select; P22-11 reworded, P22-14 withdrawn. Max per card left to plan 21 (its draft spec puts it in the dialog). Task count unchanged: 22.
+**Answers folded in.** Decision 3 (B): Task 7 stores and sends durations and proves a phase change starts nothing; Task 16 builds the offer; P22-15 added; capture `retro-phase-timer-offer` added; no task writes the retro timer. Decision 6 (B): no criteria column, no detection, no setting; Task 5 = type and labels for the three trackers, Task 6 = `AcceptanceCriteriaSection` and the presenter; Task 12 no longer calls the detection; Task 15 has no integration select; P22-11 reworded, P22-14 withdrawn. Max per card left to plan 21 (its draft spec puts it in the dialog). Deviation answers (2026-10-03): every row approved as listed, P22-14 obsolete — no task changes; §16.2 ruled per topic (matches Task 16's `offerFor`), §16.8 ruled English only (matches Task 6's `Headings`). Engines: every test step on PostgreSQL only; Task 22 renamed; no sqlite/mariadb/mysql step left. Order: plan 21 is in the base, the "lanes S and K before plan 21" option is gone. Task count unchanged: 22.
 
-**Spec coverage.** §6.1 states and cursor: Task 2; rows' meta: Tasks 2 and 13; §6.2 phase durations: Task 7 (back: storage, validation, snapshot, nothing starts), 16 (front: dialog, popover, the offer); max per card: plan 21 (Task 7 checks it); §6.3 revote: Task 8 (+ dock in 17); task timer: Task 9 (+ 17); write-back per game: Task 10 (+ 17); options at creation and in the room: Task 11; §6.4 import at creation: Task 12 (back), 18 (front); §6.5 type and labels: Tasks 5, 6 (back), 15 (front); criteria section (rules AC-1 to AC-7): Task 6 (unit and feature), 15 (front); §7 permissions: Tasks 4 (view), 2 (drafts), 7 and 11 (facilitator; the offer through the existing facilitator-only timer endpoint, Task 7's last case), 12 (`createPokerGame`); §8 real time: Task 7 (no `TimerChanged` on a phase change; `RetroSettingsChanged` on a durations change), 8 (`PokerRoundChanged`), 11 (`PokerGameChanged`, existing); §9 screens: 14, 16 (§9.2, §9.4 retro, §9.5 offer), 17, 18, 15 (§9.7); §10 no migration of data: Task 1 defaults, Task 2's card rule, Task 6's split at presentation; §11 routes: Tasks 4 and 12; §12 criteria: 1 → 4, 14; 2 → 2; 3 → 2 (walk), 22 (four engines); 4 → 2, 14; 5 → 3, 13, 14; 6 → 7; 7 → 16 (and Task 7's endpoint case); 8 → 9; 9 → 8; 10 → 10, 11; 11 → 12; 12 → 12; 13 → 5, 6; 14 → 15; 15 → 6, 15; 16 → 19; 17 → 20, 21; 18 → 22.
+**Spec coverage.** §6.1 states and cursor: Task 2; rows' meta: Tasks 2 and 13; §6.2 phase durations: Task 7 (back: storage, validation, snapshot, nothing starts), 16 (front: dialog, popover, the offer); max per card: plan 21 (Task 7 checks it); §6.3 revote: Task 8 (+ dock in 17); task timer: Task 9 (+ 17); write-back per game: Task 10 (+ 17); options at creation and in the room: Task 11; §6.4 import at creation: Task 12 (back), 18 (front); §6.5 type and labels: Tasks 5, 6 (back), 15 (front); criteria section (rules AC-1 to AC-7): Task 6 (unit and feature), 15 (front); §7 permissions: Tasks 4 (view), 2 (drafts), 7 and 11 (facilitator; the offer through the existing facilitator-only timer endpoint, Task 7's last case), 12 (`createPokerGame`); §8 real time: Task 7 (no `TimerChanged` on a phase change; `RetroSettingsChanged` on a durations change), 8 (`PokerRoundChanged`), 11 (`PokerGameChanged`, existing); §9 screens: 14, 16 (§9.2, §9.4 retro, §9.5 offer), 17, 18, 15 (§9.7); §10 no migration of data: Task 1 defaults, Task 2's card rule, Task 6's split at presentation; §11 routes: Tasks 4 and 12; §12 criteria: 1 → 4, 14; 2 → 2; 3 → 2 (walk), 22 (PostgreSQL; other engines at the roadmap's final matrix); 4 → 2, 14; 5 → 3, 13, 14; 6 → 7; 7 → 16 (and Task 7's endpoint case); 8 → 9; 9 → 8; 10 → 10, 11; 11 → 12; 12 → 12; 13 → 5, 6; 14 → 15; 15 → 6, 15; 16 → 19; 17 → 20, 21; 18 → 22.
 
 **Placeholders.** Back-end tasks carry their tests and code; where the plan names a route, a helper or a relation it has not read line by line (the retro phase route, the snapshot paths, `surveyFacilitatorFor`, the toast flash key, `PokerRound::task`), the step says where to read the real name. Screen tasks carry composition tables, behaviours, hooks and the code of their pure logic (`lib/teams/sessions.ts`, `lib/retro/phase-durations.ts`, `lib/poker/tracker-browse.ts`), following the screen procedure of plan 18e.
 
@@ -2773,4 +2785,4 @@ No browser walkthrough is written, edited or run. Captures only, through `tests/
 
 **Review Focus.** 1 → Task 2's walk test; 2 → Task 8's race; 3 → Task 8 ("still refuses a second reveal and a timer"); 4 → Task 12 ("creates nothing when the tracker fails"); 5 → Task 6 (guest payload); 6 → Task 6 (unit cases per rule, the stale-cache case, the stored description); 7 → Task 7 (starts no timer, leaves a running timer alone).
 
-**Known weak points.** Nothing was run. Plan 21 is a draft on disk (2026-10-21 files), revised in parallel: Task 7 relies on its `max_votes_per_card` in the dialog and Task 16 on its timer start, its pause and its per-topic rule in Discussing, all re-read at the start of lane C. The criteria regexes of Task 6 were written, not run: the unit test is the reference, and a regex that fails a case is fixed toward the spec's rules, never by loosening them. Task 2's state test ages a whiteboard through the clock; if `Whiteboard::updated_at` does not move when elements are written (spec §16.5), the Live rule of whiteboards reads the board's own updates only and the report says so. The race of Task 8 asserts order through `Race`'s timings; the fallback assertion is written in the step.
+**Known weak points.** Nothing was run. Plan 21 was a draft when this plan was written; it is merged before Task 1, but Task 7 relies on its `max_votes_per_card` in the dialog and Task 16 on its timer start, its pause and its per-topic rule in Discussing, all re-read at the start of lane C. Only PostgreSQL runs here: an engine-specific failure (the cursor's timestamp comparison on SQLite, the JSON columns on MariaDB) shows up at the roadmap's final matrix (risk accepted by the owner). The criteria regexes of Task 6 were written, not run: the unit test is the reference, and a regex that fails a case is fixed toward the spec's rules, never by loosening them. Task 2's state test ages a whiteboard through the clock; if `Whiteboard::updated_at` does not move when elements are written (spec §16.5), the Live rule of whiteboards reads the board's own updates only and the report says so. The race of Task 8 asserts order through `Race`'s timings; the fallback assertion is written in the step.

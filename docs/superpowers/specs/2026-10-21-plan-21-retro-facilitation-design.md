@@ -1,7 +1,7 @@
 # Skrum — Retro facilitation (roadmap plan 21, RT-1 to RT-10) — Design
 
-Date: 2026-10-03, draft v2 (the owner's answers of 2026-10-03 applied)
-Status: **decisions answered, to be approved by the owner.** Every question of §15 has the owner's answer (2026-10-03). Eight follow the recommended option; two differ and the body is rewritten on them: decision 1 (an anonymous retro shows a count of people writing, relayed by the server, with no id and no column) and decision 10 (a vote cast or taken back after "I have finished voting" takes the "finished" back by itself). The plan's pre-build deviations are still to be approved by the owner.
+Date: 2026-10-03, v3 (the owner's answers and pre-build deviation answers of 2026-10-03 applied)
+Status: **approved, ready to build** (owner, 2026-10-03: "Oui vas y", the roadmap plans run autonomously once revised). Every question of §15 has the owner's answer (2026-10-03). Eight follow the recommended option; two differ and the body is rewritten on them: decision 1 (an anonymous retro shows a count of people writing, relayed by the server, with no id and no column) and decision 10 (a vote cast or taken back after "I have finished voting" takes the "finished" back by itself). Every pre-build deviation of the plan, P21-01 to P21-11, is answered (2026-10-03, §17): each answer is the row as written, so nothing built changes. Per-plan verification runs on PostgreSQL; the four-engine matrix runs once at the end of the roadmap (§12).
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13 "rewrite first, features after", §6.4 retro, §9.1 the phase matrix).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md`, every round: mockup binding for presentation, existing features kept, simple data added, informal register (fr "tu", es "tú", de "du"), a guest counts as a participant, "+2 min" on every timer (2-D8, third round points 3/4), Eloquent only. Roadmap changes of the fifth round: plans 28 and 30 and scheduling are backlog.
 Roadmap rows: RT-1 to RT-10 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Deviation rows cleared: D-10 (in part), D-11, D-12 (in part), D-13, D-14 of plan 18e; D-105 (the "finished" sentence) and D-106 (the "Topic actions" card) in part.
@@ -29,7 +29,7 @@ Every "Back end" line of the roadmap was checked against the code; three are cor
 
 ## 2. Goals
 
-1. The room sees who is writing a card, who is moving one, and who is taking notes, live, without anything stored (RT-1); on an anonymous retro it sees how many people are writing, never who nor where.
+1. The room sees who is writing a card, who is moving one, and who is taking notes, live, with nothing stored on a named retro (RT-1); on an anonymous retro it sees how many people are writing, never who nor where, through a short-lived `participants.writing_until` that expires by itself after 8 s and is never shown (§6.11).
 2. The facilitator pauses and resumes the retro's timer; everyone sees the paused time (RT-2).
 3. A retro can cap the votes one person puts on one card, set at creation and in the settings (RT-3).
 4. Each participant says "I have finished voting"; the room sees "x/y have finished"; changing a vote afterwards takes it back by itself (RT-4).
@@ -71,10 +71,12 @@ Staying in the backlog by the roadmap ("Not requested") or the owner's word, wit
 | Cursors | Off in Voting, ROTI and Completed (a pointer tells a vote); named "Participant" on an anonymous retro | plan 18e; `board-cursors.tsx` |
 | Vote limit | Changeable before Voting only (Icebreaker, Writing, Grouping) | `RetroSettingsController` |
 | Who facilitates | One facilitator per retro (`facilitator_participant_id`); co-facilitators do not exist | code |
-| Database | Eloquent and the standard query builder only, Schema builder only in migrations, no driver branch; tests on PostgreSQL, SQLite, MariaDB and MySQL; races with `Race` | owner; `docs/database.md` |
+| Database | Eloquent and the standard query builder only, Schema builder only in migrations, no driver branch; the code must run on PostgreSQL, SQLite, MariaDB and MySQL; this plan's tests and races (`Race`) run on PostgreSQL, the four-engine matrix once at the end of the roadmap | owner; `docs/database.md`; owner, 2026-10-03 ("Lance les 4 bases seulement à la fin") |
 | Tests | Unit, feature, concurrency and Vitest are written and run; browser walkthroughs are neither written nor run; captures in light, 1440, French | owner, working rules |
 | Roadmap | Plans 28, 30 and scheduling are backlog | owner, fifth round |
 | The ten questions of §15 | Answered; decisions 1 (C) and 10 (B) differ from the recommendation | owner, 2026-10-03 |
+| Pre-build deviations P21-01 to P21-11 | Answered: 07 as the mockup (topic timer only in Discussing), 08 the list and progress dialog, 10 both the progress and "5/8 have finished", the others approved as listed (§17) | owner, 2026-10-03 |
+| Roadmap order | Plan 21 runs in the first wave, in parallel with plans 20, 26, 27 and 29; then 22, then 23, then 24 and 25 | owner, 2026-10-03 |
 
 ## 5. Rules
 
@@ -281,7 +283,7 @@ Every screen is the retro board of plan 18e; this plan fills the places it left.
 
 - Topic cards: "1 linked action" / "n linked actions" (`topicMeta`), "In discussion" as today.
 - "Retro actions" card: "Export to Jira" in the header (`exportAll`); the quick-add form's line "Quick add · linked to «title»" (`linkedTo`); each item's meta shows its topic (`itemTopic`).
-- Bulk export dialog (§6.10): target, item list, progress, summary. No mockup draws the dialog: it is the per-item export dialog (`ItemExportDialog`) with a list; the plan's deviation P21-08 puts it to the owner.
+- Bulk export dialog (§6.10): target, item list, progress, summary. No mockup draws the dialog: it is the per-item export dialog (`ItemExportDialog`) with a list and a progress, as the owner approved (deviation P21-08, 2026-10-03).
 - States: no export source (no button); every item already exported (no button); exporting; partial failure; all done.
 
 ### 9.6 ROTI — ScreenRetroROTI
@@ -302,7 +304,7 @@ Every screen is the retro board of plan 18e; this plan fills the places it left.
 
 ## 10. Migrations of existing data
 
-None. Every new column is nullable and null keeps today's behaviour: no cap, nobody finished, nobody writing, no pause, no time per topic, no topic discussed, no note, items without a topic, ROTI not revealed. A retro sitting in the ROTI phase at the deploy behaves as before until its facilitator reveals. The two migrations (columns; `topic_notes`) are tested by the feature tests on the four engines; no Upgrade test is needed since no row is rewritten.
+None. Every new column is nullable and null keeps today's behaviour: no cap, nobody finished, nobody writing, no pause, no time per topic, no topic discussed, no note, items without a topic, ROTI not revealed. A retro sitting in the ROTI phase at the deploy behaves as before until its facilitator reveals. The two migrations (columns; `topic_notes`) are tested by the feature tests on PostgreSQL in this plan and on the four engines by the roadmap's final matrix; no Upgrade test is needed since no row is rewritten.
 
 ## 11. Routes
 
@@ -326,9 +328,9 @@ Changed: `teams.retros.store` and `retros.settings.update` take `max_votes_per_c
 
 ## 12. Testing
 
-- Every test touching the database runs on PostgreSQL, SQLite, MariaDB and MySQL (`bin/test-db <engine> -- <paths>`); the four suites run at the end.
+- Every test touching the database runs on PostgreSQL in this plan (`bin/test-db pgsql -- <paths>`), per task and as the whole suite at the end of the plan. SQLite, MariaDB and MySQL are not run per plan: the owner ruled (2026-10-03) that the four-engine matrix runs once, after the last merge of the roadmap into `roadmap` (plans 24 and 25). Portability still binds every line: Eloquent and the query builder only, no raw SQL, no driver branch, `tests/Arch/DatabasePortabilityTest.php` passing on every task.
 - Feature tests per route: the guard of each row of §7, each 4xx, the broadcast payloads, the snapshot keys per viewer (facilitator, member, guest).
-- Races (`tests/Concurrency`, `Race`, on PostgreSQL, MariaDB, MySQL and a SQLite file): the cap per card under simultaneous votes; finishing while a vote arrives (both succeed; the participant ends finished only if the finish committed after the vote); two first saves of a topic's note (one row, one 409); two saves from the same version (one 200, one 409); a vote arriving while the ROTI is revealed (saved before, or refused).
+- Races (`tests/Concurrency`, `Race`, on PostgreSQL in this plan; MariaDB, MySQL and a SQLite file in the roadmap's final matrix): the cap per card under simultaneous votes; finishing while a vote arrives (both succeed; the participant ends finished only if the finish committed after the vote); two first saves of a topic's note (one row, one 409); two saves from the same version (one 200, one 409); a vote arriving while the ROTI is revealed (saved before, or refused).
 - Unit (Pest): `Retro::maxVotesPerCard`, the invariant of the timer columns.
 - Feature tests of the writing count (§6.11): the count with one, two and an expired writer, the exact payload keys of `writing.count`, each guard, the rate limit.
 - Vitest: the activity reducer (`lib/retro/activity.ts`: expiry, self, kinds per phase, anonymous rule, labels, the writing count with its expiry and the viewer left out), the heartbeat of the hook (never a `writing` whisper on an anonymous retro), the estimate (`lib/retro/topic-estimate.ts`), the note editor state (`lib/retro/note-editor.ts`: debounce, conflict, read-only), the bulk export runner (`lib/action-items/bulk-export.ts`: sequence, stop, retry, per-item outcome), the board reducer actions, and each component's states.
@@ -360,7 +362,7 @@ Changed: `teams.retros.store` and `retros.settings.update` take `max_votes_per_c
 22. A retro created before this plan behaves as before: no cap, nobody finished, nobody counted as writing, no pause, no time per topic, ROTI shown at the end.
 23. Every new string exists in English, French, Spanish and German, informal in the last three (`TranslationKeysTest`, `InformalRegisterTest`).
 24. The six retro phases are captured in light at 1440 in French with the new elements and without horizontal overflow, and compared with their mockups; each difference is fixed or is a row of the plan's deviations table.
-25. The unit, feature and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL through `bin/test-db`, the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+25. The unit, feature, arch and concurrency suites pass on PostgreSQL through `bin/test-db pgsql` (with `--concurrency` for the races); `tests/Arch/DatabasePortabilityTest.php` passes. SQLite, MariaDB and MySQL (and the races on a SQLite file, MariaDB and MySQL) are proved by the roadmap's four-engine matrix after plans 24 and 25, not by this plan.
 
 ## 14. Risks
 
@@ -372,8 +374,9 @@ Changed: `teams.retros.store` and `retros.settings.update` take `max_votes_per_c
 - **Long bulk exports.** A browser loop survives a slow tracker (one short request each) but stops if the tab is closed; the dialog says so and asks for confirmation. A tracker's rate limit shows as failed rows with "Retry".
 - **The topic timer surprises.** Restarting the timer on every topic change can surprise a facilitator who wanted one timer for the whole discussion; stopping the topic timer (or never starting it in Discussing) keeps today's behaviour.
 - **Shared retro files.** `BuildBoardSnapshot`, `ChangeRetroPhase`, `routes/web.php`, `lib/retro/types.ts`, `board-reducer.ts`, `use-retro-board.ts` and the four `lang/*.json` are touched by several lanes; the plan gives each lane its own block and the controller merges one lane at a time.
-- **Plan 22 (SE-3).** "Timer per phase" will start timers at phase changes; it must respect a paused timer and the time per topic. This spec names the columns (`timer_paused_seconds`, `topic_seconds`, `max_votes_per_card`) that plan 22 builds on.
-- **Plan 20 (WB-1).** It rebuilds the whiteboard toolbars; it may touch `components/skrum/` pieces the retro uses (`facilitator-bar.tsx`, `timer.tsx`). A conflict is resolved at merge; this plan changes `Timer` only by props it already has.
+- **Engines checked late (accepted by the owner).** This plan's tests run on PostgreSQL only; a query that behaves differently on SQLite, MariaDB or MySQL is found by the roadmap's final matrix, not here. The portability rules (§5) and the arch test keep that risk small; a failure found then is fixed on a branch from `roadmap`.
+- **Plan 22 (SE-3).** Plan 22 runs after this plan (roadmap order of 2026-10-03). "Timer per phase" will offer timers at phase changes; it must respect a paused timer and the time per topic. This spec names the columns (`timer_paused_seconds`, `topic_seconds`, `max_votes_per_card`) that plan 22 builds on.
+- **Plan 20 (WB-1).** It runs in parallel with this plan. It rebuilds the whiteboard toolbars; it may touch `components/skrum/` pieces the retro uses (`facilitator-bar.tsx`, `timer.tsx`). A conflict is resolved at merge; this plan changes `Timer` only by props it already has.
 
 ## 15. Decisions for the owner — answered 2026-10-03
 
@@ -449,3 +452,23 @@ All ten are answered. The body follows the answers: eight are the recommended op
 9. Whether a `DELETE writing` sent from `pagehide` reaches the server (browsers may drop it); the 8 s expiry of `writing_until` and the receivers' 8 s timeout cover a lost stop.
 </content>
 </invoke>
+
+## 17. Pre-build deviations — answered 2026-10-03
+
+The plan's table "Pre-build deviations" lists what is built differently from the mockups. The owner answered every row on 2026-10-03 ("P21: 07 mockup (topic timer only in Discussing), 08 list + progress dialog, 10 both progress and '5/8 finished', other rows approved as listed"). Every answer is the row as the plan wrote it, so no section, criterion or task changes; rows marked **O** follow the owner's earlier decisions and are approved by them.
+
+| # | Screen | Built | Owner's answer (2026-10-03) | Where |
+|---|---|---|---|---|
+| P21-01 | Discussing | "+2 min" on the topic timer instead of the mockup's "+1 min" (O, 2-D8) | approved as listed | §4, §9.4 |
+| P21-02 | Discussing | "8/8 following" not rendered, place kept (backlog) | approved as listed | §3, §9.4 |
+| P21-03 | Writing | "Reveal the cards" not rendered (backlog, D-10) | approved as listed | §3, §9.1 |
+| P21-04 | Grouping | duplicates suggestion and "Undo last group" not rendered (backlog, D-10) | approved as listed | §3, §9.2 |
+| P21-05 | Writing | anonymous retro: only the presence line with the count, no name, ring or column line (O, decision 1 C) | approved as listed | §6.11, §9.1 |
+| P21-06 | Voting | "Max per card" with "No limit" on by default, instead of a stepper defaulting to 2 (O, existing behaviour kept) | approved as listed | §9.7 |
+| P21-07 | Discussing | the topbar shows no timer in Discussing; the topic timer on the stage is the only one | **as the mockup**: topic timer only, in Discussing | §9.4 |
+| P21-08 | Actions | the bulk export dialog is the per-item export dialog with a list of items and a progress (no mockup) | **the list and progress dialog** | §6.10, §9.5 |
+| P21-09 | Discussing | "Topic actions", then "Other action items (n)", collapsed (O, 2-D9) | approved as listed | §6.7, §9.4 |
+| P21-10 | Voting | the progress "n of m votes cast" stays, followed by "5/8 have finished" | **both**: the progress and "5/8 have finished" | §9.3 |
+| P21-11 | ROTI | "Results appear for everyone when the facilitator reveals them or ends the session." | approved as listed | §9.6 |
+
+No gate waits for the owner any more. A new difference found while building is fixed or ruled under the owner's autonomy mandate of 2026-10-03, added to the plan's table as "ruled while building", and listed in the plan's report.

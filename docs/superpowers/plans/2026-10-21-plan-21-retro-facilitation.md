@@ -2,26 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 20 only).
 
-**Status: draft v2 (2026-10-03), the owner's answers applied.** Every decision of spec §15 is answered; decisions 1 (C, a server-relayed writing count) and 10 (B, voting again takes "finished" back) differ from draft v1 and the tasks that depend on them are rewritten (Tasks 1, 5, 10, 11, 13, 19 and the new Task 23). The pre-build deviations are still to be approved by the owner before their screen is built.
+**Status: v3 (2026-10-03), ready to build.** Every decision of spec §15 is answered; decisions 1 (C, a server-relayed writing count) and 10 (B, voting again takes "finished" back) differ from draft v1 and the tasks that depend on them are rewritten (Tasks 1, 5, 10, 11, 13, 19 and the new Task 23). Every pre-build deviation P21-01 to P21-11 is answered by the owner (2026-10-03): P21-07, P21-08 and P21-10 as listed, the others approved as listed; none changes what is built, and no screen waits for an answer. Per-task verification runs on PostgreSQL only; the four-engine matrix runs once at the end of the roadmap (owner, 2026-10-03).
 
 **Goal:** The retro board shows who is writing, moving a card or taking notes; the facilitator pauses the timer; a retro caps the votes per card and each participant says "I have finished voting"; every topic of the discussion gets the same time, its shared notes, a "discussed" mark and the action items made for it; the facilitator reveals the ROTI in its phase and nudges the last voters; the retro's action items go to the tracker in one dialog.
 
 **Architecture:** Eight nullable columns and one table (`topic_notes`) added to the retro aggregate; every write locks the retro row first and broadcasts on `presence-retro.{id}` after commit, as the board already does. Activity indicators are client events on the same presence channel, sender stamped by Reverb, nothing stored; on an anonymous retro, writing is instead a heartbeat to the server (`participants.writing_until`, 8 s) and a `writing.count` event that carries a count and nothing else (spec §6.11). The bulk export is a browser loop over the existing per-item export endpoint. The front fills the places plan 18e left in each phase (`02-retro.md`, "Places left").
 
-**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb (client events), dnd-kit; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from the list.
+**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb (client events), dnd-kit; PostgreSQL through `bin/test-db` for this plan (SQLite, MariaDB and MySQL at the end of the roadmap); `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from the list.
 
-**Spec:** `docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md` (draft v2, the owner's answers applied). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenRetroWriting`, `ScreenRetroGrouping`, `ScreenRetroVote`, `ScreenRetroDiscussion`, `ScreenRetroActions`, `ScreenRetroROTI`, `ScreenSessionCreate`, `SessionSettingsPopover`, `FacilitatorBar`, `Timer`, `VoteDots`, `ROTIWidget`, `PresenceStack`, `ActionItem` — for each, the `README.md` and the `preview.html`.
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md` (v3, decisions and pre-build deviations answered). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenRetroWriting`, `ScreenRetroGrouping`, `ScreenRetroVote`, `ScreenRetroDiscussion`, `ScreenRetroActions`, `ScreenRetroROTI`, `ScreenSessionCreate`, `SessionSettingsPopover`, `FacilitatorBar`, `Timer`, `VoteDots`, `ROTIWidget`, `PresenceStack`, `ActionItem` — for each, the `README.md` and the `preview.html`.
 
 **Not in this plan:** the backlog of spec §3 ("Reveal the cards" button, duplicates, "Undo last group", "n/n following", retro exports, ROTI delta and sparkline, "Timer per phase" (plan 22), pause of other timers, co-editing, notes outside the recap e-mail and the AI summary, bell nudges); browser walkthroughs (owner's working rule: none is written or run); anything of the former plans 28 and 30 and scheduling.
 
-**Tasks:** 23. Step A, back end: Task 1 (single writer), then lanes T (2, 3), V (4, 5, 23), D (6, 7, 9) and R (8) in parallel. (Task 23, the writing count, was added with the owner's answer to decision 1; it is numbered last so the other numbers stay as the drafts and the roadmap cite them, and it runs in lane V after Task 5.) Step B, front foundation: Task 10 (single writer). Step C, screens: lanes W (11, 12), Vf (13), Df (14, 15), Af (16, 18), Rf (17) in parallel. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
+**Tasks:** 23. Step A, back end: Task 1 (single writer), then lanes T (2, 3), V (4, 5, 23), D (6, 7, 9) and R (8) in parallel. (Task 23, the writing count, was added with the owner's answer to decision 1; it is numbered last so the other numbers stay as the drafts and the roadmap cite them, and it runs in lane V after Task 5.) Step B, front foundation: Task 10 (single writer). Step C, screens: lanes W (11, 12), Vf (13), Df (14, 15), Af (16, 18), Rf (17) in parallel. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (PostgreSQL suites and report). Roadmap order (owner, 2026-10-03): plan 21 runs in the first wave, in parallel with plans 20, 26, 27 and 29; plan 22 (SE-3, "Timer per phase") comes after it and builds on its timer columns; then 23; then 24 and 25.
 
 ## Branch and run
 
-- Base: `main` at or after `18d3637e` (plans 18e–18g, the database portability work and plan 19). Check before Task 1, and stop if one fails: `app/Enums/RetroPhase.php` has no `HealthCheck` case and has `Actions` and `Roti`; `resources/js/components/retro/phase-voting-bar.tsx` has the props `cap`, `finished`, `done`; `resources/js/components/retro/facilitator-dock.tsx` exports `RotiTools` places (`roti?: RotiTools`); `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; the last migration of `database/migrations` is dated before `2026_10_21_100000`.
-- Branch `plan-21-retro-facilitation` from that base. **Never push, never merge into `main`.**
-- Task 1 runs on that branch with one writer. Lanes run in git worktrees on branches `lane/21-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `bin/test-db pgsql -- tests/Feature/Retros tests/Arch` and `bin/test-db sqlite -- tests/Feature/Retros`.
-- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it); MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
+- Base: the integration branch `roadmap` at or after `19db587f` (it holds `main` at `18d3637e`: plans 18e–18g, the database portability work and plan 19). Check before Task 1, and stop if one fails: `app/Enums/RetroPhase.php` has no `HealthCheck` case and has `Actions` and `Roti`; `resources/js/components/retro/phase-voting-bar.tsx` has the props `cap`, `finished`, `done`; `resources/js/components/retro/facilitator-dock.tsx` exports `RotiTools` places (`roti?: RotiTools`); `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; the last migration of `database/migrations` is dated before `2026_10_21_100000`.
+- Branch `plan-21-retro-facilitation` from that base; when Task 22 passes, the controller merges it into `roadmap` and runs the PostgreSQL suite there. **Never push, never merge into `main`** (main is fast-forwarded only when the owner asks). Plans 20, 26, 27 and 29 run at the same time on their own branches: a conflict in a shared file (`routes/web.php`, `lang/*.json`, `components/skrum/`) is resolved at the merge into `roadmap`.
+- Task 1 runs on that branch with one writer. Lanes run in git worktrees on branches `lane/21-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check` and `bin/test-db pgsql -- tests/Feature/Retros tests/Arch`.
+- From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it). MariaDB and MySQL are not started for this plan. Never run two whole suites at once in the shared container.
 - **Every task re-reads the files it touches.** A line number or a method body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
@@ -65,12 +65,12 @@ Front end, modified: `resources/js/lib/retro/types.ts`, `board-reducer.ts`, `hoo
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 20, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 21.
+- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**. The rows P21-01 to P21-11 are answered (2026-10-03); a new difference found while building is fixed, or ruled under the owner's autonomy mandate of 2026-10-03, added as a row marked "ruled while building" and listed in the report. Captures are taken once, in Task 20, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 21.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale (no arbitrary size), no overflow from 20rem to 60rem, visible focus, contrast, `prefers-reduced-motion` (the trema dots and the nudge pulse stop), lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers live in `resources/js/components/retro/`. Reuse what exists: `skrum/timer` (`paused`, `onPause`, `onResume` already exist), `skrum/presence-stack` (`typing` already exists), `skrum/vote-dots` (`maxPerCard` already exists), `skrum/roti-widget` (`mode="result"`), `components/action-items/item-export`.
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md`, rules 1 to 12, apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them with no allowed list. No raw query of any form; no driver test in code, migrations, factories or tests; migrations with the Schema builder only, `up` only, dated `2026_10_21_…`, `dateTime()` for date columns, no `enum()`, no collation, no JSON column; **every transaction this plan writes locks the retro row first** (`Retro::query()->whereKey($id)->lockForUpdate()->firstOrFail()`), then the participant, the card, the note or the item; a transaction that broadcasts is not retried with `Transactions::Attempts`, except the vote paths that already are (their broadcast goes through `sendToOthers`, which waits for the commit); an explicit tie-breaker on every sort; tests never read SQL text and never change the schema.
-- **Four engines.** Every task runs the tests it wrote or touched on PostgreSQL, SQLite, MariaDB and MySQL: `bin/test-db pgsql -- <paths>`, then `sqlite`, `mariadb`, `mysql`. A step "Run the tests on the four engines" means exactly that; its "Expected" holds on each. The red step of a task ("see it fail") may run once, on PostgreSQL: `bin/test-db pgsql -- <path>`. Races (`tests/Concurrency`) run with `bin/test-db <engine> --concurrency -- <path>` on `pgsql`, `mariadb`, `mysql` and `sqlite-file`, never on SQLite in memory, never in parallel.
+- **PostgreSQL per plan, four engines at the end of the roadmap** (owner, 2026-10-03: "Lance les 4 bases seulement à la fin"). Every task runs the tests it wrote or touched on PostgreSQL: `bin/test-db pgsql -- <paths>`; a step "Run the tests on PostgreSQL" means exactly that. Races (`tests/Concurrency`) run with `bin/test-db pgsql --concurrency -- <path>`, never in parallel. SQLite, MariaDB and MySQL are not run by this plan: the four-engine matrix (pgsql, sqlite, mariadb, mysql, and the races on `sqlite-file`, `mariadb`, `mysql`) runs once, after the last merge into `roadmap` (plans 24 and 25). The code stays portable regardless: the database rule below and `tests/Arch/DatabasePortabilityTest.php` hold on every task, so that the final matrix finds nothing; an engine-specific regression found late is the risk the owner accepted.
 - **Races** are proved with `Tests\Concurrency\Support\Race` (`Race::run`, `Race::request`; static closures capturing scalars only); each case states the protection it proves: the cap per card (Task 4), finishing while a vote arrives (Task 5), the first note of a topic and two saves from one version (Task 6), a vote while the ROTI is revealed (Task 8).
-- **Working rules (owner):** unit, feature, arch and concurrency tests are written and run per task on pgsql and sqlite at least, and on the four engines before the task's commit; Vitest is written and run (`npm run test -- <pattern>` per task, the whole suite in Task 22); the whole suites run at each lane merge (gates above) and on the four engines in Task 22; browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run; captures only, in Task 20, light, 1440, French.
+- **Working rules (owner):** unit, feature, arch and concurrency tests are written and run per task on PostgreSQL before the task's commit; Vitest is written and run (`npm run test -- <pattern>` per task, the whole suite in Task 22); the retro suites run at each lane merge (gates above) and the whole suites on PostgreSQL in Task 22; browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run; captures only, in Task 20, light, 1440, French.
 - **No new dependency**, PHP or JS, without the owner's approval.
 - **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), in the informal register (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). A key that exists keeps its value. Task 19 holds the values of every key this plan names; in `en.json` the value is the key.
 - **No test is deleted** without the owner's approval. An existing test whose expectation changes is listed in its task with the reason.
@@ -91,21 +91,21 @@ A change to a shared `skrum/` or `session/` component is its own commit inside t
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built (owner's rule of the fifth round). Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+Put to the owner before the screen is built (owner's rule of the fifth round): **all eleven rows answered on 2026-10-03.** The owner's word: "P21: 07 mockup (topic timer only in Discussing), 08 list + progress dialog, 10 both progress and '5/8 finished', other rows approved as listed". Every answer is the row as written, so no task changes. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
-| # | Screen | Mockup element | Built | Reason |
-|---|---|---|---|---|
-| P21-01 | Discussing | "+1 min" on the topic timer | "+2 min" | O: "+2 min" on every timer (2-D8) |
-| P21-02 | Discussing | "8/8" following count in the focus banner | not rendered, place kept | N: backlog (roadmap) |
-| P21-03 | Writing | "Reveal the cards" beside the next-phase button | not rendered | N: backlog (D-10 keeps it) |
-| P21-04 | Grouping | duplicates suggestion, "Undo last group" | not rendered | N: backlog (D-10 keeps them) |
-| P21-05 | Writing | "Inès is writing a card…" under a column, ringed avatar, with "Anonymity: on" | on an anonymous retro, only the presence line "Someone is writing…" / ":count people are writing…": no name, no ring, no column line | F + O: a name or a column would tie a hidden card to its author; the owner chose a server-relayed count (decision 1, answer C) |
-| P21-06 | Voting | "max 2 per card" with a stepper default of 2 in creation and settings | "Max per card" with "No limit" on by default | O: existing behaviour kept (a retro has no cap today) |
-| P21-07 | Discussing | the topic timer is the only timer on screen; no timer in the topbar | the topbar keeps no timer in Discussing; the stage holds it | S: §9.4 (as the mockup) — listed because plan 18e kept the topbar timer in every phase |
-| P21-08 | Actions | "Exporter vers Jira" opens nothing drawn | the per-item export dialog with a list of items and a progress | N: no mockup of the dialog |
-| P21-09 | Discussing | the right card is "Topic actions" only | "Topic actions", then "Other action items (n)", collapsed | O: no feature lost (2-D9) |
-| P21-10 | Voting | "5/8 have finished" in place of the votes-cast progress | the progress "n of m votes cast" stays, followed by "5/8 have finished" | parity row 57 of plan 18e (kept by D-105) |
-| P21-11 | ROTI | "Results appear for everyone when the facilitator ends the session." | "… when the facilitator reveals them or ends the session." | F: the reveal exists now |
+| # | Screen | Mockup element | Built | Reason | Owner (2026-10-03) |
+|---|---|---|---|---|---|
+| P21-01 | Discussing | "+1 min" on the topic timer | "+2 min" | O: "+2 min" on every timer (2-D8) | approved as listed |
+| P21-02 | Discussing | "8/8" following count in the focus banner | not rendered, place kept | N: backlog (roadmap) | approved as listed |
+| P21-03 | Writing | "Reveal the cards" beside the next-phase button | not rendered | N: backlog (D-10 keeps it) | approved as listed |
+| P21-04 | Grouping | duplicates suggestion, "Undo last group" | not rendered | N: backlog (D-10 keeps them) | approved as listed |
+| P21-05 | Writing | "Inès is writing a card…" under a column, ringed avatar, with "Anonymity: on" | on an anonymous retro, only the presence line "Someone is writing…" / ":count people are writing…": no name, no ring, no column line | F + O: a name or a column would tie a hidden card to its author; the owner chose a server-relayed count (decision 1, answer C) | approved as listed |
+| P21-06 | Voting | "max 2 per card" with a stepper default of 2 in creation and settings | "Max per card" with "No limit" on by default | O: existing behaviour kept (a retro has no cap today) | approved as listed |
+| P21-07 | Discussing | the topic timer is the only timer on screen; no timer in the topbar | the topbar keeps no timer in Discussing; the stage holds it | S: §9.4 (as the mockup) — listed because plan 18e kept the topbar timer in every phase | as the mockup: the topic timer only, on the stage, in Discussing (Task 14) |
+| P21-08 | Actions | "Exporter vers Jira" opens nothing drawn | the per-item export dialog with a list of items and a progress | N: no mockup of the dialog | the list and progress dialog, as listed (Task 18) |
+| P21-09 | Discussing | the right card is "Topic actions" only | "Topic actions", then "Other action items (n)", collapsed | O: no feature lost (2-D9) | approved as listed |
+| P21-10 | Voting | "5/8 have finished" in place of the votes-cast progress | the progress "n of m votes cast" stays, followed by "5/8 have finished" | parity row 57 of plan 18e (kept by D-105) | both: the progress and "5/8 have finished" (Task 13) |
+| P21-11 | ROTI | "Results appear for everyone when the facilitator ends the session." | "… when the facilitator reveals them or ends the session." | F: the reveal exists now | approved as listed |
 
 ## Review Focus
 
@@ -732,9 +732,9 @@ function topicCard(Retro $retro, array $attributes = []): Card
 
 (import `App\Models\Card` if the file does not already.)
 
-- [ ] **Step 7: Run the tests on the four engines**
+- [ ] **Step 7: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros`, then `sqlite`, `mariadb`, `mysql`.
+Run: `bin/test-db pgsql -- tests/Feature/Retros`.
 Expected: PASS. A failing existing test that compares the exact key list of the snapshot, of a card payload or of an action item payload gets the new keys, and is named in the commit message.
 
 - [ ] **Step 8: Gates and commit**
@@ -1051,9 +1051,9 @@ and the closure returns `$locked` in both branches (type `Retro`); the response 
 
 Add to the four `lang/*.json` (values in Task 19): `The icebreaker's timer cannot be paused.`, `The timer is not paused.`
 
-- [ ] **Step 6: Run the tests on the four engines**
+- [ ] **Step 6: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/TimerPauseTest.php tests/Feature/Retros/TimerExtensionTest.php tests/Feature/Retros/FacilitationTest.php`, then `sqlite`, `mariadb`, `mysql`.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/TimerPauseTest.php tests/Feature/Retros/TimerExtensionTest.php tests/Feature/Retros/FacilitationTest.php`.
 Expected: PASS.
 
 - [ ] **Step 7: Gates and commit**
@@ -1496,9 +1496,9 @@ The 404 for another retro's card comes from `$locked->cards()->whereKey(...)->fi
 
 `Only a topic can be marked as discussed.`
 
-- [ ] **Step 5: Run the tests on the four engines**
+- [ ] **Step 5: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicTimerTest.php tests/Feature/Retros/TopicDiscussedTest.php tests/Feature/Retros/TimerPauseTest.php tests/Feature/Retros/FacilitationTest.php tests/Feature/Retros/ActionsPhaseTest.php`, then `sqlite`, `mariadb`, `mysql`.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicTimerTest.php tests/Feature/Retros/TopicDiscussedTest.php tests/Feature/Retros/TimerPauseTest.php tests/Feature/Retros/FacilitationTest.php tests/Feature/Retros/ActionsPhaseTest.php`.
 Expected: PASS. An existing test that asserted the exact JSON of `retros.highlight.update` (`assertExactJson(['highlightedCardId' => …])`) moves to `assertJsonPath('highlightedCardId', …)`; name it in the commit.
 
 - [ ] **Step 6: Gates and commit**
@@ -1709,11 +1709,11 @@ Expected: FAIL (third vote accepted; unknown field).
 
 `You can put only one vote on a card.`, `You can put at most :count votes on one card.`
 
-- [ ] **Step 5: Run the tests on the four engines, and the race**
+- [ ] **Step 5: Run the tests on PostgreSQL, and the race**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/MaxVotesPerCardTest.php tests/Feature/Retros/VotingTest.php tests/Feature/Retros/CreateRetroTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/MaxVotesPerCardTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
-Expected: PASS on each.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/MaxVotesPerCardTest.php tests/Feature/Retros/VotingTest.php tests/Feature/Retros/CreateRetroTest.php`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/MaxVotesPerCardTest.php`.
+Expected: PASS.
 
 - [ ] **Step 6: Gates and commit**
 
@@ -2059,11 +2059,11 @@ class VotingCompletionsController extends Controller
 
 None on the server (decision 10 B has no refusal). The front strings are in Task 13.
 
-- [ ] **Step 5: Run the tests on the four engines, and the races**
+- [ ] **Step 5: Run the tests on PostgreSQL, and the races**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/VotingCompletionTest.php tests/Feature/Retros/VotingTest.php tests/Feature/Retros/MaxVotesPerCardTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/VotingCompletionTest.php tests/Concurrency/VoteLimitTest.php tests/Concurrency/MaxVotesPerCardTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
-Expected: PASS on each (`VoteLimitTest`'s deadlock case still sees one rollback: the participant is locked after the retro, as before; `destroy` now locks the participant too, after the retro, so no new lock order appears).
+Run: `bin/test-db pgsql -- tests/Feature/Retros/VotingCompletionTest.php tests/Feature/Retros/VotingTest.php tests/Feature/Retros/MaxVotesPerCardTest.php`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/VotingCompletionTest.php tests/Concurrency/VoteLimitTest.php tests/Concurrency/MaxVotesPerCardTest.php`.
+Expected: PASS (`VoteLimitTest`'s deadlock case still sees one rollback: the participant is locked after the retro, as before; `destroy` now locks the participant too, after the retro, so no new lock order appears).
 
 - [ ] **Step 6: Gates and commit**
 
@@ -2312,10 +2312,10 @@ class RetroWritersController extends Controller
         Route::delete('writing', [RetroWritersController::class, 'destroy'])->middleware('throttle:retro-writing')->name('retros.writing.destroy');
 ```
 
-- [ ] **Step 4: Run the tests on the four engines**
+- [ ] **Step 4: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/WritingCountTest.php tests/Feature/Retros/RetroFacilitationSchemaTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Expected: PASS on each. No race: the count protects no invariant (spec §6.11 rule 2).
+Run: `bin/test-db pgsql -- tests/Feature/Retros/WritingCountTest.php tests/Feature/Retros/RetroFacilitationSchemaTest.php`.
+Expected: PASS. No race: the count protects no invariant (spec §6.11 rule 2).
 
 - [ ] **Step 5: Gates and commit**
 
@@ -2625,11 +2625,11 @@ class TopicNotesController extends Controller
 
 `Notes belong to a topic, not to a card inside a group.`, `Someone else changed these notes.`
 
-- [ ] **Step 5: Run the tests on the four engines, and the races**
+- [ ] **Step 5: Run the tests on PostgreSQL, and the races**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicNotesTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/TopicNotesTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
-Expected: PASS on each.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicNotesTest.php`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/TopicNotesTest.php`.
+Expected: PASS.
 
 - [ ] **Step 6: Gates and commit**
 
@@ -2795,9 +2795,9 @@ and `attributes()` keeps `card_id`: `array_flip(['content', 'priority', 'due_on'
 
 `Choose a topic of this retrospective.`
 
-- [ ] **Step 5: Run the tests on the four engines**
+- [ ] **Step 5: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/ActionItemTopicsTest.php tests/Feature/Retros/ActionItemsTest.php tests/Feature/ActionItems`, then `sqlite`, `mariadb`, `mysql`.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/ActionItemTopicsTest.php tests/Feature/Retros/ActionItemsTest.php tests/Feature/ActionItems`.
 Expected: PASS.
 
 - [ ] **Step 6: Gates and commit**
@@ -3122,11 +3122,11 @@ class RetroRotiNudgesController extends Controller
 
 `The ROTI is already revealed.`, `You can nudge again in a moment.`
 
-- [ ] **Step 5: Run the tests on the four engines, and the race**
+- [ ] **Step 5: Run the tests on PostgreSQL, and the race**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/RotiRevealTest.php tests/Feature/Retros/RotiNudgeTest.php tests/Feature/Retros/RotiTest.php tests/Feature/Retros/BoardSnapshotTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/RotiRevealTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
-Expected: PASS on each.
+Run: `bin/test-db pgsql -- tests/Feature/Retros/RotiRevealTest.php tests/Feature/Retros/RotiNudgeTest.php tests/Feature/Retros/RotiTest.php tests/Feature/Retros/BoardSnapshotTest.php`.
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/RotiRevealTest.php`.
+Expected: PASS.
 
 - [ ] **Step 6: Gates and commit**
 
@@ -3281,9 +3281,9 @@ Expected: FAIL.
 
 `Discussion notes` (already a key if Task 15 lands first; add once).
 
-- [ ] **Step 5: Run the tests on the four engines**
+- [ ] **Step 5: Run the tests on PostgreSQL**
 
-Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicNotesRecapTest.php tests/Feature/Retros/SummaryInputTest.php tests/Feature/Integrations tests/Feature/Mail`, then `sqlite`, `mariadb`, `mysql` (use the folders that exist; `MailMockupTest` and the recap tests must pass unchanged).
+Run: `bin/test-db pgsql -- tests/Feature/Retros/TopicNotesRecapTest.php tests/Feature/Retros/SummaryInputTest.php tests/Feature/Integrations tests/Feature/Mail` (use the folders that exist; `MailMockupTest` and the recap tests must pass unchanged).
 Expected: PASS.
 
 - [ ] **Step 6: Gates and commit**
@@ -4815,7 +4815,7 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 
 ### Task 21: Deviations and documents
 
-- [ ] For each capture of Task 20, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** with the owner's word. A difference that fits no reason stops the task.
+- [ ] For each capture of Task 20, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is one of the answered rows P21-01 to P21-11, or is ruled under the owner's autonomy mandate (2026-10-03) and added as a row marked "ruled while building", with its reason; the report lists every such ruling for the owner.
 - [ ] Documents, in one commit:
   - the spec (`docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md`) and this plan, in place: status "built", and every difference found while building folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: a "Status" column for the retro section with RT-1 to RT-10 "done, plan 21" (as the surveys section has), and the "Not requested" line completed with spec §3;
@@ -4824,21 +4824,22 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
   - `docs/database.md`: nothing to add unless a task found a new rule.
 - [ ] Commit `docs: plan 21 — spec and plan in place, roadmap and deviation rows updated` with the two trailers.
 
-### Task 22: Full suites on four engines, and report
+### Task 22: Full suites on PostgreSQL, and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check`; `vendor/bin/sail composer rector:check` if the project has it.
-- [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (Unit, Feature, Upgrade and Arch in parallel; one engine at a time, never two whole suites at once in the shared container) — Expected: `test-db <engine>: PASS` on each.
-- [ ] `bin/test-db pgsql --concurrency`, `bin/test-db mariadb --concurrency`, `bin/test-db mysql --concurrency`, `bin/test-db sqlite-file --concurrency` — Expected: PASS on each.
+- [ ] `bin/test-db pgsql` (Unit, Feature, Upgrade and Arch in parallel; never two whole suites at once in the shared container) — Expected: `test-db pgsql: PASS`. `tests/Arch/DatabasePortabilityTest.php` is part of it and must pass.
+- [ ] `bin/test-db pgsql --concurrency` — Expected: PASS.
+- [ ] SQLite, MariaDB and MySQL are **not** run here: the four-engine matrix runs once after the last merge into `roadmap` (plans 24 and 25), per the owner's ruling of 2026-10-03. A failure it finds in this plan's code is fixed then, on a branch from `roadmap`.
 - [ ] `bin/check-pg-upgrade` — Expected: PASS (the upgraded schema equals a fresh install's).
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS.
-- [ ] Report `.superpowers/sdd/roadmap/plan-21/report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it and the engines it passed on; the differences that remain with each mockup; every existing test that was edited and why; every translation key added outside Task 19's table; the captures left out (activity, bulk export) and why; every decision of spec §15 as answered (and how decisions 1 C and 10 B behave in the tests); what spec §16 could now be determined.
-- [ ] Commit `docs: plan 21 report` with the two trailers. Then ask the owner to read the report. **No merge into `main`, no push.**
+- [ ] Report `.superpowers/sdd/roadmap/plan-21/report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it (on PostgreSQL; criterion 25's other engines are checked by the roadmap's final matrix); the differences that remain with each mockup; every existing test that was edited and why; every translation key added outside Task 19's table; the captures left out (activity, bulk export) and why; every decision of spec §15 as answered (and how decisions 1 C and 10 B behave in the tests); what spec §16 could now be determined.
+- [ ] Commit `docs: plan 21 report` with the two trailers. The controller merges the branch into `roadmap`, runs `bin/test-db pgsql` there, and notifies the owner that plan 21 is done (owner's autonomy mandate of 2026-10-03). **No merge into `main`, no push.**
 
 ---
 
 ## Self-review (done while writing; kept for the reader)
 
-**Spec coverage.** §6.1 schema: Task 1. §6.2 pause: Tasks 1 (invariant, completion), 2 (routes, Icebreaker, "+2 min"), 12 (screen). §6.3 cap: Tasks 1 (`maxVotesPerCard`), 4 (endpoint, creation, settings, race), 13 (screen, popover, creation row). §6.4 finished voting (decision 10 B): Tasks 1 (reset on entering Voting, snapshot), 5 (routes, a vote takes "finished" back, `finishedIds` in the vote answer, races), 10 (`cardVoting` never blocks for "finished", `useCardVote` applies `finishedIds`), 13 (screen, status line). §6.5 time per topic and discussed: Tasks 1 (snapshot), 3 (timer, highlight, mark routes), 14 (screen, estimate). §6.6 notes: Tasks 1 (table, snapshot), 6 (route, version, races), 9 (recap e-mail, AI input), 15 (editor, soft lock). §6.7 linked items: Tasks 1 (column, presenter), 7 (routes), 16 (screens, session end). §6.8 ROTI: Tasks 1 (snapshot, reset on entering ROTI), 8 (reveal, nudge, race), 17 (screen). §6.9 activity: Task 11. §6.10 bulk export: Task 18. §6.11 writing count (decision 1 C): Tasks 1 (`writing_until`, never in the snapshot), 23 (routes, event with the count only, guards, limiter), 10 (`writing.count` listener), 11 (heartbeat, no whisper, the presence line). §7 permissions: the guard tests of Tasks 2 to 8 and 23. §8 real time: events in Tasks 1 to 8 and 23, the channel in Task 10. §9 screens: Tasks 11 to 18. §10 no data migration: Task 1's "as before" test. §11 routes: Tasks 2 to 8 and 23. §12 testing: per task on four engines; races in Tasks 4, 5, 6, 8; captures in Task 20. §13 criteria: 1, 3, 4 → 11; 2 → 11, 23; 5–6 → 1, 2, 12; 7 → 4, 13; 8–9 → 5, 10, 13; 10–12 → 3, 14; 13–14 → 6, 15; 15 → 9; 16–17 → 7, 16; 18–19 → 8, 17; 20 → 18; 21 → 4, 13; 22 → 1; 23 → 19; 24 → 20, 21; 25 → 22.
+**Spec coverage.** §6.1 schema: Task 1. §6.2 pause: Tasks 1 (invariant, completion), 2 (routes, Icebreaker, "+2 min"), 12 (screen). §6.3 cap: Tasks 1 (`maxVotesPerCard`), 4 (endpoint, creation, settings, race), 13 (screen, popover, creation row). §6.4 finished voting (decision 10 B): Tasks 1 (reset on entering Voting, snapshot), 5 (routes, a vote takes "finished" back, `finishedIds` in the vote answer, races), 10 (`cardVoting` never blocks for "finished", `useCardVote` applies `finishedIds`), 13 (screen, status line). §6.5 time per topic and discussed: Tasks 1 (snapshot), 3 (timer, highlight, mark routes), 14 (screen, estimate). §6.6 notes: Tasks 1 (table, snapshot), 6 (route, version, races), 9 (recap e-mail, AI input), 15 (editor, soft lock). §6.7 linked items: Tasks 1 (column, presenter), 7 (routes), 16 (screens, session end). §6.8 ROTI: Tasks 1 (snapshot, reset on entering ROTI), 8 (reveal, nudge, race), 17 (screen). §6.9 activity: Task 11. §6.10 bulk export: Task 18. §6.11 writing count (decision 1 C): Tasks 1 (`writing_until`, never in the snapshot), 23 (routes, event with the count only, guards, limiter), 10 (`writing.count` listener), 11 (heartbeat, no whisper, the presence line). §7 permissions: the guard tests of Tasks 2 to 8 and 23. §8 real time: events in Tasks 1 to 8 and 23, the channel in Task 10. §9 screens: Tasks 11 to 18. §10 no data migration: Task 1's "as before" test. §11 routes: Tasks 2 to 8 and 23. §12 testing: per task on PostgreSQL (four engines at the end of the roadmap); races in Tasks 4, 5, 6, 8; captures in Task 20. §13 criteria: 1, 3, 4 → 11; 2 → 11, 23; 5–6 → 1, 2, 12; 7 → 4, 13; 8–9 → 5, 10, 13; 10–12 → 3, 14; 13–14 → 6, 15; 15 → 9; 16–17 → 7, 16; 18–19 → 8, 17; 20 → 18; 21 → 4, 13; 22 → 1; 23 → 19; 24 → 20, 21; 25 → 22.
 
 **Placeholders.** Back-end tasks carry their tests and code. Three steps adapt to names the plan could not read with certainty and say so: the accessors of `RetroRecapMail` and `SummaryInput` (Task 9), the fixture of a workspace item an author may edit (Task 7), the `legacyRoti()` factory state (Task 8, it exists in `RetroFactory`). Screen tasks carry the pure logic in full and the composition, behaviours and states of their components, as the plan-18e procedure has it.
 
@@ -4848,5 +4849,7 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 
 **Known weak points of this draft.** Nothing was run. The `RetroRecapMail` accessor and the exact shape of `SummaryInput` were not read in full. The visual harness may not be able to show client events (spec §16 item 6). Reverb relaying guest client events is assumed from its configuration (spec §16 item 1). The `retro-writing` limiter's key depends on the participant attribute being set before the throttle middleware runs (spec §16 item 8); Task 23's 429 test proves it.
 
-**v2 (owner's answers of 2026-10-03).** Decisions 1 and 10 changed from the draft: Task 23 is new (23 tasks); Tasks 1, 5, 10, 11, 13, 19, 20 and this review were rewritten on the answers. The pre-build deviations, P21-05 reworded, are still to be approved by the owner.
+**v2 (owner's answers of 2026-10-03).** Decisions 1 and 10 changed from the draft: Task 23 is new (23 tasks); Tasks 1, 5, 10, 11, 13, 19, 20 and this review were rewritten on the answers. The pre-build deviations, P21-05 reworded, were then put to the owner.
+
+**v3 (pre-build deviations and test matrix, 2026-10-03).** P21-01 to P21-11 answered: 07 as the mockup (topic timer only in Discussing, Task 14), 08 the list and progress dialog (Task 18), 10 both the progress and "5/8 have finished" (Task 13), the rest approved as listed; each answer is what the row already said, so no task, file or test changes and the count stays 23. The per-task runs, the lane gates and Task 22 run on PostgreSQL only; the four-engine matrix moved to the end of the roadmap (owner). Base and merge target are now the `roadmap` branch; plan 21 runs in the first wave with 20, 26, 27 and 29, before plan 22. Notes of the first revision pass settled here: Task 23 keeps its number and runs in lane V after Task 5 (ruled: stable numbers over order); goal 1's "nothing stored" is reworded in the spec, since `writing_until` is short-lived data the owner's answer C implies; the three checks against `main` (the limiter's order, `RetroGuard::unlocked`'s status, a `DELETE` on `pagehide`) stay checks inside Task 23 and Task 11, proved by their tests, not owner questions.
 

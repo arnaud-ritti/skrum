@@ -1,7 +1,7 @@
 # Skrum — Team invitations, the invite link, and the four-step onboarding (registration included) — Design
 
-Date: 2026-10-03 (draft for the owner; revised the same day with the owner's answers)
-Status: **draft, decisions answered, not approved.** The owner answered the nine questions of §16 on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 25"). Six answers are the recommended option; three differ from it and the body is rewritten on them: decision 2 (the team's facilitators also invite), decision 3 (the invite link has an expiry and no use limit), decision 7 (a team slug, unique per workspace, with the redirect route `/t/<slug>`). The plan's pre-build deviations have not been put to the owner yet. Nothing is built before the owner approves this spec.
+Date: 2026-10-03 (drafted for the owner; revised the same day with the owner's answers to §16, then with the owner's answers to the plan's pre-build deviations)
+Status: **approved for execution, 2026-10-03.** The owner answered the nine questions of §16 on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 25"). Six answers are the recommended option; three differ from it and the body is written on them: decision 2 (the team's facilitators also invite), decision 3 (the invite link has an expiry and no use limit), decision 7 (a team slug, unique per workspace, with the redirect route `/t/<slug>`). The owner then answered the plan's pre-build deviations P25-01 to P25-17 on 2026-10-03 (`progress.md`, line "P25: …"; §16.1): three against the recommendation and now built — P25-03 "Skip for now" on step 2 as the mockup (§8.5), P25-10 the "session in progress, join it" banner after joining (§8.8), P25-15 an instance default workspace that new SSO accounts join, step 1 skipped (§6.4) —, P25-02 obsolete, the others approved as listed. The readings of §16 (notes) are ruled on the owner's behalf. The owner's "Oui vas y" of 2026-10-03 covers the execution once the specs are revised. Execution order of the roadmap: plans 20, 21, 26, 27, 29 in parallel → 22 → 23 → 24 and 25 (§13).
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rules, rule 13; §9.2 back-end conventions; §10 backlog).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — third round (security: "Invitation through SSO", "Invitation in the bell"; "Features to specify after the rewrite": "Invitations: team invitations, inviter's message, Decline, team invite link"; "Onboarding: the four-step onboarding"), fourth round (D-52: registration that creates a workspace and a team is specified with the onboarding; D-54: the invitation card; "Expired invitation"), fifth round (roadmap change: scheduling is backlog; working rules), sixth round (informal register; guests count as participants).
 Roadmap rows: IN-1, IN-2, IN-3, IN-4 and ON-1 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`, plus the registration line of its header note (owner, 2026-10-02). Deviation rows cleared: D-30 (wholly, except "already in n teams", backlog), D-33, D-52, the "Invite" part of D-18, the "button names the workspace" part of D-54.
@@ -20,11 +20,13 @@ A newcomer who registers lands on "Name your workspace" inside the application s
 
 1. A person who may manage a team's members, or a facilitator of the team, invites people to that team by e-mail, several at once, with a team role and an optional message; the invited person sees the team, the role and the message on the invitation page and in the mail, accepts (joining the workspace and the team) or declines; the inviter is told of a decline in the bell.
 2. A team has one invite link at a time, with an expiry and no limit on the number of people who use it; anyone with a verified account who opens it joins the team as a member; the link stops at its expiry or when it is replaced or turned off. The people who joined through it are counted and the count is shown to the team's inviters.
-3. A person who registers without an invitation or a link is taken, once their address is verified, through the four steps of the mockup: name the workspace, create the first team, invite (or skip), pick a first ritual (or go to the team page). Every step is saved on "Continue" and the onboarding resumes where it was left.
+3. A person who registers without an invitation or a link is taken, once their address is verified, through the four steps of the mockup: name the workspace, create the first team (or "Skip for now", which ends the onboarding there — P25-03), invite (or skip), pick a first ritual (or go to the team page). Every step is saved on "Continue" and the onboarding resumes where it was left.
 4. Registration follows the "Inscription" mockup: "Create your workspace", with a "Team name" field that prefills step 2.
 5. Nothing that works today stops working: workspace invitations without a team, the account created on the card (S35), SSO through an invitation (with its verified-address rule), the bell item that links to the invitation page, `workspaces/create` for a second workspace.
 6. Database code is Eloquent and the standard query builder only and runs unchanged on PostgreSQL, MySQL, MariaDB and SQLite; every test that touches the database passes on the four.
 7. A team has a short address, its slug, unique in its workspace: `/t/<slug>` leads to the team page. The slug is derived from the name when the team is created, can be edited at onboarding step 2 and in the team settings, and every existing team receives one.
+8. An instance admin may name a **default workspace**: an account created through SSO that no invitation and no invite link brought joins it as a member and starts the onboarding at step 2, step 1 being the admin's (P25-15, the mockup's "In self-host with forced SSO, step 1 is filled by the admin and skipped").
+9. Whoever lands on a team page right after accepting a team invitation or joining by a link is offered the team's session in progress, if there is one, in a banner with "Join" (P25-10, the mockup's "if a session is in progress, a banner offers to join it").
 
 ## 3. Non-goals (what stays in the backlog)
 
@@ -33,11 +35,10 @@ A newcomer who registers lands on "Name your workspace" inside the application s
 - The "When · optional" date of step 4, any start time or "starts in 5 min" notification: scheduling is backlog (owner, fifth round). Nothing is reserved for it.
 - Session addresses under the team slug (`/t/atlas/retro/sprint-24`, drawn in `ScreenErrors`): only `/t/<slug>` itself exists (decision 7); every other route keeps the team's id. A slug that was edited does not keep its old address: the old `/t/<old>` answers 404.
 - A limit on the number of people who use an invite link, and a choice of its expiry (decision 3, option C): the expiry is fixed at 7 days.
-- The workspace logo of step 1 (decision 6, option B): stored images arrive with AC-1 (plan 26); its place is left.
-- The banner "a session is in progress, join it" after an accepted invitation: the team page already shows an open retro with "Join".
+- The workspace logo of step 1 (decision 6, option B; P25-01 approved): plan 26 now merges before this plan, but it builds profile photos (AC-1), not a workspace logo; the logo stays backlog and its place is left.
 - An invitation answered from the bell ("Accept" / "Decline" buttons): the owner ruled that the bell links to the invitation page and that no token-less route exists (third round). "Decline" lives on the invitation page only.
 - A mail to the inviter on a decline (decision 5, option A).
-- Self-host "SSO forced: step 1 filled by the admin and skipped": the instance has no default workspace for newcomers; step 1 is always shown to a user who has none.
+- A default workspace for accounts created otherwise than through SSO (password registration, magic link, e-mail code), for SSO accounts created before the setting, or a default team: the owner's answer to P25-15 names new SSO accounts. A choice of role in the default workspace: always `member`.
 - Invitations to several teams at once (decision 9, option A); team invitations through the MCP server or the API.
 - Mentions, scheduling, whiteboard collaboration (former plans 30, 22-scheduling and 28): backlog.
 
@@ -57,8 +58,11 @@ A newcomer who registers lands on "Name your workspace" inside the application s
 | Register | Informal everywhere: French "tu", Spanish "tú", German "du"; English unchanged; this overrides the mockups' "vous" | owner, sixth round; `tests/Feature/InformalRegisterTest.php` |
 | Presentation | The mockup wins; an element with no data is omitted, listed and its place left | parent spec §5 rule 13 |
 | Database | Eloquent and the standard query builder only; four engines; races proved with `Race` | owner; `docs/database.md` |
-| Tests | Unit and feature tests written and run, per task, on pgsql and sqlite, the four engines for races and data migrations and the whole suites at the end; no browser walkthrough; captures in light, 1440, French | owner, working rules |
+| Tests | Unit and feature tests written and run per task on PostgreSQL, races with `--concurrency` and the data migration's upgrade test on PostgreSQL, the PostgreSQL suites at the end of the plan; the other three engines at the roadmap's final matrix; no browser walkthrough; captures in light, 1440, French | owner, working rules, as changed on 2026-10-03 |
 | The nine questions of §16 | Answered: 1 A, 2 B, 3 C, 4 A, 5 A, 6 B, 7 B, 8 A, 9 A | owner, 2026-10-03 (`progress.md`, line "Plan 25") |
+| The plan's pre-build deviations | P25-03 "Skip for now" on step 2 as the mockup (skips 3 and 4 too), ≠ rec.; P25-10 add the "session in progress, join it" banner after accepting, ≠ rec.; P25-15 an instance DEFAULT WORKSPACE admin setting: new SSO accounts join it and step 1 is skipped, ≠ rec.; P25-02 obsolete (team slug chosen); others approved | owner, 2026-10-03 (`progress.md`, line "P25: …"); §16.1 |
+| Engines per plan | Per task and per merge PostgreSQL only; the four-engine matrix runs once after the roadmap's last merge (plans 24 and 25). Portability rules unchanged | owner, 2026-10-03 ("Lance les 4 bases seulement à la fin") |
+| Execution order | Plans 20, 21, 26, 27, 29 in parallel → 22 → 23 → 24 and 25 | owner, 2026-10-03 |
 
 ## 5. Rules and vocabulary
 
@@ -72,6 +76,8 @@ The rules of the parent spec §5 apply to every front file; §9.2 applies to the
 | team inviter | Someone who may invite to a team: `TeamPolicy::invite` (§7) — who manages the team's members, plus the team's facilitators (decision 2). |
 | team slug | `teams.slug`: the team's short address, lower-case letters, digits and single hyphens, unique in its workspace; `/t/<slug>` redirects to the team page (decision 7). Not to be confused with the invite link. |
 | onboarding | A row of `onboardings`: the progress of one user through the four steps. A user without a row has nothing to complete. |
+| default workspace | The instance setting `default_workspace` (P25-15): the workspace that new SSO accounts join, set by an instance admin. Unset by default. |
+| session in progress | A session of the team in plan 22's state **Live** (its spec §6.1: a retro started and not completed, a poker game with a round and not ended, an open poll, a whiteboard touched in the last 15 minutes, an icebreaker room with a round in play). |
 | team role | TM-6 (plan 23): owner, facilitator, member, observer, stored on `team_user`. This spec names it `App\Enums\TeamRole`; the plan reads the name plan 23 gives it. |
 
 ## 6. Domain and data
@@ -117,9 +123,19 @@ Limits (decision 3, option C, answered by the owner): an expiry and no use limit
 
 - **At registration** (`CreateNewUser::register`), when the account is created without a pending invitation and without a usable invite link in the session: one row, step `workspace`, `team_name` from the form.
 - **Lazily**, in `CurrentWorkspaceController` (the `dashboard` route every sign-in lands on): a verified user who belongs to no workspace and has no row gets one, step `workspace`. This covers accounts created through SSO or a magic link, and existing users who left their last workspace. It replaces today's redirect to `workspaces/create` for them; `workspaces/create` stays for a second workspace.
+- **At an SSO account's creation, with a default workspace set** (§6.4): one row, step `team`, `workspace_id` the default workspace.
 - **Never** for an account created by accepting an invitation or joining by a link, and never for an existing user who belongs to a workspace: no row is written for them, so **no existing data is migrated**.
 - A row is **completed** at step 4 ("Create …" or "Go to the dashboard instead"), and also when its user accepts an invitation or joins by a link while the row has no workspace yet (they came to join, not to found).
 - `dashboard` sends a user with an uncompleted row to `onboarding`; with a usable invite link token in the session, it sends them to the link page first (they opened a link before registering).
+
+### 6.4 The default workspace (P25-15)
+
+An instance setting, no new table: the key `default_workspace` of `instance_settings` (`InstanceSettingKey::DefaultWorkspace`), its value a workspace id, read through `InstanceSettings::defaultWorkspaceId()` (null when unset or not a UUID). It is not a Branding key: the Branding reset keeps it. An id whose workspace was deleted reads as unset everywhere (the admin page shows "None"; nothing is joined); nothing clears the stored value by itself.
+
+- **Who joins it:** an account created through SSO (`ResolveSsoUser`, the creation branch) when no pending invitation for its address was accepted in the same callback and no usable invite link is in the session. It joins with the workspace role `member` (never more), the workspace becomes its current one, and its onboarding row is created at step `team` with that workspace (§6.3). Inside the account's creation transaction; nothing to lock (the account is not visible to anyone yet).
+- **Who does not:** an account created by password registration, magic link or e-mail code; an existing account signing in through SSO (linked or matched by address); an account brought by an invitation (it joins the invitation's workspace only) or by a link (it joins the link's team on the link page); any account when the setting is unset or its workspace gone. The sign-up gate is unchanged: an SSO account that the signup mode refuses is still refused (the default workspace opens no registration).
+- **Step 1 is skipped:** the row starts at step 2; step 1 is shown done; "Back" is not offered and the server refuses the move to `workspace` and a rename (the user does not own the workspace). If the workspace is deleted during the onboarding, the row loses it (`null` on delete) and is shown at step 1, which then creates the user's own workspace.
+- **Set by:** an instance admin, on the admin "SSO authentication" page (§10.9), recorded in plan 29's audit log as a settings change.
 
 ## 7. Permissions
 
@@ -133,9 +149,12 @@ Limits (decision 3, option C, answered by the owner): an expiry and no use limit
 | Decline an invitation | whoever holds the token: the invited person, signed in or not (the card shows "Decline" in every pending state) | pending; throttled 10 per minute per address and IP |
 | Join by an invite link | a signed-in account with a verified address | usable link; already a member of the team: nothing changes, nothing counted |
 | Register through an invite link | anyone, when the instance's signup mode lets the link open registration — decision 4 | usable link |
-| Go through the onboarding | the user of the row | step 1 renames a workspace only while the user owns it; step 2 edits a team (name, colour, description, slug) only while the user may update it |
+| Go through the onboarding | the user of the row | step 1 renames a workspace only while the user owns it; step 2 creates the row's one team in the row's workspace (Rule D-1) and later edits it (name, colour, description, slug) only while the user may update it; "Skip for now" (step 2) completes the row |
+| Set the default workspace | instance admins (`manageInstance`, password confirmed as the admin area asks) | a workspace of the instance, or none |
 | Edit a team's slug (team settings, General tab) | `TeamPolicy::update` as plan 23 leaves it (managers and the team's owners); not facilitators | §6.1 form, unique in the workspace |
 | Open `/t/<slug>` | a signed-in account (signed out: sign in first, then back) | resolves only among the teams of the workspaces the account belongs to (§8.7); a team the account may not view, or no match: 404 |
+
+**Rule D-1 (from P25-15; a reading of this spec, ruled on the owner's behalf).** Step 2 creates the onboarding's first team in the row's workspace without `TeamPolicy::create`: the onboarding row is the authorisation. Its workspace is either the one step 1 created (the user owns it) or the instance's default workspace (§6.4), where the user is a `member` and could not create a team elsewhere in the application. This is what lets a newcomer of the default workspace "create the first team" as the mockup's step 2 asks. It is limited to one team per row (`team_id`: a second "Continue" updates the same team) and to an uncompleted row; outside the onboarding a workspace member still cannot create a team. An implementer must not add `TeamPolicy::create` to step 2 (it would stop every default-workspace newcomer at step 2) nor widen `TeamPolicy::create` for members. Tests: "lets the joiner create one team at step two, but never go back to the admin workspace", "keeps the team creation of a workspace member outside the onboarding refused (Rule D-1)".
 
 Guests (session guests with a cookie) have no account: they are never invited, never join by a link, never onboarded. An invitation can never give the workspace role `owner` or the team role `owner`.
 
@@ -173,14 +192,16 @@ The bell item for the inviter: ":email declined your invitation to join :team" (
 
 ### 8.5 The onboarding
 
-State machine on `onboardings.step`: `workspace` → `team` → `invite` → `ritual` → completed. "Continue" saves the step and moves on; "Back" (step 2 only, as drawn) moves to `workspace` without losing anything; "Skip" (step 3) moves to `ritual`; "Go to the dashboard instead" (step 4) completes. The stepper shows done steps as done; a done step is not a link (the mockup's stepper is not interactive here).
+State machine on `onboardings.step`: `workspace` → `team` → `invite` → `ritual` → completed, plus `team` → completed ("Skip for now", P25-03). "Continue" saves the step and moves on; "Back" (step 2 only, as drawn) moves to `workspace` without losing anything, and is not offered when the row's workspace is the default workspace the user does not own (§6.4); "Skip for now" (step 2, as drawn: ghost, between "Back" and "Continue") completes the onboarding without creating a team — a team saved before a "Back" is kept — and opens `dashboard` (which lands on the team if one exists, else on the workspace page); "Skip" (step 3) moves to `ritual`; "Go to the dashboard instead" (step 4) completes. The stepper shows done steps as done; a done step is not a link (the mockup's stepper is not interactive here).
 
 - **Step 1, workspace**: name (required, at most 100), default language (one of the application's locales; preselected from the user's locale). First "Continue": `CreateWorkspace` (the user is its owner), the row keeps its id. Later "Continue" (after "Back"): renames it, sets its locale. The logo is omitted (§3).
 - **Step 2, team**: name (required, at most 100, prefilled from `team_name`), colour (the eight column colours, radiogroup, the colour's name under it; default: the colour derived from the workspace id), team link (decision 7: the instance's address and `/t/` in `font-mono` muted, then the slug; "Edit" turns the slug into a field; until it is edited the slug follows the typed name, derived in the browser by the same rule as the server's `TeamSlug::fromName`, and the server makes it unique on save), description (optional, at most WS-1's length). First "Continue": creates the team in the workspace through `CreateTeam` (with the edited slug when there is one, validated and unique, else derived), the user joins it as `owner` (TM-6), the row keeps its id. Later: updates it (a slug sent unchanged is kept; a rename alone never changes the slug).
 - **Step 3, invite**: the address chips, the team role (default `member`), the message, and "Or share this link" with the team's link (created when the step is first shown), "Copy", "Expires in :days days". "Send :count invitations" sends through §8.1 and moves on; "Skip" moves on.
 - **Step 4, first ritual**: four radio cards (Retro, Planning poker, Whiteboard, Icebreaker), default Retro; the primary button reads "Create the retro", "Create the poker game", "Create the whiteboard" or "Create the icebreaker"; it completes the onboarding and opens the team page with the "New session" dialog on that type (`?new=retro|poker|whiteboard|icebreaker`: `icebreaker` is added to the intents the team page reads) — decision 8. "Go to the dashboard instead" completes and opens the team page.
 
-Concurrency: every step locks the onboarding row first (its aggregate root); two "Continue" on step 1 at once create one workspace, two on step 2 one team.
+- **Starting at step 2** (default workspace, §6.4): the stepper shows step 1 done, the form opens on step 2 with "Step 2 of 4" and the progress at 2/4, the preview names the default workspace; steps 2 to 4 are as above.
+
+Concurrency: every step locks the onboarding row first (its aggregate root); two "Continue" on step 1 at once create one workspace, two on step 2 one team; a "Skip for now" and a "Continue" at once end in one order or the other (the completed row refuses the later one with a 404, as every step on a completed row).
 
 ### 8.6 Registration
 
@@ -194,9 +215,13 @@ The register page follows the "Inscription" variant of `ScreenAuth`: title "Crea
 
 **Rule S-1 (from decision 7; the resolution order is this spec's, to be confirmed by the owner when approving it).** A slug is unique in its workspace only, as the owner answered. Two workspaces can both have `/t/atlas`; the route resolves it for each account among its own workspaces, current workspace first. An account in two workspaces that both have `atlas` reaches the current workspace's. This is intended: an implementer must not make slugs unique per instance (it would make one workspace's names depend on another's) nor resolve a slug among workspaces the account is not in. Tests: "resolves `/t/<slug>` in the current workspace first", "never resolves a slug of a workspace the account is not in", "answers 404 for a team the account may not view as for no team".
 
+### 8.8 The session in progress after joining (P25-10)
+
+Right after a person lands on a team page by accepting a team invitation (signed in, on the card's account form, or through SSO) or by joining with the team's link, the page shows a banner when the team has a session in progress (§5): "A session is in progress: :title" with "Join" (the session's page) and a dismiss button. The session is the team's most recently active Live session for that person (plan 22's `ListTeamSessions`, state Live, first row: `updated_at` then id, newest first; a draft poll is never Live). The server computes it once, after the join has committed, and hands it to the page as flash data (`liveSession`: kind, title, URL); nothing is stored, so the banner shows once — a reload, a later visit or a partial reload of the page does not bring it back. Nothing shows after a workspace invitation without a team, for a member who opens the link of a team they are already in, or when nothing is Live. When an SSO sign-in passes through another page first (a second-factor challenge), the flash is spent there and no banner shows.
+
 ## 9. Real time
 
-None added. Nothing on these screens is shared live: the invitation page, the link page and the onboarding are one person's; the members lists refresh on the inviter's own actions. A decline reaches an open bell live through what exists: `BroadcastNotificationReceivedListener` dispatches `NotificationReceived` (the new unread count) for every notification sent on the `database` channel to a `User`, so `InvitationDeclinedNotification` needs nothing more.
+None added. Nothing on these screens is shared live: the invitation page, the link page and the onboarding are one person's; the members lists refresh on the inviter's own actions. A decline reaches an open bell live through what exists: `BroadcastNotificationReceivedListener` dispatches `NotificationReceived` (the new unread count) for every notification sent on the `database` channel to a `User`, so `InvitationDeclinedNotification` needs nothing more. The banner of §8.8 is computed when the page is reached and does not follow the session live.
 
 ## 10. Screens
 
@@ -210,7 +235,7 @@ Mockup: ScreenOnboarding frames a and c. `OnboardingLayout` on `OnboardingFrame`
 - Aside (from `lg`): the dot-grid preview — step 1 and 2: a team switcher entry and an empty team card that follow the typed name, colour and slug live (initial in the mark, the team's address `…/t/<slug>` under its name as drawn, ":workspace · 1 member", static skeletons, "No sessions yet"), then "Coming next" with the remaining steps; steps 3 and 4: the same card with the invited count.
 - Phone: compact stepper, form full width, aside hidden, actions docked at the bottom (`sticky bottom-0`).
 
-States: each step default; saving ("Continue" busy); a field error under its field (never a toast); step 2 with the slug following the name, with the slug being edited, with "This link is already taken in :workspace." under it; step 3 with an invalid chip ("“:address” looks incomplete." under the field, the chip marked invalid), with a server error on one address, with no link yet (busy while it is created), link copied; step 4 each type selected; resumed at a later step after a reload; a user who opens `onboarding` with a completed row or none is sent to `dashboard`.
+States: each step default; step 2 with "Back", "Skip for now" and "Continue" as drawn; step 2 started by a default-workspace newcomer (step 1 done, no "Back"); saving ("Continue" busy); a field error under its field (never a toast); step 2 with the slug following the name, with the slug being edited, with "This link is already taken in :workspace." under it; step 3 with an invalid chip ("“:address” looks incomplete." under the field, the chip marked invalid), with a server error on one address, with no link yet (busy while it is created), link copied; step 4 each type selected; resumed at a later step after a reload; a user who opens `onboarding` with a completed row or none is sent to `dashboard`.
 
 ### 10.2 Register — `auth/register`
 
@@ -238,6 +263,8 @@ Mockup: ScreenTeam (members card header, "Invite" ghost button with `user-plus`)
 
 States: no link; link; link copied; sending; field errors per chip; sent (toast ":count invitations sent", chips cleared).
 
+**The session-in-progress banner** (§8.8, P25-10; no mockup frame: the README's sentence only). The design system's `Alert`, info variant, first in the team page's main column above its header block: an icon (`radio`) in the colour of the session's kind (the kind colours of `SessionTypePicker`, as plan 22's Sessions rows use them), "A session is in progress: :title" (`role="status"`), the small primary "Join" (a link to the session) and the ghost icon button "Dismiss". On a phone "Join" wraps under the sentence. States: absent (the default); shown; dismissed.
+
 ### 10.6 Team settings — Members (plan 23's tab)
 
 Mockup: ScreenSettings a, card "Members": header line ":count members · :pending pending invitations", "Invitation link" (opens the invite dialog scrolled to the link block) and "Invite"; after the member rows, one row per pending invitation of the team: the address, "Invited on :date", badge "Pending invitation" (or "Expired", "Declined"), the team role, "Resend", and the revoke action with confirmation. This spec adds those elements to the tab plan 23 builds; the rows of members, roles and "last activity" are plan 23's. A facilitator reaches this tab (plan 23 sends them to Members & rituals, members read-only): they see "Invitation link", "Invite" and the pending rows with "Resend" and revoke, and still cannot change a member's role or remove a member.
@@ -253,6 +280,10 @@ The invite dialog's places (`InviteSlots`): "Team · optional" (a select of the 
 ### 10.8 The bell
 
 `team_invite` items of a team invitation read ":name invited you to join :team" (the team), linking to the invitation page as today. New kind `invitation_declined` (no mockup: designed from the `team_invite` item, with the invitee's initial avatar and no buttons). Both in `components/skrum/notifications-panel.tsx`.
+
+### 10.9 Admin — SSO authentication: the default workspace (P25-15)
+
+No mockup frame for the setting (the ScreenOnboarding README's sentence only): one more card in the admin cards' pattern (`.st-card`, as plan 29's cards of the same page), last on the "SSO authentication" page (`admin/sign-in`, plan 29), after the `sso_required` form. Title "New SSO accounts"; the sentence "Accounts created through SSO without an invitation join this workspace as members and start by creating their team."; the select "Default workspace" ("None", then the instance's workspaces by name); "Save", disabled while unchanged; the field error under the select; a toast on save. States: none set; one set; saving; error.
 
 ## 11. Routes
 
@@ -282,9 +313,10 @@ Outside any scope:
 | `PUT onboarding/team` | `onboarding.team.update` | `OnboardingTeamsController@update` | same |
 | `POST onboarding/invitations` | `onboarding.invitations.store` | `OnboardingInvitationsController@store` | same, throttle 10/min |
 | `PUT onboarding/step` | `onboarding.step.update` | `OnboardingStepsController@update` | same (body `step`: `workspace` from step 2, `ritual` from step 3) |
-| `POST onboarding/completion` | `onboarding.completion.store` | `OnboardingCompletionsController@store` | same (body `ritual`: `retro`, `poker`, `whiteboard`, `icebreaker` or absent) |
+| `POST onboarding/completion` | `onboarding.completion.store` | `OnboardingCompletionsController@store` | same (body `ritual`: `retro`, `poker`, `whiteboard`, `icebreaker` or absent; from step `team`, "Skip for now": absent only, then the answer opens `dashboard`) |
+| `PUT admin/sign-in/default-workspace` | `admin.defaultWorkspace.update` | `Admin\DefaultWorkspacesController@update` | the admin group (`auth`, `verified`, `can:manageInstance`, password confirmed); body `default_workspace_id` (uuid of a workspace, or null) |
 
-The team page gains the props `canInvite`, `inviteRoles`, `inviteLink` (optional prop, loaded when the dialog opens: `{url, expiresAt, usesCount}` or null) and, for team inviters, `pendingInvitations`. `team` gains `color`, `slug` and `address` (the absolute URL of `/t/<slug>`). `PUT onboarding/team` takes `slug` (optional). The invitation page gains `team` (`{name, color}` or null), `teamRole`, `message`, `isDeclined`, `declineUrl`. Validation in Form Requests with array rules.
+The team page gains the props `canInvite`, `inviteRoles`, `inviteLink` (optional prop, loaded when the dialog opens: `{url, expiresAt, usesCount}` or null) and, for team inviters, `pendingInvitations`. `team` gains `color`, `slug` and `address` (the absolute URL of `/t/<slug>`). `PUT onboarding/team` takes `slug` (optional). The onboarding page gains `canEditWorkspace` (false when the row's workspace is one the user does not own: no "Back", step 1 shown done). The admin page `admin/sign-in` gains `defaultWorkspaceId` (null when unset or gone) and `workspaces` (`{id, name}`, by name). The landings of §8.8 carry the flash `liveSession` (`{kind, title, url}`) when a session is in progress. The invitation page gains `team` (`{name, color}` or null), `teamRole`, `message`, `isDeclined`, `declineUrl`. Validation in Form Requests with array rules.
 
 ## 12. Migrations of existing data
 
@@ -296,13 +328,16 @@ One data migration: the team slug (§6.1), which fills `teams.slug` for every ex
 - An existing team has no colour: its mark keeps the colour derived from its id, everywhere, the mail included.
 - An existing team has a slug after the upgrade, and `/t/<slug>` reaches it.
 - Bell notifications already stored (`team_invite`) keep presenting.
+- An existing account is never moved into the default workspace: the setting applies at an SSO account's creation only, and is unset after the upgrade.
 
 ## 13. Dependencies on other plans
 
-- **Plan 23 (TM-6, team roles) must be merged first** (the owner's order: 22, then 23, then 25). A team invitation carries a team role; "who may invite to a team" is `TeamPolicy::manageMembers` as TM-6 leaves it, plus the team role `facilitator`; the creator of the onboarding's team becomes its owner. Without TM-6 there is no role to give.
+- **Execution order (owner, 2026-10-03):** plans 20, 21, 26, 27, 29 in parallel → 22 → 23 → 24 and 25. This plan starts from the integration branch `roadmap` once 23 is merged; plan 24 may run beside it.
+- **Plan 23 (TM-6, team roles) must be merged first**. A team invitation carries a team role; "who may invite to a team" is `TeamPolicy::manageMembers` as TM-6 leaves it, plus the team role `facilitator`; the creator of the onboarding's team becomes its owner. Without TM-6 there is no role to give.
 - **Plan 23 (WS-1 and WS-3)**: the team description of step 2 is WS-1's column; the Members tab of §10.6 and the General tab of §10.6a are WS-3's. If plan 23 ships without them, step 2 omits the description, §10.6 is limited to the team page dialog and the slug is edited at step 2 only (the plan says how). If plan 23 creates teams through an action of its own, `CreateTeam` (§6.1) is that action, extended; plan 23's name wins.
-- **Plan 22 (SE-2) is no longer a dependency**: scheduling went to the backlog; step 4 has no date.
-- **Plan 26 (AC-1)** comes after: the workspace logo of step 1 stays omitted until stored images exist.
+- **Plan 22 (SE-1)** is merged before: the banner of §8.8 reads its `ListTeamSessions` and its Live state. Its SE-2 (scheduling) is not a dependency: scheduling went to the backlog; step 4 has no date.
+- **Plan 26 (AC-1)** is merged before this plan, but builds profile photos, not a workspace logo: the logo of step 1 stays omitted (P25-01 approved, §3).
+- **Plan 29** is merged before: the sign-up mode and domain list are stored settings there (`SignupGate` reads them as plan 29 leaves it, the link rule of decision 4 added); the admin "SSO authentication" page, `InstanceSettings`' explicit Branding list and the audit log (`RecordAuditEvent`, `AuditAction::SettingsUpdated`) are plan 29's, and §6.4 and §10.9 build on them. Plan 29's access requests go to workspace owners and admins until plan 23 widens them; this plan does not touch them.
 
 ## 14. Acceptance criteria
 
@@ -326,14 +361,17 @@ One data migration: the team slug (§6.1), which fills `teams.slug` for every ex
 18. The team page shows "Invite" to team inviters only (a facilitator included, a member or observer not); the dialog sends invitations and manages the link. The team settings Members tab lists the team's pending, expired and declined invitations with "Resend" and revoke (confirmation), and shows "Invitation link" and "Invite", to a facilitator as to an owner. A team inviter who is not a workspace manager (an owner or a facilitator of the team) can resend and revoke the invitations of their team and no other.
 19. The workspace members page invites with a team and a message and lists each invitation's team and status.
 20. The bell names the team of a team invitation and presents `invitation_declined` items; neither has an accept or decline button.
-21. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest`, `TranslationKeysTest`); the onboarding (four steps), the register page, the invitation card (team invitation, declined), the link page, the invite dialog and the General tab's team link field are captured in light at 1440 in French without horizontal overflow and compared with their mockups, each difference being a row of the plan's deviations or fixed.
+21. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest`, `TranslationKeysTest`); the onboarding (four steps, step 2 with "Skip for now", step 2 of a default-workspace newcomer), the register page, the invitation card (team invitation, declined), the link page, the invite dialog, the team page's session-in-progress banner, the admin default workspace card and the General tab's team link field are captured in light at 1440 in French without horizontal overflow and compared with their mockups, each difference being a row of the plan's deviations or fixed.
 22. Every team has a slug of the §6.1 form, unique in its workspace: a new team gets one derived from its name (`atlas`, then `atlas-2`), also when two teams of one name are created at the same moment (race, four engines); a rename keeps it; who may update the team edits it (step 2, General tab, `teams.update`), a facilitator or a member gets 403; an existing team receives one by the data migration (upgrade test, four engines, re-runnable). `/t/<slug>` redirects a signed-in account to the team page, looking in the current workspace first and then in the account's other workspaces, never in a workspace the account is not in; no match and a team the account may not view both answer 404; a signed-out visitor signs in and comes back (Rule S-1).
-23. The unit, feature, upgrade and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL through `bin/test-db`, and the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+23. The unit, feature, upgrade, arch and concurrency suites pass on PostgreSQL through `bin/test-db pgsql` (and `--concurrency`), with `tests/Arch/DatabasePortabilityTest.php`; `bin/check-pg-upgrade` passes. SQLite, MariaDB, MySQL and a SQLite file run them in the roadmap's final matrix after plans 24 and 25 are merged (owner, 2026-10-03), not in this plan.
+24. "Skip for now" on step 2 completes the onboarding without creating a team (a team saved before a "Back" is kept), skips steps 3 and 4, opens `dashboard`, and the onboarding is never shown again; sent with a ritual, or before step 1 is saved, it is refused (P25-03).
+25. Right after accepting a team invitation (signed in, on the card's account form) or joining by a link, the response carries the team's session in progress (kind, title, URL) when one is Live, and the team page shows the banner with "Join" and "Dismiss"; nothing is carried after a workspace invitation without a team, when nothing is Live, or to a member already in the team; a reload shows no banner (P25-10).
+26. An instance admin sets, changes and clears the default workspace on the SSO authentication page (audited; an unknown workspace refused; a non-admin 403; kept by a Branding reset; shown as none once its workspace is deleted). A new SSO account brought by no invitation and no usable link joins it as `member`, with an onboarding at step 2; step 1 is shown done, "Back" and a rename are refused, step 2 creates one team the account owns (Rule D-1) or "Skip for now" lands in the workspace; an account brought by an invitation or a link, a password registration and an existing account are never moved into it; an unset setting or a deleted workspace changes nothing; a default workspace deleted during the onboarding brings step 1 back (P25-15).
 
 ## 15. Risks
 
 - **Plan 23's shape is unknown.** The role enum, the pivot column, the policy and the Members tab are assumed by name (§5, §13). The plan's first task checks them and stops on a mismatch; each later task follows plan 23's names.
-- **A link is a key to the team, with no use limit (decision 3, option C, the owner's answer).** Anyone who gets it joins until it expires (7 days) or is replaced or turned off, however many they are. Mitigations kept: verified accounts only, a fixed 7-day expiry, one link per team, replacement and turning off by any team inviter, and the count of people who joined shown in the link block so that a leak shows. A leaked link is answered by "Create a new link". With decision 4 (option A), a usable link also opens registration on an instance in `invite` signup mode: a leaked link lets any number of strangers create an account there and join the team during its 7 days. The owner answered decisions 3 and 4 separately; this combined effect is put to them again with the spec's approval (§16, note after decision 9).
+- **A link is a key to the team, with no use limit (decision 3, option C, the owner's answer).** Anyone who gets it joins until it expires (7 days) or is replaced or turned off, however many they are. Mitigations kept: verified accounts only, a fixed 7-day expiry, one link per team, replacement and turning off by any team inviter, and the count of people who joined shown in the link block so that a leak shows. A leaked link is answered by "Create a new link". With decision 4 (option A), a usable link also opens registration on an instance in `invite` signup mode: a leaked link lets any number of strangers create an account there and join the team during its 7 days. The owner answered decisions 3 and 4 separately; the combined effect is kept as an accepted consequence of both answers (§16, notes: ruled 2026-10-03) and reported with the plan.
 - **A facilitator invites (decision 2, option B).** A facilitator can bring people into the workspace (as `member`) and the team (as facilitator, member or observer) without a workspace manager or a team owner. Their invitations are listed with the inviter's name to the team's owners and the workspace managers, who can revoke them; the facilitator cannot change an existing member's role nor remove anyone.
 - **Slugs (decision 7).** A slug is a second key of a team and is unique per workspace only (Rule S-1): `/t/<slug>` depends on who asks. The upgrade fills every existing team (one write per team, outside a transaction, re-runnable); a large instance should upgrade in maintenance mode, as for the earlier fills (`docs/database.md`). A team created by the old release during the fill gets its slug from the fill if it ran after its insert, else the migration's last step (not null) fails and the run is started again, which fills the rest. Editing a slug breaks the old `/t/` address without a redirect (non-goal).
 - **Decline by token.** Whoever holds the link can decline it, as whoever holds it could accept it with the address's account. The throttle limits guessing; the token is 40 random characters.
@@ -341,6 +379,8 @@ One data migration: the team slug (§6.1), which fills `teams.slug` for every ex
 - **Registration and verification paths.** The intended URL must survive registration and e-mail verification for a link visitor; Fortify's register and verify responses are assumed to honour it (§17). A test proves the full path.
 - **Two colours for one team.** The derived colour exists in TypeScript (`lib/mark-color.ts`); the mail needs it in PHP. One parity test feeds both the same ids.
 - **SQLite and the lock order.** Joining locks the link then writes `workspace_user` and `team_user`; accepting locks the invitation; onboarding locks its row. No path locks two of these roots. Creating a team takes no lock: `CreateTeam` inserts in a nested transaction and retries on the slug's unique index, which on SQLite means the second writer waits for the first (up to five seconds) before it sees the slug taken.
+- **The default workspace (P25-15).** Every account the SSO provider and the sign-up gate let in becomes a member of that workspace, sees its teams as members do, and may create one team there through the onboarding (Rule D-1). That is the owner's answer; the admin chooses the workspace, the sign-up mode still decides who may have an account, and workspace managers can remove members and delete teams as today. A newcomer who skips step 2 lands in the workspace without a team and asks to join one (plan 29's access requests).
+- **The banner (P25-10)** names a session of the team the newcomer just joined; it shows the title of a session they may open anyway as a member. A draft poll is never Live, so never named.
 - **Spam through step 3.** A newcomer can send 20 invitations per request, 10 requests a minute. Same order as today's workspace invitations (20 a minute); open instances may want less.
 
 ## 16. Decisions for the owner — answered 2026-10-03
@@ -398,13 +438,37 @@ All nine are answered (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 20
 - B. Several teams, one role each, in a satellite table.
 - **Answered: A** ("one team per e-mail invitation").
 
-Notes to put to the owner with the approval of this spec (readings this revision made, not new questions of the drafts):
+Notes — readings of this spec, **ruled on the owner's behalf on 2026-10-03** (the owner answered every question and every deviation; none of these blocks the build; each is reported with the plan):
 
-- **Decisions 3 and 4 together.** A link without a use limit that also opens registration in `invite` mode lets any number of strangers holding a leaked link create accounts during its 7 days (§15). Kept as answered; the owner may want either a limit for links that open registration, or registration through a link closed in `invite` mode.
-- **What role may a facilitator give?** Written: facilitator, member or observer, as an owner. The alternative is member or observer only (a facilitator would then not create facilitators).
-- **`/t/<slug>` resolution (Rule S-1).** Written: current workspace first, then the account's other workspaces by name. The alternative is a workspace-scoped address (`/w/<workspace>/t/<slug>`), unambiguous but not the mockups' URL.
+- **Decisions 3 and 4 together.** A link without a use limit that also opens registration in `invite` mode lets any number of strangers holding a leaked link create accounts during its 7 days (§15). Ruled: kept as both answers say (no limit for links that open registration, registration through a link kept in `invite` mode); the count shown to inviters and "Create a new link" are the answer to a leak.
+- **What role may a facilitator give?** Ruled: facilitator, member or observer, as an owner (decision 2 makes them team inviters without restriction; they still cannot change an existing member's role).
+- **`/t/<slug>` resolution (Rule S-1).** Ruled: current workspace first, then the account's other workspaces by name (the mockups' URL; a workspace-scoped address would not be).
+- **The default workspace (P25-15).** Ruled: role `member`; SSO-created accounts only, never with an invitation or a usable link; applies whether or not SSO is forced (the admin fills the setting); step 2 may create one team (Rule D-1); set on the "SSO authentication" admin page and audited.
+- **The banner (P25-10).** Ruled: the most recently active Live session of plan 22; after accepting a team invitation or joining by a link (the same landing); once, as flash data.
 
-Not decisions, but put to the owner with the pre-build deviations of the plan: no "Skip for now" on step 2 (the README says "Skip" on steps 3 and 4 only, the frame draws it on step 2); the language switcher kept in the onboarding header beside the avatar and "Log out"; the link page and the `invitation_declined` bell item have no mockup.
+### 16.1 The plan's pre-build deviations — answered 2026-10-03
+
+The rows live in the plan (`docs/superpowers/plans/2026-10-21-plan-25-invitations-onboarding.md`, "Pre-build deviations"). Owner's answers (`progress.md`, line "P25: …"):
+
+| Row | Subject | Answer (2026-10-03) |
+|---|---|---|
+| P25-01 | Step 1 logo | approved: not rendered, place left (plan 26 builds no workspace logo) |
+| P25-02 | Step 2 team link | **obsolete**: the team slug was chosen (decision 7 B); built as drawn |
+| P25-03 | Step 2 "Skip for now" | **≠ rec.: built as the mockup**; it skips steps 3 and 4 too (§8.5) |
+| P25-04 | Step 4 date | approved: not rendered (scheduling backlog) |
+| P25-05 | Link URL `/invite/<token>` | approved |
+| P25-06 | Language switcher in the onboarding header | approved |
+| P25-07 | Step 3 sentence follows the role | approved |
+| P25-08 | "already in n teams" | approved: backlog |
+| P25-09 | "Ask for a new invitation" | approved: backlog |
+| P25-10 | Session-in-progress banner after accepting | **≠ rec.: built** (§8.8, §10.5) |
+| P25-11 | Link page without mockup | approved |
+| P25-12 | `invitation_declined` bell item | approved |
+| P25-13 | Register: plan and terms lines | approved: not rendered |
+| P25-14 | Register: password confirmation | approved: kept |
+| P25-15 | Step 1 filled by the admin and skipped | **≠ rec.: built** as an instance default workspace for new SSO accounts (§6.4, §10.9) |
+| P25-16 | Link line ":count joined" | approved |
+| P25-17 | General tab "Team link" | approved |
 
 ## 17. Not determined by reading
 
@@ -415,6 +479,9 @@ Not decisions, but put to the owner with the pre-build deviations of the plan: n
 5. Whether the throttles named here collide with limiter names already defined (`invitationAccounts` exists; `invitationDeclines` does not).
 6. Whether plan 23 adds a team-creation action (the slug's `CreateTeam` then extends it) and how its General tab saves the name (the slug field joins that save).
 7. How many teams share a name inside one workspace on existing instances (each such pair gets `-2`, `-3`, … in creation order).
+
+8. Whether plan 23 changed where a user with a workspace and no team lands from `dashboard` (the landing of "Skip for now", §8.5).
+9. The `section` value plan 29's audit records for a change made on its "SSO authentication" page (§6.4 writes `sign_in` unless plan 29 has one).
 
 Checked for the revision: no route of `routes/web.php` starts with `t/` (`GET t/{slug}` collides with nothing); workspaces already have an instance-unique slug made by `CreateWorkspace` (`<name>-<6 random characters>`), a different rule from the team slug's, which follows the mockup's `atlas`. Checked after the first reading: `workspace_user` and `team_user` both have a composite primary key on the pair (a second attach of one person fails), and every `database` notification to a user is announced live by `BroadcastNotificationReceivedListener`.
 </content>
