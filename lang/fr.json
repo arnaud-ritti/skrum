@@ -4772,5 +4772,15 @@
     "Another mailer from the environment (:mailer)": "Un autre service d'envoi depuis l'environnement (:mailer)",
     "GIF provider": "Fournisseur de GIF",
     "Turned-off integrations": "Intégrations désactivées",
-    ":enabled of :configured configured integrations turned on": ":enabled intégrations activées sur :configured configurées"
+    ":enabled of :configured configured integrations turned on": ":enabled intégrations activées sur :configured configurées",
+    "You don't have access to this team": "Tu n'as pas accès à cette équipe",
+    "You're signed in as :email. Ask for access and a team admin will review it.": "Tu es connecté·e en tant que :email. Demande l'accès : un admin de l'équipe examinera ta demande.",
+    ":workspace workspace · 1 member": "Espace :workspace · 1 membre",
+    ":workspace workspace · :count members": "Espace :workspace · :count membres",
+    "Message to the admins (optional)": "Message aux admins (facultatif)",
+    "Request access": "Demander l'accès",
+    "Request sent": "Demande envoyée",
+    "Request sent. You'll see the answer in your notifications.": "Demande envoyée. Tu verras la réponse dans tes notifications.",
+    "Team admins: :names": "Admins de l'équipe : :names",
+    "Team admins: :names and :count others": "Admins de l'équipe : :names et :count autres"
 }

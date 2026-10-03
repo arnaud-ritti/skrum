@@ -4552,5 +4552,15 @@
     "Another mailer from the environment (:mailer)": "Another mailer from the environment (:mailer)",
     "GIF provider": "GIF provider",
     "Turned-off integrations": "Turned-off integrations",
-    ":enabled of :configured configured integrations turned on": ":enabled of :configured configured integrations turned on"
+    ":enabled of :configured configured integrations turned on": ":enabled of :configured configured integrations turned on",
+    "You don't have access to this team": "You don't have access to this team",
+    "You're signed in as :email. Ask for access and a team admin will review it.": "You're signed in as :email. Ask for access and a team admin will review it.",
+    ":workspace workspace · 1 member": ":workspace workspace · 1 member",
+    ":workspace workspace · :count members": ":workspace workspace · :count members",
+    "Message to the admins (optional)": "Message to the admins (optional)",
+    "Request access": "Request access",
+    "Request sent": "Request sent",
+    "Request sent. You'll see the answer in your notifications.": "Request sent. You'll see the answer in your notifications.",
+    "Team admins: :names": "Team admins: :names",
+    "Team admins: :names and :count others": "Team admins: :names and :count others"
 }

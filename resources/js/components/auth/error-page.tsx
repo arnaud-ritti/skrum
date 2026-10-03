@@ -35,7 +35,10 @@ type ErrorPageProps = {
     headerLinks?: ReactNode;
     /** Place left: the search action of the 404 page, after "Back to my teams". */
     search?: ReactNode;
-    /** Place left: the access request of the 403 page, above its actions. */
+    /**
+     * The access request of a 403 about a known team: it brings its own
+     * sentence and actions, and the title names the team.
+     */
     accessRequest?: ReactNode;
     /** Place left: the version, after the name of the instance in the footer. */
     version?: ReactNode;
@@ -298,6 +301,7 @@ export function ErrorPage({
     };
     const known = status in copy ? status : 500;
     const { overline, title, description, actions } = copy[known];
+    const asksForTeam = known === 403 && accessRequest !== undefined;
 
     return (
         <div
@@ -327,28 +331,33 @@ export function ErrorPage({
                     {overline}
                 </p>
                 <h1 className="text-xl font-title tracking-subheading text-balance">
-                    {title}
+                    {asksForTeam
+                        ? t("You don't have access to this team")
+                        : title}
                 </h1>
-                <p className="text-sm/snug text-pretty text-muted-foreground">
-                    {description}
-                </p>
+                {!asksForTeam && (
+                    <p className="text-sm/snug text-pretty text-muted-foreground">
+                        {description}
+                    </p>
+                )}
                 {known === 500 && requestId && (
                     <ErrorId requestId={requestId} occurredAt={occurredAt} />
                 )}
-                {known === 403 && accessRequest !== undefined && (
+                {asksForTeam ? (
                     <div
                         data-slot="error-page-access-request"
                         className="w-full"
                     >
                         {accessRequest}
                     </div>
+                ) : (
+                    <div
+                        data-slot="error-page-actions"
+                        className="mt-1 flex flex-wrap items-center justify-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch"
+                    >
+                        {actions}
+                    </div>
                 )}
-                <div
-                    data-slot="error-page-actions"
-                    className="mt-1 flex flex-wrap items-center justify-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch"
-                >
-                    {actions}
-                </div>
             </main>
             <footer className="min-h-4 text-center text-xs text-muted-foreground">
                 {name}
