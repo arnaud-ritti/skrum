@@ -141,3 +141,34 @@ export type IntegrationSettingsPageProps = {
     confirmedUntil: string | null;
     confirmUrl: string;
 };
+
+/** An MCP key of any user, as the admin sees it: the fingerprint, never the secret. */
+export type McpKey = {
+    id: string;
+    name: string;
+    owner: { id: string; name: string; avatarUrl: string };
+    /** The token prefix and the last four characters. */
+    fingerprint: string;
+    scopes: string[];
+    /** Null for a key valid on every team of its owner. */
+    team: string | null;
+    createdAt: string | null;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+};
+
+/** One page of the keys, as Laravel's paginator serialises it. */
+export type McpKeysPage = {
+    data: McpKey[];
+    current_page: number;
+    last_page: number;
+    total: number;
+};
+
+export type McpKeysPageProps = {
+    keys: McpKeysPage;
+    /** `SKRUM_MCP_ENABLED`: the list is shown either way. */
+    mcpEnabled: boolean;
+    /** The admin's own token settings, where a key is created. */
+    createUrl: string;
+};

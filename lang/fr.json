@@ -4700,5 +4700,11 @@
     "App slug": "Slug de l'application",
     "Private key": "Clé privée",
     "Enabled": "Activé",
-    "Allowed hosts": "Hôtes autorisés"
+    "Allowed hosts": "Hôtes autorisés",
+    "Create a key": "Créer une clé",
+    "No key yet": "Aucune clé pour l'instant",
+    "Revoke :name of :owner?": "Révoquer :name de :owner ?",
+    "Agents using it stop at once.": "Les agents qui l'utilisent s'arrêtent aussitôt.",
+    "The MCP server is off (:env).": "Le serveur MCP est désactivé (:env).",
+    "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "Pour connecter des agents IA (Claude, IDE, scripts) au serveur MCP de l'instance. Une clé n'est affichée qu'une fois."
 }
