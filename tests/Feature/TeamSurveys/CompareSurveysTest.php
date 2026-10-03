@@ -33,7 +33,7 @@ it('pairs questions by key, then by kind and label, and gives each difference', 
     answeredBy(surveyQuestion($before, TeamSurveyQuestionKind::Nps, ['match_key' => null, 'label' => 'Recommend us? ']), [0, 10]);
     answeredBy(surveyQuestion($now, TeamSurveyQuestionKind::Nps, ['match_key' => null, 'label' => ' recommend US?']), [10, 10]);
     answeredBy(surveyQuestion($before, TeamSurveyQuestionKind::Single, ['match_key' => 'ritual'], ['Retro', 'Daily']), [[0], [1]]);
-    answeredBy(surveyQuestion($now, TeamSurveyQuestionKind::Single, ['match_key' => 'ritual'], ['Retro', 'Demo']), [[0], [0]]);
+    answeredBy($ritual = surveyQuestion($now, TeamSurveyQuestionKind::Single, ['match_key' => 'ritual'], ['Retro', 'Demo']), [[0], [0]]);
     surveyQuestion($before, TeamSurveyQuestionKind::Text, ['match_key' => 'left', 'label' => 'Dropped']);
     surveyQuestion($now, TeamSurveyQuestionKind::Text, ['match_key' => 'new', 'label' => 'Added']);
 
@@ -44,7 +44,8 @@ it('pairs questions by key, then by kind and label, and gives each difference', 
         ->and($comparison['belowThreshold'])->toBeFalse()
         ->and($pairs['scale'])->toMatchArray(['label' => 'New wording', 'current' => ['mean' => 4.5, 'responses' => 2], 'other' => ['mean' => 3.0, 'responses' => 2], 'delta' => 1.5])
         ->and($pairs['nps']['delta'])->toBe(100)
-        ->and($pairs['single']['delta'])->toBe([['label' => 'Retro', 'delta' => 50]])
+        ->and($pairs['single']['delta'])->toBe([['optionId' => $ritual->options()->where('label', 'Retro')->value('id'), 'label' => 'Retro', 'delta' => 50]])
+        ->and(array_column($pairs['single']['current']['options'], 'id'))->toBe($ritual->options()->orderBy('position')->pluck('id')->all())
         ->and(array_column($comparison['onlyHere'], 'label'))->toBe(['Added'])
         ->and(array_column($comparison['onlyThere'], 'label'))->toBe(['Dropped']);
 });
@@ -92,6 +93,23 @@ it('serves the comparison to a member who sees the results, and lists what can b
     $this->actingAs($member)->getJson(route('surveys.snapshot.show', $now))
         ->assertJsonPath('comparable.defaultId', $before->id)
         ->assertJsonPath('comparable.surveys.0.title', 'Sprint 41');
+});
+
+it('lists the default survey to compare with even when it closed before the twenty latest', function () {
+    $team = Team::factory()->create();
+    $source = closedSurvey($team, '2026-01-01 10:00:00', ['title' => 'The source']);
+    $now = closedSurvey($team, '2026-10-01 10:00:00', ['previous_survey_id' => $source->id]);
+
+    foreach (range(1, 20) as $day) {
+        closedSurvey($team, sprintf('2026-09-%02d 10:00:00', $day));
+    }
+
+    $surveys = $this->actingAs(teamMember($team))->getJson(route('surveys.snapshot.show', $now))
+        ->assertJsonPath('comparable.defaultId', $source->id)
+        ->json('comparable.surveys');
+
+    expect($surveys)->toHaveCount(21)
+        ->and(array_column($surveys, 'id'))->toContain($source->id);
 });
 
 it('answers with no comparison when there is nothing to compare with', function () {

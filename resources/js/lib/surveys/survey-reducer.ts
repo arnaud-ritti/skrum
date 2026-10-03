@@ -13,7 +13,12 @@ export type SurveyAction =
           answer: SurveyAnswer | null;
           progress?: SurveyProgress;
       }
-    | { type: 'progress.set'; responses: number; completed: number }
+    | {
+          type: 'progress.set';
+          responses: number;
+          completed: number;
+          audience: number;
+      }
     | { type: 'question.upsert'; question: SurveyQuestionPayload }
     | { type: 'question.remove'; questionId: string }
     | { type: 'question.reorder'; ids: string[] };
@@ -70,9 +75,9 @@ export function surveyReducer(
             return {
                 ...state,
                 progress: {
-                    ...state.progress,
                     responses: action.responses,
                     completed: action.completed,
+                    audience: action.audience,
                 },
             };
         case 'question.upsert':

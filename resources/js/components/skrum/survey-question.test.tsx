@@ -547,6 +547,10 @@ describe('SurveyQuestion results mode', () => {
         expect(screen.getByRole('img').getAttribute('aria-label')).toContain(
             '10: 1',
         );
+        expect(
+            document.querySelector('[data-slot="survey-key-figure"]')
+                ?.textContent,
+        ).toBe('NPS score: +50');
     });
 
     it('text results collapse 200 answers and expand on demand', () => {

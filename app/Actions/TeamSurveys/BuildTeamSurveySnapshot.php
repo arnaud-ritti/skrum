@@ -109,16 +109,23 @@ class BuildTeamSurveySnapshot
             return null;
         }
 
+        $default = $this->compareSurveys->defaultFor($survey);
+        $surveys = TeamSurvey::query()
+            ->where('team_id', $survey->team_id)
+            ->where('status', TeamSurveyStatus::Closed)
+            ->whereKeyNot($survey->id)
+            ->orderByDesc('closed_at')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get(['id', 'title', 'closed_at']);
+
+        if ($default !== null && ! $surveys->contains('id', $default->id)) {
+            $surveys->push($default);
+        }
+
         return [
-            'defaultId' => $this->compareSurveys->defaultFor($survey)?->id,
-            'surveys' => TeamSurvey::query()
-                ->where('team_id', $survey->team_id)
-                ->where('status', TeamSurveyStatus::Closed)
-                ->whereKeyNot($survey->id)
-                ->orderByDesc('closed_at')
-                ->orderByDesc('id')
-                ->limit(20)
-                ->get(['id', 'title', 'closed_at'])
+            'defaultId' => $default?->id,
+            'surveys' => $surveys
                 ->map(fn (TeamSurvey $other): array => [
                     'id' => $other->id,
                     'title' => $other->title,

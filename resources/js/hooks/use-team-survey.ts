@@ -83,6 +83,7 @@ export function useTeamSurvey(initial: SurveySnapshot) {
                     const payload = event.payload as {
                         responses: number;
                         completed: number;
+                        audience: number;
                     };
 
                     dispatch({ type: 'progress.set', ...payload });

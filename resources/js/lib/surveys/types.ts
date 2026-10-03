@@ -107,6 +107,13 @@ export type SurveySnapshot = {
     serverTime: string;
 };
 
+/** The difference of one option of this survey, in percentage points. */
+export type SurveyOptionDelta = {
+    optionId: string;
+    label: string;
+    delta: number;
+};
+
 export type SurveyComparisonPair = {
     questionId: string;
     otherQuestionId: string;
@@ -114,7 +121,7 @@ export type SurveyComparisonPair = {
     label: string;
     current: Record<string, unknown>;
     other: Record<string, unknown>;
-    delta: number | { label: string; delta: number }[] | null;
+    delta: number | SurveyOptionDelta[] | null;
 };
 
 export type SurveyComparison = {

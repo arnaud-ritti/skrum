@@ -232,6 +232,7 @@ class CompareSurveys
         $delta = collect($currentOptions)
             ->filter(fn (array $option): bool => $otherByLabel->has($this->normalised($option['label'])))
             ->map(fn (array $option): array => [
+                'optionId' => $option['id'],
                 'label' => $option['label'],
                 'delta' => $option['percent'] - $otherByLabel[$this->normalised($option['label'])]['percent'],
             ])
@@ -247,11 +248,12 @@ class CompareSurveys
 
     /**
      * @param  array<string, mixed>  $summary
-     * @return array<int, array{label: string, percent: int}>
+     * @return array<int, array{id: string, label: string, percent: int}>
      */
     private function percents(array $summary): array
     {
         return array_map(fn (array $option): array => [
+            'id' => $option['id'],
             'label' => $option['label'],
             'percent' => $summary['responses'] === 0 ? 0 : (int) round($option['count'] / $summary['responses'] * 100),
         ], $summary['options']);
