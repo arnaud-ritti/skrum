@@ -1,4 +1,11 @@
-import { Brush, Check, Crown, RotateCcw, Smile } from 'lucide-react';
+import {
+    Brush,
+    Check,
+    Crown,
+    MessageCircle,
+    RotateCcw,
+    Smile,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -64,6 +71,37 @@ function LedPlayerStatus({
         <span className="inline-flex items-center gap-1 text-skrum-primary-text">
             <Icon aria-hidden className="size-3.5 shrink-0" />
             {isDraw ? t('drawing') : t('giving clues')}
+        </span>
+    );
+}
+
+/** Two truths: who tells the round in play, and who has statements ready (spec §9.7). */
+function TruthPlayerStatus({
+    isTeller,
+    isReady,
+}: {
+    isTeller: boolean;
+    isReady: boolean;
+}) {
+    const { t } = useTrans();
+
+    if (isTeller) {
+        return (
+            <span className="inline-flex items-center gap-1 text-skrum-primary-text">
+                <MessageCircle aria-hidden className="size-3.5 shrink-0" />
+                {t('telling')}
+            </span>
+        );
+    }
+
+    if (!isReady) {
+        return undefined;
+    }
+
+    return (
+        <span className="inline-flex items-center gap-1 text-skrum-success-text">
+            <Check aria-hidden className="size-3.5 shrink-0" />
+            {t('Statements ready')}
         </span>
     );
 }
@@ -144,11 +182,25 @@ export function RoomPlayers({
         status && (round?.game === 'draw' || round?.game === 'decoded')
             ? round
             : null;
+    const readyIds =
+        status && room.game === 'two_truths' && snapshot.truthSets
+            ? new Set(snapshot.truthSets.ready)
+            : null;
+    const tellerId = round?.game === 'two_truths' ? round.leaderPlayerId : null;
     const canReset = points && room.canManage && !room.isIcebreaker;
 
     const detailOf = (row: Row): ReactNode => {
         if (row.player === null) {
             return undefined;
+        }
+
+        if (readyIds !== null) {
+            return (
+                <TruthPlayerStatus
+                    isTeller={row.playerId === tellerId}
+                    isReady={readyIds.has(row.playerId)}
+                />
+            );
         }
 
         if (gifDone !== null) {
@@ -235,7 +287,10 @@ export function RoomPlayers({
                         isGuest={row.player?.isGuest ?? false}
                         isMe={row.playerId === snapshot.me.playerId}
                         isHost={row.playerId === room.hostPlayerId}
-                        isTurn={row.playerId === ledRound?.leaderPlayerId}
+                        isTurn={
+                            row.playerId ===
+                            (ledRound?.leaderPlayerId ?? tellerId)
+                        }
                         offline={
                             row.player !== null &&
                             !onlineIds.has(row.player.presenceId)

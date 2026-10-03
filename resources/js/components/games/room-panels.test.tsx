@@ -53,6 +53,7 @@ function snapshot(
     game: GameKind,
     round: Partial<GameRound> | null,
     room: { isHost?: boolean; canManage?: boolean } = {},
+    truthSets: GameSnapshot['truthSets'] = null,
 ): GameSnapshot {
     return {
         room: {
@@ -79,6 +80,7 @@ function snapshot(
         players,
         history: [],
         leaderboard: [],
+        truthSets,
         round:
             round === null
                 ? null
@@ -172,5 +174,77 @@ describe('useRoomPanels', () => {
         expect(
             sheet.querySelector('[data-slot="game-settings-card"]'),
         ).not.toBeNull();
+    });
+
+    it('puts the players of Two truths on the left, marked ready, with the order of tellers and my statements while another tells', () => {
+        viewport(100);
+        renderRoom(
+            snapshot(
+                'two_truths',
+                { leaderPlayerId: 'bob', statements: ['a', 'b', 'c'] },
+                {},
+                {
+                    ready: ['ada'],
+                    mine: {
+                        statements: ['One', 'Two', 'Three'],
+                        lieIndex: 0,
+                        played: false,
+                    },
+                },
+            ),
+        );
+
+        const left = document.querySelector<HTMLElement>(
+            '[data-slot="game-left"]',
+        );
+        const right = document.querySelector<HTMLElement>(
+            '[data-slot="game-right"]',
+        );
+
+        expect(within(left!).getByText('Players')).toBeTruthy();
+        const participants = left!.querySelector<HTMLElement>(
+            '[data-slot="room-participants"]',
+        );
+
+        expect(
+            within(participants!).getByText('Statements ready'),
+        ).toBeTruthy();
+        expect(within(participants!).getByText('telling')).toBeTruthy();
+        expect(within(left!).getByText('Order of tellers')).toBeTruthy();
+        expect(within(left!).getByText('My statements')).toBeTruthy();
+        expect(within(right!).getByText('Scores')).toBeTruthy();
+        expect(within(right!).queryByText('Order of tellers')).toBeNull();
+    });
+
+    it('keeps my statements out of the column while I tell', () => {
+        viewport(100);
+        renderRoom(
+            snapshot(
+                'two_truths',
+                { leaderPlayerId: 'ada', statements: ['a', 'b', 'c'] },
+                {},
+                { ready: [], mine: null },
+            ),
+        );
+
+        expect(screen.queryByText('My statements')).toBeNull();
+    });
+
+    it('holds my statements in the players sheet of a phone', async () => {
+        viewport(30);
+        renderRoom(
+            snapshot(
+                'two_truths',
+                { leaderPlayerId: 'bob', statements: ['a', 'b', 'c'] },
+                {},
+                { ready: [], mine: null },
+            ),
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Players' }));
+
+        const sheet = await screen.findByRole('dialog');
+
+        expect(within(sheet).getByText('My statements')).toBeTruthy();
     });
 });

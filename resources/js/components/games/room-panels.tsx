@@ -90,7 +90,7 @@ export function useRoomPanels({
             variant: 'players',
             left: {
                 id: 'players',
-                label: isDraw ? t('Players') : t('Participants'),
+                label: room.game === 'gif' ? t('Participants') : t('Players'),
                 icon: Users,
                 content: (
                     <RoomPlayersSide

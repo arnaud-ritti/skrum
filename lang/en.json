@@ -4412,5 +4412,19 @@
     "This sprint's GIF": "This sprint's GIF",
     "Vote for this GIF": "Vote for this GIF",
     "Your votes": "Your votes",
-    "“:caption”": "“:caption”"
+    "“:caption”": "“:caption”",
+    "+:points": "+:points",
+    ":name's statements": ":name's statements",
+    "Lie": "Lie",
+    "My statements": "My statements",
+    "Picked by :names": "Picked by :names",
+    "Played": "Played",
+    "Reveal the lie": "Reveal the lie",
+    "Statement :number": "Statement :number",
+    "Statements ready": "Statements ready",
+    "True": "True",
+    "Which one is the lie?": "Which one is the lie?",
+    "Write new ones": "Write new ones",
+    "Your statements": "Your statements",
+    "telling": "telling"
 }

@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
+import { TwoTruthsResult } from './two-truths-board';
+import { TwoTruthsSetForm } from './two-truths-set-form';
 import { useEndedGifAnswers } from './use-ended-gif-answers';
 
 function RoundPoints({ points }: { points: GamePointsAward[] }) {
@@ -112,63 +114,81 @@ export function RoundEndCard() {
         lastEnded?.roundsTotal ?? lastRound?.roundsTotal ?? null;
     const isGameOver = number !== null && number === roundsTotal;
     const gifAnswers = useEndedGifAnswers();
+    /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
+    const setForm = snapshot.room.game === 'two_truths' && (
+        <TwoTruthsSetForm className="max-w-2xl" />
+    );
 
     if (outcome === null) {
         return (
-            <Card
-                data-slot="round-start-card"
-                className="w-full max-w-2xl items-center gap-4 px-6 py-10 text-center"
-            >
-                <h3 className="font-display text-xl font-title">
-                    {t('Ready to play?')}
-                </h3>
-                <StartRoundControls label={t('Start')} />
-            </Card>
+            <>
+                <Card
+                    data-slot="round-start-card"
+                    className="w-full max-w-2xl items-center gap-4 px-6 py-10 text-center"
+                >
+                    <h3 className="font-display text-xl font-title">
+                        {t('Ready to play?')}
+                    </h3>
+                    <StartRoundControls label={t('Start')} />
+                </Card>
+                {setForm}
+            </>
         );
     }
 
     return (
-        <Card
-            data-slot="round-end-card"
-            className={cn(
-                'w-full max-w-2xl items-center gap-3 p-6 text-center',
-                gifAnswers && 'max-w-4xl',
-            )}
-        >
-            {isGameOver && (
-                <h3 className="font-display text-2xl font-title">
-                    {t('Game over')}
-                </h3>
-            )}
-            <Badge variant="secondary" shape="pill">
-                {outcomeLabel(outcome, t)}
-            </Badge>
-            {word && (
-                <p className="max-w-full font-display text-3xl font-bold tracking-wide break-words">
-                    {word}
-                </p>
-            )}
-            {question && (
-                <p className="max-w-full text-lg font-medium break-words">
-                    {question}
-                </p>
-            )}
-            {gifAnswers && (
-                <GifRoundResults
-                    answers={gifAnswers}
-                    points={lastEnded?.answers ? lastEnded.points : []}
-                />
-            )}
-            {winner && (
-                <p className="text-muted-foreground">
-                    {t(':name found it!', { name: winner.name })}
-                </p>
-            )}
-            {lastEnded && !lastEnded.answers && (
-                <RoundPoints points={lastEnded.points} />
-            )}
-            {isGameOver && <FinalScores />}
-            <StartRoundControls label={t('Next round')} />
-        </Card>
+        <>
+            <Card
+                data-slot="round-end-card"
+                className={cn(
+                    'w-full max-w-2xl items-center gap-3 p-6 text-center',
+                    gifAnswers && 'max-w-4xl',
+                )}
+            >
+                {isGameOver && (
+                    <h3 className="font-display text-2xl font-title">
+                        {t('Game over')}
+                    </h3>
+                )}
+                <Badge variant="secondary" shape="pill">
+                    {outcomeLabel(outcome, t)}
+                </Badge>
+                {word && (
+                    <p className="max-w-full font-display text-3xl font-bold tracking-wide break-words">
+                        {word}
+                    </p>
+                )}
+                {question && (
+                    <p className="max-w-full text-lg font-medium break-words">
+                        {question}
+                    </p>
+                )}
+                {gifAnswers && (
+                    <GifRoundResults
+                        answers={gifAnswers}
+                        points={lastEnded?.answers ? lastEnded.points : []}
+                    />
+                )}
+                {lastEnded?.statements && (
+                    <TwoTruthsResult
+                        statements={lastEnded.statements}
+                        lieIndex={lastEnded.lieIndex ?? null}
+                        votes={lastEnded.votes ?? []}
+                        points={lastEnded.points}
+                    />
+                )}
+                {winner && (
+                    <p className="text-muted-foreground">
+                        {t(':name found it!', { name: winner.name })}
+                    </p>
+                )}
+                {lastEnded && !lastEnded.answers && (
+                    <RoundPoints points={lastEnded.points} />
+                )}
+                {isGameOver && <FinalScores />}
+                <StartRoundControls label={t('Next round')} />
+            </Card>
+            {setForm}
+        </>
     );
 }

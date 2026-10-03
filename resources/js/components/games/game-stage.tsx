@@ -14,6 +14,7 @@ import { RoundEndCard } from './round-end-card';
 import { RoundInfo } from './round-info';
 import { SprintGifBoard } from './sprint-gif-board';
 import { TurnTimer } from './turn-timer';
+import { TwoTruthsBoard } from './two-truths-board';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
 function RoundBoard({ round }: { round: GameRound }) {
@@ -29,7 +30,7 @@ function RoundBoard({ round }: { round: GameRound }) {
         case 'gif':
             return <SprintGifBoard round={round} />;
         case 'two_truths':
-            return null;
+            return <TwoTruthsBoard key={round.id} round={round} />;
         case 'mood':
             return null;
         case 'guess_who':

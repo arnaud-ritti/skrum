@@ -3,6 +3,7 @@ import { PersonAvatar } from '@/components/ui/avatar';
 import { useTrans } from '@/hooks/use-trans';
 import { nextLeaderId } from '@/lib/games/rotation';
 import { nextInTurn, turnStates, turnsWrap } from '@/lib/games/turns';
+import { tellerOrder } from '@/lib/games/two-truths';
 import type { GameKind } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { useRoom } from './room-context';
@@ -33,12 +34,12 @@ const RotationGames: GameKind[] = ['draw', 'two_truths'];
 
 /**
  * Who plays, in order (spec §9.3): the round's own order for the games in
- * turns, the rotation of the online players for Draw & Guess and Two truths;
- * nothing for the other games.
+ * turns, the rotation of the online players for Draw & Guess, the players
+ * with statements ready for Two truths; nothing for the other games.
  */
 function useTurnOrder(): Order | null {
     const { snapshot, online, lastEnded } = useRoom();
-    const { room, round, players, history } = snapshot;
+    const { room, round, players, history, truthSets } = snapshot;
 
     if (round !== null && round.turnOrder.length > 0) {
         return {
@@ -66,6 +67,16 @@ function useTurnOrder(): Order | null {
         lastEnded?.leaderPlayerId ??
         history[0]?.leaderPlayerId ??
         null;
+
+    if (room.game === 'two_truths') {
+        return tellerOrder(
+            players,
+            onlineIds,
+            truthSets?.ready ?? [],
+            previousLeaderId,
+            leaderId,
+        );
+    }
 
     return {
         order: players

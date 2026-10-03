@@ -10,10 +10,14 @@ import { GuessChat } from './guess-chat';
 import { HangmanFeed } from './hangman-feed';
 import { useRoom } from './room-context';
 import { RoomPlayers } from './room-players';
+import { TwoTruthsSetForm } from './two-truths-set-form';
 
-/** Draw & Guess and Sprint in one GIF put their players on the left, as their mockups do. */
+/**
+ * Draw & Guess and Sprint in one GIF put their players on the left, as their
+ * mockups do; Two truths too, its scores on the right (spec §9.7).
+ */
 export function hasPlayersOnLeft(game: GameKind): boolean {
-    return game === 'draw' || game === 'gif';
+    return game === 'draw' || game === 'gif' || game === 'two_truths';
 }
 
 export type RoomPlayersSideProps = {
@@ -35,7 +39,12 @@ export function RoomPlayersSide({
     const { t } = useTrans();
     const gifStep = useGifStep();
     const isGif = snapshot.room.game === 'gif';
+    const isTwoTruths = snapshot.room.game === 'two_truths';
     const { round } = snapshot;
+    /** While another player tells, the column holds my statements for a later round. */
+    const isListening =
+        round?.game === 'two_truths' &&
+        round.leaderPlayerId !== snapshot.me.playerId;
 
     return (
         <>
@@ -44,10 +53,11 @@ export function RoomPlayersSide({
             )}
             <RoomPlayers
                 title={isGif ? t('Participants') : t('Players')}
-                points={!isGif}
+                points={!isGif && !isTwoTruths}
                 highlightPlayerId={highlightPlayerId}
             />
             {!isGif && turnOrder}
+            {isListening && <TwoTruthsSetForm className="mt-2" />}
             {gifStep !== null && (
                 <div className="border-t pt-5">
                     <GifSteps step={gifStep} />
@@ -101,6 +111,7 @@ export function RoomSidebar({
     }
 
     const isGif = room.game === 'gif';
+    const playersOnLeft = hasPlayersOnLeft(room.game);
     const isPickingGif =
         hasRightColumn && round?.game === 'gif' && round.revealedAt === null;
 
@@ -112,11 +123,11 @@ export function RoomSidebar({
             {isGif && <GifPodium className="border-b pb-5" />}
             <RoomPlayers
                 title={t('Scores')}
-                headingId={isGif ? 'game-scores' : 'game-players'}
-                status={!isGif}
+                headingId={playersOnLeft ? 'game-scores' : 'game-players'}
+                status={!playersOnLeft}
                 highlightPlayerId={isGif ? null : highlightPlayerId}
             />
-            {!isGif && turnOrder}
+            {!playersOnLeft && turnOrder}
             {round?.game === 'hangman' && hasRightColumn && (
                 <HangmanFeed round={round} className="border-t pt-5" />
             )}

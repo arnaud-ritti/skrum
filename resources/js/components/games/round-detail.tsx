@@ -11,6 +11,7 @@ import { ClueRow } from './clue-row';
 import { DrawingCanvas } from './drawing-canvas';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
+import { TwoTruthsResult } from './two-truths-board';
 import { WordMask } from './word-mask';
 
 export function RoundDetail({ roundId }: { roundId: string }) {
@@ -135,7 +136,13 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 </div>
             );
         case 'two_truths':
-            return null;
+            return (
+                <TwoTruthsResult
+                    statements={detail.statements ?? []}
+                    lieIndex={detail.lieIndex ?? null}
+                    votes={detail.votes ?? []}
+                />
+            );
         case 'mood':
             return null;
         case 'guess_who':

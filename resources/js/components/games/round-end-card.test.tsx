@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { GameRoundEnded } from '@/lib/games/types';
+import type { GameKind, GameRoundEnded } from '@/lib/games/types';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { RoundEndCard } from './round-end-card';
@@ -32,14 +32,18 @@ function ended(number: number, roundsTotal: number | null): GameRoundEnded {
     };
 }
 
-function renderCard(lastEnded: GameRoundEnded, isHost: boolean) {
+function renderCard(
+    lastEnded: GameRoundEnded | null,
+    isHost: boolean,
+    game: GameKind = 'hangman',
+) {
     const ctx = {
         snapshot: {
             room: {
                 id: 'room',
-                game: 'hangman',
+                game,
                 isHost,
-                currentRoundId: 'round',
+                currentRoundId: lastEnded === null ? null : 'round',
                 settings: {
                     wordThemes: [],
                     turnSeconds: null,
@@ -51,10 +55,10 @@ function renderCard(lastEnded: GameRoundEnded, isHost: boolean) {
                 },
             },
             me: { playerId: 'ada' },
-            games: [{ value: 'hangman', label: 'Hangman', available: true }],
+            games: [{ value: game, label: game, available: true }],
             players,
             history: [],
-            truthSets: null,
+            truthSets: game === 'two_truths' ? { ready: [], mine: null } : null,
             round: null,
             leaderboard: [
                 { playerId: 'cy', points: 4, wins: 1, roundsPlayed: 3 },
@@ -105,5 +109,46 @@ describe('RoundEndCard', () => {
 
         expect(screen.queryByRole('heading', { name: 'Game over' })).toBeNull();
         expect(screen.getByRole('button', { name: 'Next round' })).toBeTruthy();
+    });
+
+    it('shows the lie of a Two truths round, then my statements under the card', () => {
+        renderCard(
+            {
+                ...ended(2, 3),
+                outcome: 'revealed',
+                word: null,
+                leaderPlayerId: 'bob',
+                statements: ['I ski', 'I sing', 'I fly'],
+                lieIndex: 2,
+                votes: [
+                    { index: 0, playerIds: [] },
+                    { index: 1, playerIds: ['cy'] },
+                    { index: 2, playerIds: ['ada'] },
+                ],
+                points: [
+                    { playerId: 'ada', points: 5, isWin: true },
+                    { playerId: 'bob', points: 2, isWin: false },
+                ],
+            },
+            true,
+            'two_truths',
+        );
+
+        const result = document.querySelector<HTMLElement>(
+            '[data-slot="two-truths-result"]',
+        );
+
+        expect(within(result!).getByText('Lie')).toBeTruthy();
+        expect(within(result!).getAllByText('True')).toHaveLength(2);
+        expect(
+            document.querySelector('[data-slot="two-truths-set-form"]'),
+        ).not.toBeNull();
+    });
+
+    it('asks for my statements on the waiting stage of Two truths', () => {
+        renderCard(null, false, 'two_truths');
+
+        expect(screen.getByText('Ready to play?')).toBeTruthy();
+        expect(screen.getByText('My statements')).toBeTruthy();
     });
 });

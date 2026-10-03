@@ -3,31 +3,17 @@ import { useMemo, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { nextLeaderId } from '@/lib/games/rotation';
+import { nextLeaderId, rotationAfter } from '@/lib/games/rotation';
 import {
     LeaderGames,
     MinimumPlayers,
     startPayload,
     tellerCandidates,
 } from '@/lib/games/turns';
-import type {
-    GameKind,
-    GamePlayer,
-    GameStartResponse,
-} from '@/lib/games/types';
+import type { GameKind, GameStartResponse } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { LeaderPicker } from './leader-picker';
 import { useRoom } from './room-context';
-
-/** The players in join order, starting after the previous leader. */
-function rotationAfter(
-    players: GamePlayer[],
-    previousLeaderId: string | null,
-): GamePlayer[] {
-    const start = players.findIndex((player) => player.id === previousLeaderId);
-
-    return [...players.slice(start + 1), ...players.slice(0, start + 1)];
-}
 
 function leaderLabel(
     game: GameKind,

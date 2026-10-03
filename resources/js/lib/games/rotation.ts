@@ -22,3 +22,13 @@ export function nextLeaderId(
 
     return null;
 }
+
+/** The players in join order, starting after the previous leader. */
+export function rotationAfter(
+    players: GamePlayer[],
+    previousLeaderId: string | null,
+): GamePlayer[] {
+    const start = players.findIndex((player) => player.id === previousLeaderId);
+
+    return [...players.slice(start + 1), ...players.slice(0, start + 1)];
+}

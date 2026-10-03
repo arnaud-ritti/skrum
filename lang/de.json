@@ -4632,5 +4632,19 @@
     "This sprint's GIF": "Das GIF des Sprints",
     "Vote for this GIF": "Für dieses GIF stimmen",
     "Your votes": "Deine Stimmen",
-    "“:caption”": "„:caption“"
+    "“:caption”": "„:caption“",
+    "+:points": "+:points",
+    ":name's statements": "Die Aussagen von :name",
+    "Lie": "Lüge",
+    "My statements": "Meine Aussagen",
+    "Picked by :names": "Gewählt von :names",
+    "Played": "Gespielt",
+    "Reveal the lie": "Lüge aufdecken",
+    "Statement :number": "Aussage :number",
+    "Statements ready": "Aussagen bereit",
+    "True": "Wahr",
+    "Which one is the lie?": "Welche ist die Lüge?",
+    "Write new ones": "Neue schreiben",
+    "Your statements": "Deine Aussagen",
+    "telling": "erzählt"
 }

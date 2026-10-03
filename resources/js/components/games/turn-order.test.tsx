@@ -22,6 +22,7 @@ type Setup = {
     round?: Partial<GameRound> | null;
     settings?: Partial<GameRoomSettingsInfo>;
     online?: string[];
+    ready?: string[];
 };
 
 function renderOrder({
@@ -29,6 +30,7 @@ function renderOrder({
     round = null,
     settings = {},
     online = ['ada', 'bob', 'cy', 'dee'],
+    ready = [],
 }: Setup) {
     const ctx = {
         snapshot: {
@@ -50,6 +52,7 @@ function renderOrder({
             players,
             history: [],
             round: round === null ? null : { game, turnOrder: [], ...round },
+            truthSets: game === 'two_truths' ? { ready, mine: null } : null,
         },
         lastEnded: null,
         online: online.map((id) => ({ id: `presence-${id}` })),
@@ -113,9 +116,26 @@ describe('TurnOrder', () => {
     });
 
     it('calls the order of Two truths the order of tellers', () => {
-        renderOrder({ game: 'two_truths' });
+        renderOrder({ game: 'two_truths', ready: ['bob'] });
 
         expect(screen.getByText('Order of tellers')).toBeTruthy();
+    });
+
+    it('lists only the tellers with statements ready, after the teller in play', () => {
+        renderOrder({
+            game: 'two_truths',
+            round: { leaderPlayerId: 'bob' },
+            ready: ['ada', 'dee'],
+        });
+
+        expect(states()).toEqual(['current', 'next', 'next']);
+        expect(screen.getByText('Next: Dee')).toBeTruthy();
+    });
+
+    it('is hidden in Two truths while no one has statements ready', () => {
+        renderOrder({ game: 'two_truths', ready: [] });
+
+        expect(document.querySelector('[data-slot="turn-order"]')).toBeNull();
     });
 
     it('is hidden for hangman without turns and for the games without an order', () => {
