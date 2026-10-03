@@ -19,6 +19,7 @@ import {
     POSTIT,
     type PostItColor,
 } from '@/lib/whiteboard/palette';
+import type { Point } from '@/lib/whiteboard/viewport';
 
 const Size = 200;
 
@@ -66,6 +67,30 @@ function stickyAt(x: number, y: number, color: PostItColor) {
     };
 }
 
+/**
+ * Adds a sticky of `color` with its top-left corner at `at` (scene), or
+ * centred in the view when `at` is omitted, and selects it. Returns its id.
+ */
+export function addSticky(
+    api: ExcalidrawImperativeAPI,
+    color: PostItColor,
+    at?: Point,
+): string {
+    const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+    const x = at?.x ?? width / 2 / zoom.value - scrollX - Size / 2;
+    const y = at?.y ?? height / 2 / zoom.value - scrollY - Size / 2;
+    const sticky = stickyAt(x, y, color);
+    const [restored] = restoreElements([sticky] as never, null);
+
+    api.updateScene({
+        elements: [...api.getSceneElementsIncludingDeleted(), restored],
+        appState: { selectedElementIds: { [sticky.id]: true } } as never,
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+
+    return sticky.id;
+}
+
 type Props = {
     api: ExcalidrawImperativeAPI;
     /** In the canvas shapes toolbar the trigger looks like the library's tools. */
@@ -90,17 +115,7 @@ export function StickyTool({ api, inToolbar = false, onOpenChange }: Props) {
     };
 
     const add = (chosen: PostItColor): void => {
-        const { scrollX, scrollY, zoom, width, height } = api.getAppState();
-        const x = width / 2 / zoom.value - scrollX - Size / 2;
-        const y = height / 2 / zoom.value - scrollY - Size / 2;
-        const sticky = stickyAt(x, y, chosen);
-        const [restored] = restoreElements([sticky] as never, null);
-
-        api.updateScene({
-            elements: [...api.getSceneElementsIncludingDeleted(), restored],
-            appState: { selectedElementIds: { [sticky.id]: true } } as never,
-            captureUpdate: CaptureUpdateAction.IMMEDIATELY,
-        });
+        addSticky(api, chosen);
         change(false);
     };
 
