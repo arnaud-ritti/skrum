@@ -244,6 +244,40 @@ describe('CanvasTools', () => {
         expect(api.setActiveTool).toHaveBeenCalledWith({ type: 'selection' });
     });
 
+    it('returns to the selection once when the placing pointer is cancelled, not on a later pointer-up', () => {
+        const api = fakeApi();
+
+        renderTools(api, withTool(StickyActive));
+        api.setActiveTool.mockClear();
+
+        api.held.pointerDown?.(StickyActive, { origin: { x: 0, y: 0 } });
+        fireEvent.pointerCancel(window);
+        fireEvent.pointerUp(window);
+
+        expect(api.setActiveTool).toHaveBeenCalledOnce();
+        expect(api.setActiveTool).toHaveBeenCalledWith({ type: 'selection' });
+    });
+
+    it('centres the tool bar between the top and the history bar when it does not fit under the header', () => {
+        const offsetHeight = vi
+            .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+            .mockImplementation(function (this: HTMLElement) {
+                return this.dataset.slot === 'whiteboard-toolbar' ? 480 : 0;
+            });
+        const api = fakeApi();
+        const short = snapshotWith();
+
+        renderTools(api, { ...short, view: { ...short.view, height: 690 } });
+
+        const root = document.querySelector<HTMLElement>(
+            '[data-slot="canvas-tools"]',
+        )!;
+
+        expect(root.style.top).toBe(`${(690 - 70 - 480) / 2}px`);
+
+        offsetHeight.mockRestore();
+    });
+
     it('stays on the sticky tool when the tool is kept', () => {
         const api = fakeApi();
         const kept = { ...StickyActive, locked: true };
@@ -427,6 +461,7 @@ describe('CanvasTools', () => {
         rerender(<Board api={api} snapshot={withTool({ type: 'laser' })} />);
 
         expect(tool('Selection').getAttribute('aria-pressed')).toBe('false');
+        expect(tool('More tools').className).toContain('bg-skrum-primary-soft');
 
         openMoreTools();
 
@@ -446,9 +481,26 @@ describe('CanvasTools', () => {
             screen.getByRole('menuitemcheckbox', { name: /Keep the tool/ }),
         );
 
-        expect(api.setActiveTool).toHaveBeenLastCalledWith({
-            type: 'rectangle',
-            locked: true,
+        expect(api.updateScene).toHaveBeenLastCalledWith({
+            appState: {
+                activeTool: { type: 'rectangle', locked: true },
+            },
+        });
+        expect(api.setActiveTool).not.toHaveBeenCalled();
+    });
+
+    it('keeps the image tool without opening the file picker again', () => {
+        const api = fakeApi();
+
+        renderTools(api, withTool({ type: 'image', locked: false }));
+        openMoreTools();
+        fireEvent.click(
+            screen.getByRole('menuitemcheckbox', { name: /Keep the tool/ }),
+        );
+
+        expect(api.setActiveTool).not.toHaveBeenCalled();
+        expect(api.updateScene).toHaveBeenLastCalledWith({
+            appState: { activeTool: { type: 'image', locked: true } },
         });
     });
 

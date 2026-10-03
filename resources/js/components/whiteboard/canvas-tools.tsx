@@ -102,8 +102,12 @@ const LibraryKeyTools: readonly WbTool[] = ToolGroups.flat().filter(
 /** 10.625rem: the bar's place under the board's header in ScreenWhiteboard. */
 const BarTopRem = 10.625;
 
-/** 1rem kept free under the bar before it is centred on a short canvas. */
-const BarMarginRem = 1;
+/**
+ * The band kept free under the bar, in the same column: the history bar's
+ * 1rem inset and 2.875rem height, and a 0.5rem gap. Below it the bar is
+ * centred between the top and that band.
+ */
+const HistoryBandRem = 1 + 2.875 + 0.5;
 
 function useToolLabels(): Record<WbTool, string> {
     const { t } = useTrans();
@@ -181,11 +185,17 @@ export function CanvasTools({
                 }
 
                 // After the library's own pointer-up, which reads the tool it started with.
-                window.addEventListener(
-                    'pointerup',
-                    () => api.setActiveTool({ type: 'selection' }),
-                    { once: true },
-                );
+                const backToSelection = (): void => {
+                    window.removeEventListener('pointerup', backToSelection);
+                    window.removeEventListener(
+                        'pointercancel',
+                        backToSelection,
+                    );
+                    api.setActiveTool({ type: 'selection' });
+                };
+
+                window.addEventListener('pointerup', backToSelection);
+                window.addEventListener('pointercancel', backToSelection);
             }),
         [api],
     );
@@ -203,12 +213,13 @@ export function CanvasTools({
         const remToPx = rootFontSize();
         const barHeight = bar.offsetHeight;
         const canvasHeight = snapshot.view.height;
+        const historyBand = HistoryBandRem * remToPx;
         const fits =
-            canvasHeight >= (BarTopRem + BarMarginRem) * remToPx + barHeight;
+            canvasHeight >= BarTopRem * remToPx + barHeight + historyBand;
 
         root.style.top = fits
             ? ''
-            : `${Math.max(0, (canvasHeight - barHeight) / 2)}px`;
+            : `${Math.max(0, (canvasHeight - historyBand - barHeight) / 2)}px`;
 
         const subBar = subBarRef.current;
         const activeButton = bar.querySelector<HTMLElement>(
@@ -525,18 +536,11 @@ function MoreTools({
     const isKept = libraryTool.locked;
     const { penDetected, penMode } = snapshot.appState;
 
+    /** Only `locked` changes: setActiveTool would re-open the image picker and clear the selection. */
     const keepTool = (): void => {
-        if (libraryTool.type === 'custom') {
-            api.setActiveTool({
-                type: 'custom',
-                customType: libraryTool.customType ?? StickyToolType,
-                locked: !isKept,
-            });
-
-            return;
-        }
-
-        api.setActiveTool({ type: libraryTool.type, locked: !isKept } as never);
+        api.updateScene({
+            appState: { activeTool: { ...libraryTool, locked: !isKept } },
+        });
     };
 
     return (
@@ -549,7 +553,11 @@ function MoreTools({
                             data-slot="whiteboard-tool"
                             data-roving-item=""
                             aria-label={label}
-                            className="grid size-9 shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent"
+                            className={cn(
+                                'grid size-9 shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent',
+                                isLaser &&
+                                    'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset hover:bg-skrum-primary-soft',
+                            )}
                         >
                             <Ellipsis aria-hidden className="size-4.5" />
                         </button>
