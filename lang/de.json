@@ -4543,7 +4543,7 @@
     "Share with the team": "Mit dem Team teilen",
     "Survey builder settings": "Einstellungen",
     "Option": "Option",
-    "Avatar & presence colour": "Avatar & Präsenzfarbe",
+    "Avatar & presence colour": "Avatar und Präsenzfarbe",
     "Used for your avatar and your live cursor.": "Wird für deinen Avatar und deinen Live-Cursor verwendet.",
     "Reduce animations": "Animationen reduzieren",
     "Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.": "Ersetzt Kartendrehungen, Konfetti und Neigungen beim Ziehen durch einfache Überblendungen. Standardmäßig an, wenn dein System es verlangt.",
@@ -4561,7 +4561,7 @@
     "Other sessions signed out.": "Andere Sitzungen abgemeldet.",
     "This :provider account is already linked to another account.": "Dieses :provider-Konto ist bereits mit einem anderen Konto verknüpft.",
     "Your account is already linked to :provider. Unlink it first.": "Dein Konto ist bereits mit :provider verknüpft. Hebe die Verknüpfung zuerst auf.",
-    "You can't unlink your last sign-in method: set a password or link another account first.": "Du kannst deine letzte Anmeldemethode nicht entfernen: Lege zuerst ein Passwort fest oder verknüpfe ein anderes Konto.",
+    "You can't unlink your last sign-in method: set a password or link another account first.": "Du kannst deine letzte Anmeldemethode nicht trennen: Lege zuerst ein Passwort fest oder verknüpfe ein anderes Konto.",
     "This account is managed by your admin.": "Dieses Konto wird von deinem Admin verwaltet.",
     ":provider is linked.": ":provider ist verknüpft.",
     ":provider is unlinked.": ":provider ist nicht mehr verknüpft.",
@@ -4571,7 +4571,7 @@
     "Set a password": "Ein Passwort festlegen",
     "Set the password": "Passwort festlegen",
     "Active sessions": "Aktive Sitzungen",
-    "Devices signed in to your account.": "Geräte, die bei deinem Konto angemeldet sind.",
+    "Devices signed in to your account.": "Geräte, die mit deinem Konto angemeldet sind.",
     "Sign out other sessions": "Andere Sitzungen abmelden",
     "Device": "Gerät",
     "IP address": "IP-Adresse",
@@ -4606,5 +4606,5 @@
     "Type the code the facilitator shared.": "Gib den Code ein, den die Moderation geteilt hat.",
     "The code has 8 characters": "Der Code hat 8 Zeichen",
     "Have an account?": "Du hast ein Konto?",
-    "Join a session with a code": "Einer Sitzung mit einem Code beitreten"
+    "Join a session with a code": "Mit einem Code einer Sitzung beitreten"
 }
