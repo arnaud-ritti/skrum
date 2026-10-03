@@ -23,7 +23,7 @@ class BrandingUpdateRequest extends FormRequest
             'powered_by' => ['present', 'nullable', 'boolean'],
             'avatar_style' => ['present', 'nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->selectable())],
             'avatar_member_choice' => ['present', 'nullable', 'boolean'],
-            'profile_photos' => ['present', 'nullable', 'boolean'],
+            'profile_photos' => ['sometimes', 'nullable', 'boolean'],
             'gif_provider' => ['present', 'nullable', 'string', Rule::in(InstanceSettings::GifProviders)],
             'gif_enabled' => ['present', 'nullable', 'boolean'],
             'gif_rating' => ['present', 'nullable', 'string', Rule::in(InstanceSettings::GifRatings)],
@@ -44,7 +44,8 @@ class BrandingUpdateRequest extends FormRequest
 
     /**
      * The values to hand to InstanceSettings::setMany: null clears a setting (the form sends null for a field the admin
-     * left on its default, so nothing gets pinned), and the GIF key is listed only when it changes.
+     * left on its default, so nothing gets pinned), and the GIF key is listed only when it changes. A form that does
+     * not offer the profile photos switch leaves it as it is.
      *
      * @return array<string, mixed>
      */
@@ -59,11 +60,14 @@ class BrandingUpdateRequest extends FormRequest
             InstanceSettingKey::PoweredBy->value => $this->nullableBoolean('powered_by'),
             InstanceSettingKey::AvatarStyle->value => $validated['avatar_style'] ?? null,
             InstanceSettingKey::AvatarMemberChoice->value => $this->nullableBoolean('avatar_member_choice'),
-            InstanceSettingKey::ProfilePhotos->value => $this->nullableBoolean('profile_photos'),
             InstanceSettingKey::GifProvider->value => $validated['gif_provider'] ?? null,
             InstanceSettingKey::GifEnabled->value => $this->nullableBoolean('gif_enabled'),
             InstanceSettingKey::GifRating->value => $validated['gif_rating'] ?? null,
         ];
+
+        if ($this->exists('profile_photos')) {
+            $settings[InstanceSettingKey::ProfilePhotos->value] = $this->nullableBoolean('profile_photos');
+        }
 
         $key = $validated['gif_key'] ?? null;
 

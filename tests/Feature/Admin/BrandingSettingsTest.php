@@ -734,6 +734,17 @@ it('turns profile photos on and off, and the reset turns them back off', functio
         ->and(storedBrandingSettings()->profilePhotos())->toBeFalse();
 });
 
+it('keeps the profile photos switch when the form does not send it', function () {
+    brandingAdmin($this);
+    resolve(InstanceSettings::class)->set('profile_photos', true);
+    $payload = collect(brandingPayload(['display_name' => 'Acme']))->except('profile_photos')->all();
+
+    $this->put(route('admin.branding.update'), $payload)->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->storedProfilePhotos())->toBeTrue()
+        ->and(storedBrandingSettings()->displayName())->toBe('Acme');
+});
+
 it('refuses a profile photos value that is not a boolean', function () {
     brandingAdmin($this);
 
