@@ -14,6 +14,12 @@ export const NativeChrome = {
     menu: '.main-menu-trigger',
     properties: '.selected-shape-actions',
     mobileBar: '.App-bottom-bar',
+    /**
+     * The phone layout's bottom row (`MobileMenu` of 0.18.1: the hamburger,
+     * the shape-actions toggle, duplicate or finalize, delete, undo and
+     * redo); the panel of shape actions above it stays, shown by "Styles".
+     */
+    mobileTools: '.excalidraw--mobile .App-bottom-bar .App-toolbar-content',
 } as const;
 
 export type NativeControl = 'undo' | 'redo';

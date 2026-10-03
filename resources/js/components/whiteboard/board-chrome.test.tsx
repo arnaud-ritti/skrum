@@ -94,18 +94,25 @@ function renderChrome({
     snapshot = snapshotWith(),
     editing = true,
     withApi = true,
+    isPhone = false,
+    readMode,
+    api = fakeApi(),
 }: {
     snapshot?: CanvasSnapshot | null;
     editing?: boolean;
     withApi?: boolean;
+    isPhone?: boolean;
+    readMode?: { reading: boolean; onChange: (reading: boolean) => void };
+    api?: ReturnType<typeof fakeApi>;
 } = {}) {
     return renderWithProviders(
         <BoardChrome
-            api={withApi ? (fakeApi() as never) : null}
+            api={withApi ? (api as never) : null}
             snapshot={snapshot}
             editing={editing}
-            isPhone={false}
+            isPhone={isPhone}
             isFacilitator
+            readMode={readMode}
         >
             <div data-testid="library-canvas" />
         </BoardChrome>,
@@ -181,5 +188,62 @@ describe('BoardChrome', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Styles' }));
 
         expect(wrapper?.className).not.toContain('skrum-whiteboard--styles');
+    });
+
+    it('docks "Fit to screen" before "Edit" on a phone in read mode, with no tool bar, zoom bar or minimap', () => {
+        setScreen(false);
+        const api = fakeApi();
+        const { container } = renderChrome({
+            isPhone: true,
+            editing: false,
+            readMode: { reading: true, onChange: vi.fn() },
+            api,
+        });
+        const dock = container.querySelector('[data-slot="read-mode-dock"]');
+
+        expect(
+            Array.from(dock?.querySelectorAll('button') ?? []).map(
+                (button) =>
+                    button.getAttribute('aria-label') ?? button.textContent,
+            ),
+        ).toEqual(['Fit to screen', 'Edit']);
+        expect(toolbar('Tools')).toBeNull();
+        expect(toolbar('Zoom')).toBeNull();
+        expect(toolbar('History')).toBeNull();
+        expect(screen.queryByRole('img', { name: 'Minimap' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Fit to screen' }));
+
+        expect(api.scrollToContent).toHaveBeenCalledOnce();
+    });
+
+    it('docks the compact tool bar before "Read" on a phone in edit mode, without zoom bar, history or minimap', () => {
+        setScreen(false);
+        const { container } = renderChrome({
+            isPhone: true,
+            snapshot: snapshotWith([]),
+            readMode: { reading: false, onChange: vi.fn() },
+        });
+        const dock = container.querySelector('[data-slot="read-mode-dock"]');
+        const bar = toolbar('Tools');
+
+        expect(bar?.getAttribute('aria-orientation')).toBe('horizontal');
+        expect(dock?.contains(bar)).toBe(true);
+        expect(dock?.lastElementChild?.textContent).toBe('Read');
+        expect(screen.getByRole('button', { name: 'Pencil' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Connector' })).toBeNull();
+        expect(toolbar('Zoom')).toBeNull();
+        expect(toolbar('History')).toBeNull();
+        expect(screen.queryByRole('img', { name: 'Minimap' })).toBeNull();
+    });
+
+    it('shows no bar on a phone to a viewer the lock keeps out', () => {
+        setScreen(false);
+        const { container } = renderChrome({ isPhone: true, editing: false });
+
+        expect(screen.queryAllByRole('toolbar')).toHaveLength(0);
+        expect(
+            container.querySelector('[data-slot="read-mode-dock"]'),
+        ).toBeNull();
     });
 });

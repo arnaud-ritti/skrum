@@ -84,8 +84,23 @@ function prefersReducedMotion(): boolean {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+/** Every live element in the view, without animation when motion is reduced; nothing on an empty board. */
+export function fitToScreen(api: ExcalidrawImperativeAPI): void {
+    const elements = api.getSceneElements();
+
+    if (elements.length === 0) {
+        return;
+    }
+
+    api.scrollToContent(elements, {
+        fitToViewport: true,
+        viewportZoomFactor: FitZoomFactor,
+        animate: !prefersReducedMotion(),
+    });
+}
+
 /** The library's own undo and redo buttons know whether their history is empty; they change without a scene change. */
-function useNativeHistory(canvas: RefObject<HTMLElement | null>): {
+export function useNativeHistory(canvas: RefObject<HTMLElement | null>): {
     canUndo: boolean;
     canRedo: boolean;
 } {
@@ -148,20 +163,6 @@ export function CanvasView({
                 scrollY: patch.scrollY,
                 zoom: { value: patch.zoom },
             } as never,
-        });
-    };
-
-    const fit = (): void => {
-        const elements = api.getSceneElements();
-
-        if (elements.length === 0) {
-            return;
-        }
-
-        api.scrollToContent(elements, {
-            fitToViewport: true,
-            viewportZoomFactor: FitZoomFactor,
-            animate: !prefersReducedMotion(),
         });
     };
 
@@ -246,7 +247,7 @@ export function CanvasView({
                     onReset={() =>
                         applyView(zoomAroundCentre(liveView(api), 1))
                     }
-                    onFit={fit}
+                    onFit={() => fitToScreen(api)}
                     onMinimapToggle={
                         isWide ? () => setMinimapOpen(!minimapOpen) : undefined
                     }

@@ -3,21 +3,11 @@ import {
     Circle,
     Diamond,
     Ellipsis,
-    Eraser,
-    Frame,
-    Hand,
-    Image,
     Minus,
-    MousePointer2,
     MoveUpRight,
-    Pencil,
-    Shapes,
-    Spline,
     Square,
-    StickyNote,
-    Type,
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactElement, ReactNode, RefObject } from 'react';
 import {
     WhiteboardColorBar,
@@ -38,7 +28,12 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { addSticky } from '@/components/whiteboard/sticky-tool';
+import {
+    ToolIcons,
+    useCanvasTools,
+    useToolLabels,
+} from '@/components/whiteboard/use-canvas-tools';
+import type { CanvasToolsState } from '@/components/whiteboard/use-canvas-tools';
 import type { CanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { isEditableTarget, useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
@@ -54,22 +49,8 @@ import {
 } from '@/lib/whiteboard/excalidraw';
 import { postItAppState } from '@/lib/whiteboard/palette';
 import type { PostItColor } from '@/lib/whiteboard/palette';
-import {
-    BoardToolKeys,
-    DefaultToolChoices,
-    StickyToolType,
-    ToolGroups,
-    ToolKeys,
-    canvasToolFor,
-    choicesAfter,
-    toolOf,
-} from '@/lib/whiteboard/tools';
-import type {
-    ConnectorKind,
-    ShapeKind,
-    ToolChoices,
-    WbTool,
-} from '@/lib/whiteboard/tools';
+import { BoardToolKeys, ToolGroups, ToolKeys } from '@/lib/whiteboard/tools';
+import type { ConnectorKind, ShapeKind, WbTool } from '@/lib/whiteboard/tools';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -79,19 +60,6 @@ type Props = {
     canvas: RefObject<HTMLElement | null>;
     /** Owner decision 4: laser, keep the tool, pen mode. */
     moreTools?: boolean;
-};
-
-const ToolIcons: Readonly<Record<WbTool, LucideIcon>> = {
-    select: MousePointer2,
-    hand: Hand,
-    sticky: StickyNote,
-    shape: Shapes,
-    connector: Spline,
-    text: Type,
-    pen: Pencil,
-    eraser: Eraser,
-    frame: Frame,
-    image: Image,
 };
 
 /** The letters the library answers on the canvas; the bar answers them while it has the focus. */
@@ -108,23 +76,6 @@ const BarTopRem = 10.625;
  * centred between the top and that band.
  */
 const HistoryBandRem = 1 + 2.875 + 0.5;
-
-function useToolLabels(): Record<WbTool, string> {
-    const { t } = useTrans();
-
-    return {
-        select: t('Selection'),
-        hand: t('Hand'),
-        sticky: t('Sticky note'),
-        shape: t('Shape'),
-        connector: t('Connector'),
-        text: t('Text'),
-        pen: t('Pencil'),
-        eraser: t('Eraser'),
-        frame: t('Frame'),
-        image: t('Image'),
-    };
-}
 
 function rootFontSize(): number {
     return (
@@ -145,60 +96,10 @@ export function CanvasTools({
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const labels = useToolLabels();
-    const [held, setHeld] = useState<ToolChoices>(DefaultToolChoices);
-    const libraryTool = snapshot.appState.activeTool;
-    const choices = choicesAfter(libraryTool, held);
-    const active = toolOf(libraryTool);
-    const viewMode = snapshot.appState.viewModeEnabled;
+    const tools = useCanvasTools(api, snapshot);
+    const { active, choose, viewMode } = tools;
     const rootRef = useRef<HTMLDivElement>(null);
     const subBarRef = useRef<HTMLDivElement>(null);
-    const stickyColor = useRef<PostItColor>(choices.sticky);
-    const isViewMode = useRef(viewMode);
-
-    if (choices !== held) {
-        setHeld(choices);
-    }
-
-    useEffect(() => {
-        stickyColor.current = choices.sticky;
-        isViewMode.current = viewMode;
-    });
-
-    useEffect(
-        () =>
-            api.onPointerDown((tool, pointerDownState) => {
-                if (
-                    tool.type !== 'custom' ||
-                    tool.customType !== StickyToolType
-                ) {
-                    return;
-                }
-
-                if (isViewMode.current || api.getAppState().viewModeEnabled) {
-                    return;
-                }
-
-                addSticky(api, stickyColor.current, pointerDownState.origin);
-
-                if (tool.locked) {
-                    return;
-                }
-
-                // After the library's own pointer-up, which reads the tool it started with.
-                const backToSelection = (): void => {
-                    window.removeEventListener('pointerup', backToSelection);
-                    window.removeEventListener(
-                        'pointercancel',
-                        backToSelection,
-                    );
-                    api.setActiveTool({ type: 'selection' });
-                };
-
-                window.addEventListener('pointerup', backToSelection);
-                window.addEventListener('pointercancel', backToSelection);
-            }),
-        [api],
-    );
 
     useLayoutEffect(() => {
         const root = rootRef.current;
@@ -230,10 +131,6 @@ export function CanvasTools({
             subBar.style.marginTop = `${activeButton.offsetTop}px`;
         }
     });
-
-    const choose = (tool: WbTool): void => {
-        api.setActiveTool(canvasToolFor(tool, choices));
-    };
 
     const isInsideBoard = (target: EventTarget | null): boolean =>
         target instanceof Node &&
@@ -284,23 +181,13 @@ export function CanvasTools({
     };
 
     const addFromColour = (color: PostItColor): void => {
-        addSticky(api, color);
-
-        if (libraryTool.locked) {
+        if (!tools.addStickyInView(color)) {
             return;
         }
 
-        api.setActiveTool({ type: 'selection' });
         rootRef.current
             ?.querySelector<HTMLElement>('[data-toolbar-item="sticky"]')
             ?.focus();
-    };
-
-    const applyFill = (color: PostItColor): void => {
-        api.updateScene({
-            appState: postItAppState(color) as never,
-            captureUpdate: CaptureUpdateAction.IMMEDIATELY,
-        });
     };
 
     const groups: ToolbarItem[][] = ToolGroups.map((group) =>
@@ -314,95 +201,16 @@ export function CanvasTools({
         })),
     );
 
-    const subBar = (): ReactNode => {
-        if (active === 'sticky') {
-            return (
-                <WhiteboardSubBar label={t('Sticky note colours')}>
-                    <WhiteboardColorBar
-                        value={choices.sticky}
-                        onChange={(color) =>
-                            setHeld({ ...choices, sticky: color })
-                        }
-                        onActivate={addFromColour}
-                        className="border-0 bg-transparent p-0 shadow-none"
-                    />
-                </WhiteboardSubBar>
-            );
-        }
-
-        if (active === 'shape') {
-            return (
-                <WhiteboardSubBar label={t('Shapes')}>
-                    <KindRadios<ShapeKind>
-                        label={t('Shape')}
-                        value={choices.shape}
-                        kinds={[
-                            {
-                                id: 'rectangle',
-                                label: t('Rectangle'),
-                                icon: Square,
-                            },
-                            {
-                                id: 'diamond',
-                                label: t('Diamond'),
-                                icon: Diamond,
-                            },
-                            {
-                                id: 'ellipse',
-                                label: t('Ellipse'),
-                                icon: Circle,
-                            },
-                        ]}
-                        onChoose={(shape) => {
-                            setHeld({ ...choices, shape });
-                            api.setActiveTool({ type: shape });
-                        }}
-                    />
-                    <Separator
-                        orientation="vertical"
-                        className="mx-1 self-stretch data-[orientation=vertical]:h-auto"
-                    />
-                    <WhiteboardColorBar
-                        value={
-                            colorBarState(
-                                snapshot.elements as unknown as ColorElement[],
-                                snapshot.appState as ColorAppState,
-                            ).value
-                        }
-                        onChange={applyFill}
-                        className="border-0 bg-transparent p-0 shadow-none"
-                    />
-                </WhiteboardSubBar>
-            );
-        }
-
-        if (active === 'connector') {
-            return (
-                <WhiteboardSubBar label={t('Connectors')}>
-                    <KindRadios<ConnectorKind>
-                        label={t('Connector')}
-                        value={choices.connector}
-                        kinds={[
-                            {
-                                id: 'arrow',
-                                label: t('Arrow'),
-                                icon: MoveUpRight,
-                            },
-                            { id: 'line', label: t('Line'), icon: Minus },
-                        ]}
-                        onChoose={(connector) => {
-                            setHeld({ ...choices, connector });
-                            api.setActiveTool({ type: connector });
-                        }}
-                    />
-                </WhiteboardSubBar>
-            );
-        }
-
-        return null;
-    };
-
-    const shownSubBar = subBar();
+    const shownSubBar = (
+        <CanvasToolSubBar
+            api={api}
+            snapshot={snapshot}
+            tools={tools}
+            onAddSticky={addFromColour}
+        />
+    );
+    const hasSubBar =
+        active === 'sticky' || active === 'shape' || active === 'connector';
 
     return (
         <div
@@ -421,13 +229,129 @@ export function CanvasTools({
                     ) : undefined
                 }
             />
-            {shownSubBar && (
+            {hasSubBar && (
                 <div ref={subBarRef} className="pointer-events-auto">
                     {shownSubBar}
                 </div>
             )}
         </div>
     );
+}
+
+/**
+ * The sub-bar of the active tool: the sticky colours (a press adds a note in
+ * the middle of the view), the kinds of shape with the eight fills, the kinds
+ * of connector. Nothing for the other tools.
+ */
+export function CanvasToolSubBar({
+    api,
+    snapshot,
+    tools,
+    onAddSticky,
+    className,
+}: {
+    api: ExcalidrawImperativeAPI;
+    snapshot: CanvasSnapshot;
+    tools: CanvasToolsState;
+    onAddSticky: (color: PostItColor) => void;
+    className?: string;
+}): ReactNode {
+    const { t } = useTrans();
+    const { active, choices, hold } = tools;
+
+    const applyFill = (color: PostItColor): void => {
+        api.updateScene({
+            appState: postItAppState(color) as never,
+            captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+        });
+    };
+
+    if (active === 'sticky') {
+        return (
+            <WhiteboardSubBar
+                label={t('Sticky note colours')}
+                className={className}
+            >
+                <WhiteboardColorBar
+                    value={choices.sticky}
+                    onChange={(color) => hold({ ...choices, sticky: color })}
+                    onActivate={onAddSticky}
+                    className="border-0 bg-transparent p-0 shadow-none"
+                />
+            </WhiteboardSubBar>
+        );
+    }
+
+    if (active === 'shape') {
+        return (
+            <WhiteboardSubBar label={t('Shapes')} className={className}>
+                <KindRadios<ShapeKind>
+                    label={t('Shape')}
+                    value={choices.shape}
+                    kinds={[
+                        {
+                            id: 'rectangle',
+                            label: t('Rectangle'),
+                            icon: Square,
+                        },
+                        {
+                            id: 'diamond',
+                            label: t('Diamond'),
+                            icon: Diamond,
+                        },
+                        {
+                            id: 'ellipse',
+                            label: t('Ellipse'),
+                            icon: Circle,
+                        },
+                    ]}
+                    onChoose={(shape) => {
+                        hold({ ...choices, shape });
+                        api.setActiveTool({ type: shape });
+                    }}
+                />
+                <Separator
+                    orientation="vertical"
+                    className="mx-1 self-stretch data-[orientation=vertical]:h-auto"
+                />
+                <WhiteboardColorBar
+                    value={
+                        colorBarState(
+                            snapshot.elements as unknown as ColorElement[],
+                            snapshot.appState as ColorAppState,
+                        ).value
+                    }
+                    onChange={applyFill}
+                    className="border-0 bg-transparent p-0 shadow-none"
+                />
+            </WhiteboardSubBar>
+        );
+    }
+
+    if (active === 'connector') {
+        return (
+            <WhiteboardSubBar label={t('Connectors')} className={className}>
+                <KindRadios<ConnectorKind>
+                    label={t('Connector')}
+                    value={choices.connector}
+                    kinds={[
+                        {
+                            id: 'arrow',
+                            label: t('Arrow'),
+                            icon: MoveUpRight,
+                        },
+                        { id: 'line', label: t('Line'), icon: Minus },
+                    ]}
+                    onChoose={(connector) => {
+                        hold({ ...choices, connector });
+                        api.setActiveTool({ type: connector });
+                    }}
+                />
+            </WhiteboardSubBar>
+        );
+    }
+
+    return null;
 }
 
 type Kind<T extends string> = { id: T; label: string; icon: LucideIcon };

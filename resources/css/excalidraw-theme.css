@@ -109,6 +109,28 @@
     display: none !important;
 }
 
+/* Plan 20, phone layout: the library's bottom row (hamburger, edit-menu
+   toggle, duplicate or finalize, delete, undo, redo) gives way to the
+   board's compact bar; the undo and redo buttons stay mounted for the
+   drawer. The panel of shape actions above the row stays, opened by
+   "Styles"; the island that held both loses its own background while the
+   panel is closed. `NativeChrome.mobileTools`. Check this when the library
+   is upgraded. */
+.skrum-whiteboard--own-chrome
+    .excalidraw.excalidraw--mobile
+    .App-bottom-bar
+    .App-toolbar-content {
+    display: none !important;
+}
+
+.skrum-whiteboard--own-chrome
+    .excalidraw.excalidraw--mobile
+    .App-bottom-bar
+    > .Island:not(:has(.App-mobile-menu)) {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
 /* "Styles": the library's panel beside our tool bar (left 1rem, 2.25rem tools,
    0.25rem padding, 1px border), not under it. */
 .skrum-whiteboard--own-chrome.skrum-whiteboard--styles

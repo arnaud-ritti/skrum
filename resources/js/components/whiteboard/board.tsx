@@ -60,7 +60,6 @@ import {
 import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
-import { ReadModeLayer } from './read-mode-toggle';
 import { SceneExport } from './scene-export';
 import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
 
@@ -294,6 +293,11 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     editing={!viewMode}
                     isPhone={isPhone}
                     isFacilitator={me.isFacilitator}
+                    readMode={
+                        canSwitchReadMode(isPhone, viewOnly)
+                            ? { reading, onChange: setReading }
+                            : undefined
+                    }
                 >
                     <Excalidraw
                         viewModeEnabled={viewMode ? true : undefined}
@@ -375,12 +379,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <MainMenu.DefaultItems.ChangeCanvasBackground />
                         </MainMenu>
                     </Excalidraw>
-                    {api && canSwitchReadMode(isPhone, viewOnly) && (
-                        <ReadModeLayer
-                            reading={reading}
-                            onChange={setReading}
-                        />
-                    )}
                 </BoardChrome>
                 <BoardReactions state={state} />
             </div>

@@ -30,4 +30,10 @@ describe('excalidraw theme stylesheet', () => {
         expect(css).not.toMatch(/Excalifont|Virgil/);
         expect(css).not.toMatch(/--font-family/);
     });
+
+    it('hides the library tool row of the phone layout under the board chrome', () => {
+        expect(css).toMatch(
+            /\.skrum-whiteboard--own-chrome\s+\.excalidraw\.excalidraw--mobile\s+\.App-bottom-bar\s+\.App-toolbar-content/,
+        );
+    });
 });

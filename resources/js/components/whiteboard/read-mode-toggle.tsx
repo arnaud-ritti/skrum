@@ -2,6 +2,7 @@ import { Eye, Pencil } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 
 type ReadModeToggleProps = {
     reading: boolean;
@@ -36,22 +37,27 @@ export function ReadModeToggle({
 type ReadModeLayerProps = ReadModeToggleProps & {
     /** Place left for the "Follow :name" pill of the phone (roadmap WB-3). */
     follow?: ReactNode;
-    /** Place left for the phone tools before the toggle: fit to screen, comments (roadmap WB-1, WB-2). */
-    tools?: ReactNode;
+    /**
+     * Before the toggle: "Fit to screen" while reading, the phone's tool bar
+     * while editing (plan 20); comments later (roadmap WB-2).
+     */
+    dockActions?: ReactNode;
 };
 
 /**
  * What the phone adds over the canvas: the "Reading" state at the top while
- * reading, and the toggle in the bottom dock, beside the reactions. The state
- * is a polite region that stays mounted, so a change of mode is announced; it
- * is a span, the board's notices being the `div[role="status"]`. The rules
- * that place the dock against the canvas's own bottom bar are in app.css.
+ * reading, and the toggle in the bottom dock: at the right beside the
+ * reactions while reading, centred after the phone's tool bar while editing
+ * (MobileRituals' wb-dock). The state is a polite region that stays
+ * mounted, so a change of mode is announced; it is a span, the board's
+ * notices being the `div[role="status"]`. The rules that place the dock and
+ * the reactions in the phone layout are in app.css.
  */
 export function ReadModeLayer({
     reading,
     onChange,
     follow,
-    tools,
+    dockActions,
 }: ReadModeLayerProps) {
     const { t } = useTrans();
 
@@ -78,9 +84,12 @@ export function ReadModeLayer({
             </div>
             <div
                 data-slot="read-mode-dock"
-                className="pointer-events-none absolute right-4 bottom-6 z-10 flex h-14 max-w-full items-center gap-1"
+                className={cn(
+                    'pointer-events-none absolute bottom-6 z-10 flex h-14 max-w-full items-center gap-1',
+                    reading ? 'right-4' : 'inset-x-4 justify-center',
+                )}
             >
-                {tools}
+                {dockActions}
                 <ReadModeToggle reading={reading} onChange={onChange} />
             </div>
         </>
