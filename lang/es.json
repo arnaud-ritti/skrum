@@ -4427,5 +4427,18 @@
     "Results, scale 1-5 with mean, most frequent answer and a fall": "Resultados, escala 1-5 con media, respuesta más frecuente y una bajada",
     "Results, NPS with segments and a rise": "Resultados, NPS con segmentos y una subida",
     "Results, NPS with no change": "Resultados, NPS sin cambios",
-    "Sprint 41": "Sprint 41"
+    "Sprint 41": "Sprint 41",
+    ":responses answers out of :audience participants · anonymous": ":responses respuestas de :audience participantes · anónima",
+    "Answer the survey to see the results.": "Responde a la encuesta para ver los resultados.",
+    "Answers appear here as people send them.": "Las respuestas aparecen aquí a medida que llegan.",
+    "Close the survey?": "¿Cerrar la encuesta?",
+    "Compare": "Comparar",
+    "Export CSV": "Exportar CSV",
+    "Free-text answers": "Respuestas libres",
+    "Nothing to compare with yet.": "Aún no hay nada con qué comparar.",
+    "People can no longer answer. You can reopen it.": "Ya nadie podrá responder. Puedes reabrirla.",
+    "Results appear from :threshold answers. :responses so far.": "Los resultados aparecen a partir de :threshold respuestas. :responses por ahora.",
+    "Results will show when the survey is closed.": "Los resultados se mostrarán cuando se cierre la encuesta.",
+    "See the :count answers": "Ver las :count respuestas",
+    "closed on :date": "cerrada el :date"
 }

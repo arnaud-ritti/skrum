@@ -1,0 +1,183 @@
+import { screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { renderWithProviders } from '@/test/render';
+import { surveySnapshot } from '@/test/survey-results';
+import { ResultsState, resultsStateOf } from './results-states';
+
+describe('resultsStateOf', () => {
+    it('reads the summary when the results are there', () => {
+        expect(resultsStateOf(surveySnapshot())).toBe('summary');
+    });
+
+    it('reads the threshold when too few people have answered', () => {
+        expect(
+            resultsStateOf(
+                surveySnapshot({
+                    results: {
+                        belowThreshold: true,
+                        responses: 2,
+                        questions: {},
+                    },
+                }),
+            ),
+        ).toBe('belowThreshold');
+    });
+
+    it('reads an empty survey when the threshold is passed with no answer', () => {
+        expect(
+            resultsStateOf(
+                surveySnapshot({
+                    survey: { resultsThreshold: 0 },
+                    results: {
+                        belowThreshold: false,
+                        responses: 0,
+                        questions: {},
+                    },
+                }),
+            ),
+        ).toBe('empty');
+    });
+
+    it('waits for the closing when results show only then', () => {
+        expect(
+            resultsStateOf(
+                surveySnapshot({
+                    me: { canSeeResults: false, isEditor: false },
+                    results: null,
+                }),
+            ),
+        ).toBe('afterClose');
+    });
+
+    it('asks for an answer when results show after answering', () => {
+        expect(
+            resultsStateOf(
+                surveySnapshot({
+                    survey: { showResultsAfterAnswer: true },
+                    me: {
+                        canSeeResults: false,
+                        isEditor: false,
+                        hasSubmitted: false,
+                    },
+                    results: null,
+                }),
+            ),
+        ).toBe('answerFirst');
+    });
+
+    it('loads while results the viewer may see have not arrived', () => {
+        expect(resultsStateOf(surveySnapshot({ results: null }))).toBe(
+            'loading',
+        );
+    });
+});
+
+describe('ResultsState', () => {
+    it('gives the threshold and the answers so far, with their progress', () => {
+        renderWithProviders(
+            <ResultsState
+                snapshot={surveySnapshot({
+                    results: {
+                        belowThreshold: true,
+                        responses: 2,
+                        questions: {},
+                    },
+                })}
+            />,
+        );
+
+        const status = screen.getByRole('status');
+
+        expect(status.textContent).toContain(
+            'Results appear from 3 answers. 2 so far.',
+        );
+        expect(
+            within(status)
+                .getByRole('progressbar')
+                .getAttribute('aria-valuenow'),
+        ).toBe('2');
+    });
+
+    it('says results show at the closing', () => {
+        renderWithProviders(
+            <ResultsState
+                snapshot={surveySnapshot({
+                    me: { canSeeResults: false, isEditor: false },
+                    results: null,
+                })}
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            'Results will show when the survey is closed.',
+        );
+    });
+
+    it('leads to the survey when results show after answering', () => {
+        renderWithProviders(
+            <ResultsState
+                snapshot={surveySnapshot({
+                    survey: { showResultsAfterAnswer: true },
+                    me: {
+                        canSeeResults: false,
+                        isEditor: false,
+                        hasSubmitted: false,
+                    },
+                    results: null,
+                })}
+            />,
+        );
+
+        const status = screen.getByRole('status');
+
+        expect(status.textContent).toContain(
+            'Answer the survey to see the results.',
+        );
+        expect(within(status).getByRole('link').getAttribute('href')).toBe(
+            '/surveys/survey-1',
+        );
+    });
+
+    it('shows the empty state when nobody has answered', () => {
+        renderWithProviders(
+            <ResultsState
+                snapshot={surveySnapshot({
+                    survey: { resultsThreshold: 0 },
+                    progress: { responses: 0, completed: 0 },
+                    results: {
+                        belowThreshold: false,
+                        responses: 0,
+                        questions: {},
+                    },
+                })}
+            />,
+        );
+
+        const status = screen.getByRole('status');
+
+        expect(
+            within(status).getByRole('heading', { name: 'No answers yet.' }),
+        ).not.toBeNull();
+    });
+
+    it('shows skeleton cards while loading', () => {
+        const { container } = renderWithProviders(
+            <ResultsState snapshot={surveySnapshot({ results: null })} />,
+        );
+
+        expect(screen.getByRole('status').getAttribute('aria-label')).toBe(
+            'Loading',
+        );
+        expect(
+            container.querySelectorAll('[data-slot="skeleton"]').length,
+        ).toBeGreaterThan(0);
+    });
+
+    it('renders nothing on a summary', () => {
+        const { container } = renderWithProviders(
+            <ResultsState snapshot={surveySnapshot()} />,
+        );
+
+        expect(container.innerHTML).toBe('');
+    });
+});
