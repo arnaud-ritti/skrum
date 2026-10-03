@@ -4931,5 +4931,16 @@
     "you can still change it until the estimate is saved.": "you can still change it until the estimate is saved.",
     ":selected of :total selected": ":selected of :total selected",
     "Pick at least one ticket, or choose “Later”.": "Pick at least one ticket, or choose “Later”.",
-    "Role changed.": "Role changed."
+    "Role changed.": "Role changed.",
+    "A sprint lasts at most eight weeks.": "A sprint lasts at most eight weeks.",
+    "Rituals saved.": "Rituals saved.",
+    "Sprint :number already exists.": "Sprint :number already exists.",
+    "Sprint :number already starts today.": "Sprint :number already starts today.",
+    "Sprint :number is already planned from :date.": "Sprint :number is already planned from :date.",
+    "Sprint :number started.": "Sprint :number started.",
+    "Sprint added.": "Sprint added.",
+    "Sprint deleted.": "Sprint deleted.",
+    "Sprint numbers stop at :max.": "Sprint numbers stop at :max.",
+    "Sprint saved.": "Sprint saved.",
+    "This sprint overlaps Sprint :number (:start – :end).": "This sprint overlaps Sprint :number (:start – :end)."
 }

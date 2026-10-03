@@ -5151,5 +5151,16 @@
     "you can still change it until the estimate is saved.": "du kannst sie noch ändern, bis die Schätzung gespeichert ist.",
     ":selected of :total selected": ":selected von :total ausgewählt",
     "Pick at least one ticket, or choose “Later”.": "Wähle mindestens ein Ticket oder „Später“.",
-    "Role changed.": "Rolle geändert."
+    "Role changed.": "Rolle geändert.",
+    "A sprint lasts at most eight weeks.": "Ein Sprint dauert höchstens acht Wochen.",
+    "Rituals saved.": "Rituale gespeichert.",
+    "Sprint :number already exists.": "Sprint :number gibt es bereits.",
+    "Sprint :number already starts today.": "Sprint :number beginnt bereits heute.",
+    "Sprint :number is already planned from :date.": "Sprint :number ist bereits ab dem :date geplant.",
+    "Sprint :number started.": "Sprint :number gestartet.",
+    "Sprint added.": "Sprint hinzugefügt.",
+    "Sprint deleted.": "Sprint gelöscht.",
+    "Sprint numbers stop at :max.": "Sprint-Nummern enden bei :max.",
+    "Sprint saved.": "Sprint gespeichert.",
+    "This sprint overlaps Sprint :number (:start – :end).": "Dieser Sprint überschneidet sich mit Sprint :number (:start – :end)."
 }

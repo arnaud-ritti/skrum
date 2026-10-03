@@ -174,8 +174,11 @@ use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
+use App\Http\Controllers\TeamRitualsController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamSessionsController;
+use App\Http\Controllers\TeamSprintsController;
+use App\Http\Controllers\TeamSprintStartsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyComparisonsController;
@@ -350,6 +353,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index')->where('source', 'jira|linear|jira_dc|github');
             Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
             Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store')->where('source', 'jira|linear|jira_dc|github');
+            Route::post('teams/{team}/sprints', [TeamSprintsController::class, 'store'])->name('teams.sprints.store');
+            Route::patch('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'update'])->name('teams.sprints.update')->whereUuid('sprint');
+            Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy')->whereUuid('sprint');
+            Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
+            Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
