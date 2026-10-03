@@ -75,22 +75,20 @@ export default function TeamMembersPage({
             membersCount={members.length}
         >
             <Head title={t('Members & rituals')} />
-            <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[5fr_4fr]">
-                <div className="flex min-w-0 flex-col gap-5">
-                    <MembersTable
-                        workspaceSlug={workspace.slug}
-                        team={team}
-                        members={members}
-                        canManageMembers={canManageMembers}
-                        roleOptions={roleOptions}
-                    />
-                    <SprintsCard
-                        workspaceSlug={workspace.slug}
-                        team={team}
-                        sprints={sprints}
-                        rituals={rituals}
-                    />
-                </div>
+            <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[5fr_4fr] xl:[&>#members]:col-span-2">
+                <MembersTable
+                    workspaceSlug={workspace.slug}
+                    team={team}
+                    members={members}
+                    canManageMembers={canManageMembers}
+                    roleOptions={roleOptions}
+                />
+                <SprintsCard
+                    workspaceSlug={workspace.slug}
+                    team={team}
+                    sprints={sprints}
+                    rituals={rituals}
+                />
                 <div className="flex min-w-0 flex-col gap-5">
                     <DefaultFacilitatorsCard
                         workspaceSlug={workspace.slug}

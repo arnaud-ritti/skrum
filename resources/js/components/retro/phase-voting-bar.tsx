@@ -6,7 +6,11 @@ import { VoteBudget } from '@/components/skrum/vote-dots';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useTrans } from '@/hooks/use-trans';
-import { votingProgress, type CardVoting } from '@/lib/retro/adapters';
+import {
+    isObserving,
+    votingProgress,
+    type CardVoting,
+} from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
@@ -141,7 +145,7 @@ export function PhaseVotingBar({
     const { cast, total } = votingProgress(board);
     const budget = board.retro.votesPerParticipant;
     const remaining = board.viewer.remainingVotes;
-    const showsBudget = part !== 'progress';
+    const showsBudget = part !== 'progress' && !isObserving(board);
     const showsProgress = part !== 'budget';
 
     return (

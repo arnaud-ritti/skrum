@@ -60,6 +60,21 @@ describe('PhaseVotingBar', () => {
         ).toBe('of 2');
     });
 
+    it('shows an observer of the team no vote budget, only how far the room is (P23-04)', () => {
+        const { container } = bar({
+            viewer: { isFacilitator: false, participantId: 'bob' },
+            viewerIsObserver: true,
+        });
+
+        expect(
+            container.querySelector('[data-slot="vote-budget-detail"]'),
+        ).toBeNull();
+        expect(screen.queryByText('Votes left: 1')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-voting-progress"]'),
+        ).not.toBeNull();
+    });
+
     it('keeps the sentence the browser suite reads', () => {
         bar();
 

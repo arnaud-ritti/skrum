@@ -4,6 +4,7 @@ import {
     centreOrigin,
 } from '@/components/session/use-flying-reactions';
 import { channelKey } from '@/lib/realtime/whisper-transport';
+import { isObserving } from '@/lib/retro/adapters';
 import { useBoard } from './board-context';
 import { dragIsolation } from './dnd';
 
@@ -29,7 +30,7 @@ export function BoardReactions({
 }: Props) {
     const { board, presence, online } = useBoard();
 
-    if (!presence || !showsRetroReactions(board.retro)) {
+    if (!presence || !showsRetroReactions(board.retro) || isObserving(board)) {
         return null;
     }
 

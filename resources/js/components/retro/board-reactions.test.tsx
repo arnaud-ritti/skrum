@@ -51,4 +51,19 @@ describe('BoardReactions', () => {
 
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
+
+    it('gives an observer of the team no Reactions toolbar (P23-04)', () => {
+        renderInBoard(
+            <BoardReactions />,
+            boardContext(
+                retroSnapshot({
+                    viewer: { isFacilitator: false, participantId: 'bob' },
+                    viewerIsObserver: true,
+                }),
+                { presence: channel() },
+            ),
+        );
+
+        expect(screen.queryByRole('toolbar')).toBeNull();
+    });
 });
