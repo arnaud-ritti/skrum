@@ -2,6 +2,7 @@
 
 namespace App\Actions\TeamSurveys;
 
+use App\Enums\TeamSurveyStatus;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
@@ -13,6 +14,7 @@ class BuildTeamSurveySnapshot
         private PresentSurveyQuestion $presentSurveyQuestion,
         private PresentSurveyProgress $presentSurveyProgress,
         private BuildSurveyResults $buildSurveyResults,
+        private CompareSurveys $compareSurveys,
     ) {}
 
     /**
@@ -59,6 +61,7 @@ class BuildTeamSurveySnapshot
             'questions' => $this->questions($survey, $viewer),
             'progress' => $this->presentSurveyProgress->handle($survey),
             'results' => $this->buildSurveyResults->handle($survey, $viewer),
+            'comparable' => $this->comparable($survey, $viewer),
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$survey->team->workspace, $survey->team], absolute: false),
                 'show' => route('surveys.show', $survey, absolute: false),
@@ -87,5 +90,37 @@ class BuildTeamSurveySnapshot
             ->map(fn (TeamSurveyQuestion $question): array => $this->presentSurveyQuestion->handle($question, $myAnswers->get($question->id)))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array{defaultId: ?string, surveys: array<int, array{id: string, title: string, closedAt: ?string}>}|null
+     */
+    private function comparable(TeamSurvey $survey, TeamSurveyRespondent $viewer): ?array
+    {
+        if ($viewer->isGuest()) {
+            return null;
+        }
+
+        if (! $survey->resultsVisibleTo($viewer)) {
+            return null;
+        }
+
+        return [
+            'defaultId' => $this->compareSurveys->defaultFor($survey)?->id,
+            'surveys' => TeamSurvey::query()
+                ->where('team_id', $survey->team_id)
+                ->where('status', TeamSurveyStatus::Closed)
+                ->whereKeyNot($survey->id)
+                ->orderByDesc('closed_at')
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get(['id', 'title', 'closed_at'])
+                ->map(fn (TeamSurvey $other): array => [
+                    'id' => $other->id,
+                    'title' => $other->title,
+                    'closedAt' => $other->closed_at?->toIso8601String(),
+                ])
+                ->all(),
+        ];
     }
 }

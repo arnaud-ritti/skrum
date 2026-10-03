@@ -4,6 +4,7 @@ namespace App\Http\Controllers\TeamSurveys;
 
 use App\Actions\TeamSurveys\BuildTeamSurveySnapshot;
 use App\Actions\TeamSurveys\CreateTeamSurvey;
+use App\Actions\TeamSurveys\DuplicateTeamSurvey;
 use App\Actions\TeamSurveys\NewTeamSurvey;
 use App\Actions\TeamSurveys\TeamSurveyGuard;
 use App\Enums\TeamSurveyStatus;
@@ -27,8 +28,19 @@ use Inertia\Response;
 
 class TeamSurveysController extends Controller
 {
-    public function store(TeamSurveyStoreRequest $request, Workspace $workspace, Team $team, CreateTeamSurvey $createTeamSurvey): RedirectResponse
-    {
+    public function store(
+        TeamSurveyStoreRequest $request,
+        Workspace $workspace,
+        Team $team,
+        CreateTeamSurvey $createTeamSurvey,
+        DuplicateTeamSurvey $duplicateTeamSurvey,
+    ): RedirectResponse {
+        if ($request->filled('source_survey_id')) {
+            $source = $team->teamSurveys()->whereKey($request->validated('source_survey_id'))->firstOrFail();
+
+            return to_route('surveys.edit', $duplicateTeamSurvey->handle($source, $request->user(), $request->validated('title')));
+        }
+
         $survey = $createTeamSurvey->handle($team, $request->user(), new NewTeamSurvey(
             title: $request->validated('title'),
             template: $request->enum('template', TeamSurveyTemplate::class),
