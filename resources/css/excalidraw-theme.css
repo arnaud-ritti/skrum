@@ -102,11 +102,18 @@
     .layer-ui__wrapper__footer-left
     .undo-redo-buttons,
 .skrum-whiteboard--own-chrome .excalidraw .layer-ui__wrapper__footer-right,
-.skrum-whiteboard--own-chrome .excalidraw .main-menu-trigger,
+.skrum-whiteboard--own-chrome .excalidraw .main-menu-trigger {
+    display: none !important;
+}
+
+/* The closed property panel stays laid out: its opacity slider places its
+   value from the input's measured width when the value changes, and a panel
+   out of the layout measures 0, which drops "100" onto the "0" label once
+   "Styles" opens it. Check this when the library is upgraded. */
 .skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
     .excalidraw
     .selected-shape-actions {
-    display: none !important;
+    visibility: hidden !important;
 }
 
 /* Plan 20, phone layout: the library's bottom row (hamburger, edit-menu
@@ -132,9 +139,8 @@
 }
 
 /* "Styles": the library's panel beside our tool bar (left 1rem, 2.25rem tools,
-   0.25rem padding, 1px border), not under it. */
-.skrum-whiteboard--own-chrome.skrum-whiteboard--styles
-    .excalidraw
-    .App-menu_top__left {
+   0.25rem padding, 1px border), not under it; closed, it stays there too, so
+   its hidden box never lies over the tool bar. */
+.skrum-whiteboard--own-chrome .excalidraw .App-menu_top__left {
     margin-left: calc(1rem + 2.75rem + 2px + 1rem);
 }
