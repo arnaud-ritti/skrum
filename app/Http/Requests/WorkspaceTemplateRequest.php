@@ -33,7 +33,30 @@ class WorkspaceTemplateRequest extends FormRequest
             return false;
         }
 
+        // A team visibility without a team is left to the rules, which answer it with a validation error.
+        if ($this->visibility() === TemplateVisibility::Team && $this->input('team_id') === null) {
+            return true;
+        }
+
         return $user->can('share', [WorkspaceTemplate::class, $this->workspace(), $this->visibility(), $this->sharedTeam()]);
+    }
+
+    /**
+     * A team template saved without a visibility nor a team, such as a columns-only save, stays with its team.
+     */
+    protected function prepareForValidation(): void
+    {
+        $template = $this->route('template');
+
+        if (! $template instanceof WorkspaceTemplate || $template->visibility !== TemplateVisibility::Team) {
+            return;
+        }
+
+        if ($this->has('visibility') || $this->has('team_id')) {
+            return;
+        }
+
+        $this->merge(['team_id' => $template->team_id]);
     }
 
     /**
@@ -79,7 +102,12 @@ class WorkspaceTemplateRequest extends FormRequest
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
             'visibility' => ['sometimes', Rule::enum(TemplateVisibility::class)],
-            'team_id' => ['nullable', 'uuid', Rule::prohibitedIf(fn (): bool => $this->visibility() !== TemplateVisibility::Team)],
+            'team_id' => [
+                'nullable',
+                'uuid',
+                Rule::requiredIf(fn (): bool => $this->visibility() === TemplateVisibility::Team),
+                Rule::prohibitedIf(fn (): bool => $this->visibility() !== TemplateVisibility::Team),
+            ],
         ];
     }
 

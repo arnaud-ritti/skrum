@@ -150,3 +150,32 @@ it('makes a team template personal to the facilitator who changes its visibility
         ->team_id->toBeNull()
         ->created_by_user_id->toBe($facilitator->id);
 });
+
+it('keeps the team of a team template saved without a visibility, and asks for a team when the visibility says team', function () {
+    $team = Team::factory()->create();
+    $facilitator = teamMember($team, TeamRole::Facilitator);
+    $template = WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Team, 'team_id' => $team->id]);
+    $route = route('workspaces.templates.update', [$team->workspace, $template]);
+
+    $this->actingAs($facilitator)->patch($route, templateBody(['name' => 'Renamed']))->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($template->refresh())
+        ->name->toBe('Renamed')
+        ->team_id->toBe($team->id);
+
+    $this->actingAs($facilitator)->patch($route, templateBody(['visibility' => 'team']))->assertSessionHasErrors('team_id');
+    postTemplate($facilitator, $team, ['visibility' => 'team'])->assertSessionHasErrors('team_id');
+});
+
+it('drops a template that becomes personal as the default of the teams', function () {
+    $team = Team::factory()->create();
+    $facilitator = teamMember($team, TeamRole::Facilitator);
+    $template = WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Team, 'team_id' => $team->id]);
+    $team->update(['default_retro_template' => $template->catalogueKey()]);
+
+    $this->actingAs($facilitator)
+        ->patch(route('workspaces.templates.update', [$team->workspace, $template]), templateBody(['visibility' => 'personal']))
+        ->assertRedirect();
+
+    expect($team->fresh()->default_retro_template)->toBeNull();
+});

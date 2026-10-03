@@ -93,6 +93,10 @@ class WorkspaceTemplatesController extends Controller
             ]);
 
             $this->replaceColumns($lockedTemplate, $request->templateColumns());
+
+            if ($lockedTemplate->visibility === TemplateVisibility::Personal) {
+                $workspace->teams()->where('default_retro_template', $lockedTemplate->catalogueKey())->update(['default_retro_template' => null]);
+            }
         }, Transactions::Attempts);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Template saved.')]);
