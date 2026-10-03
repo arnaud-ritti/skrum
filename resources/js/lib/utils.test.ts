@@ -11,6 +11,9 @@ describe('cn', () => {
             'text-primary text-body-sm',
         );
         expect(cn('text-xs', 'text-overline')).toBe('text-overline');
+        expect(cn('text-muted-foreground', 'text-3xs')).toBe(
+            'text-muted-foreground text-3xs',
+        );
     });
 
     it('keeps a shadow colour next to a custom shadow of the theme', () => {
