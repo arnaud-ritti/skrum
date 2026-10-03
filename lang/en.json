@@ -4172,5 +4172,10 @@
     "Test environment": "Test environment",
     "Unclear specifications": "Unclear specifications",
     "Something else": "Something else",
-    "A word for the team?": "A word for the team?"
+    "A word for the team?": "A word for the team?",
+    "Only the survey's facilitator or a workspace admin can do this.": "Only the survey's facilitator or a workspace admin can do this.",
+    "Questions can only change while the survey is a draft.": "Questions can only change while the survey is a draft.",
+    "The questions of a health check come from the team's statements.": "The questions of a health check come from the team's statements.",
+    "This survey is not open.": "This survey is not open.",
+    "You no longer have access to this survey.": "You no longer have access to this survey."
 }

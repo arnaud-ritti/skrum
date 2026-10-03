@@ -4392,5 +4392,10 @@
     "Test environment": "Environnement de recette",
     "Unclear specifications": "Spécifications floues",
     "Something else": "Autre chose",
-    "A word for the team?": "Un mot pour l'équipe ?"
+    "A word for the team?": "Un mot pour l'équipe ?",
+    "Only the survey's facilitator or a workspace admin can do this.": "Seul le facilitateur du sondage ou un administrateur de l'espace peut faire cela.",
+    "Questions can only change while the survey is a draft.": "Les questions ne peuvent changer que tant que le sondage est un brouillon.",
+    "The questions of a health check come from the team's statements.": "Les questions d'un bilan de santé viennent des énoncés de l'équipe.",
+    "This survey is not open.": "Ce sondage n'est pas ouvert.",
+    "You no longer have access to this survey.": "Tu n'as plus accès à ce sondage."
 }

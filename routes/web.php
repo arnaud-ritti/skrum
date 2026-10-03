@@ -153,6 +153,10 @@ use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\TeamSurveyJoinsController;
+use App\Http\Controllers\TeamSurveys\TeamSurveyResultsController;
+use App\Http\Controllers\TeamSurveys\TeamSurveysController;
+use App\Http\Controllers\TeamSurveys\TeamSurveySnapshotsController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
 use App\Http\Controllers\Whiteboards\WhiteboardDuplicatesController;
@@ -180,6 +184,7 @@ use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
+use App\Http\Middleware\ResolveSurveyRespondent;
 use App\Http\Middleware\ResolveWhiteboardMember;
 use App\Support\Branding\BrandAssets;
 use Illuminate\Http\Request;
@@ -584,6 +589,21 @@ Route::prefix('whiteboards/{board}')
         Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
         Route::post('template', [WhiteboardTemplatesController::class, 'store'])->name('whiteboards.template.store');
         Route::post('duplicate', [WhiteboardDuplicatesController::class, 'store'])->name('whiteboards.duplicate.store');
+    });
+
+Route::get('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'show'])->name('surveys.join.show');
+Route::post('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'store'])->name('surveys.join.store')->middleware('throttle:10,1');
+
+Route::prefix('surveys/{teamSurvey}')
+    ->whereUuid('teamSurvey')
+    ->middleware(ResolveSurveyRespondent::class)
+    ->scopeBindings()
+    ->group(function (): void {
+        Route::get('/', [TeamSurveysController::class, 'show'])->name('surveys.show');
+        Route::get('edit', [TeamSurveysController::class, 'edit'])->name('surveys.edit');
+        Route::delete('/', [TeamSurveysController::class, 'destroy'])->name('surveys.destroy');
+        Route::get('snapshot', [TeamSurveySnapshotsController::class, 'show'])->name('surveys.snapshot.show');
+        Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
