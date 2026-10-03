@@ -75,6 +75,7 @@ export function surveySnapshot(
             version: 4,
             openedAt: '2026-10-19T09:00:00.000Z',
             closedAt: null,
+            savedAt: '2026-10-19T08:55:00.000Z',
             ...survey,
         },
         me: {

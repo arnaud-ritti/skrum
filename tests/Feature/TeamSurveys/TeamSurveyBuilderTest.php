@@ -188,3 +188,28 @@ it('gives the questions of another survey their own ends', function () {
 
     expect(resolve(PresentSurveyQuestion::class)->handle($question)['scaleLabels'])->toBe(['Low', 'High']);
 });
+
+it('gives the builder the time of the last save, which a change or a removal of a question moves', function () {
+    $created = now()->startOfSecond()->subHour();
+    $this->travelTo($created);
+    [$survey, $facilitator] = draftSurvey();
+    $question = surveyQuestion($survey, TeamSurveyQuestionKind::Single, [], ['A', 'B']);
+    $kept = surveyQuestion($survey);
+
+    $this->actingAs($facilitator)->getJson(route('surveys.snapshot.show', $survey))
+        ->assertJsonPath('survey.savedAt', $created->toIso8601String());
+
+    $this->travelTo($created->copy()->addMinutes(5));
+    $this->patchJson(route('surveys.questions.update', [$survey, $question]), [
+        'kind' => 'single', 'label' => 'Which one?', 'is_required' => false, 'options' => ['X', 'Y'],
+    ])->assertOk();
+
+    $this->getJson(route('surveys.snapshot.show', $survey))
+        ->assertJsonPath('survey.savedAt', $created->copy()->addMinutes(5)->toIso8601String());
+
+    $this->travelTo($created->copy()->addMinutes(9));
+    $this->deleteJson(route('surveys.questions.destroy', [$survey, $kept]))->assertNoContent();
+
+    $this->getJson(route('surveys.snapshot.show', $survey))
+        ->assertJsonPath('survey.savedAt', $created->copy()->addMinutes(9)->toIso8601String());
+});

@@ -6,6 +6,7 @@ use App\Enums\HealthStatement;
 use App\Enums\TeamSurveyQuestionKind;
 use Database\Factories\TeamSurveyQuestionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Touches;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'kind', 'label', 'short_label', 'description', 'builtin', 'match_key', 'position', 'is_required', 'allows_comment',
     'scale_max', 'scale_min_label', 'scale_max_label',
 ])]
+#[Touches(['survey'])]
 class TeamSurveyQuestion extends Model
 {
     /** @use HasFactory<TeamSurveyQuestionFactory> */

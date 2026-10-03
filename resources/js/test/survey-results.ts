@@ -182,6 +182,7 @@ export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
             version: 4,
             openedAt: '2026-10-01T09:00:00+00:00',
             closedAt: null,
+            savedAt: '2026-10-01T08:55:00+00:00',
             ...overrides.survey,
         },
         me: {

@@ -82,6 +82,8 @@ export type SurveySnapshot = {
         version: number;
         openedAt: string | null;
         closedAt: string | null;
+        /** The last time the survey or one of its questions was saved. */
+        savedAt: string | null;
     };
     me: {
         id: string;

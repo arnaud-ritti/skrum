@@ -48,6 +48,7 @@ class BuildTeamSurveySnapshot
                 'version' => $survey->version,
                 'openedAt' => $survey->opened_at?->toIso8601String(),
                 'closedAt' => $survey->closed_at?->toIso8601String(),
+                'savedAt' => $survey->updated_at?->toIso8601String(),
             ],
             'me' => [
                 'id' => $viewer->id,

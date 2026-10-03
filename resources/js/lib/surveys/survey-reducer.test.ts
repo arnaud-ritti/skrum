@@ -46,6 +46,7 @@ function snapshot(overrides: Partial<SurveySnapshot> = {}): SurveySnapshot {
             version: 4,
             openedAt: null,
             closedAt: null,
+            savedAt: null,
         },
         me: {
             id: 'r1',
