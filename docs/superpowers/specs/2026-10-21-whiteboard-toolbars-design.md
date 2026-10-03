@@ -3,7 +3,7 @@
 Date: 2026-10-03
 Status: **Approved for execution — §15 answered by the owner on 2026-10-03 (every answer is the recommended option); every pre-build deviation of §16 approved by the owner on 2026-10-03** (P20-07 with the recommendation, P20-08 and P20-10 by name, the others as listed). The owner's "Oui vas y" of 2026-10-03 covers running the plan autonomously. Roadmap order: wave A, in parallel with plans 21, 26, 27 and 29; integration branch `roadmap`.
 Roadmap: plan 20, row WB-1 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`; clears the "toolbars" part of deviation **D-21** and deviation **D-49** (`docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup").
-Parent specs: `docs/superpowers/specs/2026-10-01-whiteboard-design.md` (the board: canvas, sync, access, facilitation) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (rules §5, rulings §6.5). Final location once approved: `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.
+Parent specs: `docs/superpowers/specs/2026-10-01-whiteboard-design.md` (the board: canvas, sync, access, facilitation) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (rules §5, rulings §6.5). Moved to its final location `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` by plan 20 Task 19 (built; the capture comparison of Task 19 added P20-11 and P20-12 to §16).
 Mockups (README and `preview.html` of each): `ScreenWhiteboard` (binding for the desktop board), `WhiteboardToolbar` (anatomy, states, keyboard), `MobileRituals` frame 1 (phone), `ExcalidrawTheme` (palette and theme, which stay), `KeyboardShortcuts` (the whiteboard section).
 
 ## 1. Problem statement
@@ -104,7 +104,7 @@ Placement over the canvas, from the mockup at 1440 × 900:
 | **Sub-bar** of the active tool, `role="toolbar"` named after the tool | to the right of the tool bar, aligned on the active tool's row, 0.5rem gap | Sticky note: the eight colours (`WhiteboardColorBar`); Shape: Rectangle, Diamond, Ellipse, then the eight colours; Connector: Arrow, Line; other tools: none | `sk-wbbar` (sub-bar of `WhiteboardToolbar` preview) |
 | **History** `role="toolbar"` "History" | bottom-left, 1rem | Undo, Redo (disabled when the library's stack is empty) | `sk-wbbar`, `sk-tool` |
 | **Zoom** `role="toolbar"` "Zoom" | bottom-right, 1rem | Zoom out (−), the percentage (a button: "Reset zoom to 100 %"), Zoom in (+) · separator · Fit to screen, Minimap (toggle, `aria-pressed`) | `sk-wbbar`, `wb-zoom-v` |
-| **Minimap** `role="img"` named "Minimap" with an interactive viewport (see below) | above the zoom bar, right-aligned, 0.5rem gap; 11.25rem × 7rem | the live elements as rectangles (an element whose fill is one of the eight colours — a sticky, or a shape recoloured from the bar — in that colour's swatch classes, any other element in `--muted-foreground` at 50 % opacity; bound texts are not drawn), the visible area as `sk-minimap-view` | `sk-minimap`, `sk-minimap-view`, `wb-mm-el` |
+| **Minimap** `role="img"` named "Minimap" with an interactive viewport (see below) | above the zoom bar, right-aligned, 0.5rem gap; 11.25rem × 7rem (ScreenWhiteboard draws it under the zoom bar: P20-11) | the live elements as rectangles (an element whose fill is one of the eight colours — a sticky, or a shape recoloured from the bar — in that colour's swatch classes, any other element in `--muted-foreground` at 50 % opacity; bound texts are not drawn), the visible area as `sk-minimap-view` | `sk-minimap`, `sk-minimap-view`, `wb-mm-el` |
 | **Selection bar** `role="toolbar"` "Selection" | under the selection's bounding box, centred on it, 0.75rem below; above it when there is no room below; kept 1rem inside the canvas | the eight colours (only when the selection has a filled shape) · separator · Group or Ungroup, Align (menu), Lock / Unlock (facilitator), Styles (§15 decision 2), Delete (destructive: icon and label in its tooltip, `--skrum-destructive-text`) | `sk-wbbar`, `wb-swatch`, `sk-vsep`, `sk-tool` |
 | **Count chip** | on the top-left corner of the selection's box, above it | "1 element" / ":count elements" | `wb-selcount` |
 
@@ -251,7 +251,7 @@ Each question is a product choice the mockups and the standing rules do not sett
 
 ## 16. Deviations expected (approved before the screens are built)
 
-Status of every row: **answered by the owner on 2026-10-03 — approved**: P20-07 with the recommendation ("Fit to screen" and "Modifier" in the read dock), P20-08 and P20-10 approved by name, every other row approved as listed. No row changes what is built.
+Status of every row: **answered by the owner on 2026-10-03 — approved**: P20-07 with the recommendation ("Fit to screen" and "Modifier" in the read dock), P20-08 and P20-10 approved by name, every other row approved as listed. No row changes what is built. P20-11 and P20-12 were found after the build, by the capture comparison of plan 20 Task 19: their status is in their rows.
 
 Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
@@ -267,6 +267,10 @@ Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no suc
 | P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the library's hidden tool bar) | S §5 rule 3 | approved |
 | P20-09 | WhiteboardToolbar README: zoom 10 %–400 % | 10 %–3000 %, the library's range (a wheel zoom reaches it anyway) | F: a bar that stops at 400 % while the canvas is at 900 % would show a false state | approved as listed |
 | P20-10 | Minimap shown at every width (desktop frame) | from `lg` (64rem) only; below, the zoom bar alone | A: no overlap with the reactions bar (§5 rule 4) | approved |
+| P20-11 | ScreenWhiteboard: the zoom bar above the minimap, the minimap on the bottom edge | the minimap above the zoom bar; the zoom bar on the bottom edge, level with the history and reactions bars | S §9.1: the place this spec gives; the zoom bar keeps one place whether the minimap is open, closed or absent below `lg`, so its Minimap toggle never moves away from the pointer that pressed it | found by the capture comparison of Task 19; kept as built on the owner's behalf; **to approve by the owner** (moving it is the order of two blocks in `canvas-view.tsx`) |
+| P20-12 | WhiteboardToolbar preview: the sticky sub-bar offers five colours | the eight colours of `WhiteboardColorBar` | O: 7-D1 and 7-D3 (eight colours, the colour bar everywhere; §4) | found by the capture comparison of Task 19; covered by 7-D1 |
+
+Fixed, not a deviation (Task 19): with "Styles" open the opacity value "100" lay on the slider's "0" label, because the library places it from the slider's width measured while the closed panel was out of the layout. The closed panel is now hidden with `visibility` and stays beside the tool bar (`excalidraw-theme.css`, its Vitest).
 
 ## 17. Not determined by reading
 

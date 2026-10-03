@@ -49,7 +49,7 @@ Not requested, staying backlog (spec `2026-10-19-standalone-surveys-design.md` �
 
 | Id | Feature | Mockup | Clears | Back end | Needs | Plan |
 |---|---|---|---|---|---|---|
-| WB-1 | Rebuilt toolbars: vertical tool bar, selection bar, zoom, minimap | ScreenWhiteboard | D-21 (toolbars) | None: front only, over Excalidraw's API. Spec §3 and rulings 5 and 29 are reversed by its spec | — | 20 |
+| WB-1 | Rebuilt toolbars: vertical tool bar, selection bar, zoom, minimap | ScreenWhiteboard | D-21 (toolbars) | None: front only, over Excalidraw's API. Spec §3 and rulings 5 and 29 are reversed by its spec (`2026-10-21-whiteboard-toolbars-design.md`) | — | done, plan 20 |
 | WB-2 | Comments on the board | ScreenWhiteboard (topbar "Comments") | D-21 | No comment model for a whiteboard | WB-1 | 28 |
 | WB-3 | Follow a person | ScreenWhiteboard ("Suivre Camille") | D-21 | Viewport follow exists for the facilitator ("Bring everyone to me"); following any member needs a per-member viewport broadcast | WB-1 | 28 |
 | WB-4 | Author of a sticky | ScreenWhiteboard | D-21 | Elements store no author | — | 28 |
