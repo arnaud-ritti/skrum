@@ -57,12 +57,12 @@ class CompareSurveys
         $otherQuestions = $other->questions()->with('options')->get();
         $currentSummaries = $this->buildSurveyResults->summaries($current);
         $otherSummaries = $this->buildSurveyResults->summaries($other);
-        $taken = [];
+        $matches = $this->matches($currentQuestions, $otherQuestions);
         $pairs = [];
         $onlyHere = [];
 
         foreach ($currentQuestions as $question) {
-            $match = $this->match($question, $otherQuestions->reject(fn (TeamSurveyQuestion $candidate): bool => in_array($candidate->id, $taken, true)));
+            $match = $matches[$question->id] ?? null;
 
             if ($match === null) {
                 $onlyHere[] = $this->lone($question);
@@ -70,9 +70,10 @@ class CompareSurveys
                 continue;
             }
 
-            $taken[] = $match->id;
             $pairs[] = $this->pair($question, $match, $currentSummaries[$question->id], $otherSummaries[$match->id]);
         }
+
+        $taken = array_map(fn (TeamSurveyQuestion $match): string => $match->id, array_values($matches));
 
         return [
             ...$header,
@@ -92,21 +93,48 @@ class CompareSurveys
     }
 
     /**
-     * @param  Collection<int, TeamSurveyQuestion>  $candidates
+     * Every key is paired before any label, so that a label never takes the
+     * question another one would have matched by key (spec §6.6).
+     *
+     * @param  Collection<int, TeamSurveyQuestion>  $currentQuestions
+     * @param  Collection<int, TeamSurveyQuestion>  $otherQuestions
+     * @return array<string, TeamSurveyQuestion>
      */
-    private function match(TeamSurveyQuestion $question, Collection $candidates): ?TeamSurveyQuestion
+    private function matches(Collection $currentQuestions, Collection $otherQuestions): array
     {
-        if ($question->match_key !== null) {
-            $byKey = $candidates->first(fn (TeamSurveyQuestion $candidate): bool => $candidate->match_key === $question->match_key && $candidate->kind === $question->kind);
+        $matches = [];
+        $candidates = $otherQuestions->keyBy('id');
 
-            if ($byKey !== null) {
-                return $byKey;
+        foreach ($currentQuestions as $question) {
+            $byKey = $candidates->first(fn (TeamSurveyQuestion $candidate): bool => $question->match_key !== null
+                && $candidate->match_key === $question->match_key
+                && $candidate->kind === $question->kind);
+
+            if ($byKey === null) {
+                continue;
             }
+
+            $matches[$question->id] = $byKey;
+            $candidates->forget($byKey->id);
         }
 
-        return $candidates->first(fn (TeamSurveyQuestion $candidate): bool => $candidate->kind === $question->kind
-            && $this->normalised($candidate->label) === $this->normalised($question->label)
-            && ($candidate->match_key === null || $question->match_key === null));
+        foreach ($currentQuestions as $question) {
+            if (isset($matches[$question->id])) {
+                continue;
+            }
+
+            $byLabel = $candidates->first(fn (TeamSurveyQuestion $candidate): bool => $candidate->kind === $question->kind
+                && $this->normalised($candidate->label) === $this->normalised($question->label));
+
+            if ($byLabel === null) {
+                continue;
+            }
+
+            $matches[$question->id] = $byLabel;
+            $candidates->forget($byLabel->id);
+        }
+
+        return $matches;
     }
 
     private function normalised(string $label): string

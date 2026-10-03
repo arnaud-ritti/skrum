@@ -2,6 +2,7 @@
 
 use App\Actions\TeamSurveys\CompareSurveys;
 use App\Enums\TeamSurveyQuestionKind;
+use App\Enums\TeamSurveyStatus;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyQuestion;
@@ -133,4 +134,41 @@ it('gives no value of the other survey while it is below its threshold', functio
 
     expect($comparison['belowThreshold'])->toBeTrue()
         ->and($comparison['pairs'])->toBe([]);
+});
+
+it('pairs two questions built apart when their kind and label are the same', function () {
+    $team = Team::factory()->create();
+    $before = TeamSurvey::factory()->withoutThreshold()->create(['team_id' => $team->id]);
+    $now = TeamSurvey::factory()->withoutThreshold()->create(['team_id' => $team->id]);
+    [$beforeFacilitator] = surveyFacilitator($before);
+    [$nowFacilitator] = surveyFacilitator($now);
+
+    $this->actingAs($beforeFacilitator)->postJson(route('surveys.questions.store', $before), ['kind' => 'scale', 'label' => 'How was the sprint?', 'options' => []])->assertCreated();
+    $this->actingAs($nowFacilitator)->postJson(route('surveys.questions.store', $now), ['kind' => 'scale', 'label' => 'How was the sprint? ', 'options' => []])->assertCreated();
+    $before->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => '2026-09-01 10:00:00']);
+    $now->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => '2026-10-01 10:00:00']);
+    answeredBy($before->questions()->sole(), [2, 4]);
+    answeredBy($now->questions()->sole(), [5, 5]);
+
+    $comparison = resolve(CompareSurveys::class)->handle($now->fresh(), $before->fresh());
+
+    expect($comparison['pairs'])->toHaveCount(1)
+        ->and($comparison['pairs'][0]['delta'])->toBe(2.0)
+        ->and($comparison['onlyHere'])->toBe([])
+        ->and($comparison['onlyThere'])->toBe([]);
+});
+
+it('pairs by key before it tries the labels', function () {
+    $team = Team::factory()->create();
+    $before = closedSurvey($team, '2026-09-01 10:00:00');
+    $now = closedSurvey($team, '2026-10-01 10:00:00');
+    $renamed = surveyQuestion($before, TeamSurveyQuestionKind::Scale, ['match_key' => 'mood', 'label' => 'Energy']);
+    $keyed = surveyQuestion($before, TeamSurveyQuestionKind::Scale, ['match_key' => 'energy', 'label' => 'Energy']);
+    $sameLabel = surveyQuestion($now, TeamSurveyQuestionKind::Scale, ['match_key' => 'fresh', 'label' => 'Energy']);
+    $sameKey = surveyQuestion($now, TeamSurveyQuestionKind::Scale, ['match_key' => 'energy', 'label' => 'Energy level']);
+
+    $pairs = collect(resolve(CompareSurveys::class)->handle($now, $before)['pairs'])->pluck('otherQuestionId', 'questionId');
+
+    expect($pairs[$sameKey->id])->toBe($keyed->id)
+        ->and($pairs[$sameLabel->id])->toBe($renamed->id);
 });
