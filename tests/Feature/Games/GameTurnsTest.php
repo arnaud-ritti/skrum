@@ -97,10 +97,12 @@ it('lets the turn\'s player end the turn, and the host skip it, and moves to the
 });
 
 it('refuses a turn end from another player, for a turn that moved on, or in a game without turns', function () {
-    ['room' => $room, 'hostUser' => $hostUser, 'bUser' => $bUser, 'a' => $a, 'b' => $b] = turnTable();
+    ['room' => $room, 'hostUser' => $hostUser, 'bUser' => $bUser, 'host' => $host, 'a' => $a, 'b' => $b] = turnTable();
     $round = $this->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['turn_order' => [$a->id, $b->id]])->json('round');
 
     $this->actingAs($bUser)->postJson(route('games.rounds.turn.store', [$room, $round['id']]), ['expected_player_id' => $a->id])->assertForbidden();
+    $this->actingAs($bUser)->postJson(route('games.rounds.turn.store', [$room, $round['id']]), ['expected_player_id' => $host->id])->assertForbidden();
+    $this->actingAs($bUser)->postJson(route('games.rounds.turn.store', [$room, $round['id']]), ['expected_player_id' => $b->id])->assertConflict();
     $this->actingAs($hostUser)->postJson(route('games.rounds.turn.store', [$room, $round['id']]), ['expected_player_id' => $b->id])->assertConflict();
 
     ['room' => $plain, 'hostUser' => $plainHost, 'host' => $host] = turnTable([], new FakeGameRules);
@@ -130,9 +132,11 @@ it('ends an expired turn on the next request of anyone, as the room timer does',
 
     $this->travel(31)->seconds();
 
-    $this->actingAs($aUser)->getJson(route('games.snapshot.show', $room))
+    $this->actingAs($aUser)->withHeader('X-Socket-ID', '111.222')->getJson(route('games.snapshot.show', $room))
         ->assertOk()
         ->assertJsonPath('round.turnPlayerId', $b->id);
+
+    Event::assertDispatched(GameTurnChanged::class, fn (GameTurnChanged $event): bool => $event->payload['turnPlayerId'] === $b->id && $event->socket === null);
 });
 
 it('ends a round that is its own turn when its deadline passes', function () {

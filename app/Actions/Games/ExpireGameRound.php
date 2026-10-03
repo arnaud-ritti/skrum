@@ -4,6 +4,7 @@ namespace App\Actions\Games;
 
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Support\BroadcastToEveryone;
 use App\Support\Games\GameRulesRegistry;
 use Illuminate\Support\Facades\DB;
 
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
  * Ends (or moves on) the active round once the room's timer, or the
  * current turn's deadline, has run out, both from the delayed jobs and
  * lazily on every game request, so a late queue never shows a stale round.
+ * The requester's own socket hears the change too: it did not ask for it.
  */
 class ExpireGameRound
 {
@@ -31,7 +33,7 @@ class ExpireGameRound
             return;
         }
 
-        DB::transaction(function () use ($room, $round): void {
+        BroadcastToEveryone::during(fn () => DB::transaction(function () use ($room, $round): void {
             [$lockedRoom, $lockedRound] = LockGameRound::handle($room, $round);
 
             if ($lockedRoom->current_round_id !== $lockedRound->id || ! $lockedRound->isActive()) {
@@ -59,7 +61,7 @@ class ExpireGameRound
             if ($outcome !== null) {
                 $this->endGameRound->handle($lockedRoom, $lockedRound, $outcome);
             }
-        });
+        }));
 
         $room->refresh();
     }
