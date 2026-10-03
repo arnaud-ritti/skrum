@@ -83,6 +83,7 @@ describe('SurveyRoom', () => {
                     show: '/surveys/s1',
                     results: '/surveys/s1/results',
                     edit: null,
+                    healthCheck: null,
                 },
             }),
         );
@@ -323,6 +324,7 @@ describe('SurveyRoom', () => {
                     show: '/surveys/s1',
                     results: '/surveys/s1/results',
                     edit: '/surveys/s1/edit',
+                    healthCheck: null,
                 },
             }),
         );

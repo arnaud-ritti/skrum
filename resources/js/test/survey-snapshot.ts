@@ -99,6 +99,7 @@ export function surveySnapshot(
             show: '/surveys/s1',
             results: '/surveys/s1/results',
             edit: null,
+            healthCheck: null,
         },
         serverTime: '2026-10-19T10:00:00.000Z',
         ...rest,
