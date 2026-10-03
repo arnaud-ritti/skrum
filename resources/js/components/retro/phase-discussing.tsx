@@ -325,7 +325,7 @@ function TopicNav({ timer }: { timer?: ReactNode }) {
     return (
         <div
             data-slot="retro-topic-nav"
-            className="flex min-w-0 flex-wrap items-center justify-between gap-3"
+            className="@container/topic-nav flex min-w-0 flex-wrap items-center justify-between gap-3"
         >
             <Button
                 type="button"
