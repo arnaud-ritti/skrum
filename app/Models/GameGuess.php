@@ -17,11 +17,12 @@ use Illuminate\Support\Carbon;
  * @property string $text
  * @property bool $is_near_miss
  * @property bool $is_correct
+ * @property int|null $hints
  * @property Carbon|null $created_at
  * @property-read GameRound $round
  * @property-read GamePlayer $player
  */
-#[Fillable(['game_round_id', 'player_id', 'text', 'is_near_miss', 'is_correct'])]
+#[Fillable(['game_round_id', 'player_id', 'text', 'is_near_miss', 'is_correct', 'hints'])]
 class GameGuess extends Model
 {
     /** @use HasFactory<GameGuessFactory> */
@@ -48,6 +49,7 @@ class GameGuess extends Model
         return [
             'is_near_miss' => 'boolean',
             'is_correct' => 'boolean',
+            'hints' => 'integer',
         ];
     }
 }

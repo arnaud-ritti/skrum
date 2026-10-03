@@ -4670,5 +4670,8 @@
     "Answer aloud, one after the other.": "Réponds à voix haute, chacun son tour.",
     "Your turn to speak": "À toi de parler",
     "Rounds per game": "Manches",
-    "Round :number · endless": "Manche :number · sans fin"
+    "Round :number · endless": "Manche :number · sans fin",
+    "Someone has already found the word.": "Quelqu'un a déjà trouvé le mot.",
+    "You have already changed the word.": "Tu as déjà changé de mot.",
+    "You have already found the word.": "Tu as déjà trouvé le mot."
 }

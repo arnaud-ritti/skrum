@@ -2,6 +2,7 @@
 
 namespace App\Actions\Games;
 
+use App\Enums\GameKind;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use LogicException;
@@ -21,6 +22,7 @@ class PresentGameRoundHistory
      *     outcome: string,
      *     word: ?string,
      *     question: ?string,
+     *     clue: ?array<int, string>,
      *     leaderPlayerId: ?string,
      *     leaderName: ?string,
      *     winnerPlayerId: ?string,
@@ -40,6 +42,7 @@ class PresentGameRoundHistory
             'outcome' => $round->outcome->value,
             'word' => $round->word,
             'question' => $round->question,
+            'clue' => $round->game === GameKind::Decoded ? $round->clue : null,
             'leaderPlayerId' => $round->leader_player_id,
             'leaderName' => $round->leader?->displayName(),
             'winnerPlayerId' => $round->winner_player_id,

@@ -13,9 +13,12 @@ class DrawGameWord
 {
     public function __construct(private GameWordBook $gameWordBook) {}
 
-    public function handle(GameRoom $room, bool $drawableOnly): string
+    /**
+     * @param  ?string  $except  the word being replaced, never drawn again here
+     */
+    public function handle(GameRoom $room, bool $drawableOnly, ?string $except = null): string
     {
-        $pool = $this->gameWordBook->words($room->locale, $drawableOnly, $room->wordThemes());
+        $pool = array_values(array_diff($this->gameWordBook->words($room->locale, $drawableOnly, $room->wordThemes()), [$except]));
 
         if ($pool === []) {
             throw ValidationException::withMessages(['game' => __('No word fits these themes.')]);

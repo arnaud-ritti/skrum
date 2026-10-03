@@ -4670,5 +4670,8 @@
     "Answer aloud, one after the other.": "Responde en voz alta, uno tras otro.",
     "Your turn to speak": "Te toca hablar",
     "Rounds per game": "Rondas",
-    "Round :number · endless": "Ronda :number · sin fin"
+    "Round :number · endless": "Ronda :number · sin fin",
+    "Someone has already found the word.": "Alguien ya ha encontrado la palabra.",
+    "You have already changed the word.": "Ya has cambiado la palabra.",
+    "You have already found the word.": "Ya has encontrado la palabra."
 }

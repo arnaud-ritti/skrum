@@ -163,6 +163,7 @@ it('lists ended rounds newest first with names and without the active one', func
             'outcome' => 'solved',
             'word' => 'lamp',
             'question' => null,
+            'clue' => null,
             'leaderPlayerId' => null,
             'leaderName' => null,
             'winnerPlayerId' => $winner->id,

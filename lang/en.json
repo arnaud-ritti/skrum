@@ -4450,5 +4450,8 @@
     "Answer aloud, one after the other.": "Answer aloud, one after the other.",
     "Your turn to speak": "Your turn to speak",
     "Rounds per game": "Rounds per game",
-    "Round :number · endless": "Round :number · endless"
+    "Round :number · endless": "Round :number · endless",
+    "Someone has already found the word.": "Someone has already found the word.",
+    "You have already changed the word.": "You have already changed the word.",
+    "You have already found the word.": "You have already found the word."
 }

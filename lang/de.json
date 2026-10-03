@@ -4670,5 +4670,8 @@
     "Answer aloud, one after the other.": "Antworte laut, wenn du an der Reihe bist.",
     "Your turn to speak": "Du bist dran",
     "Rounds per game": "Runden",
-    "Round :number · endless": "Runde :number · endlos"
+    "Round :number · endless": "Runde :number · endlos",
+    "Someone has already found the word.": "Jemand hat das Wort schon gefunden.",
+    "You have already changed the word.": "Du hast das Wort schon gewechselt.",
+    "You have already found the word.": "Du hast das Wort schon gefunden."
 }
