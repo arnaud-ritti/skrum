@@ -4338,5 +4338,10 @@
     "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.",
     "Unknown device": "Unknown device",
     "Device signed out.": "Device signed out.",
-    "Other sessions signed out.": "Other sessions signed out."
+    "Other sessions signed out.": "Other sessions signed out.",
+    "This :provider account is already linked to another account.": "This :provider account is already linked to another account.",
+    "Your account is already linked to :provider. Unlink it first.": "Your account is already linked to :provider. Unlink it first.",
+    "You can't unlink your last sign-in method: set a password or link another account first.": "You can't unlink your last sign-in method: set a password or link another account first.",
+    "This account is managed by your admin.": "This account is managed by your admin.",
+    ":provider is linked.": ":provider is linked."
 }

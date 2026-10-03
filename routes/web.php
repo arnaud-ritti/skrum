@@ -248,12 +248,17 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
     ->middleware('auth')
     ->name('invitations.acceptance.store');
 
+/*
+ * Outside the guest group: a signed-in user comes back here after asking to
+ * link a provider (SsoIntent); without that intent the callback does nothing.
+ */
+Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
+
 Route::middleware('guest')->group(function (): void {
     Route::post('invitations/{token}/account', [InvitationAccountsController::class, 'store'])
         ->middleware('throttle:invitationAccounts')
         ->name('invitations.account.store');
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
-    Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
     Route::post('magic-link', [MagicLinksController::class, 'store'])->middleware('throttle:magicLinks')->name('magicLinks.store');
     Route::get('magic-link/{token}', [MagicLinksController::class, 'show'])
         ->where('token', '[A-Za-z0-9]{64}')

@@ -5,6 +5,7 @@ use App\Http\Controllers\Settings\ApiTokensController;
 use App\Http\Controllers\Settings\BrowserSessionsController;
 use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
+use App\Http\Controllers\Settings\LinkedAccountsController;
 use App\Http\Controllers\Settings\MotionPreferencesController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\OtherBrowserSessionsController;
@@ -60,6 +61,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('settings/sessions', [OtherBrowserSessionsController::class, 'destroy'])
         ->middleware(RequirePasswordUnlessNoneKnown::class)
         ->name('otherBrowserSessions.destroy');
+
+    Route::get('settings/linked-accounts/{provider}', [LinkedAccountsController::class, 'create'])
+        ->middleware(RequirePasswordUnlessNoneKnown::class)
+        ->name('linkedAccounts.create');
 
     Route::redirect('settings/notifications', '/settings#notifications')->name('notificationPreferences.edit');
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');

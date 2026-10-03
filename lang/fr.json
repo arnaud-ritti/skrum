@@ -4558,5 +4558,10 @@
     "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Les membres peuvent importer une photo qui remplace leur avatar généré. Les photos sont publiques, comme les avatars.",
     "Unknown device": "Appareil inconnu",
     "Device signed out.": "Appareil déconnecté.",
-    "Other sessions signed out.": "Autres sessions déconnectées."
+    "Other sessions signed out.": "Autres sessions déconnectées.",
+    "This :provider account is already linked to another account.": "Ce compte :provider est déjà lié à un autre compte.",
+    "Your account is already linked to :provider. Unlink it first.": "Ton compte est déjà lié à :provider. Délie-le d'abord.",
+    "You can't unlink your last sign-in method: set a password or link another account first.": "Tu ne peux pas délier ton dernier moyen de connexion : définis d'abord un mot de passe ou lie un autre compte.",
+    "This account is managed by your admin.": "Ce compte est géré par ton administrateur.",
+    ":provider is linked.": ":provider est lié."
 }
