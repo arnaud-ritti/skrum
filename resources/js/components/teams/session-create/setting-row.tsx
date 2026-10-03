@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 type SettingRowProps = {
     label: string;
     htmlFor: string;
-    help?: string;
+    help?: ReactNode;
     icon?: LucideIcon;
     error?: string;
     children: ReactNode;

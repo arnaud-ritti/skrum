@@ -8,12 +8,13 @@ import {
     Minus,
     PartyPopper,
     Plus,
+    Timer,
     UserRoundPlus,
     VenetianMask,
     Vote,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent, ReactElement, ReactNode } from 'react';
 import TeamRetrosController from '@/actions/App/Http/Controllers/TeamRetrosController';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
@@ -32,6 +33,7 @@ import type {
     RetroSessionForm,
     SessionFormContext,
 } from '@/components/teams/session-create/new-session-dialog';
+import { PhaseTimersField } from '@/components/teams/session-create/phase-timers-field';
 import { RetroColumnsEditor } from '@/components/teams/session-create/retro-columns-editor';
 import { SettingRow } from '@/components/teams/session-create/setting-row';
 import { Button } from '@/components/ui/button';
@@ -49,6 +51,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameKind, GameOption } from '@/lib/games/types';
+import {
+    customStart,
+    durationsFor,
+    summary,
+} from '@/lib/retro/phase-durations';
+import type {
+    PhaseDurations,
+    PhaseTimerChoice,
+} from '@/lib/retro/phase-durations';
+import { PhaseLabels } from '@/lib/retro/phases';
 import {
     MaxShortcuts,
     defaultTemplateKey,
@@ -282,10 +294,12 @@ type SettingEntry = {
     key: string;
     label: string;
     htmlFor: string;
-    help?: string;
+    help?: ReactNode;
     icon: LucideIcon;
     error?: string;
     control: ReactNode;
+    /** Rendered under the row: the steppers of a custom timer per phase. */
+    below?: ReactNode;
 };
 
 export function RetroSessionFields({
@@ -323,6 +337,10 @@ export function RetroSessionFields({
     const [icebreakerGame, setIcebreakerGame] = useState<GameKind>('draw');
     const [votes, setVotes] = useState<number | null>(null);
     const [maxPerCard, setMaxPerCard] = useState<number | null>(null);
+    const [phaseTimer, setPhaseTimer] = useState<PhaseTimerChoice>('none');
+    const [customDurations, setCustomDurations] = useState<
+        Required<PhaseDurations>
+    >(() => customStart(null));
     const [guests, setGuests] = useState(false);
     const [saveTemplate, setSaveTemplate] = useState(false);
     const [errors, setErrors] = useState<Errors>({});
@@ -373,6 +391,11 @@ export function RetroSessionFields({
         (option) => option.available || option.value === icebreakerGame,
     );
 
+    const phaseDurations = durationsFor(phaseTimer, customDurations);
+    const phaseDurationsError = Object.entries(errors).find(([field]) =>
+        field.startsWith('phase_durations'),
+    )?.[1];
+
     const settings = (): Record<string, unknown> => ({
         title,
         is_anonymous: anonymous,
@@ -381,6 +404,7 @@ export function RetroSessionFields({
         icebreaker_game: icebreakerGame,
         votes_per_participant: votes,
         max_votes_per_card: cappedMaxPerCard,
+        phase_durations: phaseDurations,
         guest_access_enabled: guests,
     });
 
@@ -570,6 +594,59 @@ export function RetroSessionFields({
             ),
         },
         {
+            key: 'phase-timers',
+            label: t('Timer per phase'),
+            htmlFor: 'new-retro-phase-timers',
+            help: (
+                <>
+                    {summary(phaseDurations, (phase) =>
+                        t(PhaseLabels[phase]),
+                    ) ?? t('Off')}
+                    <span className="hidden sm:inline">
+                        {' · '}
+                        {t(
+                            'Offered to the facilitator, never started by itself',
+                        )}
+                    </span>
+                </>
+            ),
+            icon: Timer,
+            error: phaseDurationsError,
+            control: (
+                <Select
+                    value={phaseTimer}
+                    onValueChange={(next) =>
+                        setPhaseTimer(next as PhaseTimerChoice)
+                    }
+                >
+                    <SelectTrigger
+                        id="new-retro-phase-timers"
+                        size="sm"
+                        aria-label={t('Timer per phase')}
+                        className="max-w-44"
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">{t('No timer')}</SelectItem>
+                        <SelectItem value="standard">
+                            {t('Standard')}
+                        </SelectItem>
+                        <SelectItem value="custom">
+                            {t('Custom (5 phases)')}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            ),
+            below:
+                phaseTimer === 'custom' ? (
+                    <PhaseTimersField
+                        value={customDurations}
+                        onChange={setCustomDurations}
+                    />
+                ) : undefined,
+        },
+        {
             key: 'icebreaker',
             label: t('Icebreaker at the start'),
             htmlFor: 'new-retro-icebreaker',
@@ -750,10 +827,11 @@ export function RetroSessionFields({
                         {t('Settings')}
                     </span>
                     <div className="flex flex-col">
-                        {settingRows.map(({ key, control, ...row }) => (
-                            <SettingRow key={key} {...row}>
-                                {control}
-                            </SettingRow>
+                        {settingRows.map(({ key, control, below, ...row }) => (
+                            <Fragment key={key}>
+                                <SettingRow {...row}>{control}</SettingRow>
+                                {below}
+                            </Fragment>
                         ))}
                     </div>
                 </div>

@@ -5129,5 +5129,13 @@
     "A session you create waits here until it starts.": "Eine Sitzung, die du erstellst, wartet hier, bis sie beginnt.",
     "The sessions in progress show up here.": "Laufende Sitzungen erscheinen hier.",
     "The sessions that ended show up here, newest first.": "Beendete Sitzungen erscheinen hier, die neuesten zuerst.",
-    "Acceptance criteria": "Akzeptanzkriterien"
+    "Acceptance criteria": "Akzeptanzkriterien",
+    ":phase · :count min": ":phase · :count Min.",
+    ":phase · :count min per topic": ":phase · :count Min. pro Thema",
+    "Start the :phase timer, :count minutes": "Timer für die Phase :phase starten, :count Minuten",
+    "Start the :phase timer, :count minutes per topic": "Timer für die Phase :phase starten, :count Minuten pro Thema",
+    "Timer per phase": "Timer pro Phase",
+    "Offered to the facilitator, never started by itself": "Wird der Moderation angeboten, startet nie von selbst",
+    "Custom (5 phases)": "Benutzerdefiniert (5 Phasen)",
+    "Minutes, 0 for off": "Minuten, 0 für aus"
 }

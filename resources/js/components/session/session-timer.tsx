@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Timer } from '@/components/skrum/timer';
-import type { TimerPreset } from '@/components/skrum/timer';
+import type { TimerPreset, TimerSuggestion } from '@/components/skrum/timer';
 import { Badge } from '@/components/ui/badge';
 import { useCountdown } from '@/hooks/use-countdown';
 import { useIsMounted } from '@/hooks/use-is-mounted';
@@ -13,6 +13,8 @@ type SessionTimerProps = {
     offset: number;
     /** Never passed by a page: every screen has the Timer's own list, 1, 3, 5, 10 minutes. */
     presets?: TimerPreset[];
+    /** A retro phase's duration, offered to the facilitator before the list. */
+    suggestion?: TimerSuggestion;
     /** Seconds chosen at start, for the ring; absent for a late joiner. */
     totalSeconds?: number;
     /** Given only to who may start and stop (the facilitator, the host). */
@@ -40,6 +42,7 @@ export function SessionTimer({
     endsAt,
     offset,
     presets,
+    suggestion,
     totalSeconds,
     onStart,
     onStop,
@@ -75,6 +78,7 @@ export function SessionTimer({
             onResume={isPaused ? onResume : undefined}
             totalSeconds={totalSeconds}
             presets={presets}
+            suggestion={suggestion}
             onStart={onStart}
             onStop={onStop}
             onCustom={onCustom}

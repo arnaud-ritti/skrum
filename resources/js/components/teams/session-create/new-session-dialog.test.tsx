@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     NewSessionDialog,
     SessionFormFooter,
@@ -152,6 +153,13 @@ function lastPost(): [string, Record<string, unknown>, VisitOptions] {
         VisitOptions,
     ];
 }
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     mocks.post.mockReset();
@@ -457,6 +465,7 @@ describe('the retro form', () => {
             icebreaker_game: 'draw',
             votes_per_participant: null,
             max_votes_per_card: null,
+            phase_durations: null,
             guest_access_enabled: true,
         });
     });
@@ -570,6 +579,124 @@ describe('the retro form', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
 
         expect(lastPost()[1].max_votes_per_card).toBeNull();
+    });
+
+    describe('Timer per phase', () => {
+        const choose = async (option: string) => {
+            const user = userEvent.setup();
+
+            await user.click(
+                screen.getByRole('combobox', { name: 'Timer per phase' }),
+            );
+            await user.click(screen.getByRole('option', { name: option }));
+        };
+
+        it('sits after "Max per card", before the icebreaker, off by default', () => {
+            open();
+
+            const labels = Array.from(
+                document.querySelectorAll('[data-slot="setting-row"] label'),
+            ).map((label) => label.textContent);
+
+            expect(labels.indexOf('Timer per phase')).toBe(
+                labels.indexOf('Max per card') + 1,
+            );
+            expect(labels.indexOf('Icebreaker at the start')).toBe(
+                labels.indexOf('Timer per phase') + 1,
+            );
+            expect(
+                screen.getByRole('combobox', { name: 'Timer per phase' })
+                    .textContent,
+            ).toBe('No timer');
+            expect(
+                document.getElementById('new-retro-phase-timers-help')
+                    ?.textContent,
+            ).toBe('Off · Offered to the facilitator, never started by itself');
+        });
+
+        it('sends the five standard durations, and null with "No timer"', async () => {
+            open();
+
+            await choose('Standard');
+
+            expect(
+                document.getElementById('new-retro-phase-timers-help')
+                    ?.textContent,
+            ).toBe(
+                'Writing 7 · Grouping 5 · Voting 3 · Discussing 15 · Actions 5 · Offered to the facilitator, never started by itself',
+            );
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Create & open' }),
+            );
+
+            expect(lastPost()[1].phase_durations).toEqual({
+                writing: 7,
+                grouping: 5,
+                voting: 3,
+                discussing: 15,
+                actions: 5,
+            });
+
+            await choose('No timer');
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Create & open' }),
+            );
+
+            expect(lastPost()[1].phase_durations).toBeNull();
+        });
+
+        it('sends only the phases a custom set times', async () => {
+            open();
+
+            expect(
+                document.getElementById('new-retro-phase-writing'),
+            ).toBeNull();
+
+            await choose('Custom (5 phases)');
+
+            const presses = {
+                Writing: 3,
+                Grouping: -5,
+                Voting: -3,
+                Discussing: -15,
+                Actions: -5,
+            };
+
+            for (const [phase, count] of Object.entries(presses)) {
+                const name =
+                    count > 0 ? `Increase ${phase}` : `Decrease ${phase}`;
+
+                for (let press = 0; press < Math.abs(count); press++) {
+                    fireEvent.click(screen.getByRole('button', { name }));
+                }
+            }
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Create & open' }),
+            );
+
+            expect(lastPost()[1].phase_durations).toEqual({ writing: 10 });
+        });
+
+        it('shows a refused duration under its row', () => {
+            open();
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Create & open' }),
+            );
+            act(() =>
+                lastPost()[2].onError?.({
+                    'phase_durations.writing':
+                        'The writing duration must not be greater than 60.',
+                }),
+            );
+
+            expect(
+                document.getElementById('new-retro-phase-timers-error')
+                    ?.textContent,
+            ).toBe('The writing duration must not be greater than 60.');
+        });
     });
 
     it('shows the error of the cap per card under its row', () => {

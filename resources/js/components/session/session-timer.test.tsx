@@ -167,6 +167,31 @@ describe('SessionTimer', () => {
         expect(screen.getByRole('button', { name: 'Timer' })).toBeTruthy();
     });
 
+    it('passes its suggestion to the timer', () => {
+        const onStart = vi.fn();
+
+        renderWithProviders(
+            <SessionTimer
+                endsAt={null}
+                offset={0}
+                onStart={onStart}
+                suggestion={{
+                    seconds: 420,
+                    label: 'Writing · 7 min',
+                    startLabel: 'Start the Writing timer, 7 minutes',
+                }}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Start the Writing timer, 7 minutes',
+            }),
+        );
+
+        expect(onStart).toHaveBeenCalledWith(420);
+    });
+
     it('shows "+2 min" only when it can extend and a timer runs', () => {
         const { rerender } = renderWithProviders(
             <SessionTimer

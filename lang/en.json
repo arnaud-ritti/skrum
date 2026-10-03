@@ -4909,5 +4909,13 @@
     "A session you create waits here until it starts.": "A session you create waits here until it starts.",
     "The sessions in progress show up here.": "The sessions in progress show up here.",
     "The sessions that ended show up here, newest first.": "The sessions that ended show up here, newest first.",
-    "Acceptance criteria": "Acceptance criteria"
+    "Acceptance criteria": "Acceptance criteria",
+    ":phase · :count min": ":phase · :count min",
+    ":phase · :count min per topic": ":phase · :count min per topic",
+    "Start the :phase timer, :count minutes": "Start the :phase timer, :count minutes",
+    "Start the :phase timer, :count minutes per topic": "Start the :phase timer, :count minutes per topic",
+    "Timer per phase": "Timer per phase",
+    "Offered to the facilitator, never started by itself": "Offered to the facilitator, never started by itself",
+    "Custom (5 phases)": "Custom (5 phases)",
+    "Minutes, 0 for off": "Minutes, 0 for off"
 }

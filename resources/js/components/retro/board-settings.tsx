@@ -9,10 +9,26 @@ import {
 } from '@/components/skrum/session-settings-popover';
 import type {
     RetroSettingsValues,
+    SessionSettingGroup,
+    StepperSetting,
     SurveyKind,
 } from '@/components/skrum/session-settings-popover';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import {
+    MaxPhaseMinutes,
+    TimedPhases,
+    choiceOf,
+    customStart,
+    durationsFor,
+    summary,
+} from '@/lib/retro/phase-durations';
+import type {
+    PhaseDurations,
+    PhaseTimerChoice,
+    TimedPhase,
+} from '@/lib/retro/phase-durations';
+import { PhaseLabels } from '@/lib/retro/phases';
 import { MaxSurveys, SurveyPhases } from '@/lib/retro/survey-api';
 import type { Snapshot } from '@/lib/retro/types';
 import { useBoard } from './board-context';
@@ -44,6 +60,106 @@ export function retroSettingsValues(
     };
 }
 
+type PhaseMinutesKey = `phase_minutes_${TimedPhase}`;
+
+/**
+ * The "Timer per phase" row as the popover's flat values: the select and one
+ * stepper per phase. `phaseTimerPatch` turns them back into `phase_durations`.
+ */
+export type PhaseTimerSettingsValues = {
+    phase_timer: PhaseTimerChoice;
+} & Record<PhaseMinutesKey, number>;
+
+type BoardSettingsValues = RetroSettingsValues &
+    Partial<PhaseTimerSettingsValues>;
+
+const minutesKey = (phase: TimedPhase): PhaseMinutesKey =>
+    `phase_minutes_${phase}`;
+
+export function phaseTimerSettingsValues(
+    durations: PhaseDurations | null,
+): PhaseTimerSettingsValues {
+    const steppers = customStart(durations);
+
+    return {
+        phase_timer: choiceOf(durations),
+        phase_minutes_writing: steppers.writing,
+        phase_minutes_grouping: steppers.grouping,
+        phase_minutes_voting: steppers.voting,
+        phase_minutes_discussing: steppers.discussing,
+        phase_minutes_actions: steppers.actions,
+    };
+}
+
+/** The patch the settings endpoint takes: the flat timer values become `phase_durations`. */
+export function phaseTimerPatch(
+    patch: Partial<BoardSettingsValues>,
+    current: PhaseTimerSettingsValues,
+): Partial<RetroSettingsValues> & { phase_durations?: PhaseDurations | null } {
+    const timerKeys = [
+        'phase_timer',
+        ...TimedPhases.map(minutesKey),
+    ] as (keyof PhaseTimerSettingsValues)[];
+    const touchesTimer = timerKeys.some((key) => patch[key] !== undefined);
+    const rest = Object.fromEntries(
+        Object.entries(patch).filter(
+            ([key]) =>
+                !timerKeys.includes(key as keyof PhaseTimerSettingsValues),
+        ),
+    ) as Partial<RetroSettingsValues>;
+
+    if (!touchesTimer) {
+        return rest;
+    }
+
+    const custom = Object.fromEntries(
+        TimedPhases.map((phase) => [
+            phase,
+            patch[minutesKey(phase)] ?? current[minutesKey(phase)],
+        ]),
+    ) as Required<PhaseDurations>;
+
+    return {
+        ...rest,
+        phase_durations: durationsFor(
+            patch.phase_timer ?? current.phase_timer,
+            custom,
+        ),
+    };
+}
+
+function usePhaseTimerGroup(
+    durations: PhaseDurations | null,
+): SessionSettingGroup['settings'] {
+    const { t } = useTrans();
+    const phaseLabel = (phase: TimedPhase) => t(PhaseLabels[phase]);
+
+    return [
+        {
+            type: 'select',
+            key: 'phase_timer',
+            id: 'retro-phase-timers',
+            label: t('Timer per phase'),
+            help: summary(durations, phaseLabel) ?? t('Off'),
+            options: [
+                { value: 'none', label: t('No timer') },
+                { value: 'standard', label: t('Standard') },
+                { value: 'custom', label: t('Custom (5 phases)') },
+            ],
+        },
+        ...TimedPhases.map((phase): StepperSetting => ({
+            type: 'stepper',
+            key: minutesKey(phase),
+            id: `retro-phase-${phase}`,
+            label: phaseLabel(phase),
+            help: t('Minutes, 0 for off'),
+            min: 0,
+            max: MaxPhaseMinutes,
+            visibleWhen: { key: 'phase_timer', equals: 'custom' },
+        })),
+    ];
+}
+
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -62,7 +178,7 @@ export function BoardSettings({
     const { t } = useTrans();
     const { board } = ctx;
     const { retro } = board;
-    const [draft, setDraft] = useState<Partial<RetroSettingsValues>>({});
+    const [draft, setDraft] = useState<Partial<BoardSettingsValues>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
     const surveyEditor = useSurveyEditor();
     const canAddSurvey =
@@ -73,7 +189,12 @@ export function BoardSettings({
     const canAttachHealthCheck =
         board.viewer.isFacilitator && retro.phase !== 'completed';
 
-    const groups = useRetroSettingGroups({
+    const canEditPhaseTimers =
+        board.viewer.isFacilitator && retro.phase !== 'completed';
+    const phaseTimerSettings = usePhaseTimerGroup(retro.phaseDurations);
+    const phaseTimerValues = phaseTimerSettingsValues(retro.phaseDurations);
+
+    const retroGroups = useRetroSettingGroups({
         phase: retro.phase,
         isAnonymous: retro.isAnonymous,
         icebreakerGame: retro.icebreakerGame,
@@ -84,15 +205,29 @@ export function BoardSettings({
         llmProvider: board.features.llm ? board.features.llmProvider : null,
     });
 
+    const groups = canEditPhaseTimers
+        ? retroGroups.map((group) =>
+              group.id === 'phases'
+                  ? {
+                        ...group,
+                        settings: [...group.settings, ...phaseTimerSettings],
+                    }
+                  : group,
+          )
+        : retroGroups;
+
     const facilitator = board.participants.find(
         (participant) => participant.id === retro.facilitatorParticipantId,
     );
 
-    const apply = async (patch: Partial<RetroSettingsValues>) => {
+    const apply = async (patch: Partial<BoardSettingsValues>) => {
         setErrors({});
 
         try {
-            await retroRequest(RetroSettingsController.update(retro.id), patch);
+            await retroRequest(
+                RetroSettingsController.update(retro.id),
+                phaseTimerPatch(patch, phaseTimerValues),
+            );
         } catch (caught) {
             const message = ctx.handleError(caught);
 
@@ -113,7 +248,10 @@ export function BoardSettings({
 
             setErrors(
                 Object.fromEntries(
-                    fields.map(([key, messages]) => [key, messages[0]]),
+                    fields.map(([key, messages]) => [
+                        key.startsWith('phase_durations') ? 'phase_timer' : key,
+                        messages[0],
+                    ]),
                 ),
             );
 
@@ -157,14 +295,18 @@ export function BoardSettings({
 
     return (
         <>
-            <SessionSettingsPopover<RetroSettingsValues>
+            <SessionSettingsPopover<BoardSettingsValues>
                 open={open && !ctx.sessionExpired}
                 onOpenChange={onOpenChange}
                 title={t('Retrospective settings')}
                 sessionTitle={retro.title}
                 phase={retro.phase}
                 groups={groups}
-                value={retroSettingsValues(retro)}
+                value={
+                    canEditPhaseTimers
+                        ? { ...retroSettingsValues(retro), ...phaseTimerValues }
+                        : retroSettingsValues(retro)
+                }
                 draft={draft}
                 onDraftChange={setDraft}
                 errors={errors}

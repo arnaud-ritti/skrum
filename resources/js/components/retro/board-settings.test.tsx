@@ -1,12 +1,13 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     BoardSettings,
     retroSettingsValues,
 } from '@/components/retro/board-settings';
 import { RetroRequestError } from '@/lib/retro/api';
+import { StandardDurations } from '@/lib/retro/phase-durations';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -15,6 +16,13 @@ vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
 }));
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     retroRequest.mockReset();
@@ -341,5 +349,142 @@ describe('BoardSettings', () => {
         expect(screen.getByRole('dialog').textContent).toContain(
             'Alice Martin',
         );
+    });
+});
+
+describe('BoardSettings, the timer per phase', () => {
+    const choose = async (option: string) => {
+        const user = userEvent.setup();
+
+        await user.click(
+            document.getElementById('retro-phase-timers') as HTMLElement,
+        );
+        await user.click(screen.getByRole('option', { name: option }));
+        fireEvent.click(screen.getByRole('button', { name: /^Apply/ }));
+    };
+
+    it('sends the standard durations', async () => {
+        const { ctx } = renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(),
+        );
+
+        expect(document.getElementById('retro-phase-timers')?.textContent).toBe(
+            'No timer',
+        );
+
+        await choose('Standard');
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(retroRequest).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                url: expect.stringContaining('/retros/retro-1/settings'),
+            }),
+            { phase_durations: StandardDurations },
+        );
+    });
+
+    it('turns the durations off', async () => {
+        const { ctx } = renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(
+                retroSnapshot({ retro: { phaseDurations: StandardDurations } }),
+            ),
+        );
+
+        expect(document.getElementById('retro-phase-timers')?.textContent).toBe(
+            'Standard',
+        );
+
+        await choose('No timer');
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
+            phase_durations: null,
+        });
+    });
+
+    it('sends a custom set with the phases it times only', async () => {
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(
+                retroSnapshot({ retro: { phaseDurations: { writing: 7 } } }),
+            ),
+        );
+
+        expect(
+            (document.getElementById('retro-phase-writing') as HTMLInputElement)
+                .value,
+        ).toBe('7');
+
+        fireEvent.change(
+            document.getElementById('retro-phase-writing') as HTMLElement,
+            { target: { value: '10' } },
+        );
+        fireEvent.change(
+            document.getElementById('retro-phase-voting') as HTMLElement,
+            { target: { value: '4' } },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /^Apply/ }));
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
+                phase_durations: { writing: 10, voting: 4 },
+            }),
+        );
+    });
+
+    it('hides the steppers unless the set is custom', () => {
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(
+                retroSnapshot({ retro: { phaseDurations: StandardDurations } }),
+            ),
+        );
+
+        expect(document.getElementById('retro-phase-writing')).toBeNull();
+    });
+
+    it('shows a refused duration under the row', async () => {
+        retroRequest.mockRejectedValue(
+            new RetroRequestError(422, 'The writing duration is too long.', {
+                'phase_durations.writing': [
+                    'The writing duration is too long.',
+                ],
+            }),
+        );
+
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(),
+        );
+
+        await choose('Standard');
+
+        expect(
+            await screen.findByText('The writing duration is too long.'),
+        ).toBeTruthy();
+    });
+
+    it('is not offered to a participant, nor once the retro is completed', () => {
+        const participant = renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(
+                retroSnapshot({
+                    viewer: { isFacilitator: false, participantId: 'bob' },
+                    retro: { phaseDurations: StandardDurations },
+                }),
+            ),
+        );
+
+        expect(screen.queryByText('Timer per phase')).toBeNull();
+        participant.unmount();
+
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(retroSnapshot({ retro: { phase: 'completed' } })),
+        );
+
+        expect(screen.queryByText('Timer per phase')).toBeNull();
     });
 });
