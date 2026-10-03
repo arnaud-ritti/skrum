@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\ResolveParticipant;
+use App\Actions\TeamSurveys\ResolveRespondent;
 use App\Actions\Whiteboards\ResolveMember;
 use App\Contracts\GamePresenceRoster;
+use App\Enums\TeamSurveyStatus;
 use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\Whiteboard;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +32,7 @@ class BroadcastAuthorizationsController extends Controller
         FindGamePlayer $findGamePlayer,
         GamePresenceRoster $gamePresenceRoster,
         ResolveMember $resolveMember,
+        ResolveRespondent $resolveRespondent,
     ): JsonResponse {
         /** @var array{socket_id: string, channel_name: string} $validated */
         $validated = $request->validate([
@@ -38,6 +42,10 @@ class BroadcastAuthorizationsController extends Controller
 
         if (str_starts_with($validated['channel_name'], 'presence-game.')) {
             return $this->authorizeGameChannel($request, $validated, $findGamePlayer, $gamePresenceRoster);
+        }
+
+        if (str_starts_with($validated['channel_name'], 'presence-survey.')) {
+            return $this->authorizeSurveyChannel($request, $validated, $resolveRespondent);
         }
 
         if (str_starts_with($validated['channel_name'], 'presence-whiteboard.')) {
@@ -331,6 +339,41 @@ class BroadcastAuthorizationsController extends Controller
         abort_unless($user->can('view', $team), 403);
 
         $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeSurveyChannel(Request $request, array $validated, ResolveRespondent $resolveRespondent): JsonResponse
+    {
+        $surveyId = Str::after($validated['channel_name'], 'presence-survey.');
+
+        abort_unless(Str::isUuid($surveyId), 403);
+
+        $survey = TeamSurvey::query()->find($surveyId);
+
+        abort_if($survey === null, 403);
+        abort_unless($survey->id === $surveyId, 403);
+        abort_if($survey->retro_id !== null, 403);
+
+        $respondent = $resolveRespondent->handle($request, $survey);
+
+        abort_if($respondent === null, 403);
+        abort_if($survey->status === TeamSurveyStatus::Draft && ! $survey->isEditor($respondent), 403);
+
+        $signature = $this->pusher()->authorizePresenceChannel(
+            $validated['channel_name'],
+            $validated['socket_id'],
+            $respondent->id,
+            [
+                'id' => $respondent->id,
+                'name' => $respondent->displayName(),
+                'avatarUrl' => $respondent->avatarUrl(),
+                'isGuest' => $respondent->isGuest(),
+            ],
+        );
 
         return response()->json(json_decode($signature, true));
     }
