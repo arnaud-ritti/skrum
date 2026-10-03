@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Retros;
 use App\Actions\Games\ScheduleIcebreakerExpiry;
 use App\Actions\Retros\MarkRetroStarted;
 use App\Actions\Retros\RetroGuard;
+use App\Enums\RetroPhase;
 use App\Events\Retros\TimerChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
@@ -33,13 +34,21 @@ class RetroTimersController extends Controller
             ? null
             : now()->addSeconds((int) $validated['seconds'])->startOfSecond();
 
-        $timed = DB::transaction(function () use ($retro, $participant, $endsAt, $scheduleIcebreakerExpiry, $markRetroStarted): Retro {
+        $timed = DB::transaction(function () use ($retro, $participant, $validated, $endsAt, $scheduleIcebreakerExpiry, $markRetroStarted): Retro {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
             RetroGuard::open($locked);
 
-            $locked->update(['timer_ends_at' => $endsAt, 'timer_paused_seconds' => null]);
+            $topicSeconds = $locked->phase === RetroPhase::Discussing
+                ? $validated['seconds']
+                : $locked->topic_seconds;
+
+            $locked->update([
+                'timer_ends_at' => $endsAt,
+                'timer_paused_seconds' => null,
+                'topic_seconds' => $topicSeconds === null ? null : (int) $topicSeconds,
+            ]);
 
             if ($endsAt !== null) {
                 $markRetroStarted->handle($locked);

@@ -108,6 +108,7 @@ use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
 use App\Http\Controllers\Retros\ActionItemSubtasksController;
 use App\Http\Controllers\Retros\CardCommentsController;
+use App\Http\Controllers\Retros\CardDiscussionsController;
 use App\Http\Controllers\Retros\CardGroupNamesController;
 use App\Http\Controllers\Retros\CardGroupsController;
 use App\Http\Controllers\Retros\CardPositionsController;
@@ -467,6 +468,8 @@ Route::prefix('retros/{retro}')
         Route::post('timer/extension', [RetroTimerExtensionsController::class, 'store'])->name('retros.timer.extension.store');
         Route::put('timer/pause', [RetroTimerPausesController::class, 'update'])->name('retros.timer.pause.update');
         Route::delete('timer/pause', [RetroTimerPausesController::class, 'destroy'])->name('retros.timer.pause.destroy');
+        Route::put('cards/{card}/discussion', [CardDiscussionsController::class, 'update'])->name('retros.cards.discussion.update')->whereUuid('card');
+        Route::delete('cards/{card}/discussion', [CardDiscussionsController::class, 'destroy'])->name('retros.cards.discussion.destroy')->whereUuid('card');
         Route::put('highlight', [RetroHighlightsController::class, 'update'])->name('retros.highlight.update');
         Route::patch('settings', [RetroSettingsController::class, 'update'])->name('retros.settings.update');
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');

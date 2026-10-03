@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\Retros\MoveTopicFocus;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
-use App\Events\Retros\CardHighlighted;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class RetroHighlightsController extends Controller
 {
-    public function update(Request $request, Retro $retro): JsonResponse
+    public function update(Request $request, Retro $retro, MoveTopicFocus $moveTopicFocus): JsonResponse
     {
         $participant = Participant::current($request);
 
@@ -32,7 +32,7 @@ class RetroHighlightsController extends Controller
             ],
         ]);
 
-        DB::transaction(function () use ($retro, $participant, $validated): void {
+        $moved = DB::transaction(function () use ($retro, $participant, $validated, $moveTopicFocus): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
@@ -46,11 +46,9 @@ class RetroHighlightsController extends Controller
                 }
             }
 
-            $locked->update(['highlighted_card_id' => $validated['card_id']]);
-
-            (new CardHighlighted($locked->id, $validated['card_id']))->sendToOthers();
+            return $moveTopicFocus->handle($locked, $validated['card_id']);
         });
 
-        return response()->json(['highlightedCardId' => $validated['card_id']]);
+        return response()->json(['highlightedCardId' => $validated['card_id'], ...$moved]);
     }
 }
