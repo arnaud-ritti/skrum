@@ -159,6 +159,41 @@ describe('SurveyRoom', () => {
         expect(api.saveAnswer).not.toHaveBeenCalled();
     });
 
+    it('withdraws an answer emptied while its first save was still on its way', async () => {
+        vi.useFakeTimers();
+
+        const progress = { responses: 3, completed: 3, audience: 11 };
+        let resolveSave: (value: unknown) => void = () => {};
+
+        api.saveAnswer.mockReturnValue(
+            new Promise((resolve) => {
+                resolveSave = resolve;
+            }),
+        );
+        api.withdrawAnswer.mockResolvedValue({ answer: null, progress });
+        renderRoom(
+            surveySnapshot({ questions: [surveyQuestion('t', 'text')] }),
+        );
+
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: 'Draft' },
+        });
+        await vi.advanceTimersByTimeAsync(600);
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: '' },
+        });
+        await vi.advanceTimersByTimeAsync(600);
+
+        expect(api.withdrawAnswer).not.toHaveBeenCalled();
+
+        resolveSave({ answer: surveyAnswer({ text: 'Draft' }), progress });
+        await vi.advanceTimersByTimeAsync(0);
+        vi.useRealTimers();
+
+        expect(api.saveAnswer).toHaveBeenCalledTimes(1);
+        expect(api.withdrawAnswer).toHaveBeenCalledWith('s1', 't');
+    });
+
     it('sends the response with "Finish" and takes the snapshot it returns', async () => {
         const finished = surveySnapshot({ me: { hasSubmitted: true } });
 

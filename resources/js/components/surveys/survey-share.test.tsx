@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SurveyShare } from '@/components/surveys/survey-share';
+import type { PresenceMember } from '@/lib/retro/types';
 import type { SurveySnapshot } from '@/lib/surveys/types';
 import { renderWithProviders } from '@/test/render';
 import { surveySnapshot } from '@/test/survey-snapshot';
@@ -32,9 +33,12 @@ beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());
 });
 
-function openShare(snapshot: SurveySnapshot = sharedSnapshot()) {
+function openShare(
+    snapshot: SurveySnapshot = sharedSnapshot(),
+    online: PresenceMember[] = [],
+) {
     renderWithProviders(
-        <SurveyShare snapshot={snapshot} dispatch={dispatch} />,
+        <SurveyShare snapshot={snapshot} online={online} dispatch={dispatch} />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
@@ -73,6 +77,41 @@ describe('SurveyShare', () => {
         expect(api.update).toHaveBeenCalledWith('s1', {
             guest_access_enabled: false,
         });
+    });
+
+    it('asks before turning guest access off while a guest is answering', async () => {
+        const updated = sharedSnapshot();
+
+        updated.survey.guestAccessEnabled = false;
+        api.update.mockResolvedValue(updated);
+        openShare(sharedSnapshot(), [
+            {
+                id: 'guest-gia',
+                name: 'Guest Gia',
+                avatarUrl: '/avatars/g.svg',
+                isGuest: true,
+            },
+        ]);
+
+        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+
+        expect(api.update).not.toHaveBeenCalled();
+
+        const confirmation = within(screen.getByRole('alertdialog'));
+
+        expect(
+            confirmation.getByText('Guests answering this survey lose access.'),
+        ).toBeTruthy();
+
+        fireEvent.click(
+            confirmation.getByRole('button', { name: 'Turn off guest access' }),
+        );
+
+        await waitFor(() =>
+            expect(api.update).toHaveBeenCalledWith('s1', {
+                guest_access_enabled: false,
+            }),
+        );
     });
 
     it('creates a new link only after a confirmation, and shows it', async () => {
@@ -123,6 +162,7 @@ describe('SurveyShare', () => {
         renderWithProviders(
             <SurveyShare
                 snapshot={sharedSnapshot({ isGuest: true })}
+                online={[]}
                 dispatch={dispatch}
             />,
         );

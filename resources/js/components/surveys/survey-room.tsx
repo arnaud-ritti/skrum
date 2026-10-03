@@ -13,6 +13,7 @@ import { useTeamSurvey } from '@/hooks/use-team-survey';
 import { useTrans } from '@/hooks/use-trans';
 import SessionLayout from '@/layouts/skrum/session-layout';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
+import type { PresenceMember } from '@/lib/retro/types';
 import { surveyApi } from '@/lib/surveys/api';
 import { answerOf } from '@/lib/surveys/question-adapter';
 import type { SurveyAction } from '@/lib/surveys/survey-reducer';
@@ -149,9 +150,11 @@ function SurveyDraft({ editHref }: { editHref: string | null }) {
 
 function EditorActions({
     snapshot,
+    online,
     dispatch,
 }: {
     snapshot: SurveySnapshot;
+    online: readonly PresenceMember[];
     dispatch: Dispatch<SurveyAction>;
 }) {
     const { t } = useTrans();
@@ -174,7 +177,11 @@ function EditorActions({
                     </span>
                 </Link>
             </Button>
-            <SurveyShare snapshot={snapshot} dispatch={dispatch} />
+            <SurveyShare
+                snapshot={snapshot}
+                online={online}
+                dispatch={dispatch}
+            />
         </>
     );
 }
@@ -187,6 +194,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
     const [restartAt, setRestartAt] = useState<number | undefined>();
     const [reopening, setReopening] = useState(false);
     const latest = useRef(snapshot);
+    const savedHere = useRef(new Set<string>());
 
     latest.current = snapshot;
 
@@ -204,7 +212,10 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
                 (known) => known.id === question.id,
             )?.myAnswer;
 
-            if (held === null || held === undefined) {
+            if (
+                (held === null || held === undefined) &&
+                !savedHere.current.has(question.id)
+            ) {
                 return;
             }
 
@@ -212,6 +223,8 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
                 surveyId,
                 question.id,
             );
+
+            savedHere.current.delete(question.id);
 
             dispatch({
                 type: 'answer.set',
@@ -222,6 +235,8 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
 
             return;
         }
+
+        savedHere.current.add(question.id);
 
         const saved = await surveyApi.saveAnswer(surveyId, question.id, body);
 
@@ -310,7 +325,13 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
             snapshot={snapshot}
             realtime={state.realtime}
             connection={state.connection}
-            actions={<EditorActions snapshot={snapshot} dispatch={dispatch} />}
+            actions={
+                <EditorActions
+                    snapshot={snapshot}
+                    online={state.online}
+                    dispatch={dispatch}
+                />
+            }
         >
             {view()}
         </SurveyFrame>
