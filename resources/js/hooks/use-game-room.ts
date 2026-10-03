@@ -29,6 +29,8 @@ import type {
     GameStatementsChanged,
     GameTurnChanged,
     GameVotesCounted,
+    GameWordChanged,
+    GameWordFound,
 } from '@/lib/games/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
@@ -302,6 +304,18 @@ export function useGameRoom(
                     apply({
                         type: 'votes.counted',
                         counted: payload as unknown as GameVotesCounted,
+                    });
+                    break;
+                case 'game.word.found':
+                    apply({
+                        type: 'word.found',
+                        found: payload as unknown as GameWordFound,
+                    });
+                    break;
+                case 'game.word.changed':
+                    apply({
+                        type: 'word.changed',
+                        change: payload as unknown as GameWordChanged,
                     });
                     break;
             }

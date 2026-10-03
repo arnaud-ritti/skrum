@@ -4676,5 +4676,10 @@
     "You have already found the word.": "Ya has encontrado la palabra.",
     ":min–:max min": ":min–:max min",
     ":count min / person": ":count min / pers.",
-    "anonymous": "anónimo"
+    "anonymous": "anónimo",
+    "Found by · :found / :total": "Encontrado por · :found / :total",
+    "found · :time": "encontrado · :time",
+    "New word (:count)": "Otra palabra (:count)",
+    "You earn +:points per finder": "Ganas +:points por cada jugador que acierta",
+    "You found it: :word": "Lo encontraste: :word"
 }

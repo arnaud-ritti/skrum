@@ -379,3 +379,91 @@ describe('roomReducer, round.revealed', () => {
         });
     });
 });
+
+describe('roomReducer, Draw & Guess finders', () => {
+    const found = {
+        roundId: 'round-1',
+        playerId: 'ada',
+        seconds: 18,
+        points: 10,
+    };
+
+    it('appends a finder once, even when the event comes twice', () => {
+        const once = roomReducer(
+            stateOf({ id: 'round-1', game: 'draw', finders: [] }),
+            { type: 'word.found', found },
+        );
+        const twice = roomReducer(once, { type: 'word.found', found });
+
+        expect(twice.snapshot.round?.finders).toEqual([
+            { playerId: 'ada', seconds: 18, points: 10, afterGuessId: null },
+        ]);
+    });
+
+    it('places the finder after the last guess seen', () => {
+        const next = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'draw',
+                guesses: [{ id: 'g1', playerId: 'bob', text: 'cup' }],
+            }),
+            { type: 'word.found', found },
+        );
+
+        expect(next.snapshot.round?.finders?.[0].afterGuessId).toBe('g1');
+    });
+
+    it('asks for a fresh snapshot for a round it does not know', () => {
+        const next = roomReducer(stateOf(null), { type: 'word.found', found });
+
+        expect(next.resyncRequests).toBe(1);
+    });
+
+    it('keeps where the finders were placed when the room is fetched again', () => {
+        const next = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'draw',
+                finders: [{ ...found, afterGuessId: 'g1' }],
+            }),
+            {
+                type: 'replace',
+                snapshot: snapshot({
+                    id: 'round-1',
+                    game: 'draw',
+                    finders: [{ playerId: 'ada', seconds: 18, points: 10 }],
+                }),
+            },
+        );
+
+        expect(next.snapshot.round?.finders?.[0].afterGuessId).toBe('g1');
+    });
+
+    it('resets the mask, the hints and the drawing on a new word', () => {
+        const next = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'draw',
+                mask: ['B', null, null],
+                maxHints: 1,
+                drawing: [{ type: 'fill', color: 'red', x: 1, y: 1 }],
+                committedOpIds: ['op-1'],
+            }),
+            {
+                type: 'word.changed',
+                change: {
+                    roundId: 'round-1',
+                    mask: [null, null, null, null],
+                    maxHints: 2,
+                },
+            },
+        );
+
+        expect(next.snapshot.round).toMatchObject({
+            mask: [null, null, null, null],
+            maxHints: 2,
+            drawing: [],
+            committedOpIds: [],
+        });
+    });
+});

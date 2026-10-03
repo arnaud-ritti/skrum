@@ -13,7 +13,10 @@ import type {
     GameTruthSet,
     GameTruthSets,
     GameTurnChanged,
+    GameFinder,
     GameVotesCounted,
+    GameWordChanged,
+    GameWordFound,
     GameWordGuess,
 } from './types';
 import { withAwardedPoints } from './leaderboard';
@@ -59,7 +62,9 @@ export type RoomAction =
     | { type: 'turn.changed'; turn: GameTurnChanged }
     | { type: 'statements.changed'; change: GameStatementsChanged }
     | { type: 'statements.mine'; mine: GameTruthSet | null }
-    | { type: 'votes.counted'; counted: GameVotesCounted };
+    | { type: 'votes.counted'; counted: GameVotesCounted }
+    | { type: 'word.found'; found: GameWordFound }
+    | { type: 'word.changed'; change: GameWordChanged };
 
 const RecentPicks = 5;
 
@@ -144,9 +149,13 @@ function withClientRoundState(
         return fresh;
     }
 
-    const { committedOpIds, recentPicks } = previous.round;
+    const { committedOpIds, recentPicks, finders } = previous.round;
 
-    if (committedOpIds === undefined && recentPicks === undefined) {
+    if (
+        committedOpIds === undefined &&
+        recentPicks === undefined &&
+        finders === undefined
+    ) {
         return fresh;
     }
 
@@ -167,7 +176,48 @@ function withClientRoundState(
                       ),
                   }
                 : {}),
+            ...(fresh.round.finders !== undefined && finders !== undefined
+                ? { finders: withFinderPlaces(fresh.round.finders, finders) }
+                : {}),
         },
+    };
+}
+
+/** The fetched finders keep the place in the guesses they had when seen live. */
+function withFinderPlaces(
+    fresh: GameFinder[],
+    previous: GameFinder[],
+): GameFinder[] {
+    return fresh.map((finder) => {
+        const known = previous.find(
+            (seen) => seen.playerId === finder.playerId,
+        );
+
+        return known?.afterGuessId === undefined
+            ? finder
+            : { ...finder, afterGuessId: known.afterGuessId };
+    });
+}
+
+/** A finder seen live: once per player, after the last guess of the log. */
+function withFinder(round: GameRound, found: GameWordFound): GameRound {
+    const finders = round.finders ?? [];
+
+    if (finders.some((finder) => finder.playerId === found.playerId)) {
+        return round;
+    }
+
+    return {
+        ...round,
+        finders: [
+            ...finders,
+            {
+                playerId: found.playerId,
+                seconds: found.seconds,
+                points: found.points,
+                afterGuessId: round.guesses?.at(-1)?.id ?? null,
+            },
+        ],
     };
 }
 
@@ -519,6 +569,18 @@ export function roomReducer(
             return withRound(state, action.counted.roundId, (round) => ({
                 ...round,
                 votedCount: action.counted.voted,
+            }));
+        case 'word.found':
+            return withRound(state, action.found.roundId, (round) =>
+                withFinder(round, action.found),
+            );
+        case 'word.changed':
+            return withRound(state, action.change.roundId, (round) => ({
+                ...round,
+                mask: action.change.mask,
+                maxHints: action.change.maxHints,
+                drawing: [],
+                committedOpIds: [],
             }));
     }
 }

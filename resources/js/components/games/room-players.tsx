@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useTrans } from '@/hooks/use-trans';
 import { pendingAnswers } from '@/lib/games/gif';
+import { findTime } from '@/lib/games/redo';
 import type { GamePlayer, GameRound } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { PlayerPoints, PlayerRow } from './player-row';
@@ -55,11 +56,23 @@ function GifPlayerStatus({ done, voting }: { done: boolean; voting: boolean }) {
 function LedPlayerStatus({
     isLeader,
     isDraw,
+    foundAfter,
 }: {
     isLeader: boolean;
     isDraw: boolean;
+    /** Seconds from the start to the find of a Draw & Guess finder (spec §6.15). */
+    foundAfter: number | null;
 }) {
     const { t } = useTrans();
+
+    if (foundAfter !== null) {
+        return (
+            <span className="inline-flex items-center gap-1 text-skrum-success-text">
+                <Check aria-hidden className="size-3.5 shrink-0" />
+                {t('found · :time', { time: findTime(foundAfter) })}
+            </span>
+        );
+    }
 
     if (!isLeader) {
         return t('guessing…');
@@ -217,6 +230,11 @@ export function RoomPlayers({
                 <LedPlayerStatus
                     isLeader={row.playerId === ledRound.leaderPlayerId}
                     isDraw={ledRound.game === 'draw'}
+                    foundAfter={
+                        ledRound.finders?.find(
+                            (finder) => finder.playerId === row.playerId,
+                        )?.seconds ?? null
+                    }
                 />
             );
         }

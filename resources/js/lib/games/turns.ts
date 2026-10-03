@@ -82,7 +82,11 @@ export function tellerCandidates(
     ];
 }
 
-/** The body of POST rounds: the leader for leader games, the order of the online players for games in turns. */
+/**
+ * The body of POST rounds: the leader for leader games, the order of the
+ * online players for games in turns, and for Draw & Guess its guessers (the
+ * server drops the drawer from them, spec §6.15).
+ */
 export function startPayload(
     game: GameKind,
     settings: GameRoomSettingsInfo,
@@ -92,5 +96,6 @@ export function startPayload(
     return {
         ...(LeaderGames.includes(game) ? { leader_player_id: leaderId } : {}),
         ...(takesTurns(game, settings) ? { turn_order: onlineOrder } : {}),
+        ...(game === 'draw' ? { guesser_player_ids: onlineOrder } : {}),
     };
 }

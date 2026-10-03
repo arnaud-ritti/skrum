@@ -1,4 +1,4 @@
-import { EyeOff, Lightbulb } from 'lucide-react';
+import { Check, EyeOff, Lightbulb } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import { hintsUsed } from '@/lib/games/hints';
@@ -30,22 +30,40 @@ type Props = {
     action?: ReactNode;
     /** Under the word: when the next hint comes on its own. */
     footnote?: ReactNode;
+    /** False for a Draw & Guess finder: the word is no longer only theirs (spec §6.15). */
+    secret?: boolean;
 };
 
-export function LeaderWord({ word, label, action, footnote }: Props) {
+export function LeaderWord({
+    word,
+    label,
+    action,
+    footnote,
+    secret = true,
+}: Props) {
     const { t } = useTrans();
+    const Icon = secret ? EyeOff : Check;
 
     return (
         <WordCard className={cn(action !== undefined && 'pr-2')}>
             <div className="flex min-w-0 flex-col">
-                <span className="flex min-w-0 items-center gap-1 text-overline text-muted-foreground uppercase">
-                    <EyeOff aria-hidden className="size-3.5 shrink-0" />
+                <span
+                    className={cn(
+                        'flex min-w-0 items-center gap-1 text-overline uppercase',
+                        secret
+                            ? 'text-muted-foreground'
+                            : 'text-skrum-success-text',
+                    )}
+                >
+                    <Icon aria-hidden className="size-3.5 shrink-0" />
                     <span className="min-w-0">
                         {label}
-                        <span className="font-medium">
-                            {' · '}
-                            {t('only you see it')}
-                        </span>
+                        {secret && (
+                            <span className="font-medium">
+                                {' · '}
+                                {t('only you see it')}
+                            </span>
+                        )}
                     </span>
                 </span>
                 <span className="font-display text-2xl font-bold tracking-wider break-words">

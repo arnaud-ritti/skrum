@@ -104,3 +104,12 @@ describe('startPayload', () => {
         ).toEqual({ turn_order: ['a', 'b'] });
     });
 });
+
+describe('startPayload, Draw & Guess', () => {
+    it('posts the drawer and the online players as guessers', () => {
+        expect(startPayload('draw', settings(), 'x', ['a', 'b'])).toEqual({
+            leader_player_id: 'x',
+            guesser_player_ids: ['a', 'b'],
+        });
+    });
+});

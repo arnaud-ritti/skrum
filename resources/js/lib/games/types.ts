@@ -83,6 +83,23 @@ export type GameWordGuess = {
     seq?: number;
 };
 
+/** Draw & Guess (spec §6.15): who found the word, when and for how many points. */
+export type GameFinder = {
+    playerId: string;
+    seconds: number;
+    points: number;
+    /** Client only: the last guess seen when the finder arrived live; null before any guess. */
+    afterGuessId?: string | null;
+};
+
+export type GameWordFound = { roundId: string } & GameFinder;
+
+export type GameWordChanged = {
+    roundId: string;
+    mask: GameMask;
+    maxHints: number;
+};
+
 export type GameRoomAccess = 'team' | 'link';
 
 export type GamePlayer = {
@@ -215,7 +232,7 @@ export type GameRound = {
     pickedLetters?: string[];
     /** Client only: the latest picks seen live, oldest first. */
     recentPicks?: GameLetterPick[];
-    /** The secret word: only ever present for the round's leader. */
+    /** The secret word: only ever present for the round's leader, and in Draw & Guess for who found it. */
     word?: string;
     maxHints?: number;
     guesses?: GameGuessEntry[];
@@ -243,6 +260,13 @@ export type GameRound = {
     drawn?: GameTextRevealed | null;
     candidates?: string[];
     votedCount?: number;
+    /** Draw & Guess: who found the word, in the order they found it. */
+    finders?: GameFinder[];
+    /** Draw & Guess: null when the round was started without its guessers (the first find ends it). */
+    guessersTotal?: number | null;
+    pointsPerFinder?: number;
+    /** Draw & Guess: only for the drawer. */
+    wordChangesLeft?: number;
 };
 
 type GameHistoryRound = {
@@ -277,6 +301,7 @@ export type GameRoundDetail = GameHistoryRound & {
     weather?: GameWeatherCount[] | null;
     drawn?: GameDrawnAnswer | null;
     nominations?: GameNomination[];
+    finders?: GameFinder[];
 };
 
 export type GamePointsAward = {
@@ -303,6 +328,7 @@ export type GameRoundEnded = {
     weather?: GameWeatherCount[] | null;
     drawn?: GameDrawnAnswer | null;
     nominations?: GameNomination[];
+    finders?: GameFinder[];
 };
 
 export type GameRoundRevealed = {
@@ -357,6 +383,15 @@ export type GameGuessResponse = {
     result: 'wrong' | 'near' | 'correct';
     guessId: string;
     ended: GameRoundEnded | null;
+    /** Draw & Guess with guessers: the viewer just found the word. */
+    found?: GameFinder;
+    word?: string;
+};
+
+/** POST word-changes: the drawer's new word. */
+export type GameWordChangeResponse = GameWordChanged & {
+    word: string;
+    wordChangesLeft: number;
 };
 
 export type GameWordGuessResponse = {

@@ -195,6 +195,19 @@ describe('StartRoundControls, games in turns', () => {
     });
 });
 
+describe('StartRoundControls, Draw & Guess', () => {
+    it('posts the drawer and the online players as guessers', async () => {
+        renderControls({ game: 'draw', online: ['cy', 'ada', 'bob'] });
+
+        await userEvent.click(startButton());
+
+        expect(postedBody()).toEqual({
+            leader_player_id: 'ada',
+            guesser_player_ids: ['ada', 'bob', 'cy'],
+        });
+    });
+});
+
 describe('StartRoundControls, the end of a game', () => {
     it('offers a new game after the last round of a numbered game', () => {
         renderControls({

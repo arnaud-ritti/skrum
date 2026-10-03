@@ -134,6 +134,28 @@ describe('RoomPlayers', () => {
         expect(screen.getAllByText('guessing…')).toHaveLength(2);
     });
 
+    it('marks each finder of a Draw & Guess round with the time they found', () => {
+        const ctx = context({
+            room: { id: 'r1', game: 'draw', hostPlayerId: 'ada' },
+            round: {
+                id: 'round',
+                game: 'draw',
+                leaderPlayerId: 'cy',
+                guessersTotal: 2,
+                finders: [{ playerId: 'ada', seconds: 18, points: 10 }],
+            },
+        });
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomPlayers title="Players" />
+            </RoomProvider>,
+        );
+
+        expect(screen.getByText('found · 0:18')).toBeTruthy();
+        expect(screen.getAllByText('guessing…')).toHaveLength(1);
+    });
+
     it('lists the participants of Sprint in one GIF without rank or points', () => {
         const ctx = context({
             room: { id: 'r1', game: 'gif', hostPlayerId: 'ada' },
