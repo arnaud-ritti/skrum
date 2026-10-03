@@ -4183,5 +4183,10 @@
     "This change is not possible.": "This change is not possible.",
     "Add a question before publishing.": "Add a question before publishing.",
     "An attached health check cannot be reopened once its retro is completed.": "An attached health check cannot be reopened once its retro is completed.",
-    "Answer at least one question before finishing.": "Answer at least one question before finishing."
+    "Answer at least one question before finishing.": "Answer at least one question before finishing.",
+    "Rate each statement from 1 (Strongly disagree) to :max (Strongly agree). Only you see your own scores.": "Rate each statement from 1 (Strongly disagree) to :max (Strongly agree). Only you see your own scores.",
+    "Score every statement before sending.": "Score every statement before sending.",
+    "The health check is closed.": "The health check is closed.",
+    "This retro already has a health check.": "This retro already has a health check.",
+    "You have already sent your answers.": "You have already sent your answers."
 }

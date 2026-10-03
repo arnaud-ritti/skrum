@@ -19,7 +19,6 @@ import type {
     CardComment,
     CardPayload,
     CommentNotificationPayload,
-    HealthProgress,
     PresenceMember,
     ReactionSummary,
     Snapshot,
@@ -290,7 +289,8 @@ export function useRetroBoard(initial: Snapshot) {
                 case 'health.answered':
                     apply({
                         type: 'health.progress',
-                        statements: payload.statements as HealthProgress[],
+                        respondents: payload.respondents as number,
+                        participants: payload.participants as number,
                     });
                     break;
                 case 'survey.changed': {

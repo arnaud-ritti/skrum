@@ -58,3 +58,88 @@ describe('boardReducer writers and ROTI voters', () => {
         expect(next.roti.voterIds).toEqual(['a']);
     });
 });
+
+describe('boardReducer health check', () => {
+    const healthCheck = {
+        surveyId: 'survey-1',
+        isClosed: false,
+        scale: 5,
+        respondents: 1,
+        participants: 3,
+        hasSubmitted: false,
+        statements: [
+            {
+                key: 'interaction',
+                label: 'Interaction',
+                text: 'Interaction with colleagues was productive',
+                isBuiltin: true,
+                myScore: null,
+            },
+            {
+                key: 'vision',
+                label: 'Vision',
+                text: 'The vision and goals are clear to me',
+                isBuiltin: true,
+                myScore: null,
+            },
+        ],
+    };
+    const withHealth = { ...board, healthCheck } as unknown as Snapshot;
+    const withoutHealth = {
+        ...board,
+        healthCheck: null,
+    } as unknown as Snapshot;
+
+    it('takes the counts of health.answered and nothing else', () => {
+        const next = boardReducer(withHealth, {
+            type: 'health.progress',
+            respondents: 2,
+            participants: 4,
+        });
+
+        expect(next.healthCheck).toEqual({
+            ...healthCheck,
+            respondents: 2,
+            participants: 4,
+        });
+    });
+
+    it('applies the own submission: the scores, sent, and the counts', () => {
+        const next = boardReducer(withHealth, {
+            type: 'health.submitted',
+            scores: { interaction: 4, vision: 2 },
+            respondents: 2,
+            participants: 3,
+        });
+
+        expect(next.healthCheck).toMatchObject({
+            surveyId: 'survey-1',
+            isClosed: false,
+            scale: 5,
+            respondents: 2,
+            participants: 3,
+            hasSubmitted: true,
+        });
+        expect(
+            next.healthCheck?.statements.map((statement) => statement.myScore),
+        ).toEqual([4, 2]);
+    });
+
+    it('ignores both on a board without a health check', () => {
+        expect(
+            boardReducer(withoutHealth, {
+                type: 'health.progress',
+                respondents: 2,
+                participants: 4,
+            }),
+        ).toBe(withoutHealth);
+        expect(
+            boardReducer(withoutHealth, {
+                type: 'health.submitted',
+                scores: { vision: 3 },
+                respondents: 1,
+                participants: 1,
+            }),
+        ).toBe(withoutHealth);
+    });
+});

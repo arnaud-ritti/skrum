@@ -108,7 +108,7 @@ class GetHealth extends SkrumTool
     private function inProgress(Retro $retro): array
     {
         $names = $retro->participants()->with('user')->get()->mapWithKeys(fn (Participant $participant): array => [$participant->id => $participant->displayName()]);
-        $progress = collect($this->presentHealthProgress->handle($retro))->keyBy('key');
+        $progress = collect($this->presentHealthProgress->handle($retro)['statements'] ?? [])->keyBy('key');
         $viewer = $this->context->participant($retro);
         $myScores = $viewer === null
             ? collect()

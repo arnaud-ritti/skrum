@@ -1,150 +1,183 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\HealthCheckSurvey;
+use App\Actions\HealthCheck\ManageTeamHealthStatements;
+use App\Actions\HealthCheck\PresentHealthProgress;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
 use App\Events\Retros\HealthAnswered;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
-use App\Models\RetroHealthStatement;
-use App\Models\TeamHealthStatement;
+use App\Models\TeamSurveyAnswer;
+use App\Models\TeamSurveyRespondent;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     Event::fake();
 });
 
-function healthCheckRetro(array $attributes = []): Retro
+/**
+ * @return array<string, int>
+ */
+function healthScores(int $vision = 4): array
 {
-    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::HealthCheck)->create($attributes);
-
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
-    return $retro->fresh();
+    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
 }
 
-function healthAnswerRoute(Retro $retro, string $statement): string
+function healthSubmissionRoute(Retro $retro): string
 {
-    return route('retros.health-check.update', ['retro' => $retro, 'statement' => $statement]);
+    return route('retros.healthCheck.submission.store', $retro);
 }
 
-it('sets, changes and clears the own score for one statement', function () {
-    $retro = healthCheckRetro();
+it('sends every score at once, and the viewer reads them back', function () {
+    $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
+    attachHealthCheck($retro);
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'vision'), ['score' => 7])
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => healthScores(vision: 2)])
         ->assertOk()
-        ->assertJsonPath('statement', 'vision')
-        ->assertJsonPath('score', 7)
-        ->assertJsonPath('statements.3', ['key' => 'vision', 'count' => 1, 'answeredBy' => [$participant->id]]);
+        ->assertExactJson(['respondents' => 1, 'participants' => 1, 'hasSubmitted' => true]);
 
-    $this->actingAs($user)->deleteJson(route('retros.health-check.destroy', ['retro' => $retro, 'statement' => 'vision']))
-        ->assertOk()
-        ->assertJsonPath('statements.3', ['key' => 'vision', 'count' => 0, 'answeredBy' => []]);
+    $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['healthCheck']['statements'])->keyBy('key');
 
-    expect(HealthCheckAnswer::count())->toBe(0);
+    expect($statements['vision']['myScore'])->toBe(2)
+        ->and(TeamSurveyAnswer::query()->count())->toBe(6);
 });
 
-it('changes a score without duplicating the answer', function () {
-    $retro = healthCheckRetro();
+it('refuses a second submission without changing the scores sent', function () {
+    $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
+    attachHealthCheck($retro);
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'vision'), ['score' => 3])->assertOk();
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'vision'), ['score' => 9])
-        ->assertOk()
-        ->assertJsonPath('statements.3.count', 1);
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => healthScores(vision: 3)])->assertOk();
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => healthScores(vision: 5)])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('health_check');
 
-    expect(HealthCheckAnswer::sole()->score)->toBe(9);
+    expect(TeamSurveyAnswer::query()->count())->toBe(6)
+        ->and(resolve(HealthCheckSurvey::class)->forRetro($retro)->questions()->where('match_key', 'vision')->sole()->answers()->sole()->value)->toBe(3);
 });
 
 it('lets guests answer', function () {
-    $retro = healthCheckRetro(['guest_access_enabled' => true]);
+    $retro = Retro::factory()->withGuestAccess()->create();
+    attachHealthCheck($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
     $this->withCookies(retroGuestCookie($guest))
         ->withCredentials()
-        ->putJson(healthAnswerRoute($retro, 'motivation'), ['score' => 10])
+        ->postJson(healthSubmissionRoute($retro), ['scores' => healthScores()])
         ->assertOk();
 
-    expect(HealthCheckAnswer::sole()->participant_id)->toBe($guest->id);
+    expect(TeamSurveyRespondent::query()->where('participant_id', $guest->id)->sole()->user_id)->toBeNull();
 });
 
-it('accepts scores from 1 to 10 only', function (mixed $score) {
-    $retro = healthCheckRetro();
+it('accepts scores from 1 to 5 only', function (mixed $score) {
+    $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
+    attachHealthCheck($retro);
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'vision'), ['score' => $score])->assertUnprocessable()->assertJsonValidationErrors('score');
-})->with([0, 11, 'high', null]);
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => [...healthScores(), 'vision' => $score]])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('scores.vision');
 
-it('returns 404 for statements outside the retro set', function (callable $statement) {
-    $retro = healthCheckRetro();
+    expect(TeamSurveyAnswer::query()->count())->toBe(0);
+})->with([0, 6, 'high', null]);
+
+it('accepts 10 on an imported health check left open on the scale of ten', function () {
+    $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
+    [, $other] = retroMember($retro);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $other, ['vision' => 7], scaleMax: 10);
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, $statement()), ['score' => 5])->assertNotFound();
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => [...healthScores(), 'vision' => 10]])->assertOk();
+});
 
-    expect(HealthCheckAnswer::count())->toBe(0);
+it('returns 422 for statements outside the health check', function () {
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    attachHealthCheck($retro);
+
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => [...healthScores(), 'happiness' => 3]])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('scores');
+
+    expect(TeamSurveyAnswer::query()->count())->toBe(0);
+});
+
+it('accepts a submission in every open phase while unlocked and open', function (RetroPhase $phase, array $attributes, int $status) {
+    $retro = Retro::factory()->create(['phase' => $phase, ...$attributes]);
+    [$user] = retroMember($retro);
+    attachHealthCheck($retro);
+
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro->fresh()), ['scores' => healthScores()])->assertStatus($status);
 })->with([
-    'unknown value' => [fn () => 'happiness'],
-    'another team custom statement' => [fn () => TeamHealthStatement::factory()->create()->id],
+    'writing' => [RetroPhase::Writing, [], 200],
+    'voting' => [RetroPhase::Voting, [], 200],
+    'actions' => [RetroPhase::Actions, [], 200],
+    'completed' => [RetroPhase::Completed, ['completed_at' => '2026-10-01 10:00:00'], 403],
+    'locked' => [RetroPhase::Writing, ['is_locked' => true], 423],
 ]);
 
-it('only accepts answers during the health check and while unlocked', function (RetroPhase $phase, array $attributes, int $status) {
-    $retro = healthCheckRetro(['phase' => $phase, ...$attributes]);
-    [$user] = retroMember($retro);
-
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'vision'), ['score' => 5])->assertStatus($status);
-})->with([
-    'writing' => [RetroPhase::Writing, [], 403],
-    'completed' => [RetroPhase::Completed, [], 403],
-    'locked' => [RetroPhase::HealthCheck, ['is_locked' => true], 423],
-]);
-
-it('broadcasts counts and who answered, never a score', function () {
-    $retro = healthCheckRetro();
+it('broadcasts the number who have sent and the number of participants, never a score or a name', function () {
+    $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
+    retroMember($retro);
+    attachHealthCheck($retro);
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'processes'), ['score' => 4])->assertOk();
+    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => healthScores()])->assertOk();
 
     Event::assertDispatched(function (HealthAnswered $event) use ($participant): bool {
-        $processes = collect($event->broadcastWith()['statements'])->firstWhere('key', 'processes');
+        $payload = json_encode($event->broadcastWith());
 
         return $event->broadcastAs() === 'health.answered'
-            && $processes === ['key' => 'processes', 'count' => 1, 'answeredBy' => [$participant->id]]
-            && ! str_contains(json_encode($event->broadcastWith()), 'score');
+            && $event->broadcastWith() === ['respondents' => 1, 'participants' => 2]
+            && ! str_contains($payload, 'score')
+            && ! str_contains($payload, $participant->id);
     });
 });
 
-it('hides who answered on anonymous retros', function () {
-    $retro = healthCheckRetro(['is_anonymous' => true]);
-    [$user] = retroMember($retro);
+it('names who answered for the MCP tool on a named retro only', function (bool $isAnonymous, bool $named) {
+    $retro = Retro::factory()->create(['is_anonymous' => $isAnonymous]);
+    [, $participant] = retroMember($retro);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $participant, healthScores());
 
-    $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'processes'), ['score' => 4])
-        ->assertJsonPath('statements.4', ['key' => 'processes', 'count' => 1, 'answeredBy' => []]);
+    $vision = collect(resolve(PresentHealthProgress::class)->handle($retro)['statements'])->firstWhere('key', 'vision');
 
-    Event::assertDispatched(fn (HealthAnswered $event) => collect($event->broadcastWith()['statements'])
-        ->every(fn (array $statement) => $statement['answeredBy'] === []));
-});
+    expect($vision['count'])->toBe(1)
+        ->and($vision['answeredBy'])->toBe($named ? [$participant->id] : []);
+})->with([
+    'anonymous' => [true, false],
+    'named' => [false, true],
+]);
 
 it('sends each viewer only their own score in the snapshot', function () {
-    $retro = healthCheckRetro();
+    $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
     [, $other] = retroMember($retro);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id, 'statement' => 'vision', 'score' => 2]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id, 'statement' => 'motivation', 'score' => 9]);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $other, healthScores(vision: 2));
+    answerHealthCheck($retro, $viewer, [...healthScores(), 'motivation' => 5]);
 
-    $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
+    $healthCheck = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck'];
+    $statements = collect($healthCheck['statements'])->keyBy('key');
 
-    expect(array_keys($statements['vision']))->toBe(['key', 'label', 'text', 'isBuiltin', 'count', 'answeredBy', 'myScore'])
-        ->and($statements['vision']['count'])->toBe(1)
-        ->and($statements['vision']['answeredBy'])->toBe([$other->id])
-        ->and($statements['vision']['myScore'])->toBeNull()
-        ->and($statements['motivation']['myScore'])->toBe(9)
-        ->and($statements['motivation']['label'])->toBe('Motivation');
+    expect(array_keys($statements['vision']))->toBe(['key', 'label', 'text', 'isBuiltin', 'myScore'])
+        ->and($statements['vision']['myScore'])->toBe(4)
+        ->and($statements['motivation']['myScore'])->toBe(5)
+        ->and($statements['motivation']['label'])->toBe('Motivation')
+        ->and($healthCheck['respondents'])->toBe(2)
+        ->and($healthCheck['hasSubmitted'])->toBeTrue();
+
+    $outsider = Participant::factory()->create(['retro_id' => $retro->id]);
+
+    expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $outsider)['healthCheck']['statements'])->pluck('myScore')->filter()->all())->toBe([]);
 });
 
-it('leaves the health check out of the snapshot when it is off and unanswered', function () {
+it('leaves the health check out of the snapshot of a retro that has none', function () {
     $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
 
@@ -152,23 +185,33 @@ it('leaves the health check out of the snapshot when it is off and unanswered', 
 });
 
 it('presents built-in statements translated and custom statements as stored', function () {
-    $retro = healthCheckRetro();
+    $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
-    RetroHealthStatement::factory()->custom()->create(['retro_id' => $retro->id, 'key' => 'custom-1', 'label' => 'Pairing', 'text' => 'We pair often.', 'position' => 99]);
+    $custom = resolve(ManageTeamHealthStatements::class)->add($retro->team, 'We pair often.', 'Pairing');
+    attachHealthCheck($retro);
 
     $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
 
     expect(collect($statements['vision'])->only(['key', 'label', 'text', 'isBuiltin'])->all())
         ->toBe(['key' => 'vision', 'label' => HealthStatement::Vision->label(), 'text' => HealthStatement::Vision->text(), 'isBuiltin' => true])
-        ->and(collect($statements['custom-1'])->only(['key', 'label', 'text', 'isBuiltin'])->all())
-        ->toBe(['key' => 'custom-1', 'label' => 'Pairing', 'text' => 'We pair often.', 'isBuiltin' => false]);
+        ->and(collect($statements[$custom->id])->only(['key', 'label', 'text', 'isBuiltin'])->all())
+        ->toBe(['key' => $custom->id, 'label' => 'Pairing', 'text' => 'We pair often.', 'isBuiltin' => false]);
 });
 
-it('includes the health check in the snapshot when answers exist though it is off', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create();
-    [, $viewer] = retroMember($retro);
-    RetroHealthStatement::factory()->builtin(HealthStatement::Vision)->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id, 'statement' => 'vision', 'score' => 6]);
+it('keeps the answers of a health check that was removed, out of the snapshot, and brings them back when it is added again', function () {
+    $retro = Retro::factory()->create();
+    [$facilitator, $viewer] = retroFacilitator($retro);
+    $survey = attachHealthCheck($retro);
+    answerHealthCheck($retro, $viewer, healthScores(vision: 2));
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'][0]['myScore'])->toBe(6);
+    $this->actingAs($facilitator)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertNoContent();
+
+    expect($survey->fresh()->status)->toBe(TeamSurveyStatus::Draft)
+        ->and(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck'])->toBeNull();
+
+    $this->actingAs($facilitator)->postJson(route('retros.healthCheck.store', $retro))->assertCreated();
+
+    $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
+
+    expect($statements['vision']['myScore'])->toBe(2);
 });

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Enums\RetroPhase;
 use App\Models\Retro;
 use App\Models\Team;
@@ -43,7 +44,9 @@ class RetroFactory extends Factory
 
     public function withHealthCheck(): static
     {
-        return $this->state(fn () => ['health_check_enabled' => true]);
+        return $this->afterCreating(function (Retro $retro): void {
+            resolve(AttachHealthCheck::class)->handle($retro);
+        });
     }
 
     /**

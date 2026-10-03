@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\CreateRetro;
 use App\Actions\Retros\NewRetro;
 use App\Enums\RetroPhase;
@@ -83,7 +84,8 @@ it('starts in the first enabled phase with the chosen options', function () {
 
     $healthCheck = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 44', 'mad_sad_glad', healthCheckEnabled: true, icebreakerEnabled: true));
 
-    expect($healthCheck->phase)->toBe(RetroPhase::HealthCheck);
+    expect($healthCheck->phase)->toBe(RetroPhase::Icebreaker)
+        ->and(resolve(HealthCheckSurvey::class)->forRetro($healthCheck)?->questions()->count())->toBe(6);
 });
 
 it('copies the columns of a workspace template and remembers it', function () {

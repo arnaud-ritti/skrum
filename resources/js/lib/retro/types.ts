@@ -259,16 +259,25 @@ type HealthStatementPayload = {
     isBuiltin: boolean;
 };
 
+/** `health.answered`: how many have sent their answers, out of how many joined. */
 export type HealthProgress = {
-    key: string;
-    count: number;
-    answeredBy: string[];
+    respondents: number;
+    participants: number;
 };
 
-export type HealthCheckStatement = HealthStatementPayload &
-    HealthProgress & { myScore: number | null };
+export type HealthCheckStatement = HealthStatementPayload & {
+    myScore: number | null;
+};
 
-type HealthCheckState = { statements: HealthCheckStatement[] };
+/** The retro's health check, a team survey answered from the board. */
+export type HealthCheckState = HealthProgress & {
+    surveyId: string;
+    isClosed: boolean;
+    /** 5, or 10 for a health check imported open on the old scale. */
+    scale: number;
+    hasSubmitted: boolean;
+    statements: HealthCheckStatement[];
+};
 
 export type Snapshot = {
     retro: {
@@ -281,6 +290,8 @@ export type Snapshot = {
         phase: RetroPhase;
         phases: RetroPhase[];
         healthCheckEnabled: boolean;
+        /** How many statements the team asks, for the "Add survey" menu. */
+        healthCheckStatements: number;
         icebreakerEnabled: boolean;
         icebreakerGame: GameKind;
         votesAuto: boolean;

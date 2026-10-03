@@ -313,33 +313,16 @@ export function writingProgress(
 }
 
 /**
- * The statements of the health check as the form takes them. `answeredBy`
- * holds participant ids; it is empty on an anonymous retro, where only the
- * count is known.
+ * The statements of the health check as the form takes them: the board names
+ * nobody and shows no count per statement, only the viewer's own scores.
  */
 export function toHealthStatements(
-    board: Pick<Snapshot, 'healthCheck' | 'participants'>,
+    board: Pick<Snapshot, 'healthCheck'>,
 ): HealthCheckFormStatement[] {
     return (board.healthCheck?.statements ?? []).map((statement) => ({
         key: statement.key,
         label: statement.label,
         text: statement.text,
         myScore: statement.myScore,
-        count: statement.count,
-        answeredBy: statement.answeredBy.flatMap((id) => {
-            const participant = board.participants.find(
-                (candidate) => candidate.id === id,
-            );
-
-            return participant
-                ? [
-                      {
-                          id: participant.id,
-                          name: participant.name,
-                          avatarUrl: participant.avatarUrl,
-                      },
-                  ]
-                : [];
-        }),
     }));
 }

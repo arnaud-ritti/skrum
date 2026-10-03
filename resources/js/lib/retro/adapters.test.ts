@@ -10,7 +10,11 @@ import {
     votingProgress,
     writingProgress,
 } from '@/lib/retro/adapters';
-import type { BoardCard, BoardColumn } from '@/lib/retro/types';
+import type {
+    BoardCard,
+    BoardColumn,
+    HealthCheckStatement,
+} from '@/lib/retro/types';
 import { retroSnapshot } from '@/test/retro-board';
 
 const columns: BoardColumn[] = [
@@ -229,66 +233,49 @@ describe('writingProgress', () => {
 });
 
 describe('toHealthStatements', () => {
-    const statement = {
+    const statement: HealthCheckStatement = {
         key: 'interaction',
         label: 'Interaction',
         text: 'Interaction with colleagues was productive',
         isBuiltin: true,
-        count: 3,
-        answeredBy: ['me', 'gone', 'carol'],
-        myScore: 7,
+        myScore: 4,
     };
+
+    function healthCheck(statements = [statement]) {
+        return {
+            surveyId: 'survey-1',
+            isClosed: false,
+            scale: 5,
+            respondents: 2,
+            participants: 3,
+            hasSubmitted: true,
+            statements,
+        };
+    }
 
     it('is empty on a retro without a health check', () => {
         expect(toHealthStatements(retroSnapshot())).toEqual([]);
     });
 
-    it('keeps the server fields and resolves who answered, leaving out someone the board no longer knows', () => {
-        const board = retroSnapshot({
-            healthCheck: { statements: [statement] },
-            participants: [
-                {
-                    id: 'me',
-                    name: 'Alice Martin',
-                    avatarUrl: '/a.svg',
-                    isGuest: false,
-                },
-                {
-                    id: 'carol',
-                    name: 'Carol Guest',
-                    avatarUrl: '/c.svg',
-                    isGuest: true,
-                },
-            ],
-        });
+    it("keeps the statement and the viewer's own score, and names nobody", () => {
+        const board = retroSnapshot({ healthCheck: healthCheck() });
 
         expect(toHealthStatements(board)).toEqual([
             {
                 key: 'interaction',
                 label: 'Interaction',
                 text: 'Interaction with colleagues was productive',
-                myScore: 7,
-                count: 3,
-                answeredBy: [
-                    { id: 'me', name: 'Alice Martin', avatarUrl: '/a.svg' },
-                    { id: 'carol', name: 'Carol Guest', avatarUrl: '/c.svg' },
-                ],
+                myScore: 4,
             },
         ]);
     });
 
-    it('has a count and nobody on an anonymous retro', () => {
+    it('leaves a statement the viewer has not scored without a score', () => {
         const board = retroSnapshot({
-            healthCheck: {
-                statements: [{ ...statement, answeredBy: [], myScore: null }],
-            },
+            healthCheck: healthCheck([{ ...statement, myScore: null }]),
         });
 
-        expect(toHealthStatements(board)[0]).toMatchObject({
-            count: 3,
-            answeredBy: [],
-            myScore: null,
-        });
+        expect(toHealthStatements(board)[0].myScore).toBeNull();
     });
 });
 

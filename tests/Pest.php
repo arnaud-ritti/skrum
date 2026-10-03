@@ -1,6 +1,9 @@
 <?php
 
+use App\Actions\HealthCheck\AttachHealthCheck;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\TeamSurveys\RespondentForParticipant;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\GameKind;
@@ -10,6 +13,7 @@ use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\TeamSurveyQuestionKind;
+use App\Enums\TeamSurveyStatus;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Integrations\DeliverToChannel;
 use App\Jobs\Integrations\PushActionItemState;
@@ -54,6 +58,7 @@ use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\TrackerIssue;
+use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
@@ -1834,4 +1839,52 @@ function healthHistory(): array
 function importedSurvey(string $retroId): ?object
 {
     return DB::table('team_surveys')->where('retro_id', $retroId)->where('template', 'health_check')->first();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Lane H: the retro's health check as a team survey
+|--------------------------------------------------------------------------
+*/
+
+function attachHealthCheck(Retro $retro): TeamSurvey
+{
+    return resolve(AttachHealthCheck::class)->handle($retro);
+}
+
+/**
+ * Sends the scores of one participant, as "Submit answers" does. A fixture
+ * that reproduces an old health check passes the scale of ten: the
+ * questions take it while nobody has answered them.
+ *
+ * @param  array<string, int>  $scores  statement key => score, as given
+ */
+function answerHealthCheck(Retro $retro, Participant $participant, array $scores, int $scaleMax = HealthScale::Max): void
+{
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
+
+    if (! $survey->hasAnswers()) {
+        $survey->questions()->update(['scale_max' => $scaleMax]);
+    }
+
+    $respondent = resolve(RespondentForParticipant::class)->handle($survey, $participant);
+    $questions = $survey->questions()->get()->keyBy('match_key');
+
+    foreach ($scores as $key => $score) {
+        answerSurveyQuestion($questions[$key], $respondent, $score);
+    }
+
+    $respondent->update(['completed_at' => now()]);
+}
+
+/**
+ * Closes the health check of a retro at the retro's completion time, as
+ * completing the retro does.
+ */
+function closeHealthCheck(Retro $retro): TeamSurvey
+{
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro);
+    $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
+
+    return $survey;
 }

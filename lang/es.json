@@ -4403,5 +4403,10 @@
     "This change is not possible.": "Este cambio no es posible.",
     "Add a question before publishing.": "Añade una pregunta antes de publicar.",
     "An attached health check cannot be reopened once its retro is completed.": "Un chequeo de salud adjunto no puede reabrirse una vez completada su retro.",
-    "Answer at least one question before finishing.": "Responde al menos a una pregunta antes de terminar."
+    "Answer at least one question before finishing.": "Responde al menos a una pregunta antes de terminar.",
+    "Rate each statement from 1 (Strongly disagree) to :max (Strongly agree). Only you see your own scores.": "Puntúa cada enunciado de 1 (Totalmente en desacuerdo) a :max (Totalmente de acuerdo). Solo tú ves tus puntuaciones.",
+    "Score every statement before sending.": "Puntúa cada enunciado antes de enviar.",
+    "The health check is closed.": "El chequeo de salud está cerrado.",
+    "This retro already has a health check.": "Esta retro ya tiene un chequeo de salud.",
+    "You have already sent your answers.": "Ya has enviado tus respuestas."
 }

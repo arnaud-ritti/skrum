@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Events\Retros\CardHighlighted;
@@ -8,7 +9,6 @@ use App\Events\Retros\RetroDeleted;
 use App\Events\Retros\RetroSettingsChanged;
 use App\Events\Retros\TimerChanged;
 use App\Models\Card;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -263,7 +263,7 @@ it('refuses engagement settings from others and once completed', function (strin
 })->with(['reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode']);
 
 it('moves through the enabled pre-writing phases', function () {
-    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase(RetroPhase::HealthCheck)->create();
+    $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::HealthCheck)->create(['health_check_enabled' => true]);
     [$user] = retroFacilitator($retro);
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'writing'])->assertUnprocessable();
@@ -293,16 +293,20 @@ it('turns the pre-writing phases on and off', function () {
     ])->assertNoContent();
 
     expect($retro->fresh()->only(['health_check_enabled', 'icebreaker_enabled']))->toBe([
-        'health_check_enabled' => true,
+        'health_check_enabled' => false,
         'icebreaker_enabled' => true,
     ]);
     Event::assertDispatched(RetroSettingsChanged::class);
 
+    $this->actingAs($user)->postJson(route('retros.healthCheck.store', $retro))->assertCreated();
+
+    expect(resolve(HealthCheckSurvey::class)->forRetro($retro))->not->toBeNull();
+
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'icebreaker'])->assertOk();
 
-    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['health_check_enabled' => false])->assertNoContent();
+    $this->actingAs($user)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertNoContent();
 
-    expect($retro->fresh()->health_check_enabled)->toBeFalse();
+    expect(resolve(HealthCheckSurvey::class)->forRetro($retro))->toBeNull();
 });
 
 it('refuses to turn off the current phase', function (RetroPhase $phase, string $setting, mixed $off) {
@@ -316,9 +320,7 @@ it('refuses to turn off the current phase', function (RetroPhase $phase, string 
 
     expect($retro->fresh()->{$setting})->toBeTrue();
 })->with([
-    'health check' => [RetroPhase::HealthCheck, 'health_check_enabled', false],
     'icebreaker' => [RetroPhase::Icebreaker, 'icebreaker_enabled', false],
-    'health check as zero' => [RetroPhase::HealthCheck, 'health_check_enabled', 0],
     'icebreaker as string zero' => [RetroPhase::Icebreaker, 'icebreaker_enabled', '0'],
 ]);
 
@@ -331,7 +333,29 @@ it('refuses phase toggles from others and once completed', function (string $set
     $retro->update(['phase' => RetroPhase::Completed]);
 
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
-})->with(['health_check_enabled', 'icebreaker_enabled']);
+})->with(['icebreaker_enabled']);
+
+it('ignores the health-check flag in the settings: a retro left in the old phase keeps it', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::HealthCheck)->create(['health_check_enabled' => true]);
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['health_check_enabled' => false])->assertNoContent();
+
+    expect($retro->fresh()->health_check_enabled)->toBeTrue();
+});
+
+it('refuses to add or remove the health check for others and once completed', function () {
+    [$retro, $facilitator] = facilitatedRetro();
+    [$member] = retroMember($retro);
+
+    $this->actingAs($member)->postJson(route('retros.healthCheck.store', $retro))->assertForbidden();
+    $this->actingAs($member)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertForbidden();
+
+    $retro->update(['phase' => RetroPhase::Completed]);
+
+    $this->actingAs($facilitator)->postJson(route('retros.healthCheck.store', $retro))->assertForbidden();
+    $this->actingAs($facilitator)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertForbidden();
+});
 
 it('accepts the timer and engagement settings in the pre-writing phases', function (RetroPhase $phase) {
     $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create();
@@ -353,7 +377,7 @@ it('switches the vote limit to automatic before voting', function (RetroPhase $p
 it('refuses turning anonymity off once someone answered the health check', function () {
     $retro = Retro::factory()->withHealthCheck()->create(['is_anonymous' => true]);
     [$user, $participant] = retroFacilitator($retro);
-    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'vision', 'score' => 8]);
+    answerHealthCheck($retro, $participant, ['vision' => 4]);
 
     $this->actingAs($user)
         ->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])

@@ -4,10 +4,7 @@ namespace App\Events\Retros;
 
 class HealthAnswered extends RetroBroadcastEvent
 {
-    /**
-     * @param  array<int, array{key: string, count: int, answeredBy: array<int, string>}>  $statements
-     */
-    public function __construct(string $retroId, public array $statements)
+    public function __construct(string $retroId, public int $respondents, public int $participants)
     {
         parent::__construct($retroId);
     }
@@ -17,8 +14,11 @@ class HealthAnswered extends RetroBroadcastEvent
         return 'health.answered';
     }
 
+    /**
+     * @return array{respondents: int, participants: int}
+     */
     public function broadcastWith(): array
     {
-        return ['statements' => $this->statements];
+        return ['respondents' => $this->respondents, 'participants' => $this->participants];
     }
 }

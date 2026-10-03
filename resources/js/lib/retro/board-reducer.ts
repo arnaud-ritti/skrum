@@ -33,8 +33,11 @@ export type BoardAction =
       }
     | { type: 'writers.set'; writersCount: number }
     | { type: 'card.groupName'; cardId: string; groupName: string | null }
-    | { type: 'health.progress'; statements: HealthProgress[] }
-    | { type: 'health.answer'; key: string; score: number | null }
+    | ({ type: 'health.progress' } & HealthProgress)
+    | ({
+          type: 'health.submitted';
+          scores: Record<string, number>;
+      } & HealthProgress)
     | { type: 'cards.upsert'; cards: CardPayload[] }
     | { type: 'card.remove'; cardId: string; ungroupedCards: CardPayload[] }
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
@@ -585,38 +588,20 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     commentCount: countComments(comments),
                 };
             });
-        case 'health.progress': {
+        case 'health.progress':
             if (!state.healthCheck) {
                 return state;
             }
 
-            const progress = new Map(
-                action.statements.map((statement) => [
-                    statement.key,
-                    statement,
-                ]),
-            );
-
             return {
                 ...state,
                 healthCheck: {
-                    statements: state.healthCheck.statements.map(
-                        (statement) => {
-                            const update = progress.get(statement.key);
-
-                            return update
-                                ? {
-                                      ...statement,
-                                      count: update.count,
-                                      answeredBy: update.answeredBy,
-                                  }
-                                : statement;
-                        },
-                    ),
+                    ...state.healthCheck,
+                    respondents: action.respondents,
+                    participants: action.participants,
                 },
             };
-        }
-        case 'health.answer':
+        case 'health.submitted':
             if (!state.healthCheck) {
                 return state;
             }
@@ -624,10 +609,17 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
             return {
                 ...state,
                 healthCheck: {
-                    statements: state.healthCheck.statements.map((statement) =>
-                        statement.key === action.key
-                            ? { ...statement, myScore: action.score }
-                            : statement,
+                    ...state.healthCheck,
+                    respondents: action.respondents,
+                    participants: action.participants,
+                    hasSubmitted: true,
+                    statements: state.healthCheck.statements.map(
+                        (statement) => ({
+                            ...statement,
+                            myScore:
+                                action.scores[statement.key] ??
+                                statement.myScore,
+                        }),
                     ),
                 },
             };
