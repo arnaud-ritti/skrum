@@ -63,7 +63,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     current: ?array{taskId: string, round: Round},
  *     team: ?array{id: string, workspace: string},
  *     links: array{team: ?string},
- *     integrations: ?array<string, array{connected: bool, canWrite: bool}|null>,
+ *     integrations: ?array<string, array{connected: bool, canWrite: bool, estimateFields: list<array{id: string, name: string}>, defaultEstimateFieldId: ?string}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
  *     serverTime: string
@@ -126,6 +126,10 @@ class BuildPokerSnapshot
                 'anonymousVotes' => $game->anonymous_votes,
                 'cursorsEnabled' => $game->cursors_enabled,
                 'reactionsEnabled' => $game->reactions_enabled,
+                'revoteAfterReveal' => $game->revote_after_reveal,
+                'taskTimerSeconds' => $game->task_timer_seconds,
+                'writesEstimates' => $game->writes_estimates,
+                'estimateFieldId' => $game->estimate_field_id,
                 'teamName' => $isGuest ? null : $team->name,
             ],
             'me' => [

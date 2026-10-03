@@ -1,6 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { SessionTypePicker } from '@/components/skrum/session-type-picker';
+import { Layers, Sparkles } from 'lucide-react';
+import {
+    SessionTypePicker,
+    sessionKindIcon,
+    sessionKindTone,
+} from '@/components/skrum/session-type-picker';
 import type { SessionTypeOption } from '@/components/skrum/session-type-picker';
 import {
     DropdownMenu,
@@ -180,5 +185,14 @@ describe('SessionTypePicker', () => {
         expect(items[0].getAttribute('aria-checked')).toBe('true');
         expect(items[1].getAttribute('aria-disabled')).toBe('true');
         expect(screen.getByText('Disabled by the admin')).toBeTruthy();
+    });
+});
+
+describe('the kind tones', () => {
+    it('gives each kind the colours and the icon of its tile', () => {
+        expect(sessionKindTone('retro')).toContain('bg-skrum-col-coral');
+        expect(sessionKindTone('icebreaker')).toContain('bg-skrum-col-sun');
+        expect(sessionKindIcon('retro')).toBe(Layers);
+        expect(sessionKindIcon('icebreaker')).toBe(Sparkles);
     });
 });

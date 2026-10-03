@@ -40,13 +40,16 @@ export type PokerEstimateConflict = {
 };
 
 /**
- * Guests and broadcasts only get source, key, url and isManaged; the other
- * fields come with the snapshot of a non-guest player.
+ * Guests and broadcasts only get source, key, url, type, labels and
+ * isManaged; the other fields come with the snapshot of a non-guest player.
  */
 export type PokerTaskExternal = {
     source: PokerTrackerSource;
     key: string;
     url: string;
+    /** The ticket's type in its tracker (Story, Bug…); null when it has none. */
+    type: string | null;
+    labels: string[];
     isManaged: true;
     assignee?: string | null;
     sourceEstimate?: string | null;
@@ -61,12 +64,34 @@ export type PokerTaskExternal = {
     syncMode?: 'webhook' | 'polling' | 'off';
 };
 
-type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
+type PokerTrackerConnection = {
+    connected: boolean;
+    canWrite: boolean;
+    /** Jira only: the number fields an estimate can be written to. */
+    estimateFields: { id: string; name: string }[];
+    defaultEstimateFieldId: string | null;
+};
 
 type PokerIntegrations = Record<
     PokerTrackerSource,
     PokerTrackerConnection | null
 >;
+
+/** A connected tracker of the team, as `ListPokerSources` describes it. */
+export type PokerTrackerSourceRow = {
+    source: PokerTrackerSource;
+    siteName: string | null;
+    status: string;
+    access: string;
+    canImport: boolean;
+    canWriteBack: boolean;
+    writeBackUnavailableReason: string | null;
+    canSyncStatus: boolean;
+    syncMode: 'webhook' | 'polling' | 'off';
+    /** Jira only: the number fields an estimate can be written to. */
+    estimateFields: { id: string; name: string }[];
+    defaultEstimateFieldId: string | null;
+};
 
 export type TrackerContainer = { id: string; name: string };
 
@@ -117,7 +142,10 @@ export type PokerTask = {
     id: string;
     title: string;
     description: string | null;
+    /** The description without its "Acceptance criteria" section. */
     descriptionHtml: string;
+    /** That section alone, rendered; empty when the description has none. */
+    acceptanceCriteriaHtml: string;
     position: number;
     estimate: string | null;
     estimatedAt: string | null;
@@ -156,6 +184,12 @@ type PokerGame = {
     anonymousVotes: boolean;
     cursorsEnabled: boolean;
     reactionsEnabled: boolean;
+    revoteAfterReveal: boolean;
+    /** The round timer each new round starts with; null without one. */
+    taskTimerSeconds: number | null;
+    writesEstimates: boolean;
+    /** The Jira field the estimates are written to; null for the default one. */
+    estimateFieldId: string | null;
     /** Null for a guest. */
     teamName: string | null;
 };

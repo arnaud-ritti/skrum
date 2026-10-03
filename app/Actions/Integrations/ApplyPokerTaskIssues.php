@@ -11,10 +11,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Spec 6 §6.4 and spec 8 §5.7: title, description, assignee, source
- * estimate and status follow the source; the skrum estimate never
- * changes; ended games are frozen. Used by the manual refresh and by the
- * automatic sync.
+ * Spec 6 §6.4, spec 8 §5.7 and plan 22 §6.5: title, description,
+ * assignee, type, labels, source estimate and status follow the source;
+ * the skrum estimate never changes; ended games are frozen. Used by the
+ * manual refresh and by the automatic sync.
  */
 class ApplyPokerTaskIssues
 {
@@ -77,6 +77,8 @@ class ApplyPokerTaskIssues
             'external_key' => $issue->key,
             'external_url' => $issue->url,
             'external_assignee' => $issue->assignee,
+            'external_type' => $issue->type,
+            'external_labels' => $issue->labels === [] ? null : $issue->labels,
             'external_estimate' => $issue->estimate,
             'external_status_name' => $issue->status,
             'external_status_category' => $issue->issueStatus === null

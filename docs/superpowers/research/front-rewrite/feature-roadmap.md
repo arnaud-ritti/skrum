@@ -23,10 +23,10 @@ The "Back end" lines were written from the models and controllers read while rev
 | 19 | Standalone surveys, the Poll session type, the survey builder, health check as a default survey template (SV-1 to SV-5) | Decided by the owner. It removes a retro phase (D-03), so it comes before the retro features that touch the stepper |
 | 20 | Whiteboard toolbars rebuilt to the mockup (WB-1) | Decided by the owner as a plan of its own. No back end; independent of everything else |
 | 21 | Retro facilitation (RT-1 to RT-10) | The largest group of omitted elements on the most used screen; RT-3 is needed by SE-3 and RT-8 by WB-5 |
-| 22 | Sessions index, scheduling, advanced creation options, Jira ticket details in poker (SE-1 to SE-3, PK-1) | SE-3 needs RT-3; PK-1 needs the Jira import of SE-3 |
-| 23 | Team and workspace data (TM-1 to TM-7, WS-1 to WS-3) | TM-1 and TM-2 need SE-1 and SE-2; TM-6 (team roles) is needed by WS-3, IN-1 and ON-1 |
+| 22 | Sessions index, advanced creation options, ticket details in poker (SE-1, SE-3, PK-1; scheduling SE-2 is backlog) | SE-3 needs RT-3; PK-1 needs the Jira import of SE-3 |
+| 23 | Team and workspace data (TM-1 to TM-7, WS-1 to WS-3) | TM-2 reads `ListTeamSessions` (SE-1); TM-6 (team roles) is needed by WS-3, IN-1 and ON-1 |
 | 24 | Action items (AI-1 to AI-4) | Sprint grouping needs TM-1 |
-| 25 | Invitations and onboarding (IN-1 to IN-4, ON-1) | Needs team roles (TM-6); the onboarding's last step needs scheduling (SE-2) |
+| 25 | Invitations and onboarding (IN-1 to IN-4, ON-1) | Needs team roles (TM-6); the onboarding's last step no longer waits on scheduling (SE-2 is backlog) |
 | 26 | Account, and what a guest picks (AC-1 to AC-6, GU-1, GU-2) | GU-1 needs AC-4 |
 | 27 | Games (GM-1 to GM-4) | Independent; four new engines make it the largest plan |
 | 28 | Whiteboard collaboration (WB-2 to WB-5) | After the toolbars (WB-1), which give the selection bar its place; WB-5 needs RT-8 |
@@ -74,21 +74,21 @@ Not requested, staying backlog (spec `2026-10-21-plan-21-retro-facilitation-desi
 
 ## Sessions and poker — plan 22
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| SE-1 | Sessions index page (upcoming, live, finished) | ScreenSessionCreate (page behind the dialog); ScreenDashboard | D-06 | No page lists the four session types together: one query across them, with a common summary | — |
-| SE-2 | Scheduling ("Schedule…") and the "starts in 5 min" notification | ScreenSessionCreate; ScreenDashboard ("next retro") | D-06 | No scheduled date on a session; a scheduled notification | SE-1 |
-| SE-3 | Advanced creation options: max per card, timer per phase and per task, re-vote after reveal, Jira import, write estimates to Jira | ScreenSessionCreate | D-07 | Per-phase and per-task durations; a revote flag on a poker game; import at creation (the import exists inside a game); the write-back field is a team integration setting today | RT-3 |
-| PK-1 | Jira ticket details in the poker room: type, labels, acceptance criteria, description | ScreenPokerBefore | D-16 | A task stores its title, key and URL: the other fields at import and at refresh | SE-3 (import) |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| SE-1 | Sessions index page (upcoming, live, finished) | ScreenSessionCreate (page behind the dialog); ScreenDashboard | D-06 | No page lists the four session types together: one query across them, with a common summary | — | done, plan 22 (`ListTeamSessions`, the five kinds) |
+| SE-2 | Scheduling ("Schedule…") and the "starts in 5 min" notification | ScreenSessionCreate; ScreenDashboard ("next retro") | D-06 | No scheduled date on a session; a scheduled notification | SE-1 | backlog (owner, 2026-10-02) |
+| SE-3 | Advanced creation options: max per card, timer per phase and per task, re-vote after reveal, Jira import, write estimates to Jira | ScreenSessionCreate | D-07 | Per-phase and per-task durations; a revote flag on a poker game; import at creation (the import exists inside a game); the write-back field is a team integration setting today | RT-3 | done, plan 22 (max per card by plan 21; the phase durations are offered to the facilitator, never started by themselves; the import from every connected tracker) |
+| PK-1 | Jira ticket details in the poker room: type, labels, acceptance criteria, description | ScreenPokerBefore | D-16 | A task stores its title, key and URL: the other fields at import and at refresh | SE-3 (import) | done, plan 22 (type and labels from Jira, Linear and GitHub; the criteria from the description's "Acceptance criteria" section) |
 
-Not requested, staying backlog: the "ROTI at the end" switch, the poker CSV export and history filters, the spectator eye in presence, roles and expiry in the Share dialog.
+Not requested, staying backlog (spec `2026-10-21-plan-22-sessions-index-design.md` §3): scheduling (SE-2), the "ROTI at the end" switch, the invitation link inside the dialog, the poker CSV export and history filters, the spectator eye in presence, roles and expiry in the Share dialog.
 
 ## Team page, workspace and team settings — plan 23
 
 | Id | Feature | Mockup | Clears | Back end | Needs |
 |---|---|---|---|---|---|
-| TM-1 | Sprint, and the next retro of a team | ScreenDashboard, ScreenTeam | D-18, D-19 (sprint grouping) | No sprint entity | SE-2 |
-| TM-2 | Recent sessions table | ScreenDashboard | D-18 | The query of SE-1, limited to a team | SE-1 |
+| TM-1 | Sprint, and the next retro of a team | ScreenDashboard, ScreenTeam | D-18, D-19 (sprint grouping) | No sprint entity | — (SE-2 is backlog) |
+| TM-2 | Recent sessions table | ScreenDashboard | D-18 | The query of SE-1, limited to a team: `ListTeamSessions` (plan 22) | SE-1 |
 | TM-3 | Aggregated open actions on the team page | ScreenDashboard | D-18 | The page has a count only: the first items, overdue first | — |
 | TM-4 | Activity feed of a team, and the activity lines of a team tile | ScreenDashboard, ScreenWorkspace | D-18, D-24 | No activity log | — |
 | TM-5 | Participant, card and action counts on a retro card | ScreenTeam | D-18 | Three counts per retro in the team page query | — |
@@ -117,7 +117,7 @@ Grouping by sprint arrives with TM-1; the whiteboard and survey sources with WB-
 | IN-2 | Inviter's message | ScreenOnboarding | D-30 | No message column | — |
 | IN-3 | "Decline" | ScreenOnboarding | D-30 | No decline route or state; a notification to the inviter | — |
 | IN-4 | Team invite link (expiry, maximum uses) | ScreenTeam ("Invite"), ScreenSettings a | D-18 | No link-based invitation | IN-1 |
-| ON-1 | Four-step onboarding (workspace, team, invite, first ritual) | ScreenOnboarding | D-33 | No onboarding state per user; `OnboardingLayout` exists and is unused | IN-1, IN-4, SE-2 |
+| ON-1 | Four-step onboarding (workspace, team, invite, first ritual) | ScreenOnboarding | D-33 | No onboarding state per user; `OnboardingLayout` exists and is unused | IN-1, IN-4 (SE-2 is backlog) |
 
 Not requested, staying backlog: "already in n teams".
 
@@ -177,9 +177,9 @@ Not requested, staying backlog: the "Help" link.
 SV-1 → SV-2 → SV-3 → SV-5          WB-1 → WB-2, WB-3
 SV-1 → SV-4                         WB-1 + RT-8 → WB-5
 RT-3 → SE-3 → PK-1                  RT-7 → RT-5
-SE-1 → SE-2 → TM-1 → sprint grouping of action items
+TM-1 → sprint grouping of action items  (SE-2 backlog)
 SE-1 → TM-2                         TM-6 → WS-3, IN-1, AD-4
-IN-1 → IN-4 → ON-1 (also SE-2)      AC-4 → GU-1
+IN-1 → IN-4 → ON-1                  AC-4 → GU-1
 GM-1 → GM-2                         AI-2 → AI-4
 plan 18f → MN-1
 ```

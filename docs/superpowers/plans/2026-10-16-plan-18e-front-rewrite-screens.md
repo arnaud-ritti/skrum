@@ -295,14 +295,14 @@ Reasons: **F** false or unsafe statement; **A** accessibility rule of spec §5; 
 | D-02 | Session timer, poker | the menu keeps "Custom…" beside 1/3/5/10 | O: kept (third round) | stays |
 | D-04 | Retro, Actions | "Close the retro" in the FacilitatorBar; built: "Next phase" to ROTI | O: kept (third round) | stays |
 | D-05 | Session header | the topbar connection state is hidden from assistive technology; the banner is the only announcement | A | stays |
-| D-06 | Session creation | the Sessions page behind the dialog, "Schedule…" | N | SE-1, SE-2 |
-| D-07 | Session creation | "Max per card", "Timer per phase", "Timer per task", "Change vote after reveal", "Write estimates to Jira" select, the Jira import tab; the "ROTI at the end" switch | N | SE-3 (with RT-3); the ROTI switch: backlog (ROTI is always a phase, spec §6.4) |
+| D-06 | Session creation | "Schedule…" (the Sessions page behind the dialog: built by plan 22, SE-1) | N; O: scheduling is backlog (owner, 2026-10-02) | backlog |
+| D-07 | Session creation | the "ROTI at the end" switch ("Max per card": built by plan 21, RT-3; "Timer per phase", "Timer per task", "Change vote after reveal", "Write estimates to Jira" and the import tab: built by plan 22, SE-3) | N: ROTI is always a phase, spec §6.4 | backlog |
 | D-08 | Session creation | invitation link and "Copy link" inside the dialog; built: the guest switch, and the link in the Share dialog once the session exists | F: the link does not exist before creation | stays |
 | D-09 | Session creation | one "New session" trigger, no per-type tiles on the team page (ScreenTeam draws one tile per type, "New survey" among them). The Poll type exists since plan 19: the fifth tile of the dialog | O: 1-D2 (the per-type tiles stay as decided) | stays |
 | D-10 | Retro, Writing and Grouping | "Reveal the cards" as a button separate from the next phase; duplicate detection; "Undo last group" (the indicators and Pause: built by plan 21, RT-1, RT-2) | N | backlog |
 | D-12 | Retro, Discussion | "8/8 following" (the per-topic timer, estimates, notes, "discussed" flag and action counts: built by plan 21) | N | backlog |
 | D-15 | Retro, session end | Export menu PDF / CSV / Markdown; ROTI delta and sparkline | O: 2-D7; N | backlog (not requested) |
-| D-16 | Poker room | ticket type, labels, acceptance criteria, Jira description; spectator eye in presence; role and expiry in the Share dialog | N; O: 3-D5 | PK-1; the eye and the share roles: backlog |
+| D-16 | Poker room | spectator eye in presence; role and expiry in the Share dialog (the ticket type, labels, acceptance criteria and description: built by plan 22, PK-1) | N; O: 3-D5 | backlog |
 | D-17 | Estimation history | deck, period and "re-voted only" filters; Export CSV | O: 3-D6 | backlog (not requested) |
 | D-18 | Team page | "Invite", sprint name and next retro, the mixed "recent sessions" table, the aggregated open actions, the activity feed, participant / card / action counts on a retro card, member role badge, whiteboard thumbnails | N | IN-4, TM-1 to TM-7 |
 | D-19 | Action items | grouping by sprint (built: by team, assignee, status); selection and bulk bar; filters priority, due date, source; status "In progress"; topbar "Export"; whiteboard and survey sources | N; O: 5-D4 | AI-1 to AI-4; sprint grouping with TM-1; other sources with WB-5 and SV-1 |

@@ -21,6 +21,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { CursorToggle } from '@/components/session/cursor-preference';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTimer } from '@/components/session/session-timer';
+import type { TimerSuggestion } from '@/components/skrum/timer';
 import { SessionTitle } from '@/components/session/session-title';
 import { PhaseStepper } from '@/components/skrum/phase-stepper';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,8 @@ import { useActivity } from '@/hooks/use-retro-activity';
 import { useTrans } from '@/hooks/use-trans';
 import type { SessionSelf } from '@/layouts/skrum/session-layout';
 import { retroRequest } from '@/lib/retro/api';
+import { offerFor } from '@/lib/retro/phase-durations';
+import type { PhaseTimerOffer } from '@/lib/retro/phase-durations';
 import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
 import type {
     PresenceMember,
@@ -247,6 +250,39 @@ function PhaseMenuItems() {
  * The countdown, for everyone. `controls` adds what only the facilitator of
  * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
  */
+/** Spec §9.5: the phase's duration as the timer's first offer, per topic in Discussing. */
+function useOfferSuggestion(
+    offer: PhaseTimerOffer | null,
+): TimerSuggestion | undefined {
+    const { t } = useTrans();
+
+    if (offer === null) {
+        return undefined;
+    }
+
+    const replace = {
+        phase: t(PhaseLabels[offer.phase]),
+        count: offer.seconds / 60,
+    };
+
+    if (offer.perTopic) {
+        return {
+            seconds: offer.seconds,
+            label: t(':phase · :count min per topic', replace),
+            startLabel: t(
+                'Start the :phase timer, :count minutes per topic',
+                replace,
+            ),
+        };
+    }
+
+    return {
+        seconds: offer.seconds,
+        label: t(':phase · :count min', replace),
+        startLabel: t('Start the :phase timer, :count minutes', replace),
+    };
+}
+
 export function BoardTimer({
     controls = true,
     size,
@@ -275,6 +311,9 @@ export function BoardTimer({
     const canPause = canControl && retro.phase !== 'icebreaker';
     const startedHere =
         started !== null && started.endsAt === retro.timerEndsAt;
+    const suggestion = useOfferSuggestion(
+        canControl ? offerFor(retro.phaseDurations, retro.phase) : null,
+    );
 
     const set = async (seconds: number | null) => {
         const response = await ctx.run(
@@ -351,6 +390,7 @@ export function BoardTimer({
             offset={offset}
             pausedSeconds={retro.timerPausedSeconds}
             totalSeconds={startedHere ? started.seconds : totalSeconds}
+            suggestion={suggestion}
             onStart={canControl ? (seconds) => void set(seconds) : undefined}
             onStop={canControl ? () => void set(null) : undefined}
             onExtend={canControl ? () => void extend() : undefined}

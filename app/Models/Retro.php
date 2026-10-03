@@ -53,6 +53,7 @@ use Illuminate\Support\Collection;
  * @property int|null $timer_paused_seconds
  * @property int|null $topic_seconds
  * @property int|null $max_votes_per_card
+ * @property array<string, int>|null $phase_durations
  * @property Carbon|null $roti_revealed_at
  * @property string|null $highlighted_card_id
  * @property Carbon|null $started_at
@@ -68,7 +69,7 @@ use Illuminate\Support\Collection;
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
     'icebreaker_enabled', 'workspace_template_id',
-    'timer_paused_seconds', 'topic_seconds', 'max_votes_per_card', 'roti_revealed_at',
+    'timer_paused_seconds', 'topic_seconds', 'max_votes_per_card', 'phase_durations', 'roti_revealed_at',
     'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at', 'icebreaker_game',
 ])]
 #[Hidden(['guest_token'])]
@@ -413,6 +414,7 @@ class Retro extends Model implements DeliverySubject
             'timer_paused_seconds' => 'integer',
             'topic_seconds' => 'integer',
             'max_votes_per_card' => 'integer',
+            'phase_durations' => 'array',
             'roti_revealed_at' => 'datetime',
             'completed_at' => 'datetime',
             'started_at' => 'datetime',

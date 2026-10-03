@@ -22,6 +22,8 @@ it('shows the full external object and the connections to non-guest players', fu
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'assignee' => 'Jane Doe',
         'sourceEstimate' => '3',
         'refreshedAt' => $task->external_refreshed_at?->toIso8601String(),
@@ -35,7 +37,12 @@ it('shows the full external object and the connections to non-guest players', fu
         'syncMode' => 'off',
         'isManaged' => true,
     ])
-        ->and($response->json('integrations'))->toBe(['jira' => ['connected' => true, 'canWrite' => true], 'linear' => null, 'jira_dc' => null, 'github' => null])
+        ->and($response->json('integrations'))->toBe([
+            'jira' => ['connected' => true, 'canWrite' => true, 'estimateFields' => [['id' => 'customfield_10016', 'name' => 'Story point estimate']], 'defaultEstimateFieldId' => 'customfield_10016'],
+            'linear' => null,
+            'jira_dc' => null,
+            'github' => null,
+        ])
         ->and($response->json('tasks.0.external.syncState'))->toBe('synced');
 });
 
@@ -52,6 +59,8 @@ it('gives guests the reduced external object and no connections', function () {
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'isManaged' => true,
     ])
         ->and($response->json('integrations'))->toBeNull()
@@ -86,6 +95,8 @@ it('broadcasts the reduced external object and answers the full one', function (
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'isManaged' => true,
     ]);
 });

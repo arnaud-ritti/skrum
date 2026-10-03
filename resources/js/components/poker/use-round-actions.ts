@@ -220,7 +220,7 @@ export function useRoundActions(): RoundActions {
     };
 }
 
-/** Plays, changes or withdraws the viewer's card of the open round, shown at once and confirmed by the server. */
+/** Plays, changes or withdraws the viewer's card of the open round (changes only, after a reveal), shown at once and confirmed by the server. */
 export function useVote(): {
     busy: boolean;
     play: (card: string) => Promise<void>;
@@ -233,6 +233,11 @@ export function useVote(): {
 
     const send = async (card: string | null) => {
         if (round === null || card === round.myVote) {
+            return;
+        }
+
+        // A revealed round keeps a result: a card can change, not leave.
+        if (card === null && round.revealedAt !== null) {
             return;
         }
 

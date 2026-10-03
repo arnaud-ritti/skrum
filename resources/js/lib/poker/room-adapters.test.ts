@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    acceptsCardAfterReveal,
     estimatedPoints,
     seatsFrom,
     showsPokerCursors,
@@ -47,6 +48,7 @@ function task(id: string, overrides: Partial<PokerTask> = {}): PokerTask {
         title: `Task ${id}`,
         description: null,
         descriptionHtml: '',
+        acceptanceCriteriaHtml: '',
         position: 1,
         estimate: null,
         estimatedAt: null,
@@ -80,6 +82,10 @@ function snapshot(overrides: Partial<PokerSnapshot> = {}): PokerSnapshot {
             anonymousVotes: false,
             cursorsEnabled: true,
             reactionsEnabled: true,
+            revoteAfterReveal: false,
+            taskTimerSeconds: null,
+            writesEstimates: true,
+            estimateFieldId: null,
             teamName: 'Atlas',
         },
         me: {
@@ -329,6 +335,8 @@ describe('storyFrom', () => {
                         source: 'jira',
                         key: 'PROJ-1',
                         url: 'https://acme.atlassian.net/browse/PROJ-1',
+                        type: null,
+                        labels: [],
                         isManaged: true,
                     },
                 }),
@@ -402,6 +410,49 @@ describe('showsPokerCursors', () => {
             showsPokerCursors({
                 ...revealed,
                 game: { ...revealed.game, cursorsEnabled: false },
+            }),
+        ).toBe(false);
+    });
+});
+
+describe('acceptsCardAfterReveal', () => {
+    const revealed = (
+        game: Partial<PokerSnapshot['game']> = {},
+        tasks: PokerTask[] = [task('t1')],
+    ): PokerSnapshot => {
+        const base = snapshot({
+            tasks,
+            current: {
+                taskId: 't1',
+                round: round({ revealedAt: '2026-10-02T09:01:00Z' }),
+            },
+        });
+
+        return {
+            ...base,
+            game: { ...base.game, revoteAfterReveal: true, ...game },
+        };
+    };
+
+    it('takes a card in a revealed round until the estimate is saved, in a game that allows it', () => {
+        expect(acceptsCardAfterReveal(revealed())).toBe(true);
+        expect(
+            acceptsCardAfterReveal(revealed({ revoteAfterReveal: false })),
+        ).toBe(false);
+        expect(
+            acceptsCardAfterReveal(
+                revealed({}, [task('t1', { estimate: '5' })]),
+            ),
+        ).toBe(false);
+        expect(
+            acceptsCardAfterReveal(
+                revealed({ endedAt: '2026-10-02T10:00:00Z' }),
+            ),
+        ).toBe(false);
+        expect(
+            acceptsCardAfterReveal({
+                ...snapshot(),
+                game: { ...snapshot().game, revoteAfterReveal: true },
             }),
         ).toBe(false);
     });

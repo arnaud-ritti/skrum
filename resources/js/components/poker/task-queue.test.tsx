@@ -58,6 +58,8 @@ describe('TaskQueue, the list', () => {
                             source: 'jira',
                             key: 'PROJ-1',
                             url: 'https://acme.atlassian.net/browse/PROJ-1',
+                            type: null,
+                            labels: [],
                             isManaged: true,
                         },
                     }),
@@ -284,7 +286,12 @@ describe('TaskQueue, adding', () => {
             <TaskQueue />,
             pokerSnapshot({
                 integrations: {
-                    jira: { connected: true, canWrite: true },
+                    jira: {
+                        connected: true,
+                        canWrite: true,
+                        estimateFields: [],
+                        defaultEstimateFieldId: null,
+                    },
                     linear: null,
                     jira_dc: null,
                     github: null,
@@ -295,6 +302,8 @@ describe('TaskQueue, adding', () => {
                             source: 'jira',
                             key: 'PROJ-1',
                             url: 'https://acme.atlassian.net/browse/PROJ-1',
+                            type: null,
+                            labels: [],
                             isManaged: true,
                         },
                     }),

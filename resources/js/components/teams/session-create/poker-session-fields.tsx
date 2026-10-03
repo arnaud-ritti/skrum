@@ -1,5 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
-import { Eye, EyeOff, UserRoundPlus } from 'lucide-react';
+import {
+    Eye,
+    EyeOff,
+    Info,
+    RefreshCw,
+    Timer,
+    Upload,
+    UserRoundPlus,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
@@ -15,13 +23,22 @@ import type {
 import {
     PokerTasksField,
     emptyPokerTasks,
+    importedTickets,
     taskTitles,
     tasksProblem,
 } from '@/components/teams/session-create/poker-tasks-field';
 import type { PokerTasksValue } from '@/components/teams/session-create/poker-tasks-field';
 import { SettingRow } from '@/components/teams/session-create/setting-row';
+import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import {
@@ -33,6 +50,16 @@ import {
     toDecks,
 } from '@/lib/poker/deck-adapter';
 import type { DefaultPokerDeck } from '@/lib/poker/deck-adapter';
+import {
+    taskTimerFromChoice,
+    taskTimerOptions,
+    writableSource,
+    writeBackChoice,
+    writeBackOptions,
+    writeBackPayload,
+} from '@/lib/poker/game-options';
+import { TrackerLabels } from '@/lib/poker/types';
+import type { PokerTrackerSourceRow } from '@/lib/poker/types';
 import type { PokerDeckOption, SavedPokerDeck } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
 
@@ -51,6 +78,12 @@ export type PokerSessionFormProps = {
     initialTasks?: string;
     /** Beside "Create & open". A later plan passes "Schedule…" here. */
     secondaryAction?: ReactNode;
+    /**
+     * The team's trackers: those that can import give the "Import from" tab;
+     * the import tab's source, or else the first that can write back, gets
+     * the "Write estimates" row.
+     */
+    pokerSources?: PokerTrackerSourceRow[];
 };
 
 type Errors = Record<string, string>;
@@ -61,6 +94,7 @@ type SettingEntry = {
     htmlFor: string;
     help?: string;
     icon: LucideIcon;
+    error?: string;
     control: ReactNode;
 };
 
@@ -80,12 +114,22 @@ function emptyDeckDraft(): DeckDraft {
     return { name: '', values: [], unknownCard: true, breakCard: true };
 }
 
-function tasksError(errors: Errors): string | undefined {
-    const lineKey = Object.keys(errors).find((key) => key.startsWith('tasks.'));
+function firstError(errors: Errors, field: string): string | undefined {
+    const itemKey = Object.keys(errors).find((key) =>
+        key.startsWith(`${field}.`),
+    );
 
     return (
-        errors.tasks ?? (lineKey === undefined ? undefined : errors[lineKey])
+        errors[field] ?? (itemKey === undefined ? undefined : errors[itemKey])
     );
+}
+
+function tasksError(errors: Errors): string | undefined {
+    return firstError(errors, 'tasks');
+}
+
+function importError(errors: Errors): string | undefined {
+    return firstError(errors, 'import_ids') ?? errors.import_source;
 }
 
 export function PokerSessionFields({
@@ -97,6 +141,7 @@ export function PokerSessionFields({
     initialCustomDeck,
     initialTasks,
     secondaryAction,
+    pokerSources = [],
     context,
 }: PokerSessionFormProps & { context: SessionFormContext }): ReactElement {
     const { t } = useTrans();
@@ -127,6 +172,30 @@ export function PokerSessionFields({
     const [autoReveal, setAutoReveal] = useState(false);
     const [spectator, setSpectator] = useState(false);
     const [guests, setGuests] = useState(false);
+    const [taskTimer, setTaskTimer] = useState('off');
+    const [revote, setRevote] = useState(false);
+    const importSources = pokerSources
+        .filter((source) => source.canImport)
+        .map((source) => source.source);
+    const tickets = importedTickets(tasks, importSources);
+    const ticketSource =
+        tickets === null
+            ? undefined
+            : pokerSources.find(
+                  (source) =>
+                      source.source === tickets.source && source.canWriteBack,
+              );
+    const writeSource = ticketSource ?? writableSource(pokerSources);
+    const [writeBackPicked, setWriteBack] = useState<string | null>(null);
+    const writeBack =
+        writeSource === null
+            ? null
+            : writeBackPicked !== null &&
+                writeBackOptions(writeSource, t).some(
+                    (option) => option.value === writeBackPicked,
+                )
+              ? writeBackPicked
+              : writeBackChoice(writeSource, true, null);
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
 
@@ -189,8 +258,18 @@ export function PokerSessionFields({
                 ...deck,
                 auto_reveal: autoReveal,
                 spectator,
+                task_timer_seconds: taskTimerFromChoice(taskTimer),
+                revote_after_reveal: revote,
+                ...(writeSource === null || writeBack === null
+                    ? {}
+                    : writeBackPayload(writeBack)),
                 guest_access_enabled: guests,
-                ...(titles.length > 0 ? { tasks: titles } : {}),
+                ...(tickets !== null
+                    ? { import_source: tickets.source, import_ids: tickets.ids }
+                    : {}),
+                ...(tickets === null && titles.length > 0
+                    ? { tasks: titles }
+                    : {}),
             },
             {
                 onStart: () => setProcessing(true),
@@ -222,6 +301,14 @@ export function PokerSessionFields({
         event.preventDefault();
 
         if (processing || tasksProblem(tasks) !== null) {
+            return;
+        }
+
+        if (tickets !== null && tickets.ids.length === 0) {
+            setErrors({
+                import_ids: t('Pick at least one ticket, or choose “Later”.'),
+            });
+
             return;
         }
 
@@ -283,6 +370,92 @@ export function PokerSessionFields({
                 />
             ),
         },
+        {
+            key: 'task-timer',
+            label: t('Timer per task'),
+            htmlFor: 'new-poker-task-timer',
+            help: t('Nudges after the delay'),
+            icon: Timer,
+            error: errors.task_timer_seconds,
+            control: (
+                <Select value={taskTimer} onValueChange={setTaskTimer}>
+                    <SelectTrigger
+                        id="new-poker-task-timer"
+                        size="sm"
+                        aria-label={t('Timer per task')}
+                        className="max-w-40"
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {taskTimerOptions(t).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            ),
+        },
+        {
+            key: 'revote',
+            label: t('Change vote after reveal'),
+            htmlFor: 'new-poker-revote',
+            help: t('Before the estimate is saved'),
+            icon: RefreshCw,
+            error: errors.revote_after_reveal,
+            control: (
+                <Switch
+                    id="new-poker-revote"
+                    checked={revote}
+                    onCheckedChange={setRevote}
+                />
+            ),
+        },
+        ...(writeSource === null || writeBack === null
+            ? []
+            : [
+                  {
+                      key: 'write-back',
+                      label: t('Write estimates to :source', {
+                          source: TrackerLabels[writeSource.source],
+                      }),
+                      htmlFor: 'new-poker-write-back',
+                      help: t('Field used for the estimate'),
+                      icon: Upload,
+                      error:
+                          errors.estimate_field_id ?? errors.writes_estimates,
+                      control: (
+                          <Select
+                              value={writeBack}
+                              onValueChange={setWriteBack}
+                          >
+                              <SelectTrigger
+                                  id="new-poker-write-back"
+                                  size="sm"
+                                  aria-label={t('Write estimates to :source', {
+                                      source: TrackerLabels[writeSource.source],
+                                  })}
+                                  className="max-w-56"
+                              >
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {writeBackOptions(writeSource, t).map(
+                                      (option) => (
+                                          <SelectItem
+                                              key={option.value}
+                                              value={option.value}
+                                          >
+                                              {option.label}
+                                          </SelectItem>
+                                      ),
+                                  )}
+                              </SelectContent>
+                          </Select>
+                      ),
+                  },
+              ]),
     ];
 
     return (
@@ -367,6 +540,16 @@ export function PokerSessionFields({
                     value={tasks}
                     onChange={setTasks}
                     error={tasksError(errors)}
+                    importError={importError(errors)}
+                    importFrom={
+                        importSources.length === 0
+                            ? undefined
+                            : {
+                                  workspaceSlug,
+                                  teamId: context.team.id,
+                                  sources: importSources,
+                              }
+                    }
                 />
             </div>
 
@@ -383,6 +566,17 @@ export function PokerSessionFields({
                         ))}
                     </div>
                 </div>
+                {writeSource !== null && (
+                    <Alert variant="info" className="flex items-start gap-2">
+                        <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+                        <span className="min-w-0 text-body-sm">
+                            {t(
+                                'Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.',
+                                { source: TrackerLabels[writeSource.source] },
+                            )}
+                        </span>
+                    </Alert>
+                )}
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-semibold">
                         {t('Invitation')}

@@ -13,6 +13,7 @@ import {
     ActivityContext,
     type RetroActivity,
 } from '@/hooks/use-retro-activity';
+import { StandardDurations } from '@/lib/retro/phase-durations';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -562,6 +563,144 @@ describe('BoardTimer', () => {
 
         expect(await screen.findByRole('timer')).toBeTruthy();
         expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    describe('the phase timer offer', () => {
+        it('starts the phase duration in one click for the facilitator', async () => {
+            const user = userEvent.setup();
+            const endsAt = inMinutes(7);
+
+            retroRequest.mockResolvedValue({ timerEndsAt: endsAt });
+
+            const { ctx } = renderInBoard(
+                <BoardTimer />,
+                boardContext(
+                    retroSnapshot({
+                        retro: { phaseDurations: StandardDurations },
+                    }),
+                ),
+            );
+
+            const offer = screen.getByRole('button', {
+                name: 'Start the Writing timer, 7 minutes',
+            });
+
+            expect(offer.textContent).toBe('7 min');
+
+            await user.click(offer);
+
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    url: expect.stringContaining('/retros/retro-1/timer'),
+                }),
+                { seconds: 420 },
+            );
+            await waitFor(() =>
+                expect(ctx.apply).toHaveBeenCalledWith({
+                    type: 'timer.set',
+                    timerEndsAt: endsAt,
+                }),
+            );
+        });
+
+        it('puts the phase first in the menu, before the list', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(
+                <BoardTimer />,
+                boardContext(
+                    retroSnapshot({
+                        retro: {
+                            phaseDurations: StandardDurations,
+                            timerEndsAt: inMinutes(3),
+                        },
+                    }),
+                ),
+            );
+
+            expect(
+                screen.queryByRole('button', {
+                    name: 'Start the Writing timer, 7 minutes',
+                }),
+            ).toBeNull();
+
+            await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+            expect(
+                within(screen.getByRole('menu'))
+                    .getAllByRole('menuitem')
+                    .map((item) => item.textContent),
+            ).toEqual([
+                'Writing · 7 min',
+                '1 min',
+                '3 min',
+                '5 min',
+                '10 min',
+                'Stop timer',
+            ]);
+        });
+
+        it('says "per topic" in Discussing', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(
+                <BoardTimer />,
+                boardContext(
+                    retroSnapshot({
+                        retro: {
+                            phase: 'discussing',
+                            phaseDurations: StandardDurations,
+                        },
+                    }),
+                ),
+            );
+
+            expect(
+                screen.getByRole('button', {
+                    name: 'Start the Discussing timer, 15 minutes per topic',
+                }),
+            ).toBeTruthy();
+
+            await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+            expect(
+                screen.getByRole('menuitem', {
+                    name: 'Discussing · 15 min per topic',
+                }),
+            ).toBeTruthy();
+        });
+
+        it('offers nothing in a phase without minutes', () => {
+            renderInBoard(
+                <BoardTimer />,
+                boardContext(
+                    retroSnapshot({
+                        retro: {
+                            phase: 'voting',
+                            phaseDurations: { writing: 7 },
+                        },
+                    }),
+                ),
+            );
+
+            expect(
+                screen.queryByRole('button', { name: /^Start the/ }),
+            ).toBeNull();
+        });
+
+        it('offers nothing to a participant', () => {
+            renderInBoard(
+                <BoardTimer />,
+                boardContext(
+                    retroSnapshot({
+                        viewer: { isFacilitator: false },
+                        retro: { phaseDurations: StandardDurations },
+                    }),
+                ),
+            );
+
+            expect(screen.queryByRole('button')).toBeNull();
+        });
     });
 
     it('gives nobody a control once the retro is completed', () => {

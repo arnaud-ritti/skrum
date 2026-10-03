@@ -110,3 +110,25 @@ export function showsPokerCursors(snapshot: PokerSnapshot): boolean {
             snapshot.current.round.revealedAt !== null)
     );
 }
+
+/**
+ * Spec §9.6: with "Change vote after reveal", the revealed round of the
+ * current task still takes a card until the task's estimate is saved.
+ */
+export function acceptsCardAfterReveal(snapshot: PokerSnapshot): boolean {
+    const { game, current } = snapshot;
+
+    if (!game.revoteAfterReveal || game.endedAt !== null || current === null) {
+        return false;
+    }
+
+    if (current.round.revealedAt === null) {
+        return false;
+    }
+
+    const task = snapshot.tasks.find(
+        (candidate) => candidate.id === current.taskId,
+    );
+
+    return task !== undefined && task.estimate === null;
+}

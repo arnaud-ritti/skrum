@@ -22,7 +22,9 @@ class ListPokerSources
      *     canWriteBack: bool,
      *     writeBackUnavailableReason: ?string,
      *     canSyncStatus: bool,
-     *     syncMode: string
+     *     syncMode: string,
+     *     estimateFields: list<array{id: string, name: string}>,
+     *     defaultEstimateFieldId: ?string
      * }>
      */
     public function handle(Team $team): array
@@ -54,10 +56,53 @@ class ListPokerSources
                 'writeBackUnavailableReason' => $reason,
                 'canSyncStatus' => $integration->isActive() && $integration->setting('statusSync') === true,
                 'syncMode' => $integration->inbound_mode->value,
+                'estimateFields' => self::estimateFields($integration),
+                'defaultEstimateFieldId' => self::defaultEstimateFieldId($integration),
             ];
         }
 
         return $sources;
+    }
+
+    /**
+     * The number fields of a Jira connection an estimate can be written to;
+     * none for the other trackers.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    public static function estimateFields(TeamIntegration $integration): array
+    {
+        if (! self::isJira($integration)) {
+            return [];
+        }
+
+        $fields = [];
+
+        foreach ((array) $integration->setting('numberFields', []) as $field) {
+            if (! is_array($field) || ! is_string($field['id'] ?? null) || ! is_string($field['name'] ?? null)) {
+                continue;
+            }
+
+            $fields[] = ['id' => $field['id'], 'name' => $field['name']];
+        }
+
+        return $fields;
+    }
+
+    public static function defaultEstimateFieldId(TeamIntegration $integration): ?string
+    {
+        if (! self::isJira($integration)) {
+            return null;
+        }
+
+        $id = data_get($integration->setting('storyPointFields', []), '0.id');
+
+        return is_string($id) ? $id : null;
+    }
+
+    private static function isJira(TeamIntegration $integration): bool
+    {
+        return in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true);
     }
 
     private function siteName(TeamIntegration $integration): ?string

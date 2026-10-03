@@ -33,6 +33,12 @@ export const DefaultTimerPresets: TimerPreset[] = TimerPresetMinutes.map(
     (minutes) => ({ seconds: minutes * 60 }),
 );
 
+/** A duration offered first: a one-click start while idle, and the menu's first entry. */
+export type TimerSuggestion = TimerPreset & {
+    /** The accessible name of the one-click start. */
+    startLabel: string;
+};
+
 export type TimerProps = {
     remainingSeconds: number | null;
     totalSeconds?: number;
@@ -42,6 +48,8 @@ export type TimerProps = {
     onStart?: (seconds: number) => void;
     /** Durations of the menu; 1, 3, 5 and 10 minutes by default. */
     presets?: TimerPreset[];
+    /** Offered before the presets; needs `onStart`. */
+    suggestion?: TimerSuggestion;
     /** Adds a "Custom…" entry; the container opens its own dialog. */
     onCustom?: () => void;
     onStop?: () => void;
@@ -99,6 +107,7 @@ export function Timer({
     lowThresholdSeconds = 60,
     onStart,
     presets = DefaultTimerPresets,
+    suggestion,
     onCustom,
     onStop,
     onPause,
@@ -126,14 +135,16 @@ export function Timer({
     const hasStartEntries =
         (onStart !== undefined && presets.length > 0) || onCustom !== undefined;
 
-    function presetLabel(preset: TimerPreset): string {
-        if (preset.label !== undefined) {
-            return preset.label;
-        }
+    const offered = onStart === undefined ? undefined : suggestion;
 
-        return preset.seconds % 60 === 0
-            ? t(':count min', { count: preset.seconds / 60 })
-            : t(':count s', { count: preset.seconds });
+    function durationLabel(seconds: number): string {
+        return seconds % 60 === 0
+            ? t(':count min', { count: seconds / 60 })
+            : t(':count s', { count: seconds });
+    }
+
+    function presetLabel(preset: TimerPreset): string {
+        return preset.label ?? durationLabel(preset.seconds);
     }
     const hasControls =
         hasMenu ||
@@ -326,6 +337,21 @@ export function Timer({
                     </span>
                 </Button>
             )}
+            {offered && onStart && !hasTimer && !paused && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    data-slot="timer-suggestion"
+                    aria-label={offered.startLabel}
+                    onClick={() => onStart(offered.seconds)}
+                >
+                    <Play aria-hidden />
+                    <span className="truncate">
+                        {durationLabel(offered.seconds)}
+                    </span>
+                </Button>
+            )}
             {hasMenu && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -339,6 +365,17 @@ export function Timer({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" size="wide">
+                        {offered && onStart && (
+                            <>
+                                <DropdownMenuItem
+                                    onSelect={() => onStart(offered.seconds)}
+                                    className="whitespace-nowrap"
+                                >
+                                    {presetLabel(offered)}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                            </>
+                        )}
                         {onStart &&
                             presets.map((preset) => (
                                 <DropdownMenuItem

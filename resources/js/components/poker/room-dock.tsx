@@ -8,6 +8,7 @@ import { VoteDrawer } from '@/components/skrum/vote-drawer';
 import { Button } from '@/components/ui/button';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
+import { acceptsCardAfterReveal } from '@/lib/poker/room-adapters';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
 import { RoomResult } from './room-result';
@@ -96,7 +97,8 @@ export function RoomDock({ reactions, actions, compact }: Props) {
     const round = current?.round ?? null;
     const isEnded = game.endedAt !== null;
     const isRevealed = round !== null && round.revealedAt !== null;
-    const isClosed = round === null || isRevealed || isEnded;
+    const isRevoting = acceptsCardAfterReveal(snapshot);
+    const isClosed = round === null || isEnded || (isRevealed && !isRevoting);
     const hasDeck = snapshot.tasks.length > 0;
     const canFacilitate = me.isFacilitator && !isEnded;
     const showsResult = isRevealed && current !== null;
@@ -236,18 +238,20 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                     />
                 </div>
             )}
-            {hasDeck && !showsResult && (
+            {hasDeck && (!showsResult || (isRevoting && me.canVote)) && (
                 <div
                     data-slot="poker-deckbar"
                     className="flex w-full flex-col items-center gap-2 border-t border-border bg-background/70 px-4 pt-3 pb-4"
                 >
                     <div className="flex w-full max-w-5xl min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-                        <p
-                            data-slot="poker-dock-status"
-                            className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
-                        >
-                            {status()}
-                        </p>
+                        {!showsResult && (
+                            <p
+                                data-slot="poker-dock-status"
+                                className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+                            >
+                                {status()}
+                            </p>
+                        )}
                         <span className="flex-1" />
                         {compact && me.canVote && !isClosed && (
                             <Button
@@ -262,7 +266,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                                 </span>
                             </Button>
                         )}
-                        {canFacilitate && round !== null && (
+                        {canFacilitate && round !== null && !showsResult && (
                             <SkipAction actions={actions} compact={compact} />
                         )}
                     </div>
@@ -274,7 +278,9 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                             selection="toggle"
                             className={deckClassName}
                             onChange={(card) => void play(card)}
-                            onRetract={() => void withdraw()}
+                            onRetract={
+                                isRevealed ? undefined : () => void withdraw()
+                            }
                         />
                     )}
                     {!me.canVote && (
@@ -293,9 +299,9 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                     onOpenChange={setDrawerOpen}
                     deck={game.cards}
                     value={round?.myVote ?? null}
-                    revealed={isRevealed}
+                    revealed={isClosed}
                     onVote={(card) => void play(card)}
-                    onRetract={() => void withdraw()}
+                    onRetract={isRevealed ? undefined : () => void withdraw()}
                 />
             )}
         </div>

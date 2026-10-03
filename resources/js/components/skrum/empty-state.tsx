@@ -13,7 +13,8 @@ export type EmptyStateModule =
     | 'whiteboard'
     | 'survey'
     | 'icebreaker'
-    | 'actions';
+    | 'actions'
+    | 'sessions';
 
 export type EmptyStatePrimaryAction = {
     label: string;
@@ -354,6 +355,55 @@ function Illustration({ module }: { module: EmptyStateModule }) {
                     <circle className={dot} cx="110" cy="18" r="3.5" />
                 </>
             )}
+            {module === 'sessions' && (
+                <>
+                    <rect
+                        className={card}
+                        x="14"
+                        y="10"
+                        width="84"
+                        height="20"
+                        rx="5"
+                    />
+                    <rect
+                        className="fill-skrum-col-coral stroke-skrum-col-coral-border"
+                        x="19"
+                        y="14"
+                        width="12"
+                        height="12"
+                        rx="3"
+                    />
+                    <path className={line} d="M37 20 H76" />
+                    <rect
+                        className={card}
+                        x="14"
+                        y="34"
+                        width="84"
+                        height="20"
+                        rx="5"
+                    />
+                    <rect
+                        className="fill-skrum-col-moss stroke-skrum-col-moss-border"
+                        x="19"
+                        y="38"
+                        width="12"
+                        height="12"
+                        rx="3"
+                    />
+                    <path className={line} d="M37 44 H66" />
+                    <rect
+                        className={dash}
+                        x="14"
+                        y="58"
+                        width="84"
+                        height="20"
+                        rx="5"
+                    />
+                    <path className={ink} d="M56 63 V73 M51 68 H61" />
+                    <circle className={dot} cx="104" cy="12" r="3.5" />
+                    <circle className={dot} cx="113" cy="12" r="3.5" />
+                </>
+            )}
         </svg>
     );
 }
@@ -394,6 +444,7 @@ export function EmptyState({
         survey: t('Surveys'),
         icebreaker: t('Icebreakers'),
         actions: t('Actions'),
+        sessions: t('Sessions'),
     };
 
     return (

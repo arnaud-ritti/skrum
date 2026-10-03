@@ -1437,6 +1437,8 @@ function gitHubGraphqlIssues(?array $issues = null): Closure
                 'stateReason' => isset($raw['state_reason']) ? strtoupper($raw['state_reason']) : null,
                 'updatedAt' => $raw['updated_at'] ?? '2026-10-07T09:00:00Z',
                 'assignees' => ['nodes' => array_map(fn (array $assignee): array => ['login' => $assignee['login']], $raw['assignees'])],
+                'labels' => ['nodes' => array_map(fn (array $label): array => ['name' => $label['name']], $raw['labels'] ?? [])],
+                'issueType' => $raw['type'] ?? null,
             ];
         }
 

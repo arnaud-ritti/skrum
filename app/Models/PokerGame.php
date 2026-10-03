@@ -34,6 +34,10 @@ use Illuminate\Support\Carbon;
  * @property bool $anonymous_votes
  * @property bool $cursors_enabled
  * @property bool $reactions_enabled
+ * @property bool $revote_after_reveal
+ * @property int|null $task_timer_seconds
+ * @property bool $writes_estimates
+ * @property string|null $estimate_field_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
@@ -43,6 +47,7 @@ use Illuminate\Support\Carbon;
     'title', 'deck', 'cards', 'deck_name', 'saved_deck_id', 'facilitator_player_id', 'current_task_id',
     'guest_access_enabled', 'guest_token', 'ended_at',
     'auto_reveal', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled',
+    'revote_after_reveal', 'task_timer_seconds', 'writes_estimates', 'estimate_field_id',
 ])]
 #[Hidden(['guest_token'])]
 class PokerGame extends Model implements DeliverySubject
@@ -52,6 +57,15 @@ class PokerGame extends Model implements DeliverySubject
 
     use HasSearchColumns;
     use HasUuids;
+
+    /** Seconds a task timer may start with: X5's one list, 1, 3, 5 and 10 minutes. */
+    public const array TaskTimerChoices = [60, 180, 300, 600];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'revote_after_reveal' => false,
+        'writes_estimates' => true,
+    ];
 
     protected static function booted(): void
     {
@@ -166,6 +180,9 @@ class PokerGame extends Model implements DeliverySubject
             'anonymous_votes' => 'boolean',
             'cursors_enabled' => 'boolean',
             'reactions_enabled' => 'boolean',
+            'revote_after_reveal' => 'boolean',
+            'task_timer_seconds' => 'integer',
+            'writes_estimates' => 'boolean',
             'ended_at' => 'datetime',
         ];
     }

@@ -26,7 +26,7 @@ class PokerVotesController extends Controller
         ]);
 
         $result = $playPokerCard->handle($game, $round, $player, $validated['value']);
-        $result['revealed'] = $autoRevealPokerRound->handle($round);
+        $result['revealed'] = $result['revealed'] || $autoRevealPokerRound->handle($round);
 
         return response()->json($result);
     }

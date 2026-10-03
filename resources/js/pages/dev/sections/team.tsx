@@ -209,6 +209,7 @@ const page: TeamPageProps = {
     defaultPokerDeck: { deck: 'fibonacci', savedDeckId: null },
     pokerDeckOptions: [],
     canCreatePokerGame: true,
+    pokerSources: [],
     canManageIntegrations: true,
     pokerDecks: [],
     whiteboards: [

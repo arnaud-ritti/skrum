@@ -72,8 +72,8 @@ it('lists the team trackers with their capabilities and nothing secret', functio
     $response = actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertOk();
 
     expect(mcpStructured($response)['items'])->toBe([
-        ['source' => 'jira', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off'],
-        ['source' => 'linear', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This Linear connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off'],
+        ['source' => 'jira', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off', 'estimateFields' => [['id' => 'customfield_10016', 'name' => 'Story point estimate']], 'defaultEstimateFieldId' => 'customfield_10016'],
+        ['source' => 'linear', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This Linear connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off', 'estimateFields' => [], 'defaultEstimateFieldId' => null],
     ]);
     $response->assertDontSee(['jira-access', 'jira-refresh', 'linear-access', 'hooks.slack.com']);
 });
@@ -197,8 +197,8 @@ it('lists Jira Data Center and GitHub sources and never chat channels', function
     $response = actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertOk();
 
     expect(mcpStructured($response)['items'])->toBe([
-        ['source' => 'jira_dc', 'siteName' => 'Acme Jira', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off'],
-        ['source' => 'github', 'siteName' => 'acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This GitHub connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off'],
+        ['source' => 'jira_dc', 'siteName' => 'Acme Jira', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off', 'estimateFields' => [['id' => 'customfield_10002', 'name' => 'Story Points']], 'defaultEstimateFieldId' => 'customfield_10002'],
+        ['source' => 'github', 'siteName' => 'acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This GitHub connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off', 'estimateFields' => [], 'defaultEstimateFieldId' => null],
     ]);
     $response->assertDontSee([TeamIntegrationFactory::JiraDataCenterToken, 'logic.azure.com']);
 });

@@ -37,6 +37,7 @@ class CreateRetro
                 'icebreaker_game' => $data->icebreakerGame ?? GameKind::DrawAndGuess,
                 'votes_per_participant' => $data->votesPerParticipant,
                 'max_votes_per_card' => $data->maxVotesPerCard,
+                'phase_durations' => $data->phaseDurations,
                 'ai_summary_enabled' => $data->aiSummaryEnabled && $this->llm->isConfigured(),
                 'guest_access_enabled' => $data->guestAccessEnabled,
                 'guest_token' => Str::random(40),

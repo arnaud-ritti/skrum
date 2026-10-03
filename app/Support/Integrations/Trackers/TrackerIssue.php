@@ -10,6 +10,12 @@ class TrackerIssue
 
     public const EstimateLength = 16;
 
+    public const TypeLength = 60;
+
+    public const LabelLength = 60;
+
+    public const MaxLabels = 10;
+
     public function __construct(
         public string $externalId,
         public string $key,
@@ -20,6 +26,9 @@ class TrackerIssue
         public ?string $estimate,
         public ?string $status,
         public ?IssueStatus $issueStatus = null,
+        public ?string $type = null,
+        /** @var list<string> */
+        public array $labels = [],
     ) {}
 
     /**
@@ -60,6 +69,30 @@ class TrackerIssue
         }
 
         return mb_substr(trim($value), 0, $length);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function labels(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+
+        $labels = [];
+
+        foreach ($value as $label) {
+            $name = self::shorten($label, self::LabelLength);
+
+            if ($name === null || in_array($name, $labels, true)) {
+                continue;
+            }
+
+            $labels[] = $name;
+        }
+
+        return array_slice($labels, 0, self::MaxLabels);
     }
 
     /**

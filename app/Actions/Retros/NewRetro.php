@@ -9,6 +9,7 @@ class NewRetro
 {
     /**
      * @param  ?array<int, array{title: string, description: ?string, color: ColumnColor}>  $columns
+     * @param  ?array<string, int>  $phaseDurations
      */
     public function __construct(
         public string $title,
@@ -22,5 +23,6 @@ class NewRetro
         public bool $guestAccessEnabled = false,
         public ?array $columns = null,
         public ?int $maxVotesPerCard = null,
+        public ?array $phaseDurations = null,
     ) {}
 }

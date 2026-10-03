@@ -69,6 +69,9 @@ use App\Http\Controllers\Integrations\RetroActionItemLinkSyncsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
+use App\Http\Controllers\Integrations\TeamPokerImportContainersController;
+use App\Http\Controllers\Integrations\TeamPokerImportIterationsController;
+use App\Http\Controllers\Integrations\TeamPokerImportPreviewsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
 use App\Http\Controllers\Integrations\TrackerWebhooksController;
 use App\Http\Controllers\Integrations\WebhookDeliveriesController;
@@ -171,6 +174,7 @@ use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\TeamSessionsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyComparisonsController;
@@ -325,6 +329,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
             Route::post('teams', [TeamsController::class, 'store'])->name('teams.store');
             Route::get('teams/{team}', [TeamsController::class, 'show'])->name('teams.show');
+            Route::get('teams/{team}/sessions', [TeamSessionsController::class, 'index'])->name('teams.sessions.index');
             Route::patch('teams/{team}', [TeamsController::class, 'update'])->name('teams.update');
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
@@ -340,6 +345,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
+            Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index')->where('source', 'jira|linear|jira_dc|github');
+            Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
+            Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store')->where('source', 'jira|linear|jira_dc|github');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');

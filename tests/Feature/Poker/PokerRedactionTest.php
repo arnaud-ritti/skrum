@@ -244,3 +244,32 @@ it('never exposes a round left unrevealed, even after the task is estimated from
         }
     }
 });
+
+it('shows a guest the ticket details and the criteria section of a task, never its assignee', function () {
+    $table = redactionTable();
+    $table['task']->forceFill([
+        'external_source' => 'jira',
+        'external_id' => '10001',
+        'external_site' => 'cloud-1',
+        'external_key' => 'PROJ-1',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-1',
+        'external_type' => 'Story',
+        'external_labels' => ['csv'],
+        'external_assignee' => 'Jane Doe',
+        'description' => "Export invoices.\n\n## Acceptance criteria\n\n- UTF-8",
+    ])->save();
+
+    $surfaces = [
+        'snapshot endpoint' => pokerViewerRequest($this, $table['guest'])->getJson(route('poker.snapshot.show', $table['game']))->assertOk()->json(),
+        'page props' => pokerViewerRequest($this, $table['guest'])->get(route('poker.show', $table['game']))->assertOk()->viewData('page')['props']['snapshot'],
+    ];
+
+    foreach ($surfaces as $surface => $snapshot) {
+        $task = collect($snapshot['tasks'])->firstWhere('id', $table['task']->id);
+
+        expect($task['external']['type'])->toBe('Story', $surface)
+            ->and($task['external']['labels'])->toBe(['csv'], $surface)
+            ->and($task['external'])->not->toHaveKey('assignee', $surface)
+            ->and($task['acceptanceCriteriaHtml'])->toContain('<li>UTF-8</li>');
+    }
+});

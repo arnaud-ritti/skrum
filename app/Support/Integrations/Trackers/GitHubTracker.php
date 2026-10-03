@@ -31,7 +31,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
 
     private const int ChangedPages = 10;
 
-    private const string IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } }';
+    private const string IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } labels(first: 10) { nodes { name } } issueType { name } }';
 
     private const string ReferencePattern = '~^(\d{1,20})/([1-9]\d{0,9})\z~';
 
@@ -182,7 +182,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
      * back with exactly the new block and the text that was read around it,
      * otherwise an edit landed in between and the write starts over.
      */
-    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
+    public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate, ?string $preferredFieldId = null): void
     {
         $reference = self::issueReference($externalId);
 
@@ -361,6 +361,8 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
             estimate: $estimate === null ? null : mb_substr($estimate, 0, TrackerIssue::EstimateLength),
             status: TrackerIssue::shorten($raw['state'] ?? null, self::StatusLength),
             issueStatus: $this->issueStatus($repositoryId, $raw),
+            type: TrackerIssue::shorten(data_get($raw, 'type.name'), TrackerIssue::TypeLength),
+            labels: TrackerIssue::labels(array_column(array_filter((array) ($raw['labels'] ?? []), is_array(...)), 'name')),
         );
     }
 
@@ -432,6 +434,8 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
                 'state_reason' => is_string($node['stateReason'] ?? null) ? strtolower($node['stateReason']) : null,
                 'updated_at' => $node['updatedAt'] ?? null,
                 'assignees' => array_map(fn (mixed $assignee): array => ['login' => data_get($assignee, 'login')], (array) data_get($node, 'assignees.nodes', [])),
+                'labels' => array_map(fn (mixed $label): array => ['name' => data_get($label, 'name')], (array) data_get($node, 'labels.nodes', [])),
+                'type' => $node['issueType'] ?? null,
             ];
         }
 

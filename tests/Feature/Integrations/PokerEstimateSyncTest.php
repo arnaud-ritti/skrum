@@ -191,7 +191,7 @@ it('writes the estimate to the first story points field on the Jira edit screen'
         && str_ends_with($request->url(), "/rest/api/3/issue/{$task->external_id}")
         && $request->data() == ['fields' => ['customfield_10016' => 5.0]]);
     Event::assertDispatched(fn (PokerTaskSaved $event) => $event->task['id'] === $task->id
-        && $event->task['external'] === ['source' => 'jira', 'key' => $task->external_key, 'url' => $task->external_url, 'isManaged' => true]);
+        && $event->task['external'] === ['source' => 'jira', 'key' => $task->external_key, 'url' => $task->external_url, 'type' => null, 'labels' => [], 'isManaged' => true]);
 });
 
 it('writes half points and cleared estimates to Jira', function (?string $estimate, ?float $sent) {

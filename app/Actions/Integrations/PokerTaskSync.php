@@ -65,7 +65,15 @@ class PokerTaskSync
     }
 
     /**
-     * @return array<string, array{connected: bool, canWrite: bool}|null>
+     * The connections as the room shows them: the facilitator's write-back
+     * setting needs the Jira fields an estimate can go to.
+     *
+     * @return array<string, array{
+     *     connected: bool,
+     *     canWrite: bool,
+     *     estimateFields: list<array{id: string, name: string}>,
+     *     defaultEstimateFieldId: ?string
+     * }|null>
      */
     public function summary(): array
     {
@@ -77,6 +85,8 @@ class PokerTaskSync
             $summary[$provider->value] = $provider->isEnabled() ? [
                 'connected' => $integration?->isActive() ?? false,
                 'canWrite' => $integration?->canWrite() ?? false,
+                'estimateFields' => $integration === null ? [] : ListPokerSources::estimateFields($integration),
+                'defaultEstimateFieldId' => $integration === null ? null : ListPokerSources::defaultEstimateFieldId($integration),
             ] : null;
         }
 
@@ -94,6 +104,10 @@ class PokerTaskSync
 
     public function unsupportedReason(PokerTask $task): ?string
     {
+        if (! $this->game->writes_estimates) {
+            return __('Estimates are not written back in this game.');
+        }
+
         $provider = IntegrationProvider::tryFrom((string) $task->external_source);
 
         if ($provider === null || ! $provider->isTracker()) {
@@ -122,7 +136,7 @@ class PokerTaskSync
             return __("T-shirt estimates can't be written to :source.", ['source' => $provider->label()]);
         }
 
-        return self::storyPointsReason($provider, $integration);
+        return self::storyPointsReason($provider, $integration, $this->game->estimate_field_id);
     }
 
     /**
@@ -160,13 +174,36 @@ class PokerTaskSync
         return null;
     }
 
-    private static function storyPointsReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
+    /**
+     * A game that names a number field the connection lists has a field to
+     * write to, even when no story points field was detected.
+     */
+    private static function storyPointsReason(IntegrationProvider $provider, ?TeamIntegration $integration, ?string $preferredFieldId = null): ?string
     {
-        if ($integration !== null && in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true) && JiraIssueTracker::storyPointFieldIds($integration) === []) {
-            return __('No story points field found.');
+        if ($integration === null || ! in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)) {
+            return null;
         }
 
-        return null;
+        if (JiraIssueTracker::storyPointFieldIds($integration) !== []) {
+            return null;
+        }
+
+        if ($preferredFieldId !== null && self::listsNumberField($integration, $preferredFieldId)) {
+            return null;
+        }
+
+        return __('No story points field found.');
+    }
+
+    private static function listsNumberField(TeamIntegration $integration, string $fieldId): bool
+    {
+        foreach ((array) $integration->setting('numberFields', []) as $field) {
+            if (is_array($field) && ($field['id'] ?? null) === $fieldId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function state(PokerTask $task): ?string

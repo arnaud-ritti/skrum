@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
+import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
@@ -42,7 +43,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             const teamUrl = TeamsController.show.url(team);
 
             links.dashboard = teamUrl;
-            links.sessions = `${teamUrl}#sessions`;
+            links.sessions = TeamSessionsController.index(team);
             links.mood = `${teamUrl}#mood`;
             links.members = `${teamUrl}#members`;
             links.games = TeamGameRoomsController.index(team);

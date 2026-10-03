@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Timer } from '@/components/skrum/timer';
@@ -422,5 +422,146 @@ describe('Timer', () => {
                 .getByRole('menuitem', { name: 'Stop timer' })
                 .getAttribute('aria-disabled'),
         ).toBe('true');
+    });
+    describe('with a suggestion', () => {
+        const suggestion = {
+            seconds: 420,
+            label: 'Writing · 7 min',
+            startLabel: 'Start the Writing timer, 7 minutes',
+        };
+
+        it('starts the suggestion in one click while no timer runs', async () => {
+            const user = userEvent.setup();
+            const onStart = vi.fn();
+            const { container } = renderWithProviders(
+                <Timer
+                    remainingSeconds={null}
+                    onStart={onStart}
+                    suggestion={suggestion}
+                />,
+            );
+            const button = screen.getByRole('button', {
+                name: 'Start the Writing timer, 7 minutes',
+            });
+
+            expect(button.textContent).toBe('7 min');
+            expect(button.getAttribute('data-slot')).toBe('timer-suggestion');
+            expect(
+                container.querySelector('[data-slot="timer-suggestion"]')
+                    ?.nextElementSibling,
+            ).toBe(screen.getByRole('button', { name: 'Timer' }));
+
+            await user.click(button);
+
+            expect(onStart).toHaveBeenCalledWith(420);
+        });
+
+        it('has no button while a timer runs or is paused', () => {
+            const running = renderWithProviders(
+                <Timer
+                    remainingSeconds={90}
+                    onStart={vi.fn()}
+                    suggestion={suggestion}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('button', {
+                    name: 'Start the Writing timer, 7 minutes',
+                }),
+            ).toBeNull();
+            running.unmount();
+
+            renderWithProviders(
+                <Timer
+                    remainingSeconds={90}
+                    paused
+                    onStart={vi.fn()}
+                    onResume={vi.fn()}
+                    suggestion={suggestion}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('button', {
+                    name: 'Start the Writing timer, 7 minutes',
+                }),
+            ).toBeNull();
+        });
+
+        it('puts the suggestion first in the menu, then a separator, then the presets', async () => {
+            const user = userEvent.setup();
+            const onStart = vi.fn();
+            renderWithProviders(
+                <Timer
+                    remainingSeconds={90}
+                    onStart={onStart}
+                    onStop={vi.fn()}
+                    suggestion={suggestion}
+                />,
+            );
+
+            await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+            const menu = screen.getByRole('menu');
+
+            expect(
+                within(menu)
+                    .getAllByRole('menuitem')
+                    .map((item) => item.textContent),
+            ).toEqual([
+                'Writing · 7 min',
+                '1 min',
+                '3 min',
+                '5 min',
+                '10 min',
+                'Stop timer',
+            ]);
+            expect(
+                within(menu)
+                    .getByRole('menuitem', { name: 'Writing · 7 min' })
+                    .nextElementSibling?.getAttribute('role'),
+            ).toBe('separator');
+
+            await user.click(
+                within(menu).getByRole('menuitem', { name: 'Writing · 7 min' }),
+            );
+
+            expect(onStart).toHaveBeenCalledWith(420);
+        });
+
+        it('renders a suggestion equal to a preset beside it, without a duplicate key', async () => {
+            const user = userEvent.setup();
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+            renderWithProviders(
+                <Timer
+                    remainingSeconds={null}
+                    onStart={vi.fn()}
+                    suggestion={{
+                        seconds: 180,
+                        label: 'Voting · 3 min',
+                        startLabel: 'Start the Voting timer, 3 minutes',
+                    }}
+                />,
+            );
+
+            await user.click(screen.getByRole('button', { name: 'Timer' }));
+
+            expect(
+                screen.getAllByRole('menuitem').map((item) => item.textContent),
+            ).toEqual(['Voting · 3 min', '1 min', '3 min', '5 min', '10 min']);
+            expect(error).not.toHaveBeenCalled();
+            error.mockRestore();
+        });
+
+        it('shows nothing of it to who cannot start', () => {
+            renderWithProviders(
+                <Timer remainingSeconds={null} suggestion={suggestion} />,
+            );
+
+            expect(screen.queryByRole('button')).toBeNull();
+        });
     });
 });

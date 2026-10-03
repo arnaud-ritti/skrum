@@ -75,53 +75,70 @@ class ImportPokerTasks
             PokerGuard::notEnded($locked);
             PokerGuard::canEditTasks($player);
 
-            $source = $integration->provider->value;
-            $existing = $locked->tasks()
-                ->where('external_source', $source)
-                ->whereIn('external_id', $externalIds)
-                ->pluck('external_id')
-                ->flip();
+            $result = $this->storeIssues($locked, $integration, $externalIds, $issues);
 
-            $new = array_values(array_filter(
-                $externalIds,
-                fn (string $id): bool => isset($issues[$id]) && ! $existing->has($id),
-            ));
-
-            if ($locked->tasks()->count() + count($new) > AddPokerTask::MaxTasks) {
-                throw ValidationException::withMessages(['external_ids' => __('This game can hold 200 tasks at most.')]);
-            }
-
-            $position = (int) $locked->tasks()->max('position');
-
-            foreach ($new as $id) {
-                $issue = $issues[$id];
-                $task = new PokerTask([
-                    'title' => $issue->title,
-                    'description' => $issue->description,
-                    'position' => ++$position,
-                ]);
-
-                $task->forceFill([
-                    'poker_game_id' => $locked->id,
-                    'external_source' => $source,
-                    'external_id' => $issue->externalId,
-                    'external_url' => $issue->url,
-                    'external_site' => $integration->site(),
-                    'external_key' => $issue->key,
-                    'external_assignee' => $issue->assignee,
-                    'external_estimate' => $issue->estimate,
-                    'external_refreshed_at' => now(),
-                    'external_status_name' => $issue->status,
-                    'external_status_category' => $issue->issueStatus === null ? null : DoneMapping::category($integration->provider, $issue->issueStatus->kind),
-                    'external_updated_at' => $issue->issueStatus?->updatedAt,
-                ])->save();
-            }
-
-            if ($new !== []) {
+            if ($result['imported'] > 0) {
                 (new PokerGameChanged($locked->id))->sendToOthers();
             }
 
-            return ['imported' => count($new), 'skipped' => count($externalIds) - count($new)];
+            return $result;
         });
+    }
+
+    /**
+     * Writes the issues as tasks of a game the caller holds locked; the
+     * guards are the caller's.
+     *
+     * @param  array<int, string>  $externalIds
+     * @param  array<string, TrackerIssue>  $issues
+     * @return array{imported: int, skipped: int}
+     */
+    public function storeIssues(PokerGame $locked, TeamIntegration $integration, array $externalIds, array $issues): array
+    {
+        $source = $integration->provider->value;
+        $existing = $locked->tasks()
+            ->where('external_source', $source)
+            ->whereIn('external_id', $externalIds)
+            ->pluck('external_id')
+            ->flip();
+
+        $new = array_values(array_filter(
+            $externalIds,
+            fn (string $id): bool => isset($issues[$id]) && ! $existing->has($id),
+        ));
+
+        if ($locked->tasks()->count() + count($new) > AddPokerTask::MaxTasks) {
+            throw ValidationException::withMessages(['external_ids' => __('This game can hold 200 tasks at most.')]);
+        }
+
+        $position = (int) $locked->tasks()->max('position');
+
+        foreach ($new as $id) {
+            $issue = $issues[$id];
+            $task = new PokerTask([
+                'title' => $issue->title,
+                'description' => $issue->description,
+                'position' => ++$position,
+            ]);
+
+            $task->forceFill([
+                'poker_game_id' => $locked->id,
+                'external_source' => $source,
+                'external_id' => $issue->externalId,
+                'external_url' => $issue->url,
+                'external_site' => $integration->site(),
+                'external_key' => $issue->key,
+                'external_assignee' => $issue->assignee,
+                'external_estimate' => $issue->estimate,
+                'external_refreshed_at' => now(),
+                'external_status_name' => $issue->status,
+                'external_status_category' => $issue->issueStatus === null ? null : DoneMapping::category($integration->provider, $issue->issueStatus->kind),
+                'external_updated_at' => $issue->issueStatus?->updatedAt,
+                'external_type' => $issue->type,
+                'external_labels' => $issue->labels === [] ? null : $issue->labels,
+            ])->save();
+        }
+
+        return ['imported' => count($new), 'skipped' => count($externalIds) - count($new)];
     }
 }
