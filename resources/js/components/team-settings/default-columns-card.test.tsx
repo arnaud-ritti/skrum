@@ -165,4 +165,28 @@ describe('DefaultColumnsCard', () => {
             template: 'workspace:copy-1',
         });
     });
+
+    it('says so instead of failing silently when the copy is not in the reloaded catalogue', async () => {
+        card(builtIn);
+
+        await userEvent.click(
+            within(section()).getByRole('button', {
+                name: 'Duplicate as a team template',
+            }),
+        );
+
+        await act(async () => {
+            (mocks.post.mock.calls[0][2] as VisitOptions).onSuccess?.({});
+        });
+        await act(async () => {
+            (mocks.reload.mock.calls[0][0] as VisitOptions).onSuccess?.({
+                props: { catalogue: [] },
+            });
+        });
+
+        expect(mocks.put).not.toHaveBeenCalled();
+        expect(within(section()).getByRole('alert').textContent).toBe(
+            'Something went wrong. Please try again.',
+        );
+    });
 });

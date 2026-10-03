@@ -95,12 +95,17 @@ export function DefaultColumnsCard({
         );
     };
 
+    const failDuplicate = (): void =>
+        setErrors({ duplicate: t('Something went wrong. Please try again.') });
+
     const makeDefault = (name: string, page: CataloguePage): void => {
         const copy = page.props.catalogue?.find(
             (item) => item.isWorkspace && item.name === name,
         );
 
         if (copy === undefined) {
+            failDuplicate();
+
             return;
         }
 
@@ -136,6 +141,7 @@ export function DefaultColumnsCard({
                         only: ['catalogue'],
                         onSuccess: (page) =>
                             makeDefault(name, page as unknown as CataloguePage),
+                        onError: failDuplicate,
                     }),
                 onError: (failures) => setErrors(failures),
                 onFinish: () => setSaving(false),
