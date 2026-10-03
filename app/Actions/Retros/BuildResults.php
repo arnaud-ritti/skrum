@@ -11,6 +11,7 @@ use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Integrations\IntegrationAvailability;
@@ -91,15 +92,17 @@ class BuildResults
      */
     private function stats(Retro $retro): array
     {
-        $participantCount = $retro->participants->count();
-        $teamMemberIds = $retro->team->members()->pluck('users.id');
+        $observerIds = $retro->team->members()->wherePivot('role', TeamRole::Observer->value)->pluck('users.id');
+        $teamMemberIds = $retro->team->members()->wherePivot('role', '!=', TeamRole::Observer->value)->pluck('users.id');
+        $participants = $retro->participants->whereNotIn('user_id', $observerIds);
+        $participantCount = $participants->count();
 
         return [
             'votesCast' => $retro->votes()->count(),
             'votesAvailable' => $participantCount * $retro->voteLimit(),
             'participation' => [
                 'participants' => $participantCount,
-                'expected' => $teamMemberIds->count() + $retro->participants->whereNotIn('user_id', $teamMemberIds)->count(),
+                'expected' => $teamMemberIds->count() + $participants->whereNotIn('user_id', $teamMemberIds)->count(),
             ],
             'durationSeconds' => $this->durationSeconds($retro),
         ];

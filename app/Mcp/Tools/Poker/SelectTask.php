@@ -54,6 +54,8 @@ class SelectTask extends SkrumTool
 
         $game = $this->context->pokerGame((string) $validated['game_id']);
 
+        $this->refuseObserver($game->team);
+
         $player = DB::transaction(function () use ($game, $validated): PokerPlayer {
             $locked = PokerGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
             $player = $this->context->pokerPlayerForWrite($locked);

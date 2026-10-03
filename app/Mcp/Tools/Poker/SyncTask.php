@@ -63,6 +63,8 @@ class SyncTask extends SkrumTool
             ->firstOrFail();
         $game = $task->game;
 
+        $this->refuseObserver($game->team);
+
         if (! $this->resolvePokerTracker->teamHasTracker($game->team)) {
             throw ValidationException::withMessages(['task_id' => __('This team has no connected tracker.')]);
         }

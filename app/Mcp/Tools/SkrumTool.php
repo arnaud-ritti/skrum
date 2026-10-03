@@ -7,6 +7,7 @@ use App\Enums\McpScope;
 use App\Exceptions\Integrations\IntegrationException;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
+use App\Models\Team;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -125,6 +126,18 @@ abstract class SkrumTool extends Tool
             'page' => $page,
             'hasMore' => $rows->count() > $limit,
         ];
+    }
+
+    /**
+     * An observer of a team reads through the tools and changes nothing.
+     */
+    protected function refuseObserver(Team $team): void
+    {
+        if (! McpGrant::current()->user->isObserverOf($team)) {
+            return;
+        }
+
+        throw new AuthorizationException(__('Observers can follow this session but not take part.'));
     }
 
     private function withinWriteLimit(): bool

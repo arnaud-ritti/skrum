@@ -57,6 +57,9 @@ class CompleteAction extends SkrumTool
         ]);
 
         $item = $this->context->actionItem((string) $validated['action_id']);
+
+        $this->refuseObserver($item->team);
+
         $actor = new ActionItemActor(McpGrant::current()->user, $item->retro === null ? null : $this->context->participant($item->retro));
         $status = ($validated['completed'] ?? true) ? ActionItemStatus::Completed : ActionItemStatus::Open;
 

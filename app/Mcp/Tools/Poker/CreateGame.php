@@ -58,6 +58,8 @@ class CreateGame extends SkrumTool
     {
         $team = $this->context->team((string) $request->validate(['team_id' => ['required', 'uuid']])['team_id']);
 
+        $this->refuseObserver($team);
+
         Gate::forUser(McpGrant::current()->user)->authorize('createPokerGame', $team);
 
         SavedPokerDeckRules::ensureExclusive($request->all());

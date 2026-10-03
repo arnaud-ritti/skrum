@@ -59,6 +59,8 @@ class RevealTask extends SkrumTool
 
         $game = $this->context->pokerGame((string) $validated['game_id']);
 
+        $this->refuseObserver($game->team);
+
         $result = DB::transaction(function () use ($game, $validated): array {
             $locked = PokerGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
             $player = $this->context->pokerPlayerForWrite($locked);

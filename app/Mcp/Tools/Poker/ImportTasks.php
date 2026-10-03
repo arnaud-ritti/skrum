@@ -73,6 +73,8 @@ class ImportTasks extends SkrumTool
 
         $game = $this->context->pokerGame((string) $validated['game_id']);
 
+        $this->refuseObserver($game->team);
+
         PokerGuard::notEnded($game);
 
         $integration = $this->trackerFor($game->team, (string) $validated['source']);

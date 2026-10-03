@@ -47,6 +47,8 @@ class DeleteOwnMessage extends SkrumTool
 
         [$card, $retro, $participant] = $this->ownMessage($this->context, (string) $validated['message_id']);
 
+        $this->refuseObserver($retro->team);
+
         $this->deleteCard->handle($retro, $card, $participant);
 
         return Response::structured(['deleted' => true]);
