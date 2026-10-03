@@ -53,6 +53,11 @@ const options: NewSessionOptions = {
     surveys: [],
     canCreateSurvey: true,
     surveyTemplates: [],
+    currentSprintNumber: null,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
 };
 
 const nothingOffered: Partial<NewSessionOptions> = {

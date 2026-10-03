@@ -5170,5 +5170,21 @@
     "A personal template cannot be the team default.": "Eine persönliche Vorlage kann nicht die Standardvorlage des Teams sein.",
     "Default template saved.": "Standardvorlage gespeichert.",
     "Workspace saved.": "Arbeitsbereich gespeichert.",
-    "1 group": "1 Gruppe"
+    "1 group": "1 Gruppe",
+    "Sprint :number": "Sprint :number",
+    "Next retro :date": "Nächste Retro :date",
+    "Next retro :date, :time": "Nächste Retro :date um :time",
+    "started the retrospective": "hat die Retrospektive gestartet",
+    "closed the retrospective": "hat die Retrospektive abgeschlossen",
+    "started the planning poker": "hat das Planning Poker gestartet",
+    "ended the planning poker": "hat das Planning Poker beendet",
+    "created the whiteboard": "hat das Whiteboard erstellt",
+    "published the survey": "hat die Umfrage veröffentlicht",
+    "closed the survey": "hat die Umfrage geschlossen",
+    "completed": "hat erledigt",
+    "joined the team": "ist dem Team beigetreten",
+    "1 card": "1 Karte",
+    "1 task": "1 Aufgabe",
+    ":count estimated": ":count geschätzt",
+    "created in :date": "erstellt im :date"
 }

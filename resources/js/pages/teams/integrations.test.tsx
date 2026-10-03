@@ -18,7 +18,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     Head: () => null,
 }));
 
-vi.mock('@/components/integrations/team-settings-shell', () => ({
+vi.mock('@/components/team-settings/team-settings-shell', () => ({
     TeamSettingsShell: ({ children }: { children: ReactNode }) => (
         <div>{children}</div>
     ),
@@ -48,6 +48,13 @@ describe('team integrations page', () => {
             <TeamIntegrations
                 workspace={{ slug: 'nordlys' } as WorkspaceSummary}
                 team={{ id: 't1', name: 'Atlas' } as TeamSummary}
+                sections={{
+                    general: true,
+                    members: true,
+                    integrations: true,
+                    data: true,
+                    firstUrl: '/w/nordlys/teams/t1/settings',
+                }}
                 providers={[
                     card('slack', 'Slack'),
                     card('jira', 'Jira'),

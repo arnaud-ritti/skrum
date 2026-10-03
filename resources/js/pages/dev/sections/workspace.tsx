@@ -33,6 +33,7 @@ const teams: WorkspaceTeamTile[] = [
     {
         id: 'team-atlas',
         name: 'Atlas',
+        description: null,
         membersCount: 9,
         members: members(
             [
@@ -51,11 +52,14 @@ const teams: WorkspaceTeamTile[] = [
             openPokerGames: 3,
             openActionItems: 7,
             overdueActionItems: 2,
+            openRetroSprint: null,
+            whiteboardsEditedToday: 0,
         },
     },
     {
         id: 'team-borealis',
         name: 'Borealis',
+        description: null,
         membersCount: 8,
         members: members(
             ['Bao Lin', 'Hugo Petit', 'Yuki Tanaka', 'Noa Kim', 'Zoé Petit'],
@@ -68,11 +72,14 @@ const teams: WorkspaceTeamTile[] = [
             openPokerGames: 0,
             openActionItems: 4,
             overdueActionItems: 0,
+            openRetroSprint: null,
+            whiteboardsEditedToday: 0,
         },
     },
     {
         id: 'team-comet',
         name: 'Comet',
+        description: null,
         membersCount: 1,
         members: members(['Lea Garnier'], 6),
         isMember: false,
@@ -82,6 +89,8 @@ const teams: WorkspaceTeamTile[] = [
             openPokerGames: 1,
             openActionItems: 0,
             overdueActionItems: 0,
+            openRetroSprint: null,
+            whiteboardsEditedToday: 0,
         },
     },
 ];
@@ -113,11 +122,14 @@ const longNames: WorkspaceOverviewProps = {
                     'Sprint 42 retrospective of the platform reliability team, with the incident review',
                 openActionItems: 128,
                 overdueActionItems: 37,
+                openRetroSprint: null,
+                whiteboardsEditedToday: 0,
             },
         },
         {
             ...teams[1],
             name: 'Maximilian-Alexander-von-Hohenberg-Lichtenstein',
+            description: null,
             membersCount: 124,
         },
     ],

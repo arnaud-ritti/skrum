@@ -57,6 +57,7 @@ const writing: RetroSummary = {
     facilitator: { name: 'Camille Roux', avatarUrl: '/avatars/c.svg' },
     rotiAverage: null,
     viewerHasJoined: false,
+    stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
 };
 
 const closed: RetroSummary = {

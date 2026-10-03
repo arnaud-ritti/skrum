@@ -4950,5 +4950,21 @@
     "A personal template cannot be the team default.": "A personal template cannot be the team default.",
     "Default template saved.": "Default template saved.",
     "Workspace saved.": "Workspace saved.",
-    "1 group": "1 group"
+    "1 group": "1 group",
+    "Sprint :number": "Sprint :number",
+    "Next retro :date": "Next retro :date",
+    "Next retro :date, :time": "Next retro :date, :time",
+    "started the retrospective": "started the retrospective",
+    "closed the retrospective": "closed the retrospective",
+    "started the planning poker": "started the planning poker",
+    "ended the planning poker": "ended the planning poker",
+    "created the whiteboard": "created the whiteboard",
+    "published the survey": "published the survey",
+    "closed the survey": "closed the survey",
+    "completed": "completed",
+    "joined the team": "joined the team",
+    "1 card": "1 card",
+    "1 task": "1 task",
+    ":count estimated": ":count estimated",
+    "created in :date": "created in :date"
 }

@@ -65,6 +65,7 @@ const mine: WhiteboardSummary = {
     updatedAt: '2026-09-24T10:00:00+00:00',
     facilitatorName: 'Fran Facilitator',
     canDelete: true,
+    preview: null,
 };
 
 const theirs: WhiteboardSummary = {
@@ -73,6 +74,7 @@ const theirs: WhiteboardSummary = {
     title: 'Realtime architecture',
     facilitatorName: 'Mia Member',
     canDelete: false,
+    preview: null,
 };
 
 function section(boards: WhiteboardSummary[] = [mine, theirs]) {

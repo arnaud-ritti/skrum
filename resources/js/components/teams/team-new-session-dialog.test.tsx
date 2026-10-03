@@ -48,6 +48,11 @@ const options: NewSessionOptions = {
     surveys: [],
     canCreateSurvey: true,
     surveyTemplates: [],
+    currentSprintNumber: null,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
 };
 
 const workspace = { id: 'w', name: 'Nordlys', slug: 'nordlys' };

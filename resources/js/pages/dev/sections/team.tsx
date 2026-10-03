@@ -159,6 +159,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
             viewerHasJoined: false,
+            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
         },
         {
             id: 'retro-2',
@@ -170,6 +171,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
             viewerHasJoined: true,
+            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
         },
         {
             id: 'retro-3',
@@ -181,6 +183,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Arnaud Ritti', avatarUrl: avatar('0') },
             rotiAverage: 4.1,
             viewerHasJoined: false,
+            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
         },
         {
             id: 'retro-4',
@@ -192,6 +195,7 @@ const page: TeamPageProps = {
             facilitator: null,
             rotiAverage: 3.8,
             viewerHasJoined: false,
+            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
         },
     ],
     templateCategories: [],
@@ -219,6 +223,7 @@ const page: TeamPageProps = {
             updatedAt: '2026-09-24T08:00:00+00:00',
             facilitatorName: 'Inès Benali',
             canDelete: true,
+            preview: null,
         },
         {
             id: 'board-2',
@@ -226,6 +231,7 @@ const page: TeamPageProps = {
             updatedAt: '2026-09-17T08:00:00+00:00',
             facilitatorName: 'Malik Kone',
             canDelete: false,
+            preview: null,
         },
         {
             id: 'board-3',
@@ -233,6 +239,7 @@ const page: TeamPageProps = {
             updatedAt: '2026-09-09T08:00:00+00:00',
             facilitatorName: 'Camille Roux',
             canDelete: true,
+            preview: null,
         },
     ],
     canCreateWhiteboard: true,
@@ -302,6 +309,20 @@ const page: TeamPageProps = {
     whiteboardGallery: [],
     pokerPresence: { 'game-1': 4, 'game-2': 0 },
     moodTrend,
+    currentSprintNumber: 42,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
+    roleOptions: [],
+    viewerRole: 'owner',
+    canManageRituals: true,
+    schedule: null,
+    hasSprints: false,
+    activity: [],
+    recentSessions: [],
+    openActionItems: [],
+    overdueActionItemCount: 0,
 };
 
 function Example({

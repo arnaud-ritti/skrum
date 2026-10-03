@@ -5170,5 +5170,21 @@
     "A personal template cannot be the team default.": "Un modèle personnel ne peut pas être celui de l'équipe par défaut.",
     "Default template saved.": "Modèle par défaut enregistré.",
     "Workspace saved.": "Espace de travail enregistré.",
-    "1 group": "1 groupe"
+    "1 group": "1 groupe",
+    "Sprint :number": "Sprint :number",
+    "Next retro :date": "Prochaine rétro :date",
+    "Next retro :date, :time": "Prochaine rétro :date à :time",
+    "started the retrospective": "a lancé la rétrospective",
+    "closed the retrospective": "a clôturé la rétrospective",
+    "started the planning poker": "a lancé le planning poker",
+    "ended the planning poker": "a terminé le planning poker",
+    "created the whiteboard": "a créé le tableau blanc",
+    "published the survey": "a publié le sondage",
+    "closed the survey": "a clôturé le sondage",
+    "completed": "a terminé",
+    "joined the team": "a rejoint l'équipe",
+    "1 card": "1 carte",
+    "1 task": "1 tâche",
+    ":count estimated": ":count estimées",
+    "created in :date": "créée en :date"
 }

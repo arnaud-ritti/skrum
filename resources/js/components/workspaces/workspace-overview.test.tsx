@@ -50,6 +50,7 @@ function team(
     return {
         id,
         name,
+        description: null,
         membersCount: 2,
         members: [
             { name: 'Arnaud Ritti', avatarUrl: '' },
@@ -62,6 +63,8 @@ function team(
             openPokerGames: 0,
             openActionItems: 0,
             overdueActionItems: 0,
+            openRetroSprint: null,
+            whiteboardsEditedToday: 0,
         },
         ...overrides,
     };

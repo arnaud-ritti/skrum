@@ -339,6 +339,8 @@ export type Snapshot = {
         remainingVotes: number;
         transferCandidates: TransferCandidate[];
         canHandleSuggestions: boolean;
+        /** A team facilitator, owner or manager may take control of this open retro. */
+        canTakeControl: boolean;
     };
     columns: BoardColumn[];
     cards: BoardCard[];

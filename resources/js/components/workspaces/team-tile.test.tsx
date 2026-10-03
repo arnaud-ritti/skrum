@@ -9,6 +9,7 @@ const Now = Date.parse('2026-10-02T12:00:00Z');
 const team: WorkspaceTeamTile = {
     id: 'team-1',
     name: 'Atlas',
+    description: null,
     membersCount: 9,
     members: ['Arnaud Ritti', 'Camille Roux', 'Théo Martin', 'Inès Benali'].map(
         (name) => ({ name, avatarUrl: '' }),
@@ -20,6 +21,8 @@ const team: WorkspaceTeamTile = {
         openPokerGames: 3,
         openActionItems: 7,
         overdueActionItems: 2,
+        openRetroSprint: null,
+        whiteboardsEditedToday: 0,
     },
 };
 
@@ -105,6 +108,8 @@ describe('TeamTile', () => {
                 openPokerGames: 0,
                 openActionItems: 0,
                 overdueActionItems: 0,
+                openRetroSprint: null,
+                whiteboardsEditedToday: 0,
             },
         });
 
@@ -120,6 +125,8 @@ describe('TeamTile', () => {
                 openPokerGames: 1,
                 openActionItems: 1,
                 overdueActionItems: 0,
+                openRetroSprint: null,
+                whiteboardsEditedToday: 0,
             },
         });
 

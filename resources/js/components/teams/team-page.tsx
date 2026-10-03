@@ -1,6 +1,6 @@
+import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { teamSettingsHref as settingsHrefOf } from '@/lib/teams/settings-href';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { TeamHeader } from '@/components/teams/team-header';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
@@ -15,13 +15,20 @@ import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-sect
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { teamSettingsHref } from '@/lib/teams/settings-href';
+import type { ActionItem } from '@/lib/retro/types';
 import type {
     NewSessionOptions,
     PokerGameSummary,
+    RecentSessionRow,
     RetroSummary,
+    TeamActivityLine,
     TeamHealthStatement,
     TeamMember,
     TeamMoodPoint,
+    TeamRole,
+    TeamRoleOption,
+    TeamSchedule,
     TeamSummary,
     WhiteboardSummary,
     WhiteboardTemplateSummary,
@@ -45,13 +52,26 @@ export type TeamPageProps = NewSessionOptions & {
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     pokerPresence?: Record<string, number | null> | null;
+    /** The roles a member can be given; empty for who cannot manage the members. */
+    roleOptions: TeamRoleOption[];
+    /** The viewer's row in the team; null for a manager outside it. */
+    viewerRole: TeamRole | null;
+    canManageRituals: boolean;
+    /** The current sprint and the next retro; null when there is neither. */
+    schedule: TeamSchedule | null;
+    hasSprints: boolean;
+    activity: TeamActivityLine[];
+    recentSessions: RecentSessionRow[];
+    /** The first open action items of the team, overdue first. */
+    openActionItems: ActionItem[];
+    overdueActionItemCount: number;
 };
 
 /**
  * Places left for the features that come after the rewrite. Each is a region
  * of the page; nothing is rendered while its slot is undefined.
  */
-type TeamPageSlots = {
+export type TeamPageSlots = {
     /** TM-1: sprint and next retro, under the team name. */
     schedule?: ReactNode;
     /** TM-2: the recent sessions table, first block of the main column. */
@@ -70,27 +90,6 @@ type TeamPageSlots = {
     whiteboardThumbnailFor?: (board: WhiteboardSummary) => ReactNode;
 };
 
-/**
- * The gear of the header leads where the "Team settings" entry of the sidebar
- * leads: both read `lib/teams/settings-href.ts`.
- */
-export function teamSettingsHref({
-    workspace,
-    team,
-    canManage,
-    canManageIntegrations,
-}: Pick<
-    TeamPageProps,
-    'workspace' | 'team' | 'canManage' | 'canManageIntegrations'
->): string | undefined {
-    return settingsHrefOf({
-        workspace: workspace.slug,
-        team: team.id,
-        canManage: canManage || canManageIntegrations,
-        hasIntegrationsPage: canManageIntegrations,
-    });
-}
-
 export function TeamPage({
     slots = {},
     ...props
@@ -98,6 +97,7 @@ export function TeamPage({
     const { t } = useTrans();
     const newSessionIntent = useNewSessionIntent();
     const { workspace, team } = props;
+    const { currentTeam } = usePage().props;
 
     return (
         <div data-slot="team-page" className="flex min-w-0 flex-col gap-8">
@@ -106,7 +106,11 @@ export function TeamPage({
                 team={team}
                 members={props.members}
                 openActionItemCount={props.openActionItemCount}
-                settingsHref={teamSettingsHref(props)}
+                settingsHref={
+                    currentTeam?.id === team.id
+                        ? teamSettingsHref(currentTeam)
+                        : undefined
+                }
                 schedule={slots.schedule}
                 newSession={
                     <TeamNewSessionDialog

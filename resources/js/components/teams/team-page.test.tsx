@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TeamPage, teamSettingsHref } from '@/components/teams/team-page';
+import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { renderWithProviders } from '@/test/render';
 
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
         locale: 'en',
         errors: {} as Record<string, string>,
         currentWorkspace: { role: 'admin' } as { role: string } | null,
+        currentTeam: null as Record<string, unknown> | null,
     },
 }));
 
@@ -92,6 +93,20 @@ const base: TeamPageProps = {
     surveyTemplates: [],
     whiteboardTemplates: [],
     pokerPresence: {},
+    currentSprintNumber: null,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
+    roleOptions: [],
+    viewerRole: 'owner',
+    canManageRituals: true,
+    schedule: null,
+    hasSprints: false,
+    activity: [],
+    recentSessions: [],
+    openActionItems: [],
+    overdueActionItemCount: 0,
 };
 
 describe('the team page', () => {
@@ -240,47 +255,35 @@ describe('the team page', () => {
     });
 
     it('leads the gear of the header where the "Team settings" entry of the sidebar leads', () => {
-        const { rerender } = renderWithProviders(<TeamPage {...base} />);
         const gear = () =>
             screen
                 .queryByRole('link', { name: 'Team settings' })
                 ?.getAttribute('href');
+        const currentTeam = {
+            id: 'team-1',
+            name: 'Atlas',
+            membersCount: 1,
+            viewerRole: 'owner',
+            settingsUrl: '/w/nordlys/teams/team-1/settings',
+        };
 
-        expect(gear()).toMatch(/\/teams\/team-1#settings$/);
+        mocks.props.currentTeam = currentTeam;
 
-        rerender(<TeamPage {...base} canManageIntegrations />);
+        const { rerender } = renderWithProviders(<TeamPage {...base} />);
 
-        expect(gear()).toMatch(/\/teams\/team-1\/integrations$/);
+        expect(gear()).toBe('/w/nordlys/teams/team-1/settings');
 
-        rerender(<TeamPage {...base} canManage={false} />);
+        mocks.props.currentTeam = { ...currentTeam, settingsUrl: null };
+        rerender(<TeamPage {...base} />);
 
         expect(gear()).toBeUndefined();
-    });
 
-    it('gives the settings address of a manager, of who manages the integrations, and none to a member', () => {
-        const scope = { workspace: base.workspace, team: base.team };
+        mocks.props.currentTeam = { ...currentTeam, id: 'team-2' };
+        rerender(<TeamPage {...base} />);
 
-        expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: true,
-                canManageIntegrations: false,
-            }),
-        ).toMatch(/#settings$/);
-        expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: false,
-                canManageIntegrations: true,
-            }),
-        ).toMatch(/\/integrations$/);
-        expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: false,
-                canManageIntegrations: false,
-            }),
-        ).toBeUndefined();
+        expect(gear()).toBeUndefined();
+
+        mocks.props.currentTeam = null;
     });
 
     it('renders nothing in the places left, and fills each from its slot', () => {
