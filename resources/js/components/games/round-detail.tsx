@@ -150,6 +150,7 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 <MoodWeatherResult
                     answered={detail.answered ?? 0}
                     weather={detail.weather ?? null}
+                    threshold={detail.threshold}
                 />
             );
         case 'guess_who':

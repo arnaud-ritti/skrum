@@ -200,6 +200,7 @@ export function RoundEndCard() {
                     <MoodWeatherResult
                         answered={mood.answered}
                         weather={mood.weather ?? null}
+                        threshold={mood.threshold}
                     />
                 )}
                 {guessWho?.drawn && (

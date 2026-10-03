@@ -127,12 +127,14 @@ type MoodWeatherResultProps = {
     answered: number;
     /** Null under the threshold: the server keeps the weather back. */
     weather: GameWeatherCount[] | null;
+    threshold?: number;
 };
 
 /** After the reveal: how many picked each weather, never who. */
 export function MoodWeatherResult({
     answered,
     weather,
+    threshold = MoodThreshold,
 }: MoodWeatherResultProps) {
     const { t } = useTrans();
 
@@ -143,7 +145,7 @@ export function MoodWeatherResult({
                 className="text-sm text-muted-foreground"
             >
                 {t('Not enough answers to show the weather (:count needed).', {
-                    count: MoodThreshold,
+                    count: threshold,
                 })}
             </p>
         );

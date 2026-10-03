@@ -197,4 +197,16 @@ describe('MoodWeatherResult', () => {
             ),
         ).toBeTruthy();
     });
+
+    it('says the threshold the server sends', () => {
+        renderWithRoom(
+            <MoodWeatherResult answered={2} weather={null} threshold={4} />,
+        );
+
+        expect(
+            screen.getByText(
+                'Not enough answers to show the weather (4 needed).',
+            ),
+        ).toBeTruthy();
+    });
 });

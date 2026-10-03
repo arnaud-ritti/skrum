@@ -130,11 +130,12 @@ class MoodWeatherRules implements GameRules, RevealsInStages, TakesChoices
         $answered = (int) $counts->sum();
 
         if ($answered < self::Threshold) {
-            return ['answered' => $answered, 'weather' => null];
+            return ['answered' => $answered, 'weather' => null, 'threshold' => self::Threshold];
         }
 
         return [
             'answered' => $answered,
+            'threshold' => self::Threshold,
             'weather' => array_map(fn (GameWeather $weather): array => [
                 'weather' => $weather->value,
                 'count' => (int) ($counts[$weather->value] ?? 0),

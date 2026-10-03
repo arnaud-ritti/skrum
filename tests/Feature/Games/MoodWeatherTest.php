@@ -85,7 +85,12 @@ it('keeps the weather back under three answers', function () {
     $this->actingAs($hostUser)->postJson(route('games.rounds.reveal.store', [$room, $round]))
         ->assertOk()
         ->assertJsonPath('ended.answered', 1)
-        ->assertJsonPath('ended.weather', null);
+        ->assertJsonPath('ended.weather', null)
+        ->assertJsonPath('ended.threshold', 3);
+
+    $this->actingAs($aUser)->getJson(route('games.rounds.show', [$room, $round]))
+        ->assertJsonPath('weather', null)
+        ->assertJsonPath('threshold', 3);
 });
 
 it('reveals when the room timer runs out', function () {
