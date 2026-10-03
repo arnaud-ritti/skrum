@@ -4562,5 +4562,16 @@
     "Request sent": "Request sent",
     "Request sent. You'll see the answer in your notifications.": "Request sent. You'll see the answer in your notifications.",
     "Team admins: :names": "Team admins: :names",
-    "Team admins: :names and :count others": "Team admins: :names and :count others"
+    "Team admins: :names and :count others": "Team admins: :names and :count others",
+    ":name asks to join :team": ":name asks to join :team",
+    "“:excerpt”": "“:excerpt”",
+    "Add to the team": "Add to the team",
+    "Added by :name": "Added by :name",
+    "Added by you": "Added by you",
+    "Declined by :name": "Declined by :name",
+    "Declined by you": "Declined by you",
+    "You were added to :team": "You were added to :team",
+    "Your request to join :team was declined": "Your request to join :team was declined",
+    "I pair with Théo on the checkout, can I join the retros?": "I pair with Théo on the checkout, can I join the retros?",
+    "Access requests: to answer, added by someone, declined by you; the requester’s outcomes": "Access requests: to answer, added by someone, declined by you; the requester’s outcomes"
 }

@@ -4,14 +4,25 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import NotificationsController from '@/actions/App/Http/Controllers/NotificationsController';
 import ReadAllNotificationsController from '@/actions/App/Http/Controllers/ReadAllNotificationsController';
-import type { AppNotification } from '@/components/skrum/notifications-panel';
+import type {
+    AccessRequestDecision,
+    AccessRequestNotification,
+    AccessRequestStatus,
+    AppNotification,
+} from '@/components/skrum/notifications-panel';
 import { useTrans } from '@/hooks/use-trans';
-import { retroRequest } from '@/lib/retro/api';
+import { retroRequest, RetroRequestError } from '@/lib/retro/api';
 
 const SharedCounts = ['notifications', 'actionItems'];
 
 /** How long the bell shows that a notification just arrived. */
 const ArrivalMs = 4000;
+
+type AccessRequestAnswer = {
+    status: AccessRequestStatus;
+    reason?: string;
+    message?: string;
+};
 
 type NotificationsPage = {
     notifications: AppNotification[];
@@ -244,6 +255,64 @@ export function useNotifications() {
         }
     };
 
+    const replaceRequest = (
+        id: string,
+        request: AccessRequestNotification['request'],
+    ): void => {
+        setNotifications((current) =>
+            current.map((notification) =>
+                notification.id === id && notification.kind === 'access_request'
+                    ? { ...notification, request }
+                    : notification,
+            ),
+        );
+    };
+
+    /**
+     * The answer shows at once; a refusal puts the request back and reads
+     * the first page again, so the bell shows what the server holds.
+     */
+    const answerAccessRequest = async (
+        notification: AccessRequestNotification,
+        decision: AccessRequestDecision,
+    ): Promise<void> => {
+        const previous = notification.request;
+
+        replaceRequest(notification.id, {
+            ...previous,
+            status: decision === 'approve' ? 'approved' : 'declined',
+            decidedByYou: true,
+        });
+
+        try {
+            const answer = await retroRequest<AccessRequestAnswer>(
+                { url: previous.updateUrl, method: 'patch' },
+                { decision },
+            );
+
+            replaceRequest(notification.id, {
+                ...previous,
+                status: answer.status,
+                decidedByYou: true,
+            });
+
+            if (answer.message) {
+                toast.info(answer.message);
+            }
+        } catch (error) {
+            replaceRequest(notification.id, previous);
+
+            if (!(error instanceof RetroRequestError) || error.status !== 422) {
+                toast.error(t('Something went wrong. Please try again.'));
+
+                return;
+            }
+
+            toast.error(error.message);
+            await fetchFirstPage(true);
+        }
+    };
+
     return {
         available: shared !== null && shared !== undefined,
         notifications,
@@ -258,5 +327,6 @@ export function useNotifications() {
         stopWatching,
         open,
         markAllRead,
+        answerAccessRequest,
     };
 }

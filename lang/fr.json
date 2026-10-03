@@ -4782,5 +4782,16 @@
     "Request sent": "Demande envoyée",
     "Request sent. You'll see the answer in your notifications.": "Demande envoyée. Tu verras la réponse dans tes notifications.",
     "Team admins: :names": "Admins de l'équipe : :names",
-    "Team admins: :names and :count others": "Admins de l'équipe : :names et :count autres"
+    "Team admins: :names and :count others": "Admins de l'équipe : :names et :count autres",
+    ":name asks to join :team": ":name demande à rejoindre :team",
+    "“:excerpt”": "« :excerpt »",
+    "Add to the team": "Ajouter à l'équipe",
+    "Added by :name": "Demande acceptée par :name",
+    "Added by you": "Demande acceptée par toi",
+    "Declined by :name": "Demande refusée par :name",
+    "Declined by you": "Demande refusée par toi",
+    "You were added to :team": "Tu as été ajouté·e à :team",
+    "Your request to join :team was declined": "Ta demande pour rejoindre :team a été refusée",
+    "I pair with Théo on the checkout, can I join the retros?": "Je travaille en binôme avec Théo sur le paiement, je peux rejoindre les rétros ?",
+    "Access requests: to answer, added by someone, declined by you; the requester’s outcomes": "Demandes d'accès : à traiter, acceptée par quelqu'un, refusée par toi ; les réponses côté demandeur"
 }

@@ -196,6 +196,61 @@ export default function NotificationsPanelSection() {
         roti: null,
     };
 
+    const accessRequest: AppNotification = {
+        id: 'n6',
+        kind: 'access_request',
+        readAt: null,
+        createdAt: '2026-10-01T11:45:00Z',
+        actor: { name: 'Nadia K.', presence: 3 },
+        team: t('Atlas'),
+        excerpt: t('I pair with Théo on the checkout, can I join the retros?'),
+        request: {
+            id: 'q1',
+            status: 'pending',
+            decidedBy: null,
+            updateUrl: '#',
+        },
+        href: '#',
+    };
+    const accessAdded: AppNotification = {
+        ...accessRequest,
+        id: 'n6b',
+        readAt: '2026-10-01T11:50:00Z',
+        excerpt: null,
+        request: {
+            id: 'q2',
+            status: 'approved',
+            decidedBy: 'Camille R.',
+            updateUrl: '#',
+        },
+    };
+    const accessDeclinedByYou: AppNotification = {
+        ...accessRequest,
+        id: 'n6c',
+        request: {
+            id: 'q3',
+            status: 'declined',
+            decidedBy: null,
+            decidedByYou: true,
+            updateUrl: '#',
+        },
+    };
+    const youWereAdded: AppNotification = {
+        id: 'n7',
+        kind: 'access_answered',
+        readAt: null,
+        createdAt: '2026-10-01T11:40:00Z',
+        team: t('Atlas'),
+        outcome: 'approved',
+        href: '#',
+    };
+    const yourRequestDeclined: AppNotification = {
+        ...youWereAdded,
+        id: 'n7b',
+        readAt: '2026-10-01T11:45:00Z',
+        outcome: 'declined',
+    };
+
     const all = [invite, starting, overdue, mention, recap];
     const base: NotificationsPanelProps = {
         notifications: all,
@@ -206,6 +261,7 @@ export default function NotificationsPanelSection() {
         onOpen: () => undefined,
         onInvite: () => undefined,
         onJoin: () => undefined,
+        onAccessRequest: () => undefined,
         settingsHref: '#',
         now,
     };
@@ -374,6 +430,25 @@ export default function NotificationsPanelSection() {
                                 started,
                                 dueSoon,
                             ]}
+                        />
+                    </Frame>
+                </Example>
+                <Example
+                    label={t(
+                        'Access requests: to answer, added by someone, declined by you; the requester’s outcomes',
+                    )}
+                >
+                    <Frame>
+                        <NotificationsPanel
+                            {...base}
+                            notifications={[
+                                accessRequest,
+                                accessAdded,
+                                accessDeclinedByYou,
+                                youWereAdded,
+                                yourRequestDeclined,
+                            ]}
+                            unreadCount={3}
                         />
                     </Frame>
                 </Example>

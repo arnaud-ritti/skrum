@@ -6,6 +6,7 @@ import {
     NotificationsPanel,
 } from '@/components/skrum/notifications-panel';
 import type {
+    AccessRequestNotification,
     AppNotification,
     NotificationsPanelProps,
 } from '@/components/skrum/notifications-panel';
@@ -583,6 +584,171 @@ describe('NotificationsPanel', () => {
                 .getByRole('link', { name: 'Notification settings' })
                 .getAttribute('href'),
         ).toBe('/settings/notifications');
+    });
+});
+
+const accessRequest: AccessRequestNotification = {
+    id: 'r1',
+    kind: 'access_request',
+    readAt: null,
+    createdAt: '2026-10-01T11:50:00Z',
+    actor: { name: 'Nadia K.', presence: 3, avatarUrl: '/avatars/n.svg' },
+    team: 'Atlas',
+    excerpt: 'I pair with Théo on the checkout',
+    request: {
+        id: 'req-1',
+        status: 'pending',
+        decidedBy: null,
+        updateUrl: '/w/nordlys/teams/atlas/access-requests/req-1',
+    },
+    href: '/w/nordlys/teams/atlas',
+};
+
+const added: AppNotification = {
+    id: 'r2',
+    kind: 'access_answered',
+    readAt: null,
+    createdAt: '2026-10-01T11:40:00Z',
+    team: 'Atlas',
+    outcome: 'approved',
+    href: '/w/nordlys/teams/atlas',
+};
+
+describe('NotificationsPanel access requests', () => {
+    it('names the requester and the team, quotes the message and offers both answers', () => {
+        setup({ notifications: [accessRequest], onAccessRequest: vi.fn() });
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Nadia K. asks to join Atlas' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/atlas');
+        expect(
+            screen.getByText('“I pair with Théo on the checkout”'),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Add to the team' }),
+        ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Decline' })).toBeTruthy();
+    });
+
+    it('reports each answer with the notification', async () => {
+        const onAccessRequest = vi.fn();
+        setup({ notifications: [accessRequest], onAccessRequest });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add to the team' }),
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+
+        expect(onAccessRequest).toHaveBeenNthCalledWith(
+            1,
+            accessRequest,
+            'approve',
+        );
+        expect(onAccessRequest).toHaveBeenNthCalledWith(
+            2,
+            accessRequest,
+            'decline',
+        );
+    });
+
+    it('puts the inline answers after the link in the keyboard order', async () => {
+        setup({ notifications: [accessRequest], onAccessRequest: vi.fn() });
+        const item = screen.getByRole('listitem');
+
+        within(item)
+            .getByRole('link', { name: 'Nadia K. asks to join Atlas' })
+            .focus();
+        await userEvent.tab();
+        expect(document.activeElement?.textContent).toBe('Add to the team');
+        await userEvent.tab();
+        expect(document.activeElement?.textContent).toBe('Decline');
+    });
+
+    it('shows who answered, and no buttons, once the request is answered', () => {
+        setup({
+            notifications: [
+                {
+                    ...accessRequest,
+                    request: {
+                        ...accessRequest.request,
+                        status: 'approved',
+                        decidedBy: 'Camille R.',
+                    },
+                },
+                {
+                    ...accessRequest,
+                    id: 'r3',
+                    request: {
+                        ...accessRequest.request,
+                        status: 'declined',
+                        decidedBy: 'Camille R.',
+                    },
+                },
+            ],
+            onAccessRequest: vi.fn(),
+        });
+
+        expect(screen.getByText(/Added by Camille R\./)).toBeTruthy();
+        expect(screen.getByText(/Declined by Camille R\./)).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Add to the team' }),
+        ).toBeNull();
+    });
+
+    it('says "by you" for an answer given from this bell', () => {
+        setup({
+            notifications: [
+                {
+                    ...accessRequest,
+                    request: {
+                        ...accessRequest.request,
+                        status: 'approved',
+                        decidedBy: null,
+                        decidedByYou: true,
+                    },
+                },
+            ],
+        });
+
+        expect(screen.getByText(/Added by you/)).toBeTruthy();
+    });
+
+    it('offers no answer without a handler', () => {
+        setup({ notifications: [accessRequest] });
+
+        expect(
+            screen.queryByRole('button', { name: 'Add to the team' }),
+        ).toBeNull();
+    });
+
+    it('tells the requester the outcome, with a link to the team', () => {
+        setup({
+            notifications: [added, { ...added, id: 'r4', outcome: 'declined' }],
+        });
+
+        expect(
+            screen
+                .getByRole('link', { name: 'You were added to Atlas' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/atlas');
+        expect(
+            screen.getByRole('link', {
+                name: 'Your request to join Atlas was declined',
+            }),
+        ).toBeTruthy();
+    });
+
+    it('ignores a kind it does not know', () => {
+        setup({
+            notifications: [
+                accessRequest,
+                { ...added, id: 'x', kind: 'something_new' } as never,
+            ],
+        });
+
+        expect(screen.getAllByRole('listitem')).toHaveLength(1);
     });
 });
 
