@@ -35,15 +35,15 @@ The "Back end" lines were written from the models and controllers read while rev
 
 ## Surveys — plan 19
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| SV-1 | Standalone survey, and the Poll type of the "New session" dialog | ScreenSurvey (builder, answer, results); ScreenSessionCreate (Poll tile) | D-09 (Poll), D-22 | A survey belongs to a retro today (`surveys.retro_id`): a survey owned by a team, with its own page, guest link and channel | — |
-| SV-2 | Multi-question builder (reorder, duplicate, required) | ScreenSurvey a | D-22 | One question per survey today: a questions table under a survey, with positions | SV-1 |
-| SV-3 | Scale (1–5) and NPS (0–10) questions and their results | ScreenSurvey a, b, c | D-22 | `SurveyKind` has no scale or NPS case; results need a mean and an NPS score | SV-2 |
-| SV-4 | Compare with a previous survey; CSV export | ScreenSurvey c | D-22 | No link between two surveys; no export route | SV-1 |
-| SV-5 | Health check as a default survey template; the dedicated retro phase goes | none (the mockups have no health-check phase) | D-03 | Health statements, answers and the trend are their own tables and a `RetroPhase` case: a migration of that data, of the team trend (B23) and of the stepper | SV-1, SV-3 |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| SV-1 | Standalone survey, and the Poll type of the "New session" dialog | ScreenSurvey (builder, answer, results); ScreenSessionCreate (Poll tile) | D-09 (Poll), D-22 | A survey belongs to a retro today (`surveys.retro_id`): a survey owned by a team, with its own page, guest link and channel | — | done, plan 19 |
+| SV-2 | Multi-question builder (reorder, duplicate, required) | ScreenSurvey a | D-22 | One question per survey today: a questions table under a survey, with positions | SV-1 | done, plan 19 |
+| SV-3 | Scale (1–5) and NPS (0–10) questions and their results | ScreenSurvey a, b, c | D-22 | `SurveyKind` has no scale or NPS case; results need a mean and an NPS score | SV-2 | done, plan 19 |
+| SV-4 | Compare with a previous survey; CSV export | ScreenSurvey c | D-22 | No link between two surveys; no export route | SV-1 | done, plan 19 |
+| SV-5 | Health check as a default survey template; the dedicated retro phase goes | none (the mockups have no health-check phase) | D-03 | Health statements, answers and the trend are their own tables and a `RetroPhase` case: a migration of that data, of the team trend (B23) and of the stepper | SV-1, SV-3 | done, plan 19 |
 
-Not requested, staying backlog: builder settings (anonymity modes, close date, threshold), "send to whiteboard".
+Not requested, staying backlog (spec `2026-10-19-standalone-surveys-design.md` §13): anonymity modes; close date and automatic close; a threshold setting; saved survey templates and "From a template…"; "Send to whiteboard"; keywords; the "Other" option; per-question length; MCP survey tools and a token scope; a survey source for action items (D-19); hand-over; scheduling; a live list of surveys on the team page; moving the retro surveys onto the team-survey tables; changing one's health-check answers after sending them.
 
 ## Whiteboard
 

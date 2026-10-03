@@ -52,6 +52,8 @@ docker compose -f compose.production.yaml pull && docker compose -f compose.prod
 
 Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
 
+Upgrading to the release with team surveys: the retro's health-check phase is gone and every health check becomes a team survey. Health scores are now read on 1 to 5; scores given on the old 1-to-10 scale are kept as given and read halved. Right after the migrations of this release, run `php artisan surveys:verify-health-import` (in the application container: `docker compose -f compose.production.yaml exec app php artisan surveys:verify-health-import`): it compares the old and the new health tables retro by retro and fails on any difference. The old tables are kept for one release.
+
 ### SERVER_NAME
 
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:

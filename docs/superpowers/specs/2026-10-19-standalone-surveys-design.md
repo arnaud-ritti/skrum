@@ -538,7 +538,7 @@ The body above is written on the option marked **taken**. The plan carries a tab
 
 **8. What the CSV holds.** — **taken: A.** One row per respondent, unnamed, in an order that tells nothing, available once the survey is closed. B (aggregates only) and C (rows at any time) are not built.
 
-New with revision v2:
+New with revision v2. The owner gave the project an autonomy mandate on 2026-10-02: items 9 to 12 were taken on the option recommended below (logged in the SDD ledger of plan 19) and are built that way; the health-check header button with no mockup (P19-16 of the plan) is built from the sibling buttons of the session header.
 
 **9. Can a participant change health-check answers once sent?**
 - A. No: the form is read-only once sent, as the mockup's sent state; a wrong score stays. **Taken.** Faithful to the mockup; one submission per person is simple to prove under concurrency.

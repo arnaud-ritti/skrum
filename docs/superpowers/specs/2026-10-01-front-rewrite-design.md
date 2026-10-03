@@ -49,7 +49,7 @@ The front end still carries the Laravel starter kit: stock shadcn neutral tokens
 | ⌘K | Navigation, commands and content search (new route). |
 | Column colours | `ColumnColor` is extended to the eight design-system colours. |
 | GIF providers | Tenor stays supported by the existing proxy; attribution follows the active provider. |
-| Health check phase | Stays as an optional first phase through the rewrite. The mockups omit it; removing it would lose a feature. Plan 19 turns the health check into a default survey template and removes the dedicated phase. |
+| Health check phase | Stays as an optional first phase through the rewrite. The mockups omit it; removing it would lose a feature. Plan 19 turns the health check into a default survey template and removes the dedicated phase. **Done by plan 19** (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md`): the phase is gone; a health check is a team survey, run as a Poll or attached to a retro and answered from a header button, scored 1 to 5. |
 
 ### 4.1 Dependencies
 
@@ -135,9 +135,9 @@ A live session shows a lost connection as a full-width banner under the header (
 
 ### 6.4 Single models
 
-- **Retro phases**: Health check (optional) → Icebreaker (optional) → Writing → Grouping → Voting → Discussing → Actions → ROTI → Completed (session-end screen).
+- **Retro phases**: Health check (optional, removed by plan 19: see `docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §11.4) → Icebreaker (optional) → Writing → Grouping → Voting → Discussing → Actions → ROTI → Completed (session-end screen).
 - **Poker**: one room, the oval table, with the story queue on the right and the deck at the bottom. Watch only and rounds are part of it. The facilitator's actions (Reveal cards, Re-vote, Estimate, Save estimate, Next task) are in the dock, as the mockup shows. The reveal button is named "Reveal cards".
-- **Session creation**: one "New session" trigger; the type is chosen in the dialog among four: Retrospective, Planning poker, Whiteboard, Icebreaker (B18). The mockup's fifth type, Poll, arrives with the standalone survey of plan 19; the dialog leaves its place. The retro form shows five shortcut cards (the team's most used templates, B17) and "Browse", which opens the full template picker.
+- **Session creation**: one "New session" trigger; the type is chosen in the dialog among four: Retrospective, Planning poker, Whiteboard, Icebreaker (B18). The mockup's fifth type, Poll, arrives with the standalone survey of plan 19; the dialog leaves its place. Plan 19 has added it as the fifth tile (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §9.1). The retro form shows five shortcut cards (the team's most used templates, B17) and "Browse", which opens the full template picker.
 - **Guest link**: its controls (allow guests, copy, create a new link) live in the Share dialog only, on every session type; "Create a new link" asks for confirmation.
 - **Discussion (retro)**: the topics list only. A topic is a group or a lone card; the list is sorted by votes. Each topic keeps the controls its card had on the board: comments, reactions, highlight, and its action items. No feature of the discussing board is lost; the columns view remains on the Board tab of the completed retro.
 - **Destructive actions** ask for confirmation in a dialog: deleting an action item, removing a team member, revoking an invitation, deleting a session, a deck, a retro template or a whiteboard template, creating a new guest link. Deleting a workspace and leaving one ask for the typed name. Deleting a retro template says "Retros already created from it are not affected."
@@ -262,12 +262,12 @@ Each item is approved by this spec once the spec is approved. Nothing else on th
 | B15 | Custom error pages. 403, 404, 419, 429 and 500 are Inertia pages on the design system, rendered by the exception handler: 419 offers "Reload", 429 says when to retry when the response carries `Retry-After`. 503 is a static Blade view (`resources/views/errors/503.blade.php`): inline styles taken from the design tokens, the default brand, no script, and no access to the database, the cache or the session, so that it serves `php artisan down` and any other 503. The handler leaves JSON requests untouched (`expectsJson()`), so the JSON endpoints of the live pages and the MCP server keep their status codes and bodies. The 500 page renders without database-backed shared props and shows the request id (B36). In debug mode 500 keeps the framework page. | 5.11 |
 | B16 | Shared props for the team-centred sidebar: `currentTeam` (`id`, `name`, `membersCount`, or null) and `teams` (`id`, `name` of the teams of the current workspace visible to the user). The current team is the `team` route parameter when present; otherwise the last team visited, remembered in the session; otherwise the first visible team by name. Page props named `teams` with another shape are renamed: `teamGroups` on `settings/api-tokens` (in the preparation task of plan 18e, because the new sidebar reads the shared `teams`) and `filterTeams` on `action-items/index` (with its screen). | 1, 5 |
 | B17 | `teams/show`: `topTemplates`, the team's five most used retro templates, with a fixed fallback (§9.2). | 5.1 |
-| B18 | `teams/show`: props for the session type Icebreaker (§9.2). The Poll type is plan 19. | 5.1 |
+| B18 | `teams/show`: props for the session type Icebreaker (§9.2). The Poll type is plan 19 (built: `docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §9.1). | 5.1 |
 | B19 | `retros.started_at` and the duration of the session-end statistics (§9.2). | 5.2 |
 | B20 | "+2 min" extends a running timer: retro, poker, game room, whiteboard (§9.2). | 5.2, 5.3, 5.6, 5.7 |
 | B21 | Saved decks page: route, default deck, duplicate, usage count (§9.2). | 5.1 |
 | B22 | `/dashboard` redirects to the current team's page (§9.2). | 5.4 |
-| B23 | `teams/show`: `moodTrend`, the team's mood and ROTI across its last retros (§9.2). | 5.4 |
+| B23 | `teams/show`: `moodTrend`, the team's mood and ROTI across its last retros (§9.2). Since plan 19 the mood is read on the health scale of 5 and counts the health checks run as surveys (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §11.5, §11.9). | 5.4 |
 | B24 | `teams/show`: `avatarUrl` on `members` and `availableMembers` (§9.2). | 5.4 |
 | B25 | `action-items/index`: `counts` per status (§9.2). | 5.5 |
 | B26 | Drawing ink: black and the eight theme colours; old drawings keep theirs (§9.2). | 5.6 |
@@ -435,7 +435,7 @@ Added by rule 13 of §5: these elements were omitted by the first plan because n
 
 ## 10. Backlog (out of scope, not rendered)
 
-Device sessions with geolocation; linked accounts; password breach check and "last changed"; user-chosen presence colour; profile photo upload; reduced-motion account setting; resumable four-step onboarding; team colour, slug, description, owner and observer roles; team invite link with expiry; default facilitators and rotation; access request from the 403 page; Sessions index with scheduling and drafts; team activity feed; current sprint and sprint entity; per-phase timers; duplicate detection and auto-grouping; undo last group; collaborative discussion notes; "finished voting" flag; ROTI nudge; action status `doing`; bulk action update and bulk Jira sync; actions sourced from whiteboards and surveys; Jira JQL import and story description in poker; similar stories; whiteboard comments, follow a user, convert stickies to actions, thumbnails; poker templates at workspace level; survey builder extras (anonymity modes, close date, threshold, compare to previous sprint, send to whiteboard, CSV); pinning a GIF to a retro; join by short code; admin sections General, SSO configuration, SMTP, Integrations, MCP keys, Licence, Users, Audit log, backups, maintenance message, version check; a landing page.
+Device sessions with geolocation; linked accounts; password breach check and "last changed"; user-chosen presence colour; profile photo upload; reduced-motion account setting; resumable four-step onboarding; team colour, slug, description, owner and observer roles; team invite link with expiry; default facilitators and rotation; access request from the 403 page; Sessions index with scheduling and drafts; team activity feed; current sprint and sprint entity; per-phase timers; duplicate detection and auto-grouping; undo last group; collaborative discussion notes; "finished voting" flag; ROTI nudge; action status `doing`; bulk action update and bulk Jira sync; actions sourced from whiteboards and surveys; Jira JQL import and story description in poker; similar stories; whiteboard comments, follow a user, convert stickies to actions, thumbnails; poker templates at workspace level; survey builder extras (anonymity modes, close date, threshold, compare to previous sprint, send to whiteboard, CSV; plan 19 built compare and CSV, the rest stays in its backlog, `docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §13); pinning a GIF to a retro; join by short code; admin sections General, SSO configuration, SMTP, Integrations, MCP keys, Licence, Users, Audit log, backups, maintenance message, version check; a landing page.
 
 Added on 2026-10-02 (shown by a mockup, sent to the backlog by the owner or without back end):
 
@@ -444,7 +444,7 @@ Added on 2026-10-02 (shown by a mockup, sent to the backlog by the owner or with
 - Team page: retro participant, card and action counts; member role; aggregated action list.
 - Action items: filters by priority, due date and source.
 - Games: `DeckSaved` / `DeckDeleted` realtime events; game settings beyond name, access, language and reactions.
-- Workspace: team description and activity on team tiles; template description, visibility, defaults, usage; the standalone survey and the Poll session type (plan 19).
+- Workspace: team description and activity on team tiles; template description, visibility, defaults, usage; the standalone survey and the Poll session type (plan 19, built: `docs/superpowers/specs/2026-10-19-standalone-surveys-design.md`).
 - Access: declining an invitation; the "status" and "help" links of the error mockups.
 
 Removed from this list because the application has them and goal 2 keeps them: account deletion (the profile page deletes the account), manual action creation outside a retro (the action-items page has "New action item").
