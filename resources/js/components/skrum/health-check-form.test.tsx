@@ -197,6 +197,16 @@ describe('HealthCheckForm', () => {
         expect(onSubmit).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps submit disabled and busy while the answers are being sent', async () => {
+        const { onSubmit } = setup({ a: 4, b: 2 }, { submitting: true });
+        const submit = screen.getByRole('button', { name: 'Submit answers' });
+
+        expect((submit as HTMLButtonElement).disabled).toBe(true);
+        expect(submit.getAttribute('aria-busy')).toBe('true');
+        await userEvent.click(submit);
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
     it('is read-only once submitted', async () => {
         const { onAnswer } = setup({ a: 4, b: 2 }, { submitted: true });
 

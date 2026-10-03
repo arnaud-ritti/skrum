@@ -51,6 +51,8 @@ export interface HealthCheckFormProps {
     /** Backlog: no submit endpoint; the button is rendered only when given. */
     onSubmit?: () => void;
     submitted?: boolean;
+    /** The answers are on their way: submit waits for the answer. */
+    submitting?: boolean;
     /** The board is closed for editing: every score is disabled. */
     disabled?: boolean;
     className?: string;
@@ -307,6 +309,7 @@ export function HealthCheckForm({
     onClear,
     onSubmit,
     submitted = false,
+    submitting = false,
     disabled = false,
     className,
 }: HealthCheckFormProps) {
@@ -431,7 +434,8 @@ export function HealthCheckForm({
                             <Button
                                 type="button"
                                 className="max-w-full"
-                                disabled={!complete || disabled}
+                                disabled={!complete || disabled || submitting}
+                                aria-busy={submitting || undefined}
                                 onClick={onSubmit}
                             >
                                 <span className="truncate">

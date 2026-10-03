@@ -12,7 +12,8 @@ import { useHealthCheckSubmission } from './use-health-check-submission';
 export function PhaseHealth() {
     const ctx = useBoard();
     const { t } = useTrans();
-    const { answers, setAnswer, submit } = useHealthCheckSubmission();
+    const { answers, setAnswer, submit, submitting } =
+        useHealthCheckSubmission();
     const healthCheck = ctx.board.healthCheck;
     const scale = healthCheck?.scale ?? 5;
 
@@ -42,6 +43,7 @@ export function PhaseHealth() {
                 answers={answers}
                 disabled={!ctx.isEditable || (healthCheck?.isClosed ?? true)}
                 submitted={healthCheck?.hasSubmitted ?? false}
+                submitting={submitting}
                 onAnswer={setAnswer}
                 onSubmit={() => void submit()}
             />
