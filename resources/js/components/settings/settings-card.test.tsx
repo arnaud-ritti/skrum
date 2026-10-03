@@ -114,4 +114,26 @@ describe('SettingsCard', () => {
         expect(header?.nextElementSibling).toBe(body);
         expect(body?.className).not.toContain('p-5');
     });
+
+    it('puts the action of the card beside its title, out of the card', () => {
+        render(
+            <SettingsCard
+                title="Active sessions"
+                description="Devices signed in to your account."
+                action={<button type="button">Sign out other sessions</button>}
+            >
+                <p>rows</p>
+            </SettingsCard>,
+        );
+
+        const region = screen.getByRole('region', { name: 'Active sessions' });
+        const action = within(region).getByRole('button', {
+            name: 'Sign out other sessions',
+        });
+
+        expect(action.closest('[data-slot="card"]')).toBeNull();
+        expect(
+            action.closest('[data-slot="settings-card-heading"]')?.textContent,
+        ).toContain('Active sessions');
+    });
 });

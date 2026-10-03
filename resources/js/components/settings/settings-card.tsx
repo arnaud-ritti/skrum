@@ -16,6 +16,8 @@ type SettingsCardProps = {
     tone?: 'default' | 'destructive';
     /** Row at the top of the card, above a rule: an icon, a name, a state. */
     header?: ReactNode;
+    /** Beside the title, out of the card: the action on the whole card. */
+    action?: ReactNode;
     /** The body has no padding and no gap: its children are full-width rows. */
     flush?: boolean;
     children: ReactNode;
@@ -27,6 +29,7 @@ export function SettingsCard({
     footer,
     tone = 'default',
     header,
+    action,
     flush = false,
     children,
 }: SettingsCardProps): ReactElement {
@@ -75,18 +78,24 @@ export function SettingsCard({
             aria-labelledby={titleId}
             className="flex min-w-0 flex-col gap-4"
         >
-            <div className="flex flex-col gap-0.5">
-                <h2
-                    id={titleId}
-                    className="text-xl font-title tracking-heading"
-                >
-                    {title}
-                </h2>
-                {description !== undefined && (
-                    <p className="text-sm text-muted-foreground">
-                        {description}
-                    </p>
-                )}
+            <div
+                data-slot="settings-card-heading"
+                className="flex min-w-0 flex-wrap items-end justify-between gap-3"
+            >
+                <div className="flex min-w-0 flex-1 basis-56 flex-col gap-0.5">
+                    <h2
+                        id={titleId}
+                        className="text-xl font-title tracking-heading"
+                    >
+                        {title}
+                    </h2>
+                    {description !== undefined && (
+                        <p className="text-sm text-muted-foreground">
+                            {description}
+                        </p>
+                    )}
+                </div>
+                {action}
             </div>
             <Card>
                 {header !== undefined && header !== null && (
