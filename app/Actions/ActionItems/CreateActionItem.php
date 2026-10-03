@@ -19,7 +19,7 @@ class CreateActionItem
      * through SuggestionGuard, team members outside a retro, and
      * CreateNextOccurrence for recurring successors.
      *
-     * @param  array<string, mixed>  $attributes  content, and optionally priority, due_on, recurrence, assignee_user_id, assignee_participant_id; from the system only: previous_occurrence_id, theme_name, subtasks
+     * @param  array<string, mixed>  $attributes  content, and optionally priority, due_on, recurrence, assignee_user_id, assignee_participant_id, card_id; from the system only: previous_occurrence_id, theme_name, subtasks
      */
     public function handle(Team $team, ?Retro $retro, ActionItemActor $author, array $attributes, ?RetroTheme $theme = null): ActionItem
     {
@@ -48,6 +48,7 @@ class CreateActionItem
             'created_by_user_id' => $author->user?->id,
             'theme_id' => $theme?->id,
             'theme_name' => $themeName,
+            'card_id' => $attributes['card_id'] ?? null,
         ]);
 
         /** @var array<int, string> $subtasks */
