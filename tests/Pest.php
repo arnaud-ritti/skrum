@@ -52,6 +52,8 @@ use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\InstanceConfiguration\ConfigurationCatalogue;
+use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
@@ -73,6 +75,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Tests\BrowserTestCase;
+use Tests\Support\UnreachableDatabase;
 use Tests\TestCase;
 
 /*
@@ -1944,4 +1947,44 @@ function jpegBytes(bool $withExif = true): string
     $scan = jpegSegment(0xDA, "\x01\x01\0\0\x3F\0")."\x12\x34";
 
     return "\xFF\xD8".$jfif.$exif.$iptc.$comment.$frame.$scan."\xFF\xD9";
+}
+
+/**
+ * Runs the callback while the default connection points at a closed port, then
+ * gives the test its own connection back.
+ */
+function withUnreachableDatabase(Closure $callback): void
+{
+    $default = config('database.default');
+
+    config([
+        'database.connections.unreachable' => UnreachableDatabase::config(),
+        'database.default' => 'unreachable',
+    ]);
+
+    try {
+        $callback();
+    } finally {
+        config(['database.default' => $default]);
+        DB::purge('unreachable');
+    }
+}
+
+/**
+ * Sets configuration as if the process had booted with that environment: an OIDC connection key
+ * is mirrored into services.oidc_* as the package's boot() does, and the baseline is captured again.
+ *
+ * @param  array<string, mixed>  $config
+ */
+function withEnvironmentConfiguration(array $config): void
+{
+    foreach ($config as $key => $value) {
+        config([$key => $value]);
+
+        if (preg_match('/^oidc\.connections\.(\w+)\.(\w+)$/', $key, $match) === 1) {
+            config(["services.oidc_{$match[1]}.{$match[2]}" => $value]);
+        }
+    }
+
+    app()->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
 }

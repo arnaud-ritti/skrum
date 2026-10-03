@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditEvent;
 use App\Models\EmailTwoFactorCode;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
@@ -39,11 +40,19 @@ Schedule::command('skrum:check-integrations')
     ->daily()
     ->onOneServer();
 
-Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class, MagicLink::class, EmailTwoFactorCode::class]])
+Schedule::command('model:prune', ['--model' => [AuditEvent::class, IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class, MagicLink::class, EmailTwoFactorCode::class]])
+    ->daily()
+    ->onOneServer();
+
+Schedule::command('skrum:check-for-update')
     ->daily()
     ->onOneServer();
 
 Schedule::command('skrum:prune-whiteboards')
     ->daily()
     ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command('skrum:heartbeat')
+    ->everyMinute()
     ->onOneServer();

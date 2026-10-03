@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppNotification } from '@/components/skrum/notifications-panel';
 import { useNotifications } from '@/hooks/use-notifications';
-import { retroRequest } from '@/lib/retro/api';
+import { retroRequest, RetroRequestError } from '@/lib/retro/api';
 
 const visit = vi.fn();
 const reload = vi.fn();
@@ -11,6 +11,12 @@ const privateChannel = vi.fn();
 let shared: { unreadCount: number } | null = { unreadCount: 2 };
 let echoConfigured = false;
 let received: (payload: { unreadCount?: number }) => void = () => {};
+const toast = vi.hoisted(() => ({
+    error: vi.fn(),
+    info: vi.fn(),
+}));
+
+vi.mock('sonner', () => ({ toast }));
 
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
@@ -96,6 +102,23 @@ const invitation: AppNotification = {
     href: '/invitations/secret-token',
 };
 
+const accessRequest = {
+    id: 'n4',
+    kind: 'access_request',
+    readAt: null,
+    createdAt: '2026-10-01T09:00:00Z',
+    actor: { name: 'Nadia K.', presence: 3, avatarUrl: '/avatars/n.svg' },
+    team: 'Atlas',
+    excerpt: null,
+    request: {
+        id: 'req-1',
+        status: 'pending',
+        decidedBy: null,
+        updateUrl: '/w/nordlys/teams/atlas/access-requests/req-1',
+    },
+    href: '/w/nordlys/teams/atlas',
+} satisfies AppNotification;
+
 function page(
     notifications: AppNotification[],
     unreadCount: number,
@@ -107,6 +130,8 @@ function page(
 describe('useNotifications', () => {
     beforeEach(() => {
         request.mockReset();
+        toast.error.mockReset();
+        toast.info.mockReset();
         visit.mockReset();
         reload.mockReset();
         leave.mockReset();
@@ -350,5 +375,111 @@ describe('useNotifications', () => {
 
         expect(request).toHaveBeenCalledTimes(3);
         expect(result.current.unreadCount).toBe(3);
+    });
+
+    it('adds the requester from the bell and shows the answer at once', async () => {
+        let resolveAnswer: (value: unknown) => void = () => {};
+        request.mockResolvedValueOnce(page([accessRequest], 1));
+        request.mockImplementationOnce(
+            () => new Promise((resolve) => (resolveAnswer = resolve)) as never,
+        );
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        let answering: Promise<void> = Promise.resolve();
+
+        act(() => {
+            answering = result.current.answerAccessRequest(
+                accessRequest,
+                'approve',
+            );
+        });
+
+        expect(request.mock.calls[1][0]).toEqual({
+            url: '/w/nordlys/teams/atlas/access-requests/req-1',
+            method: 'patch',
+        });
+        expect(request.mock.calls[1][1]).toEqual({ decision: 'approve' });
+        expect(result.current.notifications[0]).toMatchObject({
+            request: { status: 'approved', decidedByYou: true },
+        });
+
+        await act(async () => {
+            resolveAnswer({ status: 'approved' });
+            await answering;
+        });
+
+        expect(result.current.notifications[0]).toMatchObject({
+            request: { status: 'approved', decidedByYou: true },
+        });
+        expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it('rolls an answer back on a refusal and shows the status the server holds', async () => {
+        const answeredByCamille = {
+            ...accessRequest,
+            request: {
+                ...accessRequest.request,
+                status: 'declined',
+                decidedBy: 'Camille R.',
+            },
+        } satisfies AppNotification;
+        request.mockResolvedValueOnce(page([accessRequest], 1));
+        request.mockRejectedValueOnce(
+            new RetroRequestError(422, 'This request was already answered.'),
+        );
+        request.mockResolvedValueOnce(page([answeredByCamille], 1));
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        await act(() =>
+            result.current.answerAccessRequest(accessRequest, 'approve'),
+        );
+
+        expect(toast.error).toHaveBeenCalledWith(
+            'This request was already answered.',
+        );
+        await waitFor(() =>
+            expect(result.current.notifications).toEqual([answeredByCamille]),
+        );
+    });
+
+    it('rolls an answer back when the request fails', async () => {
+        request.mockResolvedValueOnce(page([accessRequest], 1));
+        request.mockRejectedValueOnce(new Error('offline'));
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        await act(() =>
+            result.current.answerAccessRequest(accessRequest, 'decline'),
+        );
+
+        expect(result.current.notifications).toEqual([accessRequest]);
+        expect(toast.error).toHaveBeenCalledWith(
+            'Something went wrong. Please try again.',
+        );
+    });
+
+    it('shows a decline when the requester has left the workspace', async () => {
+        request.mockResolvedValueOnce(page([accessRequest], 1));
+        request.mockResolvedValueOnce({
+            status: 'declined',
+            reason: 'leftWorkspace',
+            message:
+                'They have left the workspace, so the request was declined.',
+        } as never);
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        await act(() =>
+            result.current.answerAccessRequest(accessRequest, 'approve'),
+        );
+
+        expect(result.current.notifications[0]).toMatchObject({
+            request: { status: 'declined', decidedByYou: true },
+        });
+        expect(toast.info).toHaveBeenCalledWith(
+            'They have left the workspace, so the request was declined.',
+        );
     });
 });

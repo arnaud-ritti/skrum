@@ -148,6 +148,8 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 Answered by the owner on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`). Reasons: **F** false or unsafe, **N** no such data or concept, **S** this spec, **O** an owner's answer, **E** the owner's rule "existing features kept". A difference found in Task 35 that is not in this table is fixed, or added as a new row and reported (the build does not stop for it).
 
+Rows P29-14 to P29-23 were added by Task 35 from the comparison of the captures (`tests/visual/__screenshots__/admin-*`, `access-error-*`, `status-page-*`, light, 1440, French) with `ScreenSettings` frame b and `ScreenErrors` (FR); none was read by the owner yet. Not rows: the "Secret modifié il y a 12 jours" line, absent from `admin-sso-stored-secret` because Task 37 had not run when the captures were taken (the flattened run takes the tasks in numeric order); and the bell, which Task 34 does not capture.
+
 | # | Screen | Mockup element | Built | Reason | Status |
 |---|---|---|---|---|---|
 | P29-01 | Admin nav | no "Admins" entry | "Admins" kept under Supervision, after Users | existing feature kept | approved 2026-10-03 (as listed) |
@@ -163,6 +165,16 @@ Answered by the owner on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`). Re
 | P29-11 | Admin topbar | domain `retro.atlas-corp.fr` in the topbar | host in the nav footer (as today) | existing (18e) | approved 2026-10-03 (as proposed, rec.) |
 | P29-12 | SSO, SMTP, integration dialog | no source line, no confirmation line | under each field its source ("From the environment" / "Saved here") and "Use the environment value"; above the form "Confirm your password to change these settings." while the confirmation is older than 5 minutes; the card footer "Every change is recorded in the audit log and mailed to every instance admin." | O: decision 1 B and its safeguards (S2, S4, S7) | approved 2026-10-03 (as listed) |
 | P29-13 | SSO | one "SSO / OIDC" card | one card per existing provider (Google, GitHub, Microsoft Entra, OIDC), each in the mockup's card layout (secret with its eye, the locked fallback switch row, the "Secret changed" footer line); "Test the connection" on Entra and OIDC only (Google and GitHub publish no discovery document to test) | E: four providers exist today; split out of the obsolete P29-02 | approved 2026-10-03 (O/E row, by the owner's rule) |
+| P29-14 | SSO | "Activée" switch in the card header | badge "Configuré" / "Non configuré"; a provider is on as soon as its client ID and secret are set | N: a provider has no on/off of its own (`SsoProvider::isEnabled()` reads the values); spec §9.3 | found at capture (Task 35), reported to the owner |
+| P29-15 | SSO | test result "Connexion réussie · 184 ms · claims reçus : email, name, groups" | "Connexion réussie · 184 ms · émetteur <issuer>" and "Dernier test …" under it | N: the test reads the discovery document and signs nobody in, so no claim is known; spec §9.3 | found at capture (Task 35), reported to the owner |
+| P29-16 | SSO | one "Annuler / Enregistrer" pair, in the topbar | each provider card also has "Annuler / Enregistrer" in its footer; the topbar's pair belongs to the card being edited | S: one provider = one section = one audited write with its own alert mail (S3, S4); spec §9.3 "Save per card" | found at capture (Task 35), reported to the owner |
+| P29-17 | SSO | Client ID and Client secret side by side; nothing under the provider card | fields stacked (half-width cards, P29-13); the OIDC card's "Libellé du bouton" field; the existing "Authentification unique" card (`sso_required`, its warnings) below the providers | E: the OIDC button label and `sso_required` exist (18f); spec §9.3 "Above the existing `sso_required` form" | found at capture (Task 35), reported to the owner |
+| P29-18 | SMTP | no mailer choice; one "Expéditeur" field "Atlas Rétros <retro@…>"; encryption "STARTTLS" | "Envoi" choice (SMTP / "Ne pas envoyer : écrire les e-mails dans le journal"); "Adresse de l'expéditeur" and "Nom de l'expéditeur" as two fields; encryption labels that name the scheme ("STARTTLS si proposé (smtp)") | S: spec §6.8 and §9.4 (`mail.default` is `smtp` or `log`; `mail.from.address` and `mail.from.name` are two keys) | found at capture (Task 35), reported to the owner |
+| P29-19 | Integrations | three apps (Slack, Jira, Linear) with brand logos; nav counter "2/3" | the nine existing providers (Slack, Telegram, Jira, Linear, Jira Data Center, GitHub, Microsoft Teams, Mattermost, Webhook) with letter tiles; nav counter "turned on / configured" | E: nine integrations exist; the counter counts instance-level states (P29-03) | found at capture (Task 35), reported to the owner |
+| P29-20 | MCP keys | columns Nom, Portée, Créée, Dernière utilisation; scopes `actions:read`, `sessions:read`… | adds "Équipe" and "Expire"; the real scopes (`mcp:read`, `mcp:write`, `mcp:delete`) | E: a key has a team and an expiry (`personal_access_tokens.team_id`, `expires_at`); F: the mockup's scopes do not exist | found at capture (Task 35), reported to the owner |
+| P29-21 | General, Users, Audit log | entries of the nav only; no section drawn | built from spec §9.2, §9.8, §9.9 with the mockup's card (`.st-card`) and table (`sk-table`) patterns | N: the mockup draws no content for them | found at capture (Task 35), reported to the owner |
+| P29-22 | 403 | one-line message field | a textarea (up to 500 characters) | S: the message is free text of up to 500 characters (`RequestTeamAccess::MaxMessageLength`) | found at capture (Task 35), reported to the owner |
+| P29-23 | 503 | overline "Maintenance programmée", title with the host ("skrum.nordlys.fr est en cours de mise à jour"), "14 h 30", "heure de Paris (CEST)" | overline "Maintenance", title with the instance name, the time formatted by the browser (`Intl`, "12:30") in the visitor's own time zone ("ton heure (UTC)") | E: overline and title as plan 18e built the static page; N: a static page knows neither the admin's time zone nor whether the downtime was planned | found at capture (Task 35), reported to the owner |
 
 ---
 
@@ -3385,7 +3397,7 @@ class ApplyInstanceConfiguration
 }
 ```
 
-`bootstrap/app.php`: `$middleware->prepend(AssignRequestId::class);` becomes `$middleware->prepend([AssignRequestId::class, ApplyInstanceConfiguration::class]);` (re-read the method's signature; the order is request id first). Global, so the login page, the status page, the integration callbacks, the inbound webhooks and the MCP route all see it.
+`bootstrap/app.php`: `$middleware->append(ApplyInstanceConfiguration::class);` beside `$middleware->prepend(AssignRequestId::class);`: after the maintenance check, so a request that maintenance turns away reads no setting (review of Tasks 11 to 20). Global, so the login page, the status page, the integration callbacks, the inbound webhooks and the MCP route all see it.
 
 Listener (auto-discovered; re-read `bootstrap/app.php` `withEvents`):
 
@@ -3879,11 +3891,12 @@ it('S5: keeps no secret in the session after a refused write', function (Closure
 
 **Files:**
 - Create: `app/Actions/Admin/PresentMailSettings.php`, `app/Http/Controllers/Admin/MailSettingsController.php`, `MailTestsController.php`, `app/Http/Requests/Admin/MailSettingsUpdateRequest.php`, `MailTestStoreRequest.php`, `app/Mail/InstanceTestMail.php`, `resources/views/mail/instance-test.blade.php`, `resources/js/pages/admin/mail.tsx` (thin)
-- Modify: `routes/admin.php`, `tests/Feature/InstanceConfiguration/ConfigurationRoutesTest.php` (one dataset row)
+- Modify: `routes/admin.php`, `tests/Feature/InstanceConfiguration/ConfigurationRoutesTest.php` (one dataset row), `app/Mail/InstanceConfigurationChangedMail.php` (`sectionUrl()`: the `Smtp` section links to `admin.mail.show`, with an assertion in the mail test; review of Tasks 11 to 20)
 - Test: `tests/Feature/Admin/MailSectionTest.php`
 
 **Interfaces:**
 - Consumes: Tasks 17, 18, 19.
+- `confirmUrl` follows Task 20's fix: a GET route (like `admin.signInConfirmation.create`) sets the intended URL and redirects to `password.confirm`; the section page itself never writes `url.intended`.
 - Produces: `admin/mail` props `{mail: {delivering: bool, fields: <describe() of Smtp>}, lastTest: ?{at, ok, to}, defaultRecipient: string, confirmedUntil: ?string, confirmUrl: string, updateUrl: string}`; route `admin.mail.update` (PUT, fields of `Smtp` + `clear[]`); route `admin.mailTests.store` (POST `{to}`).
 
 - [ ] **Step 1: Write the failing tests**

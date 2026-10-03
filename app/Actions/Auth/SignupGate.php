@@ -5,10 +5,13 @@ namespace App\Actions\Auth;
 use App\Enums\SignupMode;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Support\InstanceSettings;
 use Illuminate\Support\Str;
 
 class SignupGate
 {
+    public function __construct(private InstanceSettings $settings) {}
+
     public function allows(string $email, ?WorkspaceInvitation $invitation = null): bool
     {
         if ($this->isFirstUser()) {
@@ -19,7 +22,7 @@ class SignupGate
             return true;
         }
 
-        return match (SignupMode::fromConfig()) {
+        return match ($this->mode()) {
             SignupMode::Open => true,
             SignupMode::Invite => false,
             SignupMode::Domain => $this->hasAllowedDomain($email),
@@ -36,7 +39,13 @@ class SignupGate
             return true;
         }
 
-        return SignupMode::fromConfig() !== SignupMode::Invite;
+        return $this->mode() !== SignupMode::Invite;
+    }
+
+    /** The mode stored in General wins over the environment. */
+    private function mode(): SignupMode
+    {
+        return SignupMode::tryFrom($this->settings->signupMode() ?? '') ?? SignupMode::fromConfig();
     }
 
     private function isFirstUser(): bool
@@ -67,6 +76,6 @@ class SignupGate
 
         $domain = Str::lower($domain);
 
-        return in_array($domain, config('skrum.allowed_email_domains'), true);
+        return in_array($domain, $this->settings->allowedEmailDomains() ?? config('skrum.allowed_email_domains'), true);
     }
 }

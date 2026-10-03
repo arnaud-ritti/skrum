@@ -25,8 +25,8 @@ import { edit as notificationSettings } from '@/routes/notificationPreferences';
 const PopoverMinWidthPx = 640;
 
 /**
- * The bell of the topbar. Nothing is accepted from here: an invitation
- * links to its page, so the panel is given no `onInvite`.
+ * The bell of the topbar. An invitation links to its page, so the panel is
+ * given no `onInvite`; a request to join a team is answered from here.
  */
 export function NotificationsMenu() {
     const { t } = useTrans();
@@ -73,6 +73,9 @@ export function NotificationsMenu() {
                 onOpenChange(false);
                 void model.open(notification);
             }}
+            onAccessRequest={(notification, decision) =>
+                void model.answerAccessRequest(notification, decision)
+            }
             settingsHref={notificationSettings.url()}
             failed={model.failed}
             onRetry={() => void model.load()}

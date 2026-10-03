@@ -5,6 +5,14 @@ return [
 
     'version' => env('SKRUM_VERSION', '1.0.0'),
 
+    'licence' => 'AGPL-3.0',
+
+    'licence_url' => 'https://github.com/arnaud-ritti/skrum/blob/main/LICENSE',
+
+    'repository_url' => 'https://github.com/arnaud-ritti/skrum',
+
+    'update_feed' => env('SKRUM_UPDATE_FEED', 'https://api.github.com/repos/arnaud-ritti/skrum/releases/latest'),
+
     'signup_mode' => env('SKRUM_SIGNUP_MODE', 'invite'),
 
     'allowed_email_domains' => array_values(array_filter(array_map(

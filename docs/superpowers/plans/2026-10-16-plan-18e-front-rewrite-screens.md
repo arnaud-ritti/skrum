@@ -317,10 +317,10 @@ Reasons: **F** false or unsafe statement; **A** accessibility rule of spec §5; 
 | D-28 | Login, register | "Remember me for 30 days" (built: "Remember me"); "Free up to 10 participants"; the terms sentence; "Privacy · Terms"; "Team name" on register; version in the footer | F; N | backlog (not requested) |
 | D-29 | Login | the magic-link button and tab | built in plan 18f (B12); 11.2 leaves their place | plan 18f |
 | D-30 | Invitation | team name and colour, inviter's message, "Decline"; "already in n teams" | N | IN-1, IN-2, IN-3; the last: backlog |
-| D-31 | Error pages | "Instance status" link; the access request of the 403 page; "Back at" and the admin message of the 503 page; the version line; "Help" link | F; N | AD-2 to AD-5; "Help": backlog |
+| D-31 | Error pages | "Help" link. The "Instance status" link, the access request of the 403 page, "Back at" and the admin message of the 503 page and the version line were built by plan 29 (AD-2 to AD-5; the version for signed-in users only and none on the 503 and status pages, P29-07; its other deviations P29-05, P29-06, P29-10, P29-22, P29-23) | N | "Help": backlog |
 | D-33 | Onboarding | the four-step onboarding | N | ON-1 |
 | D-34 | `/` | the landing page | O: BLOCK-3 | stays |
-| D-35 | Admin | sections other than Branding and Admins; the version line | N | AD-1, AD-2 |
+| D-35 | Admin | nothing left: the sections General, SSO, SMTP, Integrations, MCP keys, Licence, Users and Audit log and the version line were built by plan 29 (AD-1, AD-2; its deviations P29-01 to P29-04, P29-08, P29-09, P29-11 to P29-21) | N | done, plan 29 |
 | D-36 | Whiteboard, phone | the read mode is a local view mode, not a permission | N (as written in the spec, confirmed) | stays |
 
 Rows D-37 to D-46 were added by the review of Group 1, D-47 to D-51 by the review of lane W (they were numbered D-37 to D-41 in that lane and renumbered at the merge), D-52 to D-63 by the integration of wave 2a for the access and games screens (2026-10-02). **The owner has not read them yet**: the reason is the one proposed, and gate G-deviations stays open on them until the owner's word. A difference that the owner refuses is brought back to the mockup.

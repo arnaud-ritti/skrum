@@ -61,7 +61,10 @@ RUN mkdir -p storage/app/private storage/app/public storage/framework/cache/data
 
 FROM base AS runtime
 
+ARG SKRUM_VERSION=dev
+
 ENV APP_ENV=production \
+    SKRUM_VERSION=${SKRUM_VERSION} \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
     SERVER_NAME=:80 \

@@ -1,6 +1,6 @@
 # Skrum
 
-Skrum is an open-source, self-hostable realtime retrospective board. It is multi-tenant (workspaces contain teams, teams run retros), lets guests join a retro through a link, and is available in English, French, Spanish and German.
+Skrum is an open-source, self-hostable realtime retrospective board. It is multi-tenant (workspaces contain teams, teams run retros), lets guests join a retro through a link, and is available in English, French, Spanish and German. It is released under the GNU Affero General Public License v3.0 (AGPL-3.0-only, see [`LICENSE`](LICENSE)).
 
 ## Run with Docker
 
@@ -52,6 +52,10 @@ docker compose -f compose.production.yaml pull && docker compose -f compose.prod
 
 Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
 
+To show a maintenance page while you work, run `php artisan down --retry=<seconds>` in the application container (`docker compose -f compose.production.yaml exec app php artisan down --retry=1800`) and `php artisan up` when done. The page shows the time of return taken from `--retry`, and the maintenance message saved in Administration › General (the message in force when `down` runs, with its author); it reloads by itself every 30 seconds and links to the status page.
+
+The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
+
 Upgrading to the release with team surveys: the retro's health-check phase is gone and every health check becomes a team survey. Health scores are now read on 1 to 5; scores given on the old 1-to-10 scale are kept as given and read halved. Right after the migrations of this release, run `php artisan surveys:verify-health-import` (in the application container: `docker compose -f compose.production.yaml exec app php artisan surveys:verify-health-import`): it compares the old and the new health tables retro by retro and fails on any difference. The old tables are kept for one release.
 
 Upgrading to the release with account photos, active sessions and linked accounts:
@@ -96,6 +100,9 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 | `SKRUM_MCP_WRITE_RATE_LIMIT`                                       | MCP write and delete tool calls per minute per API token (default `30`).                                                                 |
 | `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`.                                         |
 | `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                   |
+| `SLACK_*`, `JIRA_*`, `LINEAR_*`… (see `.env.example`)              | Integration apps; a provider is available when its app credentials are set.                                                              |
+| `SKRUM_VERSION`                                                    | Version shown in the admin and on the error pages; the published images set it.                                                          |
+| `SKRUM_UPDATE_FEED`                                                | Release feed asked by the optional update check (default: the project's latest GitHub release).                                          |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. The container refuses to start without them.                                                                         |
 | `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave empty in production.                                                                                       |
 | `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                      |
@@ -104,9 +111,11 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 
 `APP_KEY` is also required; the container stops with an explanation if it is missing.
 
+The SSO providers, the SMTP settings and the integration apps can also be set in Administration (SSO authentication, SMTP, Integrations). A value saved there wins over its environment variable, field by field; the environment stays the default, and "Use the environment value" returns to it. Saving needs a password confirmation of less than five minutes, every change is written to the audit log, and every SSO or SMTP change is mailed to every instance admin. Saved secrets are encrypted with `APP_KEY`: after rotating `APP_KEY` they can no longer be read, the instance falls back to the environment values and the admin shows a warning; enter them again. Some keys stay environment only and have no field in the admin: `APP_URL` and the redirect URIs derived from it, `OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS`, `OUTGOING_WEBHOOKS_ALLOW_HTTP`, `GITHUB_APP_PRIVATE_KEY_PATH`, `INTEGRATIONS_*`, mailers other than SMTP and `log`, and the Laravel Slack notification channel keys (`SLACK_BOT_USER_*`).
+
 ## Processes
 
-The image runs FrankenPHP with Laravel Octane. s6-overlay supervises four services: Octane, Reverb, the queue worker and the scheduler. Each is restarted after a crash. Migrations run once at start-up. The compose file sets `stop_grace_period: 20s` because s6 waits up to 10 seconds for services on shutdown, and Docker's default of 10 seconds would kill the container first.
+The image runs FrankenPHP with Laravel Octane. s6-overlay supervises four services: Octane, Reverb, the queue worker and the scheduler. Each is restarted after a crash. Migrations run once at start-up. The scheduler runs `skrum:heartbeat` every minute; the public page `/status` reads those heartbeats to tell whether the queue and the scheduler are alive, beside the database, cache, realtime and mail checks. It answers during maintenance too. The compose file sets `stop_grace_period: 20s` because s6 waits up to 10 seconds for services on shutdown, and Docker's default of 10 seconds would kill the container first.
 
 ## Connect an AI assistant
 

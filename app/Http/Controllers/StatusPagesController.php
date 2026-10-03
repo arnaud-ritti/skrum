@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Support\Status\InstanceStatus;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+class StatusPagesController extends Controller
+{
+    public function show(Request $request, InstanceStatus $instanceStatus): Response
+    {
+        $components = $instanceStatus->check();
+
+        return response()
+            ->view('status', [
+                'components' => $components,
+                'overall' => $instanceStatus->overall($components),
+                'checkedAt' => now('UTC')->format('H:i'),
+                'locale' => $this->locale($request),
+            ])
+            ->header('Cache-Control', 'no-store');
+    }
+
+    private function locale(Request $request): string
+    {
+        if (blank($request->header('Accept-Language'))) {
+            return app()->getLocale();
+        }
+
+        return (string) $request->getPreferredLanguage(array_unique([app()->getLocale(), ...config('skrum.locales')]));
+    }
+}

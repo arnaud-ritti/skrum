@@ -1,3 +1,4 @@
+import type { SsoTestResult } from '@/lib/admin/types';
 import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
 import type { Brand } from '@/types/brand';
@@ -25,6 +26,8 @@ declare module '@inertiajs/core' {
             signInAlert: 'sso_required_ignored' | null;
             /** True for instance admins while only single sign-on signs in. */
             ssoInForce: boolean;
+            /** Sent to instance admins only: the providers turned on, out of those configured. */
+            integrationCounts: { enabled: number; configured: number } | null;
             auth: Auth;
             sidebarOpen: boolean;
             locale: string;
@@ -37,12 +40,21 @@ declare module '@inertiajs/core' {
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
             features: { mcp: boolean; integrations: boolean };
+            /** Null when signed out. */
+            instanceVersion: string | null;
+            /** Sent to instance admins only. */
+            instanceVersionStatus: {
+                state: 'unknown' | 'current' | 'outdated';
+                latest: string | null;
+                checkedAt: string | null;
+            } | null;
             [key: string]: unknown;
         };
         flashDataType: {
             toast?: FlashToast;
             invitationUrl?: string;
             newToken?: NewApiToken;
+            ssoTest?: SsoTestResult;
         };
     }
 }

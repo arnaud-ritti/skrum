@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\InstanceSettings;
+
 enum IntegrationProvider: string
 {
     case Slack = 'slack';
@@ -44,9 +46,16 @@ enum IntegrationProvider: string
         };
     }
 
+    /**
+     * Configured on this instance and not turned off by an instance admin.
+     */
     public function isEnabled(): bool
     {
-        return $this->isConfigured();
+        if (! $this->isConfigured()) {
+            return false;
+        }
+
+        return ! in_array($this->value, resolve(InstanceSettings::class)->disabledIntegrations(), true);
     }
 
     public function isConfigured(): bool

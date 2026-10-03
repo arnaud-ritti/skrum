@@ -149,13 +149,13 @@ Not requested, staying backlog: "needs n more players", "found by" chips, Redo a
 
 ## Administration and error pages — plan 29
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| AD-1 | Remaining admin sections (General, SSO configuration, SMTP, Integrations, MCP keys, Licence, Users, Audit log) | ScreenSettings b | D-35 | These are environment configuration today: settings stored in `instance_settings`, each with its own risk; best split into several specs | — |
-| AD-2 | Version line (admin, error pages) | ScreenSettings b, ScreenErrors | D-31, D-35 | No version is exposed; "up to date" needs a check the instance makes outward | — |
-| AD-3 | Status page | ScreenErrors ("Instance status") | D-31 | No status page; `/up` is the framework health route | — |
-| AD-4 | Access request on the 403 page | ScreenErrors | D-31 | No request model; a notification to the team's managers | TM-6 |
-| AD-5 | Maintenance message and "Back at" | ScreenErrors (503) | D-31 | The 503 page is static and reads no database (B15): the message must come from `artisan down` options | — |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| AD-1 | Remaining admin sections (General, SSO configuration, SMTP, Integrations, MCP keys, Licence, Users, Audit log) | ScreenSettings b | D-35 | These are environment configuration today: settings stored in `instance_settings`, each with its own risk; best split into several specs | — | done, plan 29 |
+| AD-2 | Version line (admin, error pages) | ScreenSettings b, ScreenErrors | D-31, D-35 | Corrected by the plan 29 spec (§1): `config('skrum.version')` (`SKRUM_VERSION`) existed and was shown on the About page, but the Docker build never set it, so every image said `1.0.0`; "up to date" needs a check the instance makes outward | — | done, plan 29 |
+| AD-3 | Status page | ScreenErrors ("Instance status") | D-31 | No status page; `/up` is the framework health route | — | done, plan 29 |
+| AD-4 | Access request on the 403 page | ScreenErrors | D-31 | No request model; a notification to the team's managers | TM-6 | done, plan 29 |
+| AD-5 | Maintenance message and "Back at" | ScreenErrors (503) | D-31 | The 503 page is static and reads no database (B15): the message must come from `artisan down` options | — | done, plan 29 |
 
 Not requested, staying backlog: the "Help" link.
 

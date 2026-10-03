@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\ErrorPageResponder;
+use App\Http\Middleware\ApplyInstanceConfiguration;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequirePasswordUnlessNoneKnown;
@@ -29,14 +31,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function (): void {
             Route::group([], base_path('routes/webhooks.php'));
+            Route::group([], base_path('routes/status.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
+        $middleware->append(ApplyInstanceConfiguration::class);
 
         $middleware->replace(FrameworkTrustProxies::class, TrustProxies::class);
 
         $middleware->alias(['password.confirm' => RequirePasswordUnlessNoneKnown::class]);
+
+        $middleware->preventRequestsDuringMaintenance(except: ['status']);
 
         $isInboundWebhook = fn (Request $request): bool => $request->is('integrations/webhooks/*');
 
@@ -47,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestForgery(except: ['reminder-unsubscribe/*', 'recap-unsubscribe/*']);
 
         $middleware->web(append: [
+            EnsureAccountIsActive::class,
             HandleAppearance::class,
             SetLocale::class,
             HandleInertiaRequests::class,
@@ -54,7 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['token', 'gif_key']);
+        $exceptions->dontFlash(['token', 'gif_key', 'client_secret', 'bot_token', 'webhook_secret', 'private_key']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),

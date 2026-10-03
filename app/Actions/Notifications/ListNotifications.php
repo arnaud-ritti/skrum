@@ -7,6 +7,8 @@ use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\RetroResultsNotification;
+use App\Notifications\TeamAccessAnsweredNotification;
+use App\Notifications\TeamAccessRequestedNotification;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Notifications\DatabaseNotification;
@@ -20,6 +22,7 @@ class ListNotifications
         private PresentActionItemNotifications $presentActionItemNotifications,
         private PresentRecapNotifications $presentRecapNotifications,
         private PresentInvitationNotifications $presentInvitationNotifications,
+        private PresentAccessRequestNotifications $presentAccessRequestNotifications,
     ) {}
 
     /**
@@ -57,6 +60,7 @@ class ListNotifications
             ...$this->presentActionItemNotifications->handle($notifications, $viewableTeamIds),
             ...$this->presentRecapNotifications->handle($notifications, $viewableTeamIds),
             ...$this->presentInvitationNotifications->handle($user, $notifications),
+            ...$this->presentAccessRequestNotifications->handle($user, $notifications),
         ];
 
         $visible = $notifications->filter(fn (DatabaseNotification $notification): bool => isset($presented[$notification->id]));
@@ -89,7 +93,12 @@ class ListNotifications
             return true;
         }
 
-        return in_array($kind, [RetroResultsNotification::Kind, WorkspaceInvitationReceivedNotification::Kind], true);
+        return in_array($kind, [
+            RetroResultsNotification::Kind,
+            WorkspaceInvitationReceivedNotification::Kind,
+            TeamAccessRequestedNotification::Kind,
+            TeamAccessAnsweredNotification::Kind,
+        ], true);
     }
 
     /**

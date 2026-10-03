@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
 
 class PresentInvitationNotifications
 {
+    public function __construct(private PresentActor $presentActor) {}
+
     /**
      * The token is decrypted only here, for the account the notification
      * belongs to and while it still owns the invited address, and the link
@@ -60,7 +62,7 @@ class PresentInvitationNotifications
             }
 
             $presented[$notification->id] = [
-                'actor' => $this->actor($invitation->invitedBy),
+                'actor' => $this->presentActor->handle($invitation->invitedBy),
                 'team' => $invitation->workspace->name,
                 'href' => route('invitations.show', $token),
             ];
@@ -125,21 +127,5 @@ class PresentInvitationNotifications
         } catch (DecryptException) {
             return null;
         }
-    }
-
-    /**
-     * @return array{name: string, presence: int, avatarUrl: string}|null
-     */
-    private function actor(?User $inviter): ?array
-    {
-        if ($inviter === null) {
-            return null;
-        }
-
-        return [
-            'name' => $inviter->name,
-            'presence' => $inviter->presenceColor(),
-            'avatarUrl' => $inviter->avatarUrl(),
-        ];
     }
 }

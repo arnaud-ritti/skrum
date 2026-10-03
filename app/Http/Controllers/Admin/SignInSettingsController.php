@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\PresentSsoProviders;
+use App\Actions\Admin\RecordAuditEvent;
+use App\Enums\AuditAction;
 use App\Enums\SsoProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SignInSettingsUpdateRequest;
 use App\Models\MagicLink;
 use App\Models\User;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
+use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +23,7 @@ use Inertia\Response;
 
 class SignInSettingsController extends Controller
 {
-    public function edit(Request $request, SignInPolicy $policy, InstanceSettings $settings, SecondFactors $secondFactors): Response
+    public function edit(Request $request, SignInPolicy $policy, InstanceSettings $settings, SecondFactors $secondFactors, PresentSsoProviders $presentSsoProviders, PasswordConfirmation $confirmation): Response
     {
         return Inertia::render('admin/sign-in', [
             'ssoRequired' => $settings->ssoRequired(),
@@ -29,19 +34,31 @@ class SignInSettingsController extends Controller
             'adminsWithPasswordWayBack' => User::query()->where('is_instance_admin', true)->get()
                 ->filter(fn (User $admin): bool => $secondFactors->requiredFor($admin))
                 ->count(),
+            'providerDetails' => $presentSsoProviders->handle(),
+            'lastTest' => $settings->ssoLastTest(),
+            'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
+            'confirmUrl' => route('admin.signInConfirmation.create'),
         ]);
     }
 
-    public function update(SignInSettingsUpdateRequest $request, InstanceSettings $settings): RedirectResponse
+    public function update(SignInSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         $required = $request->boolean('sso_required');
 
-        DB::transaction(function () use ($settings, $required): void {
+        DB::transaction(function () use ($request, $settings, $recordAuditEvent, $required): void {
+            $wasRequired = $settings->ssoRequired();
+
             $settings->set('sso_required', $required);
 
             if ($required) {
                 MagicLink::query()->delete();
             }
+
+            if ($wasRequired === $required) {
+                return;
+            }
+
+            $recordAuditEvent->handle(AuditAction::SsoRequiredChanged, $request->user(), null, ['value' => $required]);
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sign-in settings saved.')]);

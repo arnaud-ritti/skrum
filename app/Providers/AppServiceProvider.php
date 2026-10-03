@@ -28,6 +28,8 @@ use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
+use App\Support\InstanceConfiguration\ConfigurationCatalogue;
+use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
@@ -84,6 +86,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->app->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
         Passkeys::authorizeLoginUsing(

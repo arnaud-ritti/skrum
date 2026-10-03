@@ -6,6 +6,7 @@ use App\Actions\Auth\RedirectIfSecondFactorRequired;
 use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Actions\Auth\SignupGate;
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\RefuseDeactivatedAccount;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\EmailCodePurpose;
 use App\Enums\SecondFactorMethod;
@@ -28,6 +29,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Fortify\Actions\AttemptToAuthenticate;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
@@ -95,6 +100,25 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::authenticateThrough(fn (): array => $this->loginPipeline());
+    }
+
+    /**
+     * Fortify's own login pipeline (AuthenticatedSessionController::loginPipeline), with the
+     * refusal of a deactivated account before the second-factor redirect.
+     *
+     * @return array<int, class-string|null>
+     */
+    private function loginPipeline(): array
+    {
+        return [
+            config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+            config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+            RefuseDeactivatedAccount::class,
+            Features::enabled(Features::twoFactorAuthentication()) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+            AttemptToAuthenticate::class,
+            PrepareAuthenticatedSession::class,
+        ];
     }
 
     /**

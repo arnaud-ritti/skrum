@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Enums\InstanceSettingKey;
+use App\Enums\IntegrationProvider;
+use App\Enums\SignupMode;
 use App\Models\InstanceSetting;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
@@ -29,6 +31,10 @@ class InstanceSettings
     public const bool DefaultProfilePhotos = false;
 
     public const bool DefaultSsoRequired = false;
+
+    public const bool DefaultUpdateCheckEnabled = false;
+
+    public const int MaintenanceMessageMaxLength = 280;
 
     /** Without a provider and a key GIFs stay off whatever this switch says. */
     public const bool DefaultGifEnabled = true;
@@ -253,9 +259,94 @@ class InstanceSettings
         $this->invalidateAfterCommit();
     }
 
+    /**
+     * Drops what this instance and the cache hold, so that the next read sees the committed rows:
+     * a writer that holds a lock reads this way.
+     */
+    public function refresh(): void
+    {
+        Cache::forget(self::CacheKey);
+
+        $this->stored = null;
+    }
+
     public function ssoRequired(): bool
     {
         return $this->storedBool(InstanceSettingKey::SsoRequired) ?? self::DefaultSsoRequired;
+    }
+
+    public function signupMode(): ?string
+    {
+        return $this->oneOf($this->stored(InstanceSettingKey::SignupMode), array_column(SignupMode::cases(), 'value'));
+    }
+
+    /** @return ?array<int, string> */
+    public function allowedEmailDomains(): ?array
+    {
+        $domains = $this->stored(InstanceSettingKey::AllowedEmailDomains);
+
+        return is_array($domains) ? array_values(array_filter($domains, 'is_string')) : null;
+    }
+
+    public function maintenanceMessage(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::MaintenanceMessage);
+    }
+
+    public function maintenanceMessageBy(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::MaintenanceMessageBy);
+    }
+
+    public function updateCheckEnabled(): bool
+    {
+        return $this->storedBool(InstanceSettingKey::UpdateCheckEnabled) ?? self::DefaultUpdateCheckEnabled;
+    }
+
+    public function latestVersion(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::LatestVersion);
+    }
+
+    public function updateCheckedAt(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::UpdateCheckedAt);
+    }
+
+    /** @return array<int, string> */
+    public function disabledIntegrations(): array
+    {
+        $disabled = $this->stored(InstanceSettingKey::DisabledIntegrations);
+
+        return is_array($disabled) ? array_values(array_filter($disabled, 'is_string')) : [];
+    }
+
+    /** @return ?array<string, mixed> */
+    public function mailLastTest(): ?array
+    {
+        $test = $this->stored(InstanceSettingKey::MailLastTest);
+
+        return is_array($test) ? $test : null;
+    }
+
+    /** @return ?array<string, mixed> */
+    public function ssoLastTest(): ?array
+    {
+        $test = $this->stored(InstanceSettingKey::SsoLastTest);
+
+        return is_array($test) ? $test : null;
+    }
+
+    /**
+     * The stored object of a configuration section, as written: secrets stay encrypted.
+     *
+     * @return array<string, mixed>
+     */
+    public function configuration(InstanceSettingKey $section): array
+    {
+        $stored = $this->stored($section);
+
+        return is_array($stored) ? $stored : [];
     }
 
     /**
@@ -274,7 +365,17 @@ class InstanceSettings
      *     gif_enabled: bool,
      *     gif_rating: string,
      *     has_gif_key: bool,
-     *     sso_required: bool
+     *     sso_required: bool,
+     *     signup_mode: ?string,
+     *     allowed_email_domains: ?array<int, string>,
+     *     maintenance_message: ?string,
+     *     maintenance_message_by: ?string,
+     *     update_check_enabled: bool,
+     *     latest_version: ?string,
+     *     update_checked_at: ?string,
+     *     disabled_integrations: array<int, string>,
+     *     mail_last_test: ?array<string, mixed>,
+     *     sso_last_test: ?array<string, mixed>
      * }
      */
     public function all(): array
@@ -295,6 +396,16 @@ class InstanceSettings
             InstanceSettingKey::GifRating->value => $this->gifRating(),
             'has_gif_key' => $this->hasGifKey(),
             InstanceSettingKey::SsoRequired->value => $this->ssoRequired(),
+            InstanceSettingKey::SignupMode->value => $this->signupMode(),
+            InstanceSettingKey::AllowedEmailDomains->value => $this->allowedEmailDomains(),
+            InstanceSettingKey::MaintenanceMessage->value => $this->maintenanceMessage(),
+            InstanceSettingKey::MaintenanceMessageBy->value => $this->maintenanceMessageBy(),
+            InstanceSettingKey::UpdateCheckEnabled->value => $this->updateCheckEnabled(),
+            InstanceSettingKey::LatestVersion->value => $this->latestVersion(),
+            InstanceSettingKey::UpdateCheckedAt->value => $this->updateCheckedAt(),
+            InstanceSettingKey::DisabledIntegrations->value => $this->disabledIntegrations(),
+            InstanceSettingKey::MailLastTest->value => $this->mailLastTest(),
+            InstanceSettingKey::SsoLastTest->value => $this->ssoLastTest(),
         ];
     }
 
@@ -330,11 +441,93 @@ class InstanceSettings
             InstanceSettingKey::AvatarMemberChoice,
             InstanceSettingKey::ProfilePhotos,
             InstanceSettingKey::GifEnabled,
-            InstanceSettingKey::SsoRequired => $this->booleanFrom($key, $value),
+            InstanceSettingKey::SsoRequired,
+            InstanceSettingKey::UpdateCheckEnabled => $this->booleanFrom($key, $value),
             InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),
             InstanceSettingKey::GifKey => Crypt::encryptString($this->stringFrom($key, $value)),
-            default => $value,
+            InstanceSettingKey::SignupMode => $this->signupModeFrom($key, $value),
+            InstanceSettingKey::AllowedEmailDomains => $this->domainsFrom($key, $value),
+            InstanceSettingKey::DisabledIntegrations => $this->providersFrom($key, $value),
+            InstanceSettingKey::MaintenanceMessage => $this->messageFrom($key, $value),
+            default => in_array($key, InstanceSettingKey::configurationSections(), true)
+                ? $this->objectFrom($key, $value)
+                : $value,
         };
+    }
+
+    private function signupModeFrom(InstanceSettingKey $key, mixed $value): string
+    {
+        $mode = SignupMode::tryFrom($this->stringFrom($key, $value))
+            ?? throw new InvalidArgumentException("Instance setting [{$key->value}] expects a sign-up mode.");
+
+        return $mode->value;
+    }
+
+    /** @return ?array<int, string> */
+    private function domainsFrom(InstanceSettingKey $key, mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects a list.");
+        }
+
+        $domains = collect($value)
+            ->filter(fn (mixed $domain): bool => is_string($domain))
+            ->map(fn (string $domain): string => strtolower(trim($domain)))
+            ->filter(fn (string $domain): bool => $domain !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $domains === [] ? null : $domains;
+    }
+
+    /** @return ?array<int, string> */
+    private function providersFrom(InstanceSettingKey $key, mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects a list.");
+        }
+
+        $known = array_column(IntegrationProvider::cases(), 'value');
+
+        $providers = collect($value)
+            ->filter(fn (mixed $provider): bool => is_string($provider) && in_array($provider, $known, true))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $providers === [] ? null : $providers;
+    }
+
+    private function messageFrom(InstanceSettingKey $key, mixed $value): string
+    {
+        $message = $this->stringFrom($key, $value);
+
+        if (mb_strlen($message) > self::MaintenanceMessageMaxLength) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] is too long.");
+        }
+
+        return $message;
+    }
+
+    /** @return ?array<string, mixed> */
+    private function objectFrom(InstanceSettingKey $key, #[SensitiveParameter] mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects an object of fields.");
+        }
+
+        if ($value === []) {
+            return null;
+        }
+
+        if (array_is_list($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects an object of fields.");
+        }
+
+        return $value;
     }
 
     private function booleanFrom(InstanceSettingKey $key, mixed $value): bool

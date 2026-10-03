@@ -10,6 +10,7 @@ import {
     Radio,
     RefreshCw,
     Settings,
+    Users,
 } from 'lucide-react';
 import { Fragment, useId, useState } from 'react';
 import type {
@@ -38,7 +39,20 @@ export type NotificationKind =
     | ActionItemNotificationKind
     | 'team_invite'
     | 'recap_ready'
+    | 'access_request'
+    | 'access_answered'
     | BacklogNotificationKind;
+
+const KnownKinds: ReadonlySet<string> = new Set<NotificationKind>([
+    'due_soon',
+    'overdue',
+    'team_invite',
+    'recap_ready',
+    'access_request',
+    'access_answered',
+    'session_starting',
+    'mention',
+]);
 
 export type NotificationWording = 'overdue' | 'due_today' | 'due_tomorrow';
 
@@ -123,10 +137,42 @@ export type BacklogNotification = NotificationBase & {
     href: string;
 };
 
+export type AccessRequestStatus = 'pending' | 'approved' | 'declined';
+
+export type AccessRequestDecision = 'approve' | 'decline';
+
+/** A request to join a team, shown to the people who may add members to it. */
+export type AccessRequestNotification = NotificationBase & {
+    kind: 'access_request';
+    actor: NotificationActor | null;
+    team: string;
+    excerpt: string | null;
+    request: {
+        id: string;
+        status: AccessRequestStatus;
+        /** Name of the person who answered, read live from the request. */
+        decidedBy: string | null;
+        /** The answer was just given from this bell. */
+        decidedByYou?: boolean;
+        updateUrl: string;
+    };
+    href: string;
+};
+
+/** The answer to a request, shown to the person who asked. */
+export type AccessAnsweredNotification = NotificationBase & {
+    kind: 'access_answered';
+    team: string;
+    outcome: Exclude<AccessRequestStatus, 'pending'>;
+    href: string;
+};
+
 export type AppNotification =
     | ActionItemNotification
     | InvitationNotification
     | RecapNotification
+    | AccessRequestNotification
+    | AccessAnsweredNotification
     | BacklogNotification;
 
 function isActionItemNotification(
@@ -149,6 +195,11 @@ export type NotificationsPanelProps = {
     onInvite?: (id: string, answer: 'accept' | 'decline') => void;
     /** Backlog: Join is rendered only when given. */
     onJoin?: (sessionId: string) => void;
+    /** "Add to the team" and "Decline" are rendered only when given. */
+    onAccessRequest?: (
+        notification: AccessRequestNotification,
+        decision: AccessRequestDecision,
+    ) => void;
     settingsHref: string;
     /** The list could not be loaded; Retry is rendered with `onRetry`. */
     failed?: boolean;
@@ -265,6 +316,7 @@ type ItemProps = {
     onOpen: (notification: AppNotification) => void;
     onInvite: NotificationsPanelProps['onInvite'];
     onJoin: NotificationsPanelProps['onJoin'];
+    onAccessRequest: NotificationsPanelProps['onAccessRequest'];
 };
 
 const stretchedLink =
@@ -277,6 +329,7 @@ function NotificationItem({
     onOpen,
     onInvite,
     onJoin,
+    onAccessRequest,
 }: ItemProps) {
     const { t } = useTrans();
     const { kind } = notification;
@@ -284,7 +337,9 @@ function NotificationItem({
         ? notification
         : null;
     const actor =
-        notification.kind === 'team_invite' || notification.kind === 'mention'
+        notification.kind === 'team_invite' ||
+        notification.kind === 'mention' ||
+        notification.kind === 'access_request'
             ? (notification.actor ?? undefined)
             : undefined;
     const href = isActionItemNotification(notification)
@@ -520,6 +575,85 @@ function NotificationItem({
         }
     }
 
+    if (notification.kind === 'access_request') {
+        const { request } = notification;
+
+        text = (
+            <Rich
+                template={t(':name asks to join :team')}
+                values={{ name: actorName, team: notification.team }}
+            />
+        );
+
+        if (notification.excerpt) {
+            quote = (
+                <p className="text-body-sm break-words text-muted-foreground">
+                    {t('“:excerpt”', { excerpt: notification.excerpt })}
+                </p>
+            );
+        }
+
+        if (request.status === 'approved') {
+            meta = `${relative} · ${
+                request.decidedByYou
+                    ? t('Added by you')
+                    : t('Added by :name', {
+                          name: request.decidedBy ?? t('Someone'),
+                      })
+            }`;
+        }
+
+        if (request.status === 'declined') {
+            meta = `${relative} · ${
+                request.decidedByYou
+                    ? t('Declined by you')
+                    : t('Declined by :name', {
+                          name: request.decidedBy ?? t('Someone'),
+                      })
+            }`;
+        }
+
+        if (request.status === 'pending' && onAccessRequest) {
+            actions = (
+                <>
+                    <Button
+                        size="sm"
+                        className="max-w-full"
+                        onClick={() => onAccessRequest(notification, 'approve')}
+                    >
+                        <span className="truncate">{t('Add to the team')}</span>
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="max-w-full"
+                        onClick={() => onAccessRequest(notification, 'decline')}
+                    >
+                        <span className="truncate">{t('Decline')}</span>
+                    </Button>
+                </>
+            );
+        }
+    }
+
+    if (notification.kind === 'access_answered') {
+        leading = (
+            <Tile tone="primary">
+                <Users />
+            </Tile>
+        );
+        text = (
+            <Rich
+                template={
+                    notification.outcome === 'approved'
+                        ? t('You were added to :team')
+                        : t('Your request to join :team was declined')
+                }
+                values={{ team: notification.team }}
+            />
+        );
+    }
+
     if (notification.kind === 'recap_ready') {
         const { actionsCount, roti } = notification;
 
@@ -647,6 +781,7 @@ export function NotificationsPanel({
     onOpen,
     onInvite,
     onJoin,
+    onAccessRequest,
     settingsHref,
     failed = false,
     onRetry,
@@ -670,12 +805,13 @@ export function NotificationsPanel({
         (typeof document === 'undefined'
             ? undefined
             : document.documentElement.lang || undefined);
+    const known = notifications.filter((notification) =>
+        KnownKinds.has(notification.kind),
+    );
     const visible =
         tab === 'unread'
-            ? notifications.filter(
-                  (notification) => notification.readAt === null,
-              )
-            : notifications;
+            ? known.filter((notification) => notification.readAt === null)
+            : known;
 
     const moveFocus = (event: KeyboardEvent<HTMLUListElement>) => {
         if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
@@ -822,6 +958,7 @@ export function NotificationsPanel({
                                         onOpen={onOpen}
                                         onInvite={onInvite}
                                         onJoin={onJoin}
+                                        onAccessRequest={onAccessRequest}
                                     />
                                 ))}
                             </ul>

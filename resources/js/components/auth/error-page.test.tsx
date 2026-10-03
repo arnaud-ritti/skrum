@@ -90,6 +90,26 @@ describe('ErrorPage', () => {
         ).toBeTruthy();
     });
 
+    it('names the team and leaves the sentence and the actions to the access request', () => {
+        renderWithProviders(
+            <ErrorPage
+                status={403}
+                accessRequest={<button type="button">Request access</button>}
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', {
+                name: "You don't have access to this team",
+            }),
+        ).toBeTruthy();
+        expect(screen.queryByText('mona@example.com')).toBeNull();
+        expect(slot('error-page-actions')).toBeNull();
+        expect(
+            screen.queryByRole('link', { name: 'Back to my teams' }),
+        ).toBeNull();
+    });
+
     it('offers a refused guest to log in, without an account to switch', () => {
         page.props.auth = { user: null };
 

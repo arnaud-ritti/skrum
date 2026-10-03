@@ -153,6 +153,7 @@ use App\Http\Controllers\SearchResultsController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
+use App\Http\Controllers\TeamAccessRequestsController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamGameRoomsController;
@@ -417,6 +418,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.deliveries.redelivery.store');
             });
 
+            Route::post('teams/{team}/access-requests', [TeamAccessRequestsController::class, 'store'])
+                ->middleware('throttle:5,60,teamAccessRequests')
+                ->name('teams.accessRequests.store');
+            Route::patch('teams/{team}/access-requests/{accessRequest}', [TeamAccessRequestsController::class, 'update'])
+                ->whereUuid('accessRequest')
+                ->name('teams.accessRequests.update');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
