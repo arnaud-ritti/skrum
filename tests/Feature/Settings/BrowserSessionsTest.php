@@ -102,7 +102,7 @@ it('tells the locked section whether the card exists, before any confirmation', 
 
 it('signs out through the routes, behind a fresh confirmation', function () {
     $user = User::factory()->create();
-    browserSession($user, 'phone-session-id', SafariOnIphone, 120);
+    browserSession($user, 'phone-session-id', SafariOnIphone, 30);
     $key = hash('sha256', 'phone-session-id');
 
     $this->actingAs($user)->deleteJson(route('browserSessions.destroy', $key))->assertStatus(423);
