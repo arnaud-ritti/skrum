@@ -4439,5 +4439,6 @@
     "Its answers are kept and come back if you add it again.": "Ses réponses sont conservées et reviennent si tu l’ajoutes à nouveau.",
     "It has no answer yet.": "Il n’a encore aucune réponse.",
     "The team rates its statements during the retro": "L’équipe note ses énoncés pendant la rétro",
-    "Automatic vote limit, health check added": "Limite de votes automatique, bilan de santé ajouté"
+    "Automatic vote limit, health check added": "Limite de votes automatique, bilan de santé ajouté",
+    "Kind": "Type"
 }

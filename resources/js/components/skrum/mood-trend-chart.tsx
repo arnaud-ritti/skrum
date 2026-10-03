@@ -31,6 +31,8 @@ export type MoodPoint = {
     href?: NonNullable<InertiaLinkProps['href']>;
     /** A remark on the point; its dot is drawn hollow. */
     note?: string;
+    /** What the point is ("Retro", "Survey"); a column of the table when a point has one. */
+    kind?: string;
 };
 
 export type MoodScale = { min: number; max: number };
@@ -249,6 +251,7 @@ export function MoodTrendChart({
     const hasVoters =
         count > 0 && shown.every((point) => point.voters !== undefined);
     const hasNotes = shown.some((point) => point.note !== undefined);
+    const hasKinds = shown.some((point) => point.kind !== undefined);
     const hasLinks = shown.some((point) => point.href !== undefined);
     const voterCounts = shown.map((point) => point.voters ?? 0);
     const minVoters = voterCounts.length > 0 ? Math.min(...voterCounts) : 0;
@@ -957,6 +960,14 @@ export function MoodTrendChart({
                                 >
                                     {periodLabel}
                                 </th>
+                                {hasKinds && (
+                                    <th
+                                        scope="col"
+                                        className="py-2 pr-4 font-semibold"
+                                    >
+                                        {t('Kind')}
+                                    </th>
+                                )}
                                 <th
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
@@ -1010,6 +1021,11 @@ export function MoodTrendChart({
                                             </Link>
                                         )}
                                     </th>
+                                    {hasKinds && (
+                                        <td className="py-2 pr-4">
+                                            {point.kind}
+                                        </td>
+                                    )}
                                     <td className="py-2 pr-4 tabular-nums">
                                         {formatValue(point.mean)}
                                     </td>

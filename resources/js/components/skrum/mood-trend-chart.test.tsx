@@ -396,6 +396,44 @@ describe('MoodTrendChart', () => {
                     .map((link) => link.getAttribute('href')),
             ).toEqual(['/retros/r2', '/retros/r3']);
         });
+
+        it('adds a column naming the kind of each point when the points carry one', () => {
+            renderWithProviders(
+                <MoodTrendChart
+                    points={[
+                        { ...trend[0], kind: 'Retro' },
+                        {
+                            id: 's1',
+                            sprint: 'Pulse of October',
+                            mean: 3.4,
+                            href: '/surveys/s1/results',
+                            kind: 'Survey',
+                        },
+                    ]}
+                    metricLabel="Health score"
+                    scale={{ min: 0, max: 5 }}
+                    period="retro"
+                    defaultView="table"
+                />,
+            );
+
+            const table = screen.getByRole('table');
+
+            expect(
+                within(table)
+                    .getAllByRole('columnheader')
+                    .map((header) => header.textContent),
+            ).toEqual(['Retro', 'Kind', 'Health score']);
+            expect(
+                within(table)
+                    .getAllByRole('row')
+                    .slice(1)
+                    .map(
+                        (row) =>
+                            within(row).getAllByRole('cell')[0].textContent,
+                    ),
+            ).toEqual(['Retro', 'Survey']);
+        });
     });
 
     it('titles the card with a heading of the level asked, the third by default', () => {
