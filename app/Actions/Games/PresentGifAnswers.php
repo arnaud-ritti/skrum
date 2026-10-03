@@ -25,6 +25,15 @@ class PresentGifAnswers
     }
 
     /**
+     * Whether the authors of revealed answers come at the close: never on an
+     * anonymous retro, where they never come.
+     */
+    public static function authorsComeAtClose(GameRoom $room, GameRound $round): bool
+    {
+        return $round->authors_hidden && ! self::hidesAuthors($room);
+    }
+
+    /**
      * @param  Collection<int, GameGifAnswer>  $answers
      * @return array<int, array{playerId: string, answered: bool}>
      */

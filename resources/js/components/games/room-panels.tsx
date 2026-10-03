@@ -5,7 +5,6 @@ import {
     Trophy,
     Users,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRoundEnded, GameSnapshot } from '@/lib/games/types';
 import {
@@ -28,9 +27,6 @@ type RoomPanelsOptions = {
      * the facilitator's alone.
      */
     watchChoice?: boolean;
-    /** Places left for later features; nothing fills them today. */
-    gifCaption?: ReactNode;
-    gifPodium?: ReactNode;
 };
 
 type RoomPanels = Required<Pick<GameLayoutProps, 'variant'>> &
@@ -46,8 +42,6 @@ export function useRoomPanels({
     snapshot,
     lastEnded,
     watchChoice = false,
-    gifCaption,
-    gifPodium,
 }: RoomPanelsOptions): RoomPanels {
     const { t } = useTrans();
     const hasLeftColumn = useHasLeftColumn();
@@ -59,12 +53,7 @@ export function useRoomPanels({
     const settingsCard = <GameSettingsCard />;
     const turnOrder = <TurnOrder />;
     const side = (
-        <RoomSidebar
-            highlightPlayerId={winnerPlayerId}
-            turnOrder={turnOrder}
-            gifPodium={gifPodium}
-            gifCaption={gifCaption}
-        />
+        <RoomSidebar highlightPlayerId={winnerPlayerId} turnOrder={turnOrder} />
     );
     const choice: GameLayoutPanel | undefined = room.isHost
         ? {

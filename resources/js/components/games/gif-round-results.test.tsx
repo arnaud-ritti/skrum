@@ -14,11 +14,15 @@ function answer(
     id: string,
     playerId: string | null,
     votes: number | null,
+    rank: number | null,
+    caption: string | null = null,
 ): GameGifRevealed {
     return {
         id,
         playerId,
         votes,
+        rank,
+        caption,
         gif: { id, previewUrl: `/gifs/${id}/preview`, url: `/gifs/${id}/full` },
     };
 }
@@ -39,9 +43,13 @@ function renderResults(
 }
 
 describe('GifRoundResults', () => {
-    it('ranks the GIFs by votes and marks the most voted as the winner', () => {
+    it('orders the GIFs by rank and marks the first as the winner', () => {
         renderResults(
-            [answer('a', 'p1', 0), answer('b', 'p2', 3), answer('c', 'p3', 1)],
+            [
+                answer('a', 'p1', 0, 3),
+                answer('b', 'p2', 3, 1, 'CI on Friday'),
+                answer('c', 'p3', 1, 2),
+            ],
             [{ playerId: 'p2', points: 6, isWin: true }],
         );
 
@@ -51,24 +59,26 @@ describe('GifRoundResults', () => {
             tiles.map((tile) => tile.querySelector('figcaption')?.textContent),
         ).toEqual(['by Bob', 'by Cleo', 'by Ada']);
         expect(within(tiles[0]).getByText('Winner')).toBeTruthy();
-        expect(within(tiles[0]).getByText('Votes: 3')).toBeTruthy();
+        expect(within(tiles[0]).getByText('3 votes')).toBeTruthy();
+        expect(within(tiles[0]).getByText('CI on Friday')).toBeTruthy();
+        expect(within(tiles[1]).getByText('1 vote')).toBeTruthy();
         expect(within(tiles[0]).getByText('+6')).toBeTruthy();
         expect(within(tiles[1]).queryByText('Winner')).toBeNull();
-        expect(within(tiles[2]).getByText('Votes: 0')).toBeTruthy();
+        expect(within(tiles[2]).getByText('0 votes')).toBeTruthy();
     });
 
     it('marks every GIF of a tie, and none when nobody voted', () => {
         const { unmount } = renderResults([
-            answer('a', 'p1', 2),
-            answer('b', null, 2),
-            answer('c', 'p3', 1),
+            answer('a', 'p1', 2, 1),
+            answer('b', null, 2, 1),
+            answer('c', 'p3', 1, 3),
         ]);
 
         expect(screen.getAllByText('Winner')).toHaveLength(2);
         expect(screen.getByText('Anonymous GIF')).toBeTruthy();
 
         unmount();
-        renderResults([answer('a', 'p1', 0), answer('b', 'p2', 0)]);
+        renderResults([answer('a', 'p1', 0, 1), answer('b', 'p2', 0, 1)]);
 
         expect(screen.queryByText('Winner')).toBeNull();
     });

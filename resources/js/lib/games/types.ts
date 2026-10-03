@@ -238,6 +238,8 @@ export type GameRound = {
     threshold?: number;
     myVotes?: string[];
     votesAllowed?: number;
+    /** Sprint in one GIF: the authors of the revealed GIFs come at the close. */
+    authorsHidden?: boolean;
     drawn?: GameTextRevealed | null;
     candidates?: string[];
     votedCount?: number;
@@ -308,6 +310,7 @@ export type GameRoundRevealed = {
     revealedAt: string;
     answers: GameGifRevealed[] | GameTextRevealed[];
     candidates?: string[];
+    authorsHidden?: boolean;
 };
 
 export type GameLetterPicked = {

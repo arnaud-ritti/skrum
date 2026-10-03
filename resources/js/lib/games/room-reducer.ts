@@ -275,6 +275,7 @@ function revealedRound(
         voters: [],
         myVote: null,
         myVotes: [],
+        authorsHidden: revealed.authorsHidden ?? false,
     };
 }
 

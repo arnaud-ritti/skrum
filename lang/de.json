@@ -4617,5 +4617,20 @@
     "Missed: −1 life": "Daneben: −1 Leben",
     "Your turn, :name — pick a letter": "Du bist dran, :name — wähl einen Buchstaben",
     "next letter in :time": "nächster Buchstabe in :time",
-    "next letter now": "nächster Buchstabe jetzt"
+    "next letter now": "nächster Buchstabe jetzt",
+    ":count / :max": ":count / :max",
+    ":count / :total used": ":count / :total genutzt",
+    ":count vote out of :total": ":count Stimme von :total",
+    ":count votes out of :total": ":count Stimmen von :total",
+    ":name wins the round": ":name gewinnt die Runde",
+    ":names win the round": ":names gewinnen die Runde",
+    "A short caption helps people vote.": "Eine kurze Bildunterschrift hilft beim Abstimmen.",
+    "Hidden until the votes close": "Verborgen bis zum Ende der Abstimmung",
+    "No GIF got a vote.": "Kein GIF hat eine Stimme bekommen.",
+    "Ranking": "Rangliste",
+    "Save caption": "Bildunterschrift speichern",
+    "This sprint's GIF": "Das GIF des Sprints",
+    "Vote for this GIF": "Für dieses GIF stimmen",
+    "Your votes": "Deine Stimmen",
+    "“:caption”": "„:caption“"
 }

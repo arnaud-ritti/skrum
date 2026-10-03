@@ -33,6 +33,33 @@ it('hides the authors of revealed GIFs until the close when the round says so', 
         ->assertJsonPath('ended.answers.0.playerId', $author->id);
 });
 
+it('tells whether the authors of revealed GIFs come at the close, never in an anonymous retro\'s icebreaker', function () {
+    [$room, $user] = sprintGifRoom();
+    $round = activeGifRound($room, ['authors_hidden' => true]);
+    GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => GamePlayer::factory()->create(['game_room_id' => $room->id])->id, 'gif_id' => 'gifA']);
+
+    $this->actingAs($user)->postJson(route('games.rounds.reveal.store', [$room, $round]))
+        ->assertOk()
+        ->assertJsonPath('authorsHidden', true);
+
+    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['authorsHidden'] === true);
+
+    $this->actingAs($user)->getJson(route('games.snapshot.show', $room))
+        ->assertJsonPath('round.authorsHidden', true);
+
+    [$shownRoom, $shownUser] = sprintGifRoom();
+    activeGifRound($shownRoom, ['revealed_at' => now()]);
+
+    $this->actingAs($shownUser)->getJson(route('games.snapshot.show', $shownRoom))
+        ->assertJsonPath('round.authorsHidden', false);
+
+    [$anonymousRoom, $facilitatorUser] = anonymousGifIcebreaker();
+    activeGifRound($anonymousRoom, ['revealed_at' => now(), 'authors_hidden' => true]);
+
+    $this->actingAs($facilitatorUser)->getJson(route('games.snapshot.show', $anonymousRoom))
+        ->assertJsonPath('round.authorsHidden', false);
+});
+
 it('ranks the closed GIFs with ties, and the top authors win', function () {
     [$room, $user] = sprintGifRoom();
     $round = activeGifRound($room, ['revealed_at' => now(), 'votes_allowed' => 2]);

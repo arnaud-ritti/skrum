@@ -46,3 +46,48 @@ export function withVoter(
 
     return voted ? [...others, playerId] : others;
 }
+
+/**
+ * Whether the viewer may press the vote of a GIF: never their own; a vote
+ * already given can always be taken back; a one-vote round moves its vote;
+ * otherwise only while the budget lasts.
+ */
+export function canVoteFor(
+    round: GameRound,
+    answerId: string,
+    myAnswerId: string | null,
+): boolean {
+    if (answerId === myAnswerId) {
+        return false;
+    }
+
+    const myVotes = round.myVotes ?? [];
+
+    if (myVotes.includes(answerId)) {
+        return true;
+    }
+
+    const allowed = round.votesAllowed ?? 1;
+
+    return allowed <= 1 || myVotes.length < allowed;
+}
+
+/** The GIFs of a closed round by rank (ties share one), then by id; unranked last. */
+export function rankedAnswers(answers: GameGifRevealed[]): GameGifRevealed[] {
+    return [...answers].sort((first, second) => {
+        const byRank =
+            (first.rank ?? Number.POSITIVE_INFINITY) -
+            (second.rank ?? Number.POSITIVE_INFINITY);
+
+        if (byRank !== 0 && !Number.isNaN(byRank)) {
+            return byRank;
+        }
+
+        return first.id < second.id ? -1 : first.id > second.id ? 1 : 0;
+    });
+}
+
+/** The authors of rank one win, as long as their GIF got a vote (spec §6.7). */
+export function isWinningAnswer(answer: GameGifRevealed): boolean {
+    return answer.rank === 1 && (answer.votes ?? 0) > 0;
+}

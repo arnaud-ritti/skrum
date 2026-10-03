@@ -31,6 +31,19 @@ describe('GifTile', () => {
         expect(screen.queryByText('Winner')).toBeNull();
     });
 
+    it("shows the sender's caption under the GIF, as its text alternative", () => {
+        render(
+            <GifTile gif={Gif} caption="by Ada" description="CI on Friday" />,
+        );
+
+        const figure = screen.getByRole('figure');
+
+        expect(figure.querySelector('img')?.getAttribute('alt')).toBe(
+            'CI on Friday',
+        );
+        expect(screen.getByText('CI on Friday')).toBeTruthy();
+    });
+
     it('carries the "Winner" mark of the mockup when it won', () => {
         render(<GifTile gif={Gif} caption="by Ada" winner />);
 

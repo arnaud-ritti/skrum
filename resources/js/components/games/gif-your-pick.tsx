@@ -1,6 +1,5 @@
-import { EyeOff, ImagePlay, RefreshCw, Send, Trash2 } from 'lucide-react';
+import { EyeOff, ImagePlay, RefreshCw, Save, Send, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import GameAnswersController from '@/actions/App/Http/Controllers/Games/GameAnswersController';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import { myGifAnswer, pendingAnswers } from '@/lib/games/gif';
 import type { GameMyGifAnswer, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
+import { GifCaptionField } from './gif-caption-field';
 import { useGifDraft } from './gif-draft';
 import { GifTile } from './gif-tile';
 import { useRoom } from './room-context';
@@ -18,25 +18,29 @@ type Props = {
     round: GameRound;
     /** `h2` in a side column, `h3` under the title of the stage. */
     heading?: 'h2' | 'h3';
-    /** Place left under the chosen GIF for its caption (GM-3). */
-    caption?: ReactNode;
     className?: string;
 };
 
 /**
  * What the player picked on the stage: a draft until "Send my GIF", then the
- * sent GIF. Other players' GIFs are never known before the reveal: only
- * placeholders.
+ * sent GIF, each with its caption. Other players' GIFs are never known before
+ * the reveal: only placeholders.
  */
 export function GifYourPick({
     round,
     heading: Heading = 'h2',
-    caption,
     className,
 }: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
-    const { draft, clear, focusPicker } = useGifDraft(round.id);
+    const {
+        draft,
+        clear,
+        focusPicker,
+        caption: typedCaption,
+        setCaption,
+        clearCaption,
+    } = useGifDraft(round.id);
     const [busy, setBusy] = useState(false);
     const changeRef = useRef<HTMLButtonElement>(null);
     const { room, me, players } = ctx.snapshot;
@@ -44,6 +48,13 @@ export function GifYourPick({
     const sent = myGifAnswer(round);
     const pending = draft !== null && draft.id !== sent?.gif.id ? draft : null;
     const shown = pending ?? sent?.gif ?? null;
+    const sentCaption = sent?.caption ?? '';
+    const caption = typedCaption ?? sentCaption;
+    const hasCaptionDraft =
+        sent !== null &&
+        typedCaption !== null &&
+        caption.trim() !== sentCaption;
+    const isDraft = pending !== null || hasCaptionDraft;
     const others = pendingAnswers(round).filter(
         (answer) => answer.playerId !== me.playerId,
     );
@@ -72,7 +83,7 @@ export function GifYourPick({
             response = await ctx.run(
                 retroRequest<{ myAnswer: GameMyGifAnswer }>(
                     GameAnswersController.update(target),
-                    { gif_id: gifId },
+                    { gif_id: gifId, caption: caption.trim() || null },
                 ),
             );
         } finally {
@@ -85,6 +96,7 @@ export function GifYourPick({
 
         markAnswered(response.myAnswer);
         clear();
+        clearCaption();
         requestAnimationFrame(() => changeRef.current?.focus());
     };
 
@@ -107,13 +119,14 @@ export function GifYourPick({
 
         markAnswered(null);
         clear();
+        clearCaption();
         focusPicker();
     };
 
     return (
         <section
             data-slot="gif-your-pick"
-            data-state={pending ? 'draft' : sent ? 'sent' : 'empty'}
+            data-state={isDraft ? 'draft' : sent ? 'sent' : 'empty'}
             aria-labelledby="gif-pick-title"
             className={cn('flex min-w-0 flex-col gap-4', className)}
         >
@@ -122,12 +135,12 @@ export function GifYourPick({
                     {t('Your pick')}
                 </Heading>
                 <span role="status" className="flex shrink-0">
-                    {pending && (
+                    {isDraft && (
                         <Badge variant="warning" shape="pill">
                             {t('Draft')}
                         </Badge>
                     )}
-                    {!pending && sent && (
+                    {!isDraft && sent && (
                         <Badge variant="success" shape="pill">
                             {t('Sent')}
                         </Badge>
@@ -136,7 +149,11 @@ export function GifYourPick({
             </div>
             {shown ? (
                 <>
-                    <GifTile gif={shown} caption={t('Your GIF')} />
+                    <GifTile
+                        gif={shown}
+                        caption={t('Your GIF')}
+                        description={pending === null ? sent?.caption : null}
+                    />
                     <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
                         <EyeOff
                             aria-hidden
@@ -144,7 +161,11 @@ export function GifYourPick({
                         />
                         {t('Your GIF stays hidden until the reveal.')}
                     </p>
-                    {caption}
+                    <GifCaptionField
+                        value={caption}
+                        disabled={busy}
+                        onChange={setCaption}
+                    />
                 </>
             ) : (
                 <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-input bg-muted/60 px-4 py-8 text-center text-sm text-muted-foreground">
@@ -178,6 +199,18 @@ export function GifYourPick({
             )}
             {!pending && sent && (
                 <div className="flex min-w-0 flex-wrap gap-2">
+                    {hasCaptionDraft && (
+                        <Button
+                            className="min-w-0"
+                            disabled={busy}
+                            onClick={() => void send(sent.gif.id)}
+                        >
+                            <Save aria-hidden />
+                            <span className="truncate">
+                                {t('Save caption')}
+                            </span>
+                        </Button>
+                    )}
                     <Button
                         ref={changeRef}
                         variant="outline"

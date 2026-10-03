@@ -14,6 +14,8 @@ type GifTileAuthor = {
 type Props = {
     gif: Pick<GameGif, 'previewUrl'>;
     caption: string;
+    /** The sender's own words under the GIF (spec §6.7); also its text alternative. */
+    description?: string | null;
     /** Who sent the GIF: an avatar before the caption. */
     author?: GifTileAuthor | null;
     /** The viewer's own choice among the GIFs. */
@@ -28,6 +30,7 @@ type Props = {
 export function GifTile({
     gif,
     caption,
+    description = null,
     author = null,
     highlight = false,
     winner = false,
@@ -49,7 +52,7 @@ export function GifTile({
         >
             <img
                 src={gif.previewUrl}
-                alt=""
+                alt={description ?? ''}
                 loading="lazy"
                 className="aspect-4/3 w-full bg-muted object-cover"
             />
@@ -77,6 +80,14 @@ export function GifTile({
                         {caption}
                     </figcaption>
                 </div>
+                {description && (
+                    <p
+                        data-slot="gif-description"
+                        className="text-sm break-words text-muted-foreground"
+                    >
+                        {description}
+                    </p>
+                )}
                 {children}
             </div>
         </figure>

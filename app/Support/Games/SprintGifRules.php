@@ -128,6 +128,7 @@ class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsI
             'myVote' => $myVotes[0] ?? null,
             'myVotes' => $myVotes,
             'votesAllowed' => $round->votes_allowed,
+            'authorsHidden' => PresentGifAnswers::authorsComeAtClose($room, $round),
         ];
     }
 

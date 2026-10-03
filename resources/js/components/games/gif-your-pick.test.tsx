@@ -129,7 +129,10 @@ describe('GifYourPick', () => {
         });
 
         expect(mocks.request).toHaveBeenCalledTimes(1);
-        expect(mocks.request.mock.calls[0][1]).toEqual({ gif_id: 'coffee' });
+        expect(mocks.request.mock.calls[0][1]).toEqual({
+            gif_id: 'coffee',
+            caption: null,
+        });
         expect(dispatch).toHaveBeenCalledWith({
             type: 'round.patched',
             roundId: 'round',
@@ -193,6 +196,94 @@ describe('GifYourPick', () => {
             type: 'round.patched',
             roundId: 'round',
             patch: { myAnswer: null },
+        });
+    });
+
+    it('sends the caption with the GIF, trimmed, and counts its characters', async () => {
+        mocks.request.mockResolvedValue({
+            myAnswer: {
+                id: 'answer',
+                gif: gif('party'),
+                caption: 'CI on Friday',
+            },
+        });
+        renderPick(round());
+
+        expect(screen.queryByLabelText('Caption')).toBeNull();
+
+        fireEvent.click(screen.getByText('pick party'));
+
+        const field = screen.getByLabelText('Caption');
+
+        expect(field.getAttribute('placeholder')).toBe(
+            'A short caption helps people vote.',
+        );
+        expect(field.getAttribute('maxlength')).toBe('60');
+
+        fireEvent.change(field, { target: { value: ' CI on Friday ' } });
+
+        expect(screen.getByText('14 / 60')).toBeTruthy();
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Send my GIF' }),
+            );
+        });
+
+        expect(mocks.request.mock.calls[0][1]).toEqual({
+            gif_id: 'party',
+            caption: 'CI on Friday',
+        });
+    });
+
+    it('shows the sent caption, and saves a new one alone as a draft', async () => {
+        mocks.request.mockResolvedValue({
+            myAnswer: { id: 'answer', gif: gif('party'), caption: 'Later' },
+        });
+        const { dispatch } = renderPick(
+            round({
+                myAnswer: {
+                    id: 'answer',
+                    gif: gif('party'),
+                    caption: 'CI on Friday',
+                },
+            }),
+        );
+
+        expect(state()).toBe('sent');
+        expect(screen.getByRole('figure').textContent).toContain(
+            'CI on Friday',
+        );
+        expect(
+            (screen.getByLabelText('Caption') as HTMLInputElement).value,
+        ).toBe('CI on Friday');
+        expect(
+            screen.queryByRole('button', { name: 'Save caption' }),
+        ).toBeNull();
+
+        fireEvent.change(screen.getByLabelText('Caption'), {
+            target: { value: 'Later' },
+        });
+
+        expect(state()).toBe('draft');
+        expect(screen.getByText('Draft')).toBeTruthy();
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Save caption' }),
+            );
+        });
+
+        expect(mocks.request.mock.calls[0][1]).toEqual({
+            gif_id: 'party',
+            caption: 'Later',
+        });
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'round.patched',
+            roundId: 'round',
+            patch: {
+                myAnswer: { id: 'answer', gif: gif('party'), caption: 'Later' },
+            },
         });
     });
 

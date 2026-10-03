@@ -1,6 +1,5 @@
 import { Eye } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import GameGifsController from '@/actions/App/Http/Controllers/Games/GameGifsController';
 import GameRevealsController from '@/actions/App/Http/Controllers/Games/GameRevealsController';
 import { useGifSearch } from '@/components/gifs/use-gif-search';
@@ -18,8 +17,6 @@ import { useRoom } from './room-context';
 
 type Props = {
     round: GameRound;
-    /** Place left under the chosen GIF for its caption (GM-3). */
-    caption?: ReactNode;
 };
 
 const noop = (): void => {};
@@ -28,7 +25,7 @@ const noop = (): void => {};
  * The picker stands open on the stage; a pick is a draft until it is sent
  * from "Your pick", which the right column holds where there is one.
  */
-export function GifAnswerStage({ round, caption }: Props) {
+export function GifAnswerStage({ round }: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
     const hasRightColumn = useHasRightColumn();
@@ -112,7 +109,7 @@ export function GifAnswerStage({ round, caption }: Props) {
             </div>
             {!hasRightColumn && (
                 <Card ref={pickRef} className="p-4">
-                    <GifYourPick round={round} heading="h3" caption={caption} />
+                    <GifYourPick round={round} heading="h3" />
                 </Card>
             )}
             {room.isHost && (

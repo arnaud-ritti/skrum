@@ -7,7 +7,7 @@ use App\Models\GameRoom;
 class GameRoundRevealed extends GameBroadcastEvent
 {
     /**
-     * @param  array{roundId: string, revealedAt: string, answers: array<int, array<string, mixed>>, candidates?: array<int, string>}  $payload
+     * @param  array{roundId: string, revealedAt: string, answers: array<int, array<string, mixed>>, candidates?: array<int, string>, authorsHidden?: bool}  $payload
      */
     public function __construct(GameRoom $room, public array $payload)
     {

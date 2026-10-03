@@ -4397,5 +4397,20 @@
     "Missed: −1 life": "Missed: −1 life",
     "Your turn, :name — pick a letter": "Your turn, :name — pick a letter",
     "next letter in :time": "next letter in :time",
-    "next letter now": "next letter now"
+    "next letter now": "next letter now",
+    ":count / :max": ":count / :max",
+    ":count / :total used": ":count / :total used",
+    ":count vote out of :total": ":count vote out of :total",
+    ":count votes out of :total": ":count votes out of :total",
+    ":name wins the round": ":name wins the round",
+    ":names win the round": ":names win the round",
+    "A short caption helps people vote.": "A short caption helps people vote.",
+    "Hidden until the votes close": "Hidden until the votes close",
+    "No GIF got a vote.": "No GIF got a vote.",
+    "Ranking": "Ranking",
+    "Save caption": "Save caption",
+    "This sprint's GIF": "This sprint's GIF",
+    "Vote for this GIF": "Vote for this GIF",
+    "Your votes": "Your votes",
+    "“:caption”": "“:caption”"
 }

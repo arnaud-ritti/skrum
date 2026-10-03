@@ -4617,5 +4617,20 @@
     "Missed: −1 life": "Raté : −1 vie",
     "Your turn, :name — pick a letter": "À toi de jouer, :name — choisis une lettre",
     "next letter in :time": "prochaine lettre dans :time",
-    "next letter now": "prochaine lettre maintenant"
+    "next letter now": "prochaine lettre maintenant",
+    ":count / :max": ":count / :max",
+    ":count / :total used": ":count / :total utilisés",
+    ":count vote out of :total": ":count vote sur :total",
+    ":count votes out of :total": ":count votes sur :total",
+    ":name wins the round": ":name remporte la manche",
+    ":names win the round": ":names remportent la manche",
+    "A short caption helps people vote.": "Une légende courte aide à voter.",
+    "Hidden until the votes close": "Caché jusqu’à la fin des votes",
+    "No GIF got a vote.": "Aucun GIF n’a reçu de vote.",
+    "Ranking": "Classement",
+    "Save caption": "Enregistrer la légende",
+    "This sprint's GIF": "Le GIF du sprint",
+    "Vote for this GIF": "Voter pour ce GIF",
+    "Your votes": "Tes votes",
+    "“:caption”": "« :caption »"
 }

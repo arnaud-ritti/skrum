@@ -330,6 +330,24 @@ describe('roomReducer, round.revealed', () => {
         expect(next.snapshot.round?.answers).toEqual(answers);
         expect(next.snapshot.round?.myVotes).toEqual([]);
         expect(next.snapshot.round?.myVote).toBeNull();
+        expect(next.snapshot.round?.authorsHidden).toBe(false);
+    });
+
+    it('keeps the GIF authors hidden until the close when the reveal says so', () => {
+        const next = roomReducer(
+            stateOf({ id: 'round-1', game: 'gif', revealedAt: null }),
+            {
+                type: 'round.revealed',
+                revealed: {
+                    roundId: 'round-1',
+                    revealedAt: '2026-10-03T10:00:00+00:00',
+                    answers: [],
+                    authorsHidden: true,
+                },
+            },
+        );
+
+        expect(next.snapshot.round?.authorsHidden).toBe(true);
     });
 
     it('shows the drawn answer of Guess who? and its candidates', () => {

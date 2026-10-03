@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { TimeUpBadge } from '@/components/session/session-timer';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
@@ -17,14 +16,7 @@ import { SprintGifBoard } from './sprint-gif-board';
 import { TurnTimer } from './turn-timer';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
-function RoundBoard({
-    round,
-    gifCaption,
-}: {
-    round: GameRound;
-    /** Place left under the chosen GIF of Sprint in one GIF (GM-3). */
-    gifCaption?: ReactNode;
-}) {
+function RoundBoard({ round }: { round: GameRound }) {
     const { t } = useTrans();
 
     switch (round.game) {
@@ -35,7 +27,7 @@ function RoundBoard({
         case 'decoded':
             return <DecodedBoard key={round.id} round={round} />;
         case 'gif':
-            return <SprintGifBoard round={round} caption={gifCaption} />;
+            return <SprintGifBoard round={round} />;
         case 'two_truths':
             return null;
         case 'mood':
@@ -94,13 +86,8 @@ function RoundStatus({ round }: { round: GameRound }) {
     );
 }
 
-export type GameStageProps = {
-    /** Place left under the chosen GIF for its caption (GM-3). */
-    gifCaption?: ReactNode;
-};
-
 /** The centre of a room: the game's name, then the round in play or the end card. */
-export function GameStage({ gifCaption }: GameStageProps) {
+export function GameStage() {
     const { snapshot, lastEnded, serverOffset } = useRoom();
     const { t } = useTrans();
     const gifStep = useGifStep();
@@ -165,11 +152,7 @@ export function GameStage({ gifCaption }: GameStageProps) {
             >
                 {announcedOutcome}
             </p>
-            {round ? (
-                <RoundBoard round={round} gifCaption={gifCaption} />
-            ) : (
-                <RoundEndCard />
-            )}
+            {round ? <RoundBoard round={round} /> : <RoundEndCard />}
         </section>
     );
 }
