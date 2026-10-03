@@ -11,4 +11,5 @@ enum GameRoundOutcome: string
     case Passed = 'passed';
     case Revealed = 'revealed';
     case Abandoned = 'abandoned';
+    case Finished = 'finished';
 }

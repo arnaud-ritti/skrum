@@ -113,6 +113,10 @@ it('lists the games with their availability', function () {
         ['value' => 'gif', 'label' => __('Sprint in one GIF'), 'available' => false],
         ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true],
         ['value' => 'decoded', 'label' => __('Decoded'), 'available' => false],
+        ['value' => 'two_truths', 'label' => __('Two truths and a lie'), 'available' => false],
+        ['value' => 'mood', 'label' => __('Mood weather'), 'available' => false],
+        ['value' => 'guess_who', 'label' => __('Guess who?'), 'available' => false],
+        ['value' => 'quick_question', 'label' => __('Quick question'), 'available' => false],
     ]);
 });
 

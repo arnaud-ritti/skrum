@@ -33,17 +33,30 @@ use Illuminate\Support\Carbon;
  * @property GameRoundOutcome|null $outcome
  * @property Carbon $started_at
  * @property Carbon|null $ended_at
+ * @property int|null $number
+ * @property int|null $rounds_total
+ * @property array<int, string>|null $turn_order
+ * @property string|null $turn_player_id
+ * @property Carbon|null $turn_ends_at
+ * @property int|null $turn_seconds
+ * @property int|null $hint_seconds
+ * @property int $votes_allowed
+ * @property bool $authors_hidden
+ * @property array<int, string>|null $statements
+ * @property int|null $lie_index
  * @property Carbon|null $created_at
  * @property-read GameRoom $room
  * @property-read GamePlayer|null $leader
  * @property-read GamePlayer|null $winner
+ * @property-read GamePlayer|null $turnPlayer
  */
 #[Fillable([
     'game_room_id', 'game', 'leader_player_id', 'word', 'revealed_positions', 'picked_letters', 'picked_by',
     'misses', 'clue', 'question', 'drawing', 'drawing_points', 'winner_player_id', 'revealed_at',
-    'outcome', 'started_at', 'ended_at',
+    'outcome', 'started_at', 'ended_at', 'number', 'rounds_total', 'turn_order', 'turn_player_id', 'turn_ends_at',
+    'turn_seconds', 'hint_seconds', 'votes_allowed', 'authors_hidden', 'statements', 'lie_index',
 ])]
-#[Hidden(['word', 'picked_by'])]
+#[Hidden(['word', 'picked_by', 'lie_index'])]
 class GameRound extends Model
 {
     /** @use HasFactory<GameRoundFactory> */
@@ -60,6 +73,8 @@ class GameRound extends Model
         'clue' => '[]',
         'drawing' => '[]',
         'drawing_points' => 0,
+        'votes_allowed' => 1,
+        'authors_hidden' => false,
     ];
 
     /** @return BelongsTo<GameRoom, $this> */
@@ -98,6 +113,47 @@ class GameRound extends Model
         return $this->hasMany(GameGifVote::class);
     }
 
+    /** @return BelongsTo<GamePlayer, $this> */
+    public function turnPlayer(): BelongsTo
+    {
+        return $this->belongsTo(GamePlayer::class, 'turn_player_id');
+    }
+
+    /** @return HasMany<GameChoice, $this> */
+    public function choices(): HasMany
+    {
+        return $this->hasMany(GameChoice::class);
+    }
+
+    /** @return HasMany<GameTextAnswer, $this> */
+    public function textAnswers(): HasMany
+    {
+        return $this->hasMany(GameTextAnswer::class);
+    }
+
+    /** Guess who?: the one answer the draw kept, or null before the draw. */
+    public function drawnAnswer(): ?GameTextAnswer
+    {
+        return $this->textAnswers()->where('is_drawn', true)->first();
+    }
+
+    /** @return array<int, string> */
+    public function turnOrder(): array
+    {
+        return array_values($this->turn_order ?? []);
+    }
+
+    public function takesTurns(): bool
+    {
+        return $this->turnOrder() !== [];
+    }
+
+    /** @return array<int, string> */
+    public function statementsList(): array
+    {
+        return array_values($this->statements ?? []);
+    }
+
     /** @return HasMany<GamePoint, $this> */
     public function points(): HasMany
     {
@@ -124,6 +180,16 @@ class GameRound extends Model
             'revealed_at' => 'datetime',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
+            'number' => 'integer',
+            'rounds_total' => 'integer',
+            'turn_order' => 'array',
+            'turn_ends_at' => 'datetime',
+            'turn_seconds' => 'integer',
+            'hint_seconds' => 'integer',
+            'votes_allowed' => 'integer',
+            'authors_hidden' => 'boolean',
+            'statements' => 'array',
+            'lie_index' => 'integer',
         ];
     }
 }
