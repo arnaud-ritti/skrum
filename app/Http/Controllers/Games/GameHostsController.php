@@ -18,8 +18,9 @@ use Illuminate\Validation\ValidationException;
 class GameHostsController extends Controller
 {
     /**
-     * The host hands hosting to a member player; the creator and workspace
-     * Owners/Admins can take it at any time, so a room never stays stuck.
+     * The host hands hosting to a member player; the creator, workspace
+     * Owners/Admins and the team's facilitators and owners can take it at
+     * any time, so a room never stays stuck.
      */
     public function update(Request $request, GameRoom $room, AnnounceTeamGameRoom $announceTeamGameRoom): Response
     {
@@ -61,7 +62,7 @@ class GameHostsController extends Controller
             return;
         }
 
-        if ($player->account()?->canManage($room->team->workspace)) {
+        if ($player->account()?->can('takeControl', $room->team) ?? false) {
             return;
         }
 

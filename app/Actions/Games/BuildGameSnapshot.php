@@ -74,6 +74,7 @@ class BuildGameSnapshot
         $isHost = $room->isHost($viewer);
         $isManager = $room->isManager($viewer);
         $canTakeOver = ! $isGuest && ($room->isCreator($viewer) || ($viewer->account()?->canManage($room->team->workspace) ?? false));
+        $canTakeHosting = $canTakeOver || (! $isGuest && ($viewer->account()?->can('takeControl', $room->team) ?? false));
         $round = $room->activeRound();
         $guestUrl = $isStandalone && $isManager && $room->access === GameRoomAccess::Link ? $room->guestUrl() : null;
 
@@ -90,7 +91,7 @@ class BuildGameSnapshot
                 'isHost' => $isHost,
                 'canManage' => $isManager,
                 'canDelete' => $isStandalone && $canTakeOver,
-                'canBecomeHost' => $isStandalone && ! $isHost && $canTakeOver,
+                'canBecomeHost' => $isStandalone && ! $isHost && $canTakeHosting,
                 'hostPlayerId' => $this->hostPlayerId($room),
                 'guestUrl' => $guestUrl,
                 'joinCode' => $guestUrl === null ? null : $this->joinCodes->for($room),

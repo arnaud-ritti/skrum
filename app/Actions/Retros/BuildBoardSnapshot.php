@@ -147,6 +147,10 @@ class BuildBoardSnapshot
                 'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
+                'canTakeControl' => ! $viewer->isGuest()
+                    && ! $isFacilitator
+                    && $retro->phase !== RetroPhase::Completed
+                    && ($viewerParticipant->user?->can('takeControl', $retro->team) ?? false),
             ],
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights): array {
