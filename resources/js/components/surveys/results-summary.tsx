@@ -184,6 +184,7 @@ export function ResultsSummary({
                         <SurveyQuestion
                             key={question.id}
                             {...props}
+                            scaleChart="histogram"
                             aria-label={question.label}
                             results={
                                 props.results && delta

@@ -45,6 +45,19 @@ describe('ResultsSummary', () => {
         ).toHaveLength(4);
     });
 
+    it('draws a scale as the mockup histogram with its two ends under it', () => {
+        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+
+        const scale = card('Workload of the sprint');
+
+        expect(
+            scale.querySelector('[data-slot="survey-scale-histogram"]'),
+        ).not.toBeNull();
+        expect(scale.querySelector('[data-slot="survey-result"]')).toBeNull();
+        expect(within(scale).getByText('Unbearable')).not.toBeNull();
+        expect(within(scale).getByText('Very comfortable')).not.toBeNull();
+    });
+
     it('numbers each card out of the number of questions', () => {
         renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
 
