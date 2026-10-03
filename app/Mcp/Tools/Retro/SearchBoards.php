@@ -116,7 +116,7 @@ class SearchBoards extends SkrumTool
 
     /**
      * @param  Builder<Retro>  $retroIds
-     * @return Collection<int, array{retroId: string, kind: 'title', id: null, snippet: string}>
+     * @return Collection<int, array{retroId: string, kind: string, id: null, snippet: string}>
      */
     private function titles(Builder $retroIds, string $term): Collection
     {
@@ -138,7 +138,7 @@ class SearchBoards extends SkrumTool
      * have a configured provider (same rule as the summary tool).
      *
      * @param  Builder<Retro>  $retroIds
-     * @return Collection<int, array{retroId: string, kind: 'summary', id: null, snippet: string}>
+     * @return Collection<int, array{retroId: string, kind: string, id: null, snippet: string}>
      */
     private function summaries(Builder $retroIds, string $term): Collection
     {
@@ -164,7 +164,7 @@ class SearchBoards extends SkrumTool
 
     /**
      * @param  Builder<Retro>  $retroIds
-     * @return Collection<int, array{retroId: string, kind: 'action', id: string, snippet: string}>
+     * @return Collection<int, array{retroId: string, kind: string, id: string, snippet: string}>
      */
     private function actions(Builder $retroIds, string $term): Collection
     {
@@ -189,7 +189,7 @@ class SearchBoards extends SkrumTool
      * the board hides (PresentCard), so hidden text can never match.
      *
      * @param  Builder<Retro>  $retroIds
-     * @return Collection<int, array{retroId: string, kind: 'message', id: string, snippet: string}>
+     * @return Collection<int, array{retroId: string, kind: string, id: string, snippet: string}>
      */
     private function messages(Builder $retroIds, string $term, McpGrant $grant): Collection
     {

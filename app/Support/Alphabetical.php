@@ -31,7 +31,8 @@ class Alphabetical
      */
     public static function sort(Collection $items, callable $by): Collection
     {
-        return $items
+        /** @var TItems $sorted */
+        $sorted = $items
             ->sortBy(function (mixed $item) use ($by): string {
                 $value = $by($item);
                 $key = self::key($value);
@@ -39,5 +40,7 @@ class Alphabetical
                 return "{$key}\0{$value}";
             }, SORT_STRING)
             ->values();
+
+        return $sorted;
     }
 }

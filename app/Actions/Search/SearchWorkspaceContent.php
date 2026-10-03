@@ -15,7 +15,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Support\Database\SearchText;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -72,7 +72,7 @@ class SearchWorkspaceContent
                 ->whereContains('title', $term)
                 ->orWhereHas('tasks', fn (Builder $tasks) => $tasks->whereContains('title', $term)))
             ->when($termHasWildcard, fn (Builder $query) => $query->with([
-                'tasks' => fn (HasMany $tasks) => $tasks->whereContains('title', $term)->select(['id', 'poker_game_id', 'title']),
+                'tasks' => fn (Relation $tasks) => $tasks->whereContains('title', $term)->select(['id', 'poker_game_id', 'title']),
             ]))
             ->latest()->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
             ->filter(fn (PokerGame $game): bool => ! $termHasWildcard

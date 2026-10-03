@@ -23,7 +23,7 @@ trait HasSearchColumns
 
     public static function bootHasSearchColumns(): void
     {
-        static::saving(function (Model $model): void {
+        static::saving(function (self $model): void {
             foreach ($model->searchColumns() as $column => $folded) {
                 $text = $model->getAttribute($column);
                 $isMissing = $text !== null && $model->getAttribute($folded) === null;
