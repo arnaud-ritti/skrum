@@ -191,6 +191,7 @@ function snapshot(
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,
+        viewerIsObserver: false,
         serverTime: '2026-10-02T09:00:00Z',
         ...rest,
     };

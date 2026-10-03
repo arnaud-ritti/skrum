@@ -4,6 +4,7 @@ import {
     BoardProvider,
     type BoardContextValue,
 } from '@/components/retro/board-context';
+import { isBoardEditable } from '@/lib/retro/adapters';
 import type { Snapshot } from '@/lib/retro/types';
 import { renderWithProviders } from '@/test/render';
 
@@ -23,6 +24,7 @@ export function retroSnapshot({
             id: 'retro-1',
             teamId: 'team-1',
             teamName: 'Atlas',
+            sprintNumber: null,
             title: 'Sprint 42',
             template: 'start_stop_continue',
             phase: 'writing',
@@ -123,6 +125,7 @@ export function retroSnapshot({
         votesVersion: 0,
         links: { team: '/teams/team-1', actionItems: null, workspace: 'acme' },
         emojiData: { baseUrl: '/emoji', locale: 'en' },
+        viewerIsObserver: false,
         serverTime: new Date().toISOString(),
         ...rest,
     } as Snapshot;
@@ -164,7 +167,7 @@ export function boardContext(
             },
         ],
         presence: null,
-        isEditable: !board.retro.isLocked,
+        isEditable: isBoardEditable(board),
         unreadCardIds: new Set(),
         markCommentsRead: vi.fn(),
         subscribeGameEvents: () => () => {},

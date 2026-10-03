@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
         locale: 'en',
         errors: {} as Record<string, string>,
         currentWorkspace: { role: 'member' },
+        auth: { user: { id: 'me' } },
     },
 }));
 
@@ -53,6 +54,11 @@ const options: NewSessionOptions = {
     surveys: [],
     canCreateSurvey: true,
     surveyTemplates: [],
+    currentSprintNumber: null,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
 };
 
 const nothingOffered: Partial<NewSessionOptions> = {

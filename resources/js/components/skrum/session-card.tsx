@@ -52,7 +52,14 @@ export type SessionCardProps = {
     meta?: ReactNode;
     /** Rendered outside the link, so it may hold buttons or a menu. */
     action?: ReactNode;
-    stats?: { participants: number; cards?: number; actions?: number };
+    stats?: {
+        participants: number;
+        /** The people are those who joined the open session: the unit is shown. */
+        joined?: boolean;
+        cards?: number;
+        groups?: number;
+        actions?: number;
+    };
     people?: SessionCardPerson[];
     className?: string;
 };
@@ -230,10 +237,19 @@ export function SessionCard({
             )}
             {!showPresence && stats && (
                 <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground *:whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1">
+                    <span
+                        data-slot="session-card-participants"
+                        className="inline-flex items-center gap-1"
+                    >
                         <Users className="size-3.5" aria-hidden />
                         {stats.participants}
-                        <span className="sr-only">{t('participants')}</span>
+                        {stats.joined ? (
+                            <span className="@max-card-compact/card:sr-only">
+                                {t('joined')}
+                            </span>
+                        ) : (
+                            <span className="sr-only">{t('participants')}</span>
+                        )}
                     </span>
                     {stats.cards !== undefined && (
                         <span className="inline-flex items-center gap-1">
@@ -244,12 +260,26 @@ export function SessionCard({
                             </span>
                         </span>
                     )}
+                    {stats.groups !== undefined && (
+                        <span
+                            data-slot="session-card-groups"
+                            className="inline-flex items-center gap-1"
+                        >
+                            <Layers className="size-3.5" aria-hidden />
+                            {stats.groups === 1
+                                ? t('1 group')
+                                : t(':count groups', { count: stats.groups })}
+                        </span>
+                    )}
                     {stats.actions !== undefined && (
-                        <span className="inline-flex items-center gap-1">
+                        <span
+                            data-slot="session-card-actions"
+                            className="inline-flex items-center gap-1"
+                        >
                             <ListChecks className="size-3.5" aria-hidden />
                             {stats.actions}
                             <span className="@max-card-compact/card:sr-only">
-                                {t('actions')}
+                                {t('action items')}
                             </span>
                         </span>
                     )}

@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Copy, Pencil } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import { RetroTemplatePicker } from '@/components/skrum/retro-template-picker';
 import type { RetroTemplate } from '@/components/skrum/retro-template-picker';
 import type { MenuEntry } from '@/components/ui/dropdown-menu';
@@ -9,6 +8,7 @@ import {
     TemplateCard,
     TemplateColumnsPreview,
     TemplateGridClass,
+    TemplateVisibilityBadge,
 } from '@/components/workspaces/template-card';
 import { useTrans } from '@/hooks/use-trans';
 import { toRetroTemplate } from '@/lib/retro/template-adapter';
@@ -22,7 +22,7 @@ import type {
 
 type HrefFor = (kind: TemplateKind, key: string) => string | null;
 
-/** What a manager may do with a workspace template; absent for a member. */
+/** What may be done with a template the viewer may edit (`canManage`). */
 type RetroTemplateActions = {
     onEdit: (template: WorkspaceTemplateSummary) => void;
     onDuplicate: (template: WorkspaceTemplateSummary) => void;
@@ -34,18 +34,15 @@ export function RetroTemplateCards({
     templates,
     hrefFor,
     actions,
-    visibilityFor,
 }: {
     templates: WorkspaceTemplateSummary[];
     hrefFor: HrefFor;
     actions?: RetroTemplateActions;
-    /** WS-2: the visibility badge of a template. */
-    visibilityFor?: (template: WorkspaceTemplateSummary) => ReactNode;
 }) {
     const { t } = useTrans();
 
     const menuOf = (template: WorkspaceTemplateSummary): MenuEntry[] =>
-        actions === undefined
+        actions === undefined || !template.canManage
             ? []
             : [
                   {
@@ -99,7 +96,12 @@ export function RetroTemplateCards({
                             workspaceTemplateKey(template.id),
                         )}
                         menu={menuOf(template)}
-                        badge={visibilityFor?.(template)}
+                        badge={
+                            <TemplateVisibilityBadge
+                                visibility={template.visibility}
+                                team={template.team}
+                            />
+                        }
                     />
                 </li>
             ))}
@@ -117,6 +119,7 @@ function workspaceRetroTemplate(
         source: 'workspace',
         columns: template.columns,
         usageCount: template.usageCount,
+        canEdit: template.canManage,
         ...(template.author === null ? {} : { author: template.author.name }),
     };
 }
@@ -159,7 +162,7 @@ export function RetroTemplatesTab({
     onQueryChange: (query: string) => void;
     hrefFor: HrefFor;
     hasTeam: boolean;
-    /** The three below are given to a manager only. */
+    /** `onEdit` reaches the templates the viewer may edit only. */
     onCreate?: () => void;
     onEdit?: (template: WorkspaceTemplateSummary) => void;
     onDuplicate?: (source: RetroTemplate) => void;

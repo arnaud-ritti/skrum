@@ -77,6 +77,8 @@ class CreateAction extends SkrumTool
         $validated = $request->validate(ActionItemRules::create(allowsGuests: true), ActionItemRules::messages());
         $retro = $this->context->retro($boardId);
 
+        $this->refuseObserver($retro->team);
+
         RetroGuard::takesActionItems($retro);
         RetroGuard::unlocked($retro);
 
@@ -100,6 +102,8 @@ class CreateAction extends SkrumTool
         $validated = $request->validate(ActionItemRules::create(allowsGuests: false), ActionItemRules::messages());
         $team = $this->context->team($teamId);
         $user = McpGrant::current()->user;
+
+        $this->refuseObserver($team);
 
         $this->permissions->authorizeCreateWithoutRetro($user, $team);
 

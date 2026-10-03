@@ -18,8 +18,16 @@ import type {
 /** What the adapters read of a board. */
 type BoardView = Pick<
     Snapshot,
-    'retro' | 'viewer' | 'columns' | 'cards' | 'participants' | 'writersCount'
+    | 'retro'
+    | 'viewer'
+    | 'columns'
+    | 'cards'
+    | 'participants'
+    | 'writersCount'
+    | 'viewerIsObserver'
 >;
+
+type EditableView = Pick<Snapshot, 'retro' | 'viewer' | 'viewerIsObserver'>;
 
 /** Phases in which the facilitator may add, rename, recolour, move or delete a column. */
 export const ColumnEditPhases: RetroPhase[] = ['icebreaker', 'writing'];
@@ -125,8 +133,19 @@ export type CardVoting = {
     maxPerCard: number | null;
 };
 
-function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
-    return !board.retro.isLocked;
+/**
+ * An observer of the team follows the retro read-only (P23-04), unless they
+ * facilitate it: the session would be stuck without them.
+ */
+export function isObserving(
+    board: Pick<Snapshot, 'viewer' | 'viewerIsObserver'>,
+): boolean {
+    return board.viewerIsObserver && !board.viewer.isFacilitator;
+}
+
+/** What the viewer may write on the board: nothing on a locked board, nothing for an observer. */
+export function isBoardEditable(board: EditableView): boolean {
+    return !board.retro.isLocked && !isObserving(board);
 }
 
 export function toCardProps(card: BoardCard, board: BoardView): BoardCardProps {
@@ -228,9 +247,9 @@ export function toGroupProps(
  */
 export function cardVoting(
     card: BoardCard,
-    board: Pick<Snapshot, 'retro' | 'viewer'>,
+    board: EditableView,
 ): CardVoting | null {
-    if (board.retro.phase !== 'voting') {
+    if (board.retro.phase !== 'voting' || isObserving(board)) {
         return null;
     }
 
@@ -251,7 +270,7 @@ export function cardVoting(
 
 function voteBlock(
     card: BoardCard,
-    board: Pick<Snapshot, 'retro' | 'viewer'>,
+    board: EditableView,
 ): CardVoting['blocked'] {
     if (!isBoardEditable(board)) {
         return 'locked';
@@ -320,7 +339,7 @@ export function groupingProgress(board: Pick<Snapshot, 'cards'>): {
 
 export function cardEngagement(
     card: BoardCard,
-    board: Pick<Snapshot, 'retro'>,
+    board: EditableView,
 ): CardEngagement {
     if (card.hidden) {
         return {

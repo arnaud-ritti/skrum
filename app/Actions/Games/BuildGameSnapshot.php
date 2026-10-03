@@ -44,6 +44,7 @@ use App\Support\Sessions\JoinCodes;
  *     scoresResetAt: ?string,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, array<string, mixed>>,
+ *     viewerIsObserver: bool,
  *     serverTime: string
  * }
  */
@@ -73,6 +74,7 @@ class BuildGameSnapshot
         $isHost = $room->isHost($viewer);
         $isManager = $room->isManager($viewer);
         $canTakeOver = ! $isGuest && ($room->isCreator($viewer) || ($viewer->account()?->canManage($room->team->workspace) ?? false));
+        $canTakeHosting = $canTakeOver || (! $isGuest && ($viewer->account()?->can('takeControl', $room->team) ?? false));
         $round = $room->activeRound();
         $guestUrl = $isStandalone && $isManager && $room->access === GameRoomAccess::Link ? $room->guestUrl() : null;
 
@@ -89,7 +91,7 @@ class BuildGameSnapshot
                 'isHost' => $isHost,
                 'canManage' => $isManager,
                 'canDelete' => $isStandalone && $canTakeOver,
-                'canBecomeHost' => $isStandalone && ! $isHost && $canTakeOver,
+                'canBecomeHost' => $isStandalone && ! $isHost && $canTakeHosting,
                 'hostPlayerId' => $this->hostPlayerId($room),
                 'guestUrl' => $guestUrl,
                 'joinCode' => $guestUrl === null ? null : $this->joinCodes->for($room),
@@ -119,6 +121,7 @@ class BuildGameSnapshot
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
             'share' => $this->gameRoomShares->availability($room, $viewer),
             'deliveries' => $this->gameRoomShares->deliveries($room, $viewer),
+            'viewerIsObserver' => $viewer->user?->isObserverOf($room->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

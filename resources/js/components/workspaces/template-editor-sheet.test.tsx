@@ -1,6 +1,6 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
 import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
 import { draftFromTemplate } from '@/lib/workspaces/template-draft';
@@ -34,13 +34,23 @@ const template: WorkspaceTemplateSummary = {
     category: 'team_mood',
     author: null,
     usageCount: 0,
+    visibility: 'workspace',
+    team: null,
+    canManage: true,
     columns: [
         { title: 'Energy', description: 'How charged', color: 'moss' },
         { title: 'Blockers', description: null, color: 'coral' },
     ],
 };
 
-function sheet(target: TemplateEditorTarget) {
+function sheet(
+    target: TemplateEditorTarget,
+    teamId?: string,
+    access: {
+        canShareWorkspace?: boolean;
+        teams?: { id: string; name: string }[];
+    } = {},
+) {
     const onClose = vi.fn();
     const onDuplicate = vi.fn();
 
@@ -54,11 +64,20 @@ function sheet(target: TemplateEditorTarget) {
             ]}
             onClose={onClose}
             onDuplicate={onDuplicate}
+            teamId={teamId}
+            {...access}
         />,
     );
 
     return { onClose, onDuplicate, dialog: screen.getByRole('dialog') };
 }
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     mocks.post.mockReset();
@@ -84,6 +103,8 @@ describe('TemplateEditorSheet', () => {
         expect(mocks.patch.mock.calls[0][1]).toEqual({
             name: 'Team pulse',
             category: 'team_mood',
+            visibility: 'workspace',
+            team_id: null,
             columns: [
                 { title: 'Energy', description: 'How charged', color: 'moss' },
                 { title: 'Blockers', description: '', color: 'coral' },
@@ -120,6 +141,27 @@ describe('TemplateEditorSheet', () => {
             within(dialog).getByText('The name has already been taken.'),
         ).toBeTruthy();
         expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('creates a template of the team it is opened for', async () => {
+        const { dialog } = sheet(
+            {
+                key: 'new-2',
+                template: null,
+                draft: { ...draftFromTemplate(template), name: 'Atlas pulse' },
+            },
+            't1',
+        );
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.post.mock.calls[0][1]).toMatchObject({
+            name: 'Atlas pulse',
+            visibility: 'team',
+            team_id: 't1',
+        });
     });
 
     it('hands the draft being edited to duplicate', async () => {
@@ -168,5 +210,76 @@ describe('TemplateEditorSheet', () => {
         });
 
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('posts the team of a team template chosen in the editor', async () => {
+        const { dialog } = sheet(
+            {
+                key: 'edit-4',
+                template: {
+                    ...template,
+                    visibility: 'team',
+                    team: { id: 't1', name: 'Atlas' },
+                },
+                draft: draftFromTemplate({
+                    ...template,
+                    visibility: 'team',
+                    team: { id: 't1', name: 'Atlas' },
+                }),
+            },
+            undefined,
+            {
+                canShareWorkspace: false,
+                teams: [
+                    { id: 't1', name: 'Atlas' },
+                    { id: 't2', name: 'Borealis' },
+                ],
+            },
+        );
+
+        expect(
+            (
+                within(dialog).getByRole('radio', {
+                    name: 'Workspace',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+
+        await userEvent.click(
+            within(dialog).getByRole('combobox', { name: 'Team' }),
+        );
+        await userEvent.click(
+            await screen.findByRole('option', { name: 'Borealis' }),
+        );
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.patch.mock.calls[0][1]).toMatchObject({
+            visibility: 'team',
+            team_id: 't2',
+        });
+    });
+
+    it('posts no team for a personal template', async () => {
+        const { dialog } = sheet({
+            key: 'new-3',
+            template: null,
+            draft: {
+                ...draftFromTemplate(template),
+                name: 'Mine',
+                visibility: 'personal',
+                teamId: 't1',
+            },
+        });
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.post.mock.calls[0][1]).toMatchObject({
+            visibility: 'personal',
+            team_id: null,
+        });
     });
 });

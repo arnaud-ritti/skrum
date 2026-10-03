@@ -35,6 +35,7 @@ import type {
 } from '@/components/teams/session-create/new-session-dialog';
 import { PhaseTimersField } from '@/components/teams/session-create/phase-timers-field';
 import { RetroColumnsEditor } from '@/components/teams/session-create/retro-columns-editor';
+import { RetroFacilitatorField } from '@/components/teams/session-create/retro-facilitator-field';
 import { SettingRow } from '@/components/teams/session-create/setting-row';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -70,9 +71,12 @@ import {
     toRetroTemplates,
 } from '@/lib/retro/template-adapter';
 import type { DraftColumn } from '@/lib/retro/template-adapter';
+import { initialFacilitatorId } from '@/lib/teams/facilitator';
+import { retroNamePrefill } from '@/lib/teams/sprint';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    FacilitatorOption,
     LlmAvailability,
 } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
@@ -92,6 +96,19 @@ export type RetroSessionFormProps = {
     initialTitle?: string;
     /** Beside "Create & open". A later plan passes "Schedule…" here. */
     secondaryAction?: ReactNode;
+    /** The team's sprint of today: the name becomes "Sprint 42 retro". */
+    currentSprintNumber?: number | null;
+    /** The team's default template, chosen ahead of the most used one. */
+    defaultRetroTemplate?: string | null;
+    /** Who may facilitate, and who is suggested (decision 4 C); no select without it. */
+    facilitator?: RetroFacilitatorChoice;
+};
+
+export type RetroFacilitatorChoice = {
+    options: FacilitatorOption[];
+    viewerId: string;
+    suggestedId: string | null;
+    rotation: boolean;
 };
 
 type Errors = Record<string, string>;
@@ -311,6 +328,9 @@ export function RetroSessionFields({
     canSaveTemplate,
     initialTitle,
     secondaryAction,
+    currentSprintNumber = null,
+    defaultRetroTemplate = null,
+    facilitator,
     context,
 }: RetroSessionFormProps & { context: SessionFormContext }): ReactElement {
     const { t } = useTrans();
@@ -318,6 +338,7 @@ export function RetroSessionFields({
     const [title, setTitle] = useState(
         () =>
             initialTitle ??
+            retroNamePrefill(currentSprintNumber, t) ??
             t('Retro :date', {
                 date: new Date().toLocaleDateString(
                     locale as string | undefined,
@@ -343,6 +364,15 @@ export function RetroSessionFields({
     >(() => customStart(null));
     const [guests, setGuests] = useState(false);
     const [saveTemplate, setSaveTemplate] = useState(false);
+    const [facilitatorId, setFacilitatorId] = useState(() =>
+        facilitator === undefined
+            ? null
+            : initialFacilitatorId(
+                  facilitator.options,
+                  facilitator.suggestedId,
+                  facilitator.viewerId,
+              ),
+    );
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
 
@@ -361,7 +391,9 @@ export function RetroSessionFields({
             ? picked
             : defaultTemplateKey(
                   catalogue ?? [],
-                  topTemplates,
+                  defaultRetroTemplate === null
+                      ? topTemplates
+                      : [defaultRetroTemplate, ...topTemplates],
                   context.intent?.template,
               );
     const selected = templates.find((item) => item.id === templateKey);
@@ -406,6 +438,14 @@ export function RetroSessionFields({
         max_votes_per_card: cappedMaxPerCard,
         phase_durations: phaseDurations,
         guest_access_enabled: guests,
+        ...(facilitator === undefined
+            ? {}
+            : {
+                  facilitator_user_id:
+                      facilitatorId === facilitator.viewerId
+                          ? null
+                          : facilitatorId,
+              }),
     });
 
     const columnsPayload = () =>
@@ -833,6 +873,15 @@ export function RetroSessionFields({
                                 {below}
                             </Fragment>
                         ))}
+                        {facilitator !== undefined &&
+                            facilitatorId !== null && (
+                                <RetroFacilitatorField
+                                    {...facilitator}
+                                    value={facilitatorId}
+                                    onChange={setFacilitatorId}
+                                    error={errors.facilitator_user_id}
+                                />
+                            )}
                     </div>
                 </div>
                 <div className="flex flex-col gap-1">

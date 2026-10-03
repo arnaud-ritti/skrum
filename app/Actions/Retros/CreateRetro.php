@@ -3,8 +3,11 @@
 namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\AttachHealthCheck;
+use App\Actions\Teams\RecordTeamActivity;
+use App\Actions\Teams\SuggestedFacilitator;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
+use App\Enums\TeamActivityKind;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
@@ -21,12 +24,17 @@ class CreateRetro
     public function __construct(
         private AttachHealthCheck $attachHealthCheck,
         private Llm $llm,
+        private SuggestedFacilitator $suggestedFacilitator,
+        private RecordTeamActivity $recordTeamActivity,
     ) {}
 
     public function handle(Team $team, User $creator, NewRetro $data): Retro
     {
         return DB::transaction(function () use ($team, $creator, $data): Retro {
-            $workspaceTemplate = $this->workspaceTemplate($team, $data->template);
+            $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
+            $facilitatorUser = $data->facilitatorUserId === null ? $creator : User::query()->findOrFail($data->facilitatorUserId);
+            $this->suggestedFacilitator->follow($lockedTeam, $facilitatorUser);
+            $workspaceTemplate = $this->workspaceTemplate($team, $creator, $data->template);
 
             $retro = $team->retros()->make([
                 'title' => $data->title,
@@ -50,7 +58,8 @@ class CreateRetro
                 $retro->columns()->create([...$column, 'position' => $position]);
             }
 
-            $facilitator = $retro->participants()->create(['user_id' => $creator->id]);
+            $facilitator = $retro->participants()->create(['user_id' => $facilitatorUser->id]);
+            $this->recordTeamActivity->handle($team->id, TeamActivityKind::RetroStarted, $creator, null, $retro->id, $retro->title);
 
             $retro->update(['facilitator_participant_id' => $facilitator->id]);
 
@@ -62,7 +71,7 @@ class CreateRetro
         });
     }
 
-    private function workspaceTemplate(Team $team, string $template): ?WorkspaceTemplate
+    private function workspaceTemplate(Team $team, User $creator, string $template): ?WorkspaceTemplate
     {
         $id = WorkspaceTemplate::idFromKey($template);
 
@@ -70,7 +79,7 @@ class CreateRetro
             return null;
         }
 
-        return $team->workspace->templates()->with('columns')->findOrFail($id);
+        return $team->workspace->templates()->visibleTo($creator, $team->workspace, $team)->with('columns')->findOrFail($id);
     }
 
     /**

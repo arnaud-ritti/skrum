@@ -107,6 +107,8 @@ export type SurveySnapshot = {
         /** The team's statements, for a survey whose questions come from them. */
         healthCheck: string | null;
     };
+    /** The viewer is an observer of the team: they read the questions, unless they edit the survey. */
+    viewerIsObserver: boolean;
     serverTime: string;
 };
 

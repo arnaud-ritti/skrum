@@ -62,6 +62,9 @@ class PromoteSuggestion extends SkrumTool
         ]);
 
         $retro = $this->context->retro((string) $validated['board_id']);
+
+        $this->refuseObserver($retro->team);
+
         $retro->suggestedActions()->whereKey($validated['suggested_action_id'])->firstOrFail();
 
         $this->suggestionGuard->authorizeUser($retro, McpGrant::current()->user, $this->context->participant($retro));

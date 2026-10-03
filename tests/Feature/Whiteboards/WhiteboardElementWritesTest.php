@@ -2,6 +2,7 @@
 
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
+use App\Jobs\RefreshWhiteboardPreview;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use Illuminate\Support\Facades\Event;
@@ -387,7 +388,7 @@ it('accepts a second write of an element whose id is 0', function () {
     expect($board->elements()->sole()->data['x'])->toBe(5);
 });
 
-it('queues no job for an element write', function () {
+it('queues no job but the thumbnail refresh for an element write', function () {
     Queue::fake();
 
     $board = Whiteboard::factory()->create();
@@ -395,5 +396,6 @@ it('queues no job for an element write', function () {
 
     writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'first'])])->assertOk();
 
-    Queue::assertNothingPushed();
+    Queue::assertPushed(RefreshWhiteboardPreview::class, 1);
+    Queue::assertCount(1);
 });

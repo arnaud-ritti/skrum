@@ -53,6 +53,8 @@ class UpdateMessage extends SkrumTool
 
         [$card, $retro, $participant] = $this->ownMessage($this->context, (string) $validated['message_id']);
 
+        $this->refuseObserver($retro->team);
+
         $updated = $this->updateCard->handle($retro, $card, $participant, ['content' => $validated['content']]);
 
         return Response::structured($this->presentMessage->presentFresh($updated, $retro, $participant));

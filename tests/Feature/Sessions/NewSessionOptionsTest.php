@@ -13,6 +13,8 @@ it('gives the team page the options of the dialog from one place', function () {
         'templateCategories', 'topTemplates', 'catalogue', 'llm', 'canCreateRetro', 'icebreakerGames', 'gameOptions',
         'canCreateGameRoom', 'roomLimit', 'pokerDecks', 'defaultPokerDeck', 'pokerDeckOptions', 'canCreatePokerGame',
         'canCreateWhiteboard', 'whiteboardGallery', 'surveys', 'canCreateSurvey', 'surveyTemplates', 'pokerSources',
+        'currentSprintNumber', 'retroFacilitators', 'suggestedFacilitatorId', 'facilitatorRotation',
+        'defaultRetroTemplate',
     ]);
 
     $this->actingAs($member)

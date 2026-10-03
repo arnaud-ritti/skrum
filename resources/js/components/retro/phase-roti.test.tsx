@@ -92,6 +92,35 @@ describe('rotiVoters', () => {
 });
 
 describe('PhaseRoti', () => {
+    it('gives an observer no score to press, and still the list of who has voted', () => {
+        const board = { ...rotiBoard(), viewerIsObserver: true };
+
+        board.viewer = { ...board.viewer, isFacilitator: false };
+        renderInBoard(<PhaseRoti />, boardContext(board));
+
+        expect(
+            screen.queryByRole('group', {
+                name: 'Was this time together worth it?',
+            }),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-test="retro-roti-voters"]'),
+        ).not.toBeNull();
+    });
+
+    it('has no vote of its own for an observer in the narrow layout either', () => {
+        const board = { ...rotiBoard({}, 'completed'), viewerIsObserver: true };
+
+        board.viewer = { ...board.viewer, isFacilitator: false };
+        renderInBoard(<RotiVote />, boardContext(board));
+
+        expect(
+            screen.queryByRole('group', {
+                name: 'Was this time together worth it?',
+            }),
+        ).toBeNull();
+    });
+
     it('asks the question in a row of five scores, under its eyebrow, with the distribution hidden', () => {
         renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
 

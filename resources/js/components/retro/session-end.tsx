@@ -30,6 +30,7 @@ import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { ShareChannels, shareResultsLabel } from '@/lib/integrations';
 import { prefersReducedMotion } from '@/lib/motion';
+import { isObserving } from '@/lib/retro/adapters';
 import {
     formatSessionDuration,
     sessionEndStats,
@@ -374,7 +375,10 @@ export function SessionEnd({
     }, [celebrates, actions, t]);
 
     const [footerRef, footerHeight] = useHeightInRem();
-    const hasReactions = Boolean(presence) && showsRetroReactions(board.retro);
+    const hasReactions =
+        Boolean(presence) &&
+        showsRetroReactions(board.retro) &&
+        !isObserving(board);
     const recapActions = (
         <RecapActions onRecap={setRecap} footerRef={footerRef} />
     );

@@ -2,6 +2,7 @@ import {
     ArrowLeft,
     ArrowRight,
     CircleCheck,
+    Crown,
     Ellipsis,
     Lock,
     MousePointer2,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import RetroFacilitatorsController from '@/actions/App/Http/Controllers/Retros/RetroFacilitatorsController';
 import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
 import RetroTimerExtensionsController from '@/actions/App/Http/Controllers/Retros/RetroTimerExtensionsController';
 import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
@@ -75,11 +77,13 @@ const ExtensionSeconds = 120;
 export function BoardTitle() {
     const { board } = useBoard();
     const { t } = useTrans();
-    const { teamName } = board.retro;
-    const overline =
-        teamName === null
+    const { teamName, sprintNumber } = board.retro;
+    const after =
+        sprintNumber === null
             ? t('Retrospective')
-            : `${teamName} · ${t('Retrospective')}`;
+            : t('Sprint :number', { number: sprintNumber });
+    const overline =
+        teamName === null ? t('Retrospective') : `${teamName} · ${after}`;
     const steps = stepperPhases(board.retro.phases);
     const stepIndex = steps.indexOf(board.retro.phase);
     const phaseLabel = t(PhaseLabels[board.retro.phase]);
@@ -442,12 +446,37 @@ type ActionsProps = {
     mobile?: boolean;
 };
 
+/**
+ * A team facilitator, owner or manager makes themselves the facilitator of
+ * the open retro (decision 2 B), as "Take control" does on poker and
+ * whiteboards; the server's refusal comes back as a toast.
+ */
+function useTakeControl(): () => void {
+    const ctx = useBoard();
+    const { retro, viewer } = ctx.board;
+
+    const takeControl = async () => {
+        const response = await ctx.run(
+            retroRequest(RetroFacilitatorsController.update(retro.id), {
+                user_id: viewer.userId,
+            }).then(() => true),
+        );
+
+        if (response) {
+            await ctx.refetch();
+        }
+    };
+
+    return () => void takeControl();
+}
+
 export function BoardActions({
     hideMyCursor,
     onHideMyCursorChange,
     mobile = false,
 }: ActionsProps) {
     const { board } = useBoard();
+    const takeControl = useTakeControl();
     const { t } = useTrans();
     const [panel, setPanel] = useState<OpenPanel>(null);
     const settingsButton = useRef<HTMLButtonElement>(null);
@@ -460,7 +489,8 @@ export function BoardActions({
     const hasShareButton = hasShare && !isCompleted && !mobile;
     const hasShareEntry = hasShare && !hasShareButton;
     const hasHealthCheck = showsHealthCheck(board);
-    const hasMenu = viewer.isFacilitator || mobile;
+    const canTakeControl = viewer.canTakeControl && viewer.userId !== null;
+    const hasMenu = viewer.isFacilitator || canTakeControl || mobile;
 
     const close = (open: boolean) => {
         if (open) {
@@ -604,6 +634,14 @@ export function BoardActions({
                                     {hideMyCursor
                                         ? t('Show my cursor')
                                         : t('Hide my cursor')}
+                                </span>
+                            </DropdownMenuItem>
+                        )}
+                        {canTakeControl && (
+                            <DropdownMenuItem onSelect={takeControl}>
+                                <Crown aria-hidden />
+                                <span className="truncate">
+                                    {t('Take control')}
                                 </span>
                             </DropdownMenuItem>
                         )}

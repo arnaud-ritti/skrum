@@ -46,9 +46,12 @@ class WhiteboardFacilitatorsController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * The new facilitator must take part in the team: an observer only keeps a session they already facilitated.
+     */
     private function ensureCanHandOver(Whiteboard $locked, User $user): void
     {
-        if ($user->can('view', $locked->team)) {
+        if ($user->can('createWhiteboard', $locked->team)) {
             return;
         }
 

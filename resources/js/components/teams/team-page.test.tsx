@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TeamPage, teamSettingsHref } from '@/components/teams/team-page';
+import { TeamPage, retroStatsFor } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { renderWithProviders } from '@/test/render';
 
@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     reload: vi.fn(),
     on: vi.fn(() => () => {}),
     replace: vi.fn(),
+    visit: vi.fn(),
     request: vi.fn(),
     toastError: vi.fn(),
     props: {
@@ -18,6 +19,8 @@ const mocks = vi.hoisted(() => ({
         locale: 'en',
         errors: {} as Record<string, string>,
         currentWorkspace: { role: 'admin' } as { role: string } | null,
+        auth: { user: { id: 'me' } },
+        currentTeam: null as Record<string, unknown> | null,
     },
 }));
 
@@ -49,6 +52,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
             reload: mocks.reload,
             on: mocks.on,
             replace: mocks.replace,
+            visit: mocks.visit,
         },
     };
 });
@@ -92,6 +96,21 @@ const base: TeamPageProps = {
     surveyTemplates: [],
     whiteboardTemplates: [],
     pokerPresence: {},
+    currentSprintNumber: null,
+    defaultRetroTemplate: null,
+    retroFacilitators: [],
+    suggestedFacilitatorId: null,
+    facilitatorRotation: false,
+    roleOptions: [],
+    viewerRole: 'owner',
+    viewerIsObserver: false,
+    canManageRituals: true,
+    schedule: null,
+    hasSprints: false,
+    activity: [],
+    recentSessions: [],
+    openActionItems: [],
+    overdueActionItemCount: 0,
 };
 
 describe('the team page', () => {
@@ -219,78 +238,229 @@ describe('the team page', () => {
         expect(screen.queryByText('New whiteboard')).toBeNull();
     });
 
-    it('shows the team settings to who manages the team only', () => {
-        const { container, rerender } = renderWithProviders(
-            <TeamPage {...base} />,
+    it('no longer holds the team settings, and sends an old #settings link where the gear leads', () => {
+        mocks.props.currentTeam = {
+            id: 'team-1',
+            name: 'Atlas',
+            membersCount: 1,
+            viewerRole: 'owner',
+            viewerIsObserver: false,
+            settingsUrl: '/w/nordlys/teams/team-1/settings',
+        };
+        window.history.replaceState(
+            null,
+            '',
+            '/w/nordlys/teams/team-1#settings',
         );
 
-        expect(
-            container.querySelector('[data-slot="team-settings"]'),
-        ).not.toBeNull();
-
-        rerender(<TeamPage {...base} canManage={false} />);
+        const { container } = renderWithProviders(<TeamPage {...base} />);
 
         expect(
             container.querySelector('[data-slot="team-settings"]'),
         ).toBeNull();
         expect(screen.queryByRole('textbox', { name: 'Team name' })).toBeNull();
+        expect(mocks.visit).toHaveBeenCalledWith(
+            '/w/nordlys/teams/team-1/settings',
+            { replace: true },
+        );
+
+        window.history.replaceState(null, '', '/w/nordlys/teams/team-1');
+        mocks.props.currentTeam = null;
+        mocks.visit.mockReset();
+    });
+
+    it('disables "New session" for an observer, with the reason', () => {
+        const { rerender } = renderWithProviders(
+            <TeamPage {...base} viewerRole="observer" viewerIsObserver />,
+        );
+        const trigger = () =>
+            screen.getByRole('button', {
+                name: 'New session',
+            }) as HTMLButtonElement;
+
+        expect(trigger().disabled).toBe(true);
+        expect(trigger().getAttribute('aria-describedby')).not.toBeNull();
         expect(
-            screen.queryByRole('button', { name: 'Delete team' }),
+            document.getElementById(
+                trigger().getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Observers cannot start sessions.');
+
+        rerender(<TeamPage {...base} viewerRole={null} />);
+
+        expect(trigger().disabled).toBe(false);
+    });
+
+    it('lets a workspace admin whose row says observer start a session and add an action', () => {
+        renderWithProviders(
+            <TeamPage
+                {...base}
+                viewerRole="observer"
+                viewerIsObserver={false}
+                openActionItems={[]}
+                openActionItemCount={0}
+            />,
+        );
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'New session',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+        expect(
+            screen.queryByText('Observers cannot start sessions.'),
         ).toBeNull();
+        expect(
+            screen.getByRole('heading', { name: /Open action items/ }),
+        ).toBeTruthy();
+    });
+
+    it('counts a retro by its phase: who joined and the cards while writing, the groups once grouped, the action items once closed', () => {
+        const stats = { participants: 8, cards: 23, groups: 6, actionItems: 4 };
+        const retro = (phase: string) =>
+            ({ phase, stats }) as Parameters<typeof retroStatsFor>[0];
+
+        expect(retroStatsFor(retro('writing'))).toEqual({
+            participants: 8,
+            joined: true,
+            cards: 23,
+        });
+        expect(retroStatsFor(retro('grouping'))).toEqual({
+            participants: 8,
+            joined: true,
+            cards: 23,
+        });
+
+        for (const phase of ['voting', 'discussing', 'actions', 'roti']) {
+            expect(retroStatsFor(retro(phase))).toEqual({
+                participants: 8,
+                joined: true,
+                cards: 23,
+                groups: 6,
+            });
+        }
+
+        expect(retroStatsFor(retro('completed'))).toEqual({
+            participants: 8,
+            cards: 23,
+            actions: 4,
+        });
     });
 
     it('leads the gear of the header where the "Team settings" entry of the sidebar leads', () => {
-        const { rerender } = renderWithProviders(<TeamPage {...base} />);
         const gear = () =>
             screen
                 .queryByRole('link', { name: 'Team settings' })
                 ?.getAttribute('href');
+        const currentTeam = {
+            id: 'team-1',
+            name: 'Atlas',
+            membersCount: 1,
+            viewerRole: 'owner',
+            viewerIsObserver: false,
+            settingsUrl: '/w/nordlys/teams/team-1/settings',
+        };
 
-        expect(gear()).toMatch(/\/teams\/team-1#settings$/);
+        mocks.props.currentTeam = currentTeam;
 
-        rerender(<TeamPage {...base} canManageIntegrations />);
+        const { rerender } = renderWithProviders(<TeamPage {...base} />);
 
-        expect(gear()).toMatch(/\/teams\/team-1\/integrations$/);
+        expect(gear()).toBe('/w/nordlys/teams/team-1/settings');
 
-        rerender(<TeamPage {...base} canManage={false} />);
+        mocks.props.currentTeam = { ...currentTeam, settingsUrl: null };
+        rerender(<TeamPage {...base} />);
 
         expect(gear()).toBeUndefined();
+
+        mocks.props.currentTeam = { ...currentTeam, id: 'team-2' };
+        rerender(<TeamPage {...base} />);
+
+        expect(gear()).toBeUndefined();
+
+        mocks.props.currentTeam = null;
     });
 
-    it('gives the settings address of a manager, of who manages the integrations, and none to a member', () => {
-        const scope = { workspace: base.workspace, team: base.team };
+    it('fills the places from the props: schedule, recent sessions, open actions, activity, roles and thumbnails', () => {
+        const { container } = renderWithProviders(
+            <TeamPage
+                {...base}
+                members={[{ ...base.members[0], role: 'facilitator' }]}
+                schedule={{
+                    sprint: {
+                        id: 'sprint-42',
+                        number: 42,
+                        startsOn: '2026-09-21',
+                        endsOn: '2026-10-04',
+                    },
+                    nextRetro: null,
+                }}
+                hasSprints
+                recentSessions={[
+                    {
+                        kind: 'whiteboard',
+                        id: 'board-1',
+                        title: 'Invite flow',
+                        url: '/whiteboards/board-1',
+                        state: 'live',
+                        updatedAt: '2026-09-18T10:00:00+00:00',
+                        participants: 5,
+                        meta: { facilitatorName: null },
+                        outcome: null,
+                    },
+                ]}
+                whiteboards={[
+                    {
+                        id: 'board-1',
+                        title: 'Invite flow',
+                        updatedAt: '2026-09-18T10:00:00+00:00',
+                        facilitatorName: null,
+                        canDelete: false,
+                        preview: null,
+                    },
+                ]}
+            />,
+        );
+        const sessions = container.querySelector('#sessions') as HTMLElement;
 
         expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: true,
-                canManageIntegrations: false,
-            }),
-        ).toMatch(/#settings$/);
+            container.querySelector(
+                '[data-slot="team-header"] [data-slot="team-schedule"]',
+            )?.textContent,
+        ).toBe('Sprint 42');
+        expect(sessions.firstElementChild?.id).toBe('recent-sessions');
+        expect(sessions.parentElement?.lastElementChild?.id).toBe('activity');
+        expect(container.querySelector('aside')?.firstElementChild?.id).toBe(
+            'open-actions',
+        );
         expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: false,
-                canManageIntegrations: true,
-            }),
-        ).toMatch(/\/integrations$/);
+            container.querySelector('#members [data-test="member-role"]')
+                ?.textContent,
+        ).toBe('Facilitator');
         expect(
-            teamSettingsHref({
-                ...scope,
-                canManage: false,
-                canManageIntegrations: false,
-            }),
-        ).toBeUndefined();
+            container.querySelector(
+                '[data-slot="team-whiteboards"] [data-slot="whiteboard-thumbnail"]',
+            ),
+        ).not.toBeNull();
     });
 
-    it('renders nothing in the places left, and fills each from its slot', () => {
-        const { container, rerender } = renderWithProviders(
-            <TeamPage {...base} />,
+    it('offers to start the first sprint to who may set the rituals of a team without sprints', () => {
+        const { rerender } = renderWithProviders(<TeamPage {...base} />);
+        const link = () =>
+            screen.queryByRole('link', { name: 'Start the first sprint' });
+
+        expect(link()?.getAttribute('href')).toBe(
+            '/w/nordlys/teams/team-1/members#sprints',
         );
 
-        expect(container.querySelector('[data-place]')).toBeNull();
+        rerender(<TeamPage {...base} canManageRituals={false} />);
 
-        rerender(
+        expect(link()).toBeNull();
+    });
+
+    it('lets a slot given replace the place the props fill', () => {
+        const { container } = renderWithProviders(
             <TeamPage
                 {...base}
                 slots={{

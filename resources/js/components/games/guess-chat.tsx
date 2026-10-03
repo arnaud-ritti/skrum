@@ -25,7 +25,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { DrawFoundBy } from './draw-found-by';
 import { dockedPanelClass } from './game-layout';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 
 const MaxGuessLength = 50;
 
@@ -346,6 +346,7 @@ export function GuessChat({
 }: Props) {
     const { t } = useTrans();
     const { snapshot } = useRoom();
+    const observing = useIsObservingRoom();
     const guesses = round.guesses ?? [];
     const isFinder = hasFound(round, snapshot.me.playerId);
 
@@ -386,7 +387,7 @@ export function GuessChat({
                     </span>
                 </p>
             )}
-            {!isFinder && !isLeader && (
+            {!isFinder && !isLeader && !observing && (
                 <div
                     className={cn(
                         'flex flex-col gap-1',
@@ -447,6 +448,7 @@ export function GuessDock({
     const { snapshot } = useRoom();
     const [isOpen, setIsOpen] = useState(false);
     const restoreFocus = useRestoreFocus(isOpen);
+    const observing = useIsObservingRoom();
     const guesses = round.guesses ?? [];
     const isFinder = hasFound(round, snapshot.me.playerId);
 
@@ -484,7 +486,9 @@ export function GuessDock({
                 </Button>
             </div>
             {isFinder && <FoundWord word={round.word} />}
-            {!isFinder && !isLeader && <GuessField round={round} />}
+            {!isFinder && !isLeader && !observing && (
+                <GuessField round={round} />
+            )}
             <Drawer open={isOpen} onOpenChange={setIsOpen}>
                 <DrawerContent onCloseAutoFocus={restoreFocus}>
                     <DrawerHeader className="text-left">

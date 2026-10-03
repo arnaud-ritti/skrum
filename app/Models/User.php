@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasSearchColumns;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Auth\SendPasswordResetLink;
 use App\Support\Auth\LoginAddress;
@@ -63,6 +64,7 @@ use SensitiveParameter;
  * @property-read int|string|null $total_points
  * @property-read int|null $wins
  * @property-read int|null $rounds_played
+ * @property-read TeamMembership $teamMembership
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts', 'presence_color', 'reduce_motion'])]
 #[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token', 'avatar_photo_path', 'password_set_at', 'deactivated_at', 'last_signed_in_at'])]
@@ -223,10 +225,47 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return $this->roleIn($workspace)?->canManageWorkspace() ?? false;
     }
 
-    /** @return BelongsToMany<Team, $this> */
+    public function isObserverOf(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return false;
+        }
+
+        return $team->roleOf($this) === TeamRole::Observer;
+    }
+
+    public function managesTeam(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return true;
+        }
+
+        return $team->roleOf($this)?->managesTeam() ?? false;
+    }
+
+    public function managesRitualsOf(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return true;
+        }
+
+        return $team->roleOf($this)?->managesRituals() ?? false;
+    }
+
+    /** @return BelongsToMany<Team, $this, TeamMembership, 'teamMembership'> */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Team::class)->withTimestamps();
+        return $this->belongsToMany(Team::class)
+            ->using(TeamMembership::class)
+            ->as('teamMembership')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<Team, $this> */
+    public function defaultFacilitatorOf(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_facilitators')->withTimestamps();
     }
 
     /** @return HasMany<GamePoint, $this> */
@@ -239,6 +278,36 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
+    }
+
+    /** @return HasMany<Participant, $this> */
+    public function retroParticipations(): HasMany
+    {
+        return $this->hasMany(Participant::class);
+    }
+
+    /** @return HasMany<PokerPlayer, $this> */
+    public function pokerPlayers(): HasMany
+    {
+        return $this->hasMany(PokerPlayer::class);
+    }
+
+    /** @return HasMany<WhiteboardMember, $this> */
+    public function whiteboardMemberships(): HasMany
+    {
+        return $this->hasMany(WhiteboardMember::class);
+    }
+
+    /** @return HasMany<GamePlayer, $this> */
+    public function gamePlayers(): HasMany
+    {
+        return $this->hasMany(GamePlayer::class);
+    }
+
+    /** @return HasMany<TeamSurveyRespondent, $this> */
+    public function surveyRespondents(): HasMany
+    {
+        return $this->hasMany(TeamSurveyRespondent::class);
     }
 
     /**

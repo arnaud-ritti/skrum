@@ -6,7 +6,9 @@ use App\Actions\Games\AbandonIcebreakerRound;
 use App\Actions\Games\EnsureIcebreakerRoom;
 use App\Actions\HealthCheck\CloseAttachedSurveys;
 use App\Actions\Surveys\CloseOpenSurveys;
+use App\Actions\Teams\RecordTeamActivity;
 use App\Enums\RetroPhase;
+use App\Enums\TeamActivityKind;
 use App\Events\RetroCompleted;
 use App\Events\Retros\PhaseChanged;
 use App\Models\Retro;
@@ -24,6 +26,7 @@ class ChangeRetroPhase
         private AbandonIcebreakerRound $abandonIcebreakerRound,
         private EnsureIcebreakerRoom $ensureIcebreakerRoom,
         private MarkRetroStarted $markRetroStarted,
+        private RecordTeamActivity $recordTeamActivity,
     ) {}
 
     /**
@@ -41,6 +44,7 @@ class ChangeRetroPhase
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
         $this->announceCompletion($locked, $phase);
+        $this->recordCompletion($locked, $phase);
         $this->queueSummary($locked, $phase);
     }
 
@@ -144,6 +148,18 @@ class ChangeRetroPhase
         }
 
         event(new RetroCompleted($retro));
+    }
+
+    private function recordCompletion(Retro $locked, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Completed) {
+            return;
+        }
+
+        $facilitator = $locked->facilitator;
+        $facilitatorUser = $facilitator?->user;
+
+        $this->recordTeamActivity->handle($locked->team_id, TeamActivityKind::RetroCompleted, $facilitatorUser, $facilitatorUser === null ? $facilitator?->displayName() : null, $locked->id, $locked->title);
     }
 
     private function queueSummary(Retro $locked, RetroPhase $phase): void

@@ -19,6 +19,8 @@ type SurveyAnswerListProps = {
     questions: SurveyQuestionPayload[];
     onSave: SurveyAnswerSaver;
     onFinish: () => Promise<void> | void;
+    /** An observer of the team: the questions are shown, nothing is answered nor sent. */
+    readOnly?: boolean;
 };
 
 function namedQuestions(
@@ -39,6 +41,7 @@ export function SurveyAnswerList({
     questions,
     onSave,
     onFinish,
+    readOnly = false,
 }: SurveyAnswerListProps) {
     const { t } = useTrans();
     const answers = useSurveyAnswers(questions, onSave);
@@ -134,6 +137,7 @@ export function SurveyAnswerList({
                                     count: questions.length,
                                 })}
                                 invalid={invalidIds.includes(question.id)}
+                                disabled={readOnly}
                                 value={draft.value}
                                 comment={draft.comment}
                                 onChange={(value) =>
@@ -167,15 +171,17 @@ export function SurveyAnswerList({
                         {finishError}
                     </p>
                 )}
-                <Button
-                    type="button"
-                    size="lg"
-                    aria-busy={finishing || undefined}
-                    onClick={() => void finish()}
-                    className="self-end"
-                >
-                    {t('Finish')}
-                </Button>
+                {!readOnly && (
+                    <Button
+                        type="button"
+                        size="lg"
+                        aria-busy={finishing || undefined}
+                        onClick={() => void finish()}
+                        className="self-end"
+                    >
+                        {t('Finish')}
+                    </Button>
+                )}
                 <SurveyPrivacyLine />
             </div>
         </div>

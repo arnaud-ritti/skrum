@@ -8,8 +8,8 @@ import { SlackIntegration } from '@/components/integrations/slack-integration';
 import { StatusSyncSection } from '@/components/integrations/status-sync-section';
 import { UrlChannelIntegration } from '@/components/integrations/url-channel-integration';
 import { WebhookIntegration } from '@/components/integrations/webhook-integration';
-import { TeamSettingsShell } from '@/components/integrations/team-settings-shell';
 import { TelegramIntegration } from '@/components/integrations/telegram-integration';
+import { TeamSettingsShell } from '@/components/team-settings/team-settings-shell';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -17,6 +17,7 @@ import type {
     IntegrationScope,
     MattermostServerInfo,
     StatusSyncPageProps,
+    TeamSettingsSections,
     TeamSummary,
     TelegramBotInfo,
     WebhookEventOption,
@@ -25,7 +26,10 @@ import type {
 
 type Props = {
     workspace: WorkspaceSummary;
-    team: TeamSummary;
+    team: TeamSummary & { description: string | null };
+    createdAt: string | null;
+    membersCount: number;
+    sections: TeamSettingsSections;
     providers: IntegrationProviderCard[];
     telegram: TelegramBotInfo | null;
     mattermost: MattermostServerInfo | null;
@@ -35,6 +39,9 @@ type Props = {
 export default function TeamIntegrations({
     workspace,
     team,
+    createdAt,
+    membersCount,
+    sections,
     providers,
     telegram,
     mattermost,
@@ -52,6 +59,9 @@ export default function TeamIntegrations({
             workspace={workspace}
             team={team}
             active="integrations"
+            sections={sections}
+            createdAt={createdAt}
+            membersCount={membersCount}
         >
             <Head title={t('Integrations')} />
             <section

@@ -18,7 +18,7 @@ import { HangmanFigure } from './hangman-figure';
 import { HangmanTurnBanner } from './hangman-turn-banner';
 import { HangmanWordGuess } from './hangman-word-guess';
 import { LetterKeyboard } from './letter-keyboard';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 import { WordMask } from './word-mask';
 
 /** How many of the last letters stand on the stage where the right column is a sheet. */
@@ -31,6 +31,7 @@ export function HangmanBoard({ round }: { round: GameRound }) {
     const [pending, setPending] = useState(false);
     const hasRightColumn = useHasRightColumn();
     const footer = useStageFooter();
+    const observing = useIsObservingRoom();
     const misses = round.misses ?? 0;
     const maxMisses = round.maxMisses ?? 6;
     const mask = round.mask ?? [];
@@ -121,8 +122,8 @@ export function HangmanBoard({ round }: { round: GameRound }) {
             </div>
             <WordMask mask={mask} size="lg" />
             <HangmanTurnBanner round={round} />
-            {footer === null && keyboard}
-            {footer === null && wordGuess}
+            {footer === null && !observing && keyboard}
+            {footer === null && !observing && wordGuess}
             {!hasRightColumn && (
                 <HangmanFeed
                     round={round}
@@ -131,6 +132,7 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                 />
             )}
             {footer !== null &&
+                !observing &&
                 createPortal(
                     <div
                         data-slot="keyboard-dock"

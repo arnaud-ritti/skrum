@@ -13,6 +13,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { HeaderLogo, SelfAvatar } from '@/layouts/skrum/session-layout';
+import { ObserverNotice } from '@/components/session/observer-notice';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import type { PresenceMember } from '@/lib/retro/types';
 import { surveyApi } from '@/lib/surveys/api';
@@ -107,12 +108,15 @@ export function SurveyFrame({
     realtime,
     connection,
     actions,
+    observing = false,
     children,
 }: {
     snapshot: SurveySnapshot;
     realtime: RealtimeState;
     connection: SessionConnection;
     actions?: ReactNode;
+    /** The viewer observes the team: one line under the header (P23-04). */
+    observing?: boolean;
     children: ReactNode;
 }) {
     const { t } = useTrans();
@@ -145,6 +149,7 @@ export function SurveyFrame({
                         className="m-2"
                     />
                 )}
+                {observing && <ObserverNotice />}
                 <div
                     inert={connection.expired}
                     className="relative min-h-0 flex-1"
@@ -249,6 +254,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
     const { t } = useTrans();
     const state = useTeamSurvey(initial);
     const { snapshot, dispatch } = state;
+    const observing = snapshot.viewerIsObserver && !snapshot.me.isEditor;
     const [restartAt, setRestartAt] = useState<number | undefined>();
     const [reopening, setReopening] = useState(false);
     const latest = useRef(snapshot);
@@ -365,6 +371,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
                     onSave={onSave}
                     onFinish={onFinish}
                     initialStep={restartAt}
+                    readOnly={observing}
                 />
             );
         }
@@ -374,6 +381,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
                 questions={questions}
                 onSave={onSave}
                 onFinish={onFinish}
+                readOnly={observing}
             />
         );
     };
@@ -381,6 +389,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
     return (
         <SurveyFrame
             snapshot={snapshot}
+            observing={observing}
             realtime={state.realtime}
             connection={state.connection}
             actions={

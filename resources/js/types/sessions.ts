@@ -12,6 +12,7 @@ import type {
 import type {
     CatalogueTemplate,
     CategoryOption,
+    FacilitatorOption,
     LlmAvailability,
 } from './workspaces';
 
@@ -49,4 +50,12 @@ export type NewSessionOptions = {
     surveys: TeamSurveySummary[];
     canCreateSurvey: boolean;
     surveyTemplates: SurveyTemplateOption[];
+    /** The sprint of today; null outside every sprint. */
+    currentSprintNumber: number | null;
+    /** The team's default retro template, when the viewer may use it. */
+    defaultRetroTemplate: string | null;
+    /** Who may facilitate a retro: the team's members who take part, alphabetical. */
+    retroFacilitators: FacilitatorOption[];
+    suggestedFacilitatorId: string | null;
+    facilitatorRotation: boolean;
 };

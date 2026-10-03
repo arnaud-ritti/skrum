@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * @property string $id
@@ -158,17 +159,18 @@ class TeamSurvey extends Model
     }
 
     /**
-     * Everyone expected to answer: the team's members, plus the guests and
-     * the people outside the team who answered, so that the share of people
-     * who answered never exceeds 100 %. Someone outside the team who only
-     * opened the page is not counted. An attached health check counts the
-     * retro's participants instead (`PresentHealthProgress`).
+     * Everyone expected to answer: the team's members but its observers, plus
+     * the guests and the people outside the team who answered, so that the
+     * share of people who answered never exceeds 100 %. Someone outside the
+     * team who only opened the page is not counted. An attached health check
+     * counts the retro's participants instead (`PresentHealthProgress`).
      */
     public function audienceCount(): int
     {
         $memberIds = $this->team->members()->pluck('users.id');
+        $observerIds = $this->observerIds();
 
-        return $memberIds->count() + $this->respondents()
+        return $memberIds->count() - $observerIds->count() + $this->respondents()
             ->where(fn (Builder $respondents) => $respondents
                 ->whereNull('user_id')
                 ->orWhere(fn (Builder $outsiders) => $outsiders->whereNotIn('user_id', $memberIds)->whereHas('answers')))
@@ -177,18 +179,28 @@ class TeamSurvey extends Model
 
     /**
      * The people who joined: the members and guests who opened the survey,
-     * and the people outside the team once they answered.
+     * and the people outside the team once they answered. Observers never
+     * count.
      */
     public function participantCount(): int
     {
-        $memberIds = $this->team->members()->pluck('users.id');
+        $memberIds = $this->team->participatingMembers()->pluck('users.id');
+        $observerIds = $this->observerIds();
 
         return $this->respondents()
             ->where(fn (Builder $respondents) => $respondents
                 ->whereNull('user_id')
                 ->orWhereIn('user_id', $memberIds)
-                ->orWhereHas('answers'))
+                ->orWhere(fn (Builder $outsiders) => $outsiders->whereNotIn('user_id', $observerIds)->whereHas('answers')))
             ->count();
+    }
+
+    /**
+     * @return SupportCollection<int, string>
+     */
+    private function observerIds(): SupportCollection
+    {
+        return $this->team->observers()->pluck('users.id');
     }
 
     protected function casts(): array

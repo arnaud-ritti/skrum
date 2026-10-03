@@ -1,5 +1,5 @@
 import { http } from '@inertiajs/core';
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { configureEcho } from '@laravel/echo-react';
 import BroadcastAuthorizationsController from '@/actions/App/Http/Controllers/BroadcastAuthorizationsController';
 import { Toaster } from '@/components/ui/sonner';
@@ -7,6 +7,10 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
 import { followAccountMotion } from '@/lib/motion';
+import {
+    followWorkspace,
+    onlineWorkspaceId,
+} from '@/lib/realtime/workspace-presence';
 import { echoConnection } from '@/lib/reverb-config';
 
 const connection = typeof window !== 'undefined' ? echoConnection() : null;
@@ -40,6 +44,9 @@ if (connection) {
 if (typeof window !== 'undefined') {
     loadDocumentOnMaintenance();
     followAccountMotion();
+    router.on('navigate', (event) =>
+        followWorkspace(onlineWorkspaceId(event.detail.page.props)),
+    );
 }
 
 void createInertiaApp({

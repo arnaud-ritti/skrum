@@ -276,6 +276,24 @@ describe('RetroTemplatePicker', () => {
         expect(onEdit).toHaveBeenCalledWith('tpl-5');
     });
 
+    it('offers no Edit on a workspace template the viewer may not edit', () => {
+        renderWithProviders(
+            <RetroTemplatePicker
+                value="tpl-5"
+                onValueChange={vi.fn()}
+                templates={templates.map((template) =>
+                    template.id === 'tpl-5'
+                        ? { ...template, canEdit: false }
+                        : template,
+                )}
+                tab="workspace"
+                onEdit={vi.fn()}
+            />,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    });
+
     it('keeps "Use this template" in place, inert, with the reason it cannot be used', () => {
         const onUse = vi.fn();
 

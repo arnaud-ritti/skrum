@@ -19,6 +19,8 @@ export type WhiteboardSummary = {
     updatedAt: string | null;
     facilitatorName: string | null;
     canDelete: boolean;
+    /** The cached thumbnail; null until the queue has built it. */
+    preview: WhiteboardPreview | null;
 };
 
 export type WhiteboardPreviewShape = {

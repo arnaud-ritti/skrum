@@ -23,7 +23,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import type { TeamMember, TeamSummary } from '@/types';
+import type {
+    TeamMember,
+    TeamRole,
+    TeamRoleOption,
+    TeamSummary,
+} from '@/types';
 
 type Props = {
     workspaceSlug: string;
@@ -31,6 +36,8 @@ type Props = {
     members: TeamMember[];
     availableMembers: TeamMember[];
     canManage: boolean;
+    /** The roles a new member can be given; empty when the server sends none. */
+    roleOptions?: TeamRoleOption[];
     /** Place left (IN-4): "Invite", at the end of the card header. */
     inviteAction?: ReactNode;
     /** Place left (TM-6): the role badge of a member, at the end of its row. */
@@ -45,6 +52,7 @@ export function TeamMembersCard({
     members,
     availableMembers,
     canManage,
+    roleOptions = [],
     inviteAction,
     roleBadgeFor,
 }: Props) {
@@ -59,6 +67,7 @@ export function TeamMembersCard({
     const [removing, setRemoving] = useState<TeamMember | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [userId, setUserId] = useState('');
+    const [role, setRole] = useState<TeamRole>('member');
     const [adding, setAdding] = useState(false);
     const params = { workspace: workspaceSlug, team: team.id };
     const visible = expanded ? members : members.slice(0, VisibleMembers);
@@ -99,11 +108,16 @@ export function TeamMembersCard({
 
         router.post(
             TeamMembersController.store.url(params),
-            { user_id: userId },
+            roleOptions.length > 0
+                ? { user_id: userId, role }
+                : { user_id: userId },
             {
                 preserveScroll: true,
                 onStart: () => setAdding(true),
-                onSuccess: () => setUserId(''),
+                onSuccess: () => {
+                    setUserId('');
+                    setRole('member');
+                },
                 onFinish: () => setAdding(false),
             },
         );
@@ -211,6 +225,32 @@ export function TeamMembersCard({
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {roleOptions.length > 0 && (
+                                    <Select
+                                        value={role}
+                                        onValueChange={(value) =>
+                                            setRole(value as TeamRole)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="add-member-role"
+                                            aria-label={t('Add as')}
+                                            className="w-auto max-w-36 min-w-0 shrink-0"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {roleOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                                 <LoadingButton
                                     type="submit"
                                     loading={adding}

@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\Retros\CreateRetro;
 use App\Actions\Retros\NewRetro;
+use App\Actions\Retros\TemplateAvailability;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceTemplate;
 use App\Support\Retros\PhaseDurations;
-use App\Support\RetroTemplates\TemplateCatalogue;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,13 +21,13 @@ use Illuminate\Validation\Rule;
 
 class TeamRetrosController extends Controller
 {
-    public function store(Request $request, Workspace $workspace, Team $team, CreateRetro $createRetro, IcebreakerGameOptions $icebreakerGameOptions): RedirectResponse
+    public function store(Request $request, Workspace $workspace, Team $team, CreateRetro $createRetro, IcebreakerGameOptions $icebreakerGameOptions, TemplateAvailability $templateAvailability): RedirectResponse
     {
         Gate::authorize('createRetro', $team);
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'template' => ['required', 'string', $this->availableTemplate($workspace)],
+            'template' => ['required', 'string', $this->availableTemplate($team, $request->user(), $templateAvailability)],
             'is_anonymous' => ['sometimes', 'boolean'],
             'health_check_enabled' => ['sometimes', 'boolean'],
             'icebreaker_enabled' => ['sometimes', 'boolean'],
@@ -40,6 +40,7 @@ class TeamRetrosController extends Controller
             'columns.*.title' => ['required', 'string', 'max:100'],
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
+            'facilitator_user_id' => ['nullable', 'uuid', $this->facilitatorCandidate($team)],
             ...PhaseDurations::rules(),
         ]);
 
@@ -56,6 +57,7 @@ class TeamRetrosController extends Controller
             columns: $this->columns($validated['columns'] ?? null),
             maxVotesPerCard: isset($validated['max_votes_per_card']) ? (int) $validated['max_votes_per_card'] : null,
             phaseDurations: PhaseDurations::fromValidated($validated['phase_durations'] ?? null),
+            facilitatorUserId: $validated['facilitator_user_id'] ?? null,
         ));
 
         return to_route('retros.show', $retro);
@@ -78,29 +80,30 @@ class TeamRetrosController extends Controller
         ], array_values($columns));
     }
 
-    private function availableTemplate(Workspace $workspace): Closure
+    /**
+     * A person who may take part in the team's sessions (not an observer, not outside the team).
+     */
+    private function facilitatorCandidate(Team $team): Closure
     {
-        return function (string $attribute, mixed $value, Closure $fail) use ($workspace): void {
-            if ($this->isAvailable($workspace, $value)) {
+        return function (string $attribute, mixed $value, Closure $fail) use ($team): void {
+            $user = is_string($value) ? User::query()->find($value) : null;
+
+            if ($user !== null && $user->can('createRetro', $team)) {
+                return;
+            }
+
+            $fail(__('Choose a facilitator from the team.'));
+        };
+    }
+
+    private function availableTemplate(Team $team, User $user, TemplateAvailability $availability): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($team, $user, $availability): void {
+            if ($availability->isAvailable($team, $user, $value)) {
                 return;
             }
 
             $fail(__('Choose a template from the list.'));
         };
-    }
-
-    private function isAvailable(Workspace $workspace, mixed $template): bool
-    {
-        if (! is_string($template)) {
-            return false;
-        }
-
-        $workspaceTemplateId = WorkspaceTemplate::idFromKey($template);
-
-        if ($workspaceTemplateId !== null) {
-            return $workspace->templates()->whereKey($workspaceTemplateId)->exists();
-        }
-
-        return TemplateCatalogue::has($template);
     }
 }

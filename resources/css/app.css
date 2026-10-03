@@ -819,3 +819,13 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
   --text-3xs: 0.5625rem;         --text-3xs--line-height: 0.75rem;
 }
 /* ===== End of plan 20 additions ===== */
+
+/*
+ * ===== Plan 23 additions =====
+ * The dotted paper behind a whiteboard thumbnail on the team page: the dot grid
+ * of the board, on the whiteboard paper that stays white in the dark theme.
+ */
+@layer utilities {
+  .bg-whiteboard-dotgrid { background-color: var(--color-whiteboard-paper); background-image: radial-gradient(var(--color-whiteboard-paper-line) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; }
+}
+/* ===== End of plan 23 additions ===== */

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Integrations;
 use App\Actions\Integrations\DisconnectIntegration;
 use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\UpdateTeamIntegration;
+use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\IntegrationProvider;
 use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
@@ -25,7 +26,7 @@ class TeamIntegrationsController extends Controller
 {
     public function __construct(private PresentTeamIntegration $presentTeamIntegration) {}
 
-    public function index(Workspace $workspace, Team $team, TelegramBot $telegramBot): Response
+    public function index(Request $request, Workspace $workspace, Team $team, TelegramBot $telegramBot, TeamSettingsSections $sections): Response
     {
         Gate::authorize('manageIntegrations', $team);
 
@@ -34,7 +35,10 @@ class TeamIntegrationsController extends Controller
 
         return Inertia::render('teams/integrations', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => $team->only(['id', 'name']),
+            'team' => $team->only(['id', 'name', 'description']),
+            'createdAt' => $team->created_at?->toIso8601String(),
+            'membersCount' => $team->members()->count(),
+            'sections' => $sections->handle($request->user(), $team),
             'providers' => array_map(function (IntegrationProvider $provider) use ($integrations): array {
                 $integration = $integrations->get($provider->value);
 

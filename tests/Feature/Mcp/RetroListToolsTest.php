@@ -3,6 +3,7 @@
 use App\Enums\ActionItemPriority;
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Mcp\Tools\Retro\ListActionItems;
 use App\Mcp\Tools\Retro\ListBoardActionItems;
@@ -28,7 +29,20 @@ it('lists the team roster with workspace permissions and no emails', function ()
         $admin->id => 'admin',
     ])
         ->and(json_encode($members))->not->toContain('@')
-        ->and($members->first())->toHaveKeys(['userId', 'name', 'avatarUrl', 'permission']);
+        ->and($members->first())->toHaveKeys(['userId', 'name', 'avatarUrl', 'permission', 'role']);
+});
+
+it('lists each member with their team role', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    $facilitator = teamMember($team, TeamRole::Facilitator);
+
+    $response = actingAsMcp($member)->tool(ListTeamMembers::class, ['team_id' => $team->id])->assertOk();
+
+    expect(collect(mcpStructured($response)['members'])->pluck('role', 'userId')->all())->toEqual([
+        $member->id => 'member',
+        $facilitator->id => 'facilitator',
+    ]);
 });
 
 it('hides the roster of teams the user cannot see', function () {

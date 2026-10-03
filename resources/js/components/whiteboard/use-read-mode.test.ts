@@ -1,6 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
+import {
+    canSwitchReadMode,
+    isLockedForViewer,
+    isViewMode,
+    useReadMode,
+} from './use-read-mode';
 
 describe('useReadMode', () => {
     it('opens a board in read mode on a phone', () => {
@@ -78,5 +83,29 @@ describe('canSwitchReadMode', () => {
     it('is not for a wider screen', () => {
         expect(canSwitchReadMode(false, false)).toBe(false);
         expect(canSwitchReadMode(false, true)).toBe(false);
+    });
+});
+
+describe('isLockedForViewer', () => {
+    const viewer = (
+        locked: boolean,
+        isFacilitator: boolean,
+        viewerIsObserver: boolean,
+    ) =>
+        isLockedForViewer({
+            board: { locked },
+            me: { isFacilitator },
+            viewerIsObserver,
+        });
+
+    it('locks a locked board for everyone but the facilitator', () => {
+        expect(viewer(true, false, false)).toBe(true);
+        expect(viewer(true, true, false)).toBe(false);
+        expect(viewer(false, false, false)).toBe(false);
+    });
+
+    it('keeps an observer in read mode, unless they facilitate the board', () => {
+        expect(viewer(false, false, true)).toBe(true);
+        expect(viewer(false, true, true)).toBe(false);
     });
 });

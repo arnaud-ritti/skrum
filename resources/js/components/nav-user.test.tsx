@@ -6,12 +6,21 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { renderWithProviders } from '@/test/render';
 import type { User } from '@/types';
 
-const page = vi.hoisted(() => ({ user: null as unknown }));
+const page = vi.hoisted(() => ({
+    user: null as unknown,
+    currentTeam: null as unknown,
+    currentWorkspace: null as unknown,
+}));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
     usePage: () => ({
-        props: { translations: {}, auth: { user: page.user } },
+        props: {
+            translations: {},
+            auth: { user: page.user },
+            currentTeam: page.currentTeam,
+            currentWorkspace: page.currentWorkspace,
+        },
     }),
 }));
 
@@ -35,6 +44,8 @@ function renderNavUser() {
 
 beforeEach(() => {
     page.user = user;
+    page.currentTeam = null;
+    page.currentWorkspace = null;
 });
 
 describe('NavUser', () => {
@@ -68,5 +79,48 @@ describe('NavUser', () => {
                 .getByRole('menuitem', { name: 'Log out' })
                 .getAttribute('data-test'),
         ).toBe('logout-button');
+    });
+});
+
+describe('NavUser, the role line', () => {
+    const roleLine = () =>
+        document.querySelector('[data-slot="user-card-role"]')?.textContent;
+
+    it('reads the team role, then the workspace role', () => {
+        page.currentTeam = {
+            id: 't',
+            name: 'Atlas',
+            viewerRole: 'facilitator',
+        };
+        page.currentWorkspace = {
+            id: 'w',
+            name: 'N',
+            slug: 'n',
+            role: 'admin',
+        };
+
+        renderNavUser();
+
+        expect(roleLine()).toBe('Facilitator · Admin');
+    });
+
+    it('reads the workspace role alone outside the current team', () => {
+        page.currentTeam = { id: 't', name: 'Atlas', viewerRole: null };
+        page.currentWorkspace = {
+            id: 'w',
+            name: 'N',
+            slug: 'n',
+            role: 'owner',
+        };
+
+        renderNavUser();
+
+        expect(roleLine()).toBe('Owner');
+    });
+
+    it('has no role line outside a workspace', () => {
+        renderNavUser();
+
+        expect(roleLine()).toBeUndefined();
     });
 });

@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { DoorOpen, Plus, UserPlus, Users } from 'lucide-react';
+import { DoorOpen, Pencil, Plus, UserPlus, Users } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
@@ -13,6 +12,7 @@ import {
 } from '@/components/workspaces/leave-workspace-dialog';
 import { NewTeamDialog } from '@/components/workspaces/new-team-dialog';
 import { TeamTile } from '@/components/workspaces/team-tile';
+import { WorkspaceDetailsDialog } from '@/components/workspaces/workspace-details-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -28,15 +28,8 @@ export type WorkspaceOverviewProps = {
     adminsCount: number;
     otherAdminName: string | null;
     canManage: boolean;
-};
-
-/**
- * Places left for the features that come after the rewrite; nothing is
- * rendered while a slot is undefined.
- */
-type WorkspaceOverviewSlots = {
-    /** WS-1: the description of a team, under its name on the tile. */
-    teamDescriptionFor?: (team: WorkspaceTeamTile) => ReactNode;
+    /** The viewer may rename the workspace and change its description. */
+    canEditDetails: boolean;
 };
 
 export function WorkspaceOverview({
@@ -46,15 +39,14 @@ export function WorkspaceOverview({
     adminsCount,
     otherAdminName,
     canManage,
+    canEditDetails,
     role,
     now,
-    slots = {},
 }: WorkspaceOverviewProps & {
     /** Role of the viewer in this workspace, when the page knows it. */
     role?: WorkspaceRole;
     /** The present, in milliseconds; given by the bench for a stable picture. */
     now?: number;
-    slots?: WorkspaceOverviewSlots;
 }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -63,6 +55,7 @@ export function WorkspaceOverview({
     const leaveTrigger = useRef<HTMLButtonElement>(null);
     const [newTeamOpen, setNewTeamOpen] = useState(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
+    const [detailsOpen, setDetailsOpen] = useState(false);
     const [present] = useState(() => now ?? Date.now());
 
     const roleLine =
@@ -119,15 +112,40 @@ export function WorkspaceOverview({
                     {workspace.name.trim().charAt(0).toUpperCase()}
                 </span>
                 <div className="flex min-w-48 flex-1 flex-col gap-1">
-                    <h1 className="font-display text-2xl font-bold tracking-heading wrap-anywhere">
-                        {workspace.name}
-                    </h1>
+                    <div className="flex min-w-0 items-center gap-1">
+                        <h1 className="min-w-0 font-display text-2xl font-bold tracking-heading wrap-anywhere">
+                            {workspace.name}
+                        </h1>
+                        {canEditDetails && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={t(
+                                    'Edit the workspace name and description',
+                                )}
+                                onClick={() => setDetailsOpen(true)}
+                                className="shrink-0 text-muted-foreground"
+                            >
+                                <Pencil aria-hidden />
+                            </Button>
+                        )}
+                    </div>
                     <p
                         data-slot="workspace-subline"
                         className="text-sm text-muted-foreground"
                     >
                         {subline}
                     </p>
+                    {workspace.description != null &&
+                        workspace.description !== '' && (
+                            <p
+                                data-slot="workspace-description"
+                                className="text-sm wrap-anywhere text-muted-foreground"
+                            >
+                                {workspace.description}
+                            </p>
+                        )}
                 </div>
                 {canManage && (
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -196,7 +214,6 @@ export function WorkspaceOverview({
                                 })}
                                 locale={locale}
                                 now={present}
-                                description={slots.teamDescriptionFor?.(team)}
                             />
                         ))}
                         {canManage && (
@@ -258,6 +275,14 @@ export function WorkspaceOverview({
                 {isPhone && <LeaveWorkspaceDialog {...leave} />}
                 {!isPhone && leaveOpen && <LeaveWorkspacePanel {...leave} />}
             </section>
+
+            {canEditDetails && (
+                <WorkspaceDetailsDialog
+                    open={detailsOpen}
+                    onOpenChange={setDetailsOpen}
+                    workspace={workspace}
+                />
+            )}
 
             {canManage && (
                 <NewTeamDialog

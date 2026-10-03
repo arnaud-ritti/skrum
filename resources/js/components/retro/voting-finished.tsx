@@ -4,7 +4,7 @@ import VotingCompletionsController from '@/actions/App/Http/Controllers/Retros/V
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { finishedCount } from '@/lib/retro/adapters';
+import { finishedCount, isObserving } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import { useBoard } from './board-context';
 import { PhaseVotingBar } from './phase-voting-bar';
@@ -157,7 +157,7 @@ export function BoardVotingBar({
                     : t(' · max :count per card', { count: cap })
             }
             finished={<FinishedCount />}
-            done={<FinishButton />}
+            done={isObserving(board) ? undefined : <FinishButton />}
         />
     );
 }

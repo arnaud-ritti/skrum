@@ -15,7 +15,11 @@ class ActionItemPermissions
 {
     public function canCreateWithoutRetro(User $user, Team $team): bool
     {
-        return $team->hasMember($user);
+        if (! $team->hasMember($user)) {
+            return false;
+        }
+
+        return ! $user->isObserverOf($team);
     }
 
     public function canEdit(ActionItem $item, ActionItemActor $actor): bool
@@ -30,6 +34,10 @@ class ActionItemPermissions
 
     public function canComplete(ActionItem $item, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($item, $actor)) {
+            return false;
+        }
+
         if ($this->isManager($item, $actor)) {
             return true;
         }
@@ -43,6 +51,10 @@ class ActionItemPermissions
 
     public function canComment(ActionItem $item, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($item, $actor)) {
+            return false;
+        }
+
         if ($actor->participant !== null && $item->retro_id !== null && $actor->participant->retro_id === $item->retro_id) {
             return true;
         }
@@ -164,6 +176,15 @@ class ActionItemPermissions
         }
 
         return $actor->user?->canManage($item->team->workspace) ?? false;
+    }
+
+    private function isObserver(ActionItem $item, ActionItemActor $actor): bool
+    {
+        if ($actor->user === null) {
+            return false;
+        }
+
+        return $actor->user->isObserverOf($item->team);
     }
 
     private function isAssignee(ActionItem $item, ActionItemActor $actor): bool

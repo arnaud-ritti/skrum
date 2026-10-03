@@ -1,6 +1,5 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { teamSettingsHref } from '@/components/teams/team-page';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 
 type SharedProps = Record<string, unknown>;
@@ -24,7 +23,13 @@ const signedOut: SharedProps = {
 };
 
 const workspace = { id: 'w1', name: 'Nordlys', slug: 'nordlys' };
-const team = { id: 't1', name: 'Atlas', membersCount: 8 };
+const team = {
+    id: 't1',
+    name: 'Atlas',
+    membersCount: 8,
+    viewerRole: 'member',
+    settingsUrl: null,
+};
 
 function modelFor(props: SharedProps) {
     page.props = { ...signedOut, ...props };
@@ -102,62 +107,21 @@ describe('useSidebarModel', () => {
         expect(modelFor({ brand }).brand).toEqual(brand);
     });
 
-    it('leads a workspace owner to the integrations of the team when a provider is configured', () => {
+    it('leads "Team settings" to the first tab of the team settings the server gives', () => {
         const model = modelFor({
-            currentWorkspace: { ...workspace, role: 'owner' },
-            currentTeam: team,
+            currentWorkspace: { ...workspace, role: 'member' },
+            currentTeam: {
+                ...team,
+                settingsUrl: '/w/nordlys/teams/t1/members',
+            },
             teams: [{ id: 't1', name: 'Atlas' }],
             workspaces: [workspace],
-            features: { mcp: false, integrations: true },
         });
 
         expect(hrefOf(model.links.settings)).toBe(
-            '/w/nordlys/teams/t1/integrations',
+            '/w/nordlys/teams/t1/members',
         );
     });
-
-    it('leads a workspace owner to the settings card of the team page when no provider is configured', () => {
-        const model = modelFor({
-            currentWorkspace: { ...workspace, role: 'owner' },
-            currentTeam: team,
-            teams: [{ id: 't1', name: 'Atlas' }],
-            workspaces: [workspace],
-            features: { mcp: false, integrations: false },
-        });
-
-        expect(hrefOf(model.links.settings)).toBe(
-            '/w/nordlys/teams/t1#settings',
-        );
-    });
-
-    it.each([
-        { role: 'owner', integrations: true },
-        { role: 'owner', integrations: false },
-        { role: 'admin', integrations: true },
-        { role: 'member', integrations: true },
-        { role: 'member', integrations: false },
-    ])(
-        'leads a $role where the gear of the team page leads (provider configured: $integrations)',
-        ({ role, integrations }) => {
-            const model = modelFor({
-                currentWorkspace: { ...workspace, role },
-                currentTeam: team,
-                teams: [{ id: 't1', name: 'Atlas' }],
-                workspaces: [workspace],
-                features: { mcp: false, integrations },
-            });
-            const manages = role !== 'member';
-
-            expect(hrefOf(model.links.settings)).toBe(
-                teamSettingsHref({
-                    workspace,
-                    team: team as never,
-                    canManage: manages,
-                    canManageIntegrations: manages && integrations,
-                }),
-            );
-        },
-    );
 
     it('hands the team count and the role of each workspace to the switcher', () => {
         const model = modelFor({

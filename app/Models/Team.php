@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,15 +18,34 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string|null $description
  * @property string|null $default_poker_deck
  * @property string|null $default_saved_poker_deck_id
+ * @property int|null $sprint_length_weeks
+ * @property int|null $retro_weekday
+ * @property string|null $retro_time
+ * @property bool $facilitator_rotation_enabled
+ * @property int $rotation_position
+ * @property string|null $default_retro_template
  * @property-read Workspace $workspace
  * @property-read string|null $last_retro_at
  * @property-read int|null $open_poker_games_count
  * @property-read int|null $open_action_items_count
  * @property-read int|null $overdue_action_items_count
+ * @property-read int|null $whiteboards_edited_today_count
  */
-#[Fillable(['name', 'default_poker_deck', 'default_saved_poker_deck_id'])]
+#[Fillable([
+    'name',
+    'description',
+    'default_poker_deck',
+    'default_saved_poker_deck_id',
+    'sprint_length_weeks',
+    'retro_weekday',
+    'retro_time',
+    'facilitator_rotation_enabled',
+    'rotation_position',
+    'default_retro_template',
+])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
@@ -33,16 +53,60 @@ class Team extends Model
 
     use HasUuids;
 
+    public const int DefaultSprintLengthWeeks = 2;
+
     /** @return BelongsTo<Workspace, $this> */
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
     }
 
-    /** @return BelongsToMany<User, $this> */
+    /** @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'> */
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->using(TeamMembership::class)
+            ->as('teamMembership')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * The observers as `User::isObserverOf` reads them: a workspace owner or admin is never one,
+     * whatever their team row says.
+     *
+     * @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'>
+     */
+    public function observers(): BelongsToMany
+    {
+        return $this->members()
+            ->wherePivot('role', TeamRole::Observer->value)
+            ->whereNotIn('users.id', $this->workspace->managers()->select('users.id'));
+    }
+
+    /** @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'> */
+    public function participatingMembers(): BelongsToMany
+    {
+        return $this->members()->whereNotIn('users.id', $this->observers()->select('users.id'));
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function defaultFacilitators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_facilitators')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position')
+            ->orderBy('users.id');
+    }
+
+    public function roleOf(User $user): ?TeamRole
+    {
+        return TeamMembership::query()
+            ->where('team_id', $this->id)
+            ->where('user_id', $user->id)
+            ->first()
+            ?->role;
     }
 
     public function hasMember(User $user): bool
@@ -131,5 +195,27 @@ class Team extends Model
     public function healthStatements(): HasMany
     {
         return $this->hasMany(TeamHealthStatement::class)->orderBy('position')->oldest();
+    }
+
+    /** @return HasMany<TeamSprint, $this> */
+    public function sprints(): HasMany
+    {
+        return $this->hasMany(TeamSprint::class)->orderBy('starts_on')->orderBy('id');
+    }
+
+    /** @return HasMany<TeamActivity, $this> */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(TeamActivity::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'sprint_length_weeks' => 'integer',
+            'retro_weekday' => 'integer',
+            'facilitator_rotation_enabled' => 'boolean',
+            'rotation_position' => 'integer',
+        ];
     }
 }

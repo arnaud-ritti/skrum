@@ -58,6 +58,8 @@ export type RetroTemplate = {
     workspaceName?: string;
     /** Who made a workspace template; shown in the detail. */
     author?: string;
+    /** `false`: the viewer may not edit this workspace template. */
+    canEdit?: boolean;
 };
 
 export type RetroTemplateCategory = { value: string; label: string };
@@ -489,7 +491,10 @@ function DetailPanel({
     }
 
     const id = template?.id ?? blankId;
-    const canEdit = onEdit !== undefined && template?.source === 'workspace';
+    const canEdit =
+        onEdit !== undefined &&
+        template?.source === 'workspace' &&
+        template.canEdit !== false;
     const name = template?.name ?? t('Start from scratch');
     const description =
         template === undefined

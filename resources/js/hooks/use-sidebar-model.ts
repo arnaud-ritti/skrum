@@ -26,7 +26,6 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         actionItems,
         brand,
         adminUrl,
-        features,
     } = usePage().props;
 
     const links: AppSidebarProps['links'] = {};
@@ -48,11 +47,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             links.members = `${teamUrl}#members`;
             links.games = TeamGameRoomsController.index(team);
 
-            const settings = teamSettingsHref({
-                ...team,
-                canManage: currentWorkspace.role !== 'member',
-                hasIntegrationsPage: features?.integrations === true,
-            });
+            const settings = teamSettingsHref(currentTeam);
 
             if (settings !== undefined) {
                 links.settings = settings;

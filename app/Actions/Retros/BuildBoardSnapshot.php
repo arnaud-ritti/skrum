@@ -17,7 +17,6 @@ use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
-use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\GamePlayer;
@@ -30,6 +29,7 @@ use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
 use App\Support\Sessions\JoinCodes;
+use App\Support\Teams\SprintCalendar;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +105,7 @@ class BuildBoardSnapshot
                 'teamId' => $retro->team_id,
                 'teamName' => $viewer->isGuest() ? null : $retro->team->name,
                 'title' => $retro->title,
+                'sprintNumber' => SprintCalendar::forTeam($retro->team, $retro->created_at)->numberOn($retro->created_at),
                 'template' => $retro->template,
                 'phase' => $retro->phase->value,
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
@@ -147,6 +148,10 @@ class BuildBoardSnapshot
                 'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
+                'canTakeControl' => ! $viewer->isGuest()
+                    && ! $isFacilitator
+                    && $retro->phase !== RetroPhase::Completed
+                    && ($viewerParticipant->user?->can('takeControl', $retro->team) ?? false),
             ],
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights): array {
@@ -205,6 +210,7 @@ class BuildBoardSnapshot
                 'llm' => $this->llm->isConfigured(),
                 'llmProvider' => $this->llm->providerName(),
             ],
+            'viewerIsObserver' => $viewerParticipant->user?->isObserverOf($retro->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }
@@ -283,13 +289,11 @@ class BuildBoardSnapshot
     {
         $team = $retro->team;
 
-        $managerIds = $team->workspace->members()
-            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
-            ->pluck('users.id');
+        $managerIds = $team->workspace->managers()->pluck('users.id');
 
         $candidates = User::query()
             ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->members()->select('users.id'))
+                ->whereIn('id', $team->participatingMembers()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
             ->orderBy('id')

@@ -47,11 +47,14 @@ class PokerFacilitatorsController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * The new facilitator must take part in the team: an observer only keeps a session they already facilitated.
+     */
     private function ensureCanHandOver(PokerGame $locked, User $user): void
     {
         PokerGuard::notEnded($locked);
 
-        if ($user->can('view', $locked->team)) {
+        if ($user->can('createPokerGame', $locked->team)) {
             return;
         }
 

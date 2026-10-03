@@ -1,10 +1,11 @@
 import { Link } from '@inertiajs/react';
-import { Ellipsis } from 'lucide-react';
+import { Building2, Ellipsis, User, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CardMenu } from '@/components/ui/dropdown-menu';
@@ -17,7 +18,12 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
-import type { TemplateAuthor, TemplateColumn } from '@/types';
+import type {
+    TeamSummary,
+    TemplateAuthor,
+    TemplateColumn,
+    TemplateVisibility,
+} from '@/types';
 
 export const TemplateGridClass =
     'grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(66)),1fr))] gap-4';
@@ -33,7 +39,7 @@ export type TemplateCardProps = {
     useHref: string | null;
     /** Entries of the "…" menu; no menu without entries. */
     menu?: MenuEntry[];
-    /** WS-2: the visibility badge of a template, beside its name. */
+    /** The visibility badge of a template, beside its name. */
     badge?: ReactNode;
     'data-test'?: string;
     className?: string;
@@ -181,6 +187,56 @@ export function TemplateCard({
                 </div>
             </article>
         </Card>
+    );
+}
+
+/** Who sees a template: "Personal", "Team · Atlas", "Workspace" (spec §6.6). */
+export function TemplateVisibilityBadge({
+    visibility,
+    team,
+}: {
+    visibility: TemplateVisibility;
+    team: TeamSummary | null;
+}) {
+    const { t } = useTrans();
+
+    if (visibility === 'personal') {
+        return (
+            <Badge
+                variant="outline"
+                icon={User}
+                data-test="template-visibility"
+            >
+                {t('Personal')}
+            </Badge>
+        );
+    }
+
+    if (visibility === 'team') {
+        return (
+            <Badge
+                variant="outline"
+                icon={Users}
+                data-test="template-visibility"
+                className="max-w-32"
+            >
+                <span className="truncate">
+                    {team === null
+                        ? t('Team')
+                        : t('Team · :team', { team: team.name })}
+                </span>
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge
+            variant="outline"
+            icon={Building2}
+            data-test="template-visibility"
+        >
+            {t('Workspace')}
+        </Badge>
     );
 }
 

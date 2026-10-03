@@ -66,6 +66,8 @@ Upgrading to the release with account photos, active sessions and linked account
 - Active sessions show each device's IP address as the framework stored it. Behind a reverse proxy, set `TRUSTED_PROXIES`, or every row shows the proxy's address. With `SESSION_DRIVER` other than `database` the Active sessions card is not shown.
 - An account created by single sign-on, without a password of its own, is asked no password confirmation in the account settings until it sets one (an accepted risk, rule S-1 of `docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md` §5.12). The administration area still asks.
 
+Upgrading to the release with team roles and sprints: every existing team member becomes "Member" of their teams. Workspace admins keep managing every team and can now take control of any open retro. Give owners and facilitators their roles in Team settings › Members & rituals. A team has no sprint until someone presses "Start the next sprint" (or adds sprints) on that same tab. A workspace admin can rename the workspace; its address stays. The members table of the team settings shows who is online when Reverb runs (without it, the date of the last session joined only).
+
 ### SERVER_NAME
 
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:

@@ -13,7 +13,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { useHasRightColumn } from './game-layout';
 import { useGifDraft } from './gif-draft';
 import { GifYourPick } from './gif-your-pick';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 
 type Props = {
     round: GameRound;
@@ -29,6 +29,7 @@ export function GifAnswerStage({ round }: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
     const hasRightColumn = useHasRightColumn();
+    const observing = useIsObservingRoom();
     const { draft, pick, pickerRef } = useGifDraft(round.id);
     const pickRef = useRef<HTMLDivElement>(null);
     const [busy, setBusy] = useState(false);
@@ -107,7 +108,7 @@ export function GifAnswerStage({ round }: Props) {
                     onRetry={retry}
                 />
             </div>
-            {!hasRightColumn && (
+            {!hasRightColumn && !observing && (
                 <Card ref={pickRef} className="p-4">
                     <GifYourPick round={round} heading="h3" />
                 </Card>

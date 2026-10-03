@@ -13,6 +13,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\WorkspaceRole;
@@ -41,6 +42,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Models\TeamSprint;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyOption;
@@ -270,11 +272,11 @@ function llmRequestBodies(): string
         ->implode("\n");
 }
 
-function teamMember(Team $team): User
+function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
 {
     $user = User::factory()->create();
     $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($user);
+    $team->members()->attach($user, ['role' => $role->value]);
 
     return $user;
 }
@@ -1998,4 +2000,9 @@ function withEnvironmentConfiguration(array $config): void
     }
 
     app()->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
+}
+
+function teamSprint(Team $team, int $number, string $startsOn, string $endsOn): TeamSprint
+{
+    return $team->sprints()->create(['number' => $number, 'starts_on' => $startsOn, 'ends_on' => $endsOn]);
 }

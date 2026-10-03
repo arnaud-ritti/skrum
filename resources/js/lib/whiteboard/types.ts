@@ -42,6 +42,8 @@ export type WhiteboardSnapshot = {
     elements: SceneElement[];
     seq: number;
     links: { team: string | null };
+    /** The viewer is an observer of the team: they read the board, unless they facilitate it. */
+    viewerIsObserver: boolean;
     serverTime: string;
 };
 

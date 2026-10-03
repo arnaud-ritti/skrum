@@ -21,7 +21,7 @@ class ListTeamMembers extends SkrumTool
 {
     protected string $name = 'retro.team.members.list';
 
-    protected string $description = 'List the members of a team with their permission (owner, admin or member). Their user ids are the valid assignee_user_id values for action items.';
+    protected string $description = 'List the members of a team with their workspace permission (owner, admin or member) and their team role (owner, facilitator, member or observer). Their user ids are the valid assignee_user_id values for action items.';
 
     public function __construct(private McpContext $context) {}
 
@@ -54,6 +54,7 @@ class ListTeamMembers extends SkrumTool
                 'name' => $member->name,
                 'avatarUrl' => url($member->avatarUrl()),
                 'permission' => $roles->get($member->id, 'member'),
+                'role' => $member->teamMembership->role->value,
             ])->values()->all(),
         ]);
     }

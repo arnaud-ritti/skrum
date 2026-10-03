@@ -85,18 +85,20 @@ Not requested, staying backlog (spec `2026-10-21-plan-22-sessions-index-design.m
 
 ## Team page, workspace and team settings — plan 23
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| TM-1 | Sprint, and the next retro of a team | ScreenDashboard, ScreenTeam | D-18, D-19 (sprint grouping) | No sprint entity | — (SE-2 is backlog) |
-| TM-2 | Recent sessions table | ScreenDashboard | D-18 | The query of SE-1, limited to a team: `ListTeamSessions` (plan 22) | SE-1 |
-| TM-3 | Aggregated open actions on the team page | ScreenDashboard | D-18 | The page has a count only: the first items, overdue first | — |
-| TM-4 | Activity feed of a team, and the activity lines of a team tile | ScreenDashboard, ScreenWorkspace | D-18, D-24 | No activity log | — |
-| TM-5 | Participant, card and action counts on a retro card | ScreenTeam | D-18 | Three counts per retro in the team page query | — |
-| TM-6 | Member role in a team (owner, facilitator, member, observer) | ScreenTeam, ScreenSettings a | D-18 | `team_user` holds no role; policies read the workspace role | — |
-| TM-7 | Whiteboard thumbnails | ScreenTeam | D-18 | A preview exists for templates only: the same renderer on a board's elements, cached | — |
-| WS-1 | Description of a workspace and of a team | ScreenWorkspace | D-24 | No description column | — |
-| WS-2 | Template usage and visibility | ScreenWorkspace (templates), TemplateEditor | D-24 | Usage is countable from `retros`; visibility (personal, team, workspace) has no column | — |
-| WS-3 | Remaining team-settings tabs: Members & rituals, default facilitators and rotation, default template and columns, Data & export | ScreenSettings a | D-27 | None of these settings is stored | TM-6 |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| TM-1 | Sprint, and the next retro of a team | ScreenDashboard, ScreenTeam | D-18, D-19 (sprint grouping) | No sprint entity | — (SE-2 is backlog; TM-1 does not need it) | done, plan 23 (explicit sprints with "Start the next sprint"; next retro from the sprints and the retro day; scheduling stays backlog) |
+| TM-2 | Recent sessions table | ScreenDashboard | D-18 | The query of SE-1, limited to a team: `ListTeamSessions` (plan 22) | SE-1 | done, plan 23 (`ListRecentTeamSessions` on plan 22's state rules; game rooms listed too) |
+| TM-3 | Aggregated open actions on the team page | ScreenDashboard | D-18 | The page has a count only: the first items, overdue first | — | done, plan 23 |
+| TM-4 | Activity feed of a team, and the activity lines of a team tile | ScreenDashboard, ScreenWorkspace | D-18, D-24 | No activity log | — | done, plan 23 (no survey answers: a team survey is anonymous, P23-08) |
+| TM-5 | Participant, card and action counts on a retro card | ScreenTeam | D-18 | Three counts per retro in the team page query | — | done, plan 23 |
+| TM-6 | Member role in a team (owner, facilitator, member, observer) | ScreenTeam, ScreenSettings a | D-18 | `team_user` holds no role; policies read the workspace role | — | done, plan 23 ("Take control" of any open session for facilitators and owners; observers read-only) |
+| TM-7 | Whiteboard thumbnails | ScreenTeam | D-18 | A preview exists for templates only: the same renderer on a board's elements, cached | — | done, plan 23 |
+| WS-1 | Description of a workspace and of a team | ScreenWorkspace | D-24 | No description column | — | done, plan 23 (and the rename of a workspace; the slug stays) |
+| WS-2 | Template usage and visibility | ScreenWorkspace (templates), TemplateEditor | D-24 | Usage is countable from `retros`; visibility (personal, team, workspace) has no column | — | done, plan 23 |
+| WS-3 | Remaining team-settings tabs: Members & rituals, default facilitators and rotation, default template and columns, Data & export | ScreenSettings a | D-27 | None of these settings is stored | TM-6 | done, plan 23 (and the Sprints card; "Online" through the workspace presence channel) |
+
+Not requested, staying backlog (spec `2026-10-21-plan-23-team-workspace-data-design.md` §3): scheduling and any automatic sprint start; team invitations, the invite link and the pending-invitation rows (plan 25); grouping action items by sprint (plan 24, on `SprintCalendar`); template defaults and poker template settings; a template description, "modified by …" and concurrent-edit detection in `TemplateEditor`; a team colour; "Online" anywhere but the members table of the team settings; live updates of the team page or the activity feed; an activity-log retention policy; activity lines for sprints and take-overs; survey answers in the feed; a workspace slug change; a take-over of a team survey; retro exports as PDF, CSV or Markdown and a team archive; plans 28 and 30.
 
 ## Action items — plan 24
 
@@ -177,7 +179,7 @@ Not requested, staying backlog: the "Help" link.
 SV-1 → SV-2 → SV-3 → SV-5          WB-1 → WB-2, WB-3
 SV-1 → SV-4                         WB-1 + RT-8 → WB-5
 RT-3 → SE-3 → PK-1                  RT-7 → RT-5
-TM-1 → sprint grouping of action items  (SE-2 backlog)
+TM-1 → sprint grouping of action items  (plan 24; TM-1 needs no SE-2)
 SE-1 → TM-2                         TM-6 → WS-3, IN-1, AD-4
 IN-1 → IN-4 → ON-1                  AC-4 → GU-1
 GM-1 → GM-2                         AI-2 → AI-4

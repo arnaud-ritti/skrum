@@ -8,7 +8,6 @@ use App\Actions\Integrations\PresentIntegrationDelivery;
 use App\Actions\Integrations\ShareOptions;
 use App\Actions\Integrations\SharePermissions;
 use App\Enums\IntegrationDeliveryKind;
-use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
@@ -66,6 +65,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *     integrations: ?array<string, array{connected: bool, canWrite: bool, estimateFields: list<array{id: string, name: string}>, defaultEstimateFieldId: ?string}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
+ *     viewerIsObserver: bool,
  *     serverTime: string
  * }
  */
@@ -165,6 +165,7 @@ class BuildPokerSnapshot
             'deliveries' => $this->sharePermissions->pokerGame($game, $viewer)
                 ? $this->latestDeliveries->handle($game, [IntegrationDeliveryKind::PokerLink])
                 : [],
+            'viewerIsObserver' => $viewer->user?->isObserverOf($game->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }
@@ -179,13 +180,11 @@ class BuildPokerSnapshot
     {
         $team = $game->team;
 
-        $managerIds = $team->workspace->members()
-            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
-            ->pluck('users.id');
+        $managerIds = $team->workspace->managers()->pluck('users.id');
 
         $candidates = User::query()
             ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->members()->select('users.id'))
+                ->whereIn('id', $team->participatingMembers()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
             ->orderBy('id')

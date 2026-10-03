@@ -21,7 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * Spec plan 22 §6.1. Five ordered queries, one per kind, each asked for one
  * row more than a page after the cursor; the merge in PHP keeps the same
  * order, so the first page of the merge is the first page of the union.
- * Also read by the team dashboard (TM-2) with a smaller limit.
+ * The five per-kind queries are public: the team page's recent sessions
+ * (TM-2, ListRecentTeamSessions) reads each state with the same rules.
  *
  * @phpstan-type SessionKind 'retro'|'poker'|'whiteboard'|'survey'|'icebreaker'
  * @phpstan-type TeamSession array{
@@ -151,7 +152,7 @@ class ListTeamSessions
     }
 
     /** @return Builder<Retro> */
-    private function retros(Team $team, SessionState $state): Builder
+    public function retros(Team $team, SessionState $state): Builder
     {
         $query = Retro::query()->where('team_id', $team->id);
 
@@ -169,7 +170,7 @@ class ListTeamSessions
     }
 
     /** @return Builder<PokerGame> */
-    private function pokerGames(Team $team, SessionState $state): Builder
+    public function pokerGames(Team $team, SessionState $state): Builder
     {
         $query = PokerGame::query()->where('team_id', $team->id);
 
@@ -181,7 +182,7 @@ class ListTeamSessions
     }
 
     /** @return Builder<TeamSurvey> */
-    private function surveys(Team $team, User $viewer, SessionState $state): Builder
+    public function surveys(Team $team, User $viewer, SessionState $state): Builder
     {
         $query = TeamSurvey::query()->where('team_id', $team->id)->whereNull('retro_id');
 
@@ -209,7 +210,7 @@ class ListTeamSessions
     }
 
     /** @return Builder<Whiteboard> */
-    private function whiteboards(Team $team, SessionState $state): Builder
+    public function whiteboards(Team $team, SessionState $state): Builder
     {
         $query = Whiteboard::query()->where('team_id', $team->id);
         $recently = now()->subMinutes(self::LiveWithinMinutes);
@@ -222,7 +223,7 @@ class ListTeamSessions
     }
 
     /** @return Builder<GameRoom> */
-    private function rooms(Team $team, SessionState $state): Builder
+    public function rooms(Team $team, SessionState $state): Builder
     {
         $query = GameRoom::query()->where('team_id', $team->id)->whereNull('retro_id');
 
@@ -268,7 +269,7 @@ class ListTeamSessions
     /**
      * The rule of the team page: a draft opens its editor, any other poll its results.
      */
-    private function surveyUrl(TeamSurvey $survey): string
+    public function surveyUrl(TeamSurvey $survey): string
     {
         if ($survey->status === TeamSurveyStatus::Draft) {
             return route('surveys.edit', $survey);

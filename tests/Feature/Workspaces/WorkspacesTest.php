@@ -199,10 +199,12 @@ it('sends the open retro, the open poker games and the open and overdue action i
             ->where('teams.1.activity.overdueActionItems', 0)
             ->where('teams.2.activity', [
                 'openRetroTitle' => null,
+                'openRetroSprint' => null,
                 'lastRetroAt' => null,
                 'openPokerGames' => 0,
                 'openActionItems' => 0,
                 'overdueActionItems' => 0,
+                'whiteboardsEditedToday' => 0,
             ]));
 });
 

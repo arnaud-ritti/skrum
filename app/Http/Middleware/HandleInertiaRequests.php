@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\Notifications\BellNotifications;
+use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
@@ -29,6 +30,8 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    public function __construct(private TeamSettingsSections $teamSettingsSections) {}
 
     /**
      * Determines the current asset version.
@@ -81,7 +84,7 @@ class HandleInertiaRequests extends Middleware
             'teams' => fn (): array => $teamResolver->visibleTeams()
                 ->map(fn (Team $team): array => $team->only(['id', 'name']))
                 ->all(),
-            'currentTeam' => fn (): ?array => $this->currentTeam($teamResolver),
+            'currentTeam' => fn (): ?array => $this->currentTeam($teamResolver, $request),
             'notifications' => fn (): ?array => $request->user() === null
                 ? null
                 : ['unreadCount' => resolve(BellNotifications::class)->unreadCount($request->user())],
@@ -198,10 +201,12 @@ class HandleInertiaRequests extends Middleware
      * @return array{
      *     id: string,
      *     name: string,
-     *     membersCount: int
+     *     membersCount: int,
+     *     viewerRole: ?string,
+     *     settingsUrl: ?string
      * }|null
      */
-    private function currentTeam(CurrentTeamResolver $resolver): ?array
+    private function currentTeam(CurrentTeamResolver $resolver, Request $request): ?array
     {
         $team = $resolver->currentTeam();
 
@@ -209,9 +214,14 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
+        $user = $request->user();
+
         return [
-            ...$team->only(['id', 'name']),
+            'id' => $team->id,
+            'name' => $team->name,
             'membersCount' => $team->members()->count(),
+            'viewerRole' => $user === null ? null : $team->roleOf($user)?->value,
+            'settingsUrl' => $user === null ? null : $this->teamSettingsSections->handle($user, $team)['firstUrl'],
         ];
     }
 

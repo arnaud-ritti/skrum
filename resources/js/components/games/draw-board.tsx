@@ -45,7 +45,7 @@ import { GuessChat, GuessDock } from './guess-chat';
 import { AutoHintCountdown } from './auto-hint-countdown';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 
 /** A live stroke nobody committed within this delay was abandoned (drawer offline). */
 const StalePreviewMs = 3000;
@@ -159,6 +159,7 @@ function NewWordButton({
 export function DrawBoard({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
+    const observing = useIsObservingRoom();
     const { snapshot, presence } = ctx;
     const roomId = snapshot.room.id;
     const isDrawer = round.leaderPlayerId === snapshot.me.playerId;
@@ -464,7 +465,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
                     )}
                 </div>
             </div>
-            {isDrawer && (
+            {isDrawer && !observing && (
                 <DrawingToolbar
                     tool={tool}
                     color={color}

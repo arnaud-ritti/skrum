@@ -70,6 +70,9 @@ class UpdateAction extends SkrumTool
         ]), ['action_id']);
 
         $item = $this->context->actionItem((string) $request->get('action_id'));
+
+        $this->refuseObserver($item->team);
+
         $actor = new ActionItemActor(McpGrant::current()->user, $item->retro === null ? null : $this->context->participant($item->retro));
 
         $assignsGuest = ($validated['assignee_participant_id'] ?? null) !== null;

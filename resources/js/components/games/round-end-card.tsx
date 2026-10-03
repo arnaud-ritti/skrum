@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
 import { GuessWhoResult } from './guess-who-board';
 import { MoodWeatherResult } from './mood-weather-board';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
 import { TwoTruthsResult } from './two-truths-board';
 import { TwoTruthsSetForm } from './two-truths-set-form';
@@ -101,6 +101,7 @@ function FinalScores() {
 export function RoundEndCard() {
     const { snapshot, lastEnded } = useRoom();
     const { t } = useTrans();
+    const observing = useIsObservingRoom();
     const lastRound =
         snapshot.history.find(
             (round) => round.id === snapshot.room.currentRoundId,
@@ -134,7 +135,7 @@ export function RoundEndCard() {
     const guessWho =
         lastEnded?.nominations !== undefined ? lastEnded : fetchedGuessWho;
     /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
-    const setForm = snapshot.room.game === 'two_truths' && (
+    const setForm = snapshot.room.game === 'two_truths' && !observing && (
         <TwoTruthsSetForm className="max-w-2xl" />
     );
 

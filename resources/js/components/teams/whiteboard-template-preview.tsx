@@ -64,6 +64,34 @@ function ShapeMark({
     return <rect x={x} y={y} width={width} height={height} {...common} />;
 }
 
+/** The shapes of a scene, scaled to fit the box the class gives the drawing. */
+export function WhiteboardPreviewShapes({
+    preview,
+    className,
+}: {
+    preview: WhiteboardPreview;
+    className?: string;
+}) {
+    const strokeWidth = Math.max(preview.width, preview.height) / 200;
+
+    return (
+        <svg
+            viewBox={`0 0 ${preview.width || 1} ${preview.height || 1}`}
+            preserveAspectRatio="xMidYMid meet"
+            className={className}
+            aria-hidden="true"
+        >
+            {preview.shapes.map((shape, index) => (
+                <ShapeMark
+                    key={index}
+                    shape={shape}
+                    strokeWidth={strokeWidth}
+                />
+            ))}
+        </svg>
+    );
+}
+
 /**
  * The outline of a whiteboard scene. Fills and strokes are the scene's own
  * colours (canvas data), so the paper is white in both themes.
@@ -75,8 +103,6 @@ export function WhiteboardTemplatePreview({
     preview: WhiteboardPreview;
     className?: string;
 }) {
-    const strokeWidth = Math.max(preview.width, preview.height) / 200;
-
     return (
         <div
             data-slot="whiteboard-template-preview"
@@ -85,20 +111,10 @@ export function WhiteboardTemplatePreview({
                 className,
             )}
         >
-            <svg
-                viewBox={`0 0 ${preview.width || 1} ${preview.height || 1}`}
-                preserveAspectRatio="xMidYMid meet"
+            <WhiteboardPreviewShapes
+                preview={preview}
                 className="h-24 w-full"
-                aria-hidden="true"
-            >
-                {preview.shapes.map((shape, index) => (
-                    <ShapeMark
-                        key={index}
-                        shape={shape}
-                        strokeWidth={strokeWidth}
-                    />
-                ))}
-            </svg>
+            />
         </div>
     );
 }

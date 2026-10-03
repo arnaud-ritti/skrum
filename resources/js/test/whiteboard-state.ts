@@ -5,6 +5,7 @@ type Overrides = {
     board?: Partial<WhiteboardState['snapshot']['board']>;
     me?: Partial<WhiteboardState['snapshot']['me']>;
     links?: WhiteboardState['snapshot']['links'];
+    viewerIsObserver?: boolean;
     online?: WhiteboardState['online'];
 };
 
@@ -49,6 +50,7 @@ export function boardState(overrides: Overrides = {}): WhiteboardState {
             },
             members: [fran],
             links: overrides.links ?? { team: '/workspaces/w/teams/t' },
+            viewerIsObserver: overrides.viewerIsObserver ?? false,
         },
         status: 'active',
         sessionExpired: false,

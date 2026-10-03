@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\InstanceSettingKey;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Team;
@@ -216,7 +217,7 @@ it('renders the 500 page with the request id when the shared props cannot be bui
 });
 
 it('still renders the page of another status when the shared props cannot be built', function () {
-    app()->bind(HandleInertiaRequests::class, fn () => new class extends HandleInertiaRequests
+    app()->bind(HandleInertiaRequests::class, fn () => new class(resolve(TeamSettingsSections::class)) extends HandleInertiaRequests
     {
         public function share(Request $request): array
         {

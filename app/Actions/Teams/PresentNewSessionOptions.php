@@ -5,6 +5,7 @@ namespace App\Actions\Teams;
 use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\Integrations\ListPokerSources;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Retros\TemplateAvailability;
 use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\TeamSurveys\PresentTeamSurveySummary;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
@@ -22,6 +23,7 @@ use App\Support\Alphabetical;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
 use App\Support\Surveys\SurveyTemplateCatalogue;
+use App\Support\Teams\SprintCalendar;
 use Inertia\Inertia;
 
 class PresentNewSessionOptions
@@ -36,6 +38,8 @@ class PresentNewSessionOptions
         private SurveyTemplateCatalogue $surveyTemplateCatalogue,
         private PresentTeamSurveySummary $presentTeamSurveySummary,
         private ListPokerSources $listPokerSources,
+        private SuggestedFacilitator $suggestedFacilitator,
+        private TemplateAvailability $templateAvailability,
     ) {}
 
     /**
@@ -50,7 +54,7 @@ class PresentNewSessionOptions
         return [
             'templateCategories' => TemplateCategory::options(),
             'topTemplates' => $this->topTeamTemplates->handle($team),
-            'catalogue' => Inertia::optional(fn (): array => $this->buildTemplateCatalogue->handle($workspace)),
+            'catalogue' => Inertia::optional(fn (): array => $this->buildTemplateCatalogue->handle($workspace, $viewer, $team)),
             'llm' => [
                 'enabled' => $this->llm->isConfigured(),
                 'provider' => $this->llm->providerName(),
@@ -83,7 +87,26 @@ class PresentNewSessionOptions
                 ->values(),
             'canCreateSurvey' => $viewer->can('createSurvey', $team),
             'surveyTemplates' => $this->surveyTemplateCatalogue->options($team),
+            'currentSprintNumber' => SprintCalendar::forTeam($team, now())->numberOn(now()),
+            'retroFacilitators' => Alphabetical::sort(
+                $team->participatingMembers()->orderBy('users.id')->get(),
+                fn (User $member): string => $member->name,
+            )->map(fn (User $member): array => [...$member->only(['id', 'name']), 'avatarUrl' => $member->avatarUrl()])->values()->all(),
+            'suggestedFacilitatorId' => $this->suggestedFacilitator->for($team)?->id,
+            'facilitatorRotation' => $team->facilitator_rotation_enabled,
+            'defaultRetroTemplate' => $this->defaultRetroTemplate($team, $viewer),
         ];
+    }
+
+    private function defaultRetroTemplate(Team $team, User $viewer): ?string
+    {
+        $key = $team->default_retro_template;
+
+        if ($key === null || ! $this->templateAvailability->isAvailable($team, $viewer, $key)) {
+            return null;
+        }
+
+        return $key;
     }
 
     /**

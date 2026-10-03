@@ -2,14 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ActionItems\ActionItemActor;
+use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
+use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\PresentTeamRetro;
+use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\BuildTeamMoodTrend;
+use App\Actions\Teams\ListRecentTeamSessions;
+use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
+use App\Actions\Teams\RefreshStaleWhiteboardPreviews;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
+use App\Models\ActionItem;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
@@ -18,6 +27,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
+use App\Support\Teams\SprintCalendar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,29 +64,45 @@ class TeamsController extends Controller
         BuildTeamMoodTrend $buildTeamMoodTrend,
         PresentTeamHealthStatements $presentTeamHealthStatements,
         PresentNewSessionOptions $presentNewSessionOptions,
+        ListTeamActivity $listTeamActivity,
+        ListRecentTeamSessions $listRecentTeamSessions,
+        PresentActionItem $presentActionItem,
+        RefreshStaleWhiteboardPreviews $refreshStaleWhiteboardPreviews,
+        AvailableTeamMembers $availableTeamMembers,
     ): Response {
         Gate::authorize('view', $team);
 
         $canManage = $request->user()->can('manageMembers', $team);
         $managesWorkspace = $request->user()->canManage($workspace);
+        $whiteboards = $team->whiteboards()
+            ->with('facilitator.user')
+            ->latest('updated_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $refreshStaleWhiteboardPreviews->handle($whiteboards);
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
-                ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()]),
-            'availableMembers' => $canManage
-                ? Alphabetical::sort(
-                    $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('users.id')->get(),
-                    fn (User $member): string => $member->name,
-                )
-                    ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()])
-                : [],
+                ->map(fn (User $member): array => [
+                    ...$member->only(['id', 'name', 'email']),
+                    'avatarUrl' => $member->avatarUrl(),
+                    'role' => $member->teamMembership->role->value,
+                ]),
+            'availableMembers' => $canManage ? $availableTeamMembers->handle($team) : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
             'retros' => $team->retros()
                 ->with(['workspaceTemplate', 'facilitator.user'])
                 ->withAvg('rotiVotes', 'score')
+                ->withCount([
+                    'participants',
+                    'cards',
+                    'cards as groups_count' => fn (Builder $cards) => $cards->whereNull('parent_card_id')->whereHas('children'),
+                    'actionItems',
+                ])
                 ->withExists(['participants as viewer_has_joined' => fn (Builder $participants) => $participants->where('user_id', $request->user()->id)])
                 ->latest()
                 ->get()
@@ -88,11 +114,7 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
-            'whiteboards' => $team->whiteboards()
-                ->with('facilitator.user')
-                ->latest('updated_at')
-                ->get()
-                ->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
+            'whiteboards' => $whiteboards->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
             'whiteboardTemplates' => Alphabetical::sort(
                 $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']),
                 fn (WhiteboardTemplate $template): string => $template->name,
@@ -106,6 +128,20 @@ class TeamsController extends Controller
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
             ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
+            'roleOptions' => $canManage ? TeamRole::options() : [],
+            'viewerRole' => $team->roleOf($request->user())?->value,
+            'viewerIsObserver' => $request->user()->isObserverOf($team),
+            'canManageRituals' => $request->user()->can('manageRituals', $team),
+            'schedule' => $this->schedule($team),
+            'hasSprints' => $team->sprints()->exists(),
+            'activity' => $listTeamActivity->handle($team),
+            'recentSessions' => $listRecentTeamSessions->handle($team, $request->user()),
+            'openActionItems' => $this->openActionItems($team, $request->user(), $presentActionItem),
+            'overdueActionItemCount' => $team->actionItems()
+                ->whereNull('completed_at')
+                ->whereNotNull('due_on')
+                ->where('due_on', '<', ActionItem::today()->toDateString())
+                ->count(),
         ]);
     }
 
@@ -135,7 +171,10 @@ class TeamsController extends Controller
 
         $team->update($request->validate([
             'name' => ['required', 'string', 'max:100'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:200'],
         ]));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team saved.')]);
 
         return back();
     }
@@ -147,5 +186,43 @@ class TeamsController extends Controller
         $team->delete();
 
         return to_route('workspaces.show', $workspace);
+    }
+
+    /**
+     * @return array{
+     *     sprint: array{id: string, number: int, startsOn: string, endsOn: string}|null,
+     *     nextRetro: array{date: string, time: ?string}|null
+     * }|null
+     */
+    private function schedule(Team $team): ?array
+    {
+        $calendar = SprintCalendar::fromToday($team, now());
+        $sprint = $calendar->sprintOn(now());
+        $nextRetro = $calendar->nextRetro(now());
+
+        if ($sprint === null && $nextRetro === null) {
+            return null;
+        }
+
+        return ['sprint' => $sprint, 'nextRetro' => $nextRetro];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function openActionItems(Team $team, User $viewer, PresentActionItem $presentActionItem): array
+    {
+        $query = $team->actionItems()->getQuery()
+            ->whereNull('completed_at')
+            ->with(ActionItem::presentationRelations())
+            ->withCount('comments');
+        $actor = ActionItemActor::forUser($viewer);
+        $today = ActionItem::today();
+
+        return ActionItemQuery::order($query)
+            ->limit(5)
+            ->get()
+            ->map(fn (ActionItem $item): array => $presentActionItem->handle($item, $actor, $today))
+            ->all();
     }
 }

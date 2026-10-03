@@ -9,6 +9,7 @@ const Now = Date.parse('2026-10-02T12:00:00Z');
 const team: WorkspaceTeamTile = {
     id: 'team-1',
     name: 'Atlas',
+    description: null,
     membersCount: 9,
     members: ['Arnaud Ritti', 'Camille Roux', 'Théo Martin', 'Inès Benali'].map(
         (name) => ({ name, avatarUrl: '' }),
@@ -20,6 +21,8 @@ const team: WorkspaceTeamTile = {
         openPokerGames: 3,
         openActionItems: 7,
         overdueActionItems: 2,
+        openRetroSprint: null,
+        whiteboardsEditedToday: 0,
     },
 };
 
@@ -105,6 +108,8 @@ describe('TeamTile', () => {
                 openPokerGames: 0,
                 openActionItems: 0,
                 overdueActionItems: 0,
+                openRetroSprint: null,
+                whiteboardsEditedToday: 0,
             },
         });
 
@@ -120,6 +125,8 @@ describe('TeamTile', () => {
                 openPokerGames: 1,
                 openActionItems: 1,
                 overdueActionItems: 0,
+                openRetroSprint: null,
+                whiteboardsEditedToday: 0,
             },
         });
 
@@ -151,21 +158,65 @@ describe('TeamTile', () => {
         expect(members?.textContent).toBe('0 members');
     });
 
-    it('keeps a place for the description under the name', () => {
-        renderWithProviders(
-            <TeamTile
-                team={team}
-                href="/t"
-                locale="en"
-                now={Now}
-                description={
-                    <span data-testid="description">Product squad</span>
-                }
-            />,
-        );
+    it('shows the description of the team under its name', () => {
+        tile({ description: 'Product squad · retro app' });
 
-        expect(screen.getByTestId('description').textContent).toBe(
-            'Product squad',
-        );
+        expect(line('team-description')).toBe('Product squad · retro app');
+    });
+
+    it('shows nothing under the name without a description', () => {
+        tile();
+
+        expect(line('team-description')).toBeUndefined();
+    });
+
+    it('names the sprint of the retro in progress in place of its title', () => {
+        tile({
+            activity: {
+                ...team.activity,
+                openRetroTitle: 'Atlas retro',
+                openRetroSprint: 42,
+            },
+        });
+
+        expect(line('team-retro')).toBe('Retro in progress · Sprint 42');
+    });
+
+    it('says how many whiteboards were edited today when no game is active', () => {
+        tile({
+            activity: {
+                ...team.activity,
+                openPokerGames: 0,
+                whiteboardsEditedToday: 3,
+            },
+        });
+
+        expect(line('team-poker')).toBeUndefined();
+        expect(line('team-whiteboards')).toBe('3 whiteboards edited today');
+    });
+
+    it('uses the singular for one whiteboard edited today', () => {
+        tile({
+            activity: {
+                ...team.activity,
+                openPokerGames: 0,
+                whiteboardsEditedToday: 1,
+            },
+        });
+
+        expect(line('team-whiteboards')).toBe('1 whiteboard edited today');
+    });
+
+    it('prefers the active poker games to the whiteboards', () => {
+        tile({
+            activity: {
+                ...team.activity,
+                openPokerGames: 2,
+                whiteboardsEditedToday: 3,
+            },
+        });
+
+        expect(line('team-poker')).toBe('2 active poker games');
+        expect(line('team-whiteboards')).toBeUndefined();
     });
 });

@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Layers, PenTool, Plus, Search, SearchX, Spade, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { EmptyState } from '@/components/skrum/empty-state';
@@ -31,13 +30,16 @@ import {
     DefaultTemplateCategory,
     blankTemplateDraft,
     copyTemplateName,
+    defaultVisibility,
     draftFromTemplate,
     matchesTemplateQuery,
+    shareableDraft,
 } from '@/lib/workspaces/template-draft';
 import { useTemplateHref } from '@/lib/workspaces/use-template';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    TeamSummary,
     WorkspacePokerDeck,
     WorkspaceSummary,
     WorkspaceTemplateSummary,
@@ -52,17 +54,14 @@ export type TemplatesPageProps = {
     pokerDecks: WorkspacePokerDeck[];
     canCreatePokerDeck: boolean;
     canManage: boolean;
+    /** Every member may create a template: a personal one at least. */
+    canCreate: boolean;
+    /** The viewer may create workspace templates. */
+    canShareWorkspace: boolean;
+    /** The teams the viewer may create team templates for. */
+    teamTemplateTeams: TeamSummary[];
     /** Loaded on demand: the Retro tab and a new template ask for it. */
     catalogue?: CatalogueTemplate[];
-};
-
-/**
- * Places left for the features that come after the rewrite; nothing is
- * rendered while a slot is undefined.
- */
-type TemplatesPageSlots = {
-    /** WS-2: the visibility badge of a retro template, beside its name. */
-    templateVisibilityFor?: (template: WorkspaceTemplateSummary) => ReactNode;
 };
 
 type TemplatesTab = 'all' | 'retro' | 'poker' | 'whiteboard';
@@ -85,17 +84,17 @@ export function TemplatesPage({
     whiteboardTemplates,
     pokerDecks,
     canCreatePokerDeck,
-    canManage,
+    canCreate,
+    canShareWorkspace,
+    teamTemplateTeams,
     catalogue,
     initialTab = 'all',
     team,
-    slots = {},
 }: TemplatesPageProps & {
     /** The tab the page opens on; the bench shows each one. */
     initialTab?: TemplatesTab;
     /** Id of the team "Use" leads to, in place of the current team; `null`: none. */
     team?: string | null;
-    slots?: TemplatesPageSlots;
 }) {
     const { t } = useTrans();
     const { hrefFor, hasTeam } = useTemplateHref(workspace.slug, team);
@@ -149,9 +148,16 @@ export function TemplatesPage({
         ]),
     );
 
+    const sharing = { canShareWorkspace, teams: teamTemplateTeams };
+
     const openNew = (): void => {
         openedFrom(focusedElement());
-        setEditor(editorTarget(null, blankTemplateDraft()));
+        setEditor(
+            editorTarget(null, {
+                ...blankTemplateDraft(),
+                ...defaultVisibility(sharing),
+            }),
+        );
     };
 
     const openedFromMenuOf = (template: WorkspaceTemplateSummary): void =>
@@ -159,15 +165,21 @@ export function TemplatesPage({
 
     const openCopy = (draft: TemplateDraft): void =>
         setEditor(
-            editorTarget(null, {
-                ...draft,
-                name: copyTemplateName(
-                    t('Copy of :name', { name: draft.name }),
+            editorTarget(
+                null,
+                shareableDraft(
+                    {
+                        ...draft,
+                        name: copyTemplateName(
+                            t('Copy of :name', { name: draft.name }),
+                        ),
+                    },
+                    sharing,
                 ),
-            }),
+            ),
         );
 
-    const actions = canManage
+    const actions = canCreate
         ? {
               onEdit: (template: WorkspaceTemplateSummary) => {
                   openedFromMenuOf(template);
@@ -258,7 +270,7 @@ export function TemplatesPage({
                             'Every team can still start a retro from a built-in template.',
                         )}
                         action={
-                            canManage
+                            canCreate
                                 ? {
                                       label: t('Create a template'),
                                       icon: Plus,
@@ -274,7 +286,6 @@ export function TemplatesPage({
                     templates={shownTemplates}
                     hrefFor={hrefFor}
                     actions={actions}
-                    visibilityFor={slots.templateVisibilityFor}
                 />
             )}
         </TemplatesSection>
@@ -350,7 +361,7 @@ export function TemplatesPage({
                         {t('Templates shared by every team of this workspace')}
                     </p>
                 </div>
-                {canManage && (
+                {canCreate && (
                     <Button
                         type="button"
                         className="max-w-full min-w-0"
@@ -425,10 +436,10 @@ export function TemplatesPage({
                             onQueryChange={setQuery}
                             hrefFor={hrefFor}
                             hasTeam={hasTeam}
-                            onCreate={canManage ? openNew : undefined}
+                            onCreate={canCreate ? openNew : undefined}
                             onEdit={actions?.onEdit}
                             onDuplicate={
-                                canManage ? duplicateFromPicker : undefined
+                                canCreate ? duplicateFromPicker : undefined
                             }
                         />
                     ) : (
@@ -449,6 +460,8 @@ export function TemplatesPage({
                 target={editor}
                 categories={categories}
                 catalogue={knownCatalogue}
+                canShareWorkspace={canShareWorkspace}
+                teams={teamTemplateTeams}
                 onClose={() => setEditor(null)}
                 onDuplicate={openCopy}
             />

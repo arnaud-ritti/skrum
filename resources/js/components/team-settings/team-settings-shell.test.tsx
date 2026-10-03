@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, TeamSettingsSections } from '@/types';
 import { TeamSettingsShell } from './team-settings-shell';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
@@ -35,20 +35,38 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
 
 const workspace = { id: 'w1', name: 'Nordlys', slug: 'nordlys' };
 const team = { id: 't1', name: 'Atlas' };
+const allSections: TeamSettingsSections = {
+    general: true,
+    members: true,
+    integrations: true,
+    data: true,
+    firstUrl: '/w/nordlys/teams/t1/settings',
+};
 
 beforeEach(() => {
     page.props = {
         translations: {},
-        currentTeam: { id: 't1', name: 'Atlas', membersCount: 11 },
+        locale: 'en',
+        currentTeam: {
+            id: 't1',
+            name: 'Atlas',
+            membersCount: 11,
+            viewerRole: 'owner',
+            settingsUrl: '/w/nordlys/teams/t1/settings',
+        },
     };
 });
 
-function renderShell(): void {
+function renderShell(
+    props: Partial<Parameters<typeof TeamSettingsShell>[0]> = {},
+): void {
     renderWithProviders(
         <TeamSettingsShell
             workspace={workspace}
             team={team}
             active="integrations"
+            sections={allSections}
+            {...props}
         >
             <p>content</p>
         </TeamSettingsShell>,
@@ -65,21 +83,47 @@ function hrefOf(href: unknown): string {
     return typeof href === 'string' ? href : (href as { url: string }).url;
 }
 
+function facts(): string | null | undefined {
+    return document.querySelector('[data-slot="team-settings-facts"]')
+        ?.textContent;
+}
+
 describe('TeamSettingsShell', () => {
-    it('lists Team and Integrations in a navigation named Team settings and marks the current one', () => {
+    it('lists the four tabs in the order of the mockup in a navigation named Team settings and marks the current one', () => {
         renderShell();
 
         expect(links().map((link) => link.textContent)).toEqual([
-            'Team',
+            'General',
+            'Members & rituals',
             'Integrations',
+            'Data & export',
         ]);
         expect(links().map((link) => link.getAttribute('href'))).toEqual([
-            '/w/nordlys/teams/t1#settings',
+            '/w/nordlys/teams/t1/settings',
+            '/w/nordlys/teams/t1/members',
             '/w/nordlys/teams/t1/integrations',
+            '/w/nordlys/teams/t1/data',
         ]);
         expect(
             links().map((link) => link.getAttribute('aria-current')),
-        ).toEqual([null, 'page']);
+        ).toEqual([null, null, 'page', null]);
+    });
+
+    it('hides the tabs the viewer may not open', () => {
+        renderShell({
+            active: 'members',
+            sections: {
+                general: false,
+                members: true,
+                integrations: false,
+                data: false,
+                firstUrl: '/w/nordlys/teams/t1/members',
+            },
+        });
+
+        expect(links().map((link) => link.textContent)).toEqual([
+            'Members & rituals',
+        ]);
     });
 
     it('gives every entry an icon', () => {
@@ -103,7 +147,7 @@ describe('TeamSettingsShell', () => {
         ]);
         expect(layout.breadcrumbs.map((crumb) => hrefOf(crumb.href))).toEqual([
             '/w/nordlys/teams/t1',
-            '/w/nordlys/teams/t1/integrations',
+            '/w/nordlys/teams/t1/settings',
             '/w/nordlys/teams/t1/integrations',
         ]);
     });
@@ -118,22 +162,34 @@ describe('TeamSettingsShell', () => {
         ).not.toBeNull();
         expect(mark?.textContent).toBe('A');
         expect(mark?.getAttribute('aria-hidden')).toBe('true');
-        expect(
-            document.querySelector('[data-slot="team-settings-facts"]')
-                ?.textContent,
-        ).toBe('11 members');
+        expect(facts()).toBe('11 members');
         expect(screen.getByText('content')).not.toBeNull();
     });
 
-    it('says "1 member" for a team of one', () => {
-        page.props.currentTeam = { id: 't1', name: 'Atlas', membersCount: 1 };
+    it('reads the description, the members and the month the team was created, as the mockup does', () => {
+        renderShell({
+            team: { ...team, description: 'Product squad' },
+            createdAt: '2025-03-10T09:00:00+00:00',
+        });
 
-        renderShell();
+        expect(facts()).toBe(
+            'Product squad · 11 members · created in March 2025',
+        );
+    });
 
-        expect(
-            document.querySelector('[data-slot="team-settings-facts"]')
-                ?.textContent,
-        ).toBe('1 member');
+    it('leaves the description out when there is none', () => {
+        renderShell({
+            team: { ...team, description: null },
+            createdAt: '2025-03-10T09:00:00+00:00',
+        });
+
+        expect(facts()).toBe('11 members · created in March 2025');
+    });
+
+    it('takes the number of members the page gives over the one of the sidebar', () => {
+        renderShell({ membersCount: 1 });
+
+        expect(facts()).toBe('1 member');
     });
 
     it('shows no count when the current team of the sidebar is another team', () => {

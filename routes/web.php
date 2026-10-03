@@ -163,18 +163,26 @@ use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
+use App\Http\Controllers\TeamDataController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
+use App\Http\Controllers\TeamDefaultRetroTemplatesController;
 use App\Http\Controllers\TeamEstimatesController;
+use App\Http\Controllers\TeamFacilitatorsController;
 use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
+use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
+use App\Http\Controllers\TeamRitualsController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamSessionsController;
+use App\Http\Controllers\TeamSettingsController;
+use App\Http\Controllers\TeamSprintsController;
+use App\Http\Controllers\TeamSprintStartsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyComparisonsController;
@@ -205,6 +213,7 @@ use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
+use App\Http\Controllers\WorkspaceDetailsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacePokerDecksController;
@@ -212,6 +221,7 @@ use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Controllers\WorkspaceWhiteboardTemplatesController;
 use App\Http\Middleware\EnsureIntegrationProviderEnabled;
+use App\Http\Middleware\RefuseObserverWrites;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
@@ -326,6 +336,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::get('/', [WorkspacesController::class, 'show'])->name('workspaces.show');
             Route::delete('/', [WorkspacesController::class, 'destroy'])->name('workspaces.destroy');
+            Route::put('details', [WorkspaceDetailsController::class, 'update'])->name('workspaces.details.update');
 
             Route::post('teams', [TeamsController::class, 'store'])->name('teams.store');
             Route::get('teams/{team}', [TeamsController::class, 'show'])->name('teams.show');
@@ -342,12 +353,22 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::put('teams/{team}/default-poker-deck', [TeamDefaultPokerDecksController::class, 'update'])->name('teams.defaultPokerDeck.update');
+            Route::put('teams/{team}/default-retro-template', [TeamDefaultRetroTemplatesController::class, 'update'])->name('teams.defaultRetroTemplate.update');
             Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
             Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index')->where('source', 'jira|linear|jira_dc|github');
             Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
             Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store')->where('source', 'jira|linear|jira_dc|github');
+            Route::post('teams/{team}/sprints', [TeamSprintsController::class, 'store'])->name('teams.sprints.store');
+            Route::patch('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'update'])->name('teams.sprints.update')->whereUuid('sprint');
+            Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy')->whereUuid('sprint');
+            Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
+            Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
+            Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');
+            Route::get('teams/{team}/settings', [TeamSettingsController::class, 'show'])->name('teams.settings.show');
+            Route::get('teams/{team}/members', [TeamMembersController::class, 'index'])->name('teams.members.index');
+            Route::get('teams/{team}/data', [TeamDataController::class, 'show'])->name('teams.data.show');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
@@ -440,6 +461,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->name('teams.accessRequests.update');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
+            Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update')->whereUuid('member');
 
             Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
@@ -498,7 +520,7 @@ Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('
 
 Route::prefix('retros/{retro}')
     ->whereUuid('retro')
-    ->middleware(ResolveRetroParticipant::class)
+    ->middleware([ResolveRetroParticipant::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
@@ -599,7 +621,7 @@ Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->
 
 Route::prefix('poker/{game}')
     ->whereUuid('game')
-    ->middleware(ResolvePokerPlayer::class)
+    ->middleware([ResolvePokerPlayer::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
@@ -641,7 +663,7 @@ Route::post('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 
 
 Route::prefix('whiteboards/{board}')
     ->whereUuid('board')
-    ->middleware(ResolveWhiteboardMember::class)
+    ->middleware([ResolveWhiteboardMember::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [WhiteboardsController::class, 'show'])->name('whiteboards.show');
@@ -665,7 +687,7 @@ Route::post('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'sto
 
 Route::prefix('surveys/{teamSurvey}')
     ->whereUuid('teamSurvey')
-    ->middleware(ResolveSurveyRespondent::class)
+    ->middleware([ResolveSurveyRespondent::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [TeamSurveysController::class, 'show'])->name('surveys.show');
@@ -695,7 +717,7 @@ Route::post('play/{guestToken}', [GameJoinsController::class, 'store'])->name('g
 
 Route::prefix('games/{room}')
     ->whereUuid('room')
-    ->middleware(ResolveGamePlayer::class)
+    ->middleware([ResolveGamePlayer::class, RefuseObserverWrites::class])
     ->scopeBindings()
     ->group(function (): void {
         Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');

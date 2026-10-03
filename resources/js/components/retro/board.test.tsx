@@ -154,6 +154,42 @@ describe('Board', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
 
+    it('shows an observer the board read-only, under the line "You are observing this session."', () => {
+        given(
+            {},
+            retroSnapshot({
+                retro: { phase: 'writing' },
+                columns: [
+                    {
+                        id: 'start',
+                        title: 'Start',
+                        description: null,
+                        color: 'moss',
+                        position: 0,
+                    },
+                ],
+                viewer: { isFacilitator: false, participantId: 'bob' },
+                viewerIsObserver: true,
+            }),
+        );
+
+        expect(
+            screen
+                .getByText('You are observing this session.')
+                .closest('[data-slot="observer-notice"]'),
+        ).not.toBeNull();
+        expect(screen.queryByText('Add a card')).toBeNull();
+        expect(screen.getByText('No card yet.')).toBeTruthy();
+    });
+
+    it('shows no observer line to the facilitator, even an observer of the team', () => {
+        given({}, retroSnapshot({ viewerIsObserver: true }));
+
+        expect(
+            screen.queryByText('You are observing this session.'),
+        ).toBeNull();
+    });
+
     it('gives a participant no facilitator bar and no facilitator menu', () => {
         given(
             {},

@@ -145,12 +145,15 @@ export function AnswerControl({
     answers,
     invalid,
     labelledBy,
+    disabled = false,
     className,
 }: {
     question: SurveyQuestionPayload;
     answers: SurveyAnswers;
     invalid: boolean;
     labelledBy: string;
+    /** An observer reads the question and gives no answer. */
+    disabled?: boolean;
     className?: string;
 }) {
     const { t } = useTrans();
@@ -172,6 +175,7 @@ export function AnswerControl({
                 chrome="none"
                 labelledBy={labelledBy}
                 invalid={invalid}
+                disabled={disabled}
                 value={draft.value}
                 comment={draft.comment}
                 onChange={(value) => answers.change(question, value)}
@@ -223,6 +227,8 @@ type SurveyAnswerFlowProps = {
     preview?: boolean;
     /** Where to start; by default the first question without an answer. */
     initialStep?: number;
+    /** An observer of the team: the questions are shown, nothing is answered nor sent. */
+    readOnly?: boolean;
 };
 
 /** One question at a time (ScreenSurvey frame b; MobileRituals on a phone). */
@@ -232,6 +238,7 @@ export function SurveyAnswerFlow({
     onFinish,
     preview = false,
     initialStep,
+    readOnly = false,
 }: SurveyAnswerFlowProps) {
     const { t } = useTrans();
     const isPhone = useIsMobile();
@@ -322,6 +329,12 @@ export function SurveyAnswerFlow({
             return;
         }
 
+        if (readOnly) {
+            moveTo(Math.min(step + 1, questions.length - 1));
+
+            return;
+        }
+
         if (question.isRequired && !answers.isAnswered(question)) {
             setInvalidId(question.id);
             focusControl(card.current);
@@ -348,9 +361,9 @@ export function SurveyAnswerFlow({
         moveTo(step - 1);
     };
 
-    const keys = useRef({ goNext, question, answers });
+    const keys = useRef({ goNext, question, answers, readOnly });
 
-    keys.current = { goNext, question, answers };
+    keys.current = { goNext, question, answers, readOnly };
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent): void => {
@@ -380,6 +393,7 @@ export function SurveyAnswerFlow({
                 goNext: next,
                 question: current,
                 answers: held,
+                readOnly: reading,
             } = keys.current;
 
             if (current === undefined) {
@@ -399,7 +413,7 @@ export function SurveyAnswerFlow({
 
             const value = digitValue(event.key, current);
 
-            if (value === null) {
+            if (value === null || reading) {
                 return;
             }
 
@@ -443,18 +457,19 @@ export function SurveyAnswerFlow({
         </Button>
     );
 
-    const nextButton = (
-        <Button
-            type="button"
-            size="lg"
-            aria-busy={finishing || undefined}
-            onClick={goNext}
-            className={cn(isPhone && 'flex-1')}
-        >
-            {nextLabel}
-            {!isLast && <ArrowRight aria-hidden />}
-        </Button>
-    );
+    const nextButton =
+        readOnly && isLast ? null : (
+            <Button
+                type="button"
+                size="lg"
+                aria-busy={finishing || undefined}
+                onClick={goNext}
+                className={cn(isPhone && 'flex-1')}
+            >
+                {nextLabel}
+                {!isLast && <ArrowRight aria-hidden />}
+            </Button>
+        );
 
     return (
         <div ref={root} className="flex h-full min-h-0 flex-col">
@@ -506,6 +521,7 @@ export function SurveyAnswerFlow({
                             answers={answers}
                             invalid={isInvalid}
                             labelledBy={headingId}
+                            disabled={readOnly}
                             className={cn(
                                 isPhone &&
                                     '[&_[role=radiogroup]>label]:min-h-11',

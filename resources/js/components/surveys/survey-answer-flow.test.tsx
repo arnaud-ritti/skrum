@@ -500,3 +500,22 @@ describe('SurveyAnswerFlow', () => {
         });
     });
 });
+
+describe('SurveyAnswerFlow, read only', () => {
+    it('shows each question without taking an answer, and without "Finish"', () => {
+        const { onSave } = renderFlow(fiveKinds.slice(0, 2), {
+            readOnly: true,
+        });
+
+        expect(
+            (screen.getAllByRole('radio')[0] as HTMLInputElement).disabled,
+        ).toBe(true);
+
+        fireEvent.keyDown(document.body, { key: '3' });
+        fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+
+        expect(onSave).not.toHaveBeenCalled();
+        expect(step().getAttribute('data-step')).toBe('1');
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+});

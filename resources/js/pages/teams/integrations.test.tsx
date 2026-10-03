@@ -5,7 +5,6 @@ import { renderWithProviders } from '@/test/render';
 import type {
     IntegrationProviderCard,
     IntegrationProviderKey,
-    TeamSummary,
     WorkspaceSummary,
 } from '@/types';
 import TeamIntegrations from './integrations';
@@ -18,7 +17,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     Head: () => null,
 }));
 
-vi.mock('@/components/integrations/team-settings-shell', () => ({
+vi.mock('@/components/team-settings/team-settings-shell', () => ({
     TeamSettingsShell: ({ children }: { children: ReactNode }) => (
         <div>{children}</div>
     ),
@@ -47,7 +46,16 @@ describe('team integrations page', () => {
         renderWithProviders(
             <TeamIntegrations
                 workspace={{ slug: 'nordlys' } as WorkspaceSummary}
-                team={{ id: 't1', name: 'Atlas' } as TeamSummary}
+                team={{ id: 't1', name: 'Atlas', description: null }}
+                createdAt={null}
+                membersCount={3}
+                sections={{
+                    general: true,
+                    members: true,
+                    integrations: true,
+                    data: true,
+                    firstUrl: '/w/nordlys/teams/t1/settings',
+                }}
                 providers={[
                     card('slack', 'Slack'),
                     card('jira', 'Jira'),

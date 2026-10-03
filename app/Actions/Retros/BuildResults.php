@@ -91,15 +91,17 @@ class BuildResults
      */
     private function stats(Retro $retro): array
     {
-        $participantCount = $retro->participants->count();
-        $teamMemberIds = $retro->team->members()->pluck('users.id');
+        $observerIds = $retro->team->observers()->pluck('users.id');
+        $teamMemberIds = $retro->team->participatingMembers()->pluck('users.id');
+        $participants = $retro->participants->whereNotIn('user_id', $observerIds);
+        $participantCount = $participants->count();
 
         return [
             'votesCast' => $retro->votes()->count(),
             'votesAvailable' => $participantCount * $retro->voteLimit(),
             'participation' => [
                 'participants' => $participantCount,
-                'expected' => $teamMemberIds->count() + $retro->participants->whereNotIn('user_id', $teamMemberIds)->count(),
+                'expected' => $teamMemberIds->count() + $participants->whereNotIn('user_id', $teamMemberIds)->count(),
             ],
             'durationSeconds' => $this->durationSeconds($retro),
         ];

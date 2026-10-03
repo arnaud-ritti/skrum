@@ -2,6 +2,8 @@
 
 namespace App\Actions\Retros;
 
+use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use App\Support\Alphabetical;
@@ -11,6 +13,8 @@ use App\Support\RetroTemplates\TemplateDefinition;
 class BuildTemplateCatalogue
 {
     /**
+     * The templates the viewer sees (from the team when one is given), then the built-ins.
+     *
      * @return array<int, array{
      *     key: string,
      *     name: string,
@@ -20,9 +24,11 @@ class BuildTemplateCatalogue
      *     columns: array<int, array{title: string, description: ?string, color: string}>
      * }>
      */
-    public function handle(Workspace $workspace): array
+    public function handle(Workspace $workspace, User $viewer, ?Team $team = null): array
     {
-        $workspaceTemplates = Alphabetical::sort($workspace->templates()->with('columns')->get(), fn (WorkspaceTemplate $template): string => $template->name)
+        $visibleTemplates = $workspace->templates()->visibleTo($viewer, $workspace, $team)->with('columns')->get();
+
+        $workspaceTemplates = Alphabetical::sort($visibleTemplates, fn (WorkspaceTemplate $template): string => $template->name)
             ->map(fn (WorkspaceTemplate $template): array => [
                 'key' => $template->catalogueKey(),
                 'name' => $template->name,

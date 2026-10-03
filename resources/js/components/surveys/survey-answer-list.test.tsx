@@ -185,3 +185,16 @@ describe('SurveyAnswerList', () => {
         ).toBe(true);
     });
 });
+
+describe('SurveyAnswerList, read only', () => {
+    it('shows every question without taking an answer, and without "Finish"', () => {
+        renderList(questions, { readOnly: true });
+
+        expect(screen.getAllByRole('article')).toHaveLength(3);
+        expect(
+            (screen.getByRole('radio', { name: 'Weekly' }) as HTMLInputElement)
+                .disabled,
+        ).toBe(true);
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+});

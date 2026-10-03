@@ -58,12 +58,13 @@ function player(id: string, name: string) {
     };
 }
 
-function renderBoard(turns: Partial<GameRound> = {}) {
+function renderBoard(turns: Partial<GameRound> = {}, viewerIsObserver = false) {
     const ctx = {
         snapshot: {
             room: { id: 'r1', game: 'hangman' },
             me: { playerId: 'ada' },
             players: [player('ada', 'Ada'), player('ines', 'Inès')],
+            viewerIsObserver,
         },
         run: <T,>(mutation: Promise<T>) => mutation,
         dispatch: vi.fn(),
@@ -196,5 +197,18 @@ describe('HangmanBoard', () => {
             field.compareDocumentPosition(keyboard) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+});
+
+describe('HangmanBoard for an observer', () => {
+    it('shows the word and the gallows without the letters or the guess field', () => {
+        viewport(80);
+        renderBoard({}, true);
+
+        expect(screen.queryByRole('group', { name: 'Letters' })).toBeNull();
+        expect(screen.queryByRole('textbox')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="hangman-board"]'),
+        ).not.toBeNull();
     });
 });

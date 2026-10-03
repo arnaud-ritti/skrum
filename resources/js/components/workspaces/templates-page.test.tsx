@@ -87,6 +87,9 @@ const base: TemplatesPageProps = {
             category: 'team_mood',
             author: { name: 'Ada Lovelace', avatarUrl: '' },
             usageCount: 3,
+            visibility: 'workspace',
+            team: null,
+            canManage: false,
             columns: [
                 { title: 'Energy', description: null, color: 'moss' },
                 { title: 'Blockers', description: null, color: 'coral' },
@@ -110,6 +113,18 @@ const base: TemplatesPageProps = {
     ],
     canCreatePokerDeck: false,
     canManage: false,
+    canCreate: true,
+    canShareWorkspace: false,
+    teamTemplateTeams: [],
+};
+
+const manager: Partial<TemplatesPageProps> = {
+    canManage: true,
+    canShareWorkspace: true,
+    templates: base.templates.map((template) => ({
+        ...template,
+        canManage: true,
+    })),
 };
 
 function page(overrides: Partial<Parameters<typeof TemplatesPage>[0]> = {}) {
@@ -197,12 +212,9 @@ describe('TemplatesPage', () => {
         expect(query(href).get('deck')).toBe('deck-1');
     });
 
-    it('gives a member no control but "Use"', () => {
+    it('gives a member no control over the templates they may not edit', () => {
         page();
 
-        expect(
-            screen.queryByRole('button', { name: 'New template' }),
-        ).toBeNull();
         expect(
             screen.queryByRole('button', { name: /^Actions for/ }),
         ).toBeNull();
@@ -277,7 +289,7 @@ describe('TemplatesPage', () => {
         expect(screen.queryByRole('article')).toBeNull();
     });
 
-    it('asks for the catalogue on the Retro tab and shows the full picker, built-in templates first', async () => {
+    it('asks for the catalogue on the Retro tab and shows the full picker, built-in templates first, which a member may duplicate', async () => {
         const view = page();
 
         await userEvent.click(screen.getByRole('tab', { name: 'Retro · 1' }));
@@ -294,8 +306,8 @@ describe('TemplatesPage', () => {
             screen.getByRole('button', { name: 'Use this template' }),
         ).toBeTruthy();
         expect(
-            screen.queryByRole('button', { name: 'Duplicate and edit' }),
-        ).toBeNull();
+            screen.getByRole('button', { name: 'Duplicate and edit' }),
+        ).toBeTruthy();
 
         await userEvent.click(
             screen.getByRole('button', { name: 'Use this template' }),
@@ -307,7 +319,7 @@ describe('TemplatesPage', () => {
     });
 
     it('lets a manager duplicate a built-in template from the picker into a new template', async () => {
-        page({ canManage: true, catalogue, initialTab: 'retro' });
+        page({ ...manager, catalogue, initialTab: 'retro' });
 
         await userEvent.click(
             screen.getByRole('button', { name: 'Duplicate and edit' }),
@@ -323,7 +335,7 @@ describe('TemplatesPage', () => {
     });
 
     it('opens the editor on a new template for a manager', async () => {
-        page({ canManage: true, catalogue });
+        page({ ...manager, catalogue });
 
         await userEvent.click(
             screen.getByRole('button', { name: 'New template' }),
@@ -337,7 +349,7 @@ describe('TemplatesPage', () => {
     });
 
     it('deletes a template from the menu of its card, after the confirmation', async () => {
-        page({ canManage: true });
+        page({ ...manager });
 
         await userEvent.click(
             screen.getByRole('button', { name: 'Actions for Team pulse' }),
@@ -374,7 +386,7 @@ describe('TemplatesPage', () => {
     });
 
     it('returns the focus to the menu of the card when the deletion is cancelled', async () => {
-        page({ canManage: true });
+        page({ ...manager });
 
         const menu = screen.getByRole('button', {
             name: 'Actions for Team pulse',
@@ -395,7 +407,7 @@ describe('TemplatesPage', () => {
     });
 
     it('opens the editor on a template from the menu of its card', async () => {
-        page({ canManage: true });
+        page({ ...manager });
 
         await userEvent.click(
             screen.getByRole('button', { name: 'Actions for Team pulse' }),
@@ -414,11 +426,126 @@ describe('TemplatesPage', () => {
     });
 
     it('offers a manager to create the first template from the empty state', () => {
-        page({ canManage: true, templates: [] });
+        page({ ...manager, templates: [] });
 
         expect(screen.getByText('No workspace templates yet.')).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Create a template' }),
         ).toBeTruthy();
+    });
+
+    it('shows the visibility of each template beside its name', () => {
+        page({
+            templates: [
+                { ...base.templates[0], id: 't-w', name: 'Shared' },
+                {
+                    ...base.templates[0],
+                    id: 't-t',
+                    name: 'Atlas only',
+                    visibility: 'team',
+                    team: { id: 'team-1', name: 'Atlas' },
+                },
+                {
+                    ...base.templates[0],
+                    id: 't-p',
+                    name: 'Mine',
+                    visibility: 'personal',
+                },
+            ],
+        });
+
+        const badges = Array.from(
+            document.querySelectorAll('[data-test="template-visibility"]'),
+        ).map((badge) => badge.textContent);
+
+        expect(badges).toEqual(['Workspace', 'Team · Atlas', 'Personal']);
+    });
+
+    it('offers the menu of the templates the viewer may edit only', () => {
+        page({
+            templates: [
+                { ...base.templates[0], id: 't-1', name: 'Shared' },
+                {
+                    ...base.templates[0],
+                    id: 't-2',
+                    name: 'Mine',
+                    visibility: 'personal',
+                    canManage: true,
+                },
+            ],
+        });
+
+        expect(
+            screen.queryByRole('button', { name: 'Actions for Shared' }),
+        ).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Actions for Mine' }),
+        ).toBeTruthy();
+    });
+
+    it('opens the editor of a member on a personal template, the workspace and team choices disabled', async () => {
+        page({ catalogue });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'New template' }),
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(
+            within(dialog)
+                .getByRole('radio', { name: 'Personal' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(
+            (
+                within(dialog).getByRole('radio', {
+                    name: 'Workspace',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+        expect(
+            (
+                within(dialog).getByRole('radio', {
+                    name: 'Team',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+    });
+
+    it('opens the editor of a team facilitator on a team template of their team', async () => {
+        page({
+            catalogue,
+            teamTemplateTeams: [{ id: 'team-1', name: 'Atlas' }],
+        });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'New template' }),
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(
+            within(dialog)
+                .getByRole('radio', { name: 'Team' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(
+            within(dialog).queryByRole('combobox', { name: 'Team' }),
+        ).toBeNull();
+    });
+
+    it('opens the editor of a manager on a workspace template', async () => {
+        page({ ...manager, catalogue });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'New template' }),
+        );
+
+        expect(
+            within(screen.getByRole('dialog'))
+                .getByRole('radio', { name: 'Workspace' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
     });
 });
