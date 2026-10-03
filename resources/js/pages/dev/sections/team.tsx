@@ -8,6 +8,7 @@ import type { TeamPageProps } from '@/components/teams/team-page';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
+import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
 import type {
@@ -233,6 +234,68 @@ const page: TeamPageProps = {
         },
     ],
     canCreateWhiteboard: true,
+    surveys: [
+        {
+            id: 'survey-1',
+            title: 'Team pulse — October',
+            status: 'open',
+            template: 'team_pulse',
+            questionCount: 5,
+            responseCount: 4,
+            updatedAt: '2026-10-01T08:00:00+00:00',
+            closedAt: null,
+            facilitatorName: 'Camille Roux',
+            canManage: true,
+            url: '#survey-1',
+        },
+        {
+            id: 'survey-2',
+            title: 'Onboarding feedback',
+            status: 'draft',
+            template: null,
+            questionCount: 1,
+            responseCount: 0,
+            updatedAt: '2026-09-29T08:00:00+00:00',
+            closedAt: null,
+            facilitatorName: 'Camille Roux',
+            canManage: true,
+            url: '#survey-2',
+        },
+        {
+            id: 'survey-3',
+            title: 'Health check — September',
+            status: 'closed',
+            template: 'health_check',
+            questionCount: 6,
+            responseCount: 9,
+            updatedAt: '2026-09-30T08:00:00+00:00',
+            closedAt: '2026-09-30T08:00:00+00:00',
+            facilitatorName: 'Malik Kone',
+            canManage: false,
+            url: '#survey-3',
+        },
+    ],
+    canCreateSurvey: true,
+    surveyTemplates: [
+        {
+            key: null,
+            name: 'Blank',
+            description: 'Start with no question.',
+            questionCount: 0,
+        },
+        {
+            key: 'health_check',
+            name: 'Health check',
+            description: "The team's statements, scored 1 to 5.",
+            questionCount: 6,
+        },
+        {
+            key: 'team_pulse',
+            name: 'Team pulse',
+            description: 'Workload, recommendation, rituals and blockers.',
+            questionCount: 5,
+        },
+    ],
     whiteboardTemplates: [],
     whiteboardGallery: [],
     pokerPresence: { 'game-1': 4, 'game-2': 0 },
@@ -285,6 +348,12 @@ export default function TeamSection() {
                         workspaceSlug="nordlys"
                         boards={[]}
                         templates={[]}
+                    />
+                    <TeamSurveysSection
+                        workspaceSlug="nordlys"
+                        teamId="atlas"
+                        surveys={[]}
+                        canCreateSurvey
                     />
                     <div className="max-w-90">
                         <TeamMembersCard

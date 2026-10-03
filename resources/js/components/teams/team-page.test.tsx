@@ -86,6 +86,9 @@ const base: TeamPageProps = {
     pokerDecks: [],
     whiteboards: [],
     canCreateWhiteboard: true,
+    surveys: [],
+    canCreateSurvey: true,
+    surveyTemplates: [],
     whiteboardTemplates: [],
     pokerPresence: {},
 };
@@ -102,12 +105,20 @@ describe('the team page', () => {
             container
                 .querySelector('#sessions')
                 ?.querySelectorAll(':scope > section'),
-        ).toHaveLength(3);
+        ).toHaveLength(4);
         expect(
             Array.from(container.querySelectorAll('#sessions h2')).map(
                 (heading) => heading.textContent,
             ),
-        ).toEqual(['Retrospectives0', 'Planning poker', 'Whiteboards0']);
+        ).toEqual([
+            'Retrospectives0',
+            'Planning poker',
+            'Whiteboards0',
+            'Surveys0',
+        ]);
+        expect(
+            container.querySelector('#sessions > section#surveys'),
+        ).not.toBeNull();
     });
 
     it('draws the ROTI curve alone in the main column, under the sessions, a skeleton until the trend arrives', () => {

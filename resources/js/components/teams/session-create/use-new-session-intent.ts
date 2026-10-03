@@ -1,7 +1,12 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
-export type SessionType = 'retro' | 'poker' | 'whiteboard' | 'icebreaker';
+export type SessionType =
+    | 'retro'
+    | 'poker'
+    | 'whiteboard'
+    | 'survey'
+    | 'icebreaker';
 
 export type NewSessionIntent = {
     type: SessionType;
@@ -11,7 +16,14 @@ export type NewSessionIntent = {
     request?: number;
 };
 
-const IntentTypes: readonly SessionType[] = ['retro', 'poker', 'whiteboard'];
+const IntentTypes: readonly SessionType[] = [
+    'retro',
+    'poker',
+    'whiteboard',
+    'survey',
+];
+
+const SurveyTemplates: readonly string[] = ['health_check', 'team_pulse'];
 
 const IntentParameters = ['new', 'template', 'deck'] as const;
 
@@ -23,7 +35,7 @@ export function readNewSessionIntent(search: string): NewSessionIntent | null {
         return null;
     }
 
-    const template = query.get('template');
+    const template = knownTemplate(type as SessionType, query.get('template'));
     const deck = query.get('deck');
 
     return {
@@ -31,6 +43,18 @@ export function readNewSessionIntent(search: string): NewSessionIntent | null {
         ...(template === null || template === '' ? {} : { template }),
         ...(deck === null || deck === '' ? {} : { deck }),
     };
+}
+
+/** A survey starts only from a built-in template; any other name is dropped. */
+function knownTemplate(
+    type: SessionType,
+    template: string | null,
+): string | null {
+    if (type === 'survey' && !SurveyTemplates.includes(template ?? '')) {
+        return null;
+    }
+
+    return template;
 }
 
 export function withoutNewSessionIntent(href: string): string {
@@ -46,7 +70,7 @@ export function withoutNewSessionIntent(href: string): string {
 /**
  * Read from the URL when the page mounts, and again on each navigation that
  * stays on the page (the command palette asks for a new session from the team
- * page itself): `?new=retro|poker|whiteboard&template=<key>&deck=<id>`.
+ * page itself): `?new=retro|poker|whiteboard|survey&template=<key>&deck=<id>`.
  * The query is then removed through Inertia, so that its page object and the
  * address bar agree. A reload that was already on its way answers with the
  * old URL: the query is removed again on each navigation that brings it back.

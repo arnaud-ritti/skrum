@@ -29,6 +29,16 @@ describe('SessionTypePicker', () => {
         ).toEqual(['retro', 'poker', 'whiteboard', 'survey', 'icebreaker']);
     });
 
+    it('names the survey type Poll, a quick vote or a health check', () => {
+        render(<SessionTypePicker value="retro" onValueChange={vi.fn()} />);
+
+        const poll = screen.getByRole('radio', { name: /Poll/ });
+
+        expect(poll.dataset.type).toBe('survey');
+        expect(poll.textContent).toContain('Quick vote or health check');
+        expect(poll.textContent).toContain('5–10 min');
+    });
+
     it('marks the selection checked and makes only it tabbable', () => {
         render(
             <SessionTypePicker

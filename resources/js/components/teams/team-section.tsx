@@ -4,6 +4,8 @@ import type { ReactNode, Ref } from 'react';
 import { Badge } from '@/components/ui/badge';
 
 type Props = {
+    /** The anchor of the block, such as `surveys` for `#surveys`. */
+    id?: string;
     icon: LucideIcon;
     title: string;
     count?: number;
@@ -16,6 +18,7 @@ type Props = {
 
 /** One titled block of the main column of the team page. */
 export function TeamSection({
+    id,
     icon: Icon,
     title,
     count,
@@ -27,8 +30,9 @@ export function TeamSection({
 
     return (
         <section
+            id={id}
             aria-labelledby={headingId}
-            className="flex min-w-0 flex-col gap-3"
+            className="flex min-w-0 scroll-mt-20 flex-col gap-3"
         >
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <h2

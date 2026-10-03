@@ -54,6 +54,7 @@ export type SessionForm = {
 export type RetroSessionForm = SessionForm;
 export type PokerSessionForm = SessionForm;
 export type WhiteboardSessionForm = SessionForm;
+export type SurveySessionForm = SessionForm;
 export type IcebreakerSessionForm = SessionForm;
 
 type NewSessionDialogProps = {
@@ -63,6 +64,7 @@ type NewSessionDialogProps = {
     retro?: RetroSessionForm;
     poker?: PokerSessionForm;
     whiteboard?: WhiteboardSessionForm;
+    survey?: SurveySessionForm;
     icebreaker?: IcebreakerSessionForm;
 };
 
@@ -70,6 +72,7 @@ const typeOrder: readonly SessionType[] = [
     'retro',
     'poker',
     'whiteboard',
+    'survey',
     'icebreaker',
 ];
 
@@ -141,6 +144,7 @@ function useTypeOptions(
         retro: t('Phases & cards'),
         poker: t('Estimate stories'),
         whiteboard: t('Free canvas'),
+        survey: t('Quick vote'),
         icebreaker: t('Warm-up games'),
     };
 
@@ -277,11 +281,12 @@ export function NewSessionDialog({
     retro,
     poker,
     whiteboard,
+    survey,
     icebreaker,
 }: NewSessionDialogProps): ReactElement | null {
     const { t } = useTrans();
     const mobile = useIsMobile();
-    const forms = { retro, poker, whiteboard, icebreaker };
+    const forms = { retro, poker, whiteboard, survey, icebreaker };
     const initialType = firstType(forms, intent);
     const [open, setOpen] = useState(
         intent !== null && initialType === intent.type,

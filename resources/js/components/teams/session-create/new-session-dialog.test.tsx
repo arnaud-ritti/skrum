@@ -6,6 +6,7 @@ import {
 } from '@/components/teams/session-create/new-session-dialog';
 import type { SessionForm } from '@/components/teams/session-create/new-session-dialog';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
+import { surveySessionForm } from '@/components/teams/session-create/survey-session-fields';
 import type { RetroSessionFormProps } from '@/components/teams/session-create/retro-session-fields';
 import { Button } from '@/components/ui/button';
 import { renderWithProviders } from '@/test/render';
@@ -186,6 +187,44 @@ describe('NewSessionDialog', () => {
                 .getAttribute('aria-checked'),
         ).toBe('true');
         expect(within(dialog).getByText('Team Atlas')).toBeTruthy();
+    });
+
+    it('offers the five types in the order Retro, Poker, Whiteboard, Poll, Icebreaker', () => {
+        const dialog = open({
+            icebreaker: fakeForm('Icebreaker', vi.fn()),
+            survey: fakeForm('Survey', vi.fn()),
+            whiteboard: fakeForm('Whiteboard', vi.fn()),
+            poker: fakeForm('Poker', vi.fn()),
+        });
+        const types = within(dialog).getByRole('radiogroup', {
+            name: 'Session type',
+        });
+
+        expect(
+            within(types)
+                .getAllByRole('radio')
+                .map((radio) => radio.dataset.type),
+        ).toEqual(['retro', 'poker', 'whiteboard', 'survey', 'icebreaker']);
+        expect(
+            within(types).getByRole('radio', { name: /Poll/ }).textContent,
+        ).toContain('Quick vote');
+    });
+
+    it('shows the Poll type disabled with the reason it is given', () => {
+        const dialog = open({
+            survey: surveySessionForm({
+                workspaceSlug: 'acme',
+                templates: [],
+                surveys: [],
+                disabledReason: 'You cannot create a survey in this team.',
+            }),
+        });
+        const poll = within(dialog).getByRole('radio', { name: /Poll/ });
+
+        expect(poll.getAttribute('aria-disabled')).toBe('true');
+        expect(poll.textContent).toContain(
+            'You cannot create a survey in this team.',
+        );
     });
 
     it('shows a type passed with a reason as disabled and never opens on it', () => {

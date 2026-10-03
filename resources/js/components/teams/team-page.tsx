@@ -9,6 +9,7 @@ import {
 import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
 import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
+import { surveySessionForm } from '@/components/teams/session-create/survey-session-fields';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { whiteboardSessionForm } from '@/components/teams/session-create/whiteboard-session-fields';
 import { TeamHeader } from '@/components/teams/team-header';
@@ -18,10 +19,15 @@ import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamSettingsCard } from '@/components/teams/team-settings-card';
+import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import type {
+    SurveyTemplateOption,
+    TeamSurveySummary,
+} from '@/lib/surveys/types';
 import type {
     CatalogueTemplate,
     CategoryOption,
@@ -70,6 +76,9 @@ export type TeamPageProps = {
     canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
     whiteboardGallery?: WhiteboardGalleryItem[];
+    surveys: TeamSurveySummary[];
+    canCreateSurvey: boolean;
+    surveyTemplates: SurveyTemplateOption[];
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     pokerPresence?: Record<string, number | null> | null;
@@ -183,6 +192,14 @@ export function TeamPage({
                                   })
                                 : undefined
                         }
+                        survey={surveySessionForm({
+                            workspaceSlug: workspace.slug,
+                            templates: props.surveyTemplates,
+                            surveys: props.surveys,
+                            disabledReason: props.canCreateSurvey
+                                ? undefined
+                                : t('You cannot create a survey in this team.'),
+                        })}
                         icebreaker={icebreakerSessionForm({
                             workspaceSlug: workspace.slug,
                             gameOptions: props.gameOptions,
@@ -219,6 +236,12 @@ export function TeamPage({
                             boards={props.whiteboards}
                             templates={props.whiteboardTemplates}
                             thumbnailFor={slots.whiteboardThumbnailFor}
+                        />
+                        <TeamSurveysSection
+                            workspaceSlug={workspace.slug}
+                            teamId={team.id}
+                            surveys={props.surveys}
+                            canCreateSurvey={props.canCreateSurvey}
                         />
                     </div>
                     <div id="mood" className="min-w-0 scroll-mt-20">
