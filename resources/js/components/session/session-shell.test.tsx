@@ -10,11 +10,12 @@ const ReconnectingHints = {
     game: 'Live updates are paused. The round may have moved on.',
     whiteboard:
         "Live updates are paused. Other people's changes appear when the connection returns.",
+    survey: 'Your answers are saved as you give them; the counter is paused.',
 } as const;
 
 function renderShell(
     connection = { reconnecting: false, expired: false },
-    kind: 'retro' | 'poker' | 'game' | 'whiteboard' = 'retro',
+    kind: keyof typeof ReconnectingHints = 'retro',
 ) {
     return renderWithProviders(
         <SessionShell
@@ -57,7 +58,13 @@ describe('SessionShell', () => {
     });
 
     it('says what is true for each session type', () => {
-        for (const kind of ['retro', 'poker', 'game', 'whiteboard'] as const) {
+        for (const kind of [
+            'retro',
+            'poker',
+            'game',
+            'whiteboard',
+            'survey',
+        ] as const) {
             const { unmount } = renderShell(
                 { reconnecting: true, expired: false },
                 kind,
