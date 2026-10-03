@@ -538,7 +538,7 @@ export function IcebreakerGameCard({
                 {hasMeta && (
                     <span
                         id={`${id}-meta`}
-                        className="mt-1 flex gap-3 text-xs font-semibold text-muted-foreground"
+                        className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-semibold text-muted-foreground"
                     >
                         {durationMin !== undefined && (
                             <span className="inline-flex items-center gap-1 whitespace-nowrap">

@@ -154,6 +154,16 @@ describe('IcebreakerGameCard', () => {
         expect(screen.getByText('3 to 12 players')).toBeTruthy();
     });
 
+    it('lets the players drop under a long duration on a narrow card', () => {
+        render(
+            <IcebreakerGameCard {...base} durationMin={3} anonymous compact />,
+        );
+
+        const meta = document.querySelector('[id$="-meta"]');
+
+        expect(meta?.className).toContain('flex-wrap');
+    });
+
     it('has no meta line without a duration or players', () => {
         render(
             <IcebreakerGameCard game="mood" title="Mood weather" anonymous />,
