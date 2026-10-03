@@ -2,6 +2,8 @@
 
 namespace App\Actions\Whiteboards;
 
+use App\Actions\Teams\RecordTeamActivity;
+use App\Enums\TeamActivityKind;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Whiteboard;
@@ -13,7 +15,10 @@ use Illuminate\Support\Str;
  */
 class CreateWhiteboard
 {
-    public function __construct(private CopyWhiteboardScene $copyWhiteboardScene) {}
+    public function __construct(
+        private CopyWhiteboardScene $copyWhiteboardScene,
+        private RecordTeamActivity $recordTeamActivity,
+    ) {}
 
     /**
      * @param  Scene  $scene
@@ -32,6 +37,7 @@ class CreateWhiteboard
             $board->update(['facilitator_member_id' => $member->id]);
 
             $this->copyWhiteboardScene->handle($board, $member, $scene);
+            $this->recordTeamActivity->handle($team->id, TeamActivityKind::WhiteboardCreated, $creator, null, $board->id, $board->title);
 
             return $board;
         });

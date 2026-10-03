@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Teams\RecordTeamActivity;
+use App\Enums\TeamActivityKind;
 use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
@@ -14,7 +16,7 @@ use Illuminate\Validation\Rule;
 
 class TeamMembersController extends Controller
 {
-    public function store(Request $request, Workspace $workspace, Team $team): RedirectResponse
+    public function store(Request $request, Workspace $workspace, Team $team, RecordTeamActivity $recordTeamActivity): RedirectResponse
     {
         Gate::authorize('manageMembers', $team);
 
@@ -31,7 +33,11 @@ class TeamMembersController extends Controller
             return back();
         }
 
-        $team->members()->attach($validated['user_id'], ['role' => $validated['role'] ?? TeamRole::Member->value]);
+        DB::transaction(function () use ($team, $validated, $recordTeamActivity): void {
+            $team->members()->attach($validated['user_id'], ['role' => $validated['role'] ?? TeamRole::Member->value]);
+
+            $recordTeamActivity->handle($team->id, TeamActivityKind::MemberJoined, User::query()->whereKey($validated['user_id'])->firstOrFail());
+        });
 
         return back();
     }

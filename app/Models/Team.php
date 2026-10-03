@@ -202,6 +202,12 @@ class Team extends Model
         return $this->hasMany(TeamSprint::class)->orderBy('starts_on')->orderBy('id');
     }
 
+    /** @return HasMany<TeamActivity, $this> */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(TeamActivity::class);
+    }
+
     protected function casts(): array
     {
         return [

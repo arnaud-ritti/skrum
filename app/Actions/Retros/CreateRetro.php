@@ -3,9 +3,11 @@
 namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\AttachHealthCheck;
+use App\Actions\Teams\RecordTeamActivity;
 use App\Actions\Teams\SuggestedFacilitator;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
+use App\Enums\TeamActivityKind;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
@@ -23,6 +25,7 @@ class CreateRetro
         private AttachHealthCheck $attachHealthCheck,
         private Llm $llm,
         private SuggestedFacilitator $suggestedFacilitator,
+        private RecordTeamActivity $recordTeamActivity,
     ) {}
 
     public function handle(Team $team, User $creator, NewRetro $data): Retro
@@ -56,6 +59,7 @@ class CreateRetro
             }
 
             $facilitator = $retro->participants()->create(['user_id' => $facilitatorUser->id]);
+            $this->recordTeamActivity->handle($team->id, TeamActivityKind::RetroStarted, $creator, null, $retro->id, $retro->title);
 
             $retro->update(['facilitator_participant_id' => $facilitator->id]);
 

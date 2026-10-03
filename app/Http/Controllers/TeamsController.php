@@ -6,6 +6,7 @@ use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\PresentTeamRetro;
 use App\Actions\Teams\BuildTeamMoodTrend;
+use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Contracts\PokerPresenceRoster;
@@ -56,6 +57,7 @@ class TeamsController extends Controller
         BuildTeamMoodTrend $buildTeamMoodTrend,
         PresentTeamHealthStatements $presentTeamHealthStatements,
         PresentNewSessionOptions $presentNewSessionOptions,
+        ListTeamActivity $listTeamActivity,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -117,6 +119,7 @@ class TeamsController extends Controller
             'canManageRituals' => $request->user()->can('manageRituals', $team),
             'schedule' => $this->schedule($team),
             'hasSprints' => $team->sprints()->exists(),
+            'activity' => $listTeamActivity->handle($team),
         ]);
     }
 

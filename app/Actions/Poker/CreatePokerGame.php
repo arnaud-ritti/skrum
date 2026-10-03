@@ -3,6 +3,8 @@
 namespace App\Actions\Poker;
 
 use App\Actions\Integrations\ImportPokerTasks;
+use App\Actions\Teams\RecordTeamActivity;
+use App\Enums\TeamActivityKind;
 use App\Models\PokerGame;
 use App\Models\Team;
 use App\Models\User;
@@ -14,6 +16,7 @@ class CreatePokerGame
     public function __construct(
         private AddPokerTask $addPokerTask,
         private ImportPokerTasks $importPokerTasks,
+        private RecordTeamActivity $recordTeamActivity,
     ) {}
 
     public function handle(Team $team, User $creator, NewPokerGame $new): PokerGame
@@ -50,6 +53,7 @@ class CreatePokerGame
             $player = $game->players()->create(['user_id' => $creator->id, 'is_spectator' => $new->spectator]);
 
             $game->update(['facilitator_player_id' => $player->id]);
+            $this->recordTeamActivity->handle($team->id, TeamActivityKind::PokerStarted, $creator, null, $game->id, $game->title);
 
             foreach ($new->tasks as $title) {
                 $this->addPokerTask->handle($game, $title, null);
