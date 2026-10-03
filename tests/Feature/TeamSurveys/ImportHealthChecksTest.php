@@ -135,6 +135,19 @@ it('brings an answer written to the old tables after the first run, on the scale
         ->and(DB::table('team_survey_questions')->where('team_survey_id', importedSurvey($history['openUnanswered']->id)->id)->pluck('scale_max')->map(fn (mixed $max): int => (int) $max)->unique()->values()->all())->toBe([10]);
 });
 
+it('leaves behind an old answer to a question already answered on five, and the verification flags its retro', function () {
+    $history = healthHistory();
+    $import = resolve(ImportHealthChecks::class);
+    $import->handle();
+    $retro = $history['openUnanswered'];
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => User::factory()]), ['interaction' => 4, 'vision' => 3]);
+    oldHealthAnswer($retro, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => User::factory()]), 'vision', 9, '2026-10-01 09:40:00');
+
+    expect($import->handle())->toMatchArray(['answers' => 0, 'skippedAnswers' => 2])
+        ->and(DB::table('team_survey_answers')->whereIn('team_survey_question_id', DB::table('team_survey_questions')->where('team_survey_id', importedSurvey($retro->id)->id)->select('id'))->max('value'))->toBe(4)
+        ->and(collect(resolve(VerifyHealthCheckImport::class)->handle())->pluck('retroId')->all())->toContain($retro->id);
+});
+
 it('leaves the old tables as they were', function () {
     healthHistory();
     $statements = DB::table('retro_health_statements')->orderBy('id')->get()->toArray();

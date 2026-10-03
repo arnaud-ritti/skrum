@@ -236,7 +236,8 @@ class ImportHealthChecks
     /**
      * An answer already copied is left as it is; an answer to a statement
      * outside the frozen set is counted and left behind, as every reader
-     * ignored it. The score is copied as it was given.
+     * ignored it, and so is an answer to a question someone already answered
+     * on five in the application. The score is copied as it was given.
      *
      * @param  Collection<int, stdClass>  $answers
      * @param  array<string, string>  $questionIds
@@ -251,6 +252,8 @@ class ImportHealthChecks
             ->mapWithKeys(fn (stdClass $row): array => ["{$row->team_survey_question_id}|{$row->team_survey_respondent_id}" => true])
             ->all();
 
+        $scaleMaxes = DB::table('team_survey_questions')->whereIn('id', array_values($questionIds))->pluck('scale_max', 'id');
+
         $rows = [];
 
         foreach ($answers as $answer) {
@@ -258,6 +261,12 @@ class ImportHealthChecks
             $respondentId = $respondentIds[$answer->participant_id] ?? null;
 
             if ($questionId === null || $respondentId === null) {
+                $report['skippedAnswers']++;
+
+                continue;
+            }
+
+            if ((int) $scaleMaxes->get($questionId) !== HealthScale::LegacyMax) {
                 $report['skippedAnswers']++;
 
                 continue;

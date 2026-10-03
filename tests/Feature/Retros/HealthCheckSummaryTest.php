@@ -203,6 +203,17 @@ it('uses the retro just before this one and ignores later and other-team retros'
     expect($statements['vision']['previousAverage'])->toBe(4.5);
 });
 
+it('takes no previous average from a health check closed by hand on a retro still running, as the trend does', function () {
+    $running = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Writing)->create();
+    summarizedRetro(['vision' => [2]], retro: $running);
+    resolve(HealthCheckSurvey::class)->forRetro($running)->update(['closed_at' => now()->subWeek()]);
+    $current = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['team_id' => $running->team_id, 'completed_at' => now()]);
+
+    $statements = collect(healthSummary(summarizedRetro(['vision' => [5]], retro: $current))['statements'])->keyBy('key');
+
+    expect($statements['vision']['previousAverage'])->toBeNull();
+});
+
 it('has no previous average for the first health check of the team', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
 

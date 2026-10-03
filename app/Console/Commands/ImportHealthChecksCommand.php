@@ -18,7 +18,7 @@ class ImportHealthChecksCommand extends Command
         $report = $importHealthChecks->handle();
 
         $this->comment("Created {$report['surveys']} surveys, {$report['questions']} questions, {$report['respondents']} respondents and {$report['answers']} answers.");
-        $this->comment("Left behind {$report['skippedAnswers']} answers to statements outside their retro's set.");
+        $this->comment("Left behind {$report['skippedAnswers']} answers to statements outside their retro's set or already answered on five.");
 
         return self::SUCCESS;
     }

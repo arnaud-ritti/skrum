@@ -302,3 +302,14 @@ it('still refuses to turn anonymity off once someone has answered the health che
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])
         ->assertUnprocessable()->assertJsonValidationErrors('is_anonymous');
 });
+
+it('still refuses to turn anonymity off once the answered health check was removed', function () {
+    $retro = Retro::factory()->anonymous()->create();
+    [$facilitator, $participant] = retroFacilitator($retro);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $participant, sixScores());
+    $this->actingAs($facilitator)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertNoContent();
+
+    $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])
+        ->assertUnprocessable()->assertJsonValidationErrors('is_anonymous');
+});

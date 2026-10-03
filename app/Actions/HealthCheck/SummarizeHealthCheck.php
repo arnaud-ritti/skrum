@@ -2,8 +2,6 @@
 
 namespace App\Actions\HealthCheck;
 
-use App\Enums\TeamSurveyStatus;
-use App\Enums\TeamSurveyTemplate;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\TeamSurvey;
@@ -14,7 +12,10 @@ use Illuminate\Support\Collection;
 
 class SummarizeHealthCheck
 {
-    public function __construct(private HealthCheckSurvey $healthCheckSurvey) {}
+    public function __construct(
+        private HealthCheckSurvey $healthCheckSurvey,
+        private BuildHealthTrend $buildHealthTrend,
+    ) {}
 
     /**
      * The previous averages come from another session of the team, which a guest of this one must not see.
@@ -118,15 +119,9 @@ class SummarizeHealthCheck
             return [];
         }
 
-        $previous = TeamSurvey::query()
-            ->where('team_id', $survey->team_id)
+        $previous = $this->buildHealthTrend->closedHealthChecks($survey->team_id)
             ->whereKeyNot($survey->id)
-            ->where('template', TeamSurveyTemplate::HealthCheck)
-            ->where('status', TeamSurveyStatus::Closed)
             ->where('closed_at', '<', $survey->closed_at)
-            ->whereHas('questions.answers')
-            ->orderByDesc('closed_at')
-            ->orderByDesc('id')
             ->first();
 
         if ($previous === null) {
