@@ -22,7 +22,14 @@ class GameAnswersController extends Controller
         ]);
 
         return response()->json([
-            'myAnswer' => $setGifAnswer->handle($room, $round, GamePlayer::current($request), $validated['gif_id'], $validated['caption'] ?? null),
+            'myAnswer' => $setGifAnswer->handle(
+                $room,
+                $round,
+                GamePlayer::current($request),
+                $validated['gif_id'],
+                $validated['caption'] ?? null,
+                keepsCaption: ! array_key_exists('caption', $validated),
+            ),
         ]);
     }
 

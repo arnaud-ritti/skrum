@@ -4,6 +4,7 @@ use App\Events\Games\GameAnswerChanged;
 use App\Events\Games\GameRoundRevealed;
 use App\Models\GameGifAnswer;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Event::fake();
@@ -26,6 +27,26 @@ it('sends a caption with the GIF and changes it until the reveal', function () {
         ->assertUnprocessable();
 
     expect(GameGifAnswer::query()->sole()->caption)->toBeNull();
+});
+
+it('keeps the caption when only the GIF changes, and asks the provider only for a new GIF', function () {
+    [$room, $user] = sprintGifRoom();
+    $round = activeGifRound($room);
+
+    $this->actingAs($user)->putJson(route('games.rounds.answer.update', [$room, $round]), ['gif_id' => 'gifA', 'caption' => 'Friday deploys'])->assertOk();
+
+    $this->actingAs($user)->putJson(route('games.rounds.answer.update', [$room, $round]), ['gif_id' => 'gifB'])
+        ->assertOk()
+        ->assertJsonPath('myAnswer.gif.id', 'gifB')
+        ->assertJsonPath('myAnswer.caption', 'Friday deploys');
+
+    Http::assertSentCount(2);
+
+    $this->actingAs($user)->putJson(route('games.rounds.answer.update', [$room, $round]), ['gif_id' => 'gifB', 'caption' => 'Friday rollbacks'])
+        ->assertOk()
+        ->assertJsonPath('myAnswer.caption', 'Friday rollbacks');
+
+    Http::assertSentCount(2);
 });
 
 it('keeps a caption from the other players until the reveal, then shows it to everyone', function () {
