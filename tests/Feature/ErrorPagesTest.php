@@ -403,3 +403,17 @@ it('answers a refused webhook delivery, which has no session, without reporting 
 
     Exceptions::assertNothingReported();
 });
+
+it('shows the version to a signed-in viewer only, the 500 page included', function () {
+    config(['skrum.version' => '1.8.2', 'app.debug' => false]);
+    Route::middleware('web')->get('/error-pages-probe/failing', fn () => throw new RuntimeException('x'));
+
+    $this->get('/no-such-page')->assertInertia(fn (Assert $page) => $page->missing('version'));
+    $this->actingAs(User::factory()->create());
+    $this->get('/no-such-page')->assertInertia(fn (Assert $page) => $page->where('version', '1.8.2'));
+    $this->get('/error-pages-probe/failing')->assertInertia(fn (Assert $page) => $page->where('version', '1.8.2'));
+});
+
+it('links every error page to the status page', function () {
+    $this->get('/no-such-page')->assertInertia(fn (Assert $page) => $page->where('statusUrl', route('status.show')));
+});

@@ -2,14 +2,19 @@
 
 namespace App\Http;
 
+use App\Actions\Teams\PresentAccessRequestOffer;
+use App\Actions\Teams\ResolveDeniedTeam;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
+use App\Models\User;
+use App\Support\InstanceVersion;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
@@ -69,7 +74,7 @@ class ErrorPageResponder
 
         try {
             return $this->throughPageMiddleware($response->request, fn (): Response => $response
-                ->render(self::Component, $this->props($response))
+                ->render(self::Component, $this->pageProps($response))
                 ->usingMiddleware(HandleInertiaRequests::class)
                 ->withSharedData()
                 ->toResponse($response->request));
@@ -90,8 +95,76 @@ class ErrorPageResponder
             'status' => 500,
             'requestId' => Context::get(AssignRequestId::ContextKey),
             'occurredAt' => now('UTC')->format('Y-m-d H:i:s'),
+            'statusUrl' => route('status.show'),
             ...$this->returnTo($response->request),
+            ...($this->sessionHoldsUser($response->request) ? $this->version() : []),
         ]);
+    }
+
+    /**
+     * Whether the failed request belongs to a signed-in user, read from the
+     * guard or the session only: the database may be what failed.
+     */
+    private function sessionHoldsUser(Request $request): bool
+    {
+        $guard = Auth::guard();
+
+        if ($guard->hasUser()) {
+            return true;
+        }
+
+        if (! $request->hasSession()) {
+            return false;
+        }
+
+        return $request->session()->has($guard->getName());
+    }
+
+    /**
+     * @return array{version?: string}
+     */
+    private function version(): array
+    {
+        $version = rescue(fn (): string => resolve(InstanceVersion::class)->current(), null, false);
+
+        return is_string($version) && $version !== '' ? ['version' => $version] : [];
+    }
+
+    /**
+     * The props of a page rendered with the shared data: the signed-in viewer
+     * also gets the version and, on a 403 about a team of their workspace, the
+     * offer to ask for access.
+     *
+     * @return array<string, mixed>
+     */
+    private function pageProps(ExceptionResponse $response): array
+    {
+        $request = $response->request;
+        $viewer = rescue(fn (): mixed => $request->user(), null, false);
+
+        if (! $viewer instanceof User) {
+            return $this->props($response);
+        }
+
+        return [
+            ...$this->props($response),
+            ...$this->version(),
+            ...($response->statusCode() === 403 ? $this->accessRequest($request, $viewer) : []),
+        ];
+    }
+
+    /**
+     * @return array{accessRequest?: array<string, mixed>}
+     */
+    private function accessRequest(Request $request, User $viewer): array
+    {
+        $offer = rescue(function () use ($request, $viewer): ?array {
+            $team = resolve(ResolveDeniedTeam::class)->handle($request);
+
+            return $team === null ? null : resolve(PresentAccessRequestOffer::class)->handle($viewer, $team);
+        }, null, false);
+
+        return is_array($offer) ? ['accessRequest' => $offer] : [];
     }
 
     /**
@@ -124,13 +197,18 @@ class ErrorPageResponder
     /**
      * @return array{
      *     status: int,
+     *     statusUrl: string,
      *     retryAfter?: int,
      *     returnTo?: string
      * }
      */
     private function props(ExceptionResponse $response): array
     {
-        $props = ['status' => $response->statusCode(), ...$this->returnTo($response->request)];
+        $props = [
+            'status' => $response->statusCode(),
+            'statusUrl' => route('status.show'),
+            ...$this->returnTo($response->request),
+        ];
         $retryAfter = $response->response->headers->get('Retry-After');
 
         if ($response->statusCode() !== 429 || ! is_numeric($retryAfter)) {
