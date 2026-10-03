@@ -221,6 +221,66 @@ describe('IcebreakerGameCard', () => {
     });
 });
 
+describe('IcebreakerGameCard, the eight games', () => {
+    const games = [
+        ['hangman', 'Hangman', 'lucide-whole-word', 'coral'],
+        ['draw', 'Draw & Guess', 'lucide-brush', 'iris'],
+        ['gif', 'Sprint in one GIF', 'lucide-film', 'apricot'],
+        ['decoded', 'Decoded', 'lucide-smile', 'sun'],
+        ['two_truths', 'Two truths and a lie', 'lucide-venetian-mask', 'plum'],
+        ['mood', 'Mood weather', 'lucide-cloud-sun', 'sky'],
+        ['guess_who', 'Guess who?', 'lucide-user-round-search', 'moss'],
+        [
+            'quick_question',
+            'Quick question',
+            'lucide-message-circle-question',
+            'lagoon',
+        ],
+    ] as const;
+
+    it.each(games)(
+        'renders %s with its name, its icon and its colour',
+        (game, title, icon, color) => {
+            const { container } = render(
+                <IcebreakerGameCard game={game} title={title} compact />,
+            );
+            const radio = screen.getByRole('radio', { name: title });
+
+            expect(radio.getAttribute('data-game')).toBe(game);
+            expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
+            expect(
+                container.querySelector(`.bg-skrum-col-${color}`),
+            ).not.toBeNull();
+        },
+    );
+
+    it.each(games)(
+        'draws the art of %s with its corner icon',
+        (game, title, icon) => {
+            const { container } = render(
+                <IcebreakerGameCard game={game} title={title} />,
+            );
+
+            expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
+            expect(
+                container.querySelector('[aria-hidden] > :first-child'),
+            ).not.toBeNull();
+        },
+    );
+
+    it('marks the lie among the three cards of Two truths', () => {
+        const { container } = render(
+            <IcebreakerGameCard
+                game="two_truths"
+                title="Two truths and a lie"
+            />,
+        );
+
+        expect(container.querySelectorAll('.rotate-6')).toHaveLength(1);
+        expect(screen.getByText('L', { selector: '.rotate-6' })).toBeTruthy();
+    });
+});
+
 describe('IcebreakerGameGrid', () => {
     it('moves focus with arrows, wrapping, and selects with space', async () => {
         const user = userEvent.setup();

@@ -4570,5 +4570,11 @@
     "An answer has already been drawn.": "Ya se ha sacado una respuesta.",
     "At least 2 answers are needed.": "Se necesitan al menos 2 respuestas.",
     "No answer has been drawn yet.": "Todavía no se ha sacado ninguna respuesta.",
-    "This is your answer.": "Esta es tu respuesta."
+    "This is your answer.": "Esta es tu respuesta.",
+    "T": "V",
+    "L": "M",
+    "Everyone prepares three statements, one lie: find it.": "Cada uno prepara tres afirmaciones, una es mentira: encuéntrala.",
+    "Your mood as a weather, anonymously.": "Tu estado de ánimo como el tiempo, de forma anónima.",
+    "Everyone answers, one answer is drawn: guess who wrote it.": "Todos responden, se sortea una respuesta: adivina quién la escribió.",
+    "One question, everyone answers aloud in turn.": "Una pregunta, cada uno responde en voz alta por turnos."
 }

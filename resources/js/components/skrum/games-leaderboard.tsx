@@ -5,15 +5,19 @@ import {
     Brush,
     ChevronRight,
     Clock,
+    CloudSun,
     Crown,
     Film,
     Flame,
     Gamepad2,
     Globe,
+    MessageCircleQuestion,
     Plus,
     Smile,
     Trophy,
+    UserRoundSearch,
     Users,
+    VenetianMask,
     WholeWord,
     CircleAlert,
 } from 'lucide-react';
@@ -46,9 +50,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTrans } from '@/hooks/use-trans';
+import type { GameKind } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 
-export type GameKind = 'draw' | 'gif' | 'hangman' | 'decoded';
+export type { GameKind };
 export type GameRoomAccess = 'team' | 'link';
 export type GameRoomStatus = 'live' | 'waiting' | 'finished';
 export type GameLeaderboardPeriod = '30d' | 'all';
@@ -99,22 +104,39 @@ export type GamesLeaderboardEntry = {
 
 type GameStyle = { icon: LucideIcon; tile: string };
 
+/** The picker's colours, so a game has one colour everywhere (P27-03). */
 const gameStyles: Record<GameKind, GameStyle> = {
     hangman: {
         icon: WholeWord,
-        tile: 'bg-skrum-col-sun border-skrum-col-sun-border text-skrum-col-sun-text',
+        tile: 'bg-skrum-col-coral border-skrum-col-coral-border text-skrum-col-coral-text',
     },
     decoded: {
         icon: Smile,
-        tile: 'bg-skrum-col-lagoon border-skrum-col-lagoon-border text-skrum-col-lagoon-text',
+        tile: 'bg-skrum-col-sun border-skrum-col-sun-border text-skrum-col-sun-text',
     },
     draw: {
         icon: Brush,
-        tile: 'bg-skrum-col-plum border-skrum-col-plum-border text-skrum-col-plum-text',
+        tile: 'bg-skrum-col-iris border-skrum-col-iris-border text-skrum-col-iris-text',
     },
     gif: {
         icon: Film,
+        tile: 'bg-skrum-col-apricot border-skrum-col-apricot-border text-skrum-col-apricot-text',
+    },
+    two_truths: {
+        icon: VenetianMask,
+        tile: 'bg-skrum-col-plum border-skrum-col-plum-border text-skrum-col-plum-text',
+    },
+    mood: {
+        icon: CloudSun,
         tile: 'bg-skrum-col-sky border-skrum-col-sky-border text-skrum-col-sky-text',
+    },
+    guess_who: {
+        icon: UserRoundSearch,
+        tile: 'bg-skrum-col-moss border-skrum-col-moss-border text-skrum-col-moss-text',
+    },
+    quick_question: {
+        icon: MessageCircleQuestion,
+        tile: 'bg-skrum-col-lagoon border-skrum-col-lagoon-border text-skrum-col-lagoon-text',
     },
 };
 
@@ -131,19 +153,24 @@ function useGameLabel(): (game: GameKind) => string {
     const { t } = useTrans();
 
     return (game) => {
-        if (game === 'hangman') {
-            return t('Hangman');
+        switch (game) {
+            case 'hangman':
+                return t('Hangman');
+            case 'draw':
+                return t('Draw & Guess');
+            case 'gif':
+                return t('Sprint in one GIF');
+            case 'decoded':
+                return t('Decoded');
+            case 'two_truths':
+                return t('Two truths and a lie');
+            case 'mood':
+                return t('Mood weather');
+            case 'guess_who':
+                return t('Guess who?');
+            case 'quick_question':
+                return t('Quick question');
         }
-
-        if (game === 'draw') {
-            return t('Draw & Guess');
-        }
-
-        if (game === 'gif') {
-            return t('Sprint in one GIF');
-        }
-
-        return t('Decoded');
     };
 }
 

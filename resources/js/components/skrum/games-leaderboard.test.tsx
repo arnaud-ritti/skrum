@@ -94,6 +94,32 @@ describe('GameRoomList', () => {
         expect(document.querySelector('[data-status]')).toBeNull();
     });
 
+    it.each([
+        ['two_truths', 'Two truths and a lie', 'lucide-venetian-mask', 'plum'],
+        ['mood', 'Mood weather', 'lucide-cloud-sun', 'sky'],
+        ['guess_who', 'Guess who?', 'lucide-user-round-search', 'moss'],
+        [
+            'quick_question',
+            'Quick question',
+            'lucide-message-circle-question',
+            'lagoon',
+        ],
+    ] as const)(
+        'shows a room of %s with its name, icon and colour',
+        (game, label, icon, color) => {
+            renderWithProviders(
+                <GameRoomList rooms={[room({ name: null, game })]} />,
+            );
+
+            const link = screen.getByRole('link', {
+                name: `${label}, ${label}, 3 players`,
+            });
+
+            expect(link.querySelector(`svg.${icon}`)).not.toBeNull();
+            expect(link.querySelector(`.bg-skrum-col-${color}`)).not.toBeNull();
+        },
+    );
+
     it('shows the context of a live room beside the game, the rounds after the players, and counts the players who are not sent', () => {
         renderWithProviders(
             <GameRoomList
