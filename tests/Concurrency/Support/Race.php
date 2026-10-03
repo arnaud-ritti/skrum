@@ -121,6 +121,43 @@ class Race
     }
 
     /**
+     * A file path for `holdFirstTransaction()` and `awaitHeldTransaction()`: the contenders share the machine.
+     */
+    public static function signal(): string
+    {
+        return sys_get_temp_dir().'/race-'.bin2hex(random_bytes(8));
+    }
+
+    /**
+     * Called by one contender before its work, with `Race::run(..., Race::NoPause)`: after its first query inside a
+     * transaction (its lock), it raises the signal and holds the transaction, so that the contenders waiting for the
+     * signal arrive while it runs.
+     */
+    public static function holdFirstTransaction(string $signal, int $holdMicroseconds = 300_000): void
+    {
+        DB::listen(static function () use ($signal, $holdMicroseconds): void {
+            if (DB::transactionLevel() === 0 || file_exists($signal)) {
+                return;
+            }
+
+            touch($signal);
+            usleep($holdMicroseconds);
+        });
+    }
+
+    /**
+     * Waits until the contender that holds its first transaction raised the signal (ten seconds at most).
+     */
+    public static function awaitHeldTransaction(string $signal): void
+    {
+        $deadline = microtime(true) + 10;
+
+        while (! file_exists($signal) && microtime(true) < $deadline) {
+            usleep(5_000);
+        }
+    }
+
+    /**
      * Sends a JSON request through the HTTP kernel of the contender's process, as the given user,
      * and returns the status: a contender reports what a client would see.
      *

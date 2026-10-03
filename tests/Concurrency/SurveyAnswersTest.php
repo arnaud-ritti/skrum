@@ -57,18 +57,27 @@ it('refuses the answers that arrive while the survey is closing', function () {
     $closer = $facilitator->id;
     $closeUri = route('surveys.status.update', $survey, false);
     $answerUri = route('surveys.answers.update', [$survey, $question], false);
+    $closing = Race::signal();
 
-    $contenders = ['close' => static fn (): int => Race::request($closer, 'PUT', $closeUri, ['status' => 'closed'])];
+    $contenders = ['close' => static function () use ($closer, $closeUri, $closing): int {
+        Race::holdFirstTransaction($closing);
+
+        return Race::request($closer, 'PUT', $closeUri, ['status' => 'closed']);
+    }];
 
     foreach ($members as $index => $memberId) {
-        $contenders["answer{$index}"] = static function () use ($memberId, $answerUri): int {
-            usleep(50_000);
+        $contenders["answer{$index}"] = static function () use ($memberId, $answerUri, $closing): int {
+            Race::awaitHeldTransaction($closing);
 
             return Race::request($memberId, 'PUT', $answerUri, ['value' => 3]);
         };
     }
 
-    $outcomes = Race::run($contenders);
+    try {
+        $outcomes = Race::run($contenders, Race::NoPause);
+    } finally {
+        @unlink($closing);
+    }
 
     expect($outcomes['close']['value'])->toBe(204)
         ->and(collect($outcomes)->except('close')->pluck('value')->all())->each->toBe(422)
