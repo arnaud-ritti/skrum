@@ -41,6 +41,7 @@ import {
     TopicMeta,
     TopicTime,
 } from './topic-meta';
+import { TopicNotes } from './topic-notes';
 import { TopicTimer } from './topic-timer';
 
 /**
@@ -108,6 +109,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
             <PhaseDiscussing
                 hideMyCursor={hideMyCursor}
                 timer={<TopicTimer />}
+                notes={<TopicNotes />}
                 topicMeta={(topic) => <TopicMeta topic={topic} />}
                 estimate={<DiscussionEstimate />}
                 summary={<DiscussionPace />}

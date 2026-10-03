@@ -4364,5 +4364,7 @@
     ":minutes min per topic · :count actions so far": ":minutes min per topic · :count actions so far",
     ":minutes min per topic · 1 action so far": ":minutes min per topic · 1 action so far",
     "of :total · this topic": "of :total · this topic",
-    "Mark as discussed": "Mark as discussed"
+    "Mark as discussed": "Mark as discussed",
+    "What the room decides, the questions left open…": "What the room decides, the questions left open…",
+    "Your text was not saved": "Your text was not saved"
 }

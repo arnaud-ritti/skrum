@@ -4584,5 +4584,7 @@
     ":minutes min per topic · :count actions so far": ":minutes min por tema · :count acciones hasta ahora",
     ":minutes min per topic · 1 action so far": ":minutes min por tema · 1 acción hasta ahora",
     "of :total · this topic": "de :total · este tema",
-    "Mark as discussed": "Marcar como tratado"
+    "Mark as discussed": "Marcar como tratado",
+    "What the room decides, the questions left open…": "Lo que decide el grupo, las preguntas que quedan abiertas…",
+    "Your text was not saved": "Tu texto no se ha guardado"
 }

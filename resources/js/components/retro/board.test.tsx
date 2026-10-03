@@ -298,6 +298,17 @@ describe('Board', () => {
                     ?.textContent,
             ).toBe('5 min per topic · 0 actions so far');
         });
+
+        it('opens the right column on the discussion notes of the topic', () => {
+            const { container } = given({}, discussingSnapshot());
+            const panels = container.querySelector(
+                '[data-slot="retro-discussion-panels"]',
+            );
+
+            expect(panels?.firstElementChild?.getAttribute('data-slot')).toBe(
+                'retro-topic-notes',
+            );
+        });
     });
 
     describe('in the ROTI phase', () => {

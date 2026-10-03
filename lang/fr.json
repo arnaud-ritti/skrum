@@ -4584,5 +4584,7 @@
     ":minutes min per topic · :count actions so far": ":minutes min par sujet · :count actions pour l'instant",
     ":minutes min per topic · 1 action so far": ":minutes min par sujet · 1 action pour l'instant",
     "of :total · this topic": "sur :total · ce sujet",
-    "Mark as discussed": "Marquer comme discuté"
+    "Mark as discussed": "Marquer comme discuté",
+    "What the room decides, the questions left open…": "Ce que le groupe décide, les questions restées ouvertes…",
+    "Your text was not saved": "Ton texte n'a pas été enregistré"
 }
