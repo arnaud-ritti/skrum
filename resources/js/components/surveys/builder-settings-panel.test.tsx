@@ -15,7 +15,9 @@ describe('BuilderSettingsPanel', () => {
             <BuilderSettingsPanel settings={settings} onChange={vi.fn()} />,
         );
 
-        expect(screen.getByRole('heading', { name: 'Settings' })).toBeTruthy();
+        expect(
+            screen.getByRole('heading', { name: 'Survey builder settings' }),
+        ).toBeTruthy();
         expect(screen.getByText('Answers are anonymous')).toBeTruthy();
         expect(
             screen

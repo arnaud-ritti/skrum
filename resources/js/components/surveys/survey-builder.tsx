@@ -36,7 +36,7 @@ import { BuilderQuestionCard } from './builder-question-card';
 import type { QuestionCardMode } from './builder-question-card';
 import { BuilderQuestionList } from './builder-question-list';
 import { BuilderSettingsPanel } from './builder-settings-panel';
-import { BuilderTopbar } from './builder-topbar';
+import { BuilderStatusBadge, BuilderTopbar } from './builder-topbar';
 import { SurveyPreviewDialog } from './survey-preview-dialog';
 
 /** The `lg` breakpoint, from which the settings sit beside the questions. */
@@ -85,6 +85,22 @@ function settingsOf(
     };
 }
 
+/** The server's time of the last save, moved onto this device's clock by the gap between the two. */
+function savedAtOnThisClock(snapshot: SurveySnapshot): number | null {
+    if (snapshot.survey.savedAt === null) {
+        return null;
+    }
+
+    const savedAt = Date.parse(snapshot.survey.savedAt);
+    const serverTime = Date.parse(snapshot.serverTime);
+
+    if (Number.isNaN(savedAt) || Number.isNaN(serverTime)) {
+        return null;
+    }
+
+    return savedAt + (Date.now() - serverTime);
+}
+
 /**
  * The builder of a team survey (mockup ScreenSurvey, frame a): the title, the
  * questions of a draft edited in place and saved by themselves, the "Add"
@@ -113,6 +129,7 @@ export function SurveyBuilder({
     );
     const [previewOpen, setPreviewOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [lastSavedAt] = useState(() => savedAtOnThisClock(initial));
     const labelInputs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocus = useRef<string | null>(null);
     const settingsInFlight = useRef(new Map<number, SurveySettingsPatch>());
@@ -417,10 +434,12 @@ export function SurveyBuilder({
                 },
                 { title: survey.title, href: links.edit ?? links.show },
             ]}
+            status={<BuilderStatusBadge status={survey.status} />}
             actions={
                 <BuilderTopbar
                     status={survey.status}
                     saveState={saveState}
+                    lastSavedAt={lastSavedAt}
                     questionCount={questions.length}
                     hasAnswers={snapshot.progress.responses > 0}
                     resultsHref={links.results}
@@ -493,7 +512,7 @@ export function SurveyBuilder({
                                 className="shrink-0"
                             >
                                 <Settings2 aria-hidden />
-                                {t('Settings')}
+                                {t('Survey builder settings')}
                             </Button>
                         )}
                     </div>
@@ -607,7 +626,9 @@ export function SurveyBuilder({
                     <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
                         <SheetContent side="right">
                             <SheetHeader>
-                                <SheetTitle>{t('Settings')}</SheetTitle>
+                                <SheetTitle>
+                                    {t('Survey builder settings')}
+                                </SheetTitle>
                             </SheetHeader>
                             <SheetBody>{settings}</SheetBody>
                         </SheetContent>

@@ -133,6 +133,7 @@ it('words an english key differently from its text only where that is meant', fu
         'Built-in survey' => 'Built-in',
         'Two-factor on' => 'On',
         'Two-factor off' => 'Off',
+        'Survey builder settings' => 'Settings',
     ]);
 });
 

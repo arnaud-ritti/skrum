@@ -33,7 +33,9 @@ export function BuilderSettingsPanel({
         <div data-slot="survey-settings" className="flex flex-col gap-5">
             {showHeading && (
                 <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-lg font-semibold">{t('Settings')}</h2>
+                    <h2 className="text-lg font-semibold">
+                        {t('Survey builder settings')}
+                    </h2>
                     <Settings2
                         aria-hidden
                         className="size-4 text-muted-foreground"

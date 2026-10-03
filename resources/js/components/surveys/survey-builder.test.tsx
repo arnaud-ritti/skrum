@@ -50,10 +50,12 @@ vi.mock('@/hooks/use-survey-channel', () => ({
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
         breadcrumbs,
+        status,
         actions,
         children,
     }: {
         breadcrumbs: { title: string; href: string }[];
+        status?: ReactNode;
         actions: ReactNode;
         children: ReactNode;
     }) => (
@@ -64,6 +66,7 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
                         {crumb.title}
                     </a>
                 ))}
+                <span data-test="breadcrumb-status">{status}</span>
             </nav>
             <header>{actions}</header>
             {children}
@@ -142,6 +145,7 @@ function snapshot(
             version: 4,
             openedAt: null,
             closedAt: null,
+            savedAt: '2026-10-03T07:59:56Z',
             ...overrides.survey,
         },
         me: {
@@ -218,7 +222,16 @@ describe('SurveyBuilder', () => {
             screen.getByRole('group', { name: 'Add a question' }),
         ).toBeTruthy();
         expect(button('Publish').disabled).toBe(true);
-        expect(screen.getByText('Draft')).toBeTruthy();
+        expect(
+            document.querySelector('[data-test="breadcrumb-status"]')
+                ?.textContent,
+        ).toBe('Draft');
+    });
+
+    it('says when the survey was last saved before anything is saved on this visit', () => {
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+
+        expect(saveStatus()).toBe('Saved 4 sec ago');
     });
 
     it('shows five questions with the first open, as in the mockup', () => {
@@ -288,7 +301,7 @@ describe('SurveyBuilder', () => {
         });
         fireEvent.change(label, { target: { value: 'Workload?' } });
 
-        expect(saveStatus()).toBe('');
+        expect(api.updateQuestion).not.toHaveBeenCalled();
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(600);
@@ -681,7 +694,10 @@ describe('SurveyBuilder', () => {
             />,
         );
 
-        expect(screen.getByText('Closed')).toBeTruthy();
+        expect(
+            document.querySelector('[data-test="breadcrumb-status"]')
+                ?.textContent,
+        ).toBe('Closed');
         expect(screen.getByRole('link', { name: 'View results' })).toBeTruthy();
         expect(
             screen.queryByRole('button', { name: 'Back to draft' }),
@@ -700,9 +716,11 @@ describe('SurveyBuilder', () => {
             screen.queryByRole('switch', { name: 'One question at a time' }),
         ).toBeNull();
 
-        fireEvent.click(button('Settings'));
+        fireEvent.click(button('Survey builder settings'));
 
-        const sheet = screen.getByRole('dialog', { name: 'Settings' });
+        const sheet = screen.getByRole('dialog', {
+            name: 'Survey builder settings',
+        });
 
         expect(
             within(sheet).getByRole('switch', {

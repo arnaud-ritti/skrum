@@ -8,6 +8,7 @@ function renderTopbar(overrides: Partial<BuilderTopbarProps> = {}) {
     const props: BuilderTopbarProps = {
         status: 'draft',
         saveState: { status: 'idle' },
+        lastSavedAt: null,
         questionCount: 3,
         hasAnswers: false,
         resultsHref: '/surveys/s-1/results',
@@ -31,7 +32,6 @@ describe('BuilderTopbar', () => {
     it('shows a draft with Preview and Publish', () => {
         const props = renderTopbar();
 
-        expect(screen.getByText('Draft')).toBeTruthy();
         expect(button('Preview').disabled).toBe(true);
 
         fireEvent.click(button('Publish'));
@@ -61,7 +61,6 @@ describe('BuilderTopbar', () => {
     it('offers Back to draft on an open survey nobody answered, and the results', () => {
         const props = renderTopbar({ status: 'open' });
 
-        expect(screen.getByText('Open')).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
         expect(
             screen
@@ -85,8 +84,21 @@ describe('BuilderTopbar', () => {
     it('shows the results of a closed survey', () => {
         renderTopbar({ status: 'closed', hasAnswers: true });
 
-        expect(screen.getByText('Closed')).toBeTruthy();
         expect(screen.getByRole('link', { name: 'View results' })).toBeTruthy();
+    });
+
+    it('says when the survey was last saved before any save of this visit', () => {
+        renderTopbar({ lastSavedAt: Date.now() - 4000 });
+
+        expect(screen.getByRole('status').textContent).toMatch(
+            /^Saved 4 sec ago$/,
+        );
+    });
+
+    it('leaves the badge of the status to the breadcrumb', () => {
+        renderTopbar();
+
+        expect(screen.queryByText('Draft')).toBeNull();
     });
 
     it('says saving, saved and not saved', () => {

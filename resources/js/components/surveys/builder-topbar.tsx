@@ -21,6 +21,8 @@ const ClockTickMs = 5000;
 export type BuilderTopbarProps = {
     status: SurveyStatus;
     saveState: SaveState;
+    /** When the survey was last saved before this visit saved anything (client clock, ms). */
+    lastSavedAt: number | null;
     questionCount: number;
     hasAnswers: boolean;
     resultsHref: string;
@@ -69,9 +71,19 @@ function useNow(enabled: boolean): number {
     return now;
 }
 
-function SaveStatus({ state }: { state: SaveState }) {
+function SaveStatus({
+    state: current,
+    lastSavedAt,
+}: {
+    state: SaveState;
+    lastSavedAt: number | null;
+}) {
     const { t } = useTrans();
     const { locale } = usePage().props;
+    const state: SaveState =
+        current.status === 'idle' && lastSavedAt !== null
+            ? { status: 'saved', at: lastSavedAt }
+            : current;
     const now = useNow(state.status === 'saved');
 
     const content = (() => {
@@ -119,7 +131,8 @@ function SaveStatus({ state }: { state: SaveState }) {
     );
 }
 
-function StatusBadge({ status }: { status: SurveyStatus }) {
+/** The status of the survey, beside the breadcrumb. */
+export function BuilderStatusBadge({ status }: { status: SurveyStatus }) {
     const { t } = useTrans();
 
     switch (status) {
@@ -132,10 +145,11 @@ function StatusBadge({ status }: { status: SurveyStatus }) {
     }
 }
 
-/** The builder's part of the application top bar: the status, the save state and the actions. */
+/** The builder's part of the application top bar: the save state and the actions. */
 export function BuilderTopbar({
     status,
     saveState,
+    lastSavedAt,
     questionCount,
     hasAnswers,
     resultsHref,
@@ -155,8 +169,7 @@ export function BuilderTopbar({
             data-slot="survey-builder-topbar"
             className="flex min-w-0 items-center gap-2"
         >
-            <StatusBadge status={status} />
-            <SaveStatus state={saveState} />
+            <SaveStatus state={saveState} lastSavedAt={lastSavedAt} />
             <Button
                 type="button"
                 variant="outline"
