@@ -184,6 +184,61 @@ const rovingKeys = {
     horizontal: { forward: 'ArrowRight', backward: 'ArrowLeft' },
 } as const;
 
+/**
+ * Roving focus of a whiteboard bar: the arrows of its orientation move between its [data-roving-item]
+ * elements, wrapping and skipping disabled ones; Home and End go to the ends.
+ */
+export function moveToolbarFocus(
+    event: KeyboardEvent<HTMLElement>,
+    orientation: 'vertical' | 'horizontal',
+): void {
+    const root = event.currentTarget;
+    const target = event.target as HTMLElement;
+
+    if (!target.hasAttribute('data-roving-item')) {
+        return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+    }
+
+    const reachable = Array.from(
+        root.querySelectorAll<HTMLElement>('[data-roving-item]'),
+    ).filter(
+        (element) =>
+            !element.hasAttribute('disabled') &&
+            element.getAttribute('aria-disabled') !== 'true',
+    );
+    const index = reachable.indexOf(target);
+    const last = reachable.length - 1;
+    const { forward, backward } = rovingKeys[orientation];
+    let next: number | null = null;
+
+    if (event.key === forward) {
+        next = index >= last ? 0 : index + 1;
+    }
+
+    if (event.key === backward) {
+        next = index <= 0 ? last : index - 1;
+    }
+
+    if (event.key === 'Home') {
+        next = 0;
+    }
+
+    if (event.key === 'End') {
+        next = last;
+    }
+
+    if (next === null) {
+        return;
+    }
+
+    event.preventDefault();
+    reachable[next]?.focus();
+}
+
 function defaultTabStop(items: readonly ToolbarItem[]): string | null {
     const pressed = items.find((item) => item.pressed && !item.disabled);
 
@@ -235,54 +290,6 @@ export function WhiteboardToolbar({
         setFocusedKey(target.dataset.toolbarItem ?? trailingKey);
     };
 
-    const move = (event: KeyboardEvent<HTMLDivElement>): void => {
-        const root = rootRef.current;
-        const target = event.target as HTMLElement;
-
-        if (!root || !target.hasAttribute('data-roving-item')) {
-            return;
-        }
-
-        if (event.metaKey || event.ctrlKey || event.altKey) {
-            return;
-        }
-
-        const reachable = Array.from(
-            root.querySelectorAll<HTMLElement>('[data-roving-item]'),
-        ).filter(
-            (element) =>
-                !element.hasAttribute('disabled') &&
-                element.getAttribute('aria-disabled') !== 'true',
-        );
-        const index = reachable.indexOf(target);
-        const last = reachable.length - 1;
-        const { forward, backward } = rovingKeys[orientation];
-        let next: number | null = null;
-
-        if (event.key === forward) {
-            next = index >= last ? 0 : index + 1;
-        }
-
-        if (event.key === backward) {
-            next = index <= 0 ? last : index - 1;
-        }
-
-        if (event.key === 'Home') {
-            next = 0;
-        }
-
-        if (event.key === 'End') {
-            next = last;
-        }
-
-        if (next === null) {
-            return;
-        }
-
-        event.preventDefault();
-        reachable[next]?.focus();
-    };
-
     return (
         <div
             ref={rootRef}
@@ -290,7 +297,7 @@ export function WhiteboardToolbar({
             role="toolbar"
             aria-label={label}
             aria-orientation={orientation}
-            onKeyDown={move}
+            onKeyDown={(event) => moveToolbarFocus(event, orientation)}
             onFocus={(event) => rememberFocus(event.target)}
             className={cn(
                 'inline-flex items-center gap-0.5 rounded-xl border border-border bg-popover p-1 shadow-raised',
@@ -312,7 +319,7 @@ export function WhiteboardToolbar({
                         />
                     )}
                     {group.map((item) => (
-                        <ToolButton
+                        <WhiteboardToolButton
                             key={item.id}
                             item={item}
                             size={size}
@@ -327,7 +334,8 @@ export function WhiteboardToolbar({
     );
 }
 
-function ToolButton({
+/** One tool of a whiteboard bar (sk-tool): the icon, the key in the corner, the tooltip with the label and the key. */
+export function WhiteboardToolButton({
     item,
     size,
     tooltipSide,
@@ -337,7 +345,7 @@ function ToolButton({
     size: 'default' | 'touch';
     tooltipSide: 'right' | 'top';
     tabIndex: number;
-}) {
+}): ReactElement {
     const Icon = item.icon;
 
     return (
