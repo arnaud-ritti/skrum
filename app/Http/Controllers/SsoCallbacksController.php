@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Auth\CompleteLogin;
 use App\Actions\Auth\LinkSocialAccount;
 use App\Actions\Auth\ResolveSsoUser;
+use App\Actions\Workspaces\InvitationLanding;
 use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
 use App\Exceptions\SocialAccountRefused;
@@ -20,7 +21,7 @@ use Throwable;
 
 class SsoCallbacksController extends Controller
 {
-    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin, LinkSocialAccount $linkSocialAccount): RedirectResponse
+    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin, LinkSocialAccount $linkSocialAccount, InvitationLanding $landing): RedirectResponse
     {
         abort_unless($provider->isEnabled(), 404);
 
@@ -52,8 +53,14 @@ class SsoCallbacksController extends Controller
             return $this->backToLogin($exception->getMessage());
         }
 
-        if ($invitation !== null && $invitation->fresh()?->accepted_at !== null) {
+        $acceptedInvitation = $invitation?->fresh();
+
+        if ($acceptedInvitation?->accepted_at !== null) {
             $request->session()->forget(['invitation_token', 'url.intended']);
+        }
+
+        if ($acceptedInvitation?->accepted_at !== null && $acceptedInvitation->team_id !== null) {
+            redirect()->setIntendedUrl($landing->url($acceptedInvitation, $user));
         }
 
         return $completeLogin->handle($request, $user, SignInEntry::Sso);

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Alphabetical;
 use App\Support\Auth\SignInPolicy;
+use App\Support\Teams\TeamMark;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -29,8 +30,14 @@ class InvitationLinksController extends Controller
 
         $user = $request->user();
 
-        if ($user?->belongsToWorkspace($invitation->workspace)) {
+        $team = $invitation->team;
+
+        if ($team === null && $user?->belongsToWorkspace($invitation->workspace)) {
             return to_route('workspaces.show', $invitation->workspace);
+        }
+
+        if ($team !== null && $user !== null && $team->hasMember($user)) {
+            return to_route('teams.show', [$invitation->workspace, $team]);
         }
 
         $request->session()->put('invitation_token', $token);
@@ -45,6 +52,7 @@ class InvitationLinksController extends Controller
                 'isExpired' => true,
                 'workspaceName' => $invitation->workspace->name,
                 'inviter' => $invitation->invitedBy === null ? null : ['name' => $invitation->invitedBy->name],
+                'isDeclined' => $invitation->isDeclined(),
             ]);
         }
 
@@ -66,11 +74,22 @@ class InvitationLinksController extends Controller
             'ssoProviders' => $user === null ? SsoProvider::options() : [],
             'inviter' => $this->person($invitation->invitedBy),
             'expiresAt' => $invitation->expires_at->toIso8601String(),
+            'team' => $team === null ? null : [
+                'name' => $team->name,
+                'initial' => mb_strtoupper(mb_substr(trim($team->name), 0, 1)),
+                'color' => TeamMark::colorFor($team)->value,
+            ],
+            'teamRole' => $invitation->team_role?->value,
+            'message' => $invitation->message,
+            'isDeclined' => false,
+            'declineUrl' => null,
             ...$this->pendingDetails($invitation),
         ]);
     }
 
     /**
+     * The members of the team for a team invitation, of the workspace otherwise.
+     *
      * @return array{
      *     role: string,
      *     membersCount: int,
@@ -79,7 +98,7 @@ class InvitationLinksController extends Controller
      */
     private function pendingDetails(WorkspaceInvitation $invitation): array
     {
-        $members = $invitation->workspace->members();
+        $members = $invitation->team === null ? $invitation->workspace->members() : $invitation->team->members();
 
         return [
             'role' => $invitation->role->value,

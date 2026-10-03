@@ -4,6 +4,7 @@ namespace App\Actions\Auth;
 
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Enums\SsoProvider;
+use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\SocialAccount;
 use App\Models\User;
@@ -19,6 +20,10 @@ class ResolveSsoUser
         private AcceptWorkspaceInvitation $acceptInvitation,
     ) {}
 
+    /**
+     * @throws SsoLoginRefused
+     * @throws InvitationUnavailable when the invitation stopped being pending between the check and the acceptance
+     */
     public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation): User
     {
         $providerUserId = (string) $ssoUser->getId();
