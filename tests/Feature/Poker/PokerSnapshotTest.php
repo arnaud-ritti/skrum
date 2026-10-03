@@ -101,7 +101,7 @@ it('counts the votes of the last round of every task, without a value before the
         ->and($tasks[$untouched->id]['votesCount'])->toBe(0)
         ->and($tasks[$current->id]['votesCount'])->toBe(2)
         ->and(array_keys($tasks[$current->id]))->toBe([
-            'id', 'title', 'description', 'descriptionHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'votesCount', 'external',
+            'id', 'title', 'description', 'descriptionHtml', 'acceptanceCriteriaHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'votesCount', 'external',
         ]);
 });
 

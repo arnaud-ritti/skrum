@@ -4,6 +4,7 @@ namespace App\Actions\Poker;
 
 use App\Actions\Integrations\PokerTaskSync;
 use App\Models\PokerTask;
+use App\Support\Poker\AcceptanceCriteriaSection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Cache;
  *     source: string,
  *     key: string,
  *     url: string,
+ *     type: ?string,
+ *     labels: list<string>,
  *     assignee?: ?string,
  *     sourceEstimate?: ?string,
  *     refreshedAt?: ?string,
@@ -29,6 +32,7 @@ use Illuminate\Support\Facades\Cache;
  *     title: string,
  *     description: ?string,
  *     descriptionHtml: string,
+ *     acceptanceCriteriaHtml: string,
  *     position: int,
  *     estimate: ?string,
  *     estimatedAt: ?string,
@@ -43,8 +47,10 @@ class PresentPokerTask
 
     /**
      * Without a PokerTaskSync (broadcasts, guests) an imported task only
-     * shows its source, key and link: assignee names and sync errors stay
-     * with the team (spec 6 §6.6). `votesCount` is the number of votes of
+     * shows its source, key, link, type and labels: assignee names and sync
+     * errors stay with the team (spec 6 §6.6, plan 22 §6.5). The criteria
+     * section of the description is rendered apart (rules AC-1 to AC-6); the
+     * raw description stays whole. `votesCount` is the number of votes of
      * the task's last round, never their values; a task created in this
      * request has no round yet and costs no query.
      *
@@ -53,12 +59,14 @@ class PresentPokerTask
     public function handle(PokerTask $task, ?PokerTaskSync $sync = null): array
     {
         $roundsCount = $task->getAttribute('rounds_count');
+        $parts = AcceptanceCriteriaSection::split($task->description);
 
         return [
             'id' => $task->id,
             'title' => $task->title,
             'description' => $task->description,
-            'descriptionHtml' => $this->descriptionHtml($task),
+            'descriptionHtml' => $this->html('poker-task-description', $task, $parts['description']),
+            'acceptanceCriteriaHtml' => $this->html('poker-task-criteria', $task, $parts['criteria']),
             'position' => $task->position,
             'estimate' => $task->estimate,
             'estimatedAt' => $task->estimated_at?->toIso8601String(),
@@ -103,6 +111,7 @@ class PresentPokerTask
                 'source' => $task->external_source,
                 'key' => $task->external_key,
                 'url' => $task->external_url,
+                ...$this->details($task),
                 'isManaged' => true,
             ];
         }
@@ -113,6 +122,7 @@ class PresentPokerTask
             'source' => $task->external_source,
             'key' => $task->external_key,
             'url' => $task->external_url,
+            ...$this->details($task),
             'assignee' => $task->external_assignee,
             'sourceEstimate' => $task->external_estimate,
             'refreshedAt' => $task->external_refreshed_at?->toIso8601String(),
@@ -128,14 +138,29 @@ class PresentPokerTask
         ];
     }
 
-    private function descriptionHtml(PokerTask $task): string
+    /**
+     * @return array{type: ?string, labels: list<string>}
+     */
+    private function details(PokerTask $task): array
     {
-        if ($task->description === null || $task->description === '') {
+        return [
+            'type' => $task->external_type,
+            'labels' => array_values($task->external_labels ?? []),
+        ];
+    }
+
+    /**
+     * Keyed by the hash of the text rendered (AC-6): HTML cached for a
+     * whole description is never served for its shorter part.
+     */
+    private function html(string $prefix, PokerTask $task, ?string $markdown): string
+    {
+        if ($markdown === null || $markdown === '') {
             return '';
         }
 
-        $key = 'poker-task-description:'.$task->id.':'.hash('xxh128', $task->description);
+        $key = "{$prefix}:{$task->id}:".hash('xxh128', $markdown);
 
-        return Cache::rememberForever($key, fn (): string => $this->renderTaskMarkdown->handle($task->description));
+        return Cache::rememberForever($key, fn (): string => $this->renderTaskMarkdown->handle($markdown));
     }
 }

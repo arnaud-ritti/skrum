@@ -22,6 +22,8 @@ it('shows the full external object and the connections to non-guest players', fu
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'assignee' => 'Jane Doe',
         'sourceEstimate' => '3',
         'refreshedAt' => $task->external_refreshed_at?->toIso8601String(),
@@ -52,6 +54,8 @@ it('gives guests the reduced external object and no connections', function () {
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'isManaged' => true,
     ])
         ->and($response->json('integrations'))->toBeNull()
@@ -86,6 +90,8 @@ it('broadcasts the reduced external object and answers the full one', function (
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,
+        'type' => null,
+        'labels' => [],
         'isManaged' => true,
     ]);
 });

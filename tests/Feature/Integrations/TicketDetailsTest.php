@@ -5,6 +5,7 @@ use App\Actions\Integrations\PreviewPokerImport;
 use App\Enums\IntegrationProvider;
 use App\Models\PokerTask;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(fn () => Http::preventStrayRequests());
@@ -96,4 +97,80 @@ it('reads the type and labels of a GitHub issue listed from a milestone', functi
 
     expect($task->external_labels)->toBe(['ui'])
         ->and($task->external_type)->toBe('Feature');
+});
+
+it('follows the source on refresh', function () {
+    $table = trackerTable();
+    $task = importedPokerTask($table['game'], ['external_id' => '10001', 'external_key' => 'PROJ-1', 'external_labels' => ['old'], 'external_type' => 'Bug']);
+    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', ['issuetype' => ['name' => 'Story'], 'labels' => ['new']])]);
+
+    $this->actingAs($table['member'])
+        ->postJson(route('poker.imports.refresh.store', $table['game']))
+        ->assertOk();
+
+    expect($task->fresh()->external_labels)->toBe(['new'])
+        ->and($task->fresh()->external_type)->toBe('Story');
+});
+
+it('shows ticket details and the criteria section to a guest, and the assignee to the team only', function () {
+    $table = trackerTable();
+    $task = importedPokerTask($table['game'], [
+        'external_type' => 'Story',
+        'external_labels' => ['csv'],
+        'external_assignee' => 'Jane Doe',
+        'description' => "Export invoices.\n\n## Acceptance criteria\n\n- UTF-8\n- semicolon",
+    ]);
+    $guest = pokerGuest($table['game']);
+
+    $payload = $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->json('tasks.0');
+
+    expect($payload['external']['type'])->toBe('Story')
+        ->and($payload['external']['labels'])->toBe(['csv'])
+        ->and($payload['external'])->not->toHaveKey('assignee')
+        ->and($payload['acceptanceCriteriaHtml'])->toContain('<li>UTF-8</li>')
+        ->and($payload['descriptionHtml'])->toContain('Export invoices.')
+        ->and($payload['descriptionHtml'])->not->toContain('UTF-8')
+        ->and($payload['description'])->toBe($task->description);
+
+    $memberPayload = $this->actingAs($table['member'])
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->json('tasks.0.external');
+
+    expect($memberPayload['assignee'])->toBe('Jane Doe')
+        ->and($memberPayload['type'])->toBe('Story')
+        ->and($memberPayload['labels'])->toBe(['csv']);
+});
+
+it('splits the criteria of a task typed by hand and leaves its stored description whole', function () {
+    $table = trackerTable();
+    $task = PokerTask::factory()->create([
+        'poker_game_id' => $table['game']->id,
+        'description' => "**Acceptance criteria:**\n- one",
+    ]);
+
+    $this->actingAs($table['member'])
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.descriptionHtml', '')
+        ->assertJsonPath('tasks.0.acceptanceCriteriaHtml', fn (string $html) => str_contains($html, '<li>one</li>'))
+        ->assertJsonPath('tasks.0.description', "**Acceptance criteria:**\n- one")
+        ->assertJsonPath('tasks.0.external', null);
+
+    expect($task->fresh()->description)->toBe("**Acceptance criteria:**\n- one");
+});
+
+it('never serves the html cached for the whole description', function () {
+    $table = trackerTable();
+    $description = "Intro\n\n## Acceptance criteria\n\n- one";
+    $task = PokerTask::factory()->create(['poker_game_id' => $table['game']->id, 'description' => $description]);
+    Cache::forever("poker-task-description:{$task->id}:".hash('xxh128', $description), '<p>stale</p>');
+
+    $this->actingAs($table['member'])
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.descriptionHtml', fn (string $html) => ! str_contains($html, 'stale') && str_contains($html, 'Intro'));
 });
