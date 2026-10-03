@@ -4562,5 +4562,9 @@
     "This game is not played in turns.": "Dieses Spiel wird nicht reihum gespielt.",
     "Only the host or the player whose turn it is can do this.": "Nur der Host oder die Person, die an der Reihe ist, kann das tun.",
     "The turn has already moved on.": "Der Zug ist schon weitergegangen.",
-    "It's not your turn.": "Du bist nicht an der Reihe."
+    "It's not your turn.": "Du bist nicht an der Reihe.",
+    "Choose who tells this round.": "Wähle, wer in dieser Runde erzählt.",
+    "This player has no statements ready.": "Diese Person hat keine Aussagen bereit.",
+    "You are telling this round, so you cannot vote.": "Du erzählst in dieser Runde, also kannst du nicht abstimmen.",
+    "Your statements have been played.": "Deine Aussagen wurden schon gespielt."
 }

@@ -4562,5 +4562,9 @@
     "This game is not played in turns.": "Ce jeu ne se joue pas chacun son tour.",
     "Only the host or the player whose turn it is can do this.": "Seul l'hôte ou le joueur dont c'est le tour peut faire cela.",
     "The turn has already moved on.": "Le tour est déjà passé.",
-    "It's not your turn.": "Ce n'est pas ton tour."
+    "It's not your turn.": "Ce n'est pas ton tour.",
+    "Choose who tells this round.": "Choisis qui raconte cette manche.",
+    "This player has no statements ready.": "Ce joueur n'a pas d'affirmations prêtes.",
+    "You are telling this round, so you cannot vote.": "Tu racontes cette manche, tu ne peux donc pas voter.",
+    "Your statements have been played.": "Tes affirmations ont déjà été jouées."
 }

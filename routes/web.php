@@ -32,6 +32,7 @@ use App\Http\Controllers\Games\GameRoundSecretsController;
 use App\Http\Controllers\Games\GameScoresController;
 use App\Http\Controllers\Games\GameSharesController;
 use App\Http\Controllers\Games\GameSnapshotsController;
+use App\Http\Controllers\Games\GameStatementsController;
 use App\Http\Controllers\Games\GameSwitchesController;
 use App\Http\Controllers\Games\GameTimerExtensionsController;
 use App\Http\Controllers\Games\GameTimersController;
@@ -684,6 +685,8 @@ Route::prefix('games/{room}')
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
         // Plan 27 lanes
         Route::post('rounds/{round}/word-guesses', [GameWordGuessesController::class, 'store'])->name('games.rounds.wordGuesses.store')->whereUuid('round');
+        Route::put('statements', [GameStatementsController::class, 'update'])->name('games.statements.update');
+        Route::delete('statements', [GameStatementsController::class, 'destroy'])->name('games.statements.destroy');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

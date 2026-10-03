@@ -25,6 +25,7 @@ use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
+use App\Support\Games\TwoTruthsRules;
 use App\Support\InstanceSettings;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
@@ -58,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(DrawAndGuessRules::class),
             $app->make(DecodedRules::class),
             $app->make(SprintGifRules::class),
+            $app->make(TwoTruthsRules::class),
         ]));
         $this->app->singleton(WriteWhiteboardElements::class);
         $this->app->scoped(McpGrantContext::class);

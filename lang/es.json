@@ -4562,5 +4562,9 @@
     "This game is not played in turns.": "Este juego no se juega por turnos.",
     "Only the host or the player whose turn it is can do this.": "Solo el anfitrión o el jugador al que le toca puede hacer esto.",
     "The turn has already moved on.": "El turno ya ha pasado.",
-    "It's not your turn.": "No es tu turno."
+    "It's not your turn.": "No es tu turno.",
+    "Choose who tells this round.": "Elige quién cuenta en esta ronda.",
+    "This player has no statements ready.": "Este jugador no tiene afirmaciones listas.",
+    "You are telling this round, so you cannot vote.": "Cuentas en esta ronda, así que no puedes votar.",
+    "Your statements have been played.": "Tus afirmaciones ya se jugaron."
 }

@@ -34,6 +34,7 @@ use App\Support\Games\GameRulesRegistry;
  *     players: array<int, array{id: string, presenceId: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     games: array<int, array{value: string, label: string, available: bool}>,
  *     round: ?array<string, mixed>,
+ *     truthSets: array{ready: array<int, string>, mine: array{statements: array<int, string>, lieIndex: int, played: bool}|null}|null,
  *     history: array<int, array<string, mixed>>,
  *     links: array{team: ?string, retro: ?string},
  *     emojiData: array{baseUrl: string, locale: string},
@@ -53,6 +54,7 @@ class BuildGameSnapshot
         private GameRulesRegistry $gameRulesRegistry,
         private RoomLeaderboard $roomLeaderboard,
         private GameRoomShares $gameRoomShares,
+        private PresentStatementSets $presentStatementSets,
     ) {}
 
     /**
@@ -98,6 +100,7 @@ class BuildGameSnapshot
             'players' => $room->players->map(fn (GamePlayer $player): array => $this->presentGamePlayer->handle($player))->values()->all(),
             'games' => $this->gameRulesRegistry->options($room),
             'round' => $round === null ? null : $this->presentGameRound->handle($round, $room, $viewer),
+            'truthSets' => $this->presentStatementSets->handle($room, $viewer),
             'history' => $this->presentGameRoundHistory->forRoom($room),
             'links' => [
                 'team' => $isStandalone && ! $isGuest ? route('teams.show', [$room->team->workspace, $room->team]) : null,
