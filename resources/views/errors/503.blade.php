@@ -108,7 +108,7 @@
         </main>
         <footer>
             {{ $instance }}
-            {{-- Place left (AD-2): the version, after the name of the instance. --}}
+            {{-- No version here (decision 6): this page is shown to anyone. --}}
         </footer>
         @if($busyMessage === null)
         <script>
