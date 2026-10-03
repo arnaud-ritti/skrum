@@ -291,6 +291,8 @@ export type Snapshot = {
         /** Null for a guest, who is not told the team. */
         teamName: string | null;
         title: string;
+        /** The team's sprint on the day the retro was created; null outside every sprint. */
+        sprintNumber: number | null;
         template: string;
         phase: RetroPhase;
         phases: RetroPhase[];
@@ -371,6 +373,8 @@ export type Snapshot = {
         workspace: string | null;
     };
     emojiData: { baseUrl: string; locale: string };
+    /** The viewer is an observer of the team: they follow the retro read-only, unless they facilitate it. */
+    viewerIsObserver: boolean;
     serverTime: string;
 };
 

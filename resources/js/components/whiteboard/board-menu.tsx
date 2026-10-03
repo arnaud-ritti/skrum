@@ -44,6 +44,7 @@ import {
     RenameBoardDialog,
     SaveTemplateDialog,
 } from './board-dialogs';
+import { isObserving } from './use-read-mode';
 
 /** The entries of the library's hidden menu (spec §9.4), run on the canvas. */
 export type BoardCanvasActions = {
@@ -193,7 +194,7 @@ export function BoardMenu({
         >
             <span className="truncate">{t('Hide my cursor')}</span>
         </DropdownMenuCheckboxItem>,
-        !me.isGuest && (
+        !me.isGuest && !isObserving(state.snapshot) && (
             <>
                 {me.canTakeControl && me.userId && (
                     <DropdownMenuItem onSelect={() => void takeControl()}>

@@ -216,6 +216,7 @@ export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
             edit: '/surveys/survey-1/edit',
             healthCheck: null,
         },
+        viewerIsObserver: false,
         serverTime: '2026-10-03T08:00:00.000Z',
     };
 }

@@ -141,6 +141,29 @@ describe('BoardMenu', () => {
         });
     });
 
+    it('gives an observer nothing that changes the board or takes it over', async () => {
+        const { menu } = await openMenu(
+            boardState({
+                me: {
+                    isFacilitator: false,
+                    canTakeControl: true,
+                    canDelete: false,
+                },
+                viewerIsObserver: true,
+            }),
+        );
+
+        expect(
+            menu.queryByRole('menuitem', { name: 'Take control' }),
+        ).toBeNull();
+        expect(
+            menu.queryByRole('menuitem', { name: 'Duplicate this board' }),
+        ).toBeNull();
+        expect(
+            menu.queryByRole('menuitem', { name: 'Save as template' }),
+        ).toBeNull();
+    });
+
     it('switches a board setting from its checkbox and refetches', async () => {
         const state = boardState();
         const { user, menu } = await openMenu(state);

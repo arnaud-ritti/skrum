@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
         locale: 'en',
         errors: {} as Record<string, string>,
         currentWorkspace: { role: 'admin' } as { role: string } | null,
+        auth: { user: { id: 'me' } },
         currentTeam: null as Record<string, unknown> | null,
     },
 }));

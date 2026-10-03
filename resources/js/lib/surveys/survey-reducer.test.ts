@@ -69,6 +69,7 @@ function snapshot(overrides: Partial<SurveySnapshot> = {}): SurveySnapshot {
             edit: null,
             healthCheck: null,
         },
+        viewerIsObserver: false,
         serverTime: '2026-10-19T10:00:00.000Z',
         ...overrides,
     };

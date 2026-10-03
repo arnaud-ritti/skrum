@@ -75,6 +75,7 @@ export function GameRoom({ snapshot: initial }: GameRoomProps) {
         <RoomProvider value={ctx}>
             <SessionShell
                 kind="game"
+                observing={snapshot.viewerIsObserver && !snapshot.room.isHost}
                 self={
                     me
                         ? {

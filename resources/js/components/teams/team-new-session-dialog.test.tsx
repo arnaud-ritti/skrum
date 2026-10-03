@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
         locale: 'en',
         errors: {} as Record<string, string>,
         currentWorkspace: { role: 'member' } as { role: string } | null,
+        auth: { user: { id: 'me' } },
     },
 }));
 
@@ -141,6 +142,29 @@ describe('TeamNewSessionDialog', () => {
                 .getByRole('radio', { name: /Planning poker/ })
                 .getAttribute('aria-checked'),
         ).toBe('true');
+    });
+
+    it('opens the retro form on the sprint, the suggested facilitator and the viewer as "Me"', () => {
+        const dialog = openDialog({
+            currentSprintNumber: 7,
+            retroFacilitators: [
+                { id: 'camille', name: 'Camille Roux', avatarUrl: '' },
+                { id: 'me', name: 'Mia Lopez', avatarUrl: '' },
+            ],
+            suggestedFacilitatorId: 'camille',
+            facilitatorRotation: true,
+        });
+
+        expect(
+            (within(dialog).getByLabelText('Name') as HTMLInputElement).value,
+        ).toBe('Sprint 7 retro');
+        expect(
+            within(dialog).getByRole('combobox', { name: 'Facilitator' })
+                .textContent,
+        ).toBe('Camille Roux (suggested)');
+        expect(
+            within(dialog).getByText('Suggested by the rotation.'),
+        ).toBeTruthy();
     });
 
     it('offers "Save as team template" to a workspace manager only', () => {

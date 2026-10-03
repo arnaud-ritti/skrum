@@ -175,6 +175,7 @@ function snapshot(
             healthCheck: null,
             ...overrides.links,
         },
+        viewerIsObserver: false,
         serverTime: '2026-10-03T08:00:00Z',
     };
 }

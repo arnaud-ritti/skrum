@@ -24,12 +24,17 @@ function round(guesses: GameRound['guesses']): GameRound {
     } as GameRound;
 }
 
-function renderDock(guesses: GameRound['guesses'], isLeader = false) {
+function renderDock(
+    guesses: GameRound['guesses'],
+    isLeader = false,
+    viewerIsObserver = false,
+) {
     const ctx = {
         snapshot: {
             room: { id: 'r1', game: 'draw' },
             me: { playerId: 'ada' },
             players: [player('ada', 'Ada'), player('cy', 'Cy')],
+            viewerIsObserver,
         },
     } as unknown as RoomContextValue;
 
@@ -71,6 +76,15 @@ describe('GuessDock', () => {
             within(drawer).getByText('Only you are told when you are close.'),
         ).toBeTruthy();
         expect(within(drawer).queryByText(/Enter to send/)).toBeNull();
+    });
+
+    it('gives an observer the guesses without a field', () => {
+        renderDock([{ id: 'g1', playerId: 'cy', text: 'a boat' }], false, true);
+
+        expect(screen.queryByRole('textbox')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="last-guess"]')?.textContent,
+        ).toContain('a boat');
     });
 
     it('gives who draws the list without a field', () => {

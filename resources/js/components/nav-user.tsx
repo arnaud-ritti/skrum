@@ -14,9 +14,12 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTrans } from '@/hooks/use-trans';
+import { userCardRole } from '@/lib/teams/roles';
 
 export function NavUser() {
-    const { auth } = usePage().props;
+    const { auth, currentTeam, currentWorkspace } = usePage().props;
+    const { t } = useTrans();
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
@@ -34,7 +37,18 @@ export function NavUser() {
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                             data-test="sidebar-menu-button"
                         >
-                            <UserInfo user={auth.user} />
+                            <UserInfo
+                                user={auth.user}
+                                role={
+                                    currentWorkspace
+                                        ? userCardRole(
+                                              currentTeam?.viewerRole ?? null,
+                                              currentWorkspace.role,
+                                              t,
+                                          )
+                                        : null
+                                }
+                            />
                             <ChevronsUpDown
                                 aria-hidden="true"
                                 className="ml-auto size-4 shrink-0 text-muted-foreground"

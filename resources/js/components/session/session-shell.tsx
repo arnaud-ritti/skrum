@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode, Ref } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { ConnectionState } from '@/components/skrum/connection-state';
+import { ObserverNotice } from '@/components/session/observer-notice';
 import { useTrans } from '@/hooks/use-trans';
 import SessionLayout from '@/layouts/skrum/session-layout';
 import type {
@@ -37,6 +38,8 @@ type SessionShellProps = {
     connection: SessionConnection;
     /** The realtime root; the whiteboard sets `data-scene` on it. */
     rootRef?: Ref<HTMLDivElement>;
+    /** The viewer observes the team: one line under the header (P23-04). */
+    observing?: boolean;
     rootProps?: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
         [key: `data-${string}`]: string | undefined;
     };
@@ -79,6 +82,7 @@ export function SessionShell({
     connection,
     rootRef,
     rootProps,
+    observing = false,
     children,
 }: SessionShellProps) {
     const { t } = useTrans();
@@ -155,6 +159,7 @@ export function SessionShell({
                         className="m-2"
                     />
                 )}
+                {observing && <ObserverNotice />}
                 <div
                     inert={connection.expired}
                     className="relative min-h-0 flex-1"

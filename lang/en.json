@@ -5029,5 +5029,8 @@
     "Edit the workspace name and description": "Edit the workspace name and description",
     "The workspace address does not change.": "The workspace address does not change.",
     "1 whiteboard edited today": "1 whiteboard edited today",
-    ":count whiteboards edited today": ":count whiteboards edited today"
+    ":count whiteboards edited today": ":count whiteboards edited today",
+    "You are observing this session.": "You are observing this session.",
+    ":name (suggested)": ":name (suggested)",
+    "Suggested by the rotation.": "Suggested by the rotation."
 }

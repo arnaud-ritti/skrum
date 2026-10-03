@@ -950,3 +950,98 @@ describe('the retro form', () => {
         ]);
     });
 });
+
+describe('the retro form of a team with sprints, a default template and facilitators', () => {
+    const facilitator = {
+        options: [
+            { id: 'camille', name: 'Camille Roux', avatarUrl: '' },
+            { id: 'ines', name: 'Inès Bernard', avatarUrl: '' },
+            { id: 'me', name: 'Mia Lopez', avatarUrl: '' },
+        ],
+        viewerId: 'me',
+        suggestedId: 'camille' as string | null,
+        rotation: true,
+    };
+
+    const openWith = (props: Partial<RetroSessionFormProps>) =>
+        open({ retro: retroSessionForm({ ...retroProps, ...props }) });
+
+    it('names the retro after the sprint of today', () => {
+        openWith({ currentSprintNumber: 42 });
+
+        expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe(
+            'Sprint 42 retro',
+        );
+    });
+
+    it('keeps the dated name outside every sprint', () => {
+        openWith({ currentSprintNumber: null });
+
+        expect(
+            (screen.getByLabelText('Name') as HTMLInputElement).value,
+        ).toMatch(/^Retro /);
+    });
+
+    it('preselects the team default template ahead of the most used one', () => {
+        openWith({ defaultRetroTemplate: 'kalm' });
+
+        expect(
+            screen
+                .getByRole('radio', { name: /KALM/ })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
+
+    it('preselects the suggested facilitator and sends them', () => {
+        openWith({ facilitator });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+        ).toBe('Camille Roux (suggested)');
+        expect(screen.getByText('Suggested by the rotation.')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1].facilitator_user_id).toBe('camille');
+    });
+
+    it('sends no facilitator when the viewer facilitates: the server default', () => {
+        openWith({ facilitator: { ...facilitator, suggestedId: null } });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+        ).toBe('Me');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1].facilitator_user_id).toBeNull();
+    });
+
+    it('preselects the viewer when the suggested person is no longer listed', () => {
+        openWith({ facilitator: { ...facilitator, suggestedId: 'gone' } });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+        ).toBe('Me');
+        expect(screen.queryByText('Suggested by the rotation.')).toBeNull();
+    });
+
+    it('shows a refused facilitator under the select', () => {
+        openWith({ facilitator });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        const options = lastPost()[2];
+
+        act(() => {
+            options.onError?.({
+                facilitator_user_id: 'Choose a facilitator from the team.',
+            });
+            options.onFinish?.();
+        });
+
+        expect(
+            document.getElementById('new-retro-facilitator-error')?.textContent,
+        ).toBe('Choose a facilitator from the team.');
+    });
+});

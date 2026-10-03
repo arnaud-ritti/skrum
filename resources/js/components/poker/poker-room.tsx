@@ -14,7 +14,7 @@ import { useMinWidth } from '@/hooks/use-min-width';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePokerGame } from '@/hooks/use-poker-game';
 import { useTrans } from '@/hooks/use-trans';
-import { showsPokerCursors } from '@/lib/poker/room-adapters';
+import { isObserving, showsPokerCursors } from '@/lib/poker/room-adapters';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { PokerDeckOption } from '@/types';
@@ -149,6 +149,7 @@ export function RoomView({
     const restoreFocus = useRestoreFocus(tasksOpen);
     const actions = useRoundActions();
     const { game, me, current } = snapshot;
+    const observing = isObserving(snapshot);
     const currentTask = current
         ? (snapshot.tasks.find((task) => task.id === current.taskId) ?? null)
         : null;
@@ -175,6 +176,7 @@ export function RoomView({
     return (
         <SessionShell
             kind="poker"
+            observing={observing}
             self={self}
             deck={game.cards}
             realtime={realtimeState(connected, online)}
@@ -227,7 +229,7 @@ export function RoomView({
                 data-slot="poker-room"
                 className="flex h-full min-h-0 flex-col"
             >
-                {!me.canVote && <WatchingBanner />}
+                {!me.canVote && !observing && <WatchingBanner />}
                 {!isWide && (
                     <div
                         data-slot="poker-subbar"

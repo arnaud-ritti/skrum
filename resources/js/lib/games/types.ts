@@ -438,6 +438,8 @@ export type GameSnapshot = {
     history: GameHistoryRound[];
     links: { team: string | null; retro: string | null };
     emojiData: EmojiDataLocation;
+    /** The viewer is an observer of the team: they follow the room, unless they host it. */
+    viewerIsObserver: boolean;
     serverTime: string;
     leaderboard: GameLeaderboardRow[];
     scoresResetAt: string | null;

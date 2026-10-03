@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
+import { isObserving } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import { toRotiResult } from '@/lib/retro/session-end';
 import type {
@@ -257,7 +258,12 @@ function WhoHasVoted({ closed }: { closed: boolean }) {
  * ROTI phase existed still shows beside its results.
  */
 export function RotiVote({ className }: { className?: string }) {
+    const { board } = useBoard();
     const { value, vote } = useRotiVote();
+
+    if (isObserving(board)) {
+        return null;
+    }
 
     return (
         <ROTIWidget
@@ -280,6 +286,7 @@ export function PhaseRoti() {
     const { value, vote } = useRotiVote();
     const nudged = useRotiNudgeToast();
     const results = board.roti.revealed ? board.roti.results : null;
+    const votes = results === null && !isObserving(board);
 
     return (
         <div
@@ -294,9 +301,10 @@ export function PhaseRoti() {
                     nudged && 'animate-nudge motion-reduce:animate-none',
                 )}
             >
-                {results ? (
+                {results && (
                     <ROTIWidget mode="result" result={toRotiResult(results)} />
-                ) : (
+                )}
+                {votes && (
                     <ROTIWidget
                         mode="vote"
                         layout="row"

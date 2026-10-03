@@ -68,6 +68,36 @@ describe('RoomView, when the current task changes', () => {
     });
 });
 
+describe('RoomView for an observer', () => {
+    it('says "You are observing this session." in place of the invitation to join the vote', () => {
+        renderInRoom(
+            room,
+            pokerSnapshot({
+                me: { isFacilitator: false, isSpectator: true, canVote: false },
+                viewerIsObserver: true,
+            }),
+        );
+
+        expect(
+            screen.getByText('You are observing this session.'),
+        ).toBeTruthy();
+        expect(
+            screen.queryByText("You're watching — switch to Play to vote"),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Join the vote' }),
+        ).toBeNull();
+    });
+
+    it("keeps the facilitator's room for an observer who facilitates the game", () => {
+        renderInRoom(room, pokerSnapshot({ viewerIsObserver: true }));
+
+        expect(
+            screen.queryByText('You are observing this session.'),
+        ).toBeNull();
+    });
+});
+
 describe('RoomView on a phone', () => {
     it('puts the settings button in the header, and in the bar under it on a phone', () => {
         const { unmount } = renderInRoom(room);

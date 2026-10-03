@@ -5,6 +5,7 @@ import {
     ColumnEditPhases,
     finishedCount,
     groupingProgress,
+    isObserving,
     toCardProps,
     toColumnProps,
     toGroupProps,
@@ -635,5 +636,46 @@ describe('finishedCount', () => {
                 [member('me'), member('bob')],
             ),
         ).toEqual({ finished: 1, total: 2 });
+    });
+});
+
+describe('an observer of the team', () => {
+    const observing = (
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+        isFacilitator = false,
+    ) =>
+        retroSnapshot({
+            columns,
+            cards: [card({ votes: 2, myVotes: 0 })],
+            viewerIsObserver: true,
+            ...overrides,
+            viewer: { isFacilitator, ...overrides.viewer },
+        });
+
+    it('sees the board as when it is locked: no card to add or edit, no reaction, no comment', () => {
+        const writing = observing({ retro: { phase: 'writing' } });
+        const grouping = observing({ retro: { phase: 'grouping' } });
+
+        expect(toColumnProps(columns[0], writing).canAdd).toBe(false);
+        expect(toCardProps(card(), writing).canEdit).toBe(false);
+        expect(cardEngagement(card(), grouping)).toMatchObject({
+            canReact: false,
+            canComment: false,
+            showsComments: true,
+        });
+        expect(isObserving(writing)).toBe(true);
+    });
+
+    it('has no vote buttons in Voting', () => {
+        expect(
+            cardVoting(card(), observing({ retro: { phase: 'voting' } })),
+        ).toBeNull();
+    });
+
+    it('still drives a retro they facilitate', () => {
+        const board = observing({ retro: { phase: 'writing' } }, true);
+
+        expect(isObserving(board)).toBe(false);
+        expect(toColumnProps(columns[0], board).canAdd).toBe(true);
     });
 });

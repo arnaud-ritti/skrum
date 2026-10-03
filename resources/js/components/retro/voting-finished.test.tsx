@@ -246,6 +246,22 @@ describe('FinishButton', () => {
 });
 
 describe('BoardVotingBar', () => {
+    it('has no "I have finished voting" for an observer', () => {
+        const board = { ...voting(['bob']), viewerIsObserver: true };
+
+        board.viewer = { ...board.viewer, isFacilitator: false };
+        renderWithProviders(
+            <Live initial={board}>
+                <BoardVotingBar />
+            </Live>,
+        );
+
+        expect(screen.getByLabelText('1 of 3 have finished')).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'I have finished voting' }),
+        ).toBeNull();
+    });
+
     it('fills the cap, the finished count and the button in Voting', () => {
         const { container } = renderWithProviders(
             <Live initial={voting(['bob'], 2)}>

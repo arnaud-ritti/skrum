@@ -5249,5 +5249,8 @@
     "Edit the workspace name and description": "Name und Beschreibung des Arbeitsbereichs bearbeiten",
     "The workspace address does not change.": "Die Adresse des Arbeitsbereichs ändert sich nicht.",
     "1 whiteboard edited today": "1 Whiteboard heute bearbeitet",
-    ":count whiteboards edited today": ":count Whiteboards heute bearbeitet"
+    ":count whiteboards edited today": ":count Whiteboards heute bearbeitet",
+    "You are observing this session.": "Du beobachtest diese Sitzung.",
+    ":name (suggested)": ":name (vorgeschlagen)",
+    "Suggested by the rotation.": "Von der Rotation vorgeschlagen."
 }

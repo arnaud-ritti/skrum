@@ -60,7 +60,13 @@ import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
 import { SceneExport } from './scene-export';
-import { canSwitchReadMode, isViewMode, useReadMode } from './use-read-mode';
+import {
+    canSwitchReadMode,
+    isLockedForViewer,
+    isObserving,
+    isViewMode,
+    useReadMode,
+} from './use-read-mode';
 
 const PollMs = 5000;
 
@@ -81,7 +87,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { locale } = usePage().props;
     const state = useWhiteboard(snapshot);
     const { board, me } = state.snapshot;
-    const viewOnly = board.locked && !me.isFacilitator;
+    const viewOnly = isLockedForViewer(state.snapshot);
+    const observing = isObserving(state.snapshot);
     const isPhone = useIsMobile();
     const { reading, setReading } = useReadMode(isPhone);
     const viewMode = isViewMode(viewOnly, reading);
@@ -236,6 +243,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     return (
         <SessionShell
             kind="whiteboard"
+            observing={observing}
             chrome="logo"
             homeHref={state.snapshot.links.team}
             self={boardSelf(state.snapshot, state.online)}
@@ -279,7 +287,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     </div>
                 )}
                 <BoardNotices
-                    locked={viewOnly}
+                    locked={board.locked && !me.isFacilitator}
                     leading={board.followEnabled && me.isFacilitator}
                     following={follow.following}
                     paused={follow.paused}

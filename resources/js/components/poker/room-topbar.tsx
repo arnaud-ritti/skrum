@@ -42,6 +42,7 @@ import { useCountdown } from '@/hooks/use-countdown';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
 import { hasShareChannel } from '@/lib/integrations';
+import { isObserving } from '@/lib/poker/room-adapters';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
@@ -348,7 +349,8 @@ export function WatchSwitch() {
         return null;
     }
 
-    const watching = snapshot.me.isSpectator;
+    const observing = isObserving(snapshot);
+    const watching = snapshot.me.isSpectator || observing;
 
     return (
         <label
@@ -362,7 +364,7 @@ export function WatchSwitch() {
             <Switch
                 id="poker-watch-only"
                 checked={watching}
-                disabled={busy}
+                disabled={busy || observing}
                 onCheckedChange={(checked) =>
                     void setSpectator(snapshot.me.playerId, checked)
                 }
@@ -426,7 +428,7 @@ export function TakeControlButton() {
     const [busy, setBusy] = useState(false);
     const { me, game } = snapshot;
 
-    if (!me.canTakeControl || me.userId === null) {
+    if (!me.canTakeControl || me.userId === null || isObserving(snapshot)) {
         return null;
     }
 

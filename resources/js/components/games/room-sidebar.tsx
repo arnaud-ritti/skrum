@@ -8,7 +8,7 @@ import { GifVoteBudget } from './gif-vote-budget';
 import { GifYourPick } from './gif-your-pick';
 import { GuessChat } from './guess-chat';
 import { HangmanFeed } from './hangman-feed';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 import { RoomPlayers } from './room-players';
 import { TwoTruthsSetForm } from './two-truths-set-form';
 
@@ -38,6 +38,7 @@ export function RoomPlayersSide({
     const { snapshot } = useRoom();
     const { t } = useTrans();
     const gifStep = useGifStep();
+    const observing = useIsObservingRoom();
     const isGif = snapshot.room.game === 'gif';
     const isTwoTruths = snapshot.room.game === 'two_truths';
     const { round } = snapshot;
@@ -57,7 +58,7 @@ export function RoomPlayersSide({
                 highlightPlayerId={highlightPlayerId}
             />
             {!isGif && turnOrder}
-            {isListening && <TwoTruthsSetForm className="mt-2" />}
+            {isListening && !observing && <TwoTruthsSetForm className="mt-2" />}
             {gifStep !== null && (
                 <div className="border-t pt-5">
                     <GifSteps step={gifStep} />
@@ -95,6 +96,7 @@ export function RoomSidebar({
     const { t } = useTrans();
     const { round, room } = snapshot;
     const hasRightColumn = useHasRightColumn();
+    const observing = useIsObservingRoom();
 
     if (room.game === 'draw') {
         if (!hasRightColumn || round?.game !== 'draw') {
@@ -113,7 +115,10 @@ export function RoomSidebar({
     const isGif = room.game === 'gif';
     const playersOnLeft = hasPlayersOnLeft(room.game);
     const isPickingGif =
-        hasRightColumn && round?.game === 'gif' && round.revealedAt === null;
+        hasRightColumn &&
+        !observing &&
+        round?.game === 'gif' &&
+        round.revealedAt === null;
 
     return (
         <>

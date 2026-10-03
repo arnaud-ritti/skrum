@@ -14,7 +14,10 @@ const SessionExpiredStatuses = [401, 419];
 
 type BoardStatus = 'active' | 'ended' | 'deleted';
 
-type BoardMeta = Pick<WhiteboardSnapshot, 'board' | 'me' | 'members' | 'links'>;
+type BoardMeta = Pick<
+    WhiteboardSnapshot,
+    'board' | 'me' | 'members' | 'links' | 'viewerIsObserver'
+>;
 
 type SceneListeners = {
     onElementsChanged: (payload: ElementsChangedPayload) => void;
@@ -85,6 +88,7 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
                 me: fresh.me,
                 members: fresh.members,
                 links: fresh.links,
+                viewerIsObserver: fresh.viewerIsObserver,
             });
         } catch (error) {
             if (

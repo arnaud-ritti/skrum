@@ -16,10 +16,12 @@ const ReconnectingHints = {
 function renderShell(
     connection = { reconnecting: false, expired: false },
     kind: keyof typeof ReconnectingHints = 'retro',
+    observing = false,
 ) {
     return renderWithProviders(
         <SessionShell
             kind={kind}
+            observing={observing}
             title={<SessionTitle backHref="/teams/t1">Sprint 42</SessionTitle>}
             realtime="connected"
             connection={connection}
@@ -31,6 +33,26 @@ function renderShell(
 }
 
 describe('SessionShell', () => {
+    it('shows an observer the line "You are observing this session." above the session', () => {
+        renderShell(undefined, 'poker', true);
+
+        const notice = screen.getByText('You are observing this session.');
+
+        expect(notice.closest('[data-slot="observer-notice"]')).not.toBeNull();
+        expect(
+            notice.compareDocumentPosition(screen.getByText('board')) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
+    it('shows no observer line to someone who takes part', () => {
+        renderShell();
+
+        expect(
+            screen.queryByText('You are observing this session.'),
+        ).toBeNull();
+    });
+
     it('emits one data-realtime element, inside the single main landmark', () => {
         const { container } = renderShell();
         const roots = container.querySelectorAll('[data-realtime]');

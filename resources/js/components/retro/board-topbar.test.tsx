@@ -36,6 +36,18 @@ beforeEach(() => {
 });
 
 describe('BoardTitle', () => {
+    it('names the sprint after the team when the retro was created inside one', () => {
+        const { container } = renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { sprintNumber: 42 } })),
+        );
+
+        expect(
+            container.querySelector('[data-slot="session-overline"]')
+                ?.textContent,
+        ).toBe('Atlas · Sprint 42');
+    });
+
     it('is the h1 of the page, with the way back to the team', () => {
         renderInBoard(<BoardTitle />, boardContext());
 
@@ -714,6 +726,46 @@ describe('BoardTimer', () => {
 });
 
 describe('BoardActions', () => {
+    const takingOver = (canTakeControl: boolean) =>
+        retroSnapshot({
+            viewer: {
+                isFacilitator: false,
+                participantId: 'bob',
+                userId: 'user-2',
+                canTakeControl,
+            },
+        });
+
+    it('offers "Take control" in the menu to who may take the retro over', async () => {
+        const user = userEvent.setup();
+        const ctx = boardContext(takingOver(true));
+
+        retroRequest.mockResolvedValue(undefined);
+        renderInBoard(actions, ctx);
+
+        await user.click(screen.getByRole('button', { name: 'Menu' }));
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Take control' }),
+        );
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: expect.stringContaining('/retros/retro-1/facilitator'),
+            }),
+            { user_id: 'user-2' },
+        );
+    });
+
+    it('has no "Take control" for who may not take the retro over', () => {
+        renderInBoard(actions, boardContext(takingOver(false)));
+
+        expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+        expect(
+            screen.queryByRole('menuitem', { name: 'Take control' }),
+        ).toBeNull();
+    });
+
     it('has a facilitator menu without a guest link entry', async () => {
         const user = userEvent.setup();
 

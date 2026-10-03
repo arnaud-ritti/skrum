@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ActivityProvider } from '@/hooks/use-retro-activity';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { realtimeState } from '@/lib/realtime/realtime-state';
+import { isBoardEditable, isObserving } from '@/lib/retro/adapters';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import {
@@ -216,7 +217,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         sessionExpired,
         online,
         presence,
-        isEditable: !board.retro.isLocked,
+        isEditable: isBoardEditable(board),
         unreadCardIds,
         markCommentsRead,
         subscribeGameEvents,
@@ -240,6 +241,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                     <DiscussionProvider>
                         <SessionShell
                             kind="retro"
+                            observing={isObserving(board)}
                             self={boardSelf(board)}
                             title={<BoardTitle />}
                             phases={isMobile ? undefined : <BoardPhases />}

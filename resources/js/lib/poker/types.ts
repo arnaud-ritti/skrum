@@ -222,6 +222,8 @@ export type PokerSnapshot = {
     share: ShareAvailability;
     deliveries: IntegrationDelivery[];
     integrations: PokerIntegrations | null;
+    /** The viewer is an observer of the team: they watch, unless they facilitate the game. */
+    viewerIsObserver: boolean;
     serverTime: string;
 };
 

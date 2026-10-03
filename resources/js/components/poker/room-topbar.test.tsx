@@ -279,6 +279,26 @@ describe('WatchSwitch', () => {
         ).toBe('true');
     });
 
+    it('is on and cannot be turned off by an observer', () => {
+        renderInRoom(
+            <WatchSwitch />,
+            pokerSnapshot({
+                me: {
+                    isFacilitator: false,
+                    isSpectator: true,
+                    canVote: false,
+                    canTakeControl: true,
+                },
+                viewerIsObserver: true,
+            }),
+        );
+
+        const control = screen.getByRole('switch', { name: 'Watch only' });
+
+        expect(control.getAttribute('aria-checked')).toBe('true');
+        expect(control.hasAttribute('disabled')).toBe(true);
+    });
+
     it('is absent on an ended game', () => {
         const { container } = renderInRoom(
             <WatchSwitch />,
@@ -343,6 +363,25 @@ describe('TasksToggle', () => {
 });
 
 describe('TakeControlButton', () => {
+    it('is not offered to an observer', () => {
+        renderInRoom(
+            <TakeControlButton />,
+            pokerSnapshot({
+                me: {
+                    isFacilitator: false,
+                    isSpectator: true,
+                    canVote: false,
+                    canTakeControl: true,
+                },
+                viewerIsObserver: true,
+            }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Take control' }),
+        ).toBeNull();
+    });
+
     it('is shown to who may take control and asks the server for it', async () => {
         mocks.request.mockResolvedValue(null);
 

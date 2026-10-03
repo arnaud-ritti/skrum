@@ -5249,5 +5249,8 @@
     "Edit the workspace name and description": "Editar el nombre y la descripción del espacio de trabajo",
     "The workspace address does not change.": "La dirección del espacio de trabajo no cambia.",
     "1 whiteboard edited today": "1 pizarra editada hoy",
-    ":count whiteboards edited today": ":count pizarras editadas hoy"
+    ":count whiteboards edited today": ":count pizarras editadas hoy",
+    "You are observing this session.": "Estás observando esta sesión.",
+    ":name (suggested)": ":name (sugerido)",
+    "Suggested by the rotation.": "Sugerido por la rotación."
 }

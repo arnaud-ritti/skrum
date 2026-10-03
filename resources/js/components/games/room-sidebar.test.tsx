@@ -216,3 +216,37 @@ describe('RoomSidebar', () => {
         expect(screen.queryByText('1 players')).toBeNull();
     });
 });
+
+describe('RoomPlayersSide for an observer', () => {
+    it('has no form for statements while another player tells', () => {
+        const ctx = {
+            snapshot: {
+                room: { id: 'r1', game: 'two_truths', hostPlayerId: 'bob' },
+                me: { playerId: 'ada' },
+                players: [player('ada'), player('bob')],
+                leaderboard: [],
+                history: [],
+                truthSets: { ready: [], mine: null },
+                round: {
+                    id: 'round',
+                    game: 'two_truths',
+                    leaderPlayerId: 'bob',
+                },
+                viewerIsObserver: true,
+            },
+            lastEnded: null,
+            online: [],
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomPlayersSide highlightPlayerId={null} />
+            </RoomProvider>,
+        );
+
+        expect(
+            document.querySelector('[data-slot="two-truths-set-form"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('textbox')).toBeNull();
+    });
+});

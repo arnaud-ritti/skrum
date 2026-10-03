@@ -84,6 +84,22 @@ describe('SurveyRoom', () => {
         ).toBe(true);
     });
 
+    it('shows an observer the questions read only, under "You are observing this session."', () => {
+        renderRoom(surveySnapshot({ viewerIsObserver: true }));
+
+        expect(
+            screen
+                .getByText('You are observing this session.')
+                .closest('[data-slot="observer-notice"]'),
+        ).not.toBeNull();
+        expect(
+            screen
+                .getAllByRole('radio')
+                .every((radio) => (radio as HTMLInputElement).disabled),
+        ).toBe(true);
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+
     it('shows neither the synced state nor the shortcuts button of the session pages', () => {
         const { container } = renderRoom();
 

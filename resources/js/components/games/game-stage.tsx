@@ -12,7 +12,7 @@ import { HistoryDrawer } from './history-drawer';
 import { MoodWeatherBoard } from './mood-weather-board';
 import { PassRoundButton } from './pass-round-button';
 import { QuickQuestionBoard } from './quick-question-board';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
 import { RoundInfo } from './round-info';
 import { SprintGifBoard } from './sprint-gif-board';
@@ -95,6 +95,7 @@ export function GameStage() {
     const { snapshot, lastEnded, serverOffset } = useRoom();
     const { t } = useTrans();
     const gifStep = useGifStep();
+    const observing = useIsObservingRoom();
     const { room, round, games, history } = snapshot;
     const gameLabel =
         games.find((option) => option.value === room.game)?.label ?? room.game;
@@ -145,7 +146,7 @@ export function GameStage() {
                 </div>
                 <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
                     {round && <TurnTimer round={round} />}
-                    {round && <PassRoundButton round={round} />}
+                    {round && !observing && <PassRoundButton round={round} />}
                     <HistoryDrawer />
                 </div>
             </div>
@@ -156,7 +157,17 @@ export function GameStage() {
             >
                 {announcedOutcome}
             </p>
-            {round ? <RoundBoard round={round} /> : <RoundEndCard />}
+            {round ? (
+                <div
+                    inert={observing}
+                    data-slot="round-board"
+                    className="contents"
+                >
+                    <RoundBoard round={round} />
+                </div>
+            ) : (
+                <RoundEndCard />
+            )}
         </section>
     );
 }
