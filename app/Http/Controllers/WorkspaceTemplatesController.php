@@ -51,6 +51,10 @@ class WorkspaceTemplatesController extends Controller
                 throw ValidationException::withMessages(['name' => __('This workspace already has 100 templates.')]);
             }
 
+            if ($request->nameIsTaken()) {
+                throw ValidationException::withMessages(['name' => __('A template with this name already exists.')]);
+            }
+
             $template = $workspace->templates()->create([
                 ...$request->templateAttributes(),
                 'created_by_user_id' => $request->user()?->id,
@@ -66,7 +70,13 @@ class WorkspaceTemplatesController extends Controller
 
     public function update(WorkspaceTemplateRequest $request, Workspace $workspace, WorkspaceTemplate $template): RedirectResponse
     {
-        DB::transaction(function () use ($request, $template): void {
+        DB::transaction(function () use ($request, $workspace, $template): void {
+            Workspace::query()->whereKey($workspace->id)->lockForUpdate()->first();
+
+            if ($request->nameIsTaken()) {
+                throw ValidationException::withMessages(['name' => __('A template with this name already exists.')]);
+            }
+
             $lockedTemplate = WorkspaceTemplate::query()->whereKey($template->id)->lockForUpdate()->firstOrFail();
 
             $lockedTemplate->update($request->templateAttributes());

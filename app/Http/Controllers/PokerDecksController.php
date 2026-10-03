@@ -118,6 +118,7 @@ class PokerDecksController extends Controller
             $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
 
             SavedPokerDeckRules::ensureRoom($lockedTeam);
+            SavedPokerDeckRules::ensureNameIsFree($lockedTeam, $validated['name']);
 
             $lockedTeam->pokerDecks()->create([
                 'name' => $validated['name'],
@@ -151,7 +152,15 @@ class PokerDecksController extends Controller
             $attributes['cards'] = $this->cards($validated);
         }
 
-        $pokerDeck->update($attributes);
+        DB::transaction(function () use ($pokerDeck, $attributes): void {
+            $lockedOwner = SavedPokerDeckRules::lockOwner($pokerDeck);
+
+            if (array_key_exists('name', $attributes)) {
+                SavedPokerDeckRules::ensureNameIsFree($lockedOwner, $attributes['name'], $pokerDeck);
+            }
+
+            $pokerDeck->update($attributes);
+        });
 
         return back();
     }

@@ -28,6 +28,9 @@ class SaveTeamIntegration
     public function __construct(private TrackerWebhooks $trackerWebhooks) {}
 
     /**
+     * The team row is locked first: before the first connection there is no integration row to lock,
+     * and two first connections would both insert one.
+     *
      * @param  array{
      *     status: IntegrationStatus,
      *     access: IntegrationAccess,
@@ -41,6 +44,8 @@ class SaveTeamIntegration
         $this->removeWebhooksOfPreviousSite($team, $provider, $attributes['settings']);
 
         return DB::transaction(function () use ($team, $provider, $user, $attributes): TeamIntegration {
+            Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
+
             $existing = TeamIntegration::query()
                 ->where('team_id', $team->id)
                 ->where('provider', $provider->value)

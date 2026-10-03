@@ -42,6 +42,36 @@ class SavedPokerDeckRules
     }
 
     /**
+     * Call with the owner row locked, inside the transaction that writes the deck:
+     * the rule of nameRules() ran before the lock, and two requests may have passed it together.
+     */
+    public static function ensureNameIsFree(Team|Workspace $lockedOwner, string $name, ?SavedPokerDeck $ignore = null): void
+    {
+        $isTaken = $lockedOwner->pokerDecks()
+            ->where('name_key', NameKey::of($name))
+            ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
+            ->exists();
+
+        if (! $isTaken) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['name' => __('A deck with this name already exists.')]);
+    }
+
+    /**
+     * Locks the row of the team or workspace that owns the deck. Call inside a transaction.
+     */
+    public static function lockOwner(SavedPokerDeck $deck): Team|Workspace
+    {
+        if ($deck->isWorkspaceDeck()) {
+            return Workspace::query()->whereKey($deck->workspace_id)->lockForUpdate()->firstOrFail();
+        }
+
+        return Team::query()->whereKey($deck->team_id)->lockForUpdate()->firstOrFail();
+    }
+
+    /**
      * Call with the team row locked, inside the transaction that creates the deck.
      */
     public static function ensureRoom(Team $lockedTeam, string $attribute = 'name'): void

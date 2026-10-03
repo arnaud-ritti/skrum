@@ -52,6 +52,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -86,6 +87,15 @@ pest()->extend(BrowserTestCase::class)
     ->in('Browser');
 
 pest()->browser()->timeout(20_000);
+
+pest()->extend(TestCase::class)
+    ->use(DatabaseTruncation::class)
+    ->beforeEach(function (): void {
+        if (config('database.connections.'.config('database.default').'.database') === ':memory:') {
+            $this->markTestSkipped('The concurrency suite needs a database that several processes can open: run it with bin/test-db <driver> --concurrency.');
+        }
+    })
+    ->in('Concurrency');
 
 /*
 |--------------------------------------------------------------------------
