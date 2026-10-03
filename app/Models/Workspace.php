@@ -22,11 +22,12 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $slug
  * @property string|null $description
+ * @property string|null $locale
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int|null $member_teams_count
  */
-#[Fillable(['name', 'slug', 'description'])]
+#[Fillable(['name', 'slug', 'description', 'locale'])]
 #[RouteKey('slug')]
 class Workspace extends Model
 {

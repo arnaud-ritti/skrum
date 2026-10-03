@@ -19,4 +19,14 @@ describe('markColorClass', () => {
     it('spreads neighbouring ids over different colours', () => {
         expect(markColorClass('a')).not.toBe(markColorClass('b'));
     });
+
+    it.each([
+        ['00000000-0000-0000-0000-000000000000', 'col-apricot'],
+        ['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b', 'col-iris'],
+        ['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5c', 'col-moss'],
+        ['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5e', 'col-sky'],
+        ['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a60', 'col-lagoon'],
+    ])('gives %s the class %s, as TeamMark::derived does', (id, expected) => {
+        expect(markColorClass(id)).toBe(expected);
+    });
 });
