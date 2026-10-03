@@ -135,7 +135,7 @@ A live session shows a lost connection as a full-width banner under the header (
 
 ### 6.4 Single models
 
-- **Retro phases**: Health check (optional, removed by plan 19: see `docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §11.4) → Icebreaker (optional) → Writing → Grouping → Voting → Discussing → Actions → ROTI → Completed (session-end screen).
+- **Retro phases**: ~~Health check (optional) →~~ Icebreaker (optional) → Writing → Grouping → Voting → Discussing → Actions → ROTI → Completed (session-end screen). The health-check phase is gone: plan 19 removed it (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §11.4).
 - **Poker**: one room, the oval table, with the story queue on the right and the deck at the bottom. Watch only and rounds are part of it. The facilitator's actions (Reveal cards, Re-vote, Estimate, Save estimate, Next task) are in the dock, as the mockup shows. The reveal button is named "Reveal cards".
 - **Session creation**: one "New session" trigger; the type is chosen in the dialog among four: Retrospective, Planning poker, Whiteboard, Icebreaker (B18). The mockup's fifth type, Poll, arrives with the standalone survey of plan 19; the dialog leaves its place. Plan 19 has added it as the fifth tile (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §9.1). The retro form shows five shortcut cards (the team's most used templates, B17) and "Browse", which opens the full template picker.
 - **Guest link**: its controls (allow guests, copy, create a new link) live in the Share dialog only, on every session type; "Create a new link" asks for confirmation.
@@ -204,7 +204,7 @@ Designed from neighbouring mockups, because no mockup exists:
 
 - `workspaces/members`, `workspaces/create`: from ScreenWorkspace and ScreenTeam.
 - `teams/integrations`: from ScreenSettings, as a section of the sub-navigation.
-- Health check phase of the retro: HealthCheck inside the ScreenRetro frame.
+- ~~Health check phase of the retro: HealthCheck inside the ScreenRetro frame.~~ Removed by plan 19 (`docs/superpowers/specs/2026-10-19-standalone-surveys-design.md` §11.4).
 - Results and insights of a completed retro: inside the session-end screen of ScreenRetroROTI.
 - `auth/confirm-password`, `verify-email`, `reset-password`, `two-factor-challenge`: from ScreenAuth.
 - Whiteboard templates: stay managed from the team page, and are listed on the Whiteboard tab of `workspaces/templates` (B30).
