@@ -25,6 +25,7 @@ class SecuritySettings
         private SecondFactors $secondFactors,
         private SendEmailTwoFactorCode $sendCode,
         private SignInPolicy $policy,
+        private BrowserSessions $sessions,
     ) {}
 
     /**
@@ -80,10 +81,18 @@ class SecuritySettings
      *     password: array{
      *         isSet: bool,
      *         allowed: bool
-     *     }
+     *     },
+     *     browserSessions: array<int, array{
+     *         key: string,
+     *         device: string,
+     *         deviceKind: string,
+     *         ipAddress: ?string,
+     *         isCurrent: bool,
+     *         lastActiveAt: string
+     *     }>|null
      * }
      */
-    public function protected(User $user): array
+    public function protected(User $user, string $currentSessionId): array
     {
         return [
             'twoFactorEnabled' => Features::canManageTwoFactorAuthentication() && $user->hasEnabledTwoFactorAuthentication(),
@@ -99,6 +108,7 @@ class SecuritySettings
                 'isSet' => $user->password_set_at !== null,
                 'allowed' => $this->policy->allowsPassword($user),
             ],
+            'browserSessions' => $this->sessions->available() ? $this->sessions->of($user, $currentSessionId) : null,
         ];
     }
 

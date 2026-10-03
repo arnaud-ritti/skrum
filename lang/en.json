@@ -4335,5 +4335,8 @@
     "Use initials": "Use initials",
     "Remove photo": "Remove photo",
     "Profile photos": "Profile photos",
-    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars."
+    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.",
+    "Unknown device": "Unknown device",
+    "Device signed out.": "Device signed out.",
+    "Other sessions signed out.": "Other sessions signed out."
 }

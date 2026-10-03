@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Settings\AccountSettingsController;
 use App\Http\Controllers\Settings\ApiTokensController;
+use App\Http\Controllers\Settings\BrowserSessionsController;
 use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
 use App\Http\Controllers\Settings\MotionPreferencesController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
+use App\Http\Controllers\Settings\OtherBrowserSessionsController;
 use App\Http\Controllers\Settings\PasswordBreachRangesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\ProfilePhotosController;
@@ -49,6 +51,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('settings/email-second-factor', [EmailSecondFactorsController::class, 'store'])->name('emailSecondFactor.store');
         Route::delete('settings/email-second-factor', [EmailSecondFactorsController::class, 'destroy'])->name('emailSecondFactor.destroy');
     });
+
+    Route::delete('settings/sessions/{sessionKey}', [BrowserSessionsController::class, 'destroy'])
+        ->where('sessionKey', '[0-9a-f]{64}')
+        ->middleware(RequirePasswordUnlessNoneKnown::class)
+        ->name('browserSessions.destroy');
+
+    Route::delete('settings/sessions', [OtherBrowserSessionsController::class, 'destroy'])
+        ->middleware(RequirePasswordUnlessNoneKnown::class)
+        ->name('otherBrowserSessions.destroy');
 
     Route::redirect('settings/notifications', '/settings#notifications')->name('notificationPreferences.edit');
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');

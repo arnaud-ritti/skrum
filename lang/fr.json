@@ -4555,5 +4555,8 @@
     "Use initials": "Utiliser les initiales",
     "Remove photo": "Retirer la photo",
     "Profile photos": "Photos de profil",
-    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Les membres peuvent importer une photo qui remplace leur avatar généré. Les photos sont publiques, comme les avatars."
+    "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars.": "Les membres peuvent importer une photo qui remplace leur avatar généré. Les photos sont publiques, comme les avatars.",
+    "Unknown device": "Appareil inconnu",
+    "Device signed out.": "Appareil déconnecté.",
+    "Other sessions signed out.": "Autres sessions déconnectées."
 }
