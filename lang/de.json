@@ -4559,5 +4559,18 @@
     "Fit to screen": "An Bildschirm anpassen",
     "Minimap": "Minikarte",
     "Shows the whole board; the frame is the part you see.": "Zeigt das ganze Board; der Rahmen ist der Teil, den du siehst.",
-    "Move the view": "Ansicht verschieben"
+    "Move the view": "Ansicht verschieben",
+    "Group": "Gruppieren",
+    "Align": "Ausrichten",
+    "Align left": "Links ausrichten",
+    "Align right": "Rechts ausrichten",
+    "Align top": "Oben ausrichten",
+    "Align bottom": "Unten ausrichten",
+    "Distribute horizontally": "Horizontal verteilen",
+    "Distribute vertically": "Vertikal verteilen",
+    "Lock": "Sperren",
+    "Unlock": "Entsperren",
+    "Styles": "Stile",
+    "1 element": "1 Element",
+    ":count elements": ":count Elemente"
 }

@@ -4559,5 +4559,18 @@
     "Fit to screen": "Ajustar a la pantalla",
     "Minimap": "Minimapa",
     "Shows the whole board; the frame is the part you see.": "Muestra todo el tablero; el marco es la parte que ves.",
-    "Move the view": "Mover la vista"
+    "Move the view": "Mover la vista",
+    "Group": "Agrupar",
+    "Align": "Alinear",
+    "Align left": "Alinear a la izquierda",
+    "Align right": "Alinear a la derecha",
+    "Align top": "Alinear arriba",
+    "Align bottom": "Alinear abajo",
+    "Distribute horizontally": "Distribuir horizontalmente",
+    "Distribute vertically": "Distribuir verticalmente",
+    "Lock": "Bloquear",
+    "Unlock": "Desbloquear",
+    "Styles": "Estilos",
+    "1 element": "1 elemento",
+    ":count elements": ":count elementos"
 }

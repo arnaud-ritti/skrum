@@ -4559,5 +4559,18 @@
     "Fit to screen": "Ajuster à l'écran",
     "Minimap": "Minimap",
     "Shows the whole board; the frame is the part you see.": "Montre tout le tableau ; le cadre est la partie que tu vois.",
-    "Move the view": "Déplacer la vue"
+    "Move the view": "Déplacer la vue",
+    "Group": "Grouper",
+    "Align": "Aligner",
+    "Align left": "Aligner à gauche",
+    "Align right": "Aligner à droite",
+    "Align top": "Aligner en haut",
+    "Align bottom": "Aligner en bas",
+    "Distribute horizontally": "Répartir horizontalement",
+    "Distribute vertically": "Répartir verticalement",
+    "Lock": "Verrouiller",
+    "Unlock": "Déverrouiller",
+    "Styles": "Styles",
+    "1 element": "1 élément",
+    ":count elements": ":count éléments"
 }

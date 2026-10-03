@@ -160,6 +160,7 @@
   --text-stat: 1.75rem;          --text-stat--line-height: 2rem;           --text-stat--letter-spacing: -0.02em;
   --text-ui-lg: 0.9375rem;       --text-ui-lg--line-height: 1.375rem;
   --text-body-sm: 0.8125rem;     --text-body-sm--line-height: 1.25rem;
+  --text-2xs: 0.6875rem;         --text-2xs--line-height: 1.125rem;
   --text-3xs: 0.5625rem;         --text-3xs--line-height: 0.75rem;
   --text-overline: 0.6875rem;    --text-overline--line-height: 1rem;       --text-overline--letter-spacing: 0.08em;      --text-overline--font-weight: 650;
 

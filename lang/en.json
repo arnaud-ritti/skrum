@@ -4339,5 +4339,18 @@
     "Fit to screen": "Fit to screen",
     "Minimap": "Minimap",
     "Shows the whole board; the frame is the part you see.": "Shows the whole board; the frame is the part you see.",
-    "Move the view": "Move the view"
+    "Move the view": "Move the view",
+    "Group": "Group",
+    "Align": "Align",
+    "Align left": "Align left",
+    "Align right": "Align right",
+    "Align top": "Align top",
+    "Align bottom": "Align bottom",
+    "Distribute horizontally": "Distribute horizontally",
+    "Distribute vertically": "Distribute vertically",
+    "Lock": "Lock",
+    "Unlock": "Unlock",
+    "Styles": "Styles",
+    "1 element": "1 element",
+    ":count elements": ":count elements"
 }
