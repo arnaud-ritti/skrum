@@ -27,6 +27,49 @@ function buckets(counts: number[], first: number): SurveyQuestionBucket[] {
     }));
 }
 
+function WithComment() {
+    const { t } = useTrans();
+    const [value, setValue] = useState<SurveyQuestionValue>(4);
+    const [comment, setComment] = useState('');
+
+    return (
+        <SurveyQuestion
+            id="comment"
+            kind="nps"
+            label={t('Would you recommend this team?')}
+            mode="answer"
+            value={value}
+            onChange={setValue}
+            comment={comment}
+            onCommentChange={setComment}
+        />
+    );
+}
+
+function Bare() {
+    const { t } = useTrans();
+    const [value, setValue] = useState<SurveyQuestionValue>(null);
+
+    return (
+        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border p-4">
+            <h3 id="bare-label" className="font-display text-xl font-semibold">
+                {t('How was the sprint?')}
+            </h3>
+            <SurveyQuestion
+                id="bare"
+                kind="scale5"
+                label={t('How was the sprint?')}
+                mode="answer"
+                chrome="none"
+                labelledBy="bare-label"
+                scaleLabels={[t('Strongly disagree'), t('Strongly agree')]}
+                value={value}
+                onChange={setValue}
+            />
+        </div>
+    );
+}
+
 function Live() {
     const { t } = useTrans();
     const [value, setValue] = useState<SurveyQuestionValue>(null);
@@ -69,6 +112,14 @@ export default function SurveyQuestionSection() {
         <div className="flex flex-col gap-8 p-4 md:p-6">
             <Example label={t('Scale 1-5, live (keys 1 to 5, anonymous)')}>
                 <Live />
+            </Example>
+            <Example label={t('NPS 0-10, with an optional comment')}>
+                <WithComment />
+            </Example>
+            <Example
+                label={t('Scale 1-5, bare control under a heading of the page')}
+            >
+                <Bare />
             </Example>
             <Example label={t('Scale 1-5, unanswered')}>
                 <SurveyQuestion
@@ -204,6 +255,55 @@ export default function SurveyQuestionSection() {
                         responses: 20,
                         nps: 25,
                         buckets: buckets([0, 0, 1, 0, 1, 1, 1, 3, 4, 5, 4], 0),
+                    }}
+                />
+            </Example>
+            <Example
+                label={t(
+                    'Results, scale 1-5 with mean, most frequent answer and a fall',
+                )}
+            >
+                <SurveyQuestion
+                    id="r8"
+                    kind="scale5"
+                    label={t('How was the sprint?')}
+                    mode="results"
+                    results={{
+                        responses: 9,
+                        mean: 3.8,
+                        mode: 4,
+                        delta: { value: -0.4, against: t('Sprint 41') },
+                        buckets: buckets([0, 1, 2, 4, 2], 1),
+                    }}
+                />
+            </Example>
+            <Example label={t('Results, NPS with segments and a rise')}>
+                <SurveyQuestion
+                    id="r9"
+                    kind="nps"
+                    label={t('Would you recommend this team?')}
+                    mode="results"
+                    results={{
+                        responses: 9,
+                        nps: 22,
+                        segments: { detractors: 2, passives: 3, promoters: 4 },
+                        delta: { value: 11, against: t('Sprint 41') },
+                        buckets: buckets([0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 2], 0),
+                    }}
+                />
+            </Example>
+            <Example label={t('Results, NPS with no change')}>
+                <SurveyQuestion
+                    id="r10"
+                    kind="nps"
+                    label={t('Would you recommend this team?')}
+                    mode="results"
+                    results={{
+                        responses: 9,
+                        nps: 22,
+                        segments: { detractors: 2, passives: 3, promoters: 4 },
+                        delta: { value: 0, against: t('Sprint 41') },
+                        buckets: buckets([0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 2], 0),
                     }}
                 />
             </Example>

@@ -1,4 +1,4 @@
-import { EyeOff, Lock } from 'lucide-react';
+import { EyeOff, Lock, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useId, useState } from 'react';
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -45,11 +45,27 @@ export type SurveyQuestionTextAnswer = {
     isMine?: boolean;
 };
 
+export type SurveyQuestionSegments = {
+    detractors: number;
+    passives: number;
+    promoters: number;
+};
+
+export type SurveyQuestionDelta = {
+    value: number;
+    /** The name of what the figure is compared with. */
+    against: string;
+};
+
 export type SurveyQuestionResults = {
     responses: number;
     hidden?: boolean;
     mean?: number;
+    /** The most frequent answer of a scale, beside its mean. */
+    mode?: number | null;
     nps?: number;
+    segments?: SurveyQuestionSegments;
+    delta?: SurveyQuestionDelta | null;
     buckets?: SurveyQuestionBucket[];
     textAnswers?: SurveyQuestionTextAnswer[] | null;
     keywords?: { word: string; weight: 1 | 2 | 3 }[];
@@ -79,6 +95,12 @@ type SurveyQuestionOwnProps = {
     submitDisabled?: boolean;
     maxLength?: number;
     value?: SurveyQuestionValue;
+    /** The optional comment of a scale or NPS answer, shown with `onCommentChange`. */
+    comment?: string;
+    onCommentChange?: (value: string) => void;
+    /** `none`: the control and its helper lines only, named by `labelledBy`. */
+    chrome?: 'card' | 'none';
+    labelledBy?: string;
     /** The answer the server holds, when `value` is a draft of it. */
     savedValue?: SurveyQuestionValue;
     results?: SurveyQuestionResults;
@@ -98,6 +120,7 @@ export type SurveyQuestionProps = SurveyQuestionOwnProps &
     >;
 
 const collapsedAnswerCount = 5;
+const commentMaxLength = 500;
 const npsValues = Array.from({ length: 11 }, (_, value) => value);
 const scaleValues = [1, 2, 3, 4, 5];
 
@@ -375,6 +398,118 @@ function TextResults({ results }: { results: SurveyQuestionResults }) {
     );
 }
 
+function formatDelta(value: number): string {
+    const rounded = Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+    return value > 0 ? `+${rounded}` : rounded;
+}
+
+function DeltaBadge({ delta }: { delta: SurveyQuestionDelta }) {
+    const { t } = useTrans();
+
+    if (delta.value === 0) {
+        return (
+            <Badge
+                variant="muted"
+                data-slot="survey-delta"
+                data-trend="flat"
+                icon={Minus}
+                className="mb-1"
+            >
+                <span className="truncate">{t('no change')}</span>
+            </Badge>
+        );
+    }
+
+    const isRise = delta.value > 0;
+
+    return (
+        <Badge
+            variant={isRise ? 'success' : 'destructive'}
+            data-slot="survey-delta"
+            data-trend={isRise ? 'up' : 'down'}
+            icon={isRise ? TrendingUp : TrendingDown}
+            className="mb-1"
+        >
+            <span className="truncate">
+                {t(':value vs :title', {
+                    value: formatDelta(delta.value),
+                    title: delta.against,
+                })}
+            </span>
+        </Badge>
+    );
+}
+
+function NpsSegments({ segments }: { segments: SurveyQuestionSegments }) {
+    const { t } = useTrans();
+    const total = segments.detractors + segments.passives + segments.promoters;
+    const parts = [
+        {
+            key: 'detractors',
+            count: segments.detractors,
+            tone: 'bg-destructive text-destructive-foreground',
+            legend: t('Detractors · 0–6'),
+        },
+        {
+            key: 'passives',
+            count: segments.passives,
+            tone: 'bg-muted text-muted-foreground ring-1 ring-border ring-inset',
+            legend: t('Passives · 7–8'),
+        },
+        {
+            key: 'promoters',
+            count: segments.promoters,
+            tone: 'bg-skrum-success text-skrum-success-foreground',
+            legend: t('Promoters · 9–10'),
+        },
+    ];
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div
+                role="img"
+                aria-label={t(
+                    ':detractors detractors, :passives passives, :promoters promoters',
+                    { ...segments },
+                )}
+                data-slot="survey-nps-segments"
+                className="flex h-7 gap-0.5 overflow-hidden rounded-md bg-muted"
+            >
+                {parts
+                    .filter((part) => part.count > 0)
+                    .map((part) => (
+                        <span
+                            key={part.key}
+                            className={cn(
+                                'grid min-w-0 place-items-center text-xs font-bold tabular-nums',
+                                part.tone,
+                            )}
+                            style={{ flexGrow: part.count, flexBasis: 0 }}
+                        >
+                            <span className="truncate">
+                                {percentOf(part.count, total)}%
+                            </span>
+                        </span>
+                    ))}
+            </div>
+            <dl className="grid grid-cols-3 gap-2">
+                {parts.map((part) => (
+                    <div
+                        key={part.key}
+                        className="flex min-w-0 flex-col-reverse gap-0.5 text-xs text-muted-foreground"
+                    >
+                        <dt className="min-w-0 break-words">{part.legend}</dt>
+                        <dd className="text-base font-semibold text-foreground tabular-nums">
+                            {part.count}
+                        </dd>
+                    </div>
+                ))}
+            </dl>
+        </div>
+    );
+}
+
 function Results({
     kind,
     options,
@@ -410,26 +545,53 @@ function Results({
 
         return (
             <div className="flex flex-col gap-3">
-                {kind === 'scale5' && results.mean !== undefined && (
-                    <p
-                        data-slot="survey-key-figure"
-                        className="font-display text-3xl font-semibold tabular-nums"
-                    >
-                        <span className="sr-only">{t('Average')}: </span>
-                        {results.mean.toFixed(1)}
-                        <span className="text-base text-muted-foreground">
-                            {' / 5'}
-                        </span>
-                    </p>
+                {(results.mean !== undefined || results.nps !== undefined) && (
+                    <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+                        {kind === 'scale5' && results.mean !== undefined && (
+                            <p
+                                data-slot="survey-key-figure"
+                                className="font-display text-3xl font-semibold tabular-nums"
+                            >
+                                <span className="sr-only">
+                                    {t('Average')}:{' '}
+                                </span>
+                                {results.mean.toFixed(1)}
+                                <span className="text-base text-muted-foreground">
+                                    {' / 5'}
+                                </span>
+                            </p>
+                        )}
+                        {kind === 'scale5' &&
+                            results.mode !== undefined &&
+                            results.mode !== null && (
+                                <p
+                                    data-slot="survey-key-figure-mode"
+                                    className="flex flex-col"
+                                >
+                                    <span className="font-display text-3xl font-semibold tabular-nums">
+                                        {results.mode}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('most frequent answer')}
+                                    </span>
+                                </p>
+                            )}
+                        {kind === 'nps' && results.nps !== undefined && (
+                            <p
+                                data-slot="survey-key-figure"
+                                className="font-display text-3xl font-semibold tabular-nums"
+                            >
+                                <span className="sr-only">
+                                    {t('NPS score')}:{' '}
+                                </span>
+                                {results.nps}
+                            </p>
+                        )}
+                        {results.delta && <DeltaBadge delta={results.delta} />}
+                    </div>
                 )}
-                {kind === 'nps' && results.nps !== undefined && (
-                    <p
-                        data-slot="survey-key-figure"
-                        className="font-display text-3xl font-semibold tabular-nums"
-                    >
-                        <span className="sr-only">{t('NPS score')}: </span>
-                        {results.nps}
-                    </p>
+                {kind === 'nps' && results.segments && (
+                    <NpsSegments segments={results.segments} />
                 )}
                 {kind === 'nps' ? (
                     <NpsHistogram buckets={buckets} />
@@ -552,6 +714,10 @@ export function SurveyQuestion({
     submitDisabled = false,
     maxLength = 500,
     value = null,
+    comment = '',
+    onCommentChange,
+    chrome = 'card',
+    labelledBy,
     savedValue,
     results,
     onChange,
@@ -564,7 +730,9 @@ export function SurveyQuestion({
 }: SurveyQuestionProps) {
     const { t } = useTrans();
     const generatedId = useId();
-    const labelId = `${generatedId}-label`;
+    const isBare = chrome === 'none';
+    const labelId = isBare && labelledBy ? labelledBy : `${generatedId}-label`;
+    const commentId = `${generatedId}-comment`;
     const scaleLabelsId = `${generatedId}-scale`;
     const errorId = `${generatedId}-error`;
     const isInert = closed || blocked;
@@ -655,61 +823,8 @@ export function SurveyQuestion({
     const canSubmit =
         kind === 'text' ? trimmedText !== '' : selectedIds.length > 0;
 
-    return (
-        <article
-            data-slot="survey-question"
-            data-kind={kind}
-            data-mode={mode}
-            aria-labelledby={labelId}
-            {...props}
-            onKeyDown={handleDigitKey}
-            className={cn(
-                'flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground shadow-card',
-                className,
-            )}
-        >
-            <header className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    {index !== undefined && count !== undefined && (
-                        <span className="tabular-nums">
-                            {t(':index / :count', { index, count })}
-                        </span>
-                    )}
-                    <Badge variant="muted">
-                        <span className="truncate">{kindLabels[kind]}</span>
-                    </Badge>
-                    {anonymous && (
-                        <Badge variant="outline">
-                            <EyeOff />
-                            <span className="truncate">{t('Anonymous')}</span>
-                        </Badge>
-                    )}
-                    {closed && (
-                        <Badge variant="secondary">
-                            <Lock />
-                            <span className="truncate">{t('Closed')}</span>
-                        </Badge>
-                    )}
-                    {actions && <div className="ms-auto">{actions}</div>}
-                </div>
-                <h3
-                    id={labelId}
-                    className="font-display text-base font-semibold break-words"
-                >
-                    {label}
-                    {required && isAnswer && (
-                        <span className="ms-1 text-xs font-normal text-muted-foreground">
-                            {t('Required')}
-                        </span>
-                    )}
-                </h3>
-                {description && (
-                    <p className="text-xs break-words whitespace-pre-wrap text-muted-foreground">
-                        {description}
-                    </p>
-                )}
-            </header>
-
+    const controls = (
+        <>
             {isAnswer && kind === 'scale5' && (
                 <ScaleControl
                     name={id}
@@ -863,6 +978,104 @@ export function SurveyQuestion({
                     </Button>
                 </div>
             )}
+
+            {isAnswer &&
+                (kind === 'scale5' || kind === 'nps') &&
+                onCommentChange && (
+                    <div className="flex flex-col gap-1">
+                        <label
+                            htmlFor={commentId}
+                            className="text-sm font-medium"
+                        >
+                            {t('Why this score? (optional)')}
+                        </label>
+                        <Textarea
+                            id={commentId}
+                            value={comment}
+                            maxLength={commentMaxLength}
+                            rows={3}
+                            disabled={disabled}
+                            onChange={(event) =>
+                                onCommentChange(event.target.value)
+                            }
+                        />
+                    </div>
+                )}
+        </>
+    );
+
+    if (isBare) {
+        return (
+            <div
+                data-slot="survey-question"
+                data-kind={kind}
+                data-mode={mode}
+                data-chrome="none"
+                {...(props as ComponentProps<'div'>)}
+                onKeyDown={handleDigitKey}
+                className={cn('flex min-w-0 flex-col gap-3', className)}
+            >
+                {controls}
+            </div>
+        );
+    }
+
+    return (
+        <article
+            data-slot="survey-question"
+            data-kind={kind}
+            data-mode={mode}
+            aria-labelledby={labelId}
+            {...props}
+            onKeyDown={handleDigitKey}
+            className={cn(
+                'flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground shadow-card',
+                className,
+            )}
+        >
+            <header className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {index !== undefined && count !== undefined && (
+                        <span className="tabular-nums">
+                            {t(':index / :count', { index, count })}
+                        </span>
+                    )}
+                    <Badge variant="muted">
+                        <span className="truncate">{kindLabels[kind]}</span>
+                    </Badge>
+                    {anonymous && (
+                        <Badge variant="outline">
+                            <EyeOff />
+                            <span className="truncate">{t('Anonymous')}</span>
+                        </Badge>
+                    )}
+                    {closed && (
+                        <Badge variant="secondary">
+                            <Lock />
+                            <span className="truncate">{t('Closed')}</span>
+                        </Badge>
+                    )}
+                    {actions && <div className="ms-auto">{actions}</div>}
+                </div>
+                <h3
+                    id={labelId}
+                    className="font-display text-base font-semibold break-words"
+                >
+                    {label}
+                    {required && isAnswer && (
+                        <span className="ms-1 text-xs font-normal text-muted-foreground">
+                            {t('Required')}
+                        </span>
+                    )}
+                </h3>
+                {description && (
+                    <p className="text-xs break-words whitespace-pre-wrap text-muted-foreground">
+                        {description}
+                    </p>
+                )}
+            </header>
+
+            {controls}
 
             {results && (!isAnswer || !results.hidden) && (
                 <Results

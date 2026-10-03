@@ -584,3 +584,176 @@ describe('SurveyQuestion results mode', () => {
         expect(screen.getByText('1 response')).toBeTruthy();
     });
 });
+
+describe('SurveyQuestion survey additions', () => {
+    it('offers a comment under a scale when a handler is given, and none without it', () => {
+        const onCommentChange = vi.fn();
+        const { rerender } = setup({
+            kind: 'scale5',
+            comment: 'Busy',
+            onCommentChange,
+        });
+
+        const field = screen.getByRole('textbox', {
+            name: 'Why this score? (optional)',
+        }) as HTMLTextAreaElement;
+
+        expect(field.value).toBe('Busy');
+        expect(field.maxLength).toBe(500);
+
+        fireEvent.change(field, { target: { value: 'Busy sprint' } });
+
+        expect(onCommentChange).toHaveBeenCalledWith('Busy sprint');
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="nps"
+                label="Pick one"
+                mode="answer"
+                comment="Busy"
+            />,
+        );
+
+        expect(screen.queryByRole('textbox')).toBeNull();
+    });
+
+    it('renders the bare control without a card when the chrome is none', () => {
+        const { container } = renderWithProviders(
+            <>
+                <h2 id="outside">Workload</h2>
+                <SurveyQuestion
+                    id="q1"
+                    kind="scale5"
+                    label="Workload"
+                    mode="answer"
+                    chrome="none"
+                    labelledBy="outside"
+                    scaleLabels={['Low', 'High']}
+                    hasAnswered
+                    onWithdraw={() => undefined}
+                    footer={<p>Footer slot</p>}
+                />
+            </>,
+        );
+
+        expect(container.querySelector('article')).toBeNull();
+        expect(container.querySelector('h3')).toBeNull();
+        expect(screen.queryByText('Footer slot')).toBeNull();
+        expect(screen.queryByText('Withdraw my answer')).toBeNull();
+        expect(
+            screen.getByRole('radiogroup').getAttribute('aria-labelledby'),
+        ).toBe('outside');
+        expect(
+            screen.getByRole('radiogroup', { name: 'Workload' }),
+        ).toBeTruthy();
+        expect(screen.getByText('Low')).toBeTruthy();
+    });
+
+    it('shows the most frequent answer beside the mean of a scale, and not when it is null', () => {
+        const results = {
+            responses: 9,
+            mean: 3.8,
+            buckets: [1, 2, 3, 4, 5].map((n) => ({
+                key: String(n),
+                label: String(n),
+                count: n === 4 ? 4 : 1,
+            })),
+        };
+        const { rerender } = setup({
+            kind: 'scale5',
+            mode: 'results',
+            results: { ...results, mode: 4 },
+        });
+
+        expect(screen.getByText('most frequent answer')).toBeTruthy();
+        expect(
+            document.querySelector('[data-slot="survey-key-figure-mode"]')
+                ?.textContent,
+        ).toContain('4');
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="scale5"
+                label="Pick one"
+                mode="results"
+                results={{ ...results, mode: null }}
+            />,
+        );
+
+        expect(screen.queryByText('most frequent answer')).toBeNull();
+    });
+
+    it('draws the NPS segments as an image with a written label and a legend of three counts', () => {
+        setup({
+            kind: 'nps',
+            mode: 'results',
+            results: {
+                responses: 9,
+                nps: 22,
+                segments: { detractors: 2, passives: 3, promoters: 4 },
+                buckets: [{ key: '0', label: '0', count: 0 }],
+            },
+        });
+
+        const bar = screen.getByRole('img', {
+            name: '2 detractors, 3 passives, 4 promoters',
+        });
+
+        expect(bar.textContent).toContain('22%');
+        expect(bar.textContent).toContain('44%');
+        expect(screen.getByText('Detractors · 0–6')).toBeTruthy();
+        expect(screen.getByText('Passives · 7–8')).toBeTruthy();
+        expect(screen.getByText('Promoters · 9–10')).toBeTruthy();
+    });
+
+    it('says a rise, a fall and no change beside the key figure, never by colour alone', () => {
+        const base = {
+            responses: 9,
+            nps: 22,
+            buckets: [{ key: '0', label: '0', count: 0 }],
+        };
+        const { rerender } = setup({
+            kind: 'nps',
+            mode: 'results',
+            results: { ...base, delta: { value: 11, against: 'Sprint 41' } },
+        });
+
+        expect(screen.getByText('+11 vs Sprint 41')).toBeTruthy();
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="scale5"
+                label="Pick one"
+                mode="results"
+                results={{
+                    responses: 9,
+                    mean: 3.1,
+                    delta: { value: -0.4, against: 'Sprint 41' },
+                }}
+            />,
+        );
+
+        const fall = screen.getByText('-0.4 vs Sprint 41');
+
+        expect(
+            fall
+                .closest('[data-slot="survey-delta"]')
+                ?.getAttribute('data-trend'),
+        ).toBe('down');
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="nps"
+                label="Pick one"
+                mode="results"
+                results={{ ...base, delta: { value: 0, against: 'Sprint 41' } }}
+            />,
+        );
+
+        expect(screen.getByText('no change')).toBeTruthy();
+    });
+});

@@ -4414,5 +4414,18 @@
     "Score every statement before sending.": "Note chaque énoncé avant d'envoyer.",
     "The health check is closed.": "Le bilan de santé est clôturé.",
     "This retro already has a health check.": "Cette rétro a déjà un bilan de santé.",
-    "You have already sent your answers.": "Tu as déjà envoyé tes réponses."
+    "You have already sent your answers.": "Tu as déjà envoyé tes réponses.",
+    "Why this score? (optional)": "Pourquoi cette note ? (facultatif)",
+    "most frequent answer": "réponse la plus fréquente",
+    ":detractors detractors, :passives passives, :promoters promoters": ":detractors détracteurs, :passives passifs, :promoters promoteurs",
+    ":value vs :title": ":value vs :title",
+    "Detractors · 0–6": "Détracteurs · 0–6",
+    "Passives · 7–8": "Passifs · 7–8",
+    "Promoters · 9–10": "Promoteurs · 9–10",
+    "NPS 0-10, with an optional comment": "NPS 0-10, avec un commentaire facultatif",
+    "Scale 1-5, bare control under a heading of the page": "Échelle 1-5, contrôle nu sous un titre de la page",
+    "Results, scale 1-5 with mean, most frequent answer and a fall": "Résultats, échelle 1-5 avec moyenne, réponse la plus fréquente et une baisse",
+    "Results, NPS with segments and a rise": "Résultats, NPS avec segments et une hausse",
+    "Results, NPS with no change": "Résultats, NPS sans changement",
+    "Sprint 41": "Sprint 41"
 }
