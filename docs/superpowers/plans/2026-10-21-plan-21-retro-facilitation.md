@@ -2296,14 +2296,21 @@ class RetroWritersController extends Controller
 
 ```php
         RateLimiter::for('retro-writing', function (Request $request): Limit {
-            $participant = $request->attributes->get('participant');
-            $key = $participant instanceof Participant ? $participant->id : $request->ip();
+            $retro = $request->route('retro');
+            $retroId = $retro instanceof Retro ? $retro->id : (string) $retro;
+            $userId = Auth::id();
+            $guestCookie = $request->cookie(GuestCookie::name(GuestCookie::RetroScope, $retroId));
+            $participantKey = match (true) {
+                $userId !== null => "user:{$userId}",
+                is_string($guestCookie) => 'guest:'.hash('sha256', $guestCookie),
+                default => "ip:{$request->ip()}",
+            };
 
-            return Limit::perMinute(40)->by("retro-writing|{$key}");
+            return Limit::perMinute(40)->by("retro-writing|{$retroId}|{$participantKey}");
         });
 ```
 
-(import `App\Models\Participant`).
+(import `App\Models\Retro` and `App\Actions\Retros\GuestCookie`). Built 2026-10-03 (check of spec §16 item 8): the throttle middleware has framework priority over `SubstituteBindings` and so runs before `ResolveRetroParticipant`; the participant attribute is never set when the limiter runs, and a key read from it fell back to the IP (the 429 test failed for the second member). The key is therefore the session user, or the hash of the retro's guest cookie, per retro.
 
 `routes/web.php`, after Task 5's two lines:
 

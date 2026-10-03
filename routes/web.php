@@ -136,6 +136,7 @@ use App\Http\Controllers\Retros\RetroSummariesController;
 use App\Http\Controllers\Retros\RetroTimerExtensionsController;
 use App\Http\Controllers\Retros\RetroTimerPausesController;
 use App\Http\Controllers\Retros\RetroTimersController;
+use App\Http\Controllers\Retros\RetroWritersController;
 use App\Http\Controllers\Retros\SuggestedActionPromotionsController;
 use App\Http\Controllers\Retros\SuggestedActionsController;
 use App\Http\Controllers\Retros\SurveyClosuresController;
@@ -506,6 +507,8 @@ Route::prefix('retros/{retro}')
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
         Route::put('voting-completion', [VotingCompletionsController::class, 'update'])->name('retros.votingCompletion.update');
         Route::delete('voting-completion', [VotingCompletionsController::class, 'destroy'])->name('retros.votingCompletion.destroy');
+        Route::put('writing', [RetroWritersController::class, 'update'])->middleware('throttle:retro-writing')->name('retros.writing.update');
+        Route::delete('writing', [RetroWritersController::class, 'destroy'])->middleware('throttle:retro-writing')->name('retros.writing.destroy');
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
         Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy')->whereUuid('card');
         Route::post('cards/{card}/comments', [CardCommentsController::class, 'store'])->name('retros.cards.comments.store')->whereUuid('card');

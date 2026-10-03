@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Retros\GuestCookie;
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
@@ -13,6 +14,7 @@ use App\Mcp\McpTrackers;
 use App\Mcp\VisibleTeams;
 use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
+use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\User;
 use App\Models\Whiteboard;
@@ -89,6 +91,24 @@ class AppServiceProvider extends ServiceProvider
             $boardId = $board instanceof Whiteboard ? $board->id : (string) $board;
 
             return Limit::perSecond(20)->by((Auth::id() ?? $request->ip()).'|'.$boardId);
+        });
+
+        /*
+         * The throttle runs before the route bindings and ResolveRetroParticipant,
+         * so the participant is read from the session user or the retro's guest cookie.
+         */
+        RateLimiter::for('retro-writing', function (Request $request): Limit {
+            $retro = $request->route('retro');
+            $retroId = $retro instanceof Retro ? $retro->id : (string) $retro;
+            $userId = Auth::id();
+            $guestCookie = $request->cookie(GuestCookie::name(GuestCookie::RetroScope, $retroId));
+            $participantKey = match (true) {
+                $userId !== null => "user:{$userId}",
+                is_string($guestCookie) => 'guest:'.hash('sha256', $guestCookie),
+                default => "ip:{$request->ip()}",
+            };
+
+            return Limit::perMinute(40)->by("retro-writing|{$retroId}|{$participantKey}");
         });
 
         Event::listen(IntegrationActivated::class, fn (IntegrationActivated $event) => MatchIntegrationUsers::start($event->integration));
