@@ -4555,5 +4555,10 @@
     "Real time": "Echtzeit",
     "Refresh": "Aktualisieren",
     "Scheduled tasks": "Geplante Aufgaben",
-    "Some systems are degraded": "Einige Systeme sind eingeschränkt"
+    "Some systems are degraded": "Einige Systeme sind eingeschränkt",
+    ":name, instance admin": ":name, Admin der Instanz",
+    "Any moment now": "Jeden Moment",
+    "Back at": "Zurück um",
+    "your time (:zone) · in about :minutes min": "deine Zeit (:zone) · in etwa :minutes Min.",
+    "“:message”": "„:message“"
 }

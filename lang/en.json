@@ -4335,5 +4335,10 @@
     "Real time": "Real time",
     "Refresh": "Refresh",
     "Scheduled tasks": "Scheduled tasks",
-    "Some systems are degraded": "Some systems are degraded"
+    "Some systems are degraded": "Some systems are degraded",
+    ":name, instance admin": ":name, instance admin",
+    "Any moment now": "Any moment now",
+    "Back at": "Back at",
+    "your time (:zone) · in about :minutes min": "your time (:zone) · in about :minutes min",
+    "“:message”": "“:message”"
 }

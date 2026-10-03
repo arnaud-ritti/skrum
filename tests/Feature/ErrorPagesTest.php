@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\InstanceSettingKey;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\InstanceSettings;
+use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
@@ -299,6 +302,74 @@ it('renders the static 503 view in maintenance mode', function () {
     } finally {
         $this->artisan('up');
     }
+});
+
+it('shows the time of return and the admin message in maintenance', function () {
+    useProcessLocalMaintenanceMode();
+    $this->travelTo(now()->setDateTime(2026, 10, 3, 12, 0, 0));
+    $admin = User::factory()->instanceAdmin()->create(['name' => 'Hugo Lambert']);
+    resolve(InstanceSettings::class)->setMany([
+        InstanceSettingKey::MaintenanceMessage->value => 'Mise à jour mensuelle.',
+        InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
+    ]);
+    $this->artisan('down', ['--retry' => 1800]);
+
+    try {
+        $content = $this->get('/', ['Accept-Language' => 'fr'])->assertServiceUnavailable()->getContent();
+
+        expect($content)
+            ->toContain('data-slot="maintenance-back-at"')
+            ->toContain('<time datetime="2026-10-03T12:30:00+00:00">12:30 UTC</time>')
+            ->toContain('« Mise à jour mensuelle. »')
+            ->toContain(e("Hugo Lambert, admin de l'instance"))
+            ->toContain('href="/status"')
+            ->and(substr_count($content, '<script'))->toBe(1);
+    } finally {
+        $this->artisan('up');
+    }
+});
+
+it('shows neither block without --retry and without a message', function () {
+    useProcessLocalMaintenanceMode();
+    $this->artisan('down');
+
+    try {
+        $this->get('/')->assertServiceUnavailable()
+            ->assertDontSee('data-slot="maintenance-back-at"', false)
+            ->assertDontSee('data-slot="maintenance-message"', false)
+            ->assertSee('href="/status"', false);
+    } finally {
+        $this->artisan('up');
+    }
+});
+
+it('shows neither block on the busy-database 503, even in maintenance', function () {
+    useProcessLocalMaintenanceMode();
+    resolve(InstanceSettings::class)->set(InstanceSettingKey::MaintenanceMessage->value, 'Back soon.');
+    $this->artisan('down', ['--retry' => 600]);
+    $this->withoutMiddleware(PreventRequestsDuringMaintenance::class);
+    Route::middleware('web')->post('/error-pages-probe/busy', fn () => throw new PDOException('SQLSTATE[HY000]: General error: 5 database is locked'));
+
+    try {
+        $this->post('/error-pages-probe/busy')
+            ->assertServiceUnavailable()
+            ->assertSee('The database is busy. Try again.')
+            ->assertDontSee('data-slot="maintenance-back-at"', false)
+            ->assertDontSee('data-slot="maintenance-message"', false);
+    } finally {
+        $this->artisan('up');
+    }
+});
+
+it('leaves the details out when the maintenance store is the unreachable database', function () {
+    config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'database']);
+    $this->withoutMiddleware(PreventRequestsDuringMaintenance::class);
+    Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
+
+    withUnreachableDatabase(function (): void {
+        $this->get('/error-pages-probe/unavailable')->assertServiceUnavailable()
+            ->assertDontSee('data-slot="maintenance-back-at"', false);
+    });
 });
 
 it('renders the 500 page without the message, the trace or the request data while the database is unreachable', function () {

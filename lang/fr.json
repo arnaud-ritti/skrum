@@ -4555,5 +4555,10 @@
     "Real time": "Temps réel",
     "Refresh": "Actualiser",
     "Scheduled tasks": "Tâches planifiées",
-    "Some systems are degraded": "Certains systèmes sont dégradés"
+    "Some systems are degraded": "Certains systèmes sont dégradés",
+    ":name, instance admin": ":name, admin de l'instance",
+    "Any moment now": "D'un instant à l'autre",
+    "Back at": "Retour prévu",
+    "your time (:zone) · in about :minutes min": "ton heure (:zone) · dans :minutes min environ",
+    "“:message”": "« :message »"
 }

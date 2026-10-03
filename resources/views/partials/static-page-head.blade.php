@@ -340,6 +340,100 @@
                 border-radius: 0.25rem;
             }
 
+            header .link {
+                margin-left: auto;
+                font-size: 0.75rem;
+                line-height: 1rem;
+            }
+
+            .back-at {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1.25rem 0.75rem 1rem;
+                border-radius: 0.75rem;
+                background: var(--sky);
+                color: var(--sky-text);
+                text-align: left;
+            }
+
+            .back-at svg {
+                width: 1.5rem;
+                height: 1.5rem;
+                flex: none;
+            }
+
+            .back-at-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+
+            .back-at-label {
+                font-size: 0.75rem;
+                line-height: 1rem;
+                font-weight: 600;
+            }
+
+            .back-at-time {
+                font-family: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, sans-serif;
+                font-size: 1.75rem;
+                line-height: 2rem;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                color: var(--foreground);
+                font-variant-numeric: tabular-nums;
+            }
+
+            .back-at-zone {
+                font-size: 0.75rem;
+                line-height: 1rem;
+            }
+
+            .back-at-zone[hidden] {
+                display: none;
+            }
+
+            .message {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.25rem;
+                margin: 0;
+            }
+
+            .message blockquote {
+                margin: 0;
+                font-size: 0.8125rem;
+                line-height: 1.25rem;
+                font-style: italic;
+                overflow-wrap: anywhere;
+            }
+
+            .message figcaption {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.75rem;
+                line-height: 1rem;
+                color: var(--muted-foreground);
+            }
+
+            .avatar {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 1.25rem;
+                height: 1.25rem;
+                flex: none;
+                border-radius: 50%;
+                background: var(--muted);
+                color: var(--foreground);
+                font-size: 0.5625rem;
+                font-weight: 600;
+                font-style: normal;
+            }
+
             footer {
                 min-height: 1rem;
                 font-size: 0.75rem;

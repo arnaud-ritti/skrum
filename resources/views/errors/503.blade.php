@@ -3,6 +3,9 @@
     database (a deadlock or a lock wait that outlived its retries) keeps the
     page and swaps the maintenance wording for its own message, without the
     reload probe: the instance is up.
+    In maintenance it shows when the instance is due back (`artisan down
+    --retry`) and the message the admin prepared, both read from the
+    maintenance payload, never from the database; the busy page shows neither.
     It reads no database, cache or session and loads no asset, so it cannot use
     app.css: its head and colours come from partials.static-page-head, shared
     with the status page. Its only script is inline: every 30 seconds it asks
@@ -21,6 +24,15 @@
         : app()->getLocale();
     $busyHeader = isset($exception) ? ($exception->getHeaders()[\App\Support\Database\Transactions::BusyHeader] ?? null) : null;
     $busyMessage = $busyHeader === null ? null : rawurldecode($busyHeader);
+    $details = $busyMessage === null ? resolve(\App\Support\Maintenance\MaintenanceDetails::class)->read() : null;
+    $backAt = $details['backAt'] ?? null;
+    $message = $details['message'] ?? null;
+    $author = $details['author'] ?? null;
+    $authorInitials = $author === null ? '' : collect(preg_split('/\s+/u', trim($author)) ?: [])
+        ->filter()
+        ->take(2)
+        ->map(fn (string $word): string => mb_strtoupper(mb_substr($word, 0, 1)))
+        ->implode('');
 @endphp
 @include('partials.static-page-head', ['title' => ($busyMessage ?? __('Maintenance', [], $locale)).' - '.$instance])
     <body data-slot="maintenance-page">
@@ -33,7 +45,7 @@
                 <circle cx="38.5" cy="15.5" r="4.5" fill="var(--primary-foreground)"/>
             </svg>
             <span class="word" aria-hidden="true">skrüm</span>
-            {{-- Place left (AD-3): the "Instance status" link, at the end of the header. --}}
+            <a class="link" href="/status">{{ __('Instance status', [], $locale) }}</a>
         </header>
         <main>
             <svg class="art" viewBox="0 0 160 110" aria-hidden="true">
@@ -53,7 +65,29 @@
             @else
                 <h1>{{ $busyMessage }}</h1>
             @endif
-            {{-- Place left (AD-5): the "Back at" block, then the message of the instance admin. --}}
+            @if($backAt !== null)
+                <div class="back-at" data-slot="maintenance-back-at">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span class="back-at-text">
+                        <span class="back-at-label">{{ __('Back at', [], $locale) }}</span>
+                        <span class="back-at-time"><time datetime="{{ $backAt }}">{{ \Illuminate\Support\Carbon::parse($backAt)->utc()->format('H:i') }} UTC</time></span>
+                        <span class="back-at-zone" data-slot="maintenance-back-at-zone" hidden
+                              data-in-minutes="{{ __('your time (:zone) · in about :minutes min', [], $locale) }}"
+                              data-soon="{{ __('Any moment now', [], $locale) }}"></span>
+                    </span>
+                </div>
+            @endif
+            @if($message !== null)
+                <figure class="message" data-slot="maintenance-message">
+                    <blockquote>{{ __('“:message”', ['message' => $message], $locale) }}</blockquote>
+                    @if($author !== null)
+                        <figcaption><span class="avatar" aria-hidden="true">{{ $authorInitials }}</span>{{ __(':name, instance admin', ['name' => $author], $locale) }}</figcaption>
+                    @endif
+                </figure>
+            @endif
             <div class="actions">
                 @if($busyMessage === null)
                     <span class="reload" data-slot="maintenance-reload" hidden>
@@ -94,6 +128,24 @@
                         location.reload();
                     }, wait);
                 };
+
+                var zone = document.querySelector('.back-at-zone');
+                var time = document.querySelector('.back-at time');
+
+                if (zone && time) {
+                    var at = new Date(time.getAttribute('datetime'));
+                    var lang = document.documentElement.lang;
+                    var minutes = Math.round((at.getTime() - Date.now()) / 60000);
+                    var zoneName = (new Intl.DateTimeFormat(lang, { timeZoneName: 'short' }).formatToParts(at).find(function (part) {
+                        return part.type === 'timeZoneName';
+                    }) || { value: '' }).value;
+
+                    time.textContent = new Intl.DateTimeFormat(lang, { hour: 'numeric', minute: '2-digit' }).format(at);
+                    zone.textContent = minutes > 0
+                        ? zone.getAttribute('data-in-minutes').replace(':zone', zoneName).replace(':minutes', String(minutes))
+                        : zone.getAttribute('data-soon');
+                    zone.hidden = false;
+                }
 
                 document.querySelector('[data-slot="maintenance-reload"]').hidden = false;
                 wait();
