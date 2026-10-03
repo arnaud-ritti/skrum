@@ -13,7 +13,7 @@ function databasePortabilityRules(): array
         'postgres function or clause' => '/date_trunc|\binterval\s+\'|distinct\s+on\b|string_agg|[\'"][^\'"\n]*(?:\bon\s+conflict\b|\breturning\b|~\*|\bextract\s*\()/i',
         'insertOrIgnore' => '/->insertOrIgnore\(/',
         'json contains or length' => '/->(?:or)?where(?:Json(?:Doesnt)?Contain|JsonLength)\w*\(/i',
-        'upsert' => '/->upsert\(/',
+        'engine-specific operator' => '/->(?:or)?where(?:Not)?\(\s*[^,;]+,\s*[\'"](?:like binary|not like binary|rlike|not rlike|regexp|not regexp|similar to|not similar to|~\*?|!~\*?|@>|<@|\?\||\?&|&&)[\'"]/i',
         'like comparison' => '/[\'"](?:not )?like[\'"]|->(?:or)?where(?:Not)?Like\((?:(?!caseSensitive:\s*true)(?!\)\s*->)[^;])*(?:;|\)\s*->)/i',
         'write without model events' => '/WithoutModelEvents|withoutEvents\(|->(?:save|update|create|createMany|forceCreate|push|delete|forceDelete|restore)Quietly\(/',
         'driver branch' => '/getDriverName\(|getDriverTitle\(|instanceof\s+\\\\?(?:[\w\\\\]*\\\\)?(?:Postgres|MySql|MariaDb|SQLite|SqlServer)\w*|config\(\s*[\'"]database\.default[\'"]\s*\)\s*[=!]==?/',
@@ -26,6 +26,7 @@ function databasePortabilityRules(): array
         'fromRaw' => '/->fromRaw\(/',
         'raw expression' => '/DB::raw\(|->raw\(|new Expression\(/',
         'raw statement' => '/(?:DB::|->)(?:statement|unprepared|affectingStatement)\(|DB::(?:select|selectOne|selectResultSets|scalar|cursor|insert|update|delete)\(/',
+        'sql string on a connection' => '/->(?:scalar|select|selectOne|statement|unprepared|insert|update|delete|affectingStatement)\(\s*[\'"](?:select|insert|update|delete|alter|create|drop|pragma|set|show)\b/i',
     ];
 
     $migrations = [
@@ -41,7 +42,7 @@ function databasePortabilityRules(): array
         'lock syntax' => '/\bfor update\b|\bfor share\b|\block in share mode\b/i',
         'sql error as a failure' => '/select 1 \/ 0/i',
         'ddl in a test' => '/Schema::(?:drop|dropIfExists|create|table|rename)\(/',
-        'reads sql text' => '/\$\w+->sql\b/',
+        'reads sql text' => '/\$\w+->sql\b|DB::listen\(|collect\(\s*DB::getQueryLog\(\)|DB::getQueryLog\(\)\s*\[|array_column\(\s*DB::getQueryLog\(\)|->pluck\(\s*[\'"]query[\'"]\s*\)/',
     ];
 
     return ['source' => $source, 'migrations' => $migrations, 'tests' => $tests];
@@ -98,21 +99,6 @@ function databasePortabilityOffences(): array
 }
 
 /**
- * @return array<string, int>
- */
-function databasePortabilityBaseline(): array
-{
-    $entries = [];
-
-    foreach (file(__DIR__.'/database-portability-baseline.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
-        [$path, $rule, $count] = explode('|', $line);
-        $entries["{$path}|{$rule}"] = (int) $count;
-    }
-
-    return $entries;
-}
-
-/**
  * @param  array<int, string>  $lines
  */
 function databasePortabilityMessage(string $heading, array $lines): string
@@ -126,34 +112,24 @@ function databasePortabilityMessage(string $heading, array $lines): string
         .'what SQL cannot say the same way on PostgreSQL, MySQL, MariaDB and SQLite is done in PHP. '
         .'No write skips the model events (WithoutModelEvents, withoutEvents, saveQuietly, …): the derived columns are written by them. '
         .'No helper may wrap raw SQL. Tests do not read SQL text, branch on the driver or change the schema. '
-        .'The rules are in docs/database.md ("Rules for database code"). Fix the code: '
-        .'tests/Arch/database-portability-baseline.txt only shrinks, and ends empty.';
+        .'The rules are in docs/database.md ("Rules for database code"). Fix the code: nothing is excused, '
+        .'there is no baseline and no allowed list.';
 }
 
 it('adds no raw query, driver branch or engine-specific construct to the application, the migrations or the tests', function () {
-    $listed = databasePortabilityBaseline();
-    $problems = [];
+    $problems = array_map(
+        fn (string $key, int $count): string => "{$key}: {$count} found",
+        array_keys(databasePortabilityOffences()),
+        databasePortabilityOffences(),
+    );
 
-    foreach (databasePortabilityOffences() as $key => $count) {
-        if ($count > ($listed[$key] ?? 0)) {
-            $problems[] = "{$key}: {$count} found, ".($listed[$key] ?? 0).' listed';
-        }
-    }
-
-    expect($problems)->toBe([], databasePortabilityMessage('New raw queries, driver branches or engine-specific constructs', $problems));
+    expect($problems)->toBe([], databasePortabilityMessage('Raw queries, driver branches or engine-specific constructs', $problems));
 });
 
-it('lists nothing that is no longer there', function () {
-    $offences = databasePortabilityOffences();
-    $stale = [];
-
-    foreach (databasePortabilityBaseline() as $key => $count) {
-        if (($offences[$key] ?? 0) < $count) {
-            $stale[] = "{$key}: listed {$count}, found ".($offences[$key] ?? 0);
-        }
-    }
-
-    expect($stale)->toBe([], databasePortabilityMessage('Fixed constructs still on the baseline: delete the line or lower its count', $stale));
+it('excuses nothing: no baseline and no allowed list exist', function () {
+    expect(glob(__DIR__.'/database-portability-baseline*'))->toBe([])
+        ->and(glob(__DIR__.'/database-portability-allowed*'))->toBe([])
+        ->and(function_exists('databasePortabilityBaseline'))->toBeFalse();
 });
 
 it('checks every like comparison of a statement, not only the first', function () {
@@ -174,3 +150,18 @@ it('refuses a write that skips the model events', function (string $code) {
     '$user->saveQuietly();',
     'User::factory()->createQuietly();',
 ]);
+
+it('refuses sql handed over as text and an operator of one engine', function (string $group, string $rule, string $code) {
+    expect(preg_match(databasePortabilityRules()[$group][$rule], $code))->toBe(1);
+})->with([
+    ['source', 'sql string on a connection', "DB::connection()->scalar('select @@transaction_isolation');"],
+    ['source', 'sql string on a connection', '$connection->statement("pragma journal_mode = wal");'],
+    ['source', 'engine-specific operator', "\$query->where('email', 'like binary', \$pattern);"],
+    ['source', 'engine-specific operator', "\$query->orWhere('title', '~*', \$pattern);"],
+    ['tests', 'reads sql text', "collect(DB::getQueryLog())->pluck('query');"],
+    ['tests', 'reads sql text', 'DB::listen(fn (QueryExecuted $query) => $seen[] = $query);'],
+]);
+
+it('lets a test count queries without reading them', function () {
+    expect(preg_match(databasePortabilityRules()['tests']['reads sql text'], 'expect(DB::getQueryLog())->toHaveCount(1); return count(DB::getQueryLog());'))->toBe(0);
+});

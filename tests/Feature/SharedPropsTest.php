@@ -4,8 +4,8 @@ use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
-use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
+use Tests\Support\SqlProbe;
 
 it('shares the avatar URL of the signed-in user and keeps the user attributes', function () {
     $workspace = Workspace::factory()->create();
@@ -141,22 +141,9 @@ it('queries the visible teams once for both shared props', function () {
     $team = Team::factory()->for($workspace)->create();
     $team->members()->attach($user);
 
-    DB::enableQueryLog();
-    $this->actingAs($user)->get(route('settings.edit'));
-    $teamQueries = collect(DB::getQueryLog())
-        ->pluck('query')
-        ->map(function (string $sql): string {
-            do {
-                $sql = preg_replace('/\([^()]*\)/', '', $sql, count: $subqueries);
-            } while ($subqueries > 0);
+    $teamReads = SqlProbe::readsFrom('teams', fn () => $this->actingAs($user)->get(route('settings.edit')));
 
-            return $sql;
-        })
-        ->filter(fn (string $outerSql) => str_contains($outerSql, 'from '.DB::connection()->getQueryGrammar()->wrapTable('teams')))
-        ->count();
-    DB::disableQueryLog();
-
-    expect($teamQueries)->toBe(1);
+    expect($teamReads)->toHaveCount(1);
 });
 
 it('shares the role of the user and the visible team count of each workspace', function () {
@@ -183,15 +170,10 @@ it('shares the role of the user and the visible team count of each workspace', f
 
 it('adds a constant number of queries to the shared workspaces whatever their number', function () {
     $user = User::factory()->create();
-    $countQueries = function () use ($user): int {
-        DB::flushQueryLog();
-        DB::enableQueryLog();
-        $this->actingAs($user)->get(route('workspaces.create'))->assertOk();
-
-        return collect(DB::getQueryLog())
-            ->filter(fn (array $query): bool => str_contains($query['query'], 'workspace_user'))
-            ->count();
-    };
+    $countQueries = fn (): int => count(SqlProbe::statementsOn(
+        'workspace_user',
+        fn () => $this->actingAs($user)->get(route('workspaces.create'))->assertOk(),
+    ));
     $first = Workspace::factory()->create();
     $first->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
     $withOne = $countQueries();

@@ -88,6 +88,28 @@ class SqlProbe
     }
 
     /**
+     * The statements whose outer query reads from a table: a table named only
+     * inside a subquery (between parentheses) does not count.
+     *
+     * @return array<int, string>
+     */
+    public static function readsFrom(string $table, Closure $during): array
+    {
+        $from = 'from '.DB::connection()->getQueryGrammar()->wrapTable($table);
+
+        return collect(self::statementsOn($table, $during))
+            ->filter(function (string $sql) use ($from): bool {
+                do {
+                    $sql = preg_replace('/\([^()]*\)/', '', $sql, count: $subqueries);
+                } while ($subqueries > 0);
+
+                return str_contains($sql, $from);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
      * The updates of a table, each with the columns its condition names.
      *
      * @return array<int, array<int, string>>
