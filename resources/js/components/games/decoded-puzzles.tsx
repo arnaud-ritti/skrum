@@ -10,23 +10,22 @@ type Props = { className?: string };
 /**
  * Decoded's "Puzzles" (spec §6.16, the mockup's `.em-round` rows): the done
  * puzzles of the run with their clue, word and finder, the current one, and
- * the coming ones as empty slots that tell nothing of their content.
+ * the coming ones as empty slots that tell nothing of their content. Between
+ * two rounds of the game the list stays, without a current row.
  */
 export function DecodedPuzzles({ className }: Props) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
     const headingId = useId();
-    const { round } = snapshot;
-    const puzzles = decodedPuzzles(snapshot.history, round);
+    const { room, round } = snapshot;
+    const run = decodedPuzzles(snapshot.history, round, room);
 
-    if (round === null || puzzles.length === 0) {
+    if (run === null || run.puzzles.length === 0) {
         return null;
     }
 
     const progress =
-        round.roundsTotal === null || round.roundsTotal === undefined
-            ? `${round.number}`
-            : `${round.number} / ${round.roundsTotal}`;
+        run.total === null ? `${run.played}` : `${run.played} / ${run.total}`;
 
     return (
         <section
@@ -45,12 +44,12 @@ export function DecodedPuzzles({ className }: Props) {
                     {progress}
                 </span>
             </div>
-            <ol aria-labelledby={headingId} className="flex flex-col gap-0.5">
-                {puzzles.map((puzzle) => (
+            <ol className="flex flex-col gap-0.5">
+                {run.puzzles.map((puzzle) => (
                     <PuzzleRow
                         key={puzzle.number}
                         puzzle={puzzle}
-                        clue={round.clue ?? []}
+                        clue={round?.clue ?? []}
                     />
                 ))}
             </ol>
@@ -131,6 +130,9 @@ function PuzzleBody({
     if (puzzle.state === 'current') {
         return (
             <span className="flex min-w-0 flex-col">
+                <span className="sr-only">
+                    {t('Puzzle :number', { number: puzzle.number })}
+                </span>
                 {clue.length > 0 && <ClueText clue={clue} />}
                 <span className="truncate text-xs font-semibold text-skrum-primary-text">
                     {t('Puzzle in progress')}

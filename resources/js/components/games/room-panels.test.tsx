@@ -88,13 +88,19 @@ function snapshot(
     } as unknown as GameSnapshot;
 }
 
-function Room({ snapshot }: { snapshot: GameSnapshot }) {
-    const panels = useRoomPanels({ snapshot, lastEnded: null });
+function Room({
+    snapshot,
+    watchChoice = false,
+}: {
+    snapshot: GameSnapshot;
+    watchChoice?: boolean;
+}) {
+    const panels = useRoomPanels({ snapshot, lastEnded: null, watchChoice });
 
     return <GameLayout {...panels} stage={<p>stage</p>} />;
 }
 
-function renderRoom(value: GameSnapshot) {
+function renderRoom(value: GameSnapshot, watchChoice = false) {
     const ctx = {
         snapshot: value,
         lastEnded: null,
@@ -105,7 +111,7 @@ function renderRoom(value: GameSnapshot) {
 
     renderWithProviders(
         <RoomProvider value={ctx}>
-            <Room snapshot={value} />
+            <Room snapshot={value} watchChoice={watchChoice} />
         </RoomProvider>,
     );
 }
@@ -225,6 +231,77 @@ describe('useRoomPanels', () => {
         expect(
             left?.querySelector('[data-slot="game-settings-card"]'),
         ).toBeNull();
+    });
+
+    it('keeps the puzzles of Decoded between two rounds of the game for a player', () => {
+        viewport(100);
+        const value = snapshot('decoded', null, {
+            isHost: false,
+            canManage: false,
+        });
+
+        value.room.settings.roundsPerGame = 8;
+        value.history = [3, 2, 1].map(
+            (number) =>
+                ({
+                    id: `round-${number}`,
+                    game: 'decoded',
+                    number,
+                    roundsTotal: 8,
+                    word: `word ${number}`,
+                    winnerName: null,
+                    clue: ['🦁'],
+                }) as GameSnapshot['history'][number],
+        );
+        renderRoom(value);
+
+        const left = document.querySelector<HTMLElement>(
+            '[data-slot="game-left"]',
+        );
+
+        expect(left?.getAttribute('aria-label')).toBe('Puzzles');
+        expect(
+            within(left!)
+                .getAllByRole('listitem')
+                .map((row) => row.getAttribute('data-state')),
+        ).toEqual([
+            'done',
+            'done',
+            'done',
+            'next',
+            'next',
+            'next',
+            'next',
+            'next',
+        ]);
+    });
+
+    it('keeps the game cards of a retro reachable behind a chooser for its players during a Decoded round', async () => {
+        viewport(100);
+        renderRoom(
+            snapshot(
+                'decoded',
+                { number: 2, roundsTotal: 3 },
+                { isHost: false, canManage: false },
+            ),
+            true,
+        );
+
+        const left = document.querySelector<HTMLElement>(
+            '[data-slot="game-left"]',
+        );
+
+        expect(
+            left?.querySelector('[data-slot="decoded-puzzles"]'),
+        ).not.toBeNull();
+
+        await userEvent.click(
+            within(left!).getByRole('button', { name: 'Games' }),
+        );
+
+        const sheet = await screen.findByRole('dialog');
+
+        expect(sheet.querySelector('[data-slot="game-picker"]')).not.toBeNull();
     });
 
     it('keeps the puzzles of Decoded off a phone, where the round line stands for them', () => {

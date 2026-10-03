@@ -34,13 +34,21 @@ function ended(
 
 function renderPuzzles(
     history: GameHistoryRound[],
-    round: Partial<GameRound> & { game?: GameKind },
+    round: (Partial<GameRound> & { game?: GameKind }) | null,
+    roundsPerGame: number | null = round?.roundsTotal ?? null,
 ) {
     const ctx = {
         snapshot: {
-            room: { id: 'room', game: 'decoded' },
+            room: {
+                id: 'room',
+                game: round?.game ?? 'decoded',
+                settings: { roundsPerGame },
+            },
             history,
-            round: { id: 'now', game: 'decoded', clue: [], ...round },
+            round:
+                round === null
+                    ? null
+                    : { id: 'now', game: 'decoded', clue: [], ...round },
         } as unknown as GameSnapshot,
     } as unknown as RoomContextValue;
 
@@ -90,6 +98,7 @@ describe('DecodedPuzzles', () => {
 
         expect(playing.getAttribute('aria-current')).toBe('step');
         expect(within(playing).getByText('Puzzle in progress')).toBeTruthy();
+        expect(within(playing).getByText('Puzzle 4')).toBeTruthy();
         expect(
             within(playing).getByRole('img', { name: 'Clue: 🧊' }),
         ).toBeTruthy();
@@ -122,6 +131,18 @@ describe('DecodedPuzzles', () => {
         );
 
         expect(within(rows()[0]).getByText('Not found')).toBeTruthy();
+    });
+
+    it('keeps the list between two rounds, with no current row', () => {
+        renderPuzzles([ended(3), ended(2), ended(1)], null, 8);
+
+        expect(screen.getByText('3 / 8')).toBeTruthy();
+        expect(rows()).toHaveLength(8);
+        expect(
+            rows().filter((row) => row.getAttribute('aria-current') !== null),
+        ).toHaveLength(0);
+        expect(within(rows()[2]).getByText('Word 3')).toBeTruthy();
+        expect(rows()[3].textContent).toContain('Puzzle 4');
     });
 
     it('shows nothing for another game', () => {

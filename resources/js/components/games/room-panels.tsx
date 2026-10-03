@@ -112,10 +112,22 @@ export function useRoomPanels({
 
     /**
      * Decoded's puzzles hold the left column, above the settings card, as in
-     * its mockup; the host's game cards wait behind the chooser. On a phone
-     * the round line of the stage stands for them.
+     * its mockup, during a round and between two rounds of the game; the
+     * host's game cards wait behind the chooser, and so do the read-only
+     * cards of a retro's players. On a phone the round line of the stage
+     * stands for them.
      */
-    if (!isPhone && decodedPuzzles(snapshot.history, round).length > 0) {
+    if (!isPhone && decodedPuzzles(snapshot.history, round, room) !== null) {
+        const watchedCards: GameLayoutPanel | undefined =
+            watchChoice && hasLeftColumn
+                ? {
+                      id: 'choice',
+                      label: t('Games'),
+                      icon: Shapes,
+                      content: <GamePicker readOnly />,
+                  }
+                : undefined;
+
         return {
             variant: 'choice',
             left: {
@@ -141,7 +153,7 @@ export function useRoomPanels({
                       ...choice,
                       content: <GamePicker inRetro={watchChoice} />,
                   }
-                : undefined,
+                : watchedCards,
         };
     }
 
