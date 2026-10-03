@@ -10,10 +10,13 @@ import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
-/** An integer from 1 to the scale; the server stores 1..10. */
+/**
+ * An integer from 1 to the scale; the server stores 1..5 (1..10 on an
+ * imported health check left open at the upgrade).
+ */
 export type HealthScore = number;
 
-export const healthCheckScale = 10;
+export const healthCheckScale = 5;
 
 export interface HealthCheckRespondent {
     id: string;
@@ -39,7 +42,7 @@ export interface HealthCheckFormProps {
     statements: HealthCheckFormStatement[];
     /** Scores by statement key. */
     answers?: Record<string, HealthScore | null | undefined>;
-    /** Highest score; the server validates 1..10. */
+    /** Highest score: 5, or 10 on an imported health check left open. */
     scale?: number;
     /** Each answer is saved on its own (PUT). */
     onAnswer: (statementKey: string, value: HealthScore) => void;
@@ -359,9 +362,9 @@ export function HealthCheckForm({
                     id={endsId}
                     className="flex justify-between gap-3 text-xs text-muted-foreground"
                 >
-                    <span>{t(':score · Awful', { score: 1 })}</span>
+                    <span>{t(':score · Strongly disagree', { score: 1 })}</span>
                     <span className="text-right">
-                        {t(':score · Great', { score: scale })}
+                        {t(':score · Strongly agree', { score: scale })}
                     </span>
                 </p>
             </div>

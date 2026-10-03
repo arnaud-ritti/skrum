@@ -20,6 +20,7 @@ function statement(key: string, average: number | null): HealthStatementResult {
         average,
         count: average === null ? 0 : 3,
         previousAverage: null,
+        distribution: [0, 0, 0, 0, 0],
     };
 }
 
@@ -32,17 +33,18 @@ describe('HealthRadar', () => {
         const { container } = render(
             <HealthRadar
                 statements={[
-                    statement('Fun', 8),
-                    statement('Speed', 6.5),
-                    statement('Trust', 9),
+                    statement('Fun', 4),
+                    statement('Vision', 3.5),
+                    statement('Trust', 4.5),
                 ]}
             />,
         );
 
         const radar = screen.getByRole('img', { name: 'Team health radar' });
 
+        expect(screen.getByText('Vision')).toBeTruthy();
         expect(radar.querySelector('desc')?.textContent).toBe(
-            'Fun: 8.0/10; Speed: 6.5/10; Trust: 9.0/10',
+            'Fun: 4.0/5; Vision: 3.5/5; Trust: 4.5/5',
         );
         expect(
             container.querySelectorAll('polygon.fill-primary\\/20'),
@@ -55,10 +57,10 @@ describe('HealthRadar', () => {
         const { container } = render(
             <HealthRadar
                 statements={[
-                    statement('Fun', 8),
-                    statement('Speed', 6.5),
+                    statement('Fun', 4),
+                    statement('Speed', 3.3),
                     statement('Trust', null),
-                    statement('Pace', 4),
+                    statement('Pace', 2),
                 ]}
             />,
         );

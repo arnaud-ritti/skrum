@@ -44,6 +44,7 @@ function health(
             participants: 2,
             hasSubmitted: false,
             statements: [statement(), vision],
+            results: null,
             ...state,
         },
     });

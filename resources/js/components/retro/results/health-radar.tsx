@@ -5,7 +5,9 @@ const ViewBoxSize = 320;
 const Center = ViewBoxSize / 2;
 const Radius = 100;
 const LabelRadius = 118;
-const Rings = [2.5, 5, 7.5, 10];
+/** The health scale every reader reports on. */
+export const HealthMax = 5;
+const Rings = [1.25, 2.5, 3.75, HealthMax];
 
 type Point = { x: number; y: number };
 
@@ -27,7 +29,7 @@ function pointAt(index: number, total: number, distance: number): Point {
 }
 
 function scorePoint(index: number, total: number, score: number): Point {
-    return pointAt(index, total, (Radius * score) / 10);
+    return pointAt(index, total, (Radius * score) / HealthMax);
 }
 
 function textAnchor(index: number, total: number): 'start' | 'middle' | 'end' {
@@ -65,7 +67,7 @@ export function HealthRadar({
     const summary = statements
         .map(
             (statement) =>
-                `${statement.label}: ${statement.average === null ? t('No answers') : `${formatScore(statement.average)}/10`}`,
+                `${statement.label}: ${statement.average === null ? t('No answers') : `${formatScore(statement.average)}/${HealthMax}`}`,
         )
         .join('; ');
     const segments = scored.flatMap((point, index) => {
@@ -95,7 +97,7 @@ export function HealthRadar({
                 />
             ))}
             {statements.map((statement, index) => {
-                const end = scorePoint(index, total, 10);
+                const end = scorePoint(index, total, HealthMax);
 
                 return (
                     <line

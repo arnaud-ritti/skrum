@@ -1,16 +1,16 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Surveys\HealthScale;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function completedRetro(Team $team, string $completedAt, array $attributes = []): Retro
@@ -21,22 +21,19 @@ function completedRetro(Team $team, string $completedAt, array $attributes = [])
     ]);
 }
 
+/**
+ * Each voter's scores on ten, as before plan 19; the health check is closed
+ * at the retro's completion time.
+ *
+ * @param  array<int, array<string, int>>  $scoresByVoter
+ */
 function withHealthScores(Retro $retro, array $scoresByVoter): Retro
 {
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
     foreach ($scoresByVoter as $scores) {
-        $participant = Participant::factory()->create(['retro_id' => $retro->id]);
-
-        foreach ($scores as $statement => $score) {
-            HealthCheckAnswer::factory()->create([
-                'retro_id' => $retro->id,
-                'participant_id' => $participant->id,
-                'statement' => $statement,
-                'score' => $score,
-            ]);
-        }
+        answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores, HealthScale::LegacyMax);
     }
+
+    closeHealthCheck($retro);
 
     return $retro;
 }
@@ -60,6 +57,7 @@ it('gives one point per completed retro with a mood or a ROTI, in date order, wi
 
     expect(collect($points)->pluck('retroId')->all())->toBe([$rotiOnly->id, $both->id, $moodOnly->id])
         ->and($points[0])->toMatchArray([
+            'surveyId' => null,
             'title' => $rotiOnly->title,
             'completedAt' => $rotiOnly->completed_at->toIso8601String(),
             'url' => route('retros.show', $rotiOnly),
@@ -68,20 +66,20 @@ it('gives one point per completed retro with a mood or a ROTI, in date order, wi
             'roti' => 4.0,
             'rotiVoters' => 3,
         ])
-        ->and($points[1])->toMatchArray(['mood' => 6.0, 'moodVoters' => 1, 'roti' => 2.5, 'rotiVoters' => 2])
-        ->and($points[2])->toMatchArray(['mood' => 7.5, 'moodVoters' => 2, 'roti' => null, 'rotiVoters' => 0]);
+        ->and($points[1])->toMatchArray(['surveyId' => resolve(HealthCheckSurvey::class)->forRetro($both)->id, 'mood' => 3.0, 'moodVoters' => 1, 'roti' => 2.5, 'rotiVoters' => 2])
+        ->and($points[2])->toMatchArray(['surveyId' => resolve(HealthCheckSurvey::class)->forRetro($moodOnly)->id, 'mood' => 3.8, 'moodVoters' => 2, 'roti' => null, 'rotiVoters' => 0]);
 });
 
-it('counts as mood voters only the participants who answered in that retro', function () {
+it('counts as mood voters only the people who answered the health check of that retro', function () {
     $team = Team::factory()->create();
     $retro = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 6]]);
-    $other = completedRetro($team, '2026-02-01 10:00:00');
-    $silentHere = Participant::factory()->create(['retro_id' => $retro->id]);
-    HealthCheckAnswer::factory()->create(['retro_id' => $other->id, 'participant_id' => $silentHere->id, 'statement' => 'vision', 'score' => 4]);
+    Participant::factory()->create(['retro_id' => $retro->id]);
+    $other = withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 4], ['vision' => 8]]);
 
     $points = collect(resolve(BuildTeamMoodTrend::class)->handle($team))->keyBy('retroId');
 
-    expect($points->get($retro->id)['moodVoters'])->toBe(1);
+    expect($points->get($retro->id)['moodVoters'])->toBe(1)
+        ->and($points->get($other->id)['moodVoters'])->toBe(2);
 });
 
 it('skips a completed retro with neither a mood nor a ROTI vote', function () {

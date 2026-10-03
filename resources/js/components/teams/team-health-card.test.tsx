@@ -79,7 +79,7 @@ describe('the health check card of a team', () => {
         ]);
         expect(
             within(region).getByText(
-                '2 statements asked at the end of each retro, scored 1–10.',
+                '2 statements, scored 1–5, asked in every health check',
             ),
         ).toBeTruthy();
     });

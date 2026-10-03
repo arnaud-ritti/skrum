@@ -1,41 +1,39 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
+use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Enums\RetroPhase;
-use App\Models\HealthCheckAnswer;
+use App\Enums\TeamSurveyStatus;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Surveys\HealthScale;
 
 /**
+ * Scores on ten reproduce the health checks of before plan 19; the summary
+ * reads them on the health scale (spec §11.9).
+ *
  * @param  array<string, array<int, int|null>>  $scores  statement key => score per participant (null = skipped)
  */
-function summarizedRetro(array $scores, int $silentParticipants = 0, ?Retro $retro = null): Retro
+function summarizedRetro(array $scores, int $silentParticipants = 0, ?Retro $retro = null, int $scaleMax = HealthScale::LegacyMax): Retro
 {
     $retro ??= Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-
-    if (! $retro->healthStatements()->exists()) {
-        resolve(FreezeHealthStatements::class)->handle($retro);
-    }
 
     $respondents = max(array_map(count(...), $scores ?: [[]]));
     $participants = Participant::factory()->count($respondents + $silentParticipants)->create(['retro_id' => $retro->id]);
 
-    foreach ($scores as $statement => $statementScores) {
-        foreach ($statementScores as $index => $score) {
-            if ($score === null) {
-                continue;
-            }
+    for ($index = 0; $index < $respondents; $index++) {
+        $own = array_filter(
+            array_map(fn (array $statementScores): ?int => $statementScores[$index] ?? null, $scores),
+            fn (?int $score): bool => $score !== null,
+        );
 
-            HealthCheckAnswer::factory()->create([
-                'retro_id' => $retro->id,
-                'participant_id' => $participants[$index]->id,
-                'statement' => $statement,
-                'score' => $score,
-            ]);
+        if ($own !== []) {
+            answerHealthCheck($retro, $participants[$index], $own, $scaleMax);
         }
     }
+
+    closeHealthCheck($retro);
 
     return $retro->fresh();
 }
@@ -49,19 +47,19 @@ it('reports every answered statement and excludes the others', function () {
     $summary = healthSummary(summarizedRetro(['interaction' => [8, 6], 'task_clarity' => [4]]));
     $statements = collect($summary['statements'])->keyBy('key');
 
-    expect($statements['interaction'])->toMatchArray(['average' => 7.0, 'count' => 2])
-        ->and($statements['task_clarity'])->toMatchArray(['average' => 4.0, 'count' => 1, 'label' => 'Clear tasks'])
-        ->and($statements['vision'])->toMatchArray(['average' => null, 'count' => 0])
-        ->and($summary['score'])->toBe(5.5)
-        ->and($summary['topStrength'])->toBe(['key' => 'interaction', 'label' => 'Interaction', 'average' => 7.0])
-        ->and($summary['growthArea'])->toBe(['key' => 'task_clarity', 'label' => 'Clear tasks', 'average' => 4.0]);
+    expect($statements['interaction'])->toMatchArray(['average' => 3.5, 'count' => 2])
+        ->and($statements['task_clarity'])->toMatchArray(['average' => 2.0, 'count' => 1, 'label' => 'Clear tasks'])
+        ->and($statements['vision'])->toMatchArray(['average' => null, 'count' => 0, 'distribution' => [0, 0, 0, 0, 0]])
+        ->and($summary['score'])->toBe(2.8)
+        ->and($summary['topStrength'])->toBe(['key' => 'interaction', 'label' => 'Interaction', 'average' => 3.5])
+        ->and($summary['growthArea'])->toBe(['key' => 'task_clarity', 'label' => 'Clear tasks', 'average' => 2.0]);
 });
 
 it('reports an average from a single answer and no strength or growth area', function () {
     $summary = healthSummary(summarizedRetro(['vision' => [3]]));
 
-    expect(collect($summary['statements'])->firstWhere('key', 'vision')['average'])->toBe(3.0)
-        ->and($summary['score'])->toBe(3.0)
+    expect(collect($summary['statements'])->firstWhere('key', 'vision')['average'])->toBe(1.5)
+        ->and($summary['score'])->toBe(1.5)
         ->and($summary['topStrength'])->toBeNull()
         ->and($summary['growthArea'])->toBeNull();
 });
@@ -98,12 +96,12 @@ it('assesses the score by band', function (array $scores, float $score, string $
         ->and($summary['assessment']['band'])->toBe($band)
         ->and($summary['assessment']['title'])->toBe($title);
 })->with([
-    'eight' => [['vision' => [8]], 8.0, 'excellent', 'Excellent'],
-    'seven and a half' => [['vision' => [8, 7]], 7.5, 'good', 'Good'],
-    'six' => [['vision' => [6]], 6.0, 'good', 'Good'],
-    'five and a half' => [['vision' => [6, 5]], 5.5, 'needs_attention', 'Needs attention'],
-    'four' => [['vision' => [4]], 4.0, 'needs_attention', 'Needs attention'],
-    'three and a half' => [['vision' => [4, 3]], 3.5, 'critical', 'Critical'],
+    'four' => [['vision' => [8]], 4.0, 'excellent', 'Excellent'],
+    'three point eight' => [['vision' => [8, 7]], 3.8, 'good', 'Good'],
+    'three' => [['vision' => [6]], 3.0, 'good', 'Good'],
+    'two point eight' => [['vision' => [6, 5]], 2.8, 'needs_attention', 'Needs attention'],
+    'two' => [['vision' => [4]], 2.0, 'needs_attention', 'Needs attention'],
+    'one point eight' => [['vision' => [4, 3]], 1.8, 'critical', 'Critical'],
 ]);
 
 it('explains the good band with the spec sentence', function () {
@@ -111,11 +109,11 @@ it('explains the good band with the spec sentence', function () {
         ->toBe('Most health scores are above average. Keep the momentum going.');
 });
 
-it('summarises nothing when the health check is off or unanswered', function () {
-    $answeredButOff = summarizedRetro(['vision' => [7]]);
-    $answeredButOff->update(['health_check_enabled' => false]);
+it('summarises nothing when the health check is removed or unanswered', function () {
+    $answeredButRemoved = summarizedRetro(['vision' => [7]]);
+    resolve(HealthCheckSurvey::class)->forRetro($answeredButRemoved)->update(['status' => TeamSurveyStatus::Draft, 'closed_at' => null]);
 
-    expect(healthSummary($answeredButOff->fresh()))->toBeNull()
+    expect(healthSummary($answeredButRemoved->fresh()))->toBeNull()
         ->and(healthSummary(summarizedRetro([])))->toBeNull();
 });
 
@@ -131,9 +129,9 @@ it('summarises the frozen set of 3 and of 10 statements', function (int $customs
         $manage->archive($retro->team, $statement);
     }
 
-    resolve(FreezeHealthStatements::class)->handle($retro);
+    $firstKey = resolve(HealthCheckSurvey::class)->forRetro($retro)->questions()->first()->match_key;
 
-    $summary = healthSummary(summarizedRetro([$retro->healthStatements()->first()->key => [6]], retro: $retro));
+    $summary = healthSummary(summarizedRetro([$firstKey => [6]], retro: $retro));
 
     expect($summary['statements'])->toHaveCount($expected);
 })->with([
@@ -144,19 +142,27 @@ it('summarises the frozen set of 3 and of 10 statements', function (int $customs
 it('labels custom statements as typed', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
     $custom = resolve(ManageTeamHealthStatements::class)->add($retro->team, 'We shipped what we promised', 'Delivery');
-    resolve(FreezeHealthStatements::class)->handle($retro);
 
     $summary = healthSummary(summarizedRetro([$custom->id => [9], 'vision' => [3]], retro: $retro));
 
-    expect($summary['topStrength'])->toBe(['key' => $custom->id, 'label' => 'Delivery', 'average' => 9.0])
+    expect($summary['topStrength'])->toBe(['key' => $custom->id, 'label' => 'Delivery', 'average' => 4.5])
         ->and(collect($summary['statements'])->firstWhere('key', $custom->id))->toMatchArray([
             'text' => 'We shipped what we promised',
             'isBuiltin' => false,
         ]);
 });
 
+it('summarises a health check answered on five as given', function () {
+    $summary = healthSummary(summarizedRetro(['vision' => [4, 5, 3]], scaleMax: HealthScale::Max));
+    $vision = collect($summary['statements'])->firstWhere('key', 'vision');
+
+    expect($vision)->toMatchArray(['average' => 4.0, 'count' => 3, 'distribution' => [0, 0, 1, 1, 1]])
+        ->and($summary['score'])->toBe(4.0)
+        ->and($summary['assessment']['band'])->toBe('excellent');
+});
+
 it('averages the one-decimal statement averages into the score', function () {
-    $summary = healthSummary(summarizedRetro(['interaction' => [1, 2, 2], 'vision' => [1, 1, 2, 2, 2]]));
+    $summary = healthSummary(summarizedRetro(['interaction' => [1, 2, 2], 'vision' => [1, 1, 2, 2, 2]], scaleMax: HealthScale::Max));
 
     expect(collect($summary['statements'])->pluck('average', 'key')->only(['interaction', 'vision'])->all())
         ->toBe(['interaction' => 1.7, 'vision' => 1.6])
@@ -176,9 +182,9 @@ it('reports the previous average of a statement present in the previous retro', 
 
     $statements = collect(healthSummary(summarizedRetro(['vision' => [8], 'task_clarity' => [5]], retro: $current))['statements'])->keyBy('key');
 
-    expect($statements['vision']['previousAverage'])->toBe(6.5)
+    expect($statements['vision']['previousAverage'])->toBe(3.3)
         ->and($statements['task_clarity']['previousAverage'])->toBeNull()
-        ->and($statements['interaction']['previousAverage'])->toBe(4.0);
+        ->and($statements['interaction']['previousAverage'])->toBe(2.0);
 });
 
 it('uses the retro just before this one and ignores later and other-team retros', function () {
@@ -194,7 +200,7 @@ it('uses the retro just before this one and ignores later and other-team retros'
 
     $statements = collect(healthSummary(summarizedRetro(['vision' => [5]], retro: $current))['statements'])->keyBy('key');
 
-    expect($statements['vision']['previousAverage'])->toBe(9.0);
+    expect($statements['vision']['previousAverage'])->toBe(4.5);
 });
 
 it('has no previous average for the first health check of the team', function () {

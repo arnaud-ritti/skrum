@@ -42,8 +42,8 @@ function radios(label: string): HTMLElement[] {
 }
 
 describe('HealthCheckForm', () => {
-    it('offers the server scale, 1 to 10, with the selected value checked', () => {
-        setup({ a: 8 });
+    it('offers the health scale, 1 to 5, with the selected value checked', () => {
+        setup({ a: 4 });
 
         const group = screen.getByRole('radiogroup', {
             name: 'Interaction was productive',
@@ -52,21 +52,23 @@ describe('HealthCheckForm', () => {
         expect(screen.getAllByRole('radiogroup')).toHaveLength(2);
         expect(
             radios('Interaction was productive').map((r) => r.textContent),
-        ).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+        ).toEqual(['1', '2', '3', '4', '5']);
         expect(
             screen
                 .getAllByRole('radio', { checked: true })
                 .map((r) => r.getAttribute('aria-label')),
-        ).toEqual(['Score 8']);
+        ).toEqual(['Score 4']);
         expect(group.getAttribute('aria-describedby')).toBeTruthy();
-        expect(screen.getByText('10 · Great')).toBeTruthy();
+        expect(screen.getByText('1 · Strongly disagree')).toBeTruthy();
+        expect(screen.getByText('5 · Strongly agree')).toBeTruthy();
     });
 
-    it('shows an existing answer above 5 taken from the statement', () => {
+    it('shows an existing answer above 5 on an imported health check on ten', () => {
         renderWithProviders(
             <HealthCheckForm
                 retroTitle="Sprint 42"
                 statements={[{ ...statements[0], myScore: 9 }, statements[1]]}
+                scale={10}
                 onAnswer={vi.fn()}
             />,
         );
@@ -79,8 +81,8 @@ describe('HealthCheckForm', () => {
         expect(screen.getByText('1 of 2 answered')).toBeTruthy();
     });
 
-    it('answers by click and by the digit keys, 0 meaning 10', async () => {
-        const { onAnswer } = setup();
+    it('answers by click and by the digit keys, 0 meaning 10 on a scale of ten', async () => {
+        const { onAnswer } = setup({}, { scale: 10 });
 
         await userEvent.click(radios('Interaction was productive')[6]);
         expect(onAnswer).toHaveBeenLastCalledWith('a', 7);
@@ -94,21 +96,22 @@ describe('HealthCheckForm', () => {
     });
 
     it('moves the answer with the arrow keys and wraps', async () => {
-        const { onAnswer } = setup({ a: 10 });
+        const { onAnswer } = setup({ a: 5 });
 
-        radios('Interaction was productive')[9].focus();
+        radios('Interaction was productive')[4].focus();
         await userEvent.keyboard('{ArrowRight}');
 
         expect(onAnswer).toHaveBeenLastCalledWith('a', 1);
     });
 
-    it('keeps a 1 to 5 scale when asked', async () => {
-        const { onAnswer } = setup({}, { scale: 5 });
+    it('ignores a digit above five, and 0, on the health scale', async () => {
+        const { onAnswer } = setup();
 
         expect(radios('Interaction was productive')).toHaveLength(5);
 
         radios('Interaction was productive')[0].focus();
         await userEvent.keyboard('7');
+        await userEvent.keyboard('0');
 
         expect(onAnswer).not.toHaveBeenCalled();
     });
@@ -386,7 +389,7 @@ describe('HealthCheckForm', () => {
 
         expect(
             container.querySelectorAll('[role="radio"]:disabled'),
-        ).toHaveLength(20);
+        ).toHaveLength(10);
         expect(screen.queryByRole('button', { name: /^Clear/ })).toBeNull();
 
         rerender(
@@ -404,6 +407,6 @@ describe('HealthCheckForm', () => {
         ).toHaveLength(0);
         expect(
             container.querySelectorAll('[role="radio"][aria-disabled="true"]'),
-        ).toHaveLength(20);
+        ).toHaveLength(10);
     });
 });

@@ -56,10 +56,10 @@ export function HealthCheckSummary({
                     <CardDescription data-slot="health-check-summary-facts">
                         {statements.length === 1
                             ? t(
-                                  '1 statement asked at the end of each retro, scored 1–10.',
+                                  '1 statement, scored 1–5, asked in every health check',
                               )
                             : t(
-                                  ':count statements asked at the end of each retro, scored 1–10.',
+                                  ':count statements, scored 1–5, asked in every health check',
                                   { count: statements.length },
                               )}
                     </CardDescription>

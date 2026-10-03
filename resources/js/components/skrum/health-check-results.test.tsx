@@ -11,29 +11,29 @@ const results: HealthCheckResult[] = [
     {
         key: 'a',
         label: 'Interaction',
-        distribution: [0, 0, 0, 0, 0, 1, 1, 4, 1, 1],
-        average: 8,
-        previousAverage: 7.7,
+        distribution: [0, 0, 1, 4, 3],
+        average: 4,
+        previousAverage: 3.7,
     },
     {
         key: 'b',
         label: 'Manager support',
-        distribution: [0, 0, 0, 0, 0, 0, 1, 3, 2, 2],
-        average: 8.8,
-        previousAverage: 8.8,
+        distribution: [0, 0, 0, 3, 5],
+        average: 4.4,
+        previousAverage: 4.4,
     },
     {
         key: 'c',
         label: 'Processes',
-        distribution: [1, 1, 2, 2, 1, 1, 0, 0, 0, 0],
-        average: 4.4,
-        previousAverage: 5,
+        distribution: [2, 2, 3, 1, 0],
+        average: 2.2,
+        previousAverage: 2.8,
     },
     {
         key: 'd',
         label: 'Vision',
-        distribution: [0, 0, 1, 1, 2, 2, 1, 1, 0, 0],
-        average: 6.4,
+        distribution: [0, 1, 2, 3, 2],
+        average: 3.2,
     },
 ];
 
@@ -42,7 +42,7 @@ const serverResults: HealthCheckResult[] = [
         key: 'interaction',
         label: 'Interaction',
         text: 'Interaction with colleagues was productive',
-        average: 8.25,
+        average: 4.13,
         count: 8,
     },
     {
@@ -72,13 +72,13 @@ function row(label: string): HTMLElement {
 }
 
 describe('HealthCheckResults', () => {
-    it('shows the average out of 10, a written trend and an accessible distribution', () => {
+    it('shows the average out of 5, a written trend and an accessible distribution', () => {
         show();
 
         const interaction = row('Interaction');
         expect(
             interaction.querySelector('[data-slot="health-mean"]')?.textContent,
-        ).toBe('8.0/10');
+        ).toBe('4.0/5');
         expect(
             interaction.querySelector('[data-trend="up"]')?.textContent,
         ).toContain('+0.3');
@@ -87,12 +87,10 @@ describe('HealthCheckResults', () => {
         ).toContain('vs sprint 41');
         expect(
             within(interaction).getByRole('img').getAttribute('aria-label'),
-        ).toBe(
-            '1 : 0 · 2 : 0 · 3 : 0 · 4 : 0 · 5 : 0 · 6 : 1 · 7 : 1 · 8 : 4 · 9 : 1 · 10 : 1',
-        );
-        expect(screen.getByText('Alert threshold · 6/10')).toBeTruthy();
-        expect(screen.getByText('1–2 · Awful')).toBeTruthy();
-        expect(screen.getByText('9–10 · Great')).toBeTruthy();
+        ).toBe('1 : 0 · 2 : 0 · 3 : 1 · 4 : 4 · 5 : 3');
+        expect(screen.getByText('Alert threshold · 3/5')).toBeTruthy();
+        expect(screen.getByText('1 · Awful')).toBeTruthy();
+        expect(screen.getByText('5 · Great')).toBeTruthy();
     });
 
     it('renders the server payload: average or no answers, count, no bars', () => {
@@ -102,7 +100,7 @@ describe('HealthCheckResults', () => {
 
         expect(
             interaction.querySelector('[data-slot="health-mean"]')?.textContent,
-        ).toBe('8.3/10');
+        ).toBe('4.1/5');
         expect(within(interaction).getByText('8 answered')).toBeTruthy();
         expect(
             within(interaction).getByText(
@@ -122,8 +120,8 @@ describe('HealthCheckResults', () => {
         show({
             results: serverResults,
             summary: {
-                score: 7.4,
-                topStrength: { label: 'Interaction', average: 8.25 },
+                score: 3.7,
+                topStrength: { label: 'Interaction', average: 4.13 },
                 growthArea: null,
                 alignment: { value: 6, label: 'Moderate alignment' },
                 assessment: {
@@ -138,9 +136,9 @@ describe('HealthCheckResults', () => {
             '[data-slot="health-summary"]',
         ) as HTMLElement;
 
-        expect(within(summary).getByText('7.4/10')).toBeTruthy();
+        expect(within(summary).getByText('3.7/5')).toBeTruthy();
         expect(within(summary).getByText('Top strength')).toBeTruthy();
-        expect(within(summary).getByText('8.3/10')).toBeTruthy();
+        expect(within(summary).getByText('4.1/5')).toBeTruthy();
         expect(within(summary).queryByText('Growth area')).toBeNull();
         expect(within(summary).getByText('6/10')).toBeTruthy();
         expect(within(summary).getByText('Moderate alignment')).toBeTruthy();
@@ -148,19 +146,23 @@ describe('HealthCheckResults', () => {
         expect(screen.getByTestId('radar')).toBeTruthy();
     });
 
-    it('keeps a 1 to 5 scale when asked', () => {
+    it('draws the five segments of the distribution the server sends', () => {
         show({
-            scale: 5,
             results: [
                 {
                     key: 'a',
                     label: 'Interaction',
                     average: 2.2,
-                    distribution: [2, 3, 2, 1, 0],
+                    distribution: [2, 3, 2, 1, 1],
                 },
             ],
         });
 
+        expect(
+            row('Interaction').querySelectorAll(
+                '[data-slot="health-distribution"] > span',
+            ),
+        ).toHaveLength(5);
         expect(
             row('Interaction').querySelector('[data-slot="health-mean"]')
                 ?.textContent,
@@ -191,7 +193,7 @@ describe('HealthCheckResults', () => {
     });
 
     it('honours a custom alert threshold', () => {
-        show({ alertThreshold: 9 });
+        show({ alertThreshold: 4.5 });
 
         expect(screen.getAllByText('Needs attention')).toHaveLength(4);
     });
@@ -244,7 +246,7 @@ describe('HealthCheckResults', () => {
             results: Array.from({ length: 200 }, (_, index) => ({
                 key: `s${index}`,
                 label: `${'L'.repeat(56)} ${index}`,
-                average: (index % 10) + 1,
+                average: (index % 5) + 1,
                 count: 8,
             })),
         });

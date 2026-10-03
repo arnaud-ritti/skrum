@@ -17,6 +17,7 @@ class PresentHealthCheck
     public function __construct(
         private HealthCheckSurvey $healthCheckSurvey,
         private PresentHealthProgress $presentHealthProgress,
+        private SummarizeHealthCheck $summarizeHealthCheck,
     ) {}
 
     /**
@@ -27,7 +28,8 @@ class PresentHealthCheck
      *     respondents: int,
      *     participants: int,
      *     hasSubmitted: bool,
-     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, myScore: ?int}>
+     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, myScore: ?int}>,
+     *     results: ?array<string, mixed>
      * }|null
      */
     public function handle(Retro $retro, Participant $viewer): ?array
@@ -62,6 +64,7 @@ class PresentHealthCheck
                 'isBuiltin' => $question->builtin !== null,
                 'myScore' => $myScores[$question->id] ?? null,
             ])->values()->all(),
+            'results' => $survey->status === TeamSurveyStatus::Closed ? $this->summarizeHealthCheck->handle($retro, $viewer) : null,
         ];
     }
 
@@ -69,7 +72,7 @@ class PresentHealthCheck
      * Reads the viewer's respondent without creating one: a snapshot must
      * not add rows.
      */
-    private function respondentOf(TeamSurvey $survey, Participant $viewer): ?TeamSurveyRespondent
+    public function respondentOf(TeamSurvey $survey, Participant $viewer): ?TeamSurveyRespondent
     {
         return TeamSurveyRespondent::query()
             ->where('team_survey_id', $survey->id)

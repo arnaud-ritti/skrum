@@ -102,6 +102,7 @@ export function toHealthResults(health: HealthResults): {
             average: statement.average,
             count: statement.count,
             previousAverage: statement.previousAverage,
+            distribution: statement.distribution,
         })),
         summary: {
             score: health.score,

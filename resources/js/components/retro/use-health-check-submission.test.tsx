@@ -40,6 +40,7 @@ function healthCheck(
                 myScore: null,
             },
         ],
+        results: null,
         ...overrides,
     };
 }

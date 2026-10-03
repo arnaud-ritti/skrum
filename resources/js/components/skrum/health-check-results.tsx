@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-/** One count per score, from 1 to the scale. */
+/** Answers per score of the health scale, 1 to 5, as the server buckets them. */
 export type HealthDistribution = number[];
 
 /** `key`, `label`, `text`, `average` and `count` as in `HealthStatementResult`. */
@@ -21,7 +21,7 @@ export interface HealthCheckResult {
     /** `null` when nobody answered the statement. */
     average: number | null;
     count?: number;
-    /** Backlog: the server sends no distribution; no bars without it. */
+    /** Answers per score, 1 to 5; no bars without it. */
     distribution?: HealthDistribution;
     /** Backlog: no per-statement comparison on the server. */
     previousAverage?: number | null;
@@ -47,7 +47,7 @@ export interface HealthCheckResultsProps {
     participants: number;
     previousRetroTitle?: string;
     results: HealthCheckResult[];
-    /** Highest score; the server stores 1..10. */
+    /** Highest score: every reader reports on the health scale, 1 to 5. */
     scale?: number;
     /** Defaults to 60 % of the scale. */
     alertThreshold?: number;
@@ -62,7 +62,10 @@ export interface HealthCheckResultsProps {
     className?: string;
 }
 
-export const healthCheckResultsScale = 10;
+export const healthCheckResultsScale = 5;
+
+/** Consensus is reported from 0 to 10 whatever the scale of the scores. */
+const alignmentScale = 10;
 export const healthCheckMinimumRespondents = 3;
 
 const segmentClasses = [
@@ -372,7 +375,7 @@ export function HealthCheckResults({
                       <Stat
                           key="alignment"
                           label={t('Alignment')}
-                          value={`${summary.alignment.value}/${scale}`}
+                          value={`${summary.alignment.value}/${alignmentScale}`}
                           detail={summary.alignment.label}
                       />
                   ) : null,

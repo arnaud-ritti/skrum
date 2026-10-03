@@ -1,6 +1,6 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { HealthTrendPoint } from '@/lib/retro/types';
-import { formatScore } from './health-radar';
+import { formatScore, HealthMax } from './health-radar';
 
 const Width = 220;
 const Height = 56;
@@ -19,10 +19,12 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                 ? Width / 2
                 : Padding +
                   (index * (Width - 2 * Padding)) / (points.length - 1),
-        y: Padding + ((10 - point.score) / 10) * (Height - 2 * Padding),
+        y:
+            Padding +
+            ((HealthMax - point.score) / HealthMax) * (Height - 2 * Padding),
     }));
     const tooltip = (point: HealthTrendPoint): string => {
-        const base = `${point.title}: ${formatScore(point.score)}/10`;
+        const base = `${point.title}: ${formatScore(point.score)}/${HealthMax}`;
 
         return point.sameStatements
             ? base
@@ -47,7 +49,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                     className="fill-none stroke-primary"
                 />
                 {plotted.map(({ point, x, y }) => (
-                    <a key={point.retroId} href={point.url}>
+                    <a key={point.surveyId} href={point.url}>
                         <circle
                             cx={x}
                             cy={y}
