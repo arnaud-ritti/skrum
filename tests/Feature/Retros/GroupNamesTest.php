@@ -84,7 +84,6 @@ it('names groups from grouping to discussing only', function (RetroPhase $phase,
 
     $this->actingAs($user)->putJson(route('retros.cards.group-name.update', [$retro, $lead]), ['name' => 'Deploys'])->assertStatus($status);
 })->with([
-    'health check' => [RetroPhase::HealthCheck, 403],
     'writing' => [RetroPhase::Writing, 403],
     'grouping' => [RetroPhase::Grouping, 200],
     'voting' => [RetroPhase::Voting, 200],

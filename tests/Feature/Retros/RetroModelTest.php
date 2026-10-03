@@ -12,16 +12,14 @@ use App\Models\Vote;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-it('lists the enabled phases in order', function (bool $healthCheck, bool $icebreaker, array $expected) {
-    $retro = Retro::factory()->make(['health_check_enabled' => $healthCheck, 'icebreaker_enabled' => $icebreaker]);
+it('lists the enabled phases in order, the icebreaker first when enabled, else writing', function (bool $icebreaker, array $expected) {
+    $retro = Retro::factory()->make(['icebreaker_enabled' => $icebreaker]);
 
     expect(array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()))->toBe($expected)
         ->and($retro->firstPhase()->value)->toBe($expected[0]);
 })->with([
-    'neither' => [false, false, ['writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
-    'health check' => [true, false, ['health_check', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
-    'icebreaker' => [false, true, ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
-    'both' => [true, true, ['health_check', 'icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
+    'without icebreaker' => [false, ['writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
+    'icebreaker' => [true, ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
 ]);
 
 it('moves only to neighbours among the enabled phases', function () {
@@ -31,7 +29,6 @@ it('moves only to neighbours among the enabled phases', function () {
         ->and($retro->nextPhase())->toBe(RetroPhase::Grouping)
         ->and($retro->canMoveTo(RetroPhase::Icebreaker))->toBeTrue()
         ->and($retro->canMoveTo(RetroPhase::Grouping))->toBeTrue()
-        ->and($retro->canMoveTo(RetroPhase::HealthCheck))->toBeFalse()
         ->and($retro->canMoveTo(RetroPhase::Voting))->toBeFalse()
         ->and($retro->canMoveTo(RetroPhase::Writing))->toBeFalse();
 
@@ -50,9 +47,9 @@ it('knows which phases are open and which hide the cards of others', function ()
     $hiding = array_values(array_filter(RetroPhase::cases(), fn (RetroPhase $phase) => $phase->hidesOthersCards()));
     $open = array_values(array_filter(RetroPhase::cases(), fn (RetroPhase $phase) => $phase->isOpen()));
 
-    expect(array_map(fn (RetroPhase $phase) => $phase->value, $hiding))->toBe(['health_check', 'icebreaker', 'writing'])
+    expect(array_map(fn (RetroPhase $phase) => $phase->value, $hiding))->toBe(['icebreaker', 'writing'])
         ->and($open)->not->toContain(RetroPhase::Completed)
-        ->and($open)->toHaveCount(8);
+        ->and($open)->toHaveCount(7);
 });
 
 it('names members, guests and former members', function () {

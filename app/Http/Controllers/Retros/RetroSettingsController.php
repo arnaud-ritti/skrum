@@ -70,7 +70,7 @@ class RetroSettingsController extends Controller
             }
 
             if (array_key_exists('votes_per_participant', $validated)) {
-                RetroGuard::phase($locked, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping);
+                RetroGuard::phase($locked, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping);
             }
 
             $this->ensureCurrentPhaseStaysOn($locked, $validated);

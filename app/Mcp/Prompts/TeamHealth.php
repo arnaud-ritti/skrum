@@ -24,7 +24,7 @@ class TeamHealth extends SkrumPrompt
 {
     protected string $name = 'team-health';
 
-    protected string $description = "Describe a team's health over its last six completed retrospectives: health score, ROTI, agreements and recurring themes.";
+    protected string $description = "Describe a team's health over its last six completed retrospectives: the score of their health checks, ROTI, agreements and recurring themes.";
 
     private const int BoardCount = 6;
 

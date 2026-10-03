@@ -38,7 +38,6 @@ use Illuminate\Support\Collection;
  * @property bool $hide_vote_counts
  * @property bool $is_locked
  * @property bool $presentation_mode
- * @property bool $health_check_enabled
  * @property bool $icebreaker_enabled
  * @property GameKind $icebreaker_game
  * @property bool $ai_summary_enabled
@@ -63,7 +62,7 @@ use Illuminate\Support\Collection;
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
-    'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
+    'icebreaker_enabled', 'workspace_template_id',
     'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at', 'icebreaker_game',
 ])]
 #[Hidden(['guest_token'])]
@@ -278,11 +277,10 @@ class Retro extends Model implements DeliverySubject
      */
     public function phases(): array
     {
-        return array_values(array_filter(RetroPhase::cases(), fn (RetroPhase $phase): bool => match ($phase) {
-            RetroPhase::HealthCheck => (bool) $this->health_check_enabled,
-            RetroPhase::Icebreaker => (bool) $this->icebreaker_enabled,
-            default => true,
-        }));
+        return array_values(array_filter(
+            RetroPhase::cases(),
+            fn (RetroPhase $phase): bool => $phase !== RetroPhase::Icebreaker || $this->icebreaker_enabled,
+        ));
     }
 
     public function firstPhase(): RetroPhase
@@ -353,7 +351,6 @@ class Retro extends Model implements DeliverySubject
             'is_locked' => 'boolean',
             'presentation_mode' => 'boolean',
             'ai_summary_enabled' => 'boolean',
-            'health_check_enabled' => 'boolean',
             'icebreaker_enabled' => 'boolean',
             'roti_votable_when_completed' => 'boolean',
             'icebreaker_game' => GameKind::class,

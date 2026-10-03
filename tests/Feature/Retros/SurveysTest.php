@@ -95,7 +95,6 @@ it('keeps survey management to the facilitator in the board phases', function (R
         ->assertStatus($status);
 })->with([
     'member' => [RetroPhase::Writing, [], false, 403],
-    'health check' => [RetroPhase::HealthCheck, [], true, 403],
     'icebreaker' => [RetroPhase::Icebreaker, [], true, 403],
     'completed' => [RetroPhase::Completed, [], true, 403],
     'locked' => [RetroPhase::Discussing, ['is_locked' => true], true, 423],

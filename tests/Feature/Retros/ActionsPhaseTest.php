@@ -27,11 +27,11 @@ function retroLedInPhase(RetroPhase $phase, array $attributes = []): array
     return [$retro->fresh(), $user, $participant];
 }
 
-it('walks the nine phases forward and back', function () {
-    [$retro, $user] = retroLedInPhase(RetroPhase::HealthCheck, ['health_check_enabled' => true, 'icebreaker_enabled' => true]);
-    $walk = ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed'];
+it('walks the eight phases forward and back', function () {
+    [$retro, $user] = retroLedInPhase(RetroPhase::Icebreaker, ['icebreaker_enabled' => true]);
+    $walk = ['writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed'];
 
-    expect(array_map(fn (RetroPhase $phase): string => $phase->value, $retro->phases()))->toBe(['health_check', ...$walk]);
+    expect(array_map(fn (RetroPhase $phase): string => $phase->value, $retro->phases()))->toBe(['icebreaker', ...$walk]);
 
     foreach ($walk as $phase) {
         $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => $phase])->assertOk();

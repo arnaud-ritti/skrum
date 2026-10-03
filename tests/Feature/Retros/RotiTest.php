@@ -64,7 +64,7 @@ it('refuses ratings in the other phases', function (RetroPhase $phase) {
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertForbidden();
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertForbidden();
-})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions]);
+})->with([RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions]);
 
 it('refuses ratings once completed', function () {
     [$retro, $user] = rotiRetro(RetroPhase::Completed);

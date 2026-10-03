@@ -79,7 +79,7 @@ it('refuses reactions when they are turned off', function () {
 });
 
 it('allows actions in every phase but completed', function () {
-    $retro = Retro::factory()->make(['phase' => RetroPhase::HealthCheck]);
+    $retro = Retro::factory()->make(['phase' => RetroPhase::Icebreaker]);
 
     RetroGuard::open($retro);
 

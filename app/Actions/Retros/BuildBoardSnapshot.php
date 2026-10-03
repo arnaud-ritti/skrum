@@ -99,7 +99,6 @@ class BuildBoardSnapshot
                 'template' => $retro->template,
                 'phase' => $retro->phase->value,
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
-                'healthCheckEnabled' => $retro->health_check_enabled,
                 'healthCheckStatements' => $this->teamHealthStatements->active($retro->team)->count(),
                 'icebreakerEnabled' => $retro->icebreaker_enabled,
                 'icebreakerGame' => $retro->icebreaker_game->value,

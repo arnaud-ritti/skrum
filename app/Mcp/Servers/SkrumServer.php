@@ -41,8 +41,9 @@ use Laravel\Mcp\Server\Attributes\Name;
 #[Instructions(<<<'MARKDOWN'
     skrum is a self-hosted tool for agile team rituals.
     Teams belong to workspaces. Each team runs retrospective boards; a board holds messages (cards) in template columns,
-    moves through phases (health check, icebreaker, writing, grouping, voting, discussing, actions, roti, completed) and ends with
-    action items (agreements), a health check score and a ROTI rating. Teams also run planning poker games: a game holds
+    moves through phases (icebreaker, writing, grouping, voting, discussing, actions, roti, completed) and can carry a health
+    check, a short survey the team answers during the board, scored 1 to 5. A board ends with action items (agreements),
+    a health check score and a ROTI rating. Teams also run planning poker games: a game holds
     tasks, and each task is estimated in rounds of hidden votes that the facilitator reveals.
     Content that the user cannot see on a board (hidden cards, anonymous authors, unrevealed votes) is never returned.
     MARKDOWN)]

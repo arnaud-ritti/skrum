@@ -346,7 +346,7 @@ it('hides others cards again in the pre-writing phases', function (RetroPhase $p
 
     expect(snapshotCard($snapshot, $othersCard))->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'gif' => null])
         ->and(json_encode($snapshot))->not->toContain('written before moving back');
-})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+})->with([RetroPhase::Icebreaker]);
 
 it('exposes the enabled phases and toggles', function () {
     $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create();
@@ -355,7 +355,6 @@ it('exposes the enabled phases and toggles', function () {
     expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
         'phase' => 'icebreaker',
         'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed'],
-        'healthCheckEnabled' => false,
         'healthCheckStatements' => 6,
         'icebreakerEnabled' => true,
     ]);

@@ -23,7 +23,7 @@ class ColumnOrdersController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::facilitator($retro, $participant);
-        RetroGuard::phase($retro, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing);
+        RetroGuard::phase($retro, RetroPhase::Icebreaker, RetroPhase::Writing);
 
         $validated = $request->validate([
             'column_ids' => ['required', 'array'],
@@ -34,7 +34,7 @@ class ColumnOrdersController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
-            RetroGuard::phase($locked, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing);
+            RetroGuard::phase($locked, RetroPhase::Icebreaker, RetroPhase::Writing);
 
             $currentIds = $locked->columns()->pluck('id')->all();
             $requestedIds = $validated['column_ids'];

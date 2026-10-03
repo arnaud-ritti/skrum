@@ -79,7 +79,7 @@ it('starts in the first enabled phase with the chosen options', function () {
     expect($retro->phase)->toBe(RetroPhase::Icebreaker)
         ->and($retro->is_anonymous)->toBeTrue()
         ->and($retro->icebreaker_enabled)->toBeTrue()
-        ->and($retro->health_check_enabled)->toBeFalse()
+        ->and(resolve(HealthCheckSurvey::class)->forRetro($retro))->toBeNull()
         ->and($retro->votes_per_participant)->toBe(4);
 
     $healthCheck = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 44', 'mad_sad_glad', healthCheckEnabled: true, icebreakerEnabled: true));

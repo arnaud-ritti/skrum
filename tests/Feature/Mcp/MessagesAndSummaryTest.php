@@ -184,7 +184,7 @@ it('hides other participants cards and their details in every phase that hides t
     expect($message)->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'sentiment' => null, 'category' => null, 'reactions' => [], 'commentCount' => 0]);
 
     $response->assertDontSee('Secret idea');
-})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+})->with([RetroPhase::Icebreaker]);
 
 it('hides the grouped cards of others while writing', function () {
     [$retro, $user, $participant, $column] = mcpMessagesBoard(RetroPhase::Writing);

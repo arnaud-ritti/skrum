@@ -86,7 +86,6 @@ it('follows the survey creation phases and lock', function (RetroPhase $phase, a
 })->with([
     'discussing' => [RetroPhase::Discussing, [], 200],
     'completed' => [RetroPhase::Completed, [], 403],
-    'health check' => [RetroPhase::HealthCheck, ['health_check_enabled' => true], 403],
     'locked' => [RetroPhase::Voting, ['is_locked' => true], 423],
 ]);
 

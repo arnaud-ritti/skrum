@@ -4,7 +4,6 @@ namespace App\Enums;
 
 enum RetroPhase: string
 {
-    case HealthCheck = 'health_check';
     case Icebreaker = 'icebreaker';
     case Writing = 'writing';
     case Grouping = 'grouping';
@@ -24,7 +23,7 @@ enum RetroPhase: string
      */
     public static function hidingOthersCards(): array
     {
-        return [self::HealthCheck, self::Icebreaker, self::Writing];
+        return [self::Icebreaker, self::Writing];
     }
 
     public function hidesOthersCards(): bool
@@ -45,7 +44,6 @@ enum RetroPhase: string
     public function label(): string
     {
         return match ($this) {
-            self::HealthCheck => __('Health check'),
             self::Icebreaker => __('Icebreaker'),
             self::Writing => __('Writing'),
             self::Grouping => __('Grouping'),
