@@ -7,6 +7,7 @@ use App\Events\Retros\RetroSettingsChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class RetroGuestTokensController extends Controller
 {
-    public function store(Request $request, Retro $retro): JsonResponse
+    public function store(Request $request, Retro $retro, JoinCodes $joinCodes): JsonResponse
     {
         $participant = Participant::current($request);
 
@@ -37,6 +38,9 @@ class RetroGuestTokensController extends Controller
             return $locked->guest_token;
         });
 
-        return response()->json(['guestUrl' => route('retros.join.show', $guestToken)]);
+        return response()->json([
+            'guestUrl' => route('retros.join.show', $guestToken),
+            'joinCode' => $joinCodes->rotate($retro),
+        ]);
     }
 }

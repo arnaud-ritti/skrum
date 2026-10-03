@@ -7,6 +7,7 @@ use App\Events\Whiteboards\WhiteboardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class WhiteboardGuestTokensController extends Controller
 {
-    public function store(Request $request, Whiteboard $board): JsonResponse
+    public function store(Request $request, Whiteboard $board, JoinCodes $joinCodes): JsonResponse
     {
         $member = WhiteboardMember::current($request);
 
@@ -37,6 +38,9 @@ class WhiteboardGuestTokensController extends Controller
             return $locked->guest_token;
         });
 
-        return response()->json(['guestUrl' => route('whiteboards.join.show', $guestToken)]);
+        return response()->json([
+            'guestUrl' => route('whiteboards.join.show', $guestToken),
+            'joinCode' => $joinCodes->rotate($board),
+        ]);
     }
 }

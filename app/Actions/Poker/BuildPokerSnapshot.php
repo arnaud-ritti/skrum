@@ -14,6 +14,7 @@ use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\User;
 use App\Support\Alphabetical;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Contracts\Database\Query\Builder;
 
 /**
@@ -32,6 +33,7 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         facilitatorPlayerId: ?string,
  *         guestAccessEnabled: bool,
  *         guestUrl: ?string,
+ *         joinCode: ?string,
  *         endedAt: ?string,
  *         currentTaskId: ?string,
  *         tasksCount: int,
@@ -75,6 +77,7 @@ class BuildPokerSnapshot
         private ShareOptions $shareOptions,
         private SharePermissions $sharePermissions,
         private LatestDeliveries $latestDeliveries,
+        private JoinCodes $joinCodes,
     ) {}
 
     /**
@@ -97,6 +100,7 @@ class BuildPokerSnapshot
         $currentRound = $game->latestRoundOfCurrentTask();
         $team = $game->team;
         $sync = $isGuest ? null : PokerTaskSync::for($game);
+        $guestUrl = ! $isGuest && $game->guest_access_enabled ? route('poker.join.show', $game->guest_token) : null;
 
         return [
             'game' => [
@@ -108,7 +112,8 @@ class BuildPokerSnapshot
                 'isNumeric' => $isNumeric,
                 'facilitatorPlayerId' => $game->facilitator_player_id,
                 'guestAccessEnabled' => $game->guest_access_enabled,
-                'guestUrl' => ! $isGuest && $game->guest_access_enabled ? route('poker.join.show', $game->guest_token) : null,
+                'guestUrl' => $guestUrl,
+                'joinCode' => $guestUrl === null ? null : $this->joinCodes->for($game),
                 'endedAt' => $game->ended_at?->toIso8601String(),
                 'currentTaskId' => $game->current_task_id,
                 'tasksCount' => $game->tasks->count(),

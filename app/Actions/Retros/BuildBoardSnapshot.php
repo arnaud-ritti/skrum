@@ -28,6 +28,7 @@ use App\Support\Alphabetical;
 use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,7 @@ class BuildBoardSnapshot
         private ExpireGameRound $expireGameRound,
         private BuildGameSnapshot $buildGameSnapshot,
         private IcebreakerGameOptions $icebreakerGameOptions,
+        private JoinCodes $joinCodes,
     ) {}
 
     /**
@@ -89,6 +91,9 @@ class BuildBoardSnapshot
             ? ['items' => [], 'hasMore' => false]
             : $this->carriedActionItems->handle($retro);
         $canShare = $this->sharePermissions->retro($retro, $viewerParticipant);
+        $guestUrl = $retro->guest_access_enabled && $isFacilitator
+            ? route('retros.join.show', $retro->guest_token)
+            : null;
 
         return [
             'retro' => [
@@ -114,9 +119,8 @@ class BuildBoardSnapshot
                 'votesPerParticipant' => $retro->voteLimit(),
                 'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
-                'guestUrl' => $retro->guest_access_enabled && $isFacilitator
-                    ? route('retros.join.show', $retro->guest_token)
-                    : null,
+                'guestUrl' => $guestUrl,
+                'joinCode' => $guestUrl === null ? null : $this->joinCodes->for($retro),
                 'facilitatorParticipantId' => $retro->facilitator_participant_id,
                 'timerEndsAt' => $retro->timer_ends_at?->toIso8601String(),
                 'highlightedCardId' => $retro->highlighted_card_id,

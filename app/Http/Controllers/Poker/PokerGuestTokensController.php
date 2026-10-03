@@ -7,6 +7,7 @@ use App\Events\Poker\PokerGameChanged;
 use App\Http\Controllers\Controller;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class PokerGuestTokensController extends Controller
 {
-    public function store(Request $request, PokerGame $game): JsonResponse
+    public function store(Request $request, PokerGame $game, JoinCodes $joinCodes): JsonResponse
     {
         $player = PokerPlayer::current($request);
 
@@ -39,6 +40,9 @@ class PokerGuestTokensController extends Controller
             return $locked->guest_token;
         });
 
-        return response()->json(['guestUrl' => route('poker.join.show', $guestToken)]);
+        return response()->json([
+            'guestUrl' => route('poker.join.show', $guestToken),
+            'joinCode' => $joinCodes->rotate($game),
+        ]);
     }
 }

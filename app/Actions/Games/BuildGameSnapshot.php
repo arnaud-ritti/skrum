@@ -7,6 +7,7 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Support\EmojibaseLocale;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Sessions\JoinCodes;
 
 /**
  * @phpstan-type Snapshot array{
@@ -23,6 +24,7 @@ use App\Support\Games\GameRulesRegistry;
  *         canBecomeHost: bool,
  *         hostPlayerId: ?string,
  *         guestUrl: ?string,
+ *         joinCode: ?string,
  *         isIcebreaker: bool,
  *         currentRoundId: ?string,
  *         teamName: ?string
@@ -50,6 +52,7 @@ class BuildGameSnapshot
         private GameRulesRegistry $gameRulesRegistry,
         private RoomLeaderboard $roomLeaderboard,
         private GameRoomShares $gameRoomShares,
+        private JoinCodes $joinCodes,
     ) {}
 
     /**
@@ -66,6 +69,7 @@ class BuildGameSnapshot
         $isManager = $room->isManager($viewer);
         $canTakeOver = ! $isGuest && ($room->isCreator($viewer) || ($viewer->account()?->canManage($room->team->workspace) ?? false));
         $round = $room->activeRound();
+        $guestUrl = $isStandalone && $isManager && $room->access === GameRoomAccess::Link ? $room->guestUrl() : null;
 
         return [
             'room' => [
@@ -81,7 +85,8 @@ class BuildGameSnapshot
                 'canDelete' => $isStandalone && $canTakeOver,
                 'canBecomeHost' => $isStandalone && ! $isHost && $canTakeOver,
                 'hostPlayerId' => $this->hostPlayerId($room),
-                'guestUrl' => $isStandalone && $isManager && $room->access === GameRoomAccess::Link ? $room->guestUrl() : null,
+                'guestUrl' => $guestUrl,
+                'joinCode' => $guestUrl === null ? null : $this->joinCodes->for($room),
                 'isIcebreaker' => ! $isStandalone,
                 'currentRoundId' => $room->current_round_id,
                 'teamName' => $isGuest ? null : $room->team->name,
