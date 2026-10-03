@@ -1,3 +1,4 @@
+import type { SsoTestResult } from '@/lib/admin/types';
 import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
 import type { Brand } from '@/types/brand';
@@ -51,6 +52,7 @@ declare module '@inertiajs/core' {
             toast?: FlashToast;
             invitationUrl?: string;
             newToken?: NewApiToken;
+            ssoTest?: SsoTestResult;
         };
     }
 }
