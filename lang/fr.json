@@ -4588,13 +4588,13 @@
     "Categories": "Catégories",
     ":count chosen": ":count choisies",
     "Time per turn": "Temps par tour",
-    "Time per round": "Temps par manche",
+    "Time per round": "Chrono",
     "Time per person": "Temps par personne",
     "Auto hints": "Indices auto",
     "Take turns": "Chacun son tour",
     "Endless": "Sans fin",
     ":count each": ":count chacun",
-    "Hide authors until the votes close": "Masquer les auteurs jusqu'à la fin des votes",
+    "Hide authors until the votes close": "Auteurs cachés jusqu'aux votes",
     "Guests allowed": "Invités autorisés",
     "Answers are anonymous.": "Les réponses sont anonymes.",
     "Changes apply from the next round.": "Les changements s'appliquent à partir de la prochaine manche.",
@@ -4669,6 +4669,6 @@
     "Another question": "Une autre question",
     "Answer aloud, one after the other.": "Réponds à voix haute, chacun son tour.",
     "Your turn to speak": "À toi de parler",
-    "Rounds per game": "Manches par partie",
+    "Rounds per game": "Manches",
     "Round :number · endless": "Manche :number · sans fin"
 }

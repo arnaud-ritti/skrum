@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import GameRoomsController from '@/actions/App/Http/Controllers/Games/GameRoomsController';
@@ -91,7 +92,7 @@ function SettingRow({
     children: ReactNode;
 }) {
     return (
-        <div className="flex min-w-0 items-center justify-between gap-3 text-sm">
+        <div className="flex min-w-0 items-center justify-between gap-2 text-body-sm">
             <label
                 htmlFor={id}
                 data-slot="setting-label"
@@ -104,7 +105,7 @@ function SettingRow({
     );
 }
 
-const selectClass = 'w-36 shrink-0';
+const selectClass = 'w-32 shrink-0 px-2.5 text-body-sm';
 
 /**
  * The settings of the game in play (spec §9.2), for the room's managers:
@@ -255,7 +256,7 @@ export function GameSettingsCard() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className={selectClass}
+                                className={`${selectClass} justify-between font-normal`}
                             >
                                 <span className="truncate">
                                     {values.categories.length === 0
@@ -264,6 +265,10 @@ export function GameSettingsCard() {
                                               count: values.categories.length,
                                           })}
                                 </span>
+                                <ChevronDown
+                                    aria-hidden
+                                    className="size-4 opacity-50"
+                                />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent align="end" className="grid gap-2">
