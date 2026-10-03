@@ -2,6 +2,7 @@
 
 use App\Models\Retro;
 use App\Models\User;
+use App\Support\Avatars\AvatarPhotos;
 use App\Support\InstanceSettings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -136,3 +137,16 @@ it('deletes the photo with the account', function () {
 it('answers 404 for a file that is not a stored photo', function (string $file) {
     $this->get("/avatar-photos/{$file}")->assertNotFound();
 })->with([str_repeat('a', 40).'.jpg', '..%2F.env', 'x.jpg']);
+
+it('deletes the photo stored by an upload that finished in between', function () {
+    $user = User::factory()->create();
+    $stale = $user->fresh();
+    resolve(AvatarPhotos::class)->store($user, photoUpload(jpegBytes()));
+    $between = $user->fresh()->avatar_photo_path;
+
+    resolve(AvatarPhotos::class)->store($stale, photoUpload(pngBytes(), 'me.png'));
+
+    expect(Storage::disk('local')->allFiles('avatars'))->toBe([$stale->avatar_photo_path])
+        ->and($user->fresh()->avatar_photo_path)->toBe($stale->avatar_photo_path)
+        ->and($between)->not->toBe($stale->avatar_photo_path);
+});

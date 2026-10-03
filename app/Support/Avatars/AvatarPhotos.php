@@ -6,6 +6,7 @@ use App\Exceptions\InvalidAvatarPhoto;
 use App\Models\User;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -29,6 +30,9 @@ class AvatarPhotos
     private const array MimeTypes = ['jpg' => 'image/jpeg', 'png' => 'image/png'];
 
     /**
+     * The previous path is read from the locked row, so two uploads at once
+     * never leave a file that nothing points to.
+     *
      * @throws InvalidAvatarPhoto
      */
     public function store(User $user, UploadedFile $file): void
@@ -40,9 +44,16 @@ class AvatarPhotos
 
         throw_if($this->disk()->put($path, $clean) === false, RuntimeException::class, 'The avatar photo could not be written.');
 
-        $previous = $user->avatar_photo_path;
+        $previous = DB::transaction(function () use ($user, $path): ?string {
+            $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $previous = $locked->avatar_photo_path;
 
-        $user->forceFill(['avatar_photo_path' => $path])->save();
+            $locked->forceFill(['avatar_photo_path' => $path])->save();
+
+            return $previous;
+        });
+
+        $user->forceFill(['avatar_photo_path' => $path])->syncOriginalAttribute('avatar_photo_path');
 
         $this->delete($previous);
     }
