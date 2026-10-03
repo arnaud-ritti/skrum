@@ -36,6 +36,7 @@ function point(
 ): TeamMoodPoint {
     return {
         retroId,
+        surveyId: null,
         title: `Sprint ${retroId}`,
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,
@@ -49,8 +50,8 @@ function point(
 
 const trend: TeamMoodPoint[] = [
     point('40', { roti: 3.8, rotiVoters: 4 }),
-    point('41', { mood: 6, moodVoters: 3, roti: 4.3, rotiVoters: 3 }),
-    point('42', { mood: 7.5, moodVoters: 4, roti: 4, rotiVoters: 5 }),
+    point('41', { mood: 3, moodVoters: 3, roti: 4.3, rotiVoters: 3 }),
+    point('42', { mood: 3.5, moodVoters: 4, roti: 4, rotiVoters: 5 }),
 ];
 
 function dots(container: HTMLElement) {
@@ -72,7 +73,7 @@ describe('the mood card of a team', () => {
         ).toBeNull();
     });
 
-    it('draws one point per retro with a health score, on 10, with the change since the previous retro, and no ROTI tab', () => {
+    it('draws one point per retro with a health score, on 5, with the change since the previous retro, and no ROTI tab', () => {
         const { container } = renderWithProviders(
             <TeamMoodCard trend={trend} />,
         );
@@ -86,32 +87,50 @@ describe('the mood card of a team', () => {
         expect(
             container.querySelector('[data-slot="mood-trend-kpi"]')
                 ?.textContent,
-        ).toBe('7.5/10');
+        ).toBe('3.5/5');
         expect(
             container.querySelector('[data-slot="mood-trend-delta"]')
                 ?.textContent,
-        ).toBe('+1.5 since the previous retro');
+        ).toBe('+0.5 since the previous retro');
     });
 
-    it('lists the same values in the table view, each retro as a link', async () => {
+    it('lists the same values in the table view, each retro or survey as a link, with its kind', async () => {
         const user = userEvent.setup();
 
-        renderWithProviders(<TeamMoodCard trend={trend} />);
+        renderWithProviders(
+            <TeamMoodCard
+                trend={[
+                    ...trend,
+                    point('43', {
+                        retroId: null,
+                        surveyId: 's43',
+                        title: 'Pulse 43',
+                        url: '/surveys/s43/results',
+                        mood: 4,
+                        moodVoters: 6,
+                    }),
+                ]}
+            />,
+        );
 
         await user.click(screen.getByRole('button', { name: 'View as table' }));
 
         const rows = within(screen.getByRole('table')).getAllByRole('row');
 
         expect(rows.map((row) => row.textContent)).toEqual([
-            'RetroHealth scoreVoters',
-            'Sprint 416.0/103',
-            'Sprint 427.5/104',
+            'RetroKindHealth scoreVoters',
+            'Sprint 41Retro3.0/53',
+            'Sprint 42Retro3.5/54',
+            'Pulse 43Survey4.0/56',
         ]);
         expect(
             screen
                 .getByRole('link', { name: 'Sprint 42' })
                 .getAttribute('href'),
         ).toBe('/retros/42');
+        expect(
+            screen.getByRole('link', { name: 'Pulse 43' }).getAttribute('href'),
+        ).toBe('/surveys/s43/results');
     });
 
     it('says so for a team without a health score, even when it has ROTI votes', () => {

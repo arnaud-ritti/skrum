@@ -156,8 +156,15 @@ export type TeamHealthStatement = {
     isArchived: boolean;
 };
 
+/**
+ * A point of the team's trend: a completed retro (its ROTI, and the mood of
+ * the health check attached to it), or a health check run as a survey.
+ */
 export type TeamMoodPoint = {
-    retroId: string;
+    /** Null for a health check run as a survey. */
+    retroId: string | null;
+    /** The health check that gives the mood; null when there is none. */
+    surveyId: string | null;
     title: string;
     completedAt: string;
     url: string;

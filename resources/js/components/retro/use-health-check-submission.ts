@@ -6,15 +6,25 @@ import { useBoard } from './board-context';
 
 type Submission = HealthProgress & { hasSubmitted: boolean };
 
+type Chosen = { surveyId: string | null; scores: Record<string, number> };
+
+export type HealthCheckSubmission = ReturnType<typeof useHealthCheckSubmission>;
+
 /**
  * The scores of the retro's health check, kept on this screen until "Submit
  * answers" sends them all at once: nothing reaches the server or the others
- * before. Once sent, they are final.
+ * before. Once sent, they are final. They belong to one health check: another
+ * one attached starts blank.
  */
 export function useHealthCheckSubmission() {
     const ctx = useBoard();
     const healthCheck = ctx.board.healthCheck;
-    const [chosen, setChosen] = useState<Record<string, number>>({});
+    const surveyId = healthCheck?.surveyId ?? null;
+    const [chosenFor, setChosenFor] = useState<Chosen>({
+        surveyId,
+        scores: {},
+    });
+    const chosen = chosenFor.surveyId === surveyId ? chosenFor.scores : {};
     const [submitting, setSubmitting] = useState(false);
 
     const statements = healthCheck?.statements ?? [];
@@ -44,7 +54,13 @@ export function useHealthCheckSubmission() {
             return;
         }
 
-        setChosen((current) => ({ ...current, [key]: score }));
+        setChosenFor((current) => ({
+            surveyId,
+            scores: {
+                ...(current.surveyId === surveyId ? current.scores : {}),
+                [key]: score,
+            },
+        }));
     };
 
     const submit = async (): Promise<void> => {

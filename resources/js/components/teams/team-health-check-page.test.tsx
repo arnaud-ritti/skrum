@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { TeamHealthCheckPage } from '@/components/teams/team-health-check-page';
 import type { TeamHealthCheckPageProps } from '@/components/teams/team-health-check-page';
@@ -42,6 +42,7 @@ const base: TeamHealthCheckPageProps = {
         },
     ],
     canManageHealthStatements: true,
+    canCreateSurvey: true,
 };
 
 describe('the health check page of a team', () => {
@@ -52,6 +53,11 @@ describe('the health check page of a team', () => {
 
         expect(
             screen.getByRole('heading', { level: 1, name: 'Health check' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                /scores from 1 to 5 in every health check, and the mood they give\.$/,
+            ),
         ).toBeTruthy();
         expect(
             screen.getByRole('region', { name: 'Health check statements' }),
@@ -76,6 +82,79 @@ describe('the health check page of a team', () => {
         expect(container.querySelector('[data-action="reorder"]')).toBeNull();
     });
 
+    it('starts a health check from the team page, preselected, for who may create a survey', () => {
+        renderWithProviders(<TeamHealthCheckPage {...base} />);
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Start a health check' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1?new=survey&template=health_check');
+    });
+
+    it('offers no start to who may not create a survey', () => {
+        renderWithProviders(
+            <TeamHealthCheckPage {...base} canCreateSurvey={false} />,
+        );
+
+        expect(
+            screen.queryByRole('link', { name: 'Start a health check' }),
+        ).toBeNull();
+    });
+
+    it('names in its table whether each point is a retro or a survey', () => {
+        renderWithProviders(
+            <TeamHealthCheckPage
+                {...base}
+                moodTrend={[
+                    {
+                        retroId: 'retro-1',
+                        surveyId: 'survey-1',
+                        title: 'Sprint 41',
+                        completedAt: '2026-09-18T08:00:00+00:00',
+                        url: '/retros/retro-1',
+                        mood: 3.6,
+                        moodVoters: 4,
+                        roti: 4.1,
+                        rotiVoters: 4,
+                    },
+                    {
+                        retroId: null,
+                        surveyId: 'survey-2',
+                        title: 'Pulse of September',
+                        completedAt: '2026-09-18T08:00:00+00:00',
+                        url: '/surveys/survey-2/results',
+                        mood: 4,
+                        moodVoters: 6,
+                        roti: null,
+                        rotiVoters: 0,
+                    },
+                ]}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'View as table' }));
+
+        const table = screen.getByRole('table');
+
+        expect(
+            within(table)
+                .getAllByRole('columnheader')
+                .map((header) => header.textContent),
+        ).toContain('Kind');
+        expect(
+            within(table)
+                .getAllByRole('row')
+                .slice(1)
+                .map((row) => within(row).getAllByRole('cell')[0].textContent),
+        ).toEqual(['Retro', 'Survey']);
+        expect(
+            within(table)
+                .getByRole('link', { name: 'Pulse of September' })
+                .getAttribute('href'),
+        ).toBe('/surveys/survey-2/results');
+    });
+
     it('draws the mood trend, a skeleton until it arrives, with its table view', () => {
         const { container, rerender } = renderWithProviders(
             <TeamHealthCheckPage {...base} />,
@@ -91,10 +170,11 @@ describe('the health check page of a team', () => {
                 moodTrend={[
                     {
                         retroId: 'retro-1',
+                        surveyId: 'survey-1',
                         title: 'Sprint 41',
                         completedAt: '2026-09-18T08:00:00+00:00',
                         url: '/retros/retro-1',
-                        mood: 7.2,
+                        mood: 3.6,
                         moodVoters: 4,
                         roti: 4.1,
                         rotiVoters: 4,

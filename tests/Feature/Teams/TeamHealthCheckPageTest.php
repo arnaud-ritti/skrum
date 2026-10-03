@@ -42,7 +42,8 @@ it('shows the health check page to a team member, read-only, with every statemen
                 'isBuiltin' => true,
                 'isArchived' => false,
             ])
-            ->where('canManageHealthStatements', false));
+            ->where('canManageHealthStatements', false)
+            ->where('canCreateSurvey', true));
 });
 
 it('lets a workspace admin manage the statements from the health check page, archived ones listed', function () {

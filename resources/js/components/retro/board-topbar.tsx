@@ -48,6 +48,12 @@ import { showsRetroCursors } from './board-cursors';
 import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
 import { BoardSettings } from './board-settings';
 import { BoardShare, showsBoardShare } from './board-share';
+import {
+    HealthCheckButton,
+    HealthCheckMenuItem,
+    showsHealthCheck,
+} from './health-check-button';
+import { HealthCheckDialog } from './health-check-dialog';
 
 /** Seconds "+2 min" adds, as RetroTimerExtensionsController does. */
 const ExtensionSeconds = 120;
@@ -320,7 +326,7 @@ export function BoardPresence() {
 
 const ReopenGuardMs = 250;
 
-type OpenPanel = 'settings' | 'share' | 'handover' | 'delete' | null;
+type OpenPanel = 'settings' | 'share' | 'health' | 'handover' | 'delete' | null;
 
 type ActionsProps = {
     hideMyCursor: boolean;
@@ -349,6 +355,7 @@ export function BoardActions({
     const hasShare = showsBoardShare(board);
     const hasShareButton = hasShare && !isCompleted && !mobile;
     const hasShareEntry = hasShare && !hasShareButton;
+    const hasHealthCheck = showsHealthCheck(board);
     const hasMenu = viewer.isFacilitator || mobile;
 
     const close = (open: boolean) => {
@@ -411,6 +418,9 @@ export function BoardActions({
                     <TooltipContent>{t('Settings')}</TooltipContent>
                 </Tooltip>
             )}
+            {hasHealthCheck && !mobile && (
+                <HealthCheckButton onOpen={() => setPanel('health')} />
+            )}
             {hasShareButton && (
                 <Button
                     type="button"
@@ -458,6 +468,11 @@ export function BoardActions({
                         }}
                     >
                         {mobile && viewer.isFacilitator && <PhaseMenuItems />}
+                        {mobile && hasHealthCheck && (
+                            <HealthCheckMenuItem
+                                onSelect={() => fromMenu('health')}
+                            />
+                        )}
                         <DropdownMenuItem onSelect={() => fromMenu('settings')}>
                             <Settings2 aria-hidden />
                             <span className="truncate">{t('Settings…')}</span>
@@ -521,6 +536,12 @@ export function BoardActions({
             />
             {hasShare && (
                 <BoardShare open={panel === 'share'} onOpenChange={close} />
+            )}
+            {hasHealthCheck && (
+                <HealthCheckDialog
+                    open={panel === 'health'}
+                    onOpenChange={close}
+                />
             )}
             {viewer.isFacilitator && (
                 <>

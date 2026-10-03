@@ -1,10 +1,21 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { ClipboardList, Lock, Minus, Plus, Settings2, X } from 'lucide-react';
+import {
+    ChevronDown,
+    ClipboardList,
+    HeartPulse,
+    Lock,
+    Minus,
+    Plus,
+    Settings2,
+    Vote,
+    X,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ComponentType, KeyboardEvent, ReactNode, RefObject } from 'react';
 import { toast } from 'sonner';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Drawer,
@@ -12,6 +23,13 @@ import {
     DrawerTitle,
     DrawerTrigger,
 } from '@/components/ui/drawer';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     Popover,
@@ -42,6 +60,18 @@ export type { RetroPhase };
 export type SessionPhase = RetroPhase | (string & {});
 
 export type SettingValue = boolean | number | string | null;
+
+/** What "Add survey" adds to the retro. */
+export type SurveyKind = 'health_check' | 'quick_poll';
+
+export type SessionSurveys = {
+    /** How many statements the team's health check asks. */
+    healthCheckStatements: number;
+    /** A health check is attached: it cannot be added twice. */
+    healthCheckAttached: boolean;
+    /** False where the retro takes no quick poll (its phase, its limit). */
+    quickPollAvailable?: boolean;
+};
 
 export type SessionSettingsValues = Record<string, SettingValue>;
 
@@ -115,8 +145,10 @@ export type SessionSettingsPopoverProps<
     errors?: Record<string, string | undefined>;
     readOnly?: boolean;
     facilitatorName?: string;
-    /** Opens the survey dialog. The entry is hidden without it. */
-    onAddSurvey?: () => void;
+    /** Adds a survey of the chosen kind. The entry is hidden without it. */
+    onAddSurvey?: (kind: SurveyKind) => void;
+    /** The state of the "Add survey" menu; without it, the health check is left out. */
+    surveys?: SessionSurveys;
     /** Rendered after the groups: deck fields, guest link and the like. */
     children?: ReactNode;
     onApply: (patch: Partial<V>) => Promise<void>;
@@ -139,7 +171,6 @@ export type RetroSettingsValues = {
     title: string;
     is_anonymous: boolean;
     votes_per_participant: number | null;
-    health_check_enabled: boolean;
     icebreaker_enabled: boolean;
     icebreaker_game: string;
     reactions_enabled: boolean;
@@ -284,15 +315,6 @@ export function useRetroSettingGroups(
             id: 'phases',
             label: t('Phases'),
             settings: [
-                {
-                    type: 'switch',
-                    key: 'health_check_enabled',
-                    id: 'retro-health-check',
-                    label: t('Health check'),
-                    disabledReason:
-                        completed ??
-                        (phase === 'health_check' ? phaseOn : undefined),
-                },
                 {
                     type: 'switch',
                     key: 'icebreaker_enabled',
@@ -626,6 +648,130 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
+function SurveyMenuItem({
+    icon,
+    title,
+    description,
+    badge,
+    disabled,
+    onSelect,
+}: {
+    icon: ReactNode;
+    title: string;
+    description: string;
+    badge?: string;
+    disabled: boolean;
+    onSelect: () => void;
+}) {
+    return (
+        <DropdownMenuItem
+            disabled={disabled}
+            onSelect={onSelect}
+            className="items-start"
+        >
+            {icon}
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-semibold">{title}</span>
+                <span className="text-xs text-muted-foreground">
+                    {description}
+                </span>
+            </span>
+            {badge !== undefined && (
+                <Badge variant="secondary" className="shrink-0">
+                    {badge}
+                </Badge>
+            )}
+        </DropdownMenuItem>
+    );
+}
+
+/** "Add survey": the retro's health check, or a quick poll. */
+function AddSurveyMenu({
+    disabled,
+    surveys,
+    onAddSurvey,
+}: {
+    disabled: boolean;
+    surveys?: SessionSurveys;
+    onAddSurvey: (kind: SurveyKind) => void;
+}) {
+    const { t } = useTrans();
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const chosen = useRef<SurveyKind | null>(null);
+
+    /**
+     * The kind chosen is added once the menu is gone: a dialog it opens
+     * would otherwise see the menu take the focus back on closing.
+     */
+    const addChosen = (event: Event) => {
+        const kind = chosen.current;
+
+        if (kind === null) {
+            return;
+        }
+
+        chosen.current = null;
+        event.preventDefault();
+        triggerRef.current?.focus();
+        onAddSurvey(kind);
+    };
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    ref={triggerRef}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={disabled}
+                >
+                    <ClipboardList aria-hidden="true" />
+                    <span className="truncate">{t('Add survey')}</span>
+                    <ChevronDown aria-hidden="true" className="ml-auto" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align="start"
+                className="w-80 max-w-viewport-gutter"
+                onCloseAutoFocus={addChosen}
+            >
+                <DropdownMenuLabel variant="overline">
+                    {t('Add to this retro')}
+                </DropdownMenuLabel>
+                {surveys !== undefined && (
+                    <SurveyMenuItem
+                        icon={<HeartPulse aria-hidden="true" />}
+                        title={
+                            surveys.healthCheckAttached
+                                ? t('Health check added')
+                                : t('Health check')
+                        }
+                        description={t(':count statements', {
+                            count: surveys.healthCheckStatements,
+                        })}
+                        badge={t('Built-in survey')}
+                        disabled={surveys.healthCheckAttached}
+                        onSelect={() => {
+                            chosen.current = 'health_check';
+                        }}
+                    />
+                )}
+                <SurveyMenuItem
+                    icon={<Vote aria-hidden="true" />}
+                    title={t('Quick poll')}
+                    description={t('One question, answered on the board')}
+                    disabled={surveys?.quickPollAvailable === false}
+                    onSelect={() => {
+                        chosen.current = 'quick_poll';
+                    }}
+                />
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 function changedKeysOf(
     draft: Partial<SessionSettingsValues>,
     value: SessionSettingsValues,
@@ -669,6 +815,7 @@ function SettingsPanel({
         readOnly = false,
         facilitatorName,
         onAddSurvey,
+        surveys,
         children,
         onApply,
         onReset,
@@ -1047,17 +1194,11 @@ function SettingsPanel({
 
             {!readOnly && onAddSurvey !== undefined && (
                 <div className="flex flex-col gap-2 border-t px-4 py-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
+                    <AddSurveyMenu
                         disabled={pending}
-                        onClick={onAddSurvey}
-                    >
-                        <ClipboardList aria-hidden="true" />
-                        <span className="truncate">{t('Add survey')}</span>
-                    </Button>
+                        surveys={surveys}
+                        onAddSurvey={onAddSurvey}
+                    />
                 </div>
             )}
 

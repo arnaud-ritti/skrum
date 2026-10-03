@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -83,13 +84,14 @@ describe('BoardSettings', () => {
             'retro-icebreaker',
             'retro-reactions',
             'retro-hide-vote-counts',
-            'retro-health-check',
             'retro-cursors',
             'retro-votes-auto',
             'retro-presentation',
         ]) {
             expect(document.getElementById(id), id).not.toBeNull();
         }
+
+        expect(document.getElementById('retro-health-check')).toBeNull();
     });
 
     it('sends only what changed, then refetches the board', async () => {
@@ -157,7 +159,19 @@ describe('BoardSettings', () => {
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     });
 
-    it('offers "Add survey" to the facilitator, and opens the survey dialog in place of the panel', () => {
+    const openAddSurvey = async () => {
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('button', { name: 'Add survey' }));
+
+        return user;
+    };
+
+    const isDisabled = (name: RegExp) =>
+        screen.getByRole('menuitem', { name }).getAttribute('aria-disabled') ===
+        'true';
+
+    it('offers "Add survey" to the facilitator, and opens the quick poll dialog in place of the panel', async () => {
         const onOpenChange = vi.fn();
 
         renderInBoard(
@@ -169,17 +183,23 @@ describe('BoardSettings', () => {
             boardContext(),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Add survey' }));
+        const user = await openAddSurvey();
+
+        await user.click(screen.getByRole('menuitem', { name: /^Quick poll/ }));
 
         expect(onOpenChange).toHaveBeenCalledWith(false);
-        expect(screen.getByRole('dialog', { name: 'New survey' })).toBeTruthy();
+        expect(
+            await screen.findByRole('dialog', { name: 'New survey' }),
+        ).toBeTruthy();
         expect(document.getElementById('survey-question')).not.toBeNull();
     });
 
     it('gives the keyboard to the settings button when the survey dialog is cancelled', async () => {
         renderInBoard(<SettingsUnderButton />, boardContext());
 
-        fireEvent.click(screen.getByRole('button', { name: 'Add survey' }));
+        const user = await openAddSurvey();
+
+        await user.click(screen.getByRole('menuitem', { name: /^Quick poll/ }));
         fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 
         await waitFor(() =>
@@ -190,8 +210,60 @@ describe('BoardSettings', () => {
         expect(screen.queryByRole('dialog', { name: 'New survey' })).toBeNull();
     });
 
+    it('attaches the health check, with the number of statements of the team', async () => {
+        const { ctx } = renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(),
+        );
+
+        const user = await openAddSurvey();
+
+        expect(
+            screen.getByRole('menuitem', { name: /^Health check/ }).textContent,
+        ).toContain('6 statements');
+
+        await user.click(
+            screen.getByRole('menuitem', { name: /^Health check/ }),
+        );
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'post',
+                    url: expect.stringMatching(
+                        /\/retros\/retro-1\/health-check$/,
+                    ),
+                }),
+            ),
+        );
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+    });
+
+    it('says when the health check is already added', async () => {
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(
+                retroSnapshot({
+                    healthCheck: {
+                        surveyId: 'survey-1',
+                        isClosed: false,
+                        scale: 5,
+                        respondents: 0,
+                        participants: 1,
+                        hasSubmitted: false,
+                        statements: [],
+                        results: null,
+                    },
+                }),
+            ),
+        );
+
+        await openAddSurvey();
+
+        expect(isDisabled(/^Health check added/)).toBe(true);
+    });
+
     it.each([
-        ['a participant', retroSnapshot({ viewer: { isFacilitator: false } })],
         ['the actions phase', retroSnapshot({ retro: { phase: 'actions' } })],
         ['a locked board', retroSnapshot({ retro: { isLocked: true } })],
         [
@@ -202,7 +274,25 @@ describe('BoardSettings', () => {
                 })) as never,
             }),
         ],
-    ])('does not offer "Add survey" with %s', (_, board) => {
+    ])(
+        'offers the health check and no quick poll with %s',
+        async (_, board) => {
+            renderInBoard(
+                <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+                boardContext(board),
+            );
+
+            await openAddSurvey();
+
+            expect(isDisabled(/^Health check/)).toBe(false);
+            expect(isDisabled(/^Quick poll/)).toBe(true);
+        },
+    );
+
+    it.each([
+        ['a participant', retroSnapshot({ viewer: { isFacilitator: false } })],
+        ['a completed retro', retroSnapshot({ retro: { phase: 'completed' } })],
+    ])('does not offer "Add survey" to %s', (_, board) => {
         renderInBoard(
             <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
             boardContext(board),
@@ -212,16 +302,16 @@ describe('BoardSettings', () => {
     });
 
     it.each(['writing', 'grouping', 'voting', 'discussing'] as const)(
-        'offers "Add survey" in %s',
-        (phase) => {
+        'offers the quick poll in %s',
+        async (phase) => {
             renderInBoard(
                 <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
                 boardContext(retroSnapshot({ retro: { phase } })),
             );
 
-            expect(
-                screen.getByRole('button', { name: 'Add survey' }),
-            ).toBeTruthy();
+            await openAddSurvey();
+
+            expect(isDisabled(/^Quick poll/)).toBe(false);
         },
     );
 

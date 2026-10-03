@@ -31,7 +31,6 @@ const base: RetroSettingsValues = {
     title: 'Sprint 42 retro',
     is_anonymous: true,
     votes_per_participant: 5,
-    health_check_enabled: false,
     icebreaker_enabled: false,
     icebreaker_game: 'draw',
     reactions_enabled: true,
@@ -137,7 +136,6 @@ describe('useRetroSettingGroups', () => {
             'is_locked',
             'votes_per_participant',
             'hide_vote_counts',
-            'health_check_enabled',
             'icebreaker_enabled',
             'icebreaker_game',
             'reactions_enabled',
@@ -153,7 +151,6 @@ describe('useRetroSettingGroups', () => {
 
         expect(settings.is_locked.id).toBe('retro-locked');
         expect(settings.hide_vote_counts.id).toBe('retro-hide-vote-counts');
-        expect(settings.health_check_enabled.id).toBe('retro-health-check');
         expect(settings.icebreaker_enabled.id).toBe('retro-icebreaker');
         expect(settings.reactions_enabled.id).toBe('retro-reactions');
         expect(settings.cursors_enabled.id).toBe('retro-cursors');
@@ -191,16 +188,18 @@ describe('useRetroSettingGroups', () => {
         const reason = 'Move to another phase before turning this phase off.';
 
         expect(
-            settingsOf({ phase: 'health_check' }).health_check_enabled
-                .disabledReason,
-        ).toBe(reason);
-        expect(
             settingsOf({ phase: 'icebreaker' }).icebreaker_enabled
                 .disabledReason,
         ).toBe(reason);
         expect(
-            settingsOf({ phase: 'icebreaker' }).health_check_enabled
-                .disabledReason,
+            settingsOf({ phase: 'writing' }).icebreaker_enabled.disabledReason,
+        ).toBeUndefined();
+    });
+
+    it('has no health-check toggle: a health check is added from "Add survey"', () => {
+        expect(settingsOf().health_check_enabled).toBeUndefined();
+        expect(
+            settingsOf({ phase: 'health_check' }).health_check_enabled,
         ).toBeUndefined();
     });
 
@@ -224,7 +223,6 @@ describe('useRetroSettingGroups', () => {
         expect(settings.title.disabledReason).toBeUndefined();
         expect(settings.is_locked.disabledReason).toBe(reason);
         expect(settings.hide_vote_counts.disabledReason).toBe(reason);
-        expect(settings.health_check_enabled.disabledReason).toBe(reason);
         expect(settings.icebreaker_game.disabledReason).toBe(reason);
         expect(settings.presentation_mode.disabledReason).toBe(reason);
         expect(settings.ai_summary_enabled.disabledReason).toBe(reason);
@@ -676,15 +674,97 @@ describe('SessionSettingsPopover', () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('opens the survey dialog from the survey entry', async () => {
+    it('opens the "Add survey" menu with the health check and the quick poll', async () => {
         const onAddSurvey = vi.fn();
-        renderWithProviders(<Harness onAddSurvey={onAddSurvey} />);
+        renderWithProviders(
+            <Harness
+                onAddSurvey={onAddSurvey}
+                surveys={{
+                    healthCheckStatements: 6,
+                    healthCheckAttached: false,
+                }}
+            />,
+        );
 
         await userEvent.click(
             screen.getByRole('button', { name: 'Add survey' }),
         );
 
-        expect(onAddSurvey).toHaveBeenCalledTimes(1);
+        const menu = screen.getByRole('menu');
+        const items = within(menu).getAllByRole('menuitem');
+
+        expect(items.map((item) => item.textContent)).toEqual([
+            'Health check6 statementsBuilt-in survey',
+            'Quick pollOne question, answered on the board',
+        ]);
+        expect(within(menu).getByText('Add to this retro')).toBeTruthy();
+        expect(within(menu).queryByText(/From a template/)).toBeNull();
+
+        await userEvent.click(
+            screen.getByRole('menuitem', { name: /^Health check/ }),
+        );
+
+        expect(onAddSurvey).toHaveBeenCalledWith('health_check');
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add survey' }),
+        );
+        await userEvent.click(
+            screen.getByRole('menuitem', { name: /^Quick poll/ }),
+        );
+
+        expect(onAddSurvey).toHaveBeenLastCalledWith('quick_poll');
+    });
+
+    it('says when the health check is already added, and offers it no more', async () => {
+        const onAddSurvey = vi.fn();
+        renderWithProviders(
+            <Harness
+                onAddSurvey={onAddSurvey}
+                surveys={{
+                    healthCheckStatements: 6,
+                    healthCheckAttached: true,
+                }}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add survey' }),
+        );
+
+        const item = screen.getByRole('menuitem', {
+            name: /^Health check added/,
+        });
+
+        expect(item.getAttribute('aria-disabled')).toBe('true');
+        expect(
+            screen
+                .getByRole('menuitem', { name: /^Quick poll/ })
+                .getAttribute('aria-disabled'),
+        ).toBeNull();
+    });
+
+    it('disables the quick poll where the retro takes none', async () => {
+        renderWithProviders(
+            <Harness
+                onAddSurvey={vi.fn()}
+                surveys={{
+                    healthCheckStatements: 6,
+                    healthCheckAttached: false,
+                    quickPollAvailable: false,
+                }}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add survey' }),
+        );
+
+        expect(
+            screen
+                .getByRole('menuitem', { name: /^Quick poll/ })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
     });
 
     it('hides the survey entry without a callback', () => {
