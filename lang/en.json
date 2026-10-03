@@ -3583,7 +3583,6 @@
     "Columns · :count": "Columns · :count",
     "A board has at most :count columns.": "A board has at most :count columns.",
     "Phases & cards": "Phases & cards",
-    "The team rates its health statements first": "The team rates its health statements first",
     "Save as team template": "Save as team template",
     "Warm-up games": "Warm-up games",
     "Browse": "Browse",
@@ -4212,5 +4211,13 @@
     ":count statements": ":count statements",
     "Quick poll": "Quick poll",
     "One question, answered on the board": "One question, answered on the board",
+    "Health check, :answered of :total answered": "Health check, :answered of :total answered",
+    "No answers.": "No answers.",
+    "Close the health check": "Close the health check",
+    "Everyone will see the results.": "Everyone will see the results.",
+    "Remove the health check": "Remove the health check",
+    "Its answers are kept and come back if you add it again.": "Its answers are kept and come back if you add it again.",
+    "It has no answer yet.": "It has no answer yet.",
+    "The team rates its statements during the retro": "The team rates its statements during the retro",
     "Automatic vote limit, health check added": "Automatic vote limit, health check added"
 }

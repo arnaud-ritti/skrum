@@ -3807,7 +3807,6 @@
     "Columns · :count": "Colonnes · :count",
     "A board has at most :count columns.": "Un tableau a au plus :count colonnes.",
     "Phases & cards": "Phases et cartes",
-    "The team rates its health statements first": "L’équipe note d’abord ses énoncés de santé",
     "Save as team template": "Enregistrer comme modèle d’équipe",
     "Warm-up games": "Jeux d’échauffement",
     "Spread across all cards": "Répartis sur toutes les cartes",
@@ -4432,5 +4431,13 @@
     ":count statements": ":count énoncés",
     "Quick poll": "Sondage rapide",
     "One question, answered on the board": "Une question, répondue sur le board",
+    "Health check, :answered of :total answered": "Bilan de santé, :answered sur :total ont répondu",
+    "No answers.": "Aucune réponse.",
+    "Close the health check": "Clôturer le bilan de santé",
+    "Everyone will see the results.": "Tout le monde verra les résultats.",
+    "Remove the health check": "Retirer le bilan de santé",
+    "Its answers are kept and come back if you add it again.": "Ses réponses sont conservées et reviennent si tu l’ajoutes à nouveau.",
+    "It has no answer yet.": "Il n’a encore aucune réponse.",
+    "The team rates its statements during the retro": "L’équipe note ses énoncés pendant la rétro",
     "Automatic vote limit, health check added": "Limite de votes automatique, bilan de santé ajouté"
 }

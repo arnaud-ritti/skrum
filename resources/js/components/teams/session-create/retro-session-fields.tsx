@@ -563,7 +563,7 @@ export function RetroSessionFields({
             key: 'health-check',
             label: t('Health check'),
             htmlFor: 'new-retro-health-check',
-            help: t('The team rates its health statements first'),
+            help: t('The team rates its statements during the retro'),
             icon: HeartPulse,
             control: (
                 <Switch

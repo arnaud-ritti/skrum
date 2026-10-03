@@ -426,6 +426,109 @@ describe('BoardActions', () => {
         expect(screen.getByRole('menuitem', { name: 'Share…' })).toBeTruthy();
     });
 
+    describe('health check', () => {
+        const attached = (retro: Parameters<typeof retroSnapshot>[0] = {}) =>
+            retroSnapshot({
+                ...retro,
+                healthCheck: {
+                    surveyId: 'survey-1',
+                    isClosed: false,
+                    scale: 5,
+                    respondents: 1,
+                    participants: 3,
+                    hasSubmitted: false,
+                    statements: [],
+                    results: null,
+                },
+            });
+
+        it('puts the health check button before Share and opens its dialog', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(actions, boardContext(attached()));
+
+            const healthButton = screen.getByRole('button', {
+                name: 'Health check, 1 of 3 answered',
+            });
+            const shareButton = screen.getByRole('button', { name: 'Share' });
+
+            expect(
+                healthButton.compareDocumentPosition(shareButton) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy();
+
+            await user.click(healthButton);
+
+            expect(
+                await screen.findByRole('dialog', {
+                    name: 'Health check · Sprint 42',
+                }),
+            ).toBeTruthy();
+        });
+
+        it('gives a participant the button too', () => {
+            renderInBoard(
+                actions,
+                boardContext(attached({ viewer: { isFacilitator: false } })),
+            );
+
+            expect(
+                screen.getByRole('button', {
+                    name: 'Health check, 1 of 3 answered',
+                }),
+            ).toBeTruthy();
+        });
+
+        it('has no button without a health check, nor once the retro is completed', () => {
+            const none = renderInBoard(actions, boardContext());
+
+            expect(
+                screen.queryByRole('button', { name: /^Health check/ }),
+            ).toBeNull();
+
+            none.unmount();
+
+            renderInBoard(
+                actions,
+                boardContext(attached({ retro: { phase: 'completed' } })),
+            );
+
+            expect(
+                screen.queryByRole('button', { name: /^Health check/ }),
+            ).toBeNull();
+        });
+
+        it('is an entry of the one menu on a phone', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(
+                <BoardActions
+                    mobile
+                    hideMyCursor={false}
+                    onHideMyCursorChange={vi.fn()}
+                />,
+                boardContext(attached({ viewer: { isFacilitator: false } })),
+            );
+
+            expect(
+                screen.queryByRole('button', { name: /^Health check/ }),
+            ).toBeNull();
+
+            await user.click(screen.getByRole('button', { name: 'Menu' }));
+            await user.click(
+                screen.getByRole('menuitem', {
+                    name: 'Health check, 1 of 3 answered',
+                }),
+            );
+
+            expect(
+                await screen.findByRole('dialog', {
+                    name: 'Health check · Sprint 42',
+                }),
+            ).toBeTruthy();
+        });
+    });
+
     describe('on a phone', () => {
         const phoneActions = (
             <BoardActions
