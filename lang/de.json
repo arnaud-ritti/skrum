@@ -1740,6 +1740,8 @@
     "General settings saved.": "Allgemeine Einstellungen gespeichert.",
     "Users": "Benutzer",
     "MCP keys": "MCP-Schlüssel",
+    "Licence": "Lizenz",
+    "Audit log": "Audit-Protokoll",
     "Account deactivated.": "Konto deaktiviert.",
     "Account reactivated.": "Konto reaktiviert.",
     "This account is deactivated. Ask an admin of the instance.": "Dieses Konto ist deaktiviert. Frag einen Admin der Instanz.",

@@ -54,4 +54,16 @@ enum AuditAction: string
             self::TokenRevokedByAdmin => self::GroupTokens,
         };
     }
+
+    /** @return array<int, string> */
+    public static function groups(): array
+    {
+        return [self::GroupSettings, self::GroupAccounts, self::GroupSignIn, self::GroupTokens];
+    }
+
+    /** @return array<int, self> */
+    public static function inGroup(string $group): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $action): bool => $action->group() === $group));
+    }
 }

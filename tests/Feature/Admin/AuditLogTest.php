@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Artisan;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 
@@ -157,4 +158,73 @@ it('prunes events older than the retention', function () {
     Artisan::call('model:prune', ['--model' => [AuditEvent::class]]);
 
     expect(AuditEvent::query()->pluck('id')->all())->toBe([$kept->id]);
+});
+
+it('lists audit events newest first, 50 a page, filtered by group', function () {
+    $admin = confirmedAdmin($this);
+    AuditEvent::factory()->create(['action' => AuditAction::SignedIn, 'created_at' => now()->subMinute()]);
+    AuditEvent::factory()->create(['action' => AuditAction::AdminGranted, 'created_at' => now()]);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->component('admin/audit-log')->where('events.data.0.action', 'admin_granted')->where('retentionDays', 365));
+    $this->get(route('admin.auditEvents.index', ['group' => 'signIn']))
+        ->assertInertia(fn (Assert $page) => $page->has('events.data', 1)->where('events.data.0.action', 'signed_in'));
+});
+
+it('pages the audit events by 50', function () {
+    confirmedAdmin($this);
+    AuditEvent::factory()->count(51)->create(['actor_user_id' => null, 'actor_name' => '']);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->has('events.data', 50)
+        ->where('events.total', 51));
+});
+
+it('filters the audit events by actor', function () {
+    confirmedAdmin($this);
+    $nadia = User::factory()->create(['name' => 'Nadia']);
+    AuditEvent::factory()->create(['actor_user_id' => $nadia->id, 'actor_name' => 'Nadia', 'action' => AuditAction::PasswordChanged]);
+    AuditEvent::factory()->create();
+
+    $this->get(route('admin.auditEvents.index', ['actor' => $nadia->id]))->assertInertia(fn (Assert $page) => $page
+        ->has('events.data', 1)
+        ->where('events.data.0.actor.name', 'Nadia')
+        ->where('events.data.0.group', 'signIn')
+        ->where('filters', ['group' => null, 'actor' => $nadia->id]));
+});
+
+it('names the user subject of an event and shows the system for an event without actor', function () {
+    confirmedAdmin($this);
+    $malik = User::factory()->create(['name' => 'Malik']);
+    AuditEvent::factory()->create([
+        'actor_user_id' => null,
+        'actor_name' => '',
+        'action' => AuditAction::UserDeactivated,
+        'subject_type' => 'User',
+        'subject_id' => $malik->id,
+    ]);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('events.data.0.actor', null)
+        ->where('events.data.0.subject', ['type' => 'User', 'id' => $malik->id, 'label' => 'Malik']));
+});
+
+it('keeps the name of an actor whose account is gone', function () {
+    confirmedAdmin($this);
+    AuditEvent::factory()->create(['actor_user_id' => null, 'actor_name' => 'Ines']);
+
+    $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('events.data.0.actor', ['name' => 'Ines', 'avatarUrl' => null]));
+});
+
+it('refuses an unknown group filter', function () {
+    confirmedAdmin($this);
+
+    $this->get(route('admin.auditEvents.index', ['group' => 'everything']))->assertSessionHasErrors('group');
+});
+
+it('refuses the audit log to a member who is not an instance admin', function () {
+    $this->actingAs(User::factory()->create())->withSession(['auth.password_confirmed_at' => time()]);
+
+    $this->get(route('admin.auditEvents.index'))->assertForbidden();
 });

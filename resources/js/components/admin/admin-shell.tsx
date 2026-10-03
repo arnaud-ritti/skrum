@@ -24,8 +24,10 @@ export type AdminSection =
     | 'branding'
     | 'signIn'
     | 'mcpKeys'
+    | 'licence'
     | 'users'
-    | 'admins';
+    | 'admins'
+    | 'auditLog';
 
 type AdminNavEntry = {
     section: AdminSection;

@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Admin\AdminCandidatesController;
 use App\Http\Controllers\Admin\AdminsController;
+use App\Http\Controllers\Admin\AuditEventsController;
 use App\Http\Controllers\Admin\AvatarPreviewsController;
 use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
+use App\Http\Controllers\Admin\LicencesController;
 use App\Http\Controllers\Admin\McpKeysController;
 use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Controllers\Admin\UserDeactivationsController;
@@ -67,5 +69,9 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::delete('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'destroy'])
             ->whereUuid('user')
             ->name('admin.userDeactivations.destroy');
+
+        Route::get('admin/licence', [LicencesController::class, 'show'])->name('admin.licence.show');
+
+        Route::get('admin/audit-log', [AuditEventsController::class, 'index'])->name('admin.auditEvents.index');
     });
 });
