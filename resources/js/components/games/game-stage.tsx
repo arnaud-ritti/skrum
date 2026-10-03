@@ -12,7 +12,9 @@ import { HistoryDrawer } from './history-drawer';
 import { PassRoundButton } from './pass-round-button';
 import { useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
+import { RoundInfo } from './round-info';
 import { SprintGifBoard } from './sprint-gif-board';
+import { TurnTimer } from './turn-timer';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
 function RoundBoard({
@@ -93,14 +95,12 @@ function RoundStatus({ round }: { round: GameRound }) {
 }
 
 export type GameStageProps = {
-    /** Place left above the title for "Round n of m" (GM-2). */
-    roundInfo?: ReactNode;
     /** Place left under the chosen GIF for its caption (GM-3). */
     gifCaption?: ReactNode;
 };
 
 /** The centre of a room: the game's name, then the round in play or the end card. */
-export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
+export function GameStage({ gifCaption }: GameStageProps) {
     const { snapshot, lastEnded, serverOffset } = useRoom();
     const { t } = useTrans();
     const gifStep = useGifStep();
@@ -133,7 +133,7 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
         >
             <div className="flex w-full shrink-0 flex-wrap items-end justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-1">
-                    {roundInfo}
+                    {round && <RoundInfo round={round} />}
                     {round && <RoundStatus round={round} />}
                     {gifStep === 3 && <GifStepLine step={3} />}
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -152,7 +152,8 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
                         )}
                     </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+                    {round && <TurnTimer round={round} />}
                     {round && <PassRoundButton round={round} />}
                     <HistoryDrawer />
                 </div>

@@ -1,4 +1,10 @@
-import { MessagesSquare, Shapes, Trophy, Users } from 'lucide-react';
+import {
+    MessagesSquare,
+    Shapes,
+    SlidersHorizontal,
+    Trophy,
+    Users,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRoundEnded, GameSnapshot } from '@/lib/games/types';
@@ -9,7 +15,9 @@ import {
     type GameLayoutProps,
 } from './game-layout';
 import { GamePicker } from './game-picker';
+import { GameSettingsCard } from './game-settings-card';
 import { hasPlayersOnLeft, RoomPlayersSide, RoomSidebar } from './room-sidebar';
+import { TurnOrder } from './turn-order';
 
 type RoomPanelsOptions = {
     snapshot: GameSnapshot;
@@ -21,8 +29,6 @@ type RoomPanelsOptions = {
      */
     watchChoice?: boolean;
     /** Places left for later features; nothing fills them today. */
-    settingsCard?: ReactNode;
-    turnOrder?: ReactNode;
     gifCaption?: ReactNode;
     gifPodium?: ReactNode;
 };
@@ -40,8 +46,6 @@ export function useRoomPanels({
     snapshot,
     lastEnded,
     watchChoice = false,
-    settingsCard,
-    turnOrder,
     gifCaption,
     gifPodium,
 }: RoomPanelsOptions): RoomPanels {
@@ -52,6 +56,8 @@ export function useRoomPanels({
     const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
     const playersOnLeft = hasPlayersOnLeft(room.game);
     const isDraw = room.game === 'draw';
+    const settingsCard = <GameSettingsCard />;
+    const turnOrder = <TurnOrder />;
     const side = (
         <RoomSidebar
             highlightPlayerId={winnerPlayerId}
@@ -116,13 +122,23 @@ export function useRoomPanels({
                   id: 'choice',
                   label: t('Games'),
                   icon: Shapes,
-                  content: <GamePicker readOnly />,
+                  content: <GamePicker readOnly settings={settingsCard} />,
+              }
+            : undefined;
+    /** A manager who is not the host sets the game without choosing it. */
+    const managed: GameLayoutPanel | undefined =
+        !room.isHost && room.canManage
+            ? {
+                  id: 'settings',
+                  label: t('Game settings'),
+                  icon: SlidersHorizontal,
+                  content: settingsCard,
               }
             : undefined;
 
     return {
         variant: 'choice',
-        left: choice ?? watched,
+        left: choice ?? watched ?? managed,
         right: {
             id: 'players',
             label: t('Players and scores'),

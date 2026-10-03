@@ -31,6 +31,26 @@ export const SettingsByGame: Record<GameKind, GameSettingKey[]> = {
 
 export const WordThemes: WordTheme[] = ['work', 'objects', 'food', 'nature'];
 
+/** The games whose words come from the themes. */
+export const WordGames: GameKind[] = ['hangman', 'draw', 'decoded'];
+
+/** The labels of `GameWordTheme::label()`. */
+export function wordThemeLabel(
+    theme: WordTheme,
+    t: (key: string) => string,
+): string {
+    switch (theme) {
+        case 'work':
+            return t('Team & tech');
+        case 'objects':
+            return t('Everyday objects');
+        case 'food':
+            return t('Food');
+        case 'nature':
+            return t('Nature & animals');
+    }
+}
+
 export const TurnSecondsOptions = [15, 30, 45, 60, 80, 90, 120, 180] as const;
 
 export const RoundsOptions = [3, 5, 6, 8, 10] as const;

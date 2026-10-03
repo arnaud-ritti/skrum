@@ -3,6 +3,7 @@ import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRound
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { withAwardedPoints } from '@/lib/games/leaderboard';
 import { outcomeLabel } from '@/lib/games/outcomes';
 import type {
     GameGifRevealed,
@@ -52,6 +53,51 @@ function RoundPoints({ points }: { points: GamePointsAward[] }) {
     );
 }
 
+const PodiumSize = 3;
+
+/** The room's best scores when a game of a set number of rounds is over (spec §6.4). */
+function FinalScores() {
+    const { snapshot } = useRoom();
+    const { t } = useTrans();
+    const names = new Map(
+        snapshot.players.map((player) => [player.id, player.name]),
+    );
+    const podium = withAwardedPoints(
+        snapshot.leaderboard,
+        [],
+        snapshot.players,
+    ).slice(0, PodiumSize);
+
+    if (podium.length === 0) {
+        return null;
+    }
+
+    return (
+        <ol
+            aria-label={t('Final scores')}
+            data-slot="final-scores"
+            className="flex w-full max-w-sm flex-col gap-1"
+        >
+            {podium.map((row, index) => (
+                <li
+                    key={row.playerId}
+                    className="flex min-w-0 items-center gap-3 rounded-md bg-muted px-3 py-2 text-sm"
+                >
+                    <span className="w-4 shrink-0 font-semibold tabular-nums">
+                        {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-left">
+                        {names.get(row.playerId) ?? t('Someone')}
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums">
+                        {t(':count points', { count: row.points })}
+                    </span>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
 /** Between two rounds: what the last one gave, and the controls of the next. */
 export function RoundEndCard() {
     const { snapshot, lastEnded } = useRoom();
@@ -67,6 +113,10 @@ export function RoundEndCard() {
     const winner =
         snapshot.players.find((player) => player.id === winnerId) ?? null;
     const question = lastEnded?.question ?? lastRound?.question ?? null;
+    const number = lastEnded?.number ?? lastRound?.number ?? null;
+    const roundsTotal =
+        lastEnded?.roundsTotal ?? lastRound?.roundsTotal ?? null;
+    const isGameOver = number !== null && number === roundsTotal;
     const roomId = snapshot.room.id;
     const gifRoundId =
         lastRound?.game === 'gif' && !lastEnded?.answers ? lastRound.id : null;
@@ -128,6 +178,11 @@ export function RoundEndCard() {
                 gifAnswers && 'max-w-4xl',
             )}
         >
+            {isGameOver && (
+                <h3 className="font-display text-2xl font-title">
+                    {t('Game over')}
+                </h3>
+            )}
             <Badge variant="secondary" shape="pill">
                 {outcomeLabel(outcome, t)}
             </Badge>
@@ -155,6 +210,7 @@ export function RoundEndCard() {
             {lastEnded && !lastEnded.answers && (
                 <RoundPoints points={lastEnded.points} />
             )}
+            {isGameOver && <FinalScores />}
             <StartRoundControls label={t('Next round')} />
         </Card>
     );

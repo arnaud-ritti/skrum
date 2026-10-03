@@ -49,21 +49,41 @@ export function RoomTitle() {
     const gameLabel =
         games.find((option) => option.value === room.game)?.label ?? room.game;
     const GameIcon = gameIcons[room.game];
+    const { round } = snapshot;
+    const roundCount =
+        round !== null && round.number !== null && round.roundsTotal !== null
+            ? t('Round :number / :total', {
+                  number: round.number,
+                  total: round.roundsTotal,
+              })
+            : null;
 
     return (
         <SessionTitle
             backHref={links.team}
             overline={overline}
             badges={
-                <Badge
-                    variant="soft"
-                    shape="pill"
-                    data-slot="room-game"
-                    className="hidden sm:inline-flex"
-                >
-                    <GameIcon aria-hidden />
-                    {gameLabel}
-                </Badge>
+                <>
+                    <Badge
+                        variant="soft"
+                        shape="pill"
+                        data-slot="room-game"
+                        className="hidden sm:inline-flex"
+                    >
+                        <GameIcon aria-hidden />
+                        {gameLabel}
+                    </Badge>
+                    {roundCount !== null && (
+                        <Badge
+                            variant="outline"
+                            shape="pill"
+                            data-slot="room-round"
+                            className="hidden sm:inline-flex"
+                        >
+                            {roundCount}
+                        </Badge>
+                    )}
+                </>
             }
         >
             {room.name}
