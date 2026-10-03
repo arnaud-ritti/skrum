@@ -4428,5 +4428,21 @@
     "Results, NPS with segments and a rise": "Résultats, NPS avec segments et une hausse",
     "Results, NPS with no change": "Résultats, NPS sans changement",
     "Sprint 41": "Sprint 41",
-    "Your answers are saved as you give them; the counter is paused.": "Tes réponses sont enregistrées au fur et à mesure ; le compteur est en pause."
+    "Your answers are saved as you give them; the counter is paused.": "Tes réponses sont enregistrées au fur et à mesure ; le compteur est en pause.",
+    ":count of :total have answered": ":count sur :total ont répondu",
+    "Anonymous answers": "Réponses anonymes",
+    "Change my answers": "Modifier mes réponses",
+    "Closed on :date": "Clôturé le :date",
+    "It can be answered once it is published.": "Tu pourras y répondre une fois qu’il sera publié.",
+    "Neither the facilitator nor the team can link this answer to you.": "Ni le facilitateur ni l’équipe ne peuvent relier cette réponse à toi.",
+    "Question :index of :count": "Question :index sur :count",
+    "Results appear from :threshold answers. :count so far.": "Les résultats s’affichent à partir de :threshold réponses. :count pour l’instant.",
+    "Results will show when the survey is closed": "Les résultats s’afficheront à la clôture du sondage",
+    "See the results": "Voir les résultats",
+    "Thank you — your answers are saved.": "Merci — tes réponses sont enregistrées.",
+    "This survey is not open yet.": "Ce sondage n’est pas encore ouvert.",
+    "This survey was deleted.": "Ce sondage a été supprimé.",
+    "Your answers could not be sent. Try again.": "Tes réponses n’ont pas pu être envoyées. Réessaie.",
+    "to go on": "pour valider",
+    "to score": "pour noter"
 }
