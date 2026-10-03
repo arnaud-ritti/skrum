@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasSearchColumns;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Auth\SendPasswordResetLink;
 use App\Support\Auth\LoginAddress;
@@ -63,6 +64,7 @@ use SensitiveParameter;
  * @property-read int|string|null $total_points
  * @property-read int|null $wins
  * @property-read int|null $rounds_played
+ * @property-read TeamMembership $teamMembership
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts', 'presence_color', 'reduce_motion'])]
 #[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token', 'avatar_photo_path', 'password_set_at', 'deactivated_at', 'last_signed_in_at'])]
@@ -223,10 +225,41 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return $this->roleIn($workspace)?->canManageWorkspace() ?? false;
     }
 
-    /** @return BelongsToMany<Team, $this> */
+    public function isObserverOf(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return false;
+        }
+
+        return $team->roleOf($this) === TeamRole::Observer;
+    }
+
+    public function managesTeam(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return true;
+        }
+
+        return $team->roleOf($this)?->managesTeam() ?? false;
+    }
+
+    public function managesRitualsOf(Team $team): bool
+    {
+        if ($this->canManage($team->workspace)) {
+            return true;
+        }
+
+        return $team->roleOf($this)?->managesRituals() ?? false;
+    }
+
+    /** @return BelongsToMany<Team, $this, TeamMembership, 'teamMembership'> */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Team::class)->withTimestamps();
+        return $this->belongsToMany(Team::class)
+            ->using(TeamMembership::class)
+            ->as('teamMembership')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     /** @return HasMany<GamePoint, $this> */

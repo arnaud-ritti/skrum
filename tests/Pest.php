@@ -13,6 +13,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\WorkspaceRole;
@@ -270,11 +271,11 @@ function llmRequestBodies(): string
         ->implode("\n");
 }
 
-function teamMember(Team $team): User
+function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
 {
     $user = User::factory()->create();
     $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($user);
+    $team->members()->attach($user, ['role' => $role->value]);
 
     return $user;
 }

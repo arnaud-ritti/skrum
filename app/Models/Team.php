@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,10 +40,23 @@ class Team extends Model
         return $this->belongsTo(Workspace::class);
     }
 
-    /** @return BelongsToMany<User, $this> */
+    /** @return BelongsToMany<User, $this, TeamMembership, 'teamMembership'> */
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->using(TeamMembership::class)
+            ->as('teamMembership')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function roleOf(User $user): ?TeamRole
+    {
+        return TeamMembership::query()
+            ->where('team_id', $this->id)
+            ->where('user_id', $user->id)
+            ->first()
+            ?->role;
     }
 
     public function hasMember(User $user): bool
