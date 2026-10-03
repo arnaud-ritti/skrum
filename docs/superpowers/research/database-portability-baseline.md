@@ -160,3 +160,25 @@ Rules: `upsert` removed; `sql string on a connection`, `engine-specific operator
 (the query log read through `collect(DB::getQueryLog())`, `pluck('query')`, `DB::listen`) added.
 `SharedPropsTest` counts its statements through `SqlProbe::readsFrom()` and `SqlProbe::statementsOn()`.
 `bin/check-pg-upgrade` passes.
+
+## Task 19 — the full matrix, after the merge of Task 14
+
+Run on 2026-10-03 at `8ea5ce49` (merge of `db/task-14` + the `Race` documentation), database `testing_l9`, four
+processes, one run at a time. 5 939 tests.
+
+| Run | Result | Time |
+|---|---|---|
+| pgsql | `test-db pgsql: PASS, Tests: 2 skipped, 5937 passed (54506 assertions)` | 3 min 39 |
+| sqlite | `test-db sqlite: PASS, Tests: 8 skipped, 5931 passed (54493 assertions)` | 1 min 01 |
+| mariadb | `test-db mariadb: PASS, Tests: 1 skipped, 5938 passed (54508 assertions)` | 4 min 04 |
+| mysql | `test-db mysql: PASS, Tests: 1 skipped, 5938 passed (54508 assertions)` | 7 min 44 |
+| pgsql --concurrency | `PASS, Tests: 1 skipped, 19 passed (85 assertions)` | 1 min 39 |
+| mariadb --concurrency | `PASS, Tests: 1 skipped, 19 passed (85 assertions)` | 1 min 46 |
+| mysql --concurrency | `PASS, Tests: 1 skipped, 19 passed (85 assertions)` | 2 min 10 |
+| sqlite-file --concurrency | `PASS, Tests: 1 skipped, 19 passed (86 assertions)` | 1 min 40 |
+| sqlite-file -- tests/Feature/Database | `PASS, Tests: 4 skipped, 191 passed (363 assertions)` | 8 s |
+| bin/check-pg-upgrade | PASS | 5 s |
+
+`tests/Upgrade` is left out of the `sqlite-file` run: `migrate:fresh` truncates the file under an open WAL
+connection and the database then reads as malformed. PHPStan 0 errors, Pint clean, `tsc` clean after
+`wayfinder:generate`. Browser suite not run. Report: `database-portability-report.md`.
