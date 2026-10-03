@@ -4560,5 +4560,8 @@
     "Any moment now": "D'un instant à l'autre",
     "Back at": "Retour prévu",
     "your time (:zone) · in about :minutes min": "ton heure (:zone) · dans :minutes min environ",
-    "“:message”": "« :message »"
+    "“:message”": "« :message »",
+    "You are not in the workspace of this team.": "Tu ne fais pas partie de l’espace de travail de cette équipe.",
+    "You are already in this team.": "Tu fais déjà partie de cette équipe.",
+    "This request was already answered.": "Cette demande a déjà reçu une réponse."
 }

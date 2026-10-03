@@ -4560,5 +4560,8 @@
     "Any moment now": "En cualquier momento",
     "Back at": "Vuelta prevista",
     "your time (:zone) · in about :minutes min": "tu hora (:zone) · en unos :minutes min",
-    "“:message”": "«:message»"
+    "“:message”": "«:message»",
+    "You are not in the workspace of this team.": "No formas parte del espacio de trabajo de este equipo.",
+    "You are already in this team.": "Ya formas parte de este equipo.",
+    "This request was already answered.": "Esta solicitud ya tiene respuesta."
 }
