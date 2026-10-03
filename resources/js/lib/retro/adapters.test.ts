@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     cardEngagement,
     cardVoting,
+    ColumnEditPhases,
     groupingProgress,
     toCardProps,
     toColumnProps,
@@ -189,14 +190,15 @@ describe('toColumnProps', () => {
         expect(canAdd({ phase: 'writing', isLocked: true })).toBe(false);
     });
 
-    it('lets the facilitator change the columns until Writing ends', () => {
+    it('lets the facilitator change the columns from the icebreaker until Writing ends', () => {
+        expect(ColumnEditPhases).toEqual(['icebreaker', 'writing']);
+
         const canManage = (retro: object, viewer: object = {}) =>
             toColumnProps(
                 columns[0],
                 retroSnapshot({ columns, cards, retro, viewer }),
             ).canManage;
 
-        expect(canManage({ phase: 'health_check' })).toBe(true);
         expect(canManage({ phase: 'icebreaker' })).toBe(true);
         expect(canManage({ phase: 'writing' })).toBe(true);
         expect(canManage({ phase: 'grouping' })).toBe(false);

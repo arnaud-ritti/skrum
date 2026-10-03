@@ -13,7 +13,6 @@ import type {
 } from '@/types/integrations';
 
 export type RetroPhase =
-    | 'health_check'
     | 'icebreaker'
     | 'writing'
     | 'grouping'
@@ -291,7 +290,6 @@ export type Snapshot = {
         template: string;
         phase: RetroPhase;
         phases: RetroPhase[];
-        healthCheckEnabled: boolean;
         /** How many statements the team asks, for the "Add survey" menu. */
         healthCheckStatements: number;
         icebreakerEnabled: boolean;

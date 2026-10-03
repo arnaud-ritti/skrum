@@ -163,6 +163,56 @@ describe('BoardPhases', () => {
         ).toContain('Writing');
     });
 
+    it('has no health check step, with the icebreaker first when enabled and a health check attached', () => {
+        renderInBoard(
+            <BoardPhases />,
+            boardContext(
+                retroSnapshot({
+                    retro: {
+                        icebreakerEnabled: true,
+                        phase: 'icebreaker',
+                        phases: [
+                            'icebreaker',
+                            'writing',
+                            'grouping',
+                            'voting',
+                            'discussing',
+                            'actions',
+                            'roti',
+                            'completed',
+                        ],
+                    },
+                    healthCheck: {
+                        surveyId: 'survey-1',
+                        isClosed: false,
+                        scale: 5,
+                        respondents: 0,
+                        participants: 3,
+                        hasSubmitted: false,
+                        statements: [],
+                        results: null,
+                    },
+                }),
+            ),
+        );
+
+        const steps = [
+            ...screen
+                .getByRole('list', { name: 'Phases' })
+                .querySelectorAll('[data-slot="phase-step"]'),
+        ].map((step) => step.querySelector('.truncate')?.textContent);
+
+        expect(steps).toEqual([
+            'Icebreaker',
+            'Writing',
+            'Grouping',
+            'Voting',
+            'Discussing',
+            'Actions',
+            'ROTI',
+        ]);
+    });
+
     it('lets the facilitator move to the next phase, then refetches', async () => {
         const { ctx } = renderInBoard(<BoardPhases />, boardContext());
 

@@ -2,7 +2,6 @@ import type { RetroPhase } from './types';
 
 /** English keys of the phase names; translated where they are shown. */
 export const PhaseLabels: Record<RetroPhase, string> = {
-    health_check: 'Health check',
     icebreaker: 'Icebreaker',
     writing: 'Writing',
     grouping: 'Grouping',

@@ -32,7 +32,6 @@ import {
     PresentationOverlay,
 } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
-import { PhaseHealth } from './phase-health';
 import { PhaseRoti } from './phase-roti';
 import { SessionEnd, type CompletedView } from './session-end';
 
@@ -109,12 +108,9 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     return (
-        <>
-            {phase === 'health_check' && <PhaseHealth />}
-            <div className="flex flex-1 flex-col lg:flex-row">
-                <ColumnsBoard hideMyCursor={hideMyCursor} />
-            </div>
-        </>
+        <div className="flex flex-1 flex-col lg:flex-row">
+            <ColumnsBoard hideMyCursor={hideMyCursor} />
+        </div>
     );
 }
 

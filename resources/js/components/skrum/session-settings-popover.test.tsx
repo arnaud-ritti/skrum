@@ -171,7 +171,7 @@ describe('useRetroSettingGroups', () => {
     });
 
     it('locks the vote limit once voting has started, and in phases added later', () => {
-        for (const phase of ['health_check', 'icebreaker', 'grouping']) {
+        for (const phase of ['icebreaker', 'writing', 'grouping']) {
             expect(
                 settingsOf({ phase }).votes_per_participant.disabledReason,
             ).toBeUndefined();
@@ -199,7 +199,7 @@ describe('useRetroSettingGroups', () => {
     it('has no health-check toggle: a health check is added from "Add survey"', () => {
         expect(settingsOf().health_check_enabled).toBeUndefined();
         expect(
-            settingsOf({ phase: 'health_check' }).health_check_enabled,
+            settingsOf({ phase: 'icebreaker' }).health_check_enabled,
         ).toBeUndefined();
     });
 
@@ -605,14 +605,20 @@ describe('SessionSettingsPopover', () => {
 
     it('names every back-end phase in the header', () => {
         const { rerender } = renderWithProviders(
-            <Harness phase="health_check" />,
+            <Harness phase="icebreaker" />,
         );
 
-        expect(screen.getByText('Sprint 42 retro · Health check')).toBeTruthy();
+        expect(screen.getByText('Sprint 42 retro · Icebreaker')).toBeTruthy();
 
         rerender(<Harness phase="completed" />);
 
         expect(screen.getByText('Sprint 42 retro · Completed')).toBeTruthy();
+    });
+
+    it('does not name the health check as a phase: it is a survey now', () => {
+        renderWithProviders(<Harness phase="health_check" />);
+
+        expect(screen.queryByText('Sprint 42 retro · Health check')).toBeNull();
     });
 
     it('does not break on a phase it does not know', () => {

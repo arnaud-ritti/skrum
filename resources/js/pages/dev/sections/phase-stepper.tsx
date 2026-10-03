@@ -16,10 +16,9 @@ function Example({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function usePhases(count: 6 | 7 | 8): PhaseStep[] {
+function usePhases(count: 6 | 7): PhaseStep[] {
     const { t } = useTrans();
     const all: PhaseStep[] = [
-        { id: 'health_check', label: t('Health check') },
         { id: 'icebreaker', label: t('Icebreaker') },
         { id: 'writing', label: t('Writing') },
         { id: 'grouping', label: t('Grouping') },
@@ -29,18 +28,14 @@ function usePhases(count: 6 | 7 | 8): PhaseStep[] {
         { id: 'roti', label: t('ROTI') },
     ];
 
-    if (count === 8) {
+    if (count === 7) {
         return all;
     }
 
-    if (count === 7) {
-        return all.slice(1);
-    }
-
-    return all.slice(2);
+    return all.slice(1);
 }
 
-function Live({ count }: { count: 6 | 7 | 8 }) {
+function Live({ count }: { count: 6 | 7 }) {
     const { t } = useTrans();
     const phases = usePhases(count);
     const [current, setCurrent] = useState(phases[2].id);
@@ -60,7 +55,6 @@ export default function PhaseStepperSection() {
     const { t } = useTrans();
     const six = usePhases(6);
     const seven = usePhases(7);
-    const eight = usePhases(8);
     const skipped = seven.map((phase) =>
         phase.id === 'icebreaker' ? { ...phase, skipped: true } : phase,
     );
@@ -81,14 +75,6 @@ export default function PhaseStepperSection() {
                 <PhaseStepper
                     phases={seven}
                     current="voting"
-                    interactive
-                    onPhaseChange={noop}
-                />
-            </Example>
-            <Example label={t('8 phases, discussing active (interactive)')}>
-                <PhaseStepper
-                    phases={eight}
-                    current="discussing"
                     interactive
                     onPhaseChange={noop}
                 />
@@ -119,7 +105,7 @@ export default function PhaseStepperSection() {
             </Example>
             <Example label={t('Compact, participant')}>
                 <PhaseStepper
-                    phases={eight}
+                    phases={seven}
                     current="grouping"
                     compact
                     leaderName={name}
@@ -142,7 +128,7 @@ export default function PhaseStepperSection() {
             </Example>
             <Example label={t('Mobile, interactive')}>
                 <PhaseStepper
-                    phases={eight}
+                    phases={seven}
                     current="grouping"
                     mobile
                     interactive
@@ -170,7 +156,7 @@ export default function PhaseStepperSection() {
             >
                 <div className="w-80 max-w-full">
                     <PhaseStepper
-                        phases={eight}
+                        phases={seven}
                         current="discussing"
                         interactive
                         onPhaseChange={noop}
@@ -184,7 +170,7 @@ export default function PhaseStepperSection() {
             >
                 <div className="w-160 max-w-full">
                     <PhaseStepper
-                        phases={eight}
+                        phases={seven}
                         current="discussing"
                         interactive
                         onPhaseChange={noop}
@@ -205,7 +191,7 @@ export default function PhaseStepperSection() {
                     'Live: Previous, Next, neighbour steps, arrow keys move focus',
                 )}
             >
-                <Live count={8} />
+                <Live count={7} />
             </Example>
         </div>
     );

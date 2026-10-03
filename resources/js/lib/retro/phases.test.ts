@@ -17,8 +17,8 @@ const Phases: RetroPhase[] = [
 ];
 
 describe('retro phases', () => {
-    it('names every phase', () => {
-        expect(PhaseLabels.health_check).toBe('Health check');
+    it('names every phase, and the health check is not one', () => {
+        expect(Object.keys(PhaseLabels)).not.toContain('health_check');
         expect(PhaseLabels.discussing).toBe('Discussing');
         expect(PhaseLabels.completed).toBe('Completed');
     });
@@ -37,7 +37,7 @@ describe('retro phases', () => {
         expect(nextPhase(Phases, 'writing')).toBe('grouping');
         expect(nextPhase(Phases, 'discussing')).toBe('completed');
         expect(nextPhase(Phases, 'completed')).toBeNull();
-        expect(nextPhase(Phases, 'health_check')).toBeNull();
+        expect(nextPhase(Phases, 'roti')).toBeNull();
     });
 
     it('reopens on the last phase before the completed state', () => {

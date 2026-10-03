@@ -21,11 +21,7 @@ type BoardView = Pick<
 >;
 
 /** Phases in which the facilitator may add, rename, recolour, move or delete a column. */
-export const ColumnEditPhases: RetroPhase[] = [
-    'health_check',
-    'icebreaker',
-    'writing',
-];
+export const ColumnEditPhases: RetroPhase[] = ['icebreaker', 'writing'];
 
 /** Phases in which an author may edit or delete their card. */
 const CardEditPhases: RetroPhase[] = ['writing', 'grouping'];

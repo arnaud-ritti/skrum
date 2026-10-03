@@ -165,7 +165,7 @@ export const MinRetroVotes = 1;
 export const MaxRetroVotes = 20;
 export const MaxSessionTitleLength = 120;
 
-const votePhases = ['health_check', 'icebreaker', 'writing', 'grouping'];
+const votePhases = ['icebreaker', 'writing', 'grouping'];
 
 export type RetroSettingsValues = {
     title: string;
@@ -828,7 +828,6 @@ function SettingsPanel({
         !readOnly && changedKeys.includes(key);
 
     const knownPhases: Record<string, string> = {
-        health_check: t('Health check'),
         icebreaker: t('Icebreaker'),
         writing: t('Writing'),
         grouping: t('Grouping'),

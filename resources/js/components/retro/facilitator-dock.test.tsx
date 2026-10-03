@@ -35,12 +35,7 @@ beforeEach(() => {
 
 describe('facilitatorActions', () => {
     it('offers the lock in every phase before the discussion', () => {
-        for (const phase of [
-            'health_check',
-            'icebreaker',
-            'writing',
-            'grouping',
-        ] as const) {
+        for (const phase of ['icebreaker', 'writing', 'grouping'] as const) {
             expect(ids(phase)).toEqual(['lock']);
         }
     });

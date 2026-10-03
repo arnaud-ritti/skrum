@@ -104,7 +104,6 @@ function WorstCaseShell({
         <PhaseStepper
             mobile={isMobile}
             phases={[
-                { id: 'health_check', label: t('Health check') },
                 { id: 'icebreaker', label: t('Icebreaker') },
                 { id: 'writing', label: t('Writing') },
                 { id: 'grouping', label: t('Grouping') },
