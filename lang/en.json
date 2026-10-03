@@ -623,6 +623,8 @@
     "You no longer have access to this game.": "You no longer have access to this game.",
     "Voting is closed for this round.": "Voting is closed for this round.",
     "No timer is running.": "No timer is running.",
+    "The icebreaker's timer cannot be paused.": "The icebreaker's timer cannot be paused.",
+    "The timer is not paused.": "The timer is not paused.",
     "A timer cannot run longer than two hours.": "A timer cannot run longer than two hours.",
     "A timer cannot run longer than one hour.": "A timer cannot run longer than one hour.",
     "Join a planning poker game": "Join a planning poker game",

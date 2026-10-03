@@ -876,6 +876,8 @@
     "You no longer have access to this game.": "Du hast keinen Zugriff mehr auf dieses Spiel.",
     "Voting is closed for this round.": "Die Abstimmung für diese Runde ist geschlossen.",
     "No timer is running.": "Es läuft kein Timer.",
+    "The icebreaker's timer cannot be paused.": "Der Timer des Eisbrechers kann nicht pausiert werden.",
+    "The timer is not paused.": "Der Timer ist nicht pausiert.",
     "A timer cannot run longer than two hours.": "Ein Timer darf nicht länger als zwei Stunden laufen.",
     "A timer cannot run longer than one hour.": "Ein Timer darf nicht länger als eine Stunde laufen.",
     "Join a planning poker game": "Einem Planning-Poker-Spiel beitreten",

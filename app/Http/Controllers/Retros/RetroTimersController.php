@@ -33,13 +33,13 @@ class RetroTimersController extends Controller
             ? null
             : now()->addSeconds((int) $validated['seconds'])->startOfSecond();
 
-        DB::transaction(function () use ($retro, $participant, $endsAt, $scheduleIcebreakerExpiry, $markRetroStarted): void {
+        $timed = DB::transaction(function () use ($retro, $participant, $endsAt, $scheduleIcebreakerExpiry, $markRetroStarted): Retro {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
             RetroGuard::open($locked);
 
-            $locked->update(['timer_ends_at' => $endsAt]);
+            $locked->update(['timer_ends_at' => $endsAt, 'timer_paused_seconds' => null]);
 
             if ($endsAt !== null) {
                 $markRetroStarted->handle($locked);
@@ -48,8 +48,10 @@ class RetroTimersController extends Controller
             TimerChanged::of($locked)->sendToOthers();
 
             $scheduleIcebreakerExpiry->handle($locked);
+
+            return $locked;
         });
 
-        return response()->json(['timerEndsAt' => $endsAt?->toIso8601String()]);
+        return response()->json(TimerChanged::of($timed)->broadcastWith());
     }
 }
