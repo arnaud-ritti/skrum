@@ -4537,5 +4537,6 @@
     "1 question": "1 question",
     "500 characters max": "500 caractères max",
     ":count options": ":count options",
-    "Its questions and answers are deleted too.": "Ses questions et ses réponses sont supprimées aussi."
+    "Its questions and answers are deleted too.": "Ses questions et ses réponses sont supprimées aussi.",
+    "Results, scale 1-5 as a histogram with its ends": "Résultats, échelle 1-5 en histogramme avec ses bornes"
 }

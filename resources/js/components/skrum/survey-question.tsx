@@ -84,6 +84,8 @@ type SurveyQuestionOwnProps = {
     options?: SurveyQuestionOption[];
     maxChoices?: number;
     scaleLabels?: [min: string, max: string];
+    /** How the results of a scale are drawn: one row per value, or the vertical histogram of a results page with the two ends under it. */
+    scaleChart?: 'rows' | 'histogram';
     anonymous?: boolean;
     required?: boolean;
     invalid?: boolean;
@@ -304,6 +306,76 @@ function NpsHistogram({ buckets }: { buckets: SurveyQuestionBucket[] }) {
     );
 }
 
+function ScaleHistogram({
+    buckets,
+    labels,
+}: {
+    buckets: SurveyQuestionBucket[];
+    labels?: [string, string];
+}) {
+    const { t } = useTrans();
+    const highest = Math.max(1, ...buckets.map((bucket) => bucket.count));
+    const description = buckets
+        .map((bucket) => `${bucket.label}: ${bucket.count}`)
+        .join(', ');
+
+    return (
+        <div className="flex flex-col gap-1">
+            <div
+                role="img"
+                aria-label={t('Distribution: :summary', {
+                    summary: description,
+                })}
+                data-slot="survey-scale-histogram"
+                className="flex h-30 items-end gap-3 border-b border-border"
+            >
+                {buckets.map((bucket) => (
+                    <div
+                        key={bucket.key}
+                        className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                    >
+                        <span className="text-xs font-bold tabular-nums">
+                            {bucket.count}
+                        </span>
+                        <div className="flex min-h-0 w-full flex-1 items-end justify-center">
+                            <div
+                                data-slot="survey-histogram-bar"
+                                className={cn(
+                                    'min-h-0.5 w-full max-w-11 rounded-t-md transition-[height] duration-220 ease-standard motion-reduce:transition-none',
+                                    bucket.count > 0
+                                        ? 'bg-chart-1'
+                                        : 'bg-border',
+                                )}
+                                style={{
+                                    height: `${percentOf(bucket.count, highest)}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div aria-hidden="true" className="flex gap-3">
+                {buckets.map((bucket) => (
+                    <span
+                        key={bucket.key}
+                        className="min-w-0 flex-1 text-center text-xs font-semibold text-muted-foreground tabular-nums"
+                    >
+                        {bucket.label}
+                    </span>
+                ))}
+            </div>
+            {labels && (
+                <div className="mt-1 flex justify-between gap-3 text-xs text-muted-foreground">
+                    <span className="min-w-0 break-words">{labels[0]}</span>
+                    <span className="min-w-0 text-end break-words">
+                        {labels[1]}
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function TextResults({ results }: { results: SurveyQuestionResults }) {
     const { t } = useTrans();
     const [expanded, setExpanded] = useState(false);
@@ -516,11 +588,15 @@ function Results({
     options,
     results,
     value,
+    scaleChart,
+    scaleLabels,
 }: {
     kind: SurveyQuestionKind;
     options: SurveyQuestionOption[];
     results: SurveyQuestionResults;
     value: SurveyQuestionValue;
+    scaleChart: 'rows' | 'histogram';
+    scaleLabels?: [string, string];
 }) {
     const { t } = useTrans();
 
@@ -594,9 +670,11 @@ function Results({
                 {kind === 'nps' && results.segments && (
                     <NpsSegments segments={results.segments} />
                 )}
-                {kind === 'nps' ? (
-                    <NpsHistogram buckets={buckets} />
-                ) : (
+                {kind === 'nps' && <NpsHistogram buckets={buckets} />}
+                {kind === 'scale5' && scaleChart === 'histogram' && (
+                    <ScaleHistogram buckets={buckets} labels={scaleLabels} />
+                )}
+                {kind === 'scale5' && scaleChart === 'rows' && (
                     <CountResults
                         items={buckets}
                         total={results.responses}
@@ -705,6 +783,7 @@ export function SurveyQuestion({
     options = [],
     maxChoices,
     scaleLabels,
+    scaleChart = 'rows',
     anonymous = false,
     required = false,
     invalid = false,
@@ -1084,6 +1163,8 @@ export function SurveyQuestion({
                     options={options}
                     results={results}
                     value={savedValue === undefined ? value : savedValue}
+                    scaleChart={scaleChart}
+                    scaleLabels={scaleLabels}
                 />
             )}
 

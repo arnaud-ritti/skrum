@@ -245,6 +245,24 @@ export default function SurveyQuestionSection() {
                     }}
                 />
             </Example>
+            <Example
+                label={t('Results, scale 1-5 as a histogram with its ends')}
+            >
+                <SurveyQuestion
+                    id="r9"
+                    kind="scale5"
+                    label={t('How was the sprint?')}
+                    mode="results"
+                    scaleChart="histogram"
+                    scaleLabels={[t('Unbearable'), t('Very comfortable')]}
+                    results={{
+                        responses: 9,
+                        mean: 3.8,
+                        mode: 4,
+                        buckets: buckets([0, 1, 2, 4, 2], 1),
+                    }}
+                />
+            </Example>
             <Example label={t('Results, NPS')}>
                 <SurveyQuestion
                     id="r2"

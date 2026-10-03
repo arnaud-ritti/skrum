@@ -4317,5 +4317,6 @@
     "1 question": "1 question",
     "500 characters max": "500 characters max",
     ":count options": ":count options",
-    "Its questions and answers are deleted too.": "Its questions and answers are deleted too."
+    "Its questions and answers are deleted too.": "Its questions and answers are deleted too.",
+    "Results, scale 1-5 as a histogram with its ends": "Results, scale 1-5 as a histogram with its ends"
 }

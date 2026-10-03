@@ -689,6 +689,61 @@ describe('SurveyQuestion survey additions', () => {
         expect(screen.queryByText('most frequent answer')).toBeNull();
     });
 
+    it('draws a scale as a vertical histogram with its two ends when asked, and as rows by default', () => {
+        const results = {
+            responses: 9,
+            mean: 3.8,
+            mode: 4,
+            buckets: [1, 2, 3, 4, 5].map((n) => ({
+                key: String(n),
+                label: String(n),
+                count: [0, 1, 2, 4, 2][n - 1],
+            })),
+        };
+        const { container, rerender } = setup({
+            kind: 'scale5',
+            mode: 'results',
+            scaleLabels: ['Unbearable', 'Very comfortable'],
+            results,
+        });
+
+        expect(
+            container.querySelectorAll('[data-slot="survey-result"]'),
+        ).toHaveLength(5);
+        expect(
+            container.querySelector('[data-slot="survey-scale-histogram"]'),
+        ).toBeNull();
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="scale5"
+                label="Pick one"
+                mode="results"
+                scaleChart="histogram"
+                scaleLabels={['Unbearable', 'Very comfortable']}
+                results={results}
+            />,
+        );
+
+        const histogram = screen.getByRole('img', {
+            name: 'Distribution: 1: 0, 2: 1, 3: 2, 4: 4, 5: 2',
+        });
+
+        expect(histogram.getAttribute('data-slot')).toBe(
+            'survey-scale-histogram',
+        );
+        expect(
+            histogram.querySelectorAll('[data-slot="survey-histogram-bar"]'),
+        ).toHaveLength(5);
+        expect(
+            container.querySelector('[data-slot="survey-result"]'),
+        ).toBeNull();
+        expect(screen.getByText('Unbearable')).toBeTruthy();
+        expect(screen.getByText('Very comfortable')).toBeTruthy();
+        expect(screen.getByText('3.8')).toBeTruthy();
+    });
+
     it('draws the NPS segments as an image with a written label and a legend of three counts', () => {
         setup({
             kind: 'nps',
