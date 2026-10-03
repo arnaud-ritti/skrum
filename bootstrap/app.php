@@ -4,6 +4,7 @@ use App\Http\ErrorPageResponder;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePasswordUnlessNoneKnown;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrustProxies;
 use App\Support\Database\Transactions;
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
 
         $middleware->replace(FrameworkTrustProxies::class, TrustProxies::class);
+
+        $middleware->alias(['password.confirm' => RequirePasswordUnlessNoneKnown::class]);
 
         $isInboundWebhook = fn (Request $request): bool => $request->is('integrations/webhooks/*');
 

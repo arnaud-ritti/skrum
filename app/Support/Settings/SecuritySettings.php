@@ -6,6 +6,7 @@ use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Enums\EmailCodePurpose;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
+use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Features;
@@ -23,6 +24,7 @@ class SecuritySettings
         private IntegrationAvailability $availability,
         private SecondFactors $secondFactors,
         private SendEmailTwoFactorCode $sendCode,
+        private SignInPolicy $policy,
     ) {}
 
     /**
@@ -74,6 +76,10 @@ class SecuritySettings
      *         enabled: bool,
      *         address: string,
      *         resendIn: int
+     *     },
+     *     password: array{
+     *         isSet: bool,
+     *         allowed: bool
      *     }
      * }
      */
@@ -88,6 +94,10 @@ class SecuritySettings
                 'enabled' => $this->secondFactors->hasEmailCode($user),
                 'address' => $user->email,
                 'resendIn' => $this->sendCode->secondsUntilResend($user, EmailCodePurpose::Enable),
+            ],
+            'password' => [
+                'isSet' => $user->password_set_at !== null,
+                'allowed' => $this->policy->allowsPassword($user),
             ],
         ];
     }

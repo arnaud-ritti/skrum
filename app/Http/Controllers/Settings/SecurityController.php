@@ -15,9 +15,10 @@ class SecurityController extends Controller
      */
     public function update(PasswordUpdateRequest $request, RevokeLoginSecrets $revoke): RedirectResponse
     {
-        $request->user()->update([
+        $request->user()->forceFill([
             'password' => $request->password,
-        ]);
+            'password_set_at' => now(),
+        ])->save();
 
         $revoke->handle($request->user());
 

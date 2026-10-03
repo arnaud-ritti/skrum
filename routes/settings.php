@@ -12,7 +12,7 @@ use App\Http\Controllers\Settings\ProfilePhotosController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\ShortcutPreferencesController;
 use App\Http\Middleware\EnsureMcpIsEnabled;
-use Illuminate\Auth\Middleware\RequirePassword;
+use App\Http\Middleware\RequirePasswordUnlessNoneKnown;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function (): void {
@@ -33,7 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
      * the password, then lead to the section.
      */
     Route::redirect('settings/security', '/settings#security')
-        ->middleware(RequirePassword::class)
+        ->middleware(RequirePasswordUnlessNoneKnown::class)
         ->name('security.edit');
 
     Route::put('settings/password', [SecurityController::class, 'update'])
@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware('throttle:30,1')
         ->name('passwordBreachRanges.store');
 
-    Route::middleware([RequirePassword::class, 'throttle:6,1,emailSecondFactor'])->group(function (): void {
+    Route::middleware([RequirePasswordUnlessNoneKnown::class, 'throttle:6,1,emailSecondFactor'])->group(function (): void {
         Route::post('settings/email-second-factor/code', [EmailSecondFactorCodesController::class, 'store'])->name('emailSecondFactor.codes.store');
         Route::post('settings/email-second-factor', [EmailSecondFactorsController::class, 'store'])->name('emailSecondFactor.store');
         Route::delete('settings/email-second-factor', [EmailSecondFactorsController::class, 'destroy'])->name('emailSecondFactor.destroy');
@@ -58,15 +58,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::middleware(EnsureMcpIsEnabled::class)->group(function (): void {
         Route::redirect('settings/api-tokens', '/settings#api-tokens')
-            ->middleware(RequirePassword::class)
+            ->middleware(RequirePasswordUnlessNoneKnown::class)
             ->name('apiTokens.index');
 
         Route::post('settings/api-tokens', [ApiTokensController::class, 'store'])
-            ->middleware([RequirePassword::class, 'throttle:10,1'])
+            ->middleware([RequirePasswordUnlessNoneKnown::class, 'throttle:10,1'])
             ->name('apiTokens.store');
 
         Route::delete('settings/api-tokens/{token}', [ApiTokensController::class, 'destroy'])
-            ->middleware(RequirePassword::class)
+            ->middleware(RequirePasswordUnlessNoneKnown::class)
             ->whereUuid('token')
             ->name('apiTokens.destroy');
     });

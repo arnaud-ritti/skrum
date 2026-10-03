@@ -39,7 +39,7 @@ class AccountSettingsController extends Controller
     {
         $user = $request->user();
         $verified = ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
-        $passwordConfirmed = $verified && $this->passwordConfirmation->isFresh($request);
+        $passwordConfirmed = $verified && $this->passwordConfirmation->isSatisfied($request);
 
         if ($passwordConfirmed && Features::canManageTwoFactorAuthentication() && ! $this->staysOnThePage($request)) {
             $request->ensureStateIsValid();
@@ -88,6 +88,7 @@ class AccountSettingsController extends Controller
             'presenceColor' => $user->presenceColor(),
             'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null,
             'photosAllowed' => $photosAllowed,
+            'needsPasswordConfirmation' => ! $this->passwordConfirmation->isNotNeeded($user),
         ];
     }
 
