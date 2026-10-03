@@ -52,7 +52,12 @@ export type SessionCardProps = {
     meta?: ReactNode;
     /** Rendered outside the link, so it may hold buttons or a menu. */
     action?: ReactNode;
-    stats?: { participants: number; cards?: number; actions?: number };
+    stats?: {
+        participants: number;
+        cards?: number;
+        groups?: number;
+        actions?: number;
+    };
     people?: SessionCardPerson[];
     className?: string;
 };
@@ -242,6 +247,17 @@ export function SessionCard({
                             <span className="@max-card-compact/card:sr-only">
                                 {t('cards')}
                             </span>
+                        </span>
+                    )}
+                    {stats.groups !== undefined && (
+                        <span
+                            data-slot="session-card-groups"
+                            className="inline-flex items-center gap-1"
+                        >
+                            <Layers className="size-3.5" aria-hidden />
+                            {stats.groups === 1
+                                ? t('1 group')
+                                : t(':count groups', { count: stats.groups })}
                         </span>
                     )}
                     {stats.actions !== undefined && (

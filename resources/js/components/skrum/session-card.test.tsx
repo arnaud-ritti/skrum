@@ -109,6 +109,33 @@ describe('SessionCard', () => {
         expect(screen.getByText('38')).toBeTruthy();
     });
 
+    it('counts the groups after the cards, in the singular for one', () => {
+        const { container, rerender } = render(
+            <SessionCard
+                {...base}
+                stats={{ participants: 9, cards: 38, groups: 6, actions: 6 }}
+            />,
+        );
+        const groups = () =>
+            container.querySelector('[data-slot="session-card-groups"]');
+
+        expect(groups()?.textContent).toBe('6 groups');
+        expect(groups()?.previousElementSibling?.textContent).toContain('38');
+
+        rerender(
+            <SessionCard
+                {...base}
+                stats={{ participants: 9, cards: 38, groups: 1 }}
+            />,
+        );
+
+        expect(groups()?.textContent).toBe('1 group');
+
+        rerender(<SessionCard {...base} />);
+
+        expect(groups()).toBeNull();
+    });
+
     it('renders the scheduled state and omits missing counters', () => {
         render(
             <SessionCard
