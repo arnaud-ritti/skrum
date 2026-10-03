@@ -1,12 +1,12 @@
 # Skrüm — Administration sections and error pages (plan 29) — Design
 
-Date: 2026-10-03 (draft for the owner; nothing is built before the owner has read §16)
+Date: 2026-10-03 (draft); revised 2026-10-03 with the owner's answers to §16 (all ten answered; decisions 1 and 2 differ from the recommendation the draft was written on). Nothing is built before the owner approves this spec and the pre-build deviations of the plan.
 Roadmap rows: AD-1 to AD-5 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Deviation rows cleared: D-35 (admin sections, version line) and D-31 (error pages: "Instance status" link, the 403 access request, "Back at" and the admin message of the 503 page, the version line). The "Help" link of D-31 stays backlog (roadmap). The 404 "Search sessions ⌘K" stays "never" (owner, D-55).
-Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md`, all rounds: mockup binding for presentation (third round, rule 13); existing features kept; simple data may be added; informal register (sixth round: French "tu", Spanish "tú", German "du", error pages and the static 503 page included); a guest counts as a participant (no effect here); Eloquent only and four engines (fifth round, `docs/database.md`); the security answers of the third round (`sso_required`, break-glass); 11-D3 (request id on the 500 page), 11-D7/11-D10 (static 503, no database), the fourth-round "Maintenance" answer (an Inertia visit during maintenance forces a full reload) and D-55 (the static 503 reloads every 30 s).
+Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md`, all rounds: mockup binding for presentation (third round, rule 13); existing features kept; simple data may be added; informal register (sixth round: French "tu", Spanish "tú", German "du", error pages and the static 503 page included); a guest counts as a participant (no effect here); Eloquent only and four engines (fifth round, `docs/database.md`); the security answers of the third round (`sso_required`, break-glass); 11-D3 (request id on the 500 page), 11-D7/11-D10 (static 503, no database), the fourth-round "Maintenance" answer (an Inertia visit during maintenance forces a full reload) and D-55 (the static 503 reloads every 30 s). Answers of 2026-10-03 to §16: `.superpowers/sdd/roadmap/progress.md`, line "Plan 29".
 Mockups (binding for presentation): `docs/design-system/components/ScreenSettings` (frame b, "Administration de l'instance self-host"), `ScreenErrors` (404, 403, 500, 503), `NotificationsPanel` (the bell), `Table`, `Pagination`, `Badge`, `Sidebar`; for each, `README.md` and `preview.html`.
 Database rules: `docs/database.md`, "Rules for database code" 1 to 12.
 
-What was read: `main` at `18d3637e` (front-end rewrite, database portability, plan 19). Nothing was run. Every "Back end" line of the roadmap was checked against the code; corrections are in §1.
+What was read: `main` at `18d3637e` (front-end rewrite, database portability, plan 19), re-read at `0c294632` for the revision (instance settings, SSO and integration enums, `config/services.php`, `config/oidc.php`, `config/mail.php`, the OIDC Socialite package, Octane's listeners, `bootstrap/app.php`, `composer.json`). Nothing was run. Every "Back end" line of the roadmap was checked against the code; corrections are in §1.
 
 ## 1. Problem statement, and what the code holds today
 
@@ -16,7 +16,7 @@ What the code holds, checked against the roadmap's "Back end" lines:
 
 | Roadmap line | Reading of the code |
 |---|---|
-| AD-1 "environment configuration today; settings in `instance_settings`" | True. SSO providers (`SsoProvider::isEnabled()` reads `services.google.*`, `services.github.*`, `oidc.connections.entra.*`, `oidc.connections.generic.*`), mail (`config/mail.php`, `MAIL_*`), integration apps (`IntegrationProvider::isConfigured()` reads `services.*`), sign-up (`SignupMode::fromConfig()`, `skrum.allowed_email_domains`) and MCP (`skrum.mcp.enabled`) are environment only. `instance_settings` (key, JSON value) is read through `App\Support\InstanceSettings` (cached 300 s, survives an unreadable table) and already holds one secret, the GIF key, encrypted, with the environment as fallback — the precedent for anything stored. Tokens: `personal_access_tokens` (Sanctum, `token_hint`, `abilities` = MCP scopes, `team_id`, `last_used_at`, `expires_at`); a revoke deletes the row (`RevokeMcpToken`). No user listing, no deactivation, no `last_signed_in_at`, no audit table, no licence concept (`composer.json` says `"license": "MIT"`, the mockup says AGPL-3.0). |
+| AD-1 "environment configuration today; settings in `instance_settings`" | True. SSO providers (`SsoProvider::isEnabled()` reads `services.google.*`, `services.github.*`, `oidc.connections.entra.*`, `oidc.connections.generic.*`), mail (`config/mail.php`, `MAIL_*`), integration apps (`IntegrationProvider::isConfigured()` reads `services.*`), sign-up (`SignupMode::fromConfig()`, `skrum.allowed_email_domains`) and MCP (`skrum.mcp.enabled`) are environment only. The OIDC package (`socialiteproviders/openidconnect`, `OpenIDConnectServiceProvider::boot`) copies each `oidc.connections.<name>` into `services.oidc_<name>` **at boot**, and its Socialite drivers read `services.oidc_entra` / `services.oidc_generic`: a value changed later must be written to both places. Octane gives each request a clone of the configuration (`CreateConfigurationSandbox`) and forgets resolved mailers and Socialite drivers between requests (`GiveNewApplicationInstanceToMailManager`, `PrepareSocialiteForNextOperation`); a queue worker does neither. `instance_settings` (key, JSON value) is read through `App\Support\InstanceSettings` (container-scoped, cached 300 s, survives an unreadable table) and already holds one secret, the GIF key, encrypted, with the environment as fallback — the precedent for anything stored. `bootstrap/app.php` keeps `token` and `gif_key` out of flashed input (`dontFlash`). Tokens: `personal_access_tokens` (Sanctum, `token_hint`, `abilities` = MCP scopes, `team_id`, `last_used_at`, `expires_at`); a revoke deletes the row (`RevokeMcpToken`). No user listing, no deactivation, no `last_signed_in_at`, no audit table, no licence concept (`composer.json` says `"license": "MIT"`, the repository has no `LICENSE` file, the mockup says AGPL-3.0). |
 | AD-2 "No version is exposed" | **Partly false.** `config('skrum.version')` exists (`SKRUM_VERSION`, default `1.0.0`), is shown on the About page (signed-in users) and given to the MCP server. It is not set by the Docker build (`Dockerfile` has no `SKRUM_VERSION`, `.github/workflows/docker-image.yml` passes no build argument): every image says `1.0.0`. No update check exists. |
 | AD-3 "No status page; `/up` is the framework health route" | True. `/up` answers 200 even in maintenance; the Docker health check calls it. Four processes run in the image (`docker/s6-rc.d`: octane, queue, reverb, scheduler). Defaults: `CACHE_STORE=database`, `QUEUE_CONNECTION=database`, `BROADCAST_CONNECTION=null`, `MAIL_MAILER=log`. No heartbeat exists. |
 | AD-4 "No request model; a notification to the team's managers" | True. A signed-in user gets 403 for a team they are not in from `TeamPolicy::view` (team pages) and from the participant middlewares (`ResolveRetroParticipant`, `ResolvePokerPlayer`, `ResolveWhiteboardMember`, `ResolveSurveyRespondent`, `ResolveGamePlayer`); a non-member of the workspace gets 403 from `can:view,workspace`. "Team managers" today are the workspace's owners and admins (`TeamPolicy::manageMembers` → `User::canManage`); team roles are TM-6 (plan 23). The bell (`ListNotifications`, presenters per kind, `NotificationReceived` on `user.{id}`) is the channel to reuse. Plain members do not see the names of teams they are not in (`Workspace::teamsVisibleTo`). |
@@ -25,16 +25,18 @@ What the code holds, checked against the roadmap's "Back end" lines:
 ## 2. Goals
 
 1. The admin has the sections of the mockup, each built on data the instance holds or that this plan adds, behind the existing guard (`can:manageInstance` + `RequirePassword`).
-2. The instance shows its version (admin footer, error pages) and, when the admin turns the check on, whether a newer release exists.
-3. A public status page tells anyone whether the application, the database, the cache, the queue worker, the scheduler and the real-time server answer, and is reachable from every error page and during maintenance.
-4. A signed-in member of a workspace who meets a 403 on a team (or on a session of that team) can ask for access with a message; the people who manage that team get it in the bell, add the person or decline, and the requester learns the outcome in the bell.
-5. The 503 page shows when the instance is expected back (from `artisan down --retry`) and the message the admin wrote beforehand, still without reading the database at request time.
-6. Every new text in four languages, informal; every database line Eloquent-only and green on PostgreSQL, MariaDB, MySQL and SQLite.
+2. SSO providers, SMTP and the integration apps are **editable in the admin** (decision 1, answer B): stored encrypted in `instance_settings`, the environment as the fallback for every field, applied to each web request, queued job and console command — with the safeguards of §5.1 (fresh confirmation, audit of every change, a mail to every instance admin when SSO or SMTP changes).
+3. The instance shows its version (admin footer, error pages for signed-in users) and, when the admin turns the check on, whether a newer release exists.
+4. A public status page tells anyone whether the application, the database, the cache, the queue worker, the scheduler and the real-time server answer, and is reachable from every error page and during maintenance.
+5. A signed-in member of a workspace who meets a 403 on a team (or on a session of that team) can ask for access with a message; the people who manage that team get it in the bell, add the person or decline, and the requester learns the outcome in the bell.
+6. The 503 page shows when the instance is expected back (from `artisan down --retry`) and the message the admin wrote beforehand, still without reading the database at request time.
+7. The project's declared licence becomes AGPL-3.0 (decision 2): `composer.json`, a `LICENSE` file with the licence text, and the admin's Licence card agree.
+8. Every new text in four languages, informal; every database line Eloquent-only and green on PostgreSQL, MariaDB, MySQL and SQLite.
 
 ## 3. Non-goals (backlog)
 
 - The "Help" link of the error pages (roadmap: backlog).
-- Editing SSO, SMTP or integration-app **secrets** in the admin (decision 1, option A taken in the body): those stay environment configuration, shown read-only with a test action.
+- Editing in the admin: `APP_URL` and the redirect URIs derived from it, the outgoing-webhook network relaxations (`OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS`, `OUTGOING_WEBHOOKS_ALLOW_HTTP`), `GITHUB_APP_PRIVATE_KEY_PATH`, `INTEGRATIONS_INBOUND_WEBHOOKS`, `INTEGRATIONS_POLL_MINUTES`, mailers other than SMTP (SES, Postmark…), the Laravel Slack notification channel keys (`SLACK_BOT_USER_*`). They stay environment configuration (rule S8).
 - Licence keys, seat limits, expiry enforcement or an "Enterprise" edition (decision 2).
 - Deleting a user from the admin, impersonation, resetting another user's second factor (decision 3).
 - An uptime history, incidents, or a JSON status API (`/up` stays the monitor route).
@@ -55,6 +57,7 @@ What the code holds, checked against the roadmap's "Back end" lines:
 | `sso_required` | Kept as is on the SSO section, with its break-glass | third round, security |
 | Register | Informal, four languages, the 503 page included | sixth round |
 | Data | Eloquent and the standard query builder only; Schema builder migrations, `up` only | fifth round, `docs/database.md` |
+| §16 decisions 1 to 10 | Answered 2026-10-03; the body below is written on the answers | `.superpowers/sdd/roadmap/progress.md` |
 
 ## 5. Rules
 
@@ -63,6 +66,20 @@ What the code holds, checked against the roadmap's "Back end" lines:
 - Nothing secret is ever sent to the browser: secrets are shown as "set" / "not set".
 - The status page and the 503 page are Blade views that survive an unreachable database (`Tests\Support\UnreachableDatabase`) and an unreadable cache.
 - Text sorting of lists read by people goes through `Alphabetical::sort` on bounded sets; paginated lists (users, tokens, audit) sort by `created_at` then `id`, newest first, which every engine orders the same way.
+
+### 5.1 Security rules of the editable configuration (owner's decision, accepted risk)
+
+These rules are numbered so that no implementer or reviewer "fixes" them back. Each has its test (plan: Tasks 17 to 22).
+
+- **S1 — Accepted risk.** An instance admin can change the SSO providers (issuer, client id, secret), the SMTP server and the integration apps from the admin. This lets an instance admin — or anyone holding an admin's signed-in session and a fresh confirmation — redirect sign-in to an identity provider of their choice and sign in as any account linked by verified address, and read password-reset mails through an SMTP server of their choice. The owner chose this on 2026-10-03 **after this risk was spelled out to him**, and asked for the safeguards S2 to S9 instead of read-only fields. Do not make these fields read-only, move them back to the environment, or remove them; a review that finds the risk refers to this rule. Test: `an instance admin can store an OIDC issuer and an SMTP host` (Task 20/21) stays green.
+- **S2 — Fresh confirmation.** Every write of an SSO provider, of SMTP or of an integration app (saving or clearing a field) is refused unless the admin's session holds a password confirmation younger than **300 seconds** (`InstanceConfiguration::ConfirmationSeconds`), checked in the Form Request (error key `confirmation`, nothing written) — not the 3-hour window of `RequirePassword`. The confirmation is the existing one (password or passkey). Plan 26's rule S-1 (no confirmation in the account settings for an account without a known password) does **not** apply here: plan 26 itself keeps the admin area out of it (its §5.12, S-1.3), and S2 reads only the session's confirmation time, which S-1's middleware does not write. Tests: a write 301 s after the confirmation is refused and stores nothing; a write 299 s after it succeeds.
+- **S3 — Audit of every change.** Each write records one `ConfigurationUpdated` event: section, names of the fields changed, names of the fields cleared (back to the environment), and whether the alert mail went out — never a value, secret or not. Tests: the event's `properties` hold the field names; the JSON of every audit row contains none of the values written.
+- **S4 — Alert mail to every instance admin for SSO and SMTP.** After the write commits, `InstanceConfigurationChangedMail` is sent synchronously to every active (not deactivated) instance admin, the author included: who (name, address), when (UTC), from which IP, which section, which fields — never a value — and "If no admin made this change, sign in, check the section and change your password." It is sent through **the mail configuration in force before the change** (the request's configuration applied at its start), so that an SMTP server set by an intruder does not swallow the alert. A failure to send is reported, recorded in the audit event (`alertSent: false`), keeps the change, and the toast says "Saved, but the alert to the admins could not be sent." Integration-app changes are audited, not mailed (the owner named SSO and SMTP). Tests: a change of the OIDC client id mails each active admin once and none to a deactivated admin; an SMTP host change is mailed through the previous host (the mailer's transport host asserted); an integration change mails nobody.
+- **S5 — Secrets never leave the server in clear.** A secret field (`client_secret`, `password`, `bot_token`, `webhook_secret`, `private_key`) is encrypted with `Crypt::encryptString` before it is stored, is write-only (the page receives `secretSet: bool` and the source), and never appears in Inertia props, flashed input (`dontFlash`), validation messages, audit rows, the alert mail or logs (`#[SensitiveParameter]` on every method that takes one). Tests: the raw `instance_settings` row differs from the plain secret and decrypts to it; the page HTML, the audit table and the mail body contain none of the secret strings; an invalid form keeps no secret in the session.
+- **S6 — A blank secret keeps the stored one.** Saving a form with a secret field left blank changes nothing for that field; returning a field to the environment value is its own action ("Use the environment value"), under S2 and S3. Test: a save with a blank `client_secret` keeps the stored secret.
+- **S7 — Environment fallback, per field.** A field not stored reads its environment value. A stored secret that can no longer be decrypted (the `APP_KEY` changed) is treated as not stored — the environment value applies — and the section shows "A saved secret can't be read any more (the application key changed). Enter it again." Tests: clearing a field returns `config()` to the environment value on the next request; a secret encrypted under another key falls back and raises the warning.
+- **S8 — What stays environment only.** `APP_URL` and the redirect URIs, the two outgoing-webhook relaxations (an admin must not open requests to the private network from the page), `GITHUB_APP_PRIVATE_KEY_PATH`, `INTEGRATIONS_*`, mailers other than SMTP and `log`. The catalogue (§6.8) has no field for them. Test: the catalogue holds none of those configuration keys.
+- **S9 — No lock-out through SSO.** While `sso_required` is on, a change that leaves no SSO provider enabled is refused ("Turn off "SSO required" first."). The break-glass of the third round is unchanged. Test: clearing the only enabled provider's client id while `sso_required` is on answers a validation error and stores nothing.
 
 ## 6. Domain and data
 
@@ -80,8 +97,11 @@ What the code holds, checked against the roadmap's "Back end" lines:
 | `disabled_integrations` | list of `IntegrationProvider` values | Integrations | `IntegrationProvider::isEnabled()` |
 | `mail_last_test` | `{at, ok, to}` | SMTP test | SMTP section |
 | `sso_last_test` | `{provider, at, ok, ms, issuer}` | SSO test | SSO section |
+| `sso_google`, `sso_github`, `sso_entra`, `sso_oidc` | object of fields (§6.8), secrets encrypted | SSO section | `InstanceConfiguration` |
+| `smtp` | object of fields (§6.8), password encrypted | SMTP section | `InstanceConfiguration` |
+| `integration_slack`, `integration_telegram`, `integration_jira`, `integration_linear`, `integration_jira_dc`, `integration_github`, `integration_msteams`, `integration_mattermost`, `integration_webhook` | object of fields (§6.8), secrets encrypted | Integrations section | `InstanceConfiguration` |
 
-`InstanceSettingKey::branding()` lists every key except `sso_required` today, so the Branding reset would clear the new keys: it becomes an explicit list of the fifteen branding keys.
+`InstanceSettingKey::branding()` lists every key except `sso_required` today, so the Branding reset would clear the new keys: it becomes an explicit list of the fourteen branding keys.
 
 ### 6.2 Users
 
@@ -92,6 +112,7 @@ A deactivated account:
 - is refused at the password login (a step `RefuseDeactivatedAccount` added to Fortify's login pipeline through `Fortify::authenticateThrough`, which answers only when the password is right, so the message reveals nothing to someone who does not hold it) with the same message, and at every other sign-in path by the middleware on the request that follows;
 - is refused by MCP token authentication (`AuthenticateMcpRequest`) with 401;
 - is refused on the broadcast authorisation route;
+- receives no alert mail of S4;
 - keeps its memberships, tokens and content; reactivation restores everything.
 
 An admin cannot deactivate themselves, and the last active instance admin cannot be deactivated (locked count, as `RevokeInstanceAdmin`).
@@ -100,9 +121,11 @@ An admin cannot deactivate themselves, and the last active instance admin cannot
 
 - `App\Support\InstanceVersion`: `current()` = `config('skrum.version')` trimmed, leading `v` removed; `status()` = `unknown` (check off, never run, or failed), `current`, `outdated` (with `latest`), compared with `version_compare`.
 - The Docker image sets the version: `ARG SKRUM_VERSION=dev` → `ENV SKRUM_VERSION`; the workflow passes `${{ steps.meta.outputs.version }}`.
-- Update check (only when `update_check_enabled`): command `skrum:check-for-update`, scheduled daily `onOneServer()`; one GET to `config('skrum.update_feed')` (default `https://api.github.com/repos/arnaud-ritti/skrum/releases/latest`, a `tag_name`), timeout 5 s; stores `latest_version` and `update_checked_at`; a failure stores nothing new and logs a warning. Turning the switch on runs the check once (queued).
+- Update check (decision 10: off by default, a switch in General): command `skrum:check-for-update`, scheduled daily `onOneServer()`; does nothing while the switch is off; one GET to `config('skrum.update_feed')` (default `https://api.github.com/repos/arnaud-ritti/skrum/releases/latest`, a `tag_name`), timeout 5 s; stores `latest_version` and `update_checked_at`; a failure stores nothing new and logs a warning. Turning the switch on runs the check once (queued).
 
 ### 6.4 Maintenance details
+
+Decision 9: "Back at" from `artisan down --retry`, the message prepared in General.
 
 - The admin writes the message in General before maintenance (`maintenance_message`, author kept).
 - `AddMaintenanceDetailsListener` listens to `MaintenanceModeEnabled`. It reads the payload, the message and its author's name (the database is still reachable when `artisan down` runs), and writes the payload back with a `skrum` key: `{message: ?string, author: ?string, backAt: ?string}` where `backAt` = now + `retry` seconds in ISO 8601 UTC, null without `--retry`. A failure is reported and leaves the payload as it was.
@@ -114,18 +137,22 @@ An admin cannot deactivate themselves, and the last active instance admin cannot
 Table `team_access_requests`: `id` uuid, `team_id` (cascade), `user_id` (cascade), `message` text nullable (≤ 500), `status` string (`TeamAccessRequestStatus`: `pending`, `approved`, `declined`), `decided_by_user_id` nullable (null on delete), `decided_at` dateTime nullable, timestamps; indexes `(team_id, status)`, `(user_id, status)`.
 
 - One pending request per (team, user): enforced in `RequestTeamAccess` under a lock on the team row (rule 6), not by an index (no partial index, rule 5). A second request while one is pending returns the pending one.
-- Recipients: until TM-6, the owners and admins of the team's workspace (decision 8), the requester excluded.
+- Recipients (decision 8): until TM-6 (plan 23), the owners and admins of the team's workspace, the requester excluded; plan 23 changes `AccessRequestRecipients` only.
 - Approve adds the user to the team (`syncWithoutDetaching`) if they still belong to the workspace; otherwise the request is declined and the manager told why. Approve and decline lock the team row then the request; a request answered already returns "already answered" and changes nothing.
 - Notifications (database channel, bell): `TeamAccessRequestedNotification` (kind `access_request`, stores the request id) to each recipient; `TeamAccessAnsweredNotification` (kind `access_answered`) to the requester. Presenters read the request live: a recipient who can no longer manage the team, or a request whose team is gone, drops out of the bell as other kinds do.
 - A rejected request can be made again (a new row).
 
 ### 6.6 Audit log
 
-Table `audit_events`: `id` uuid, `actor_user_id` nullable (null on delete), `actor_name` string (kept when the actor is deleted), `action` string (`AuditAction`), `subject_type` / `subject_id` nullable strings, `properties` JSON nullable (never a secret, never a value of a secret setting — keys only), `ip_address` string(45) nullable, `created_at` dateTime. Index `(created_at, id)`, `(action, created_at)`. Prunable after 365 days (daily `model:prune` already scheduled: add the model).
+Decision 4: admin actions and security events, kept 365 days.
 
-Actions recorded (decision 4, option B): admin settings changed (section, keys), branding reset, instance admin granted / revoked, user deactivated / reactivated, MCP token revoked by an admin, SSO connection tested, test e-mail sent, `sso_required` changed; sign-in succeeded, sign-in failed (address folded, no password), two-factor enabled / disabled, password changed, MCP token created / revoked by its owner.
+Table `audit_events`: `id` uuid, `actor_user_id` nullable (null on delete), `actor_name` string (kept when the actor is deleted), `action` string (`AuditAction`), `subject_type` / `subject_id` nullable strings, `properties` JSON nullable (never a secret, never a value of a configuration field — names only), `ip_address` string(45) nullable, `created_at` dateTime. Index `(created_at, id)`, `(action, created_at)`. Prunable after 365 days (daily `model:prune` already scheduled: add the model).
+
+Actions recorded: admin settings changed (section, keys), **configuration changed** (`ConfigurationUpdated`: section, fields changed, fields cleared, `alertSent`), branding reset, instance admin granted / revoked, user deactivated / reactivated, MCP token revoked by an admin, SSO connection tested, test e-mail sent, `sso_required` changed; sign-in succeeded, sign-in failed (address folded, no password), two-factor enabled / disabled, password changed, MCP token created / revoked by its owner.
 
 ### 6.7 Status
+
+Decision 5: public, states only.
 
 `App\Support\Status\InstanceStatus::check(): array` returns one row per component `{key, state}` with `state` ∈ `operational`, `degraded`, `down`, `not_configured`, `maintenance`:
 
@@ -134,19 +161,59 @@ Actions recorded (decision 4, option B): admin settings changed (section, keys),
 | Application | the page answered; in maintenance → `maintenance` | operational / maintenance |
 | Database | `User::query()->exists()` inside `rescue` | operational / down |
 | Cache | put then get a random value under `skrum.status.probe` | operational / down |
-| Queue | heartbeat `skrum.heartbeat.queue` written by the job `RecordQueueHeartbeatJob`, dispatched every minute by `skrum:heartbeat` | < 3 min operational, < 15 min degraded, else or never down |
+| Queue | heartbeat `skrum.heartbeat.queue` written by the job `RecordQueueHeartbeat`, dispatched every minute by `skrum:heartbeat` | < 3 min operational, < 15 min degraded, else or never down |
 | Scheduler | heartbeat `skrum.heartbeat.scheduler` written by `skrum:heartbeat` | same thresholds |
 | Real time | `broadcasting.default` is `reverb`: TCP connect to `broadcasting.connections.reverb.options.host:port`, 1 s timeout; `null` or `log` → not configured | operational / down / not configured |
-| E-mail | `mail.default` not `log` / `array` | operational / not configured |
+| E-mail | `mail.default` (after §6.8 is applied) not `log` / `array` | operational / not configured |
 
-Heartbeats live in the cache. Overall: "All systems operational", "Some systems are degraded", "Maintenance in progress". No detail beyond the state is public (decision 5).
+Heartbeats live in the cache. Overall: "All systems operational", "Some systems are degraded", "Maintenance in progress". No detail beyond the state is public.
+
+### 6.8 Instance configuration (SSO, SMTP, integration apps)
+
+Decision 1, answer B. One `InstanceSettingKey` per section; its value is a JSON object holding only the fields the admin stored; a secret field holds `Crypt::encryptString(value)`.
+
+**Catalogue** (`App\Support\InstanceConfiguration\ConfigurationCatalogue`, one `match` over the sections): each field names its configuration keys, whether it is secret, and its rules. `*` = secret.
+
+| Section (key) | Field → configuration keys written |
+|---|---|
+| `sso_google` | `client_id` → `services.google.client_id`; `client_secret`* → `services.google.client_secret` |
+| `sso_github` | `client_id`, `client_secret`* → `services.github.*` |
+| `sso_entra` | `tenant`, `client_id`, `client_secret`* → `oidc.connections.entra.*` **and** `services.oidc_entra.*` |
+| `sso_oidc` | `base_url` (https), `client_id`, `client_secret`*, `label` → `oidc.connections.generic.*` **and** `services.oidc_generic.*` |
+| `smtp` | `mailer` (`smtp` or `log`) → `mail.default`; `host`, `port` (1–65535), `scheme` (`smtp` / `smtps` / none), `username`, `password`* → `mail.mailers.smtp.*` (a stored `host` also sets `mail.mailers.smtp.url` to null, so `MAIL_URL` does not override it); `from_address` (e-mail), `from_name` → `mail.from.*` |
+| `integration_slack` | `client_id`, `client_secret`* → `services.slack.*` |
+| `integration_telegram` | `bot_token`* → `services.telegram.bot_token` |
+| `integration_jira` | `client_id`, `client_secret`* → `services.jira.*` |
+| `integration_linear` | `client_id`, `client_secret`*, `webhook_secret`* → `services.linear.*` |
+| `integration_jira_dc` | `base_url` (https), `client_id`, `client_secret`*, `personal_tokens` (bool) → `services.jira_dc.*` |
+| `integration_github` | `app_id`, `slug`, `client_id`, `client_secret`*, `private_key`* (PEM, ≤ 16 KB), `webhook_secret`* → `services.github_app.*` |
+| `integration_msteams` | `enabled` (bool), `allowed_hosts` (list of host names) → `services.msteams.*` |
+| `integration_mattermost` | `url` (https) → `services.mattermost.url` |
+| `integration_webhook` | `enabled` (bool) → `services.outgoing_webhooks.enabled` |
+
+**Reading.** `InstanceConfiguration::value(section, field)` = the stored value (decrypted for a secret) or the environment baseline. `InstanceConfiguration::describe(section)` gives the page, per field: the value (non-secret only), `source` (`stored` / `environment` / `none`), `secretSet` for a secret, and `unreadable` when a stored secret fails to decrypt (S7).
+
+**Baseline.** `InstanceConfigurationBaseline` holds the configuration values of every catalogue key as the process booted them (the environment). It is captured once per process in `AppServiceProvider::boot()` (reads `config()`, writes nothing) and never changes.
+
+**Applying.** `InstanceConfiguration::apply()` writes, for every catalogue field, the stored value or the baseline value into its configuration keys, then forgets resolved mailers (`MailManager::forgetMailers()`) and Socialite drivers (`SocialiteManager::forgetDrivers()`) when resolved. It runs:
+- per web request, by the global middleware `ApplyInstanceConfiguration` (after `AssignRequestId`, before routing, so the login page's provider buttons, the integration callbacks and the inbound webhooks see it);
+- per queued job, by `ApplyInstanceConfigurationListener` on `Illuminate\Queue\Events\JobProcessing` (a worker keeps its configuration between jobs: each job starts from the stored values, and a cleared field returns to the baseline);
+- per console command, by the same listener on `Illuminate\Console\Events\CommandStarting` (the scheduler's `schedule:run` included).
+Nothing is written into `config()` at boot. A failure (unreadable settings, unreachable cache) is caught without being reported; the configuration stays as it was (the environment on a fresh request), and the page renders. The keys the last `apply()` wrote are kept in `config()` itself (`skrum.instance_configuration.applied`), so a field cleared since the previous job of a worker returns to its baseline value, and a configuration key that a test or an operator set directly, and that is not stored, is left alone.
+
+**Writing.** `UpdateInstanceConfiguration::handle(User $admin, InstanceSettingKey $section, array $values, array $clear, string $ip): ConfigurationChange` — the only writer. It validates against the catalogue, keeps a blank secret (S6), encrypts secrets (S5), refuses a change that leaves no SSO provider while `sso_required` is on (S9), and — under a cache lock per section (`Cache::lock`, as `IntegrationTokens` does), so that two admins saving different fields of one section keep both — stores in one transaction with the `ConfigurationUpdated` audit event (S3), and after commit sends the alert of S4 for SSO and SMTP sections. The fresh confirmation (S2) is checked by the Form Request before the action runs.
+
+`SsoProvider` and `IntegrationProvider` keep reading `config()`: no enum gains a new dependency for this (the arch rule on enums is unchanged by §6.8).
 
 ## 7. Permissions
 
 | Who | What |
 |---|---|
 | Instance admin (`is_instance_admin`), password confirmed | every admin section, read and write |
-| Anyone, signed in or not, guests included | the status page; the version line per decision 6 |
+| Instance admin with a confirmation younger than 300 s | writes of the SSO providers, SMTP and integration apps (S2) |
+| Active instance admins | receive the alert mail of S4 |
+| Anyone, signed in or not, guests included | the status page |
+| Signed-in user | the version line on error pages (decision 6); none on the static 503 and the status page |
 | Signed-in member of the workspace, not in the team | the access-request block on a 403 of that team or of its sessions; `POST …/access-requests` |
 | Signed-in non-member of the workspace, a guest, a visitor | the plain 403 page: no team, no names |
 | Workspace owner or admin (until TM-6) | receives the request; approves or declines it |
@@ -160,6 +227,8 @@ No new channel. Bell arrivals use the existing `NotificationReceived` on `user.{
 
 All admin sections render inside `AdminShell` (spec ruling 14 of the front rewrite: the mockup's navigation column inside the app layout). Topbar: "Self-host" badge, and on editable sections the mockup's "n unsaved changes · Cancel · Save" (the Branding pattern). Mobile: the navigation becomes the "Section" select (exists); tables become stacked cards.
 
+**Configuration forms (SSO, SMTP, integration apps).** Shared behaviour: each field shows its source under it ("From the environment" muted / "Saved here" / nothing when empty); a secret field is a password input that is always empty, with the badge "Set" or "Not set" and the placeholder "Leave blank to keep it"; a stored field has a "Use the environment value" link (clears it); while the confirmation is older than 300 s the form shows the line "Confirm your password to change these settings." with a "Confirm" button (the existing confirmation page, back to the section) and its fields are read-only; a save answered with the `confirmation` error keeps the typed values (secrets excepted) and shows the same line; the section card says in its footer "Every change is recorded in the audit log and mailed to every instance admin." (SSO, SMTP) or "Every change is recorded in the audit log." (integrations); an unreadable secret shows the S7 warning `Alert`.
+
 ### 9.1 Admin navigation (`AdminShell`)
 
 Groups "Instance" (General, Branding, SSO authentication [badge "active" when `ssoInForce`], SMTP, Integrations [badge "n/m" enabled/configured], MCP keys, Licence) and "Supervision" (Users, Admins, Audit log). Footer card: host, then "v1.8.2 · up to date" / "· update available: v1.9.0" / version alone (§6.3). "Admins" stays (existing feature; the mockup has no such entry: pre-build deviation P29-01). `/admin` redirects to General.
@@ -168,58 +237,64 @@ States: active entry (`aria-current`), badges, version unknown, update available
 
 ### 9.2 General (`admin/general`)
 
-Three cards (`.st-card` pattern): **Sign-up** (radio: invitation only / open / allowed domains + domain chips input; the environment value shown as default), **Maintenance message** (textarea 280, preview line "Shown on the maintenance page from the next `artisan down`", author and date of the saved message, "Clear"), **Updates** (version, switch "Check for new versions once a day" with the sentence "The instance asks GitHub once a day; nothing about the instance is sent.", last check result). States: saved, unsaved, validation errors, check failed.
+Three cards (`.st-card` pattern): **Sign-up** (radio: invitation only / open / allowed domains + domain chips input; the environment value shown as default), **Maintenance message** (textarea 280, preview line "Shown on the maintenance page from the next `artisan down`", author and date of the saved message, "Clear"), **Updates** (version, switch "Check for new versions once a day" — off by default —, with the sentence "The instance asks GitHub once a day; nothing about the instance is sent.", last check result). States: saved, unsaved, validation errors, check failed.
 
 ### 9.3 SSO authentication (`admin/sign-in`, extended)
 
-Above the existing `sso_required` form: one card per provider (Google, GitHub, Microsoft Entra, OIDC) in the mockup's form layout, **read-only** (decision 1 A): status badge (Configured / Not configured), issuer or tenant, client ID, secret "set" (masked field, no eye: there is nothing to reveal), redirect URI read-only with Copy, the environment variable names as hint; "Test the connection" on Entra and OIDC (fetches the discovery document; result alert "Connected · 184 ms · issuer …" or the error; last result kept). Not configured: the card collapses to its name and "Set `OIDC_BASE_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` to enable it." The mockup's "Keep sign-in by e-mail as fallback" is the existing break-glass sentence, not a switch (P29-02).
+Above the existing `sso_required` form: one card per provider (Google, GitHub, Microsoft Entra, OIDC) in the mockup's form layout, **editable** (decision 1 B): status badge (Configured / Not configured), the fields of §6.8 (issuer/base URL, tenant, client ID, label, client secret), the redirect URI read-only with Copy, the environment variable name of each field as a hint; "Save" per card (the card's own form; the topbar shows the unsaved count of the card being edited); "Test the connection" on Entra and OIDC (fetches the discovery document of the values in force; result alert "Connected · 184 ms · issuer …" or the error; last result kept). The mockup's secret "eye" is not built: the secret is write-only (S5, P29-02). The mockup's "Keep sign-in by e-mail as fallback" is the existing break-glass sentence, not a switch (P29-02). Shared form behaviour above.
 
 ### 9.4 SMTP (`admin/mail`)
 
-Read-only card: mailer, host, port, encryption, user, password "set", sender; status badge "Operational" (a delivering mailer) or "Not configured (mails are written to the log)". "Send a test e-mail" (address, default the admin's), result line "Last test delivered today at 14:02" / "Last test failed at 14:02: the server refused the connection" (the exception class mapped to a sentence; never the server's raw answer). Throttled 5 per 10 minutes.
+Editable card (decision 1 B): mailer (SMTP / "Don't send: write mails to the log"), host, port, encryption (none / TLS on connect `smtps` / STARTTLS when offered `smtp`), user, password (write-only), sender address and name; status badge "Operational" (a delivering mailer) or "Not configured (mails are written to the log)"; "Save". "Send a test e-mail" (address, default the admin's) uses the configuration in force (saved values first: save, then test); result line "Last test delivered today at 14:02" / "Last test failed at 14:02: the server refused the connection" (the exception class mapped to a sentence; never the server's raw answer). Throttled 5 per 10 minutes. Shared form behaviour above.
 
 ### 9.5 Integrations (`admin/integrations`)
 
-One row per provider (`.st-int`): name, state "Available · n teams connected" / "Not configured" / "Turned off", a switch (enabled only when configured). Turning a provider off hides it from team settings and stops its deliveries and polls (`isEnabled()` false), keeping the team integrations; turning it back on resumes them. The mockup's "Configure" / "Connect" buttons are team-level actions: replaced by the teams count and the env hint (P29-03). Confirm dialog before turning off a provider that teams use.
+One row per provider (`.st-int`): mark, name, state "Available · n teams connected" / "Not configured" / "Turned off", "Configure" (ghost; opens the provider's credentials dialog with its §6.8 fields and the redirect or webhook URL to copy; shared form behaviour), and a switch (enabled only when configured). Turning a provider off hides it from team settings and stops its deliveries and polls (`isEnabled()` false), keeping the team integrations; turning it back on resumes them. Confirm dialog before turning off a provider that teams use. Saving credentials that make a used provider unconfigured (a cleared client id) asks the same confirmation. The mockup's "Connecté · workspace atlas-corp · #atlas-retro" is a team-level state: replaced by the teams count (P29-03).
 
 ### 9.6 MCP keys (`admin/mcp-keys`)
 
 Table: name, owner (avatar, name), fingerprint `skrum_…{token_hint}` (Sanctum's `token_prefix` is `skrum_`, `token_hint` the last four characters), scopes as `code` chips, team, created (date · owner), last used (relative, "Never"), expires; "Revoke" (destructive text, confirm dialog naming the owner). 25 per page, newest first. "Create a key" links to the admin's own token settings (`settings/api-tokens`). MCP turned off in the environment: an alert "The MCP server is off (`SKRUM_MCP_ENABLED`)", list still shown. Empty state.
 
-### 9.7 Licence (`admin/licence`) — decision 2, option B
+### 9.7 Licence (`admin/licence`) — decision 2, answer B with AGPL-3.0
 
-Card "Skrüm" with the licence name read from `config('skrum.licence')` (owner to confirm the value), the sentence "Open source; every feature is included.", "Accounts in use" = active (not deactivated) users, no seat limit, no expiry, link to the source repository. No progress bar (no limit to measure against: P29-04).
+Card "Skrüm" with the licence badge "AGPL-3.0" (`config('skrum.licence')`, a constant of the project, not an environment variable), the sentence "Open source under the GNU Affero General Public License v3.0; every feature is included.", "Accounts in use" = active (not deactivated) users, no seat limit, no expiry, links "Licence text" (the repository's `LICENSE`) and "Source code" (the repository). No progress bar (no limit to measure against: P29-04).
+
+The project's declared licence changes from MIT to AGPL-3.0 (the owner's legal decision): `composer.json` `"license": "AGPL-3.0-only"` (the SPDX identifier of "AGPL-3.0"), a `LICENSE` file at the repository root holding the unmodified GNU AGPL v3 text, and `config('skrum.licence')` = `AGPL-3.0`; a test keeps the three in agreement.
 
 ### 9.8 Users (`admin/users`)
 
-Search (name or address, the `AdminCandidatesController` technique), filter All / Active / Deactivated / Admins; table: avatar, name, address, badges (Admin, Deactivated, 2FA on), workspaces count, created, last sign-in; row menu: Deactivate / Reactivate (confirm dialog; refused for self and for the last active admin, the reason shown), "Make admin" opens the Admins flow. 25 per page, newest first. Empty search state.
+Decision 3: list, search, deactivate, reactivate. Search (name or address, the `AdminCandidatesController` technique), filter All / Active / Deactivated / Admins; table: avatar, name, address, badges (Admin, Deactivated, 2FA on), workspaces count, created, last sign-in; row menu: Deactivate / Reactivate (confirm dialog; refused for self and for the last active admin, the reason shown), "Make admin" opens the Admins flow. 25 per page, newest first. Empty search state.
 
 ### 9.9 Audit log (`admin/audit-log`)
 
-Table: when (relative, exact on hover), actor (avatar or "System"), action sentence (translated per `AuditAction`), subject, IP. Filters: action group (Settings, Accounts, Sign-in, Tokens), actor search; 50 per page, newest first; "Kept 365 days" note. Empty state.
+Table: when (relative, exact on hover), actor (avatar or "System"), action sentence (translated per `AuditAction`), subject, IP. Filters: action group (Settings, Accounts, Sign-in, Tokens; `ConfigurationUpdated` is in Settings), actor search; 50 per page, newest first; "Kept 365 days" note. Empty state.
 
 ### 9.10 Error pages
 
 - Header: "Instance status" link (to `/status`) on 403, 404, 419, 429, 500 and 503. "Help" not built.
-- Footer: "name · v1.8.2" per decision 6 (500 page: from config, no shared props).
-- 403 with a known team (§6.5): overline "Error 403 · Access denied", title "You don't have access to this team", team block (pastille with the initial, name, "workspace · n members"), "You're signed in as **email**. Ask for access and a team admin will review it.", optional message (textarea 500), "Request access" (primary), "Switch account" (ghost), "Team admins: A, B" with avatars (three at most, then "+n"). After sending: toast and a disabled "Request sent". A request already pending: the block opens in the sent state. A failure keeps the form with the error.
+- Footer: "name · v1.8.2" for signed-in users only (decision 6; 500 page: from config, no shared props). The static 503 and the status page show no version.
+- 403 with a known team (§6.5), decision 7 "as the mockup": overline "Error 403 · Access denied", title "You don't have access to this team", team block (pastille with the initial, name, "workspace · n members"), "You're signed in as **email**. Ask for access and a team admin will review it.", optional message (textarea 500), "Request access" (primary), "Switch account" (ghost), "Team admins: A, B" with avatars (three at most, then "+n"). After sending: toast and a disabled "Request sent". A request already pending: the block opens in the sent state. A failure keeps the form with the error.
 - 403 without a known team, or for a non-member of the workspace: unchanged.
 
 ### 9.11 503 page (static)
 
-Header: logo, "Instance status" link (`/status`, served during maintenance). Main: as today, plus the "Back at" block (`skrum-info-soft`): time in display size, "your time (zone) · in about n min" — computed by the existing inline script in the browser's time zone from `<time datetime>`; without script the UTC time is shown; a past time reads "Any moment now". Then the admin's message in quotes with the author ("Hugo Lambert, instance admin"). Without `--retry` and without message: the page as today. The busy-database 503 shows neither block. The mockup's "Your admin is installing version 1.9.0" is not built: the target version is not known (P29-05). Footer: name (and version per decision 6). Still one inline script, no external asset.
+Header: logo, "Instance status" link (`/status`, served during maintenance). Main: as today, plus the "Back at" block (`skrum-info-soft`): time in display size, "your time (zone) · in about n min" — computed by the existing inline script in the browser's time zone from `<time datetime>`; without script the UTC time is shown; a past time reads "Any moment now". Then the admin's message in quotes with the author ("Hugo Lambert, instance admin"). Without `--retry` and without message: the page as today. The busy-database 503 shows neither block. The mockup's "Your admin is installing version 1.9.0" is not built: the target version is not known (P29-05). Footer: name, no version (decision 6). Still one inline script, no external asset.
 
 ### 9.12 Status page (`/status`)
 
-No mockup: built from the 503 page's frame (same static head, logo, card list). Title "Instance status", overall sentence, list of components with an icon and the state in words (not colour alone), "Checked at hh:mm UTC", "Refresh" link, link "Back to my teams" (`/`). Language from `Accept-Language` like the 503 page. Served outside the `web` middleware group (no session, no CSRF, no cookie) and excepted from maintenance mode.
+No mockup: built from the 503 page's frame (same static head, logo, card list). Title "Instance status", overall sentence, list of components with an icon and the state in words (not colour alone), "Checked at hh:mm UTC", "Refresh" link, link "Back to my teams" (`/`). Language from `Accept-Language` like the 503 page. Served outside the `web` middleware group (no session, no CSRF, no cookie) and excepted from maintenance mode. No version, host or timing.
 
 ### 9.13 Bell
 
 Two kinds added to `NotificationsPanel`: `access_request` — actor avatar, "**Nadia** asks to join **Atlas**", the message excerpt, inline "Add to the team" (primary sm) and "Decline" (ghost sm); answered state "Added by Camille" / "Declined by Camille", buttons removed — and `access_answered` — team tile, "You were added to **Atlas**" (links to the team) or "Your request to join **Atlas** was declined".
 
+### 9.14 Alert mail (S4)
+
+`InstanceConfigurationChangedMail` on the existing branded mail layout: subject "SSO settings changed on :instance" / "SMTP settings changed on :instance"; body: ":name (:email) changed :section on :date at :time UTC from :ip.", the list of field labels changed and cleared, the sentence "If no admin made this change, sign in, check the section and change your password.", a button to the section. Informal, four languages, in each recipient's locale.
+
 ## 10. Migrations of existing data
 
-None. New tables and nullable columns only; no row is rewritten. Environment values keep working: every new setting falls back to its environment value when not stored. `InstanceSettingKey::branding()` becomes explicit so that a Branding reset clears the same keys as before.
+None. New tables and nullable columns only; no row is rewritten. Environment values keep working: every new setting and every configuration field falls back to its environment value when not stored. `InstanceSettingKey::branding()` becomes explicit so that a Branding reset clears the same keys as before.
 
 ## 11. Routes
 
@@ -227,10 +302,12 @@ None. New tables and nullable columns only; no row is rewritten. Environment val
 |---|---|---|
 | GET `admin` | `admin.index` | redirect to General |
 | GET/PUT `admin/general` | `admin.general.edit` / `.update` | `Admin\GeneralSettingsController` |
+| PUT `admin/sign-in/providers/{provider}` | `admin.ssoProviders.update` | `Admin\SsoProvidersController` |
 | POST `admin/sign-in/tests` | `admin.ssoTests.store` | `Admin\SsoConnectionTestsController` |
-| GET `admin/mail` | `admin.mail.show` | `Admin\MailSettingsController` |
+| GET/PUT `admin/mail` | `admin.mail.show` / `.update` | `Admin\MailSettingsController` |
 | POST `admin/mail/tests` | `admin.mailTests.store` | `Admin\MailTestsController` (throttle 5,10) |
-| GET/PUT `admin/integrations` | `admin.integrations.edit` / `.update` | `Admin\IntegrationSettingsController` |
+| GET/PUT `admin/integrations` | `admin.integrations.edit` / `.update` | `Admin\IntegrationSettingsController` (on/off) |
+| PUT `admin/integrations/{provider}/app` | `admin.integrationApps.update` | `Admin\IntegrationAppsController` (credentials) |
 | GET `admin/mcp-keys`, DELETE `admin/mcp-keys/{token}` | `admin.mcpKeys.index` / `.destroy` | `Admin\McpKeysController` |
 | GET `admin/licence` | `admin.licence.show` | `Admin\LicencesController` |
 | GET `admin/users` | `admin.users.index` | `Admin\UsersController` |
@@ -240,14 +317,18 @@ None. New tables and nullable columns only; no row is rewritten. Environment val
 | PATCH `w/{workspace}/teams/{team}/access-requests/{accessRequest}` | `teams.accessRequests.update` | `TeamAccessRequestsController` |
 | GET `status` | `status.show` | `StatusPagesController` (routes/status.php, no `web` group) |
 
+The three configuration writes (`admin.ssoProviders.update`, `admin.mail.update`, `admin.integrationApps.update`) carry the clearing of fields as `clear: string[]` in the same request.
+
 ## 12. Testing
 
 - Feature tests per route: admin access (non-admin 403, unconfirmed password redirect), each section's props, each write and its audit event, validation.
+- Configuration (§5.1, §6.8): each rule S2 to S9 has its named test; stored values reach `config()` on the next request, in a queued job (a `JobProcessing` dispatched on a worker-like loop that changes the setting between two jobs) and in an artisan command; clearing returns to the baseline; the OIDC values reach `services.oidc_generic`; a mailer resolved before the change is not reused after it; the middleware survives an unreachable database and cache; nothing is applied at boot (a fresh application's `config()` equals the environment after boot with stored values present).
+- Licence: `composer.json` `license` = `AGPL-3.0-only`, `LICENSE` starts with "GNU AFFERO GENERAL PUBLIC LICENSE" and "Version 3, 19 November 2007", `config('skrum.licence')` = `AGPL-3.0`.
 - Error pages: the 403 block for each denied route kind (team page, retro, poker game, whiteboard, team survey, game room), absent for a non-member of the workspace, a guest, a visitor, and on a 403 that is not about a team (closed registration); the 500 page carries the version without shared props; the 503 page in maintenance with `--retry=1800` and a message, without them, with an unreachable database, and the busy 503; still one inline script.
 - Status page with each component down (fakes), in maintenance, with an unreachable database, without a session cookie set.
-- Races (`tests/Concurrency`, `Race`, on pgsql, mariadb, mysql, sqlite-file): two access requests of one user at once make one pending row; an approve and a decline of one request at once give one outcome; deactivating the last two active admins at once leaves one.
+- Races (`tests/Concurrency`, `Race`, on pgsql, mariadb, mysql, sqlite-file): two access requests of one user at once make one pending row; an approve and a decline of one request at once give one outcome; deactivating the last two active admins at once leaves one; two admins saving different fields of one configuration section at once keep both fields.
 - Upgrade: none (no data migration).
-- Vitest for `AdminShell`, each section container, the access-request block, the two bell kinds, the version line.
+- Vitest for `AdminShell`, each section container (the configuration forms' write-only secrets, sources, clear links, confirmation line), the access-request block, the two bell kinds, the version line.
 - Captures (light, 1440, French) of the nine admin sections, the 403 with the block (both states), the 503 with "Back at" and message, the status page. No browser walkthrough.
 
 ## 13. Acceptance criteria
@@ -256,11 +337,11 @@ None. New tables and nullable columns only; no row is rewritten. Environment val
 2. `AdminShell` lists, in this order, General, Branding, SSO authentication, SMTP, Integrations, MCP keys, Licence under "Instance" and Users, Admins, Audit log under "Supervision", each linking to its page; `/admin` opens General.
 3. The admin footer shows the host and `v` + `config('skrum.version')`; with the update check on and a newer `latest_version`, "update available: vX"; with the same version, "up to date"; with the check off or never run, the version alone.
 4. Saving General stores the sign-up mode and the domains; `SignupGate` then follows the stored mode (open, invite, domain) over the environment; clearing them returns to the environment value.
-5. With the update check on, `skrum:check-for-update` stores the release's version without its `v` and the time; a failing or non-JSON answer stores nothing and does not throw; with the check off it makes no request.
-6. A Branding reset leaves every non-branding key (the ten of §6.1 and `sso_required`) in place.
-7. The SSO section shows each provider's state, non-secret values, redirect URI and "secret set" without any secret in the props; "Test the connection" on a configured OIDC provider reports success with the issuer and the time, or the failure, records an audit event, and makes no request for an unconfigured provider.
-8. The SMTP section shows the mail configuration without the password; a test e-mail is sent synchronously to the given address, its result stored and shown; a transport failure is shown as a sentence; the sixth test within 10 minutes is refused.
-9. Turning a configured provider off makes `IntegrationProvider::isEnabled()` false for it (team settings hide it, its callbacks answer 404 through `EnsureIntegrationProviderEnabled`), keeps every `team_integrations` row, and turning it back on restores it; an unconfigured provider cannot be turned on.
+5. With the update check on, `skrum:check-for-update` stores the release's version without its `v` and the time; a failing or non-JSON answer stores nothing and does not throw; with the check off (the default) it makes no request.
+6. A Branding reset leaves every non-branding key (the keys of §6.1 that are not branding, and `sso_required`) in place.
+7. The SSO section shows each provider's state, the value and source of each non-secret field, "set"/"not set" for the secret and the redirect URI, without any secret in the props; saving a provider stores its fields (secret encrypted), and the login page's provider buttons and the Socialite driver use them on the next request; "Test the connection" on a configured Entra or OIDC provider tests the values in force and reports success with the issuer and the time, or the failure, records an audit event, and makes no request for an unconfigured provider.
+8. The SMTP section shows the mail configuration in force without the password, with each field's source; saving stores it and the next mail of the instance goes through it; a test e-mail is sent synchronously to the given address through the configuration in force, its result stored and shown; a transport failure is shown as a sentence; the sixth test within 10 minutes is refused.
+9. Turning a configured provider off makes `IntegrationProvider::isEnabled()` false for it (team settings hide it, its callbacks answer 404 through `EnsureIntegrationProviderEnabled`), keeps every `team_integrations` row, and turning it back on restores it; an unconfigured provider cannot be turned on; saving a provider's app credentials in its dialog makes it configured on the next request, in queued jobs and in the scheduler's commands.
 10. The MCP keys section lists every token of every user, newest first, 25 per page, with owner, fingerprint, scopes, team, created, last used and expiry; an admin revokes any token, the token stops authenticating, and an audit event names its owner.
 11. The Users section lists every account newest first with the columns of §9.8, filters and searches them; deactivating signs the account out at its next request, refuses its password login with the message, refuses its MCP tokens with 401, and keeps its memberships; reactivating restores access; an admin cannot deactivate themselves or the last active admin, also when two deactivations arrive at once.
 12. `last_signed_in_at` is set on a password sign-in, an SSO sign-in, a magic-link sign-in and an e-mail-code sign-in.
@@ -271,87 +352,61 @@ None. New tables and nullable columns only; no row is rewritten. Environment val
 17. The bell lists `access_request` and `access_answered` with the texts of §9.13 and drops them when their team is gone or the reader can no longer manage it.
 18. `artisan down --retry=1800` with a saved message shows on the 503 page "Back at" at down time + 30 minutes (UTC in the HTML, local time after the script) and the message with its author; `artisan down` without them shows the page as before; the busy 503 shows neither; the page still has exactly one inline script and no external asset, also with an unreachable database.
 19. `/status` answers 200 with every component's state, in maintenance as well (state "Maintenance in progress"), with an unreachable database (Database down, the page still rendered), without starting a session; each error page and the 503 page link to it.
-20. Error pages show the version per decision 6; the 500 page shows it without shared props.
+20. Error pages show the version to signed-in users only; the 500 page shows it without shared props; the static 503 and the status page show none.
 21. The Docker image built by the workflow reports its release version in `config('skrum.version')`.
 22. Every new string exists in en, fr, es, de, informal (`InformalRegisterTest`, `TranslationKeysTest` pass); the captures of §12 have no horizontal overflow and are compared with their mockup, each difference fixed or a row of the plan's deviations table.
 23. Unit, feature and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL through `bin/test-db`; the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+24. A stored configuration field applies over the environment on the next web request, in the next queued job of a running worker and in an artisan command; clearing it returns each of them to the environment value; no stored value is in `config()` right after boot; with unreadable settings or an unreachable cache the environment values apply and the page renders.
+25. Rule S5: a secret is stored encrypted (the raw row differs from it and decrypts to it) and appears in none of the page props, the flashed session, the audit rows, the alert mail and the log; rule S6: a blank secret keeps the stored one; rule S7: a secret encrypted under another `APP_KEY` falls back to the environment and the section shows the warning.
+26. Rule S2: a configuration write with a confirmation older than 300 s is refused with the `confirmation` error and stores nothing, also for an account without a known password; one younger than 300 s is accepted.
+27. Rules S3 and S4: every configuration write records one `ConfigurationUpdated` event with the field names and no value; every SSO or SMTP write mails each active instance admin once (none to a deactivated admin), through the mail configuration in force before the change, naming the author, the IP, the section and the fields, without any value; a failed alert keeps the change, sets `alertSent: false` and warns the author; an integration-app write mails nobody.
+28. Rule S9: while `sso_required` is on, a write that leaves no SSO provider enabled is refused and stores nothing. Rule S8: the catalogue holds no field for the environment-only keys.
+29. Rule S1: an instance admin can store an OIDC issuer, client id and secret and an SMTP host and password from the admin (the accepted risk is a feature, not a defect).
+30. `composer.json` declares `AGPL-3.0-only`, `LICENSE` holds the GNU AGPL v3 text, and the Licence card shows "AGPL-3.0" with the accounts in use and the links to the licence text and the source.
 
 ## 14. Risks
 
+- **Accepted: admin takeover of SSO accounts and of password-reset mails (S1).** The owner accepted it on 2026-10-03 with the safeguards S2 to S9. The residual risk: a stolen admin session plus a fresh confirmation (or a stolen admin password) is enough; the alert mail tells the other admins after the fact, it does not prevent the change. An instance with a single admin gets the alert in that admin's own mailbox.
+- **Configuration applied per request, per job, per command.** A path that runs outside the three (a long-running process other than the queue worker, e.g. Reverb, or a closure scheduled in-process before `CommandStarting` fires) keeps the environment values. Reverb reads none of the catalogue keys; the test list covers the queue worker and the scheduler. A worker started before an `APP_KEY` change cannot decrypt: rule S7.
+- **The OIDC package's boot copy.** Writing only `oidc.connections.*` would leave the Socialite driver on the environment values: the catalogue writes both places, and a test builds the driver's redirect URL from a stored base URL.
+- **Mailers and Socialite drivers resolved before the overlay.** Octane forgets them between requests; a queue worker does not: `apply()` forgets them itself.
+- **The alert sent through the previous configuration.** When the previous mailer is `log`, the alert lands in the log only; the toast and the audit event still record the change.
+- **Plan 26's rule S-1 and S2.** Plan 26 lets an account without a known password act in its account settings without any confirmation, passkey registration included, and keeps the admin area out of that rule. An instance admin born by SSO, with no password, can therefore register a passkey from a stolen session without confirming, then use that passkey to satisfy S2 here. The two accepted risks add up for that one kind of account; it is reported to the owner (§17 item 11), not fixed silently. The plan that merges second adds the test "an admin without a known password and without a confirmation cannot save SSO" (S2 still holds when no passkey was registered).
 - **Many sign-in paths.** Deactivation relies on a middleware for the paths that do not go through Fortify's pipeline: one request is served after such a sign-in before the sign-out. Acceptable for a deactivation (not a security boundary against an attacker holding the password); the test list covers each path.
-- **Octane.** Settings are read per request through `InstanceSettings` (cached); nothing new is put into `config()` at boot, so a worker never keeps a stale value.
-- **Information on the 403 page.** The team's name and its managers' names are shown to a workspace member who is not in the team. Today such a member does not see that team's name anywhere (decision 7).
+- **Octane.** Settings are read per request through `InstanceSettings` (container-scoped, cached); the configuration overlay is written per request into Octane's per-request configuration clone, never at boot; the baseline is immutable.
+- **Information on the 403 page.** The team's name and its managers' names are shown to a workspace member who is not in the team (decision 7). Today such a member does not see that team's name anywhere.
 - **Access-request spam.** One pending request per team and user, 5 requests an hour per user, and a decline that does not block a new request; a manager can ignore it.
 - **The status page under load or with a dead database.** It is public and unthrottled (the throttle reads the cache, which is the database by default). Each check is bounded (TCP 1 s; the database connect timeout is the driver's) — a hanging database connection makes the page slow, as `/up` is today.
 - **Update check.** An outbound call from a self-hosted instance (off by default) to a repository whose public availability is not known (§17).
-- **The arch rule on enums.** `IntegrationProvider::isEnabled()` must read the instance setting: the enum is added to the `ignoring` list of the arch test beside `McpFeature`, as the precedent says ("asks the container").
+- **The arch rule on enums.** `IntegrationProvider::isEnabled()` must read the instance setting `disabled_integrations`: the enum is added to the `ignoring` list of the arch test beside `McpFeature`, as the precedent says ("asks the container").
 - **Maintenance with `--render`.** The pre-rendered page has no "Back at" block (§6.4).
-- **Size.** Nine admin sections, the error and status pages, a request flow and the bell: three back-end lanes and a screen step; AD-1 can be split (decision 1 is where the size goes up or down).
-- **Admin escalation.** Kept out by decision 1 A: an admin who could change the OIDC issuer or the SMTP server could sign in as anyone (SSO accounts are matched by verified address) or read password-reset mails.
+- **Licence change.** Relicensing from MIT to AGPL-3.0 is the owner's legal decision; the plan changes the declaration and adds the text, nothing else (no file headers, no notice in the interface beyond the Licence card). What AGPL §13 asks of an instance that modifies the code (offering its source to network users) is the deployer's duty; whether Skrüm should show a "Source code" link to every user is §17.
+- **Size.** Nine admin sections, three editable configuration sections with their safeguards, the error and status pages, a request flow and the bell: four back-end lanes and a screen step (36 tasks).
 
 ## 15. Rollout
 
-One deploy. The migrations add columns and tables only. After the deploy the admin sees the new sections with environment values as defaults; nothing changes for users until an admin saves a setting.
+One deploy. The migrations add columns and tables only. After the deploy the admin sees the new sections with environment values as defaults; nothing changes for users until an admin saves a setting. The first save of an SSO or SMTP field mails every instance admin (S4).
 
-## 16. Decisions for the owner
+## 16. Decisions for the owner — answered 2026-10-03
 
-The body is written on the option marked **recommended**. The plan's table "Owner decisions" says which tasks change with another answer.
+The body is written on these answers. The plan's table "Owner decisions" lists them with the tasks they shaped.
 
-**1. Where do SSO, SMTP and integration-app settings live?**
-- A. **Recommended.** They stay in the environment. The sections show them read-only (non-secret values, "secret set", redirect URI), with "Test the connection" and "Send a test e-mail"; the only new stored values are non-secret switches (sign-up, providers turned off). No admin can redirect sign-in to an identity provider of their choice or read password-reset mails through their own SMTP server. Deviation: the fields of the mockup are read-only (P29-02).
-- B. Editable and stored encrypted in `instance_settings`, the environment as fallback (the GIF-key precedent), applied per request and per queued job. The mockup exactly; about six more tasks (mail and Socialite configuration per request, workers that pick up changes, decrypt failures after an `APP_KEY` rotation), and an instance admin becomes able to take over any SSO account.
-- C. B for SMTP and the integration apps, A for SSO. Halves the escalation (password-reset mails still readable).
+1. **Where SSO, SMTP and integration-app settings live — answered B (≠ recommendation A).** Editable, stored encrypted in `instance_settings`, the environment as fallback, applied per request and per queued job (and per console command). The owner confirmed after the takeover risk was spelled out, with safeguards: password confirmation, audit of every change, mail to every instance admin when SSO or SMTP changes. Written as §5.1 (S1 to S9) and §6.8.
+2. **Licence section — answered B, with AGPL-3.0 (≠ recommendation on the licence value).** An informational card naming AGPL-3.0; the project's declared licence changes from MIT (`composer.json` `license`, a `LICENSE` file to match): the owner's legal decision. §9.7.
+3. **What the Users section can do — answered B (recommendation).** List, search, deactivate and reactivate (§6.2).
+4. **What the audit log records — answered B (recommendation).** Admin actions plus security events, kept 365 days (§6.6).
+5. **Status page audience and detail — answered A (recommendation).** Public, states only (§6.7, §9.12).
+6. **Who sees the version line on error pages — answered B (recommendation).** Signed-in users only; none on the static 503 and the status page (§9.10).
+7. **What the 403 page shows a workspace member who is not in the team — answered A (recommendation).** As the mockup: team name, member count, the managers' names and avatars (§9.10).
+8. **Who receives an access request before team roles exist — answered B (recommendation).** The workspace's owners and admins until plan 23 (§6.5).
+9. **"Back at" and the maintenance message — answered A (recommendation).** `artisan down --retry` plus the message prepared in General (§6.4).
+10. **The update check — answered B (recommendation).** Off by default, a switch in General (§6.3).
 
-**2. Licence section.**
-- A. Not built; the entry stays out of the navigation (deviation D-35 stays for it).
-- B. **Recommended.** An informational card: the licence name (the owner gives it: `composer.json` says MIT, the mockup AGPL-3.0), "every feature included", accounts in use, no limit, no expiry. True data, the mockup's place filled.
-- C. Licence keys with seats and expiry, and features behind them (the mockup's "SSO and audit under licence"). A business model change; a plan of its own.
-
-**3. What the Users section can do.**
-- A. List and search only.
-- B. **Recommended.** List, search, deactivate and reactivate (§6.2). Covers someone leaving the company without destroying their content.
-- C. B plus delete an account (reuse the self-deletion action, with the workspace-ownership checks it has).
-
-**4. What the audit log records.**
-- A. Admin actions only.
-- B. **Recommended.** Admin actions plus security events (sign-in success and failure, second factor on/off, password change, MCP token created or revoked), kept 365 days.
-- C. B plus workspace and team administration (members added or removed, invitations, team deletion).
-
-**5. Status page audience and detail.**
-- A. **Recommended.** Public (the error pages link to it for visitors too), states only, no versions, no hosts, no timings.
-- B. Instance admins only (a visitor clicking "Instance status" lands on the login page — useless on a 503).
-- C. Public, with detail (latency, last heartbeat times, version).
-
-**6. Who sees the version line on error pages.**
-- A. Everyone, as the mockup shows.
-- B. **Recommended.** Signed-in users only, as the About page today; the static 503 and the status page show none (they cannot tell who is signed in). Telling an anonymous visitor the exact version helps whoever looks for a known flaw.
-- C. Instance admins only.
-
-**7. What the 403 page shows a workspace member who is not in the team.**
-- A. **Recommended.** The mockup: team name, member count, the managers' names and avatars. They hold the link already; without names they cannot know whom to ask.
-- B. Team name only, no people.
-- C. Nothing about the team; a generic "Ask for access" sent to the workspace managers.
-
-**8. Who receives an access request before team roles exist (TM-6, plan 23).**
-- A. Wait: AD-4 moves to after plan 23, which removes three tasks here.
-- B. **Recommended.** The workspace's owners and admins now (they are who can add members today); plan 23 switches the recipients to the team's owners and facilitators in `AccessRequestRecipients` (one class).
-- C. The workspace owner only.
-
-**9. "Back at" and the maintenance message.**
-- A. **Recommended.** "Back at" from `artisan down --retry`; the message written beforehand in General and attached at `down` by a listener (the mockup README: "admin's message (instance setting, optional)", "the time comes from `--retry`").
-- B. A command `skrum:down --message= --back-at=` only; nothing in the admin.
-- C. A as well as B (the command's options win over the stored message).
-
-**10. The update check.**
-- A. None: the version alone.
-- B. **Recommended.** Off by default, a switch in General; once a day to the GitHub releases of the project.
-- C. On by default.
-
-Not decisions, but to confirm with the pre-build deviations: "Admins" stays as a section (P29-01); "Configure"/"Connect" on the Integrations rows become counts (P29-03); the Licence progress bar is not drawn (P29-04); the 503 sentence naming the target version is not built (P29-05).
+Still to put to the owner with the pre-build deviations (the plan's table, not asked yet): "Admins" stays as a section (P29-01); the secret fields are write-only, no "eye", and the e-mail fallback is a sentence (P29-02); the Integrations rows show teams counts instead of team-level connection states (P29-03); the Licence progress bar is not drawn (P29-04); the 503 sentence naming the target version is not built (P29-05); the configuration forms carry a source line per field, a confirmation line and the audit/alert sentence the mockup does not draw (P29-12).
 
 ## 17. Not determined by reading
 
-1. The licence of the project (MIT in `composer.json`, AGPL-3.0 in the mockup).
+1. ~~The licence of the project~~ — answered: AGPL-3.0 (decision 2). Still open: "AGPL-3.0-only" (the plan's reading of "AGPL-3.0", SPDX) or "AGPL-3.0-or-later"; and whether every user (not only admins) should see a "Source code" link, as AGPL §13 suggests for network use.
 2. Whether `github.com/arnaud-ritti/skrum` is public and publishes releases with `tag_name` (the update check's source).
 3. Whether Reverb answers a TCP connect on `broadcasting.connections.reverb.options.host:port` from inside the container (the client-facing address may differ from the server's bind address `reverb.servers.reverb`).
 4. Whether every passkey sign-in fires `Illuminate\Auth\Events\Login` (the passkey package's guard call); the plan's test proves it or adds a listener on the package's event.
@@ -359,3 +414,6 @@ Not decisions, but to confirm with the pre-build deviations: "Admins" stays as a
 6. Whether Fortify's default login pipeline in the installed version is the one the plan extends (`authenticateThrough` with a step before the two-factor redirect); the plan re-reads `AuthenticatedSessionController::loginPipeline`.
 7. Whether `TeamSurvey` and `GameRoom` routes bind their models before their middleware abort (true for `retro`, `game`, `board`; to check for `teamSurvey` and `room`).
 8. The size of the `lang/*.json` conflicts between lanes.
+9. How each integration client reads its configuration: at call time (`config()` inside the method, as `SlackClient`, `JiraClient`… appear to) or once in a constructor of a long-lived object; a client built once per worker would keep old credentials. Task 18 re-reads each of the 13 classes that read `services.*` and lists any that cache.
+10. Whether `CommandStarting` fires before a scheduled closure (`Schedule::call`) runs inside `schedule:run`; Task 18 checks it.
+11. Plans 26 and 29 together: under plan 26's S-1 an SSO-born instance admin without a password registers a passkey with no confirmation, and that passkey then satisfies S2 for the SSO and SMTP settings. Whether the owner accepts this combination, or wants S2 to refuse a passkey registered less than, say, a day earlier for an account without a known password, is his call.

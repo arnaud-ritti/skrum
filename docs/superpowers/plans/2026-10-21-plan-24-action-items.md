@@ -1,43 +1,43 @@
 # Action items: selection and bulk changes, priority / due-date / source filters, "In progress", export (Plan 24) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 13 only).
+> **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 16 only).
 
-**Status: draft of 2026-10-03, written on the recommended option of each question of spec §15.** Nothing runs before the owner has answered spec §15 and read the pre-build deviations. The table **Owner decisions** says which tasks change with another answer.
+**Status: revised 2026-10-03 on the owner's answers to spec §15** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 24"). Answers 2 (C) and 6 (B) differ from the draft's recommendation; the plan is rewritten on them (Tasks 2, 3, 4 and 8 are new or rewritten; Tasks 6, 7, 10, 13, 14 changed). The pre-build deviations are still to approve by the owner (not asked yet): nothing of a screen is built before they are answered.
 
-**Goal:** On the action items page a member selects rows and changes their status, assignee, due date or priority, sends them to the team's tracker, or deletes them, each item checked on its own; filters by several statuses, priorities, a due-date bucket and a source; marks items "In progress" anywhere an item's status is shown; and downloads the filtered list as CSV.
+**Goal:** On the action items page a member selects rows — or every item matching the filters — and changes their status, assignee, due date or priority, sends them to the team's tracker, or deletes them, each item checked on its own; filters by several statuses, priorities, a due-date bucket and a source; marks items "In progress" anywhere an item's status is shown, synced both ways with Jira and Linear through a configurable start status; and downloads the filtered list as CSV.
 
-**Architecture:** "In progress" is a nullable `action_items.started_at` beside `completed_at`, which stays the one source of completion; `ActionItemStatus` gains `Doing`, `ActionItem::currentStatus()` derives the status, `SetActionItemStatus` handles the six transitions, and a tracker read promotes an open linked item whose issue is in progress. `ActionItemFilters` becomes lists and buckets read from the query (old single values mapped), and `ActionItemQuery` applies them to the list, the counters and the new CSV export. Two bulk endpoints loop over the single-item actions (`ApplyActionItemChanges`, `DeleteActionItem`), one transaction and one lock per item, and report refusals per item. The front fills the places plan 18e left in `ActionItemsPage` (`selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`, `withDoing`, `NewActionItemButton.before`).
+**Architecture:** "In progress" is a nullable `action_items.started_at` beside `completed_at`, which stays the one source of completion; `ActionItemStatus` gains `Doing`, `ActionItem::currentStatus()` derives the status, `SetActionItemStatus` handles the six transitions and fires a new domain event `ActionItemProgressChanged` on start and stop. The tracker sync gains a third state: `ExternalIssueState::Started`, `DoneMapping::state()` reads it from the in-progress category of Jira and Linear, `DoneMapping::itemState()` gives an item's state per provider, and the existing conflict rules, push job and transition choosers carry it, with a `startStatusId` / `startStateId` target per project or team saved by the status mapping settings. `ActionItemFilters` becomes lists and buckets read from the query or from an array (old single values mapped), and `ActionItemQuery` applies them to the list, the counters, the CSV export and the "all matching" bulk target. Two bulk endpoints loop over the single-item actions (`ApplyActionItemChanges`, `DeleteActionItem`), one transaction and one lock per item, over ids or over the ids the filters match (count checked, cap 500), and report refusals per item. The front fills the places plan 18e left in `ActionItemsPage` (`selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`, `withDoing`, `NewActionItemButton.before`) and adds "Start to" to the status mapping panel.
 
-**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs.
+**Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, upgrade, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb, Octane; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs.
 
-**Spec:** `.superpowers/sdd/roadmap/plan-24/spec.md` (moves to `docs/superpowers/specs/2026-10-21-action-items-bulk-filters-status-export-design.md` in Task 15). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenActions`, `ActionItem`, `MobileDashboard`, `Checkbox`, `Popover`, `Command`, `DatePicker`, `DropdownMenu`, `Sonner` — for each, the `README.md` and the `preview.html`.
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-24-action-items-design.md`. Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenActions`, `ActionItem`, `MobileDashboard`, `Checkbox`, `Popover`, `Command`, `DatePicker`, `DropdownMenu`, `Sonner` — for each, the `README.md` and the `preview.html`. The status mapping panel has no mockup (P24-12).
 
-**Not in this plan:** the backlog of spec §3 (grouping by sprint, whiteboard and survey sources, the topbar search field, "select all matching" across pages, bulk on the retro board, pushing "In progress" to trackers, a webhook event for it, other export formats); browser walkthroughs (owner's working rule: none is written, edited or run); anything of the former plans 28 and 30 and scheduling.
+**Not in this plan:** the backlog of spec §3 (grouping by sprint, whiteboard and survey sources, the topbar search field, "all matching" beyond 500, a queued bulk change and exclusions, "Sync to :tracker" for an "all matching" selection, bulk on the retro board, "In progress" on GitHub, a webhook event for it, other export formats); browser walkthroughs (owner's working rule: none is written, edited or run); anything of the former plans 28 and 30 and scheduling.
 
-**Tasks:** 16. Step A, back end, single writer: 1 to 6. Step B, front foundation, single writer: 7. Step C, screens, lanes: Status (8), Filters (9), Bulk (10, 11), Export (12). Final: 13 (bench and captures), 14 (translations), 15 (deviations and documents), 16 (four-engine suites and report).
+**Tasks:** 19. Step A, back end, single writer: 1 to 9 (4 also touches the integrations front). Step B, front foundation, single writer: 10. Step C, screens, lanes: Status (11), Filters (12), Bulk (13, 14), Export (15). Final: 16 (bench and captures), 17 (translations), 18 (deviations and documents), 19 (four-engine suites and report).
 
 ## Branch and run
 
-- Base: `main` at `18d3637e` or later (plans 18e to 18g, database portability, plan 19). Check before Task 1, and stop if one fails: `app/Enums/ActionItemStatus.php` has exactly `Open` and `Completed`; `resources/js/components/action-items/action-items-page.tsx` declares the slots `selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`; `resources/js/components/skrum/action-item.tsx` exports `nextActionStatus` and accepts `withDoing`; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; the last migration of `database/migrations` is dated before `2026_10_21_100000`. If plan 21 or plan 23 was merged since, re-read `ActionItem`, `PresentActionItem`, `ActionItemPermissions` and the action-items components, and take the next free migration date.
+- Base: `main` at `0c294632` or later (plans 18e to 18g, database portability, plan 19, and the drafts of plans 20 to 29). Check before Task 1, and stop if one fails: `app/Enums/ActionItemStatus.php` has exactly `Open` and `Completed`; `app/Enums/ExternalIssueState.php` has exactly `Open` and `Done`; `app/Support/Integrations/Trackers/DoneMapping.php` has `state`, `category` and `configured`; `resources/js/components/action-items/action-items-page.tsx` declares the slots `selectionCell`, `selectionHead`, `bulkBar`, `extraFacets`; `resources/js/components/skrum/action-item.tsx` exports `nextActionStatus` and accepts `withDoing`; `resources/js/components/integrations/status-mapping-panel.tsx` has the "Complete to" and "Reopen to" selects; `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; the last migration of `database/migrations` is dated before `2026_10_21_100000`. If plan 21 or plan 23 was merged since, re-read `ActionItem`, `PresentActionItem`, `ActionItemPermissions`, `ApplyIssueChanges` and the action-items components, and take the next free migration date.
 - Branch `plan-24-action-items` from that base. No merge into `main`, no push.
-- Steps A and B run on that branch with one writer. Lanes run in git worktrees on branches `lane/24-<name>`, cut from the head of Task 7; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `npm run test -- resources/js/components/action-items resources/js/lib/action-items`, and `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`.
+- Steps A and B run on that branch with one writer. Lanes run in git worktrees on branches `lane/24-<name>`, cut from the head of Task 10; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, `npm run test -- resources/js/components/action-items resources/js/lib/action-items`, and `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`.
 - From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` (the running application container) and `TEST_DB_WORKDIR` (the worktree's path inside it); MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
-- Between Task 3 (the `filters` prop becomes lists) and Task 7 (the front reads them) the page's filters misbehave at runtime on this branch. Nothing is merged in between.
+- Between Task 5 (the `filters` prop becomes lists) and Task 10 (the front reads them) the page's filters misbehave at runtime on this branch. Nothing is merged in between.
 - Every task re-reads the files it touches; a line number or a method body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
 
-The seven questions of spec §15. "Plan written on" is the recommended option. The last column names what changes with another answer.
+The seven questions of spec §15, answered by the owner on 2026-10-03. Every row is answered; the plan is written on the answers.
 
-| # | Question | Plan written on | If the owner answers otherwise |
+| # | Question | Answer | Where the plan carries it |
 |---|---|---|---|
-| 1 | A bulk change meets an item it cannot change | **A**: per-item outcome, refusals listed | **B**: Task 4 wraps the loop in one transaction that locks every row in id order first and rethrows the first refusal (422 naming the item); Task 5 the same; the race cases of Tasks 4 and 5 assert one winner; Task 10 drops the "Details" list. **C**: as B on the server, plus Task 7 computes per-action availability over the whole selection and Task 10 disables an action when one item refuses it |
-| 2 | "In progress" and trackers | **B**: read only, promote open → doing | **A**: drop Task 2. **C**: Task 2 grows into three tasks (settings `startStatusId` / `startStateId` in `DoneMapping::configured`, the team integrations settings UI, `PushActionItemState` with a third target and `ExternalIssueState::InProgress`) |
-| 3 | "Sync to Jira" in the bulk bar | **A**: client loop over the per-item export | **B**: a new back-end task after Task 5 (a `ExportActionItems` job per item, a `POST …/action-items/bulk-exports` endpoint, a result event on the user channel), to be shared with RT-10 of plan 21; Task 11's loop becomes one request and a listener. **C**: Task 11 drops the sync part; P24-06 stays a deviation |
-| 4 | Due-date buckets | **A**: overdue, today, next 7 days, later, none | **B**: Task 3 replaces `week`/`later` by `this_week`/`next_week`/`later` with a week starting Monday (ISO) on the server and a translated note in the facet; Task 9 relabels. **C**: Task 3 reads `due_from` / `due_to` (`Y-m-d`), Task 9 builds a range calendar in the facet |
-| 5 | What "Export" downloads | **A**: every matching item, all pages | **B**: Task 6 honours `page` (and Task 12 sends the selected ids when there is a selection, a new `ids` parameter capped at 50). **C**: Task 6 adds `format=md` with a checklist writer and its tests; Task 12 turns the button into a menu |
-| 6 | How far a selection reaches | **A**: current page, 50 ids | **B**: a new back-end task after Task 5 (bulk endpoints accepting `filters` instead of `ids`, a cap of 500, a count check), Task 10 adds "Select all n matching" and the confirmation naming the count |
-| 7 | Phone selection | **A**: long press and a "Select" button | **B**: Task 11 drops the "Select" button (and P24-09 becomes "no keyboard route into selection below 80rem") |
+| 1 | A bulk change meets an item it cannot change | **A** (as recommended): per-item outcome, refusals listed | Tasks 6, 7, 8 (loop, refusals with title), 13 (toast and "Details") |
+| 2 | "In progress" and trackers | **C** (differs from the recommendation B): both ways, with a configurable start status per Jira project and Linear team | Task 1 (`ActionItemProgressChanged`), Task 2 (three-state reads and sync state), Task 3 (start pushes and their listener), Task 4 (start status settings, server and "Start to" select) |
+| 3 | "Sync to Jira" in the bulk bar | **A** (as recommended): browser loop over the per-item export, one by one | Task 14 (rows only; disabled in "all matching" mode) |
+| 4 | Due-date buckets | **A** (as recommended): overdue, today, next 7 days, later, none | Task 5, Task 12 |
+| 5 | What "Export" downloads | **A** (as recommended): CSV of every matching item, all pages | Task 9, Task 15 |
+| 6 | How far a selection reaches | **B** (differs from the recommendation A): "Select all n matching", sent as filters to the server | Task 5 (`ActionItemFilters::fromQuery`), Task 8 (filters target, count check, cap 500, race, measurement), Task 10 (bulk client and selection modes), Task 13 ("Select all :count matching", confirmation naming the count, changed-count answer), Task 14 (the phone "…" entry) |
+| 7 | Phone selection | **A** (as recommended): long press and a "Select" button | Task 14 |
 
 ## File structure
 
@@ -46,35 +46,37 @@ Back end, created:
 | File | Responsibility |
 |---|---|
 | `database/migrations/2026_10_21_100000_add_started_at_to_action_items.php` | the `started_at` column |
-| `app/Actions/ActionItems/ActionItemBulkChanges.php` | the per-item loop for updates and deletions |
-| `app/Http/Requests/ActionItems/ActionItemBulkUpdateRequest.php`, `ActionItemBulkDeletionRequest.php` | validation of the bulk bodies |
+| `app/Events/ActionItems/ActionItemProgressChanged.php` | start and stop of an item (domain event, not broadcast) |
+| `app/Listeners/QueueProgressedActionItemStatusPushesListener.php` | queues the tracker pushes of a start or stop |
+| `app/Actions/ActionItems/ActionItemBulkChanges.php` | the per-item loop for updates and deletions, and the "all matching" ids |
+| `app/Http/Requests/ActionItems/ActionItemBulkUpdateRequest.php`, `ActionItemBulkDeletionRequest.php` | validation of the bulk bodies (ids or filters and count) |
 | `app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php`, `WorkspaceActionItemBulkDeletionsController.php` | the two bulk routes |
 | `app/Support/CsvCell.php`, `app/Support/CsvDownload.php` | formula neutralisation and the streamed download, shared with the survey CSV |
 | `app/Actions/ActionItems/ExportActionItemsCsv.php`, `app/Http/Controllers/WorkspaceActionItemCsvExportsController.php` | the list export |
 
-Back end, modified: `app/Enums/ActionItemStatus.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/{SetActionItemStatus,ActionItemSubtaskRules,ActionItemFilters,ActionItemQuery}.php`, `app/Actions/Retros/PresentActionItem.php`, `app/Actions/Integrations/ApplyIssueChanges.php`, `app/Actions/TeamSurveys/ExportSurveyCsv.php`, `app/Http/Controllers/TeamSurveys/TeamSurveyExportsController.php`, `app/Http/Controllers/WorkspaceActionItemsController.php` (no change of code: the props follow `ActionItemFilters::toArray()`), `app/Mcp/Tools/Retro/ListActionItems.php`, `routes/web.php`.
+Back end, modified: `app/Enums/ActionItemStatus.php`, `app/Enums/ExternalIssueState.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/{SetActionItemStatus,ActionItemSubtaskRules,ActionItemFilters,ActionItemQuery}.php`, `app/Actions/Retros/PresentActionItem.php`, `app/Actions/Integrations/{ApplyIssueChanges,LinkStatusSync,UpdateStatusSyncSettings}.php`, `app/Support/Integrations/Trackers/{DoneMapping,LinearTracker}.php`, `app/Support/Integrations/Jira/JiraTransitions.php`, `app/Exceptions/Integrations/StatusPushRejected.php`, `app/Jobs/Integrations/PushActionItemState.php`, `app/Actions/TeamSurveys/ExportSurveyCsv.php`, `app/Http/Controllers/TeamSurveys/TeamSurveyExportsController.php`, `app/Http/Controllers/WorkspaceActionItemsController.php` (no change of code: the props follow `ActionItemFilters::toArray()`), `app/Mcp/Tools/Retro/ListActionItems.php`, `routes/web.php`.
 
-Tests, created: `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `ActionItemFiltersTest.php`, `ActionItemBulkUpdatesTest.php`, `ActionItemBulkDeletionsTest.php`, `ActionItemCsvExportTest.php`; `tests/Upgrade/ActionItemStartedAtTest.php`; `tests/Concurrency/ActionItemBulkTest.php`. Modified: `tests/Feature/Integrations/ApplyIssueChangesTest.php` (new cases; one existing expectation, Task 2), `tests/Feature/Mcp/RetroListToolsTest.php` (one new case).
+Tests, created: `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `ActionItemFiltersTest.php`, `ActionItemBulkUpdatesTest.php`, `ActionItemBulkDeletionsTest.php`, `ActionItemBulkMatchingTest.php`, `ActionItemCsvExportTest.php`; `tests/Upgrade/ActionItemStartedAtTest.php`; `tests/Concurrency/ActionItemBulkTest.php`. Modified: `tests/Feature/Integrations/ApplyIssueChangesTest.php` (new cases; one existing test's input, Task 2), `tests/Feature/Integrations/IssueStatusReadsTest.php` (two dataset rows, Task 2), `tests/Feature/Integrations/StatusSyncSettingsTest.php` (one expectation and new cases, Task 4), `tests/Feature/Integrations/IssueTransitionsTest.php` and `ActionItemStatusPushTest.php` (new cases, Task 3), `tests/Feature/Mcp/RetroListToolsTest.php` (one new case).
 
-Front end, created: `resources/js/lib/action-items/{selection,bulk,status}.ts` and their `.test.ts`; `resources/js/components/action-items/{use-action-item-selection.ts,action-item-select-cell.tsx,action-items-bulk-bar.tsx,bulk-assign-menu.tsx,bulk-result-toast.tsx,bulk-delete-confirm.tsx,use-bulk-tracker-export.ts,action-item-facets.tsx,export-action-items-button.tsx}` and their tests. Modified: `lib/retro/types.ts`, `components/action-items/{action-items-page,action-items-table,action-items-list,action-item-sheet,action-item-filters,action-item-filters-drawer,use-action-item-filters,action-items-header}.tsx|ts`, `components/skrum/{action-item,action-sheet}.tsx` (only if a prop is missing; each such change is its own commit), `components/retro/{board-dialogs,action-item-rows,carried-items-sheet}.tsx`, `pages/action-items/index.tsx`, `pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php` (captures only), `lang/{en,fr,es,de}.json`.
+Front end, created: `resources/js/lib/action-items/{selection,bulk,status}.ts` and their `.test.ts`; `resources/js/components/action-items/{use-action-item-selection.ts,action-item-select-cell.tsx,action-items-bulk-bar.tsx,bulk-assign-menu.tsx,bulk-result-toast.tsx,bulk-delete-confirm.tsx,bulk-matching-confirm.tsx,use-bulk-tracker-export.ts,use-long-press.ts,action-item-facets.tsx,export-action-items-button.tsx}` and their tests. Modified: `lib/retro/types.ts`, `types/integrations.ts`, `components/integrations/status-mapping-panel.tsx` and `trackers.test.tsx`, `components/action-items/{action-items-page,action-items-table,action-items-list,action-item-sheet,action-item-filters,action-item-filters-drawer,use-action-item-filters,action-items-header}.tsx|ts`, `components/skrum/{action-item,action-sheet}.tsx` (only if a prop is missing; each such change is its own commit), `components/retro/{board-dialogs,action-item-rows,carried-items-sheet}.tsx`, `pages/action-items/index.tsx`, `pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php` (captures only), `lang/{en,fr,es,de}.json`.
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows ScreenActions and ActionItem: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 13, in light, at 1440, in French, and compared with the mockup's `preview.html`.
+- **Mockup first** (parent spec §5 rule 13). A screen follows ScreenActions and ActionItem: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 16, in light, at 1440, in French, and compared with the mockup's `preview.html`.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale (no arbitrary size), no overflow from 20rem to 60rem, visible focus, contrast, motion with `prefers-reduced-motion`, lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no Echo, no router). Containers live in `resources/js/components/action-items/`. Reuse what exists: `ActionItem`, `ActionSheet`, `ActionStatusBadge`, `ActionPriorityMark`, `Table`, `Checkbox` (it has the `indeterminate` state), `Popover` + `Command`, `DropdownMenu`, `Calendar`, `Dialog`, `Drawer`, `Tooltip`, `sonner`, `ItemDeleteConfirm`, `ItemExport`, `useActionItemMutations`, `useActionItemsRealtime`.
 - **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md`, rules 1 to 12, apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. In short: no raw query of any form; no driver test; migrations with the Schema builder only, `up` only, dated `2026_10_21_…`, nullable `timestamp()`; a transaction locks the aggregate root first (here: the action item row, `WorkspaceActionItemGuard::lockWritable`); transactions that broadcast are not retried (`Transactions::Attempts` is not used here); an explicit tie-breaker on every sort (`ActionItemQuery::order` has one); dates bound as `Y-m-d` strings; `action_items.sort_rank` is written by `ActionItem::save()` only, so a legacy row inserted with `DB::table()` in a test sets `sort_rank` itself; tests never read SQL text and never change the schema; writes never skip model events.
 - **Four engines.** Every task runs the tests it wrote or touched on PostgreSQL, MariaDB, MySQL and SQLite: `bin/test-db pgsql -- <paths>`, then `mariadb`, `mysql`, `sqlite`. A step "Run the tests on the four engines" means exactly that; its "Expected" holds on each. The red step of a task ("see it fail") may run once, on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. Races (`tests/Concurrency`) run with `bin/test-db <engine> --concurrency -- tests/Concurrency/ActionItemBulkTest.php` on `pgsql`, `mariadb`, `mysql` and `sqlite-file`, never on SQLite in memory, never in parallel. The data migration test (`tests/Upgrade`) runs on the four engines.
-- **Races** are proved with `Tests\Concurrency\Support\Race` (static closures capturing scalars only; `Race::request`); each case states the protection it proves (the row lock of `lockWritable` and the early return of `SetActionItemStatus` on an unchanged status; the unique `previous_occurrence_id`).
-- **Working rules (owner):** unit, feature, upgrade, arch and concurrency tests are written and run per task; Vitest is written and run per task (`npm run test -- <pattern>`), the whole suite in Task 16; whole suites at merges into the plan branch (the gates above) and at the end; browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run — a walkthrough whose selector this plan changes is listed in the report, not edited; captures only, in Task 13, light, 1440, French.
+- **Races** are proved with `Tests\Concurrency\Support\Race` (static closures capturing scalars only; `Race::request`); each case states the protection it proves (the row lock of `lockWritable` and the early return of `SetActionItemStatus` on an unchanged status; the unique `previous_occurrence_id`; the count check of an "all matching" request).
+- **Working rules (owner):** unit, feature, upgrade, arch and concurrency tests are written and run per task; Vitest is written and run per task (`npm run test -- <pattern>`), the whole suite in Task 19; whole suites at merges into the plan branch (the gates above) and at the end; browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run — a walkthrough whose selector this plan changes is listed in the report, not edited; captures only, in Task 16, light, 1440, French.
 - **No new dependency**, PHP or JS, without the owner's approval. Long press is written with pointer events, not a library.
-- **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), in the informal register (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). A key that exists keeps its value ("In progress", "Mark as in progress", "Export", "Priority", "Due date", "Source", "To do", "Done", "No due date", "Today", "Later", "Select", "Assign", ":count selected", "Added outside a retro", ":count of :total", ":name (guest)" exist). Task 14 lists the values of every new key.
-- **No test is deleted** without the owner's approval. The one existing expectation this plan changes is named in Task 2.
+- **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), in the informal register (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). A key that exists keeps its value ("In progress", "Mark as in progress", "Export", "Priority", "Due date", "Source", "To do", "Done", "No due date", "Today", "Later", "Select", "Assign", ":count selected", "Added outside a retro", ":count of :total", ":name (guest)", "Automatic", "Complete to", "Reopen to", "Status mapping saved." exist). Task 17 lists the values of every new key.
+- **No test is deleted** without the owner's approval. The existing expectations this plan changes are named in Tasks 2 and 4, and nowhere else; any other existing test that fails is reported, not edited.
 - Primary and foreign keys are UUIDs. Create files with `vendor/bin/sail artisan make:… --no-interaction`.
 - Controllers: plural name, CRUD method names only (`arch()->preset()->laravel()`). Route names camelCase, URLs kebab-case, tuple notation. Form Requests with array rules.
 - Arch facts: models do not use `App\Actions`, `App\Http` or `App\Mcp`; actions do not use `App\Http`; `App\Support` does not use `App\Http` or `App\Mcp`; enums use nothing of the application; no class is `final`.
 - PHP style: early returns, no `else`, happy path last, typed everything, PascalCase constants, constructor promotion, no comment that restates code; before each commit `vendor/bin/pint --dirty --format agent` and `vendor/bin/sail composer types:check` (PHPStan).
-- Octane is installed: no static or per-request singleton state in new classes.
-- Front gates after every task that touches the front: `npm run types:check`, `npm run check`, `npm run build:front` (it runs `wayfinder:generate --with-form`, needed after Tasks 4, 5 and 6 before the front uses their routes).
+- Octane is installed: no static or per-request singleton state in new classes. A request stops at 30 seconds (`config/octane.php`); Task 8's measurement guards the 500-item cap.
+- Front gates after every task that touches the front: `npm run types:check`, `npm run check`, `npm run build:front` (it runs `wayfinder:generate --with-form`, needed after Tasks 6, 7 and 9 before the front uses their routes).
 - One commit per task, in the repository's style (`feat(action-items): …`, `test: …`), ending with the trailer lines:
 
 ```
@@ -86,7 +88,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built (owner's rule of the fifth round). Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+Put to the owner before the screen is built (owner's rule of the fifth round). **Every row is to approve by the owner (not asked yet).** Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
 | # | Screen | Mockup element | Built | Reason |
 |---|---|---|---|---|
@@ -94,34 +96,36 @@ Put to the owner before the screen is built (owner's rule of the fifth round). R
 | P24-02 | Filter bar, rows | Source "Whiteboard · …", "Sondage · …" and their icons | Source facet "From a retro" / "Added outside a retro"; rows keep the retro link or "Added outside a retro" | N: roadmap backlog (former plan 28; plan 19 §13) |
 | P24-03 | Header, table | "Grouper par Sprint" (default), sprint group rows with "en cours" / "terminé" badges, dates and late counts | None / Team / Assignee, None by default; group rows with label, count and a selection box | N: no sprint (TM-1); D-19 keeps it |
 | P24-04 | Table | a box on every row | a disabled box, with a tooltip, on a row the viewer can neither complete nor manage | F otherwise: a selection the server would refuse entirely |
-| P24-05 | Bulk bar | no feedback drawn | a toast after each action ("n updated, m not changed" with "Details") and "Exporting n of m…" during a tracker sync | S: per-item outcome (decision 1) |
-| P24-06 | Bulk bar | "Synchroniser vers Jira" always shown | "Sync to :tracker", named after the team's tracker, shown only for a selection of one team with a writable tracker | N/F: a tracker belongs to a team; several trackers or teams have no single target (decision 3) |
+| P24-05 | Bulk bar | no feedback drawn | a toast after each action ("n updated, m not changed" with "Details") and "Exporting n of m…" during a tracker sync | O: per-item outcome (decision 1) |
+| P24-06 | Bulk bar | "Synchroniser vers Jira" always shown | "Sync to :tracker", named after the team's tracker, shown only for a selection of rows of one team with a writable tracker; disabled in "all matching" mode | N/F: a tracker belongs to a team; several trackers or teams have no single target; the browser loop needs ids (decisions 3 and 6) |
 | P24-07 | Topbar | search field "Rechercher une action, un ticket… ⌘K" | not rendered | PB-12 of plan 18e stands |
 | P24-08 | Sidebar | "Actions · 2 en retard" | the number alone | D-129, still to approve |
-| P24-09 | Phone and tablet list | long press only | long press and a "Select" button in the header | A: keyboard and screen-reader route into selection (decision 7) |
+| P24-09 | Phone and tablet list | long press only | long press and a "Select" button in the header | O: keyboard and screen-reader route into selection (decision 7) |
 | P24-10 | Phone chips | "Ouvertes", "Terminées" | "To do n" (To do + In progress), "Done", as D-118 | D-118 stands for the wording |
+| P24-11 | Bulk bar | "n sélectionnées" only | "Select all :count matching" after the page is selected, "All :count matching selected", and the "Apply to :count action items?" confirmation (with the changed-count sentence) | O: decision 6 |
+| P24-12 | Team integrations, status mapping | no mockup | a "Start to" select before "Complete to" and "Reopen to", same layout | O: decision 2 |
 
 ## Review Focus
 
 The inputs the spec implies that are most likely to bite, each pinned by a test in the task that owns the code.
 
-1. **A link or a stored filter from before this plan** (`?status=open`, `?status=overdue`, `?status=all`, the reminder digest's link): the same items as before. Tests in Task 3 (server mapping) and Task 7 (the landing sends the stored entry unchanged).
-2. **A bulk selection mixing what may and may not be changed** (another author's item, a locked board, an item deleted in another tab, an item of a team the viewer left, a recurring item asked to lose its date): the rest changes, each refusal has its sentence, nothing leaks about invisible items. Test in Task 4.
-3. **Two bulk requests over the same items at once** (a double click, two tabs): one next occurrence per recurring item, no 500. Race cases in Task 4 and Task 5.
-4. **A tracker read of an issue "In Review" on an item a member just started, or just completed**: started stays started; completed follows the source's done/open rule as today. Tests in Task 2.
-5. **A CSV cell typed as `=HYPERLINK(…)`** in an item's text, a retro title or a team name: shown as text by a spreadsheet. Test in Task 6.
+1. **A link or a stored filter from before this plan** (`?status=open`, `?status=overdue`, `?status=all`, the reminder digest's link): the same items as before. Tests in Task 5 (server mapping) and Task 10 (the landing sends the stored entry unchanged).
+2. **A bulk selection mixing what may and may not be changed** (another author's item, a locked board, an item deleted in another tab, an item of a team the viewer left, a recurring item asked to lose its date): the rest changes, each refusal has its sentence, nothing leaks about invisible items (no title). Test in Task 6.
+3. **Two bulk requests over the same items at once** (a double click, two tabs), with ids or with "all matching", **or an "all matching" request after the list changed** (an item added in another tab between the count and "Apply"): one next occurrence per recurring item, no 500, and a changed list refused with its new number, nothing changed. Race cases in Tasks 6, 7 and 8; "changes nothing when the list changed since the member counted it" in Task 8.
+4. **A tracker read of an issue "To Do" on an item a member just started, and of an issue "In Review" on an item still to do**: the member's unpushed newer start wins and is pushed; an older start yields to the source; the to-do item becomes started without a push. Tests in Task 2. **A start push on a Jira workflow whose in-progress transition requires a field**: a failed write with its sentence, the item stays started. Test in Task 3.
+5. **A CSV cell typed as `=HYPERLINK(…)`** in an item's text, a retro title or a team name: shown as text by a spreadsheet. Test in Task 9.
 
 ## Lanes
 
 | Lane | Tasks | Cut from | Shares with other lanes |
 |---|---|---|---|
-| main | 1 to 7, 13 to 16 | — | — |
-| Status | 8 | head of Task 7 | `components/action-items/action-items-table.tsx` (status cell only), `lang/*.json` |
-| Filters | 9 | head of Task 7 | `components/action-items/action-items-page.tsx` (the `extraFacets` line and the drawer props only), `lang/*.json` |
-| Bulk | 10, then 11 | head of Task 7 | `components/action-items/action-items-page.tsx` (the `selectionCell`, `selectionHead`, `bulkBar` lines and the list's selection props), `action-items-table.tsx` (first column and group rows only), `action-items-list.tsx`, `action-items-header.tsx` ("Select" button), `lang/*.json` |
-| Export | 12 | head of Task 7 | `pages/action-items/index.tsx` (the `before` prop only), `lang/*.json` |
+| main | 1 to 10, 16 to 19 | — | — |
+| Status | 11 | head of Task 10 | `components/action-items/action-items-table.tsx` (status cell only), `lang/*.json` |
+| Filters | 12 | head of Task 10 | `components/action-items/action-items-page.tsx` (the `extraFacets` line and the drawer props only), `lang/*.json` |
+| Bulk | 13, then 14 | head of Task 10 | `components/action-items/action-items-page.tsx` (the `selectionCell`, `selectionHead`, `bulkBar` lines and the list's selection props), `action-items-table.tsx` (first column and group rows only), `action-items-list.tsx`, `action-items-header.tsx` ("Select" button), `lang/*.json` |
+| Export | 15 | head of Task 10 | `pages/action-items/index.tsx` (the `before` prop only), `lang/*.json` |
 
-The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `action-items-page.tsx` and `action-items-table.tsx` are edited by several lanes in named regions; the controller resolves the conflicts at each merge. `lang/*.json` conflicts are resolved by the controller (keys appended in one alphabetical block per lane). A lane that needs a change in `components/skrum/` stops and asks: Task 7 makes the only planned one.
+The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `action-items-page.tsx` and `action-items-table.tsx` are edited by several lanes in named regions; the controller resolves the conflicts at each merge. `lang/*.json` conflicts are resolved by the controller (keys appended in one alphabetical block per lane). A lane that needs a change in `components/skrum/` stops and asks: Task 10 makes the only planned one. The status mapping panel (Task 4) is done in Step A and touched by no lane.
 
 ---
 
@@ -130,11 +134,11 @@ The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `act
 ### Task 1: "In progress" — column, status, transitions, presentation
 
 **Files:**
-- Create: `database/migrations/2026_10_21_100000_add_started_at_to_action_items.php`, `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `tests/Upgrade/ActionItemStartedAtTest.php`
+- Create: `database/migrations/2026_10_21_100000_add_started_at_to_action_items.php`, `app/Events/ActionItems/ActionItemProgressChanged.php`, `tests/Feature/ActionItems/ActionItemInProgressTest.php`, `tests/Upgrade/ActionItemStartedAtTest.php`
 - Modify: `app/Enums/ActionItemStatus.php`, `app/Models/ActionItem.php`, `database/factories/ActionItemFactory.php`, `app/Actions/ActionItems/SetActionItemStatus.php`, `app/Actions/ActionItems/ActionItemSubtaskRules.php`, `app/Actions/Retros/PresentActionItem.php`, `lang/{en,fr,es,de}.json`
 
 **Interfaces:**
-- Produces: `ActionItemStatus::Doing` (`'doing'`), `ActionItemStatus::label(): string`; `ActionItem::currentStatus(): ActionItemStatus`; `ActionItem::$started_at` (`?Carbon`, cast `datetime`, not fillable); factory state `ActionItemFactory::started(string $at = '2026-10-20 08:00:00')`; `SetActionItemStatus::handle(ActionItem $locked, ActionItemActor|ExternalSyncActor $actor, ActionItemStatus $status): ActionItem` accepting the three values; `PresentActionItem` keys `status` (`open|doing|completed`) and `startedAt` (`?string`, ISO 8601).
+- Produces: `ActionItemStatus::Doing` (`'doing'`), `ActionItemStatus::label(): string`; `ActionItem::currentStatus(): ActionItemStatus`; `ActionItem::$started_at` (`?Carbon`, cast `datetime`, not fillable); factory state `ActionItemFactory::started(string $at = '2026-10-20 08:00:00')`; `SetActionItemStatus::handle(ActionItem $locked, ActionItemActor|ExternalSyncActor $actor, ActionItemStatus $status): ActionItem` accepting the three values and firing `ActionItemProgressChanged(ActionItem $actionItem, ActionItemEventOrigin $origin, ActionItemActor|ExternalSyncActor|null $actor)` on open ↔ doing (spec §6.1; its listener is Task 3's); `PresentActionItem` keys `status` (`open|doing|completed`) and `startedAt` (`?string`, ISO 8601).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -146,7 +150,9 @@ The four lanes run in parallel. Merge order: Status, Filters, Bulk, Export. `act
 use App\Enums\ActionItemRecurrence;
 use App\Enums\ActionItemStatus;
 use App\Enums\RetroPhase;
+use App\Enums\ActionItemEventOrigin;
 use App\Events\ActionItems\ActionItemCompleted;
+use App\Events\ActionItems\ActionItemProgressChanged;
 use App\Events\ActionItems\ActionItemReopened;
 use App\Events\ActionItems\TeamActionItemSaved;
 use App\Models\ActionItem;
@@ -160,7 +166,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
-    Event::fake([ActionItemCompleted::class, ActionItemReopened::class, TeamActionItemSaved::class]);
+    Event::fake([ActionItemCompleted::class, ActionItemReopened::class, ActionItemProgressChanged::class, TeamActionItemSaved::class]);
     $this->travelTo(CarbonImmutable::parse('2026-10-21 09:00:00'));
 });
 
@@ -194,6 +200,8 @@ it('starts an open item and puts it back to do, without completion events', func
     Event::assertNotDispatched(ActionItemCompleted::class);
     Event::assertNotDispatched(ActionItemReopened::class);
     Event::assertDispatchedTimes(TeamActionItemSaved::class, 2);
+    Event::assertDispatchedTimes(ActionItemProgressChanged::class, 2);
+    Event::assertDispatched(fn (ActionItemProgressChanged $event) => $event->origin === ActionItemEventOrigin::Skrum);
 });
 
 it('changes and announces nothing when the item already has the status', function () {
@@ -204,6 +212,7 @@ it('changes and announces nothing when the item already has the status', functio
     patchItemStatus($item, $user, ['status' => 'doing'])->assertOk()->assertJsonPath('actionItem.startedAt', '2026-10-20T08:00:00+00:00');
 
     Event::assertNotDispatched(TeamActionItemSaved::class);
+    Event::assertNotDispatched(ActionItemProgressChanged::class);
 });
 
 it('keeps the start when a started item is completed, and the next occurrence starts to do', function () {
@@ -220,6 +229,7 @@ it('keeps the start when a started item is completed, and the next occurrence st
         ->and($next->currentStatus())->toBe(ActionItemStatus::Open)
         ->and($next->started_at)->toBeNull();
     Event::assertDispatchedTimes(ActionItemCompleted::class, 1);
+    Event::assertNotDispatched(ActionItemProgressChanged::class);
 });
 
 it('reopens a completed item to do or in progress', function (string $target, bool $staysStarted) {
@@ -234,6 +244,7 @@ it('reopens a completed item to do or in progress', function (string $target, bo
         ->and($fresh->completed_via_source)->toBeNull()
         ->and($fresh->started_at !== null)->toBe($staysStarted);
     Event::assertDispatchedTimes(ActionItemReopened::class, 1);
+    Event::assertNotDispatched(ActionItemProgressChanged::class);
 })->with([
     'to do' => ['open', false],
     'in progress' => ['doing', true],
@@ -416,12 +427,44 @@ enum ActionItemStatus: string
     }
 ```
 
-`app/Actions/ActionItems/SetActionItemStatus.php` (whole `handle`):
+`app/Events/ActionItems/ActionItemProgressChanged.php` (`vendor/bin/sail artisan make:event ActionItems/ActionItemProgressChanged --no-interaction`, then the shape of `ActionItemReopened`):
+
+```php
+<?php
+
+namespace App\Events\ActionItems;
+
+use App\Actions\ActionItems\ActionItemActor;
+use App\Actions\ActionItems\ExternalSyncActor;
+use App\Enums\ActionItemEventOrigin;
+use App\Models\ActionItem;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * An item was started or put back to do (spec 24 §6.1). A domain event: not broadcast, not
+ * a webhook; its listener queues the tracker pushes (Task 3).
+ */
+class ActionItemProgressChanged implements ShouldDispatchAfterCommit
+{
+    use Dispatchable;
+    use SerializesModels;
+
+    public function __construct(
+        public ActionItem $actionItem,
+        public ActionItemEventOrigin $origin,
+        public ActionItemActor|ExternalSyncActor|null $actor = null,
+    ) {}
+}
+```
+
+`app/Actions/ActionItems/SetActionItemStatus.php` (whole `handle`; add `use App\Events\ActionItems\ActionItemProgressChanged;`):
 
 ```php
     /**
      * Setting the current status again changes and announces nothing. Completion and
-     * reopening keep their events; starting and stopping only announce the item.
+     * reopening keep their events; starting and stopping fire ActionItemProgressChanged.
      */
     public function handle(ActionItem $locked, ActionItemActor|ExternalSyncActor $actor, ActionItemStatus $status): ActionItem
     {
@@ -461,6 +504,10 @@ enum ActionItemStatus: string
             event(new ActionItemReopened($locked, $origin, $actor));
         }
 
+        if (! $wasCompleted && ! $completing) {
+            event(new ActionItemProgressChanged($locked, $origin, $actor));
+        }
+
         $this->broadcastActionItemChange->saved($locked);
 
         return $locked;
@@ -493,37 +540,43 @@ Expected: PASS. `tests/Feature/ActionItems/PresentActionItemTest.php` and the MC
 - [ ] **Step 5: Commit**
 
 ```bash
-git add database/migrations/2026_10_21_100000_add_started_at_to_action_items.php app/Enums/ActionItemStatus.php app/Models/ActionItem.php database/factories/ActionItemFactory.php app/Actions/ActionItems/SetActionItemStatus.php app/Actions/ActionItems/ActionItemSubtaskRules.php app/Actions/Retros/PresentActionItem.php tests/Feature/ActionItems/ActionItemInProgressTest.php tests/Upgrade/ActionItemStartedAtTest.php lang
+git add database/migrations/2026_10_21_100000_add_started_at_to_action_items.php app/Events/ActionItems/ActionItemProgressChanged.php app/Enums/ActionItemStatus.php app/Models/ActionItem.php database/factories/ActionItemFactory.php app/Actions/ActionItems/SetActionItemStatus.php app/Actions/ActionItems/ActionItemSubtaskRules.php app/Actions/Retros/PresentActionItem.php tests/Feature/ActionItems/ActionItemInProgressTest.php tests/Upgrade/ActionItemStartedAtTest.php lang
 git commit -m "feat(action-items): status In progress (AI-3)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 2: A tracker read starts an open linked item (decision 2, option B)
+### Task 2: Three-state tracker reads — `Started`, item state per provider (decision 2, option C)
 
 **Files:**
-- Modify: `app/Actions/Integrations/ApplyIssueChanges.php`, `tests/Feature/Integrations/ApplyIssueChangesTest.php`
+- Modify: `app/Enums/ExternalIssueState.php`, `app/Support/Integrations/Trackers/DoneMapping.php`, `app/Actions/Integrations/ApplyIssueChanges.php`, `app/Actions/Integrations/LinkStatusSync.php`, `resources/js/types/integrations.ts`, `tests/Feature/Integrations/ApplyIssueChangesTest.php`, `tests/Feature/Integrations/IssueStatusReadsTest.php`
 
 **Interfaces:**
-- Consumes: `ActionItemStatus::Doing`, `ActionItem::currentStatus()`, `SetActionItemStatus::handle()` (Task 1); `DoneMapping::category(IntegrationProvider $provider, string $kind): ExternalStatusCategory` (exists).
-- Produces: no new signature. Behaviour: on a read where both sides are "open", an `open` item whose issue is `InProgress` becomes `doing`; when the source reopens a completed item into an `InProgress` status, the item becomes `doing`.
+- Consumes: `ActionItemStatus::Doing`, `ActionItem::currentStatus()`, `SetActionItemStatus::handle()`, `ActionItemProgressChanged` (Task 1); `DoneMapping::category(IntegrationProvider $provider, string $kind): ExternalStatusCategory` (exists).
+- Produces: `ExternalIssueState::Started` (`'started'`); `DoneMapping::state()` answering `Started` for Jira, Jira Data Center and Linear in-progress statuses; `DoneMapping::tracksStart(IntegrationProvider $provider): bool`; `DoneMapping::itemState(ActionItem $item, IntegrationProvider $provider): ExternalIssueState`. Behaviour (spec §6.2, "Reads", "Sync state"): `ApplyIssueChanges` and `LinkStatusSync::state()` compare over three states; a source that wins sets the item to completed, doing or to do. The front type `ExternalLink.state` is `'open' | 'started' | 'done' | null`. Pushes still send two states until Task 3.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `tests/Feature/Integrations/ApplyIssueChangesTest.php` (it already has `applyStatusSyncIssues()`, and `tests/Pest.php` has `statusSyncLink()` and `statusSyncIssue()`):
+`statusSyncLink()` (`tests/Pest.php`, around line 1467) passes its `item` attributes to the action item factory's `create()` (through `exportBoardItem()`), so `started_at` and `completed_at` go through it unguarded.
+
+Append to `tests/Feature/Integrations/ApplyIssueChangesTest.php` (it has `applyStatusSyncIssues()`, `Queue::fake()` and the clock at `2026-10-07 10:30:00` in its `beforeEach`; add the imports `App\Enums\ActionItemStatus`, `App\Events\ActionItems\ActionItemProgressChanged`, `App\Support\Integrations\Trackers\DoneMapping` and `App\Models\Team`):
 
 ```php
 it('starts an open item when its issue is in progress, as the system and without a push', function () {
-    Event::fake([ActionItemCompleted::class, ActionItemReopened::class]);
+    Event::fake([ActionItemCompleted::class, ActionItemReopened::class, ActionItemProgressChanged::class]);
     ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink();
 
-    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Progress'])]);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
 
     $item->refresh();
-    expect($item->currentStatus())->toBe(App\Enums\ActionItemStatus::Doing)
+    $link->refresh();
+    expect($item->currentStatus())->toBe(ActionItemStatus::Doing)
         ->and($item->completed_at)->toBeNull()
-        ->and(LinkStatusSync::state($link->fresh(), $item))->toBe(LinkStatusSync::Synced);
+        ->and($link->external_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_status_name)->toBe('In Review')
+        ->and(LinkStatusSync::state($link, $item))->toBe(LinkStatusSync::Synced);
+    Event::assertDispatched(fn (ActionItemProgressChanged $event) => $event->origin === ActionItemEventOrigin::External);
     Event::assertNotDispatched(ActionItemCompleted::class);
     Event::assertNotDispatched(ActionItemReopened::class);
     Queue::assertNotPushed(PushActionItemState::class);
@@ -538,13 +591,31 @@ it('starts an item on a locked board as the system', function () {
     expect($item->fresh()->started_at)->not->toBeNull();
 });
 
-it('never puts a started item back to do when its issue is still to do', function () {
-    ['integration' => $integration, 'item' => $item] = statusSyncLink(item: ['started_at' => '2026-10-07 09:00:00']);
+it('puts a started item back to do when its issue went back to do after the start', function () {
+    Event::fake([ActionItemProgressChanged::class]);
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:15:00'],
+        item: ['started_at' => '2026-10-07 10:15:00'],
+    );
 
-    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
 
-    expect($item->fresh()->started_at?->toDateTimeString())->toBe('2026-10-07 09:00:00');
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Open);
+    Event::assertDispatched(fn (ActionItemProgressChanged $event) => $event->origin === ActionItemEventOrigin::External);
     Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('keeps a newer unpushed start and pushes it', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00'],
+        item: ['started_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Doing)
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open);
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
 });
 
 it('reopens a completed item into in progress when the source reopens it into an in-progress status', function () {
@@ -555,60 +626,123 @@ it('reopens a completed item into in progress when the source reopens it into an
 
     $item->refresh();
     expect($item->completed_at)->toBeNull()
-        ->and($item->started_at)->not->toBeNull();
+        ->and($item->currentStatus())->toBe(ActionItemStatus::Doing);
     Event::assertDispatched(fn (ActionItemReopened $event) => $event->origin === ActionItemEventOrigin::External);
 });
+
+it('reads a started item as open for GitHub and as started for Jira and Linear', function (IntegrationProvider $provider, ExternalIssueState $expected) {
+    $team = Team::factory()->create();
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->started()->create();
+
+    expect(DoneMapping::itemState($item, $provider))->toBe($expected)
+        ->and(DoneMapping::itemState($item->forceFill(['started_at' => null]), $provider))->toBe(ExternalIssueState::Open)
+        ->and(DoneMapping::itemState($item->forceFill(['completed_at' => now()]), $provider))->toBe(ExternalIssueState::Done);
+})->with([
+    'jira' => [IntegrationProvider::Jira, ExternalIssueState::Started],
+    'jira data center' => [IntegrationProvider::JiraDataCenter, ExternalIssueState::Started],
+    'linear' => [IntegrationProvider::Linear, ExternalIssueState::Started],
+    'github' => [IntegrationProvider::GitHub, ExternalIssueState::Open],
+]);
 ```
 
-Change the existing test "only records the read when both sides agree" (it reads an `indeterminate` issue named "In Review"): keep its name, input and assertions, and add one expectation after `->and($item->fresh()->completed_at)->toBeNull()`:
+Change the existing test "only records the read when both sides agree" (line ~101): its issue becomes a to-do one, so that both sides still agree under three states; its in-progress case is the first new test above. Replace its read and its status name expectation, keep its name and its other assertions:
 
 ```php
-        ->and($item->fresh()->started_at)->not->toBeNull()
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
+
+    expect($item->fresh()->completed_at)->toBeNull()
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open)
+        ->and($link->fresh()->external_status_name)->toBe('To Do');
 ```
 
-This is the only existing expectation the plan changes; say so in the commit message.
+In `tests/Feature/Integrations/IssueStatusReadsTest.php`, the dataset of "maps source states to done or open": the rows `'jira in progress'` and `'linear started'` expect `ExternalIssueState::Started` (they expected `Open`), and one row is added after `'jira dc done'`:
 
-Before running, read `statusSyncLink()` in `tests/Pest.php` (around line 1467): if its `item` attributes go through a guarded `create()`, `started_at` is passed by the factory (factories fill unguarded); if they are applied with `update()`, use `forceFill([...])->save()` in the two tests above instead.
+```php
+    'jira dc in progress' => [IntegrationProvider::JiraDataCenter, [], 'indeterminate', '3', ExternalIssueState::Started],
+```
+
+These three changes (one test's input, two dataset rows) are the only existing expectations this task changes; say so in the commit message. "announces link changes only when a link or the item changed" (its second read is an In Review issue) is expected to pass unchanged: it reads one announcement per read that changed something; if it fails, report it, do not edit it.
 
 - [ ] **Step 2: Run the tests to see them fail**
 
-Run: `vendor/bin/sail artisan test --compact tests/Feature/Integrations/ApplyIssueChangesTest.php`
-Expected: FAIL on the four new cases and on the changed one (`started_at` is null).
+Run: `vendor/bin/sail artisan test --compact tests/Feature/Integrations/ApplyIssueChangesTest.php tests/Feature/Integrations/IssueStatusReadsTest.php`
+Expected: FAIL — `Undefined constant App\Enums\ExternalIssueState::Started`, then `Call to undefined method …DoneMapping::itemState()`.
 
 - [ ] **Step 3: Implement**
 
-In `app/Actions/Integrations/ApplyIssueChanges.php`, add `use App\Enums\ExternalStatusCategory;` and, in `applyToItem()`, after `$state = DoneMapping::state($integration, $status);`:
+`app/Enums/ExternalIssueState.php`:
 
 ```php
-            $category = DoneMapping::category($integration->provider, $status->kind);
+<?php
+
+namespace App\Enums;
+
+/**
+ * An issue's state for the status sync (spec 8 §5, spec 24 §6.2). `Started` only exists for
+ * trackers with an in-progress category (DoneMapping::tracksStart). Stored in `string(10)` columns.
+ */
+enum ExternalIssueState: string
+{
+    case Open = 'open';
+    case Started = 'started';
+    case Done = 'done';
+}
 ```
 
-Replace
+`app/Support/Integrations/Trackers/DoneMapping.php`: add `use App\Enums\ActionItemStatus;` and `use App\Models\ActionItem;`; in `state()`, replace the last line `return $done ? ExternalIssueState::Done : ExternalIssueState::Open;` with:
 
 ```php
-            if ($state === $itemState) {
-                continue;
-            }
+        if ($done) {
+            return ExternalIssueState::Done;
+        }
+
+        if (self::tracksStart($integration->provider) && self::category($integration->provider, $status->kind) === ExternalStatusCategory::InProgress) {
+            return ExternalIssueState::Started;
+        }
+
+        return ExternalIssueState::Open;
+```
+
+and add after `category()`:
+
+```php
+    /**
+     * Spec 24 §6.2: Jira and Linear have an in-progress category, synced both ways; GitHub has none.
+     */
+    public static function tracksStart(IntegrationProvider $provider): bool
+    {
+        return in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::Linear], true);
+    }
+
+    /**
+     * What an item is for a link of this provider: a started item is open where the
+     * provider has no start.
+     */
+    public static function itemState(ActionItem $item, IntegrationProvider $provider): ExternalIssueState
+    {
+        return match ($item->currentStatus()) {
+            ActionItemStatus::Completed => ExternalIssueState::Done,
+            ActionItemStatus::Doing => self::tracksStart($provider) ? ExternalIssueState::Started : ExternalIssueState::Open,
+            ActionItemStatus::Open => ExternalIssueState::Open,
+        };
+    }
+```
+
+Update the class docblock: "when an issue counts as done or started, and which poker category its status belongs to".
+
+`app/Actions/Integrations/ApplyIssueChanges.php`, in `applyToItem()`: replace
+
+```php
+            $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
 ```
 
 with
 
 ```php
-            if ($state === $itemState) {
-                if ($this->sourceStarted($item, $category)) {
-                    $item = $this->setActionItemStatus->handle(
-                        $item,
-                        new ExternalSyncActor($integration->provider->value, $link->external_key),
-                        ActionItemStatus::Doing,
-                    );
-                    $outcome['changed'] = true;
-                }
-
-                continue;
-            }
+            $itemState = DoneMapping::itemState($item, $integration->provider);
 ```
 
-and in the call that follows the source, replace the third argument
+and, in the call that follows the source, replace the third argument
 
 ```php
                 $state === ExternalIssueState::Done ? ActionItemStatus::Completed : ActionItemStatus::Open,
@@ -617,56 +751,477 @@ and in the call that follows the source, replace the third argument
 with
 
 ```php
-                $this->followedStatus($state, $category),
+                self::followedStatus($state),
 ```
 
-Add the two private methods:
+Add:
 
 ```php
     /**
-     * Spec 24 §6.2: an item still to do follows its issue into progress; a started item is
-     * never put back to do by a read, so a member may start an item before its issue moves.
+     * Spec 24 §6.2: the source's state, when it wins, as the item's status.
      */
-    private function sourceStarted(ActionItem $item, ExternalStatusCategory $category): bool
+    private static function followedStatus(ExternalIssueState $state): ActionItemStatus
     {
-        return $category === ExternalStatusCategory::InProgress && $item->currentStatus() === ActionItemStatus::Open;
-    }
-
-    private function followedStatus(ExternalIssueState $state, ExternalStatusCategory $category): ActionItemStatus
-    {
-        if ($state === ExternalIssueState::Done) {
-            return ActionItemStatus::Completed;
-        }
-
-        if ($category === ExternalStatusCategory::InProgress) {
-            return ActionItemStatus::Doing;
-        }
-
-        return ActionItemStatus::Open;
+        return match ($state) {
+            ExternalIssueState::Done => ActionItemStatus::Completed,
+            ExternalIssueState::Started => ActionItemStatus::Doing,
+            ExternalIssueState::Open => ActionItemStatus::Open,
+        };
     }
 ```
 
-`LinkStatusSync`, `PushActionItemState` and `QueueActionItemStatusPushes` do not change: they read `isCompleted()`, so a started item is "open" for the sync.
+`skrumWins`, `echoesLastPush`, `isStale`, `canPush` and `markOtherTrackersChanged` do not change: they compare `ExternalIssueState` values, now three.
+
+`app/Actions/Integrations/LinkStatusSync.php`, in `state()`: replace the `$itemState` line with
+
+```php
+        $itemState = DoneMapping::itemState($item, $integration->provider);
+```
+
+(`use App\Support\Integrations\Trackers\DoneMapping;`; drop `use App\Enums\ExternalIssueState;` if Pint reports it unused).
+
+`resources/js/types/integrations.ts`, `ExternalLink`: `state: 'open' | 'started' | 'done' | null;`. Run `npm run types:check`: no other change is expected (`action-items-table.tsx` compares with `'done'` only).
+
+`PushActionItemState`, `JiraTransitions`, `LinearTracker` and `StatusPushRejected` are Task 3's.
 
 - [ ] **Step 4: Run the tests on the four engines**
 
-Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems`, then `mariadb`, `mysql`, `sqlite`.
-Expected: PASS.
+Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Feature/Poker tests/Arch`, then `mariadb`, `mysql`, `sqlite`; then `npm run types:check`.
+Expected: PASS. If a test of `tests/Feature/Integrations` other than the three changes above fails, stop and report it.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/Actions/Integrations/ApplyIssueChanges.php tests/Feature/Integrations/ApplyIssueChangesTest.php
-git commit -m "feat(integrations): a tracker read starts an open linked action item
+git add app/Enums/ExternalIssueState.php app/Support/Integrations/Trackers/DoneMapping.php app/Actions/Integrations/ApplyIssueChanges.php app/Actions/Integrations/LinkStatusSync.php resources/js/types/integrations.ts tests/Feature/Integrations/ApplyIssueChangesTest.php tests/Feature/Integrations/IssueStatusReadsTest.php
+git commit -m "feat(integrations): tracker reads carry In progress both ways
 
-The test 'only records the read when both sides agree' gains one expectation:
-its In Review issue now starts the item.
+Changed expectations: 'only records the read when both sides agree' now reads
+a to-do issue (its In Review case is a new test); the rows 'jira in progress'
+and 'linear started' of 'maps source states to done or open' read Started.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 3: Filters — statuses, priorities, due date, source (AI-2)
+### Task 3: Pushing a start or a stop — start targets of Jira and Linear (decision 2, option C)
+
+**Files:**
+- Create: `app/Listeners/QueueProgressedActionItemStatusPushesListener.php`
+- Modify: `app/Jobs/Integrations/PushActionItemState.php`, `app/Support/Integrations/Jira/JiraTransitions.php`, `app/Support/Integrations/Trackers/LinearTracker.php`, `app/Support/Integrations/Trackers/DoneMapping.php` (the `configured()` docblock), `app/Exceptions/Integrations/StatusPushRejected.php`, `tests/Feature/Integrations/IssueTransitionsTest.php`, `tests/Feature/Integrations/ActionItemStatusPushTest.php`, `lang/{en,fr,es,de}.json`
+
+**Interfaces:**
+- Consumes: `ActionItemProgressChanged` (Task 1); `ExternalIssueState::Started`, `DoneMapping::itemState()` (Task 2); `QueueActionItemStatusPushes::handle(ActionItem, ActionItemEventOrigin)`, `SyncsIssueStatus::transition(TeamIntegration, string, ExternalIssueState): ?TrackerIssue` (exist).
+- Produces: a start or stop made in skrum queues `PushActionItemState` for each synced link; `PushActionItemState` pushes `DoneMapping::itemState()`; `JiraTransitions::choose()` and `LinearTracker::transition()` reach a `Started` target through the settings keys `startStatusId` (Jira projects) and `startStateId` (Linear teams), else the first `indeterminate` transition / the first `started` state; refusals "Jira requires more fields to start :key. Start it in Jira." and "No transition to an in-progress status is available for :key.". The settings keys are written by Task 4; this task reads them.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `tests/Feature/Integrations/IssueTransitionsTest.php` (it has `jiraSyncIntegration()`, `jiraTransitionRequest()` and `$this->jiraOpen`; read the existing Linear test "moves Linear issues to the first completed or unstarted state" for `fakeLinearGraphql()` and `linearTrackerIssue()`):
+
+```php
+it('starts a Jira issue through the configured start status, else the first in-progress one', function (array $mapping, array $transitions, string $expected) {
+    $integration = jiraSyncIntegration(['statusMapping' => ['projects' => ['PROJ' => $mapping]]]);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($this->jiraOpen, $started, $transitions);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started);
+
+    expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => $expected]]);
+})->with([
+    'first in progress' => [[], [jiraTransition('31', '10002', 'Done', 'done'), jiraTransition('41', '3', 'In Progress', 'indeterminate'), jiraTransition('42', '4', 'In Review', 'indeterminate')], '41'],
+    'configured' => [['startStatusId' => '4'], [jiraTransition('41', '3', 'In Progress', 'indeterminate'), jiraTransition('42', '4', 'In Review', 'indeterminate')], '42'],
+    'configured but not reachable' => [['startStatusId' => '9'], [jiraTransition('41', '3', 'In Progress', 'indeterminate')], '41'],
+]);
+
+it('explains when no transition reaches an in-progress status', function () {
+    $integration = jiraSyncIntegration();
+    fakeJiraTransitions($this->jiraOpen, $this->jiraOpen, [jiraTransition('31', '10002', 'Done', 'done')]);
+
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started))
+        ->toThrow(StatusPushRejected::class, 'No transition to an in-progress status is available for PROJ-1.');
+});
+
+it('refuses a start transition that needs other fields', function () {
+    $integration = jiraSyncIntegration();
+    fakeJiraTransitions($this->jiraOpen, $this->jiraOpen, [jiraTransition('41', '3', 'In Progress', 'indeterminate', [
+        'customfield_10050' => ['required' => true, 'hasDefaultValue' => false],
+    ])]);
+
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started))
+        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to start PROJ-1. Start it in Jira.')
+        ->and(jiraTransitionRequest())->toBeNull();
+});
+
+it('skips the start when the Jira issue is already in progress', function () {
+    $integration = jiraSyncIntegration();
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $started, []);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Started);
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/transitions'));
+});
+
+it('moves Linear issues to the configured start state, else the first started one', function (array $settings, string $expected) {
+    enableIntegrations(IntegrationProvider::Linear);
+    $integration = TeamIntegration::factory()->linear()->create();
+    $integration->forceFill(['settings' => [...$integration->settings, 'statusSync' => true, ...$settings]])->save();
+    $current = 'unstarted';
+    $mutations = [];
+    fakeLinearGraphql([
+        'issueUpdate' => function (array $variables) use (&$mutations, &$current): array {
+            $mutations[] = $variables;
+            $current = 'started';
+
+            return ['issueUpdate' => ['success' => true]];
+        },
+        'states(first' => ['issue' => ['team' => ['states' => ['nodes' => [
+            ['id' => 'st-review', 'name' => 'In Review', 'type' => 'started', 'position' => 4],
+            ['id' => 'st-done', 'name' => 'Done', 'type' => 'completed', 'position' => 5],
+            ['id' => 'st-started', 'name' => 'In Progress', 'type' => 'started', 'position' => 3],
+            ['id' => 'st-todo', 'name' => 'Todo', 'type' => 'unstarted', 'position' => 1],
+        ]]]]],
+        'issues(' => function () use (&$current): array {
+            return ['issues' => ['nodes' => [linearTrackerIssue('lin-1', 'ENG-1', [
+                'state' => ['id' => "st-{$current}", 'name' => $current, 'type' => $current],
+                'team' => ['key' => 'ENG'],
+            ])]]];
+        },
+    ]);
+
+    resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Started);
+
+    expect($mutations)->toBe([['id' => 'lin-1', 'stateId' => $expected]]);
+})->with([
+    'first started in workflow order' => [[], 'st-started'],
+    'configured' => [['statusMapping' => ['teams' => ['ENG' => ['startStateId' => 'st-review']]]], 'st-review'],
+]);
+```
+
+Append to `tests/Feature/Integrations/ActionItemStatusPushTest.php` (add `use App\Actions\Integrations\LinkStatusSync;`):
+
+```php
+it('queues a push when a manager starts or stops a synced item', function (array $item, string $status) {
+    Queue::fake();
+    ['item' => $actionItem, 'retro' => $retro, 'author' => $author, 'link' => $link] = statusSyncLink(item: $item);
+
+    $this->actingAs($author)
+        ->patchJson(route('workspaces.actionItems.update', [$retro->team->workspace, $actionItem]), ['status' => $status])
+        ->assertOk();
+
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+    expect($link->fresh()->local_state_changed_at)->not->toBeNull();
+})->with([
+    'start' => [[], 'doing'],
+    'stop' => [['started_at' => '2026-10-07 09:00:00'], 'open'],
+]);
+
+it('does not push a start that came from the source', function () {
+    Queue::fake();
+    ['item' => $item, 'link' => $link] = statusSyncLink();
+
+    DB::transaction(fn () => resolve(SetActionItemStatus::class)->handle(
+        ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(),
+        new ExternalSyncActor('jira', 'PROJ-1'),
+        ActionItemStatus::Doing,
+    ));
+
+    Queue::assertNotPushed(PushActionItemState::class);
+    expect($link->fresh()->local_state_changed_at)->toBeNull();
+});
+
+it('pushes a started item to the in-progress status and records it', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink(item: ['started_at' => '2026-10-07 10:00:00']);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($this->open, $started, [jiraTransition('31', '10002', 'Done', 'done'), jiraTransition('41', '3', 'In Progress', 'indeterminate')]);
+
+    runStatusPush($link);
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST'
+        && str_contains($request->url(), '/issue/10001/transitions')
+        && $request['transition'] === ['id' => '41']);
+    $link->refresh();
+    expect($link->last_pushed_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_status_name)->toBe('In Progress')
+        ->and(LinkStatusSync::state($link, $item->fresh()))->toBe(LinkStatusSync::Synced);
+});
+
+it('records a start the workflow cannot take, and keeps the item started', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink(item: ['started_at' => '2026-10-07 10:00:00']);
+    fakeJiraTransitions($this->open, $this->open, [jiraTransition('31', '10002', 'Done', 'done')]);
+
+    runStatusPush($link);
+
+    expect($link->fresh()->sync_error)->toBe('No transition to an in-progress status is available for PROJ-1.')
+        ->and($item->fresh()->currentStatus())->toBe(ActionItemStatus::Doing);
+});
+
+it('pushes a stopped item back to the open status', function () {
+    ['link' => $link] = statusSyncLink();
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $this->open, [jiraTransition('11', '10000', 'To Do', 'new'), jiraTransition('31', '10002', 'Done', 'done')]);
+
+    runStatusPush($link);
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['transition'] === ['id' => '11']);
+    expect($link->fresh()->last_pushed_state)->toBe(ExternalIssueState::Open);
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/Integrations/IssueTransitionsTest.php tests/Feature/Integrations/ActionItemStatusPushTest.php`
+Expected: FAIL — the start chooses a reopen transition, no push is queued on a start, the job pushes `open` for a started item.
+
+- [ ] **Step 3: Implement**
+
+`app/Listeners/QueueProgressedActionItemStatusPushesListener.php` (`vendor/bin/sail artisan make:listener QueueProgressedActionItemStatusPushesListener --event=ActionItemProgressChanged --no-interaction`, then):
+
+```php
+<?php
+
+namespace App\Listeners;
+
+use App\Actions\Integrations\QueueActionItemStatusPushes;
+use App\Events\ActionItems\ActionItemProgressChanged;
+
+class QueueProgressedActionItemStatusPushesListener
+{
+    public function __construct(private QueueActionItemStatusPushes $queueActionItemStatusPushes) {}
+
+    public function handle(ActionItemProgressChanged $event): void
+    {
+        $this->queueActionItemStatusPushes->handle($event->actionItem, $event->origin);
+    }
+}
+```
+
+Read how `QueueCompletedActionItemStatusPushesListener` is registered (event discovery, or a line in a provider) and register the new listener the same way. `QueueActionItemStatusPushes` does not change: it already ignores changes that came from the source.
+
+`app/Jobs/Integrations/PushActionItemState.php`, in `handle()`: replace
+
+```php
+        $target = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+```
+
+with
+
+```php
+        $target = DoneMapping::itemState($item, $integration->provider);
+```
+
+and the class docblock's "the item's current open/done state" with "the item's current state (open, started where the tracker has it, done)".
+
+`app/Support/Integrations/Jira/JiraTransitions.php`:
+
+```php
+    private const array ConfiguredTargets = [
+        'open' => 'reopenStatusId',
+        'started' => 'startStatusId',
+        'done' => 'completeStatusId',
+    ];
+
+    private const array StartCategories = ['indeterminate'];
+```
+
+In `choose()`, the configured line becomes
+
+```php
+        $configured = DoneMapping::configured($integration, $project, self::ConfiguredTargets[$target->value]);
+```
+
+and the last statement
+
+```php
+        return match ($target) {
+            ExternalIssueState::Done => self::doneTransition($integration, $project, $available),
+            ExternalIssueState::Started => self::firstOfCategories($available, self::StartCategories),
+            ExternalIssueState::Open => self::firstOfCategories($available, self::ReopenCategories),
+        };
+```
+
+Rename `reopenTransition(array $available)` to `firstOfCategories(array $available, array $categories)` (loop over `$categories` instead of `self::ReopenCategories`; docblock `@param array<int, string> $categories`). In `requiredFields()`, the refusal becomes
+
+```php
+                throw new StatusPushRejected($provider, match ($target) {
+                    ExternalIssueState::Done => __('Jira requires more fields to close :key. Close it in Jira.', ['key' => $key]),
+                    ExternalIssueState::Started => __('Jira requires more fields to start :key. Start it in Jira.', ['key' => $key]),
+                    ExternalIssueState::Open => __('Jira requires more fields to reopen :key. Reopen it in Jira.', ['key' => $key]),
+                });
+```
+
+Class docblock: add "for a start, the configured start status, else the first `indeterminate` target".
+
+`app/Exceptions/Integrations/StatusPushRejected.php`, `unavailable()`:
+
+```php
+        return new self($provider, match ($target) {
+            ExternalIssueState::Done => __('No transition to a done status is available for :key.', ['key' => $key]),
+            ExternalIssueState::Started => __('No transition to an in-progress status is available for :key.', ['key' => $key]),
+            ExternalIssueState::Open => __('No transition to an open status is available for :key.', ['key' => $key]),
+        });
+```
+
+`app/Support/Integrations/Trackers/LinearTracker.php`, `targetState()`:
+
+```php
+        $configured = DoneMapping::configured($integration, $team, match ($target) {
+            ExternalIssueState::Done => 'completeStateId',
+            ExternalIssueState::Started => 'startStateId',
+            ExternalIssueState::Open => 'reopenStateId',
+        });
+
+        foreach ($states as $state) {
+            if ($configured !== null && $state['id'] === $configured) {
+                return $state;
+            }
+        }
+
+        $types = match ($target) {
+            ExternalIssueState::Done => ['completed'],
+            ExternalIssueState::Started => ['started'],
+            ExternalIssueState::Open => ['unstarted', 'backlog'],
+        };
+
+        foreach ($types as $type) {
+            foreach ($states as $state) {
+                if ($state['type'] === $type) {
+                    return $state;
+                }
+            }
+        }
+
+        return null;
+```
+
+and its docblock: "else the first `completed` state, for a start the first `started` state, or for a reopen the first `unstarted`, then `backlog` state, in workflow order".
+
+`DoneMapping::configured()` docblock: list `startStatusId` and `startStateId` with the four others. `GitHubTracker::transition()` does not change: it never receives `Started` (Task 2's `itemState()`).
+
+`lang/*.json`: "Jira requires more fields to start :key. Start it in Jira.", "No transition to an in-progress status is available for :key." (values in Task 17's table; add them now).
+
+- [ ] **Step 4: Run the tests on the four engines**
+
+Run: `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/ActionItems tests/Arch`, then `mariadb`, `mysql`, `sqlite`.
+Expected: PASS, the existing transition and push tests unchanged.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/Listeners/QueueProgressedActionItemStatusPushesListener.php app/Jobs/Integrations/PushActionItemState.php app/Support/Integrations/Jira/JiraTransitions.php app/Support/Integrations/Trackers/LinearTracker.php app/Support/Integrations/Trackers/DoneMapping.php app/Exceptions/Integrations/StatusPushRejected.php tests/Feature/Integrations/IssueTransitionsTest.php tests/Feature/Integrations/ActionItemStatusPushTest.php lang
+git commit -m "feat(integrations): push In progress to Jira and Linear
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 4: Start status settings — server and "Start to" (decision 2, option C)
+
+**Files:**
+- Modify: `app/Actions/Integrations/UpdateStatusSyncSettings.php`, `tests/Feature/Integrations/StatusSyncSettingsTest.php`, `resources/js/types/integrations.ts`, `resources/js/components/integrations/status-mapping-panel.tsx`, `resources/js/components/integrations/trackers.test.tsx`, `lang/{en,fr,es,de}.json`
+
+**Interfaces:**
+- Consumes: the settings keys `startStatusId` / `startStateId` read by Task 3.
+- Produces: `status_mapping.start_status_id` (Jira, Jira Data Center) and `status_mapping.start_state_id` (Linear) accepted by the team integration update route and stored as `statusMapping.projects.{KEY}.startStatusId` / `statusMapping.teams.{KEY}.startStateId`; `JiraStatusMapping.startStatusId` and `LinearStatusMapping.startStateId` in `types/integrations.ts`; a "Start to" select first in the panel (spec §6.7, §9.8).
+
+- [ ] **Step 1: Write the failing tests**
+
+In `tests/Feature/Integrations/StatusSyncSettingsTest.php`, change the expectation of "saves and resets a status mapping per project" (the stored entry gains the start key, null):
+
+```php
+    expect($integration->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['projects' => ['PROJ' => [
+        'doneStatusIds' => ['10002', '10005'],
+        'startStatusId' => null,
+        'completeStatusId' => '10002',
+        'reopenStatusId' => null,
+    ]]]);
+```
+
+Add three rows to the dataset of "validates status mappings":
+
+```php
+    'jira start status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_status_id' => 'abc']],
+    'linear start state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'start_state_id' => 'has spaces']],
+    'linear key on jira' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_state_id' => 'x']],
+```
+
+Append:
+
+```php
+it('saves and resets a start status per Jira project and a start state per Linear team', function () {
+    $jira = syncSettingsIntegration();
+    $admin = integrationAdmin($jira->team);
+
+    $this->actingAs($admin)->patchJson(syncSettingsRoute($jira), ['status_mapping' => ['container' => 'PROJ', 'start_status_id' => '3']])->assertOk();
+
+    expect($jira->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['projects' => ['PROJ' => [
+        'doneStatusIds' => null,
+        'startStatusId' => '3',
+        'completeStatusId' => null,
+        'reopenStatusId' => null,
+    ]]]);
+
+    $linear = syncSettingsIntegration(IntegrationProvider::Linear);
+
+    $this->actingAs(integrationAdmin($linear->team))->patchJson(syncSettingsRoute($linear), ['status_mapping' => ['container' => 'ENG', 'start_state_id' => 'st-started']])->assertOk();
+
+    expect($linear->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['teams' => ['ENG' => [
+        'startStateId' => 'st-started',
+        'completeStateId' => null,
+        'reopenStateId' => null,
+    ]]]);
+
+    $this->actingAs($admin)->patchJson(syncSettingsRoute($jira), ['status_mapping' => ['container' => 'PROJ', 'start_status_id' => null]])->assertOk();
+
+    expect($jira->fresh()->setting('statusMapping'))->toBe(['projects' => []]);
+});
+```
+
+Read "presents the sync state without secrets" in the same file and add, in the same way it reads the page props, one assertion that a saved `startStatusId` reaches `providers.*.connection.settings.statusMapping.projects.PROJ.startStatusId` (`PresentTeamIntegration` passes `statusMapping` whole, so no server change is expected for it).
+
+In `resources/js/components/integrations/trackers.test.tsx`: add `startStatusId: null` to every Jira mapping fixture and `startStateId: null` to every Linear one (`npm run types:check` names them); then, beside the existing case that reads the "Complete to" combobox (around line 907), add a case written the same way: after "Edit mapping" loads the statuses, the comboboxes are named "Start to", "Complete to", "Reopen to" in that order; choosing "In Progress" in "Start to" sends `TeamIntegrationsController.update` with `status_mapping: { container: 'PROJ', done_status_ids: null, start_status_id: '3', complete_status_id: null, reopen_status_id: null }`; for a Linear connection the select sends `start_state_id`.
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/Integrations/StatusSyncSettingsTest.php` and `npm run test -- resources/js/components/integrations/trackers`
+Expected: FAIL — `start_status_id` is refused by the `array:` rule; no "Start to" combobox.
+
+- [ ] **Step 3: Implement**
+
+`app/Actions/Integrations/UpdateStatusSyncSettings.php`, `rules()`:
+- Jira: `'status_mapping' => ['sometimes', 'array:container,done_status_ids,start_status_id,complete_status_id,reopen_status_id', 'required_array_keys:container']` and, before `complete_status_id`, `'status_mapping.start_status_id' => ['nullable', 'string', self::JiraStatusIdRule],`.
+- Linear: `'status_mapping' => ['sometimes', 'array:container,start_state_id,complete_state_id,reopen_state_id', 'required_array_keys:container']` and `'status_mapping.start_state_id' => ['nullable', 'string', self::LinearStateIdRule],`.
+
+`saveMapping()`: the Jira entry gains `'startStatusId' => $mapping['start_status_id'] ?? null,` after `doneStatusIds`; the Linear entry gains `'startStateId' => $mapping['start_state_id'] ?? null,` first. The class docblock adds "the start target (spec 24 §6.7)". Nothing else changes: a container whose values are all null is removed, a remap re-reads.
+
+`resources/js/types/integrations.ts`: `JiraStatusMapping` gains `startStatusId: string | null;` (after `doneStatusIds`), `LinearStatusMapping` gains `startStateId: string | null;` (first).
+
+`resources/js/components/integrations/status-mapping-panel.tsx`, in `ContainerMapping`:
+- `current` gains `start_status_id: jira?.startStatusId ?? null,` (Jira, after `done_status_ids`) and `start_state_id: linear?.startStateId ?? null,` (Linear, first);
+- `const startKey = isJira ? 'start_status_id' : 'start_state_id';`
+- the grid renders `{targetSelect(startKey, t('Start to'))}` before the two existing selects.
+
+`lang/*.json`: "Start to" (values in Task 17's table).
+
+- [ ] **Step 4: Run the tests on the four engines, and the gates**
+
+Run: `bin/test-db pgsql -- tests/Feature/Integrations/StatusSyncSettingsTest.php tests/Feature/Integrations/IssueTransitionsTest.php tests/Feature/Integrations/ActionItemStatusPushTest.php`, then `mariadb`, `mysql`, `sqlite`; `npm run test -- resources/js/components/integrations`; `npm run types:check`, `npm run check`, `npm run build:front`.
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/Actions/Integrations/UpdateStatusSyncSettings.php tests/Feature/Integrations/StatusSyncSettingsTest.php resources/js/types/integrations.ts resources/js/components/integrations/status-mapping-panel.tsx resources/js/components/integrations/trackers.test.tsx lang
+git commit -m "feat(integrations): a start status per Jira project and Linear team
+
+Changed expectation: 'saves and resets a status mapping per project' stores
+startStatusId (null); three rows added to 'validates status mappings'.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 5: Filters — statuses, priorities, due date, source (AI-2)
 
 **Files:**
 - Modify: `app/Actions/ActionItems/ActionItemFilters.php` (rewritten), `app/Actions/ActionItems/ActionItemQuery.php`, `app/Mcp/Tools/Retro/ListActionItems.php`, `tests/Feature/Mcp/RetroListToolsTest.php`
@@ -675,9 +1230,9 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 **Interfaces:**
 - Consumes: `started_at` (Task 1).
 - Produces:
-  - `ActionItemFilters` with public properties `array $statuses` (subset of `todo`, `doing`, `completed`, canonical order), `?string $assignee`, `?string $teamId`, `?string $itemId`, `array $priorities` (subset of `high`, `medium`, `low`), `?string $due` (`overdue|today|week|later|none`), `?string $source` (`retro|outside`); constants `Statuses` (the single values MCP and old links use: `open`, `doing`, `overdue`, `completed`, `all`), `StatusTokens`, `DefaultStatuses`, `DueBuckets`, `Sources`; `fromRequest(Request, Collection $visibleTeams): self`; `forStatus(string $status, ?string $assignee = null): self`; `toArray(): array{status: list<string>, priority: list<string>, due: ?string, source: ?string, assignee: ?string, team: ?string, item: ?string}`.
+  - `ActionItemFilters` with public properties `array $statuses` (subset of `todo`, `doing`, `completed`, canonical order), `?string $assignee`, `?string $teamId`, `?string $itemId`, `array $priorities` (subset of `high`, `medium`, `low`), `?string $due` (`overdue|today|week|later|none`), `?string $source` (`retro|outside`); constants `Statuses` (the single values MCP and old links use: `open`, `doing`, `overdue`, `completed`, `all`), `StatusTokens`, `DefaultStatuses`, `DueBuckets`, `Sources`; `fromRequest(Request, Collection $visibleTeams): self`, which reads through `fromQuery(array $query, Collection $visibleTeams): self` (used by Task 8 for the `filters` of a bulk request); `forStatus(string $status, ?string $assignee = null): self`; `toArray(): array{status: list<string>, priority: list<string>, due: ?string, source: ?string, assignee: ?string, team: ?string, item: ?string}`.
   - `ActionItemQuery::filter(Builder, User, ActionItemFilters): Builder` and `counts(...)` with the semantics of spec §6.3; `ActionItemQuery::forUser()` unchanged in signature.
-  - The `filters` prop of `action-items/index` takes the shape of `toArray()` (consumed by Task 7).
+  - The `filters` prop of `action-items/index` takes the shape of `toArray()` (consumed by Task 10).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -800,6 +1355,21 @@ it('gives the filters back in their canonical form', function () {
     expect($legacy['status'])->toBe(['todo', 'doing'])->and($legacy['due'])->toBe('overdue');
 });
 
+it('reads the same filters from an array as from the query', function () {
+    $team = Team::factory()->create();
+    $hidden = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+
+    expect(App\Actions\ActionItems\ActionItemFilters::fromQuery(['status' => 'overdue', 'priority' => 'low,high', 'team' => $hidden->id, 'source' => 7], collect([$team]))->toArray())->toBe([
+        'status' => ['todo', 'doing'],
+        'priority' => ['high', 'low'],
+        'due' => 'overdue',
+        'source' => null,
+        'assignee' => null,
+        'team' => null,
+        'item' => null,
+    ])->and(App\Actions\ActionItems\ActionItemFilters::fromQuery([], collect([$team]))->toArray()['status'])->toBe(['todo', 'doing']);
+});
+
 it('counts under team, assignee, priority and source, whatever the status and the due date', function () {
     [$team, $user] = actionItemFilterFixture();
     $counts = fn (array $query) => $this->actingAs($user)
@@ -880,24 +1450,35 @@ class ActionItemFilters
     ) {}
 
     /**
-     * Unknown values fall back to the defaults instead of failing.
-     *
      * @param  Collection<int, Team>  $visibleTeams
      */
     public static function fromRequest(Request $request, Collection $visibleTeams): self
     {
-        $team = $request->query('team');
-        $item = $request->query('item');
-        [$statuses, $statusDue] = self::readStatus($request->query('status'));
+        return self::fromQuery($request->query(), $visibleTeams);
+    }
+
+    /**
+     * The page's parameters as an array: the request's query, or the `filters` of an "all
+     * matching" bulk request. Unknown values fall back to the defaults instead of failing; a
+     * team the viewer cannot see is ignored, as on the page.
+     *
+     * @param  array<array-key, mixed>  $query
+     * @param  Collection<int, Team>  $visibleTeams
+     */
+    public static function fromQuery(array $query, Collection $visibleTeams): self
+    {
+        $team = $query['team'] ?? null;
+        $item = $query['item'] ?? null;
+        [$statuses, $statusDue] = self::readStatus($query['status'] ?? null);
 
         return new self(
             statuses: $statuses,
-            assignee: self::assignee($request->query('assignee')),
+            assignee: self::assignee($query['assignee'] ?? null),
             teamId: is_string($team) && $visibleTeams->contains('id', $team) ? $team : null,
             itemId: is_string($item) && Str::isUuid($item) ? $item : null,
-            priorities: self::many($request->query('priority'), self::priorityValues()),
-            due: self::one($request->query('due'), self::DueBuckets) ?? $statusDue,
-            source: self::one($request->query('source'), self::Sources),
+            priorities: self::many($query['priority'] ?? null, self::priorityValues()),
+            due: self::one($query['due'] ?? null, self::DueBuckets) ?? $statusDue,
+            source: self::one($query['source'] ?? null, self::Sources),
         );
     }
 
@@ -1149,7 +1730,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 4: Bulk changes (AI-1) — endpoint, per-item loop, races
+### Task 6: Bulk changes (AI-1) — endpoint, per-item loop, races
 
 **Files:**
 - Create: `app/Actions/ActionItems/ActionItemBulkChanges.php`, `app/Http/Requests/ActionItems/ActionItemBulkUpdateRequest.php`, `app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php`, `tests/Feature/ActionItems/ActionItemBulkUpdatesTest.php`, `tests/Concurrency/ActionItemBulkTest.php`
@@ -1157,7 +1738,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 
 **Interfaces:**
 - Consumes: `ApplyActionItemChanges::handle(ActionItem $locked, ActionItemActor $actor, array $validated): ActionItem`, `WorkspaceActionItemGuard::lockWritable(string $id): ActionItem`, `ActionItemQuery::visibleTo(User, Workspace): Builder`, `PresentActionItem::many(iterable, ?ActionItemActor): array`.
-- Produces: `ActionItemBulkChanges::update(User $user, Workspace $workspace, array $ids, array $changes): array{changed: array<int, ActionItem>, refused: array<int, array{id: string, message: string}>}` and `ActionItemBulkChanges::delete(User $user, Workspace $workspace, array $ids): array{changed: array<int, string>, refused: array<int, array{id: string, message: string}>}` (the latter used by Task 5); route `workspaces.actionItemBulkUpdates.store` (`POST workspaces/{workspace}/action-items/bulk-updates`, body `{ids, changes}`, answer `{actionItems, refused}`).
+- Produces: `ActionItemBulkChanges::update(User $user, Workspace $workspace, array $ids, array $changes): array{changed: array<int, ActionItem>, refused: array<int, array{id: string, title: ?string, message: string}>}` and `ActionItemBulkChanges::delete(User $user, Workspace $workspace, array $ids): array{changed: array<int, string>, refused: array<int, array{id: string, title: ?string, message: string}>}` (the latter used by Task 7; both used by Task 8); a refusal's `title` is the item's text when the viewer can see it, null when it is gone or invisible; route `workspaces.actionItemBulkUpdates.store` (`POST workspaces/{workspace}/action-items/bulk-updates`, body `{ids, changes}`, answer `{actionItems, changedCount, refused}`; Task 8 adds the `{filters, count}` body).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1199,6 +1780,7 @@ it('changes every item the member may change, and announces each', function () {
     postBulkUpdate($team, $user, $items->pluck('id')->all(), ['priority' => 'high', 'due_on' => '2026-11-02', 'assignee_user_id' => $mate->id])
         ->assertOk()
         ->assertJsonCount(3, 'actionItems')
+        ->assertJsonPath('changedCount', 3)
         ->assertJsonPath('refused', [])
         ->assertJsonPath('actionItems.0.priority', 'high')
         ->assertJsonPath('actionItems.0.dueOn', '2026-11-02')
@@ -1255,6 +1837,13 @@ it('changes what it can and refuses the rest, each with its reason', function ()
         $onLockedBoard->id => 'The board is closed for editing.',
         $invisible->id => 'This action item no longer exists.',
         $deletedId => 'This action item no longer exists.',
+    ]);
+    expect(collect($response->json('refused'))->pluck('title', 'id')->all())->toBe([
+        $someoneElses->id => $someoneElses->content,
+        $recurring->id => $recurring->content,
+        $onLockedBoard->id => $onLockedBoard->content,
+        $invisible->id => null,
+        $deletedId => null,
     ]);
     expect($someoneElses->fresh()->priority->value)->toBe('medium')
         ->and($recurring->fresh()->due_on)->not->toBeNull()
@@ -1377,7 +1966,7 @@ class ActionItemBulkChanges
     /**
      * @param  array<int, string>  $ids
      * @param  array<string, mixed>  $changes  validated like ActionItemRules::update(allowsGuests: false)
-     * @return array{changed: array<int, ActionItem>, refused: array<int, array{id: string, message: string}>}
+     * @return array{changed: array<int, ActionItem>, refused: array<int, array{id: string, title: ?string, message: string}>}
      */
     public function update(User $user, Workspace $workspace, array $ids, array $changes): array
     {
@@ -1390,7 +1979,7 @@ class ActionItemBulkChanges
 
     /**
      * @param  array<int, string>  $ids
-     * @return array{changed: array<int, string>, refused: array<int, array{id: string, message: string}>}
+     * @return array{changed: array<int, string>, refused: array<int, array{id: string, title: ?string, message: string}>}
      */
     public function delete(User $user, Workspace $workspace, array $ids): array
     {
@@ -1404,23 +1993,24 @@ class ActionItemBulkChanges
     }
 
     /**
-     * An item the viewer cannot see reads as one that is gone: nothing tells them it exists.
+     * An item the viewer cannot see reads as one that is gone, without a title: nothing tells
+     * them it exists. A visible item's refusal carries its text, for a list the page may not hold.
      *
      * @template TChanged
      *
      * @param  array<int, string>  $ids
      * @param  Closure(string): TChanged  $change
-     * @return array{changed: array<int, TChanged>, refused: array<int, array{id: string, message: string}>}
+     * @return array{changed: array<int, TChanged>, refused: array<int, array{id: string, title: ?string, message: string}>}
      */
     private function each(User $user, Workspace $workspace, array $ids, Closure $change): array
     {
-        $visible = $this->actionItemQuery->visibleTo($user, $workspace)->whereKey($ids)->pluck('id')->all();
+        $titles = $this->actionItemQuery->visibleTo($user, $workspace)->whereKey($ids)->pluck('content', 'id')->all();
         $changed = [];
         $refused = [];
 
         foreach ($ids as $id) {
-            if (! in_array($id, $visible, true)) {
-                $refused[] = ['id' => $id, 'message' => __('This action item no longer exists.')];
+            if (! array_key_exists($id, $titles)) {
+                $refused[] = ['id' => $id, 'title' => null, 'message' => __('This action item no longer exists.')];
 
                 continue;
             }
@@ -1428,7 +2018,11 @@ class ActionItemBulkChanges
             try {
                 $changed[] = $change($id);
             } catch (AuthorizationException|ValidationException|HttpException|ModelNotFoundException $exception) {
-                $refused[] = ['id' => $id, 'message' => $this->reason($exception)];
+                $refused[] = [
+                    'id' => $id,
+                    'title' => $exception instanceof ModelNotFoundException ? null : (string) $titles[$id],
+                    'message' => $this->reason($exception),
+                ];
             }
         }
 
@@ -1524,6 +2118,7 @@ class WorkspaceActionItemBulkUpdatesController extends Controller
 
         return response()->json([
             'actionItems' => $presentActionItem->many($result['changed'], ActionItemActor::forUser($user)),
+            'changedCount' => count($result['changed']),
             'refused' => $result['refused'],
         ]);
     }
@@ -1538,7 +2133,7 @@ class WorkspaceActionItemBulkUpdatesController extends Controller
 
 with `use App\Http\Controllers\WorkspaceActionItemBulkUpdatesController;` in alphabetical place.
 
-`lang/*.json`: the key "This action item no longer exists." (values in Task 14's table; add them now).
+`lang/*.json`: the key "This action item no longer exists." (values in Task 17's table; add them now).
 
 - [ ] **Step 4: Run the tests on the four engines, and the race**
 
@@ -1555,14 +2150,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 5: Bulk deletion (AI-1)
+### Task 7: Bulk deletion (AI-1)
 
 **Files:**
 - Create: `app/Http/Requests/ActionItems/ActionItemBulkDeletionRequest.php`, `app/Http/Controllers/WorkspaceActionItemBulkDeletionsController.php`, `tests/Feature/ActionItems/ActionItemBulkDeletionsTest.php`
 - Modify: `routes/web.php`, `tests/Concurrency/ActionItemBulkTest.php`
 
 **Interfaces:**
-- Consumes: `ActionItemBulkChanges::delete()` (Task 4).
+- Consumes: `ActionItemBulkChanges::delete()` (Task 6).
 - Produces: route `workspaces.actionItemBulkDeletions.store` (`POST workspaces/{workspace}/action-items/bulk-deletions`, body `{ids}`, answer `{deleted: string[], refused: {id, message}[]}`).
 
 - [ ] **Step 1: Write the failing tests**
@@ -1734,15 +2329,330 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 6: CSV export of the list (AI-4)
+### Task 8: "All matching" — bulk changes and deletions over the filters (decision 6, option B)
+
+**Files:**
+- Create: `tests/Feature/ActionItems/ActionItemBulkMatchingTest.php`
+- Modify: `app/Actions/ActionItems/ActionItemBulkChanges.php`, `app/Http/Requests/ActionItems/ActionItemBulkUpdateRequest.php`, `app/Http/Requests/ActionItems/ActionItemBulkDeletionRequest.php`, `app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php`, `app/Http/Controllers/WorkspaceActionItemBulkDeletionsController.php`, `tests/Concurrency/ActionItemBulkTest.php`, `lang/{en,fr,es,de}.json`
+
+**Interfaces:**
+- Consumes: `ActionItemFilters::fromQuery(array, Collection)` (Task 5); `ActionItemQuery::visibleTo()`, `filter()`, `order()`; `ActionItemBulkChanges::update()`, `delete()` (Tasks 6, 7); `Workspace::teamsVisibleTo(User)` (exists).
+- Produces: `ActionItemBulkChanges::MatchingCap = 500`, `ActionItemBulkChanges::FilterKeys`, `ActionItemBulkChanges::matching(User $user, Workspace $workspace, array $query, int $confirmedCount): array<int, string>` (throws `ValidationException` on `filters` above the cap, on `count` when the number differs); both bulk routes accept `{filters, count}` instead of `{ids}` (spec §6.5; `filters` may be empty, which is the landing filters); the update answer's `actionItems` is empty for a filters target.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/ActionItems/ActionItemBulkMatchingTest.php`:
+
+```php
+<?php
+
+use App\Enums\ActionItemPriority;
+use App\Events\ActionItems\TeamActionItemDeleted;
+use App\Events\ActionItems\TeamActionItemSaved;
+use App\Models\ActionItem;
+use App\Models\Team;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Testing\TestResponse;
+
+beforeEach(function () {
+    Event::fake([TeamActionItemSaved::class, TeamActionItemDeleted::class]);
+    $this->travelTo(CarbonImmutable::parse('2026-11-02 09:00:00'));
+});
+
+/**
+ * @param  array<string, mixed>  $body
+ */
+function postBulkMatching(Team $team, User $user, string $route, array $body): TestResponse
+{
+    return test()->actingAs($user)->postJson(route($route, $team->workspace), $body);
+}
+
+it('changes every visible item the filters match, and only those', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $low = ActionItem::factory()->withoutRetro($team, $user)->count(3)->create(['priority' => ActionItemPriority::Low]);
+    $high = ActionItem::factory()->withoutRetro($team, $user)->create(['priority' => ActionItemPriority::High]);
+    $elsewhere = ActionItem::factory()->withoutRetro(Team::factory()->create(['workspace_id' => $team->workspace_id]), User::factory()->create())->create(['priority' => ActionItemPriority::Low]);
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => ['priority' => 'low'], 'count' => 3, 'changes' => ['status' => 'doing']])
+        ->assertOk()
+        ->assertJsonPath('actionItems', [])
+        ->assertJsonPath('changedCount', 3)
+        ->assertJsonPath('refused', []);
+
+    expect(ActionItem::query()->whereNotNull('started_at')->pluck('id')->sort()->values()->all())->toBe($low->pluck('id')->sort()->values()->all())
+        ->and($high->fresh()->started_at)->toBeNull()
+        ->and($elsewhere->fresh()->started_at)->toBeNull();
+    Event::assertDispatchedTimes(TeamActionItemSaved::class, 3);
+});
+
+it('reads empty filters as the landing filters', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->count(2)->create();
+    $done = ActionItem::factory()->withoutRetro($team, $user)->completed()->create();
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 2, 'changes' => ['priority' => 'high']])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 2);
+
+    expect($done->fresh()->priority)->toBe(ActionItemPriority::Medium);
+});
+
+it('never reaches a team the member cannot see through the filters', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $hidden = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $mine = ActionItem::factory()->withoutRetro($team, $user)->create();
+    $theirs = ActionItem::factory()->withoutRetro($hidden, User::factory()->create())->create();
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => ['team' => $hidden->id], 'count' => 1, 'changes' => ['priority' => 'low']])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1);
+
+    expect($mine->fresh()->priority)->toBe(ActionItemPriority::Low)
+        ->and($theirs->fresh()->priority)->toBe(ActionItemPriority::Medium);
+});
+
+it('refuses the items the member may not change, with their title, in the order of the list', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $author = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Mine']);
+    $later = ActionItem::factory()->withoutRetro($team, $author)->create(['content' => 'Later', 'due_on' => '2026-11-20']);
+    $sooner = ActionItem::factory()->withoutRetro($team, $author)->create(['content' => 'Sooner', 'due_on' => '2026-11-10']);
+
+    $response = postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 3, 'changes' => ['priority' => 'low']])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1);
+
+    expect($response->json('refused'))->toBe([
+        ['id' => $sooner->id, 'title' => 'Sooner', 'message' => 'Only the author, the facilitator or an admin can change this action item.'],
+        ['id' => $later->id, 'title' => 'Later', 'message' => 'Only the author, the facilitator or an admin can change this action item.'],
+    ]);
+});
+
+it('changes nothing when the list changed since the member counted it', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $items = ActionItem::factory()->withoutRetro($team, $user)->count(3)->create();
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 2, 'changes' => ['priority' => 'low']])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['count' => 'The list changed: 3 action items match now.']);
+
+    expect(ActionItem::query()->whereKey($items->pluck('id'))->where('priority', 'low')->count())->toBe(0);
+    Event::assertNotDispatched(TeamActionItemSaved::class);
+});
+
+it('refuses more matching items than the cap, and changes the cap in one request', function () {
+    Queue::fake();
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $items = ActionItem::factory()->withoutRetro($team, $user)->count(500)->create();
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 500, 'changes' => ['status' => 'completed']])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 500);
+
+    ActionItem::factory()->withoutRetro($team, $user)->count(501)->create();
+
+    postBulkMatching($team, $user, 'workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 500, 'changes' => ['priority' => 'low']])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['filters' => 'More than 500 action items match. Narrow the filters.']);
+
+    expect(ActionItem::query()->whereKey($items->pluck('id'))->whereNull('completed_at')->count())->toBe(0)
+        ->and(ActionItem::query()->where('priority', 'low')->count())->toBe(0);
+});
+
+it('deletes every matching item the member may delete', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $outside = ActionItem::factory()->withoutRetro($team, $user)->count(2)->create();
+    $theirs = ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['content' => 'Theirs']);
+
+    $response = postBulkMatching($team, $user, 'workspaces.actionItemBulkDeletions.store', ['filters' => ['source' => 'outside'], 'count' => 3])
+        ->assertOk()
+        ->assertJsonCount(2, 'deleted')
+        ->assertJsonPath('refused.0.title', 'Theirs');
+
+    expect(ActionItem::query()->whereKey($outside->pluck('id'))->count())->toBe(0)
+        ->and($theirs->fresh())->not->toBeNull()
+        ->and($response->json('refused.0.id'))->toBe($theirs->id);
+    Event::assertDispatchedTimes(TeamActionItemDeleted::class, 2);
+});
+
+it('refuses a target it cannot read', function (string $route, Closure $body) {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    postBulkMatching($team, $user, $route, $body($item->id))->assertUnprocessable();
+
+    expect($item->fresh())->not->toBeNull()
+        ->and($item->fresh()->priority)->toBe(ActionItemPriority::Medium);
+})->with([
+    'ids and count' => ['workspaces.actionItemBulkUpdates.store', fn (string $id) => ['ids' => [$id], 'count' => 1, 'changes' => ['priority' => 'low']]],
+    'ids and filters' => ['workspaces.actionItemBulkUpdates.store', fn (string $id) => ['ids' => [$id], 'filters' => [], 'changes' => ['priority' => 'low']]],
+    'filters without count' => ['workspaces.actionItemBulkUpdates.store', fn (string $id) => ['filters' => ['priority' => 'medium'], 'changes' => ['priority' => 'low']]],
+    'count above the cap' => ['workspaces.actionItemBulkUpdates.store', fn (string $id) => ['filters' => [], 'count' => 501, 'changes' => ['priority' => 'low']]],
+    'unknown filter' => ['workspaces.actionItemBulkUpdates.store', fn (string $id) => ['filters' => ['item' => $id], 'count' => 1, 'changes' => ['priority' => 'low']]],
+    'deletion without count' => ['workspaces.actionItemBulkDeletions.store', fn (string $id) => ['filters' => []]],
+    'deletion with ids and count' => ['workspaces.actionItemBulkDeletions.store', fn (string $id) => ['ids' => [$id], 'count' => 1]],
+]);
+```
+
+Append to `tests/Concurrency/ActionItemBulkTest.php`:
+
+```php
+it('starts the same matching items twice at once without a failure', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $ids = ActionItem::factory()->withoutRetro($team, $user)->count(4)->create()->pluck('id')->all();
+    $userId = $user->id;
+    $uri = route('workspaces.actionItemBulkUpdates.store', $team->workspace, false);
+    $payload = ['filters' => ['status' => 'todo'], 'count' => 4, 'changes' => ['status' => 'doing']];
+
+    $outcomes = Race::run([
+        static fn (): int => Race::request($userId, 'POST', $uri, $payload),
+        static fn (): int => Race::request($userId, 'POST', $uri, $payload),
+    ]);
+
+    $statuses = array_column($outcomes, 'value');
+
+    expect($statuses)->toContain(200)
+        ->and(array_diff($statuses, [200, 422]))->toBe([])
+        ->and(ActionItem::query()->whereKey($ids)->whereNull('started_at')->count())->toBe(0);
+});
+```
+
+The protection proved: the count check (a request that counts after the other started the items finds none to do and answers 422) and, when both count first, the row lock and the early return of `SetActionItemStatus` on an unchanged status. The change is idempotent on purpose: a repeated "all matching" completion of recurring items would complete their next occurrences (they match the landing filter again, so the count does not move); the bar is disabled while its request runs, and spec §14 names the two-tab case.
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/ActionItems/ActionItemBulkMatchingTest.php`
+Expected: FAIL — 422 on `ids` (required) for every filters body.
+
+- [ ] **Step 3: Implement**
+
+`app/Actions/ActionItems/ActionItemBulkChanges.php`: add `use Illuminate\Support\Collection;` if needed, and:
+
+```php
+    public const MatchingCap = 500;
+
+    public const FilterKeys = ['status', 'priority', 'due', 'source', 'assignee', 'team'];
+
+    /**
+     * Spec 24 §5 rule 7: the items the filters match for the viewer now, in the order of the
+     * list. Refused above the cap, and when they are not as many as the viewer confirmed, so
+     * that nothing is changed on a set the viewer did not see.
+     *
+     * @param  array<string, mixed>  $query  page parameters among FilterKeys
+     * @return array<int, string>
+     *
+     * @throws ValidationException
+     */
+    public function matching(User $user, Workspace $workspace, array $query, int $confirmedCount): array
+    {
+        $filters = ActionItemFilters::fromQuery($query, $workspace->teamsVisibleTo($user));
+        $ids = ActionItemQuery::order($this->actionItemQuery->filter($this->actionItemQuery->visibleTo($user, $workspace), $user, $filters))
+            ->limit(self::MatchingCap + 1)
+            ->pluck('action_items.id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+
+        if (count($ids) > self::MatchingCap) {
+            throw ValidationException::withMessages([
+                'filters' => __('More than :cap action items match. Narrow the filters.', ['cap' => self::MatchingCap]),
+            ]);
+        }
+
+        if (count($ids) !== $confirmedCount) {
+            throw ValidationException::withMessages([
+                'count' => __('The list changed: :count action items match now.', ['count' => count($ids)]),
+            ]);
+        }
+
+        return $ids;
+    }
+```
+
+`app/Http/Requests/ActionItems/ActionItemBulkUpdateRequest.php`, `rules()`: the `ids` lines become
+
+```php
+            'ids' => ['required_without:count', 'prohibits:count,filters', 'array', 'min:1', 'max:'.ActionItemQuery::PerPage],
+            'ids.*' => ['required', 'uuid', 'distinct'],
+            'filters' => ['sometimes', 'array:'.implode(',', ActionItemBulkChanges::FilterKeys)],
+            'filters.*' => ['nullable', 'string', 'max:500'],
+            'count' => ['required_without:ids', 'integer', 'min:1', 'max:'.ActionItemBulkChanges::MatchingCap],
+```
+
+(`use App\Actions\ActionItems\ActionItemBulkChanges;`). `ActionItemBulkDeletionRequest::rules()` gets the same five lines.
+
+`WorkspaceActionItemBulkUpdatesController::store()`:
+
+```php
+        $user = $request->user();
+        $validated = $request->validated();
+        $byIds = array_key_exists('ids', $validated);
+        $ids = $byIds ? $validated['ids'] : $bulkChanges->matching($user, $workspace, $validated['filters'] ?? [], (int) $validated['count']);
+        $result = $bulkChanges->update($user, $workspace, $ids, $validated['changes']);
+
+        return response()->json([
+            'actionItems' => $byIds ? $presentActionItem->many($result['changed'], ActionItemActor::forUser($user)) : [],
+            'changedCount' => count($result['changed']),
+            'refused' => $result['refused'],
+        ]);
+```
+
+`WorkspaceActionItemBulkDeletionsController::store()`:
+
+```php
+        $user = $request->user();
+        $validated = $request->validated();
+        $ids = array_key_exists('ids', $validated)
+            ? $validated['ids']
+            : $bulkChanges->matching($user, $workspace, $validated['filters'] ?? [], (int) $validated['count']);
+        $result = $bulkChanges->delete($user, $workspace, $ids);
+
+        return response()->json(['deleted' => $result['changed'], 'refused' => $result['refused']]);
+```
+
+`lang/*.json`: "More than :cap action items match. Narrow the filters.", "The list changed: :count action items match now." (values in Task 17's table).
+
+- [ ] **Step 4: Run the tests on the four engines, and the race**
+
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems tests/Arch`, then `mariadb`, `mysql`, `sqlite`; then `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- tests/Concurrency/ActionItemBulkTest.php`, one engine after the other.
+Expected: PASS.
+
+- [ ] **Step 5: Measure the cap (spec §14, §16.4)**
+
+Run: `bin/test-db pgsql -- tests/Feature/ActionItems/ActionItemBulkMatchingTest.php --filter="changes the cap" --profile`, then `mysql`. Read the time of the test (it creates 500 items, completes them in one request with the queue faked, then creates 501 more). Write both numbers in the commit message. If the request part takes more than 15 seconds on either engine (half of Octane's 30), stop and report to the owner before going on: the choice is a lower `MatchingCap` or a queued bulk change, neither of which this plan decides.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/Actions/ActionItems/ActionItemBulkChanges.php app/Http/Requests/ActionItems app/Http/Controllers/WorkspaceActionItemBulkUpdatesController.php app/Http/Controllers/WorkspaceActionItemBulkDeletionsController.php tests/Feature/ActionItems/ActionItemBulkMatchingTest.php tests/Concurrency/ActionItemBulkTest.php lang
+git commit -m "feat(action-items): bulk changes over every matching item (AI-1)
+
+500-item completion: <n> s on PostgreSQL, <n> s on MySQL.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 9: CSV export of the list (AI-4)
 
 **Files:**
 - Create: `app/Support/CsvCell.php`, `app/Support/CsvDownload.php`, `app/Actions/ActionItems/ExportActionItemsCsv.php`, `app/Http/Controllers/WorkspaceActionItemCsvExportsController.php`, `tests/Feature/ActionItems/ActionItemCsvExportTest.php`
 - Modify: `app/Actions/TeamSurveys/ExportSurveyCsv.php` (uses `CsvCell`), `app/Http/Controllers/TeamSurveys/TeamSurveyExportsController.php` (uses `CsvDownload`), `routes/web.php`, `lang/{en,fr,es,de}.json`
 
 **Interfaces:**
-- Consumes: `ActionItemFilters::fromRequest()`, `ActionItemQuery::visibleTo()`, `filter()`, `order()` (Task 3); `ActionItemStatus::label()`, `ActionItem::currentStatus()` (Task 1); `BuildRetroRecap::assignee(ActionItem $item, bool $forMachines = false): ?string` (exists); `ActionItemPriority::label()` (exists).
-- Produces: `CsvCell::safe(string $cell): string`; `CsvDownload::stream(iterable $rows, string $fileName): StreamedResponse`; `ExportActionItemsCsv::rows(User, Workspace, ActionItemFilters): Generator<int, array<int, string>>`, `ExportActionItemsCsv::fileName(Workspace): string`; route `workspaces.actionItemCsvExports.show` (`GET workspaces/{workspace}/action-items/export`, the page's query) used by Task 12.
+- Consumes: `ActionItemFilters::fromRequest()`, `ActionItemQuery::visibleTo()`, `filter()`, `order()` (Task 5); `ActionItemStatus::label()`, `ActionItem::currentStatus()` (Task 1); `BuildRetroRecap::assignee(ActionItem $item, bool $forMachines = false): ?string` (exists); `ActionItemPriority::label()` (exists).
+- Produces: `CsvCell::safe(string $cell): string`; `CsvDownload::stream(iterable $rows, string $fileName): StreamedResponse`; `ExportActionItemsCsv::rows(User, Workspace, ActionItemFilters): Generator<int, array<int, string>>`, `ExportActionItemsCsv::fileName(Workspace): string`; route `workspaces.actionItemCsvExports.show` (`GET workspaces/{workspace}/action-items/export`, the page's query) used by Task 15.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2065,20 +2975,20 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 
 ## Step B — front foundation (single writer)
 
-### Task 7: Types, filters, selection, bulk client, status comparisons
+### Task 10: Types, filters, selection, bulk client, status comparisons
 
 **Files:**
 - Create: `resources/js/lib/action-items/selection.ts`, `selection.test.ts`, `bulk.ts`, `bulk.test.ts`, `status.ts`, `status.test.ts`
 - Modify: `resources/js/lib/retro/types.ts`, `components/action-items/use-action-item-filters.ts` and its test, `components/action-items/action-item-filters-drawer.tsx` (chips only), `components/action-items/action-items-page.tsx` (the empty-state condition only), `components/action-items/{action-item-sheet,action-items-list}.tsx`, `components/retro/{action-item-rows,board-dialogs,carried-items-sheet}.tsx`, `lib/action-items/endpoints.ts`
 
 **Interfaces:**
-- Consumes: the `filters` prop of Task 3; routes of Tasks 4, 5, 6 through Wayfinder (`npm run build:front` first).
+- Consumes: the `filters` prop of Task 5; routes of Tasks 6, 7, 9 through Wayfinder (`npm run build:front` first).
 - Produces:
   - `lib/retro/types.ts`: `ActionItemStatus = 'open' | 'doing' | 'completed'`; `ActionItem.startedAt: string | null`.
   - `use-action-item-filters.ts`: `StatusToken = 'todo' | 'doing' | 'completed'`, `DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none'`, `SourceFilter = 'retro' | 'outside'`, `ActionItemFilters = { status: StatusToken[]; priority: ActionItemPriority[]; due: DueBucket | null; source: SourceFilter | null; assignee: string | null; team: string | null; item: string | null }`, `DefaultStatuses`, `filterQuery()`, `activeFilterCount()`, `isDefaultStatus(statuses)`; `useActionItemFilters()` keeps its return shape.
   - `lib/action-items/status.ts`: `isOpenStatus(status: ActionItemStatus): boolean` (`open` or `doing`).
-  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState` (below).
-  - `lib/action-items/bulk.ts`: `bulkUpdate(workspace, ids, changes): Promise<BulkUpdateResult>`, `bulkDelete(workspace, ids): Promise<BulkDeleteResult>`, `actionItemsExportUrl(workspace, filters): string`, types `BulkChanges`, `BulkRefusal`.
+  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState`, and for "all matching" (decision 6) `MatchingCap` (500), `matchingOffer(selection, selectableIds, total): 'offer' | 'too-many' | null`, `leaveMatching(selectableIds, id): Set<string>` (below).
+  - `lib/action-items/bulk.ts`: `BulkTarget = { ids: string[] } | { filters: Record<string, string>; count: number }`, `matchingTarget(filters, count): BulkTarget`, `bulkUpdate(workspace, target, changes): Promise<BulkUpdateResult>`, `bulkDelete(workspace, target): Promise<BulkDeleteResult>`, `actionItemsExportUrl(workspace, filters): string`, types `BulkChanges`, `BulkRefusal` (`{ id, title: string | null, message }`), `BulkUpdateResult` (`{ actionItems, changedCount, refused }`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2089,6 +2999,9 @@ import { describe, expect, it } from 'vitest';
 import {
     headState,
     keepListed,
+    leaveMatching,
+    MatchingCap,
+    matchingOffer,
     setSelected,
     toggleSelected,
 } from '@/lib/action-items/selection';
@@ -2121,6 +3034,17 @@ describe('selection', () => {
         expect(headState(new Set(['a', 'b']), ['a', 'b'])).toBe(true);
         expect(headState(new Set(['a']), [])).toBe(false);
     });
+
+    it('offers every matching item once the whole page is selected and more items match', () => {
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 137)).toBe('offer');
+        expect(matchingOffer(new Set(['a']), ['a', 'b'], 137)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], MatchingCap + 1)).toBe('too-many');
+    });
+
+    it('leaves "all matching" for the page without the unticked row', () => {
+        expect([...leaveMatching(['a', 'b', 'c'], 'b')]).toEqual(['a', 'c']);
+    });
 });
 ```
 
@@ -2143,7 +3067,12 @@ describe('isOpenStatus', () => {
 
 ```ts
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { actionItemsExportUrl, bulkDelete, bulkUpdate } from '@/lib/action-items/bulk';
+import {
+    actionItemsExportUrl,
+    bulkDelete,
+    bulkUpdate,
+    matchingTarget,
+} from '@/lib/action-items/bulk';
 import { retroRequest } from '@/lib/retro/api';
 
 vi.mock('@/lib/retro/api', () => ({ retroRequest: vi.fn() }));
@@ -2152,9 +3081,9 @@ describe('bulk client', () => {
     beforeEach(() => vi.mocked(retroRequest).mockReset());
 
     it('posts the ids and the changes, with a long timeout', async () => {
-        vi.mocked(retroRequest).mockResolvedValue({ actionItems: [], refused: [] });
+        vi.mocked(retroRequest).mockResolvedValue({ actionItems: [], changedCount: 0, refused: [] });
 
-        await bulkUpdate('acme', ['a', 'b'], { status: 'doing' });
+        await bulkUpdate('acme', { ids: ['a', 'b'] }, { status: 'doing' });
 
         expect(retroRequest).toHaveBeenCalledWith(
             expect.objectContaining({ method: 'post', url: '/workspaces/acme/action-items/bulk-updates' }),
@@ -2163,10 +3092,26 @@ describe('bulk client', () => {
         );
     });
 
+    it('posts the filters and the count of every matching item', async () => {
+        vi.mocked(retroRequest).mockResolvedValue({ actionItems: [], changedCount: 137, refused: [] });
+
+        const target = matchingTarget(
+            { status: ['todo', 'doing'], priority: ['low'], due: null, source: null, assignee: null, team: 't1', item: 'x' },
+            137,
+        );
+        await bulkUpdate('acme', target, { priority: 'high' });
+
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ method: 'post' }),
+            { filters: { priority: 'low', team: 't1' }, count: 137, changes: { priority: 'high' } },
+            { timeoutMs: 60_000 },
+        );
+    });
+
     it('posts the ids to delete', async () => {
         vi.mocked(retroRequest).mockResolvedValue({ deleted: ['a'], refused: [] });
 
-        expect(await bulkDelete('acme', ['a'])).toEqual({ deleted: ['a'], refused: [] });
+        expect(await bulkDelete('acme', { ids: ['a'] })).toEqual({ deleted: ['a'], refused: [] });
     });
 
     it('builds the export link from the filters, without the item', () => {
@@ -2280,6 +3225,34 @@ export function headState(
 
     return selected === selectableIds.length ? true : 'indeterminate';
 }
+
+/** Spec 24 §5 rule 7: the server refuses more matching items than this. */
+export const MatchingCap = 500;
+
+/**
+ * "Select all :count matching" once every selectable row of the page is selected and the
+ * list has more items than the page; disabled above the cap.
+ */
+export function matchingOffer(
+    selection: Selection,
+    selectableIds: string[],
+    total: number,
+): 'offer' | 'too-many' | null {
+    const wholePage =
+        selectableIds.length > 0 &&
+        selectableIds.every((id) => selection.has(id));
+
+    if (!wholePage || total <= selectableIds.length) {
+        return null;
+    }
+
+    return total > MatchingCap ? 'too-many' : 'offer';
+}
+
+/** Unticking a row in "all matching" mode keeps the page's other selectable rows. */
+export function leaveMatching(selectableIds: string[], id: string): Set<string> {
+    return new Set(selectableIds.filter((selectable) => selectable !== id));
+}
 ```
 
 `resources/js/lib/action-items/status.ts`:
@@ -2308,8 +3281,13 @@ import type {
     ActionItemStatus,
 } from '@/lib/retro/types';
 
-/** Fifty items, each in its own transaction, can take longer than one change. */
+/** Up to 500 items, each in its own transaction, take longer than one change. */
 const BulkTimeoutMs = 60_000;
+
+/** Rows of the page by id, or every item matching the filters, counted (spec 24 §6.5). */
+export type BulkTarget =
+    | { ids: string[] }
+    | { filters: Record<string, string>; count: number };
 
 export type BulkChanges = Partial<{
     status: ActionItemStatus;
@@ -2318,34 +3296,48 @@ export type BulkChanges = Partial<{
     assignee_user_id: string | null;
 }>;
 
-export type BulkRefusal = { id: string; message: string };
+/** `title` is null for an item that is gone or that the viewer cannot see. */
+export type BulkRefusal = { id: string; title: string | null; message: string };
 
+/** `actionItems` is empty for a filters target: the page reloads instead. */
 export type BulkUpdateResult = {
     actionItems: ActionItem[];
+    changedCount: number;
     refused: BulkRefusal[];
 };
 
 export type BulkDeleteResult = { deleted: string[]; refused: BulkRefusal[] };
 
+/**
+ * The page's filters as its query writes them and the count it showed; `filterQuery` never
+ * writes `item` (the export link's test proves it), and the default filters are `{}`.
+ */
+export function matchingTarget(
+    filters: ActionItemFilters,
+    count: number,
+): BulkTarget {
+    return { filters: filterQuery(filters), count };
+}
+
 export function bulkUpdate(
     workspace: string,
-    ids: string[],
+    target: BulkTarget,
     changes: BulkChanges,
 ): Promise<BulkUpdateResult> {
     return retroRequest<BulkUpdateResult>(
         WorkspaceActionItemBulkUpdatesController.store(workspace),
-        { ids, changes },
+        { ...target, changes },
         { timeoutMs: BulkTimeoutMs },
     );
 }
 
 export function bulkDelete(
     workspace: string,
-    ids: string[],
+    target: BulkTarget,
 ): Promise<BulkDeleteResult> {
     return retroRequest<BulkDeleteResult>(
         WorkspaceActionItemBulkDeletionsController.store(workspace),
-        { ids },
+        { ...target },
         { timeoutMs: BulkTimeoutMs },
     );
 }
@@ -2365,7 +3357,7 @@ If `filterQuery` omits the default statuses, the export follows the server's def
 
 `use-action-item-filters.ts`: replace `StatusFilter` and `ActionItemFilters` by the types of **Interfaces**; `export const DefaultStatuses: StatusToken[] = ['todo', 'doing'];` `export function isDefaultStatus(statuses: StatusToken[]): boolean` (same members as the default, order-free); `filterQuery()` writes `status` only when not default (joined with `,` in the canonical order `todo, doing, completed`), `priority` when not empty (order `high, medium, low`), `due`, `source`, `assignee`, `team`; `activeFilterCount()` counts team, assignee, a non-default status, a non-empty priority, due, source; `isDefault` adds `filters.priority.length === 0 && filters.due === null && filters.source === null` and uses `isDefaultStatus`. `landingQuery()` is unchanged: a stored entry of before is sent as it is and the server maps it (spec §6.3); the page then stores the canonical form at the next change.
 
-`action-item-filters-drawer.tsx` (chips only): "Overdue" is pressed when `filters.due === 'overdue'` and toggles `{ due: overdue ? null : 'overdue' }`; "To do" is pressed when `isDefaultStatus(filters.status) && filters.due !== 'overdue'` and applies `{ status: DefaultStatuses, due: null }`; "Done" is pressed when the status is exactly `['completed']` and applies `{ status: ['completed'] }`. The overdue shortcut of `action-item-filters.tsx` moves to `due` in Task 9; until then, change its two lines the same way so the page works at the head of this task.
+`action-item-filters-drawer.tsx` (chips only): "Overdue" is pressed when `filters.due === 'overdue'` and toggles `{ due: overdue ? null : 'overdue' }`; "To do" is pressed when `isDefaultStatus(filters.status) && filters.due !== 'overdue'` and applies `{ status: DefaultStatuses, due: null }`; "Done" is pressed when the status is exactly `['completed']` and applies `{ status: ['completed'] }`. The overdue shortcut of `action-item-filters.tsx` moves to `due` in Task 12; until then, change its two lines the same way so the page works at the head of this task.
 
 `action-items-page.tsx`: `nothingOpen` becomes `isDefaultStatus(filters.status) && filters.due === null && filters.priority.length === 0 && filters.source === null && filters.assignee === null`.
 
@@ -2395,9 +3387,9 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 
 ## Step C — screens (lanes)
 
-Every screen task: read ScreenActions (README and preview) and ActionItem first; write the Vitest tests first (render with the props, assert roles, names, states; mock `retroRequest` and `router`); implement; run `npm run test -- <files>`, `npm run types:check`, `npm run check`, `npm run build:front`; commit. No capture here (Task 13). New strings go to the four `lang/*.json` files (values in Task 14).
+Every screen task: read ScreenActions (README and preview) and ActionItem first; write the Vitest tests first (render with the props, assert roles, names, states; mock `retroRequest` and `router`); implement; run `npm run test -- <files>`, `npm run types:check`, `npm run check`, `npm run build:front`; commit. No capture here (Task 16). New strings go to the four `lang/*.json` files (values in Task 17).
 
-### Task 8 (lane Status): "In progress" everywhere an item's status shows
+### Task 11 (lane Status): "In progress" everywhere an item's status shows
 
 **Files:** modify `components/action-items/action-items-table.tsx` (status cell), `action-items-list.tsx`, `action-item-sheet.tsx`, `components/retro/action-item-rows.tsx`, `components/retro/carried-items-sheet.tsx` (props only); their tests.
 
@@ -2407,17 +3399,17 @@ Every screen task: read ScreenActions (README and preview) and ActionItem first;
 - Pass `withDoing` to every `ActionItem` and `ActionSheet` the application renders: the page list, the sheet, the board's action rows, the carried-items panel.
 - Table status cell: `ActionStatusBadge` with the three tones (outline, info, success); the badge stays the status button (PB-05): its accessible name is "Mark as in progress" on To do, "Mark as done" on In progress, "Reopen" on Done; a click calls `context.onStatusChange(item, nextActionStatus(item.status, true))`; disabled without the right to complete, as today.
 - Sheet: the Status select lists To do, In progress, Done; the footer keeps one-click "Mark as done" (on To do and In progress) and "Reopen" (on Done). Under the status, "Started :date" when `startedAt` is set and the item is not done (`formatActionDay` for the date).
-- Board and carried panel: their open counts use `isOpenStatus` (Task 7).
+- Board and carried panel: their open counts use `isOpenStatus` (Task 10).
 
 **Vitest (written first):** the table badge reads and names each of the three statuses and sends the next one; the sheet select sends `doing`; the sheet footer completes a started item in one click; "Started …" shows for a started item and not for a done one; the board row cycles To do → In progress → Done → To do; the carried-items count includes a started item.
 
 **Commit:** `feat(action-items): In progress on the page, the sheet and the board`
 
-### Task 9 (lane Filters): Status, Priority, Due date and Source facets
+### Task 12 (lane Filters): Status, Priority, Due date and Source facets
 
 **Files:** create `components/action-items/action-item-facets.tsx` and its test; modify `action-item-filters.tsx` (Status facet, overdue shortcut, `extraFacets` filled by the page), `action-item-filters-drawer.tsx` (the stacked facets), `action-items-page.tsx` (the `extraFacets` line), `action-item-filters.test.tsx`.
 
-**Interfaces:** consumes `ActionItemFilters`, `DefaultStatuses`, `isDefaultStatus`, `activeFilterCount` (Task 7); `ActionPriorityMark` (exists); `Popover`, `Command` (`CommandList`, `CommandItem`), `Checkbox`.
+**Interfaces:** consumes `ActionItemFilters`, `DefaultStatuses`, `isDefaultStatus`, `activeFilterCount` (Task 10); `ActionPriorityMark` (exists); `Popover`, `Command` (`CommandList`, `CommandItem`), `Checkbox`.
 Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; label: string; mark?: ReactNode }[], value: T[], allValue: T[], onChange, stacked })` and `SingleFacet` (the current `Facet`, renamed and kept for Team, Assignee, Due date, Source) in `action-item-facets.tsx`; `ActionItemExtraFacets({ filters, onChange, stacked })` rendering Priority, Due date and Source in that order.
 
 **Composition and behaviours (spec §9.2):**
@@ -2434,52 +3426,54 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 
 **Commit:** `feat(action-items): status, priority, due date and source facets`
 
-### Task 10 (lane Bulk): Selection on the table, and the bulk bar
+### Task 13 (lane Bulk): Selection on the table, and the bulk bar
 
-**Files:** create `components/action-items/use-action-item-selection.ts`, `action-item-select-cell.tsx`, `action-items-bulk-bar.tsx`, `bulk-assign-menu.tsx`, `bulk-result-toast.tsx`, `bulk-delete-confirm.tsx` and their tests; modify `action-items-page.tsx` (`selectionCell`, `selectionHead`, `bulkBar`, Escape), `action-items-table.tsx` (group rows get a box: a `selectionGroup?: (group) => ReactNode` prop in the group header row).
+**Files:** create `components/action-items/use-action-item-selection.ts`, `action-item-select-cell.tsx`, `action-items-bulk-bar.tsx`, `bulk-assign-menu.tsx`, `bulk-result-toast.tsx`, `bulk-delete-confirm.tsx`, `bulk-matching-confirm.tsx` and their tests; modify `action-items-page.tsx` (`selectionCell`, `selectionHead`, `bulkBar`, Escape, the reload after an "all matching" request), `action-items-table.tsx` (group rows get a box: a `selectionGroup?: (group) => ReactNode` prop in the group header row).
 
 **Interfaces:**
-- Consumes: `selection.ts`, `bulk.ts`, `isOpenStatus` (Task 7); `canManageActionItem`, `canCompleteActionItem` (read `lib/action-items/permissions.ts` for the exact names); `useActionItemsRealtime`'s `saveRow` and `removeRow`; `ItemDeleteConfirm` as the model for the confirmation; `Calendar` in a `Popover` for the due date.
-- Produces: `useActionItemSelection({ rows, viewer }): { selected: Set<string>; selectable(item): boolean; toggle(id); setMany(ids, on); clear(); head(ids): boolean | 'indeterminate' }` (clears on a change of `filters`, page or grouping — the hook takes a `resetKey: string` built from them); `ActionItemsBulkBar({ workspace, items, selected, teams, sourcesOf, onDone, onClear, layout: 'floating' | 'docked' })`.
+- Consumes: `selection.ts` (with `matchingOffer`, `leaveMatching`, `MatchingCap`), `bulk.ts` (`BulkTarget`, `matchingTarget`), `isOpenStatus` (Task 10); the page's `items.total` and `filters`; `RetroRequestError` (`lib/retro/api.ts`: `status` and `errors`, for the 422 on `count`); `router.reload({ only: ['items', 'counts'] })`; `canManageActionItem`, `canCompleteActionItem` (read `lib/action-items/permissions.ts` for the exact names); `useActionItemsRealtime`'s `saveRow` and `removeRow`; `ItemDeleteConfirm` as the model for the confirmation; `Calendar` in a `Popover` for the due date.
+- Produces: `useActionItemSelection({ rows, viewer, total }): { selected: Set<string>; matching: { count: number } | null; selectable(item): boolean; toggle(id); setMany(ids, on); selectMatching(); clear(); head(ids): boolean | 'indeterminate'; offer: 'offer' | 'too-many' | null; target(filters): BulkTarget }` (the hook takes a `filtersKey: string` and a `pageKey: string`: a change of `filtersKey` clears everything; a change of `pageKey` — page or grouping — clears the rows and keeps `matching`); `ActionItemsBulkBar({ workspace, items, selection, filters, teams, sourcesOf, onDone, onClear, layout: 'floating' | 'docked' })`; `BulkMatchingConfirm({ count, changedSentence, onApply, onCancel })`.
 
 **Composition and behaviours (spec §9.3, §9.4):**
 - Row box (`action-item-select-cell.tsx`): `Checkbox` named "Select :title"; disabled with a tooltip "You cannot change this action item" when `selectable(item)` is false (the viewer may neither complete nor manage it). A selected row gets `data-selected` and the selected background.
 - Header box: `head(selectableIds)`; ticking selects the page's selectable rows, unticking clears; name "Select all on this page" / "Clear selection". A group row box selects its group's selectable rows.
 - `keepListed` runs when `rows` change (a row that left the list leaves the selection).
-- Bar (`action-items-bulk-bar.tsx`), mockup order: "**n** selected" (polite live region), separator, Status ▾ (To do, In progress, Done), Assign ▾ (`bulk-assign-menu.tsx`: "Unassigned" then the members common to every team of the selection, with avatars; a search field from eight people), Due date ▾ (calendar and "No due date"), Priority ▾ (High, Medium, Low with marks), "Sync to :tracker" (Task 11), Delete (destructive ghost), separator, ✕ "Clear selection". `role="toolbar"`, name "Bulk actions", fixed at the bottom centre of the content, `z-chrome`, `shadow-modal`, enter/leave motion off with reduced motion.
-- Enabled actions: Status when one selected item may be completed by the viewer; Assign, Due date, Priority and Delete when one may be managed; otherwise disabled with a tooltip.
-- A change: buttons disabled, spinner on the pressed one; `bulkUpdate(...)`; each returned item through `saveRow`; then `bulk-result-toast.tsx`: "n action items updated." (one: "1 action item updated.") when nothing was refused, else "n updated, m not changed." with a "Details" action opening a dialog listing each refused item's title and message. Full success clears the selection; a partial one removes the changed ids from it.
-- Delete: `bulk-delete-confirm.tsx` (`role="alertdialog"`) "Delete n action items?" / "This cannot be undone. Their comments and sub-tasks are deleted too." / "Delete" / "Cancel"; then `bulkDelete(...)`, `removeRow` for each deleted id, the toast.
+- **All matching** (spec §9.3, decision 6): when `offer` is `'offer'`, the bar shows a link button "Select all :count matching" (`:count` = `items.total`) after "n selected"; pressing it calls `selectMatching()`: the bar reads "All :count matching selected", every row box reads ticked (the header box too), group boxes too. When `offer` is `'too-many'` the button is disabled with the tooltip "Up to 500 at once. Narrow the filters.". Unticking a row in that mode calls `leaveMatching(selectableIds, id)`; ticking the header box off clears everything.
+- Bar (`action-items-bulk-bar.tsx`), mockup order: "**n** selected" (polite live region), separator, Status ▾ (To do, In progress, Done), Assign ▾ (`bulk-assign-menu.tsx`: "Unassigned" then the members common to every team of the selection, with avatars; a search field from eight people), Due date ▾ (calendar and "No due date"), Priority ▾ (High, Medium, Low with marks), "Sync to :tracker" (Task 14), Delete (destructive ghost), separator, ✕ "Clear selection". `role="toolbar"`, name "Bulk actions", fixed at the bottom centre of the content, `z-chrome`, `shadow-modal`, enter/leave motion off with reduced motion.
+- Enabled actions: Status when one selected row of the page may be completed by the viewer; Assign, Due date, Priority and Delete when one may be managed; otherwise disabled with a tooltip. In "all matching" mode the same reading over the page's rows (the server checks each item); Assign lists the members common to the filter's team, else to every team of `filterTeams` (spec §7).
+- A change on rows: buttons disabled, spinner on the pressed one; `bulkUpdate(workspace, { ids }, changes)`; each returned item through `saveRow`; then `bulk-result-toast.tsx`: "n action items updated." (one: "1 action item updated.") when nothing was refused, else "n updated, m not changed." (`changedCount`, `refused.length`) with a "Details" action opening a dialog listing each refused item's title — or its sentence alone when `title` is null — and message. Full success clears the selection; a partial one removes the changed ids from it.
+- A change in "all matching" mode: `bulk-matching-confirm.tsx` (`role="alertdialog"`) first: "Apply to :count action items?" / "Every action item matching the filters is changed: :count in all." / "Apply" / "Cancel"; on "Apply", `bulkUpdate(workspace, matchingTarget(filters, count), changes)`. A 422 whose `errors.count` is set keeps the dialog open with that sentence ("The list changed: :count action items match now."), reloads `items` and `counts`, and "Apply" then sends the new `items.total`; a 422 on `filters` (above the cap) closes the dialog with the error toast. On success: the toast as above, the selection cleared, `router.reload({ only: ['items', 'counts'] })`.
+- Delete: `bulk-delete-confirm.tsx` (`role="alertdialog"`) "Delete n action items?" / "This cannot be undone. Their comments and sub-tasks are deleted too." / "Delete" / "Cancel" (`n` = the count in "all matching" mode, with the same changed-count handling); then `bulkDelete(...)` with the rows' ids or the matching target, `removeRow` for each deleted id (and the reload in "all matching" mode), the toast.
 - A request that fails as a whole (network, 503, 422) shows the existing error toast of `useActionItemMutations.run` and resyncs; the selection stays.
 - Escape clears the selection when no sheet, menu or dialog is open.
 
-**Vitest (written first):** a row box toggles and marks the row; a disabled box for a row the viewer cannot change; the header box reads none / mixed / all and selects the page; a group box selects its rows; the bar appears with "3 selected" and disappears when cleared; Status → In progress posts `{ ids, changes: { status: 'doing' } }`; Assign lists only the common members; a partial answer shows "1 updated, 1 not changed." and the details list the refused title and sentence, and only the changed id leaves the selection; Delete asks first and Cancel sends nothing; Escape clears; a filter change clears.
+**Vitest (written first):** a row box toggles and marks the row; a disabled box for a row the viewer cannot change; the header box reads none / mixed / all and selects the page; a group box selects its rows; the bar appears with "3 selected" and disappears when cleared; Status → In progress posts `{ ids, changes: { status: 'doing' } }`; Assign lists only the common members; a partial answer shows "1 updated, 1 not changed." and the details list the refused title and sentence (and the sentence alone for a null title), and only the changed id leaves the selection; Delete asks first and Cancel sends nothing; Escape clears; a filter change clears. All matching: with the page selected and `items.total` 137, "Select all 137 matching" shows and enters the mode ("All 137 matching selected"); it is disabled above 500; Priority → High asks "Apply to 137 action items?" and Cancel sends nothing; Apply posts `{ filters, count: 137, changes: { priority: 'high' } }` and reloads `items` and `counts`; a 422 on `count` keeps the dialog with its sentence and the next Apply sends the reloaded total; unticking a row leaves the mode with the other page rows selected; a page change keeps the mode and a filter change clears it.
 
-**Commit:** `feat(action-items): selection and bulk bar on the table`
+**Commit:** `feat(action-items): selection, all matching and bulk bar on the table`
 
-### Task 11 (lane Bulk, after Task 10): Selection below 80rem, and "Sync to :tracker"
+### Task 14 (lane Bulk, after Task 13): Selection below 80rem, and "Sync to :tracker"
 
 **Files:** create `components/action-items/use-bulk-tracker-export.ts` and its test, `use-long-press.ts` and its test (in `components/action-items/`); modify `action-items-list.tsx` (selection mode), `action-items-header.tsx` ("Select" / "Done" button), `action-items-bulk-bar.tsx` (docked layout, "…" menu, sync button and progress), `action-items-page.tsx` (selection mode state).
 
 **Interfaces:**
-- Consumes: Task 10's hook and bar; `ItemExport`'s target form and `endpoints.exportItem` / `endpoints.exportPreview` (read `item-export.tsx` to reuse its target step as a component, or extract it into `ExportTargetForm` in its own commit if it is not separable); `exportSources` of the page.
+- Consumes: Task 13's hook and bar; `ItemExport`'s target form and `endpoints.exportItem` / `endpoints.exportPreview` (read `item-export.tsx` to reuse its target step as a component, or extract it into `ExportTargetForm` in its own commit if it is not separable); `exportSources` of the page.
 - Produces: `useLongPress(onLongPress, { delayMs = 500, moveTolerancePx = 10 })` returning pointer handlers; `useBulkTrackerExport({ endpoints, run }): { start(items, source, target); stop(); progress: { done: number; total: number } | null; result: { exported: string[]; skipped: string[]; failed: BulkRefusal[] } | null }`.
 
 **Composition and behaviours (spec §9.4, §9.5):**
 - Header button "Select" (below 80rem only, after "Group by"); in selection mode it reads "Finish selecting" and leaves the mode (and clears the selection).
-- Selection mode in the list: a box (20 px, 44 px target) before each item's status button; a tap on the item toggles it; the bulk bar docks at the bottom (`layout="docked"`, safe-area padding), full width, with Status, Assign, Due date and "…" (Priority, Sync, Delete).
+- Selection mode in the list: a box (20 px, 44 px target) before each item's status button; a tap on the item toggles it; the bulk bar docks at the bottom (`layout="docked"`, safe-area padding), full width, with Status, Assign, Due date and "…" (Priority, Sync, Delete, and "Select all :count matching" when `items.total` is above the rows shown — it selects the page's selectable rows and enters "all matching" mode in one step, disabled above 500 as in Task 13).
 - Long press (touch and pen pointers only, 500 ms without moving more than 10 px) on an item enters selection mode with that item selected; a short tap still opens it; the context menu of a long press is prevented on the item.
-- "Sync to :tracker" (`:tracker` = the source label, e.g. "Jira"): shown when every selected item has the same `teamId` and `sourcesOf(teamId)` has one source (a menu of sources when it has several); opens the existing export target step for the first unlinked item; on confirm, exports the unlinked items one after the other through `endpoints.exportItem(id)` with the target; items already linked to that source are skipped; the bar shows "Exporting :done of :total…" with a `progress` bar and "Stop"; "reconnect required" (the error the export answers today; read `item-export.tsx` for how it is recognised) stops the loop; each exported item goes through `saveRow`; the end toast: ":count exported, :skipped already linked" plus failures in "Details".
+- "Sync to :tracker" (`:tracker` = the source label, e.g. "Jira"): in "all matching" mode, disabled with the tooltip "Select rows on this page to sync them." (the loop needs ids; spec §3, P24-06); otherwise shown when every selected item has the same `teamId` and `sourcesOf(teamId)` has one source (a menu of sources when it has several); opens the existing export target step for the first unlinked item; on confirm, exports the unlinked items one after the other through `endpoints.exportItem(id)` with the target; items already linked to that source are skipped; the bar shows "Exporting :done of :total…" with a `progress` bar and "Stop"; "reconnect required" (the error the export answers today; read `item-export.tsx` for how it is recognised) stops the loop; each exported item goes through `saveRow`; the end toast: ":count exported, :skipped already linked" plus failures in "Details".
 
-**Vitest (written first):** "Select" enters the mode and shows boxes; "Finish selecting" leaves it and clears; a long press of 500 ms enters the mode with the item selected, a 200 ms press opens it, a move cancels; the docked bar shows three actions and "…" holding the rest; the sync button is hidden for a two-team selection and for a team without a source; the loop exports two unlinked items in order, skips a linked one, shows "Exporting 1 of 2…", and stops on a reconnect answer; "Stop" ends after the current item.
+**Vitest (written first):** "Select" enters the mode and shows boxes; "Finish selecting" leaves it and clears; a long press of 500 ms enters the mode with the item selected, a 200 ms press opens it, a move cancels; the docked bar shows three actions and "…" holding the rest; the "…" menu offers "Select all 137 matching" and enters the mode; the sync button is hidden for a two-team selection and for a team without a source, and disabled with its tooltip in "all matching" mode; the loop exports two unlinked items in order, skips a linked one, shows "Exporting 1 of 2…", and stops on a reconnect answer; "Stop" ends after the current item.
 
 **Commit:** `feat(action-items): phone selection and bulk sync to a tracker`
 
-### Task 12 (lane Export): "Export" in the topbar
+### Task 15 (lane Export): "Export" in the topbar
 
 **Files:** create `components/action-items/export-action-items-button.tsx` and its test; modify `pages/action-items/index.tsx` (the `before` prop of `NewActionItemButton`; also render the button when the viewer has no creatable team).
 
-**Interfaces:** consumes `actionItemsExportUrl(workspace, filters)` (Task 7).
+**Interfaces:** consumes `actionItemsExportUrl(workspace, filters)` (Task 10).
 
 **Composition and behaviours (spec §9.1):** an outline `Button` rendered as an anchor (`asChild`) with `href={actionItemsExportUrl(workspace.slug, filters)}` and `download`, lucide `FileDown`, label "Export" (visually hidden below `sm`, as "New action item" does, keeping the accessible name); placed before "New action item"; when `creatableTeams` is empty, the topbar shows "Export" alone.
 
@@ -2491,20 +3485,20 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 
 ## Final
 
-### Task 13: Bench section and captures (light, 1440, French)
+### Task 16: Bench section and captures (light, 1440, French)
 
 **Files:** modify `resources/js/pages/dev/sections/actions-index.tsx`, `tests/Browser/Visual/ActionsPageVisualTest.php`.
 
-- [ ] Add the states of spec §9.8 to the bench section, built from the page's pieces as the section does today (it does not mount `ActionItemsPage`): `selection` (three of six rows selected, header box mixed, the floating bar), `bulk-result` (the partial toast open on "Details"), `bulk-delete` (the confirmation), `facets` (Status "2 of 3", Priority High, Due date "Next 7 days", Source "From a retro", the overdue shortcut), `in-progress` (one row per status, with the sheet open on a started item), `phone-selection` (rendered at its own narrow frame: the list in selection mode with the docked bar).
-- [ ] Add the captures to `ActionsPageVisualTest.php` for those states and for the real page of a manager with an "Export" button, in light, at 1440, in French only (`VISUAL_ONLY=light-1440-fr`), and run them: `vendor/bin/sail artisan test --compact tests/Browser/Visual/ActionsPageVisualTest.php` with that variable. The harness's overflow check must pass.
+- [ ] Add the states of spec §9.9 to the bench section, built from the page's pieces as the section does today (it does not mount `ActionItemsPage`): `selection` (three of six rows selected, header box mixed, the floating bar with "Select all 137 matching" once the page is selected), `all-matching` (the bar reading "All 137 matching selected", every row ticked, "Sync to Jira" disabled), `confirm-matching` (the "Apply to 137 action items?" dialog), `bulk-result` (the partial toast open on "Details"), `bulk-delete` (the confirmation), `facets` (Status "2 of 3", Priority High, Due date "Next 7 days", Source "From a retro", the overdue shortcut), `in-progress` (one row per status, with the sheet open on a started item), `phone-selection` (rendered at its own narrow frame: the list in selection mode with the docked bar).
+- [ ] Add the captures to `ActionsPageVisualTest.php` for those states and for the real page of a manager with an "Export" button, in light, at 1440, in French only (`VISUAL_ONLY=light-1440-fr`), and run them: `vendor/bin/sail artisan test --compact tests/Browser/Visual/ActionsPageVisualTest.php` with that variable. The harness's overflow check must pass. If `tests/Browser/Visual` already captures the team integrations page, add its status mapping state with "Start to" (light, 1440, French) the same way; if it does not, add none and say so in the report (spec §9.9).
 - [ ] Compare each capture with `docs/design-system/components/ScreenActions/preview.html` (and ActionItem's preview for the status button): every difference is fixed in the lane's component, or added as a row to **Pre-build deviations** with its reason and put to the owner.
 - [ ] Commit: `test(action-items): bench states and captures of bulk changes, facets and In progress`.
 
-### Task 14: Translations
+### Task 17: Translations
 
 **Files:** `lang/{en,fr,es,de}.json`.
 
-- [ ] Check that every key added by Tasks 1 to 12 is in the four files, with these values (English is the key). Existing keys keep their values.
+- [ ] Check that every key added by Tasks 1 to 15 is in the four files, with these values (English is the key). Existing keys keep their values.
 
 | Key | fr | es | de |
 |---|---|---|---|
@@ -2532,21 +3526,32 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 | Details | Détails | Detalles | Details |
 | Started :date | Commencée le :date | Empezada el :date | Begonnen am :date |
 | Finish selecting | Terminer la sélection | Terminar la selección | Auswahl beenden |
+| Start to | Statut au démarrage | Estado al empezar | Status beim Starten |
+| Jira requires more fields to start :key. Start it in Jira. | Jira exige d’autres champs pour démarrer :key. Démarre-le dans Jira. | Jira necesita más campos para empezar :key. Empiézalo en Jira. | Jira verlangt weitere Felder, um :key zu starten. Starte es in Jira. |
+| No transition to an in-progress status is available for :key. | Aucune transition vers un statut en cours n’est disponible pour :key. | No hay ninguna transición a un estado en curso disponible para :key. | Für :key ist kein Übergang in einen laufenden Status verfügbar. |
+| Select all :count matching | Sélectionner les :count correspondantes | Seleccionar las :count que coinciden | Alle :count Treffer auswählen |
+| All :count matching selected | Les :count correspondantes sont sélectionnées | Las :count que coinciden están seleccionadas | Alle :count Treffer ausgewählt |
+| Up to 500 at once. Narrow the filters. | 500 au maximum à la fois. Affine les filtres. | Hasta 500 a la vez. Ajusta los filtros. | Höchstens 500 auf einmal. Grenze die Filter ein. |
+| Apply to :count action items? | Appliquer à :count actions ? | ¿Aplicar a :count acciones? | Auf :count Aktionen anwenden? |
+| Every action item matching the filters is changed: :count in all. | Chaque action qui correspond aux filtres est modifiée : :count en tout. | Se modifica cada acción que coincide con los filtros: :count en total. | Jede Aktion, die zu den Filtern passt, wird geändert: insgesamt :count. |
+| The list changed: :count action items match now. | La liste a changé : :count actions correspondent maintenant. | La lista cambió: ahora coinciden :count acciones. | Die Liste hat sich geändert: Jetzt passen :count Aktionen. |
+| More than :cap action items match. Narrow the filters. | Plus de :cap actions correspondent. Affine les filtres. | Coinciden más de :cap acciones. Ajusta los filtros. | Mehr als :cap Aktionen passen. Grenze die Filter ein. |
+| Select rows on this page to sync them. | Sélectionne des lignes de cette page pour les synchroniser. | Selecciona filas de esta página para sincronizarlas. | Wähle Zeilen auf dieser Seite aus, um sie zu synchronisieren. |
 
-  Keys that may already exist ("Any", "Details", "Stop", "Clear selection"): keep the existing value if there is one, and do not duplicate the key.
+  Keys that may already exist ("Any", "Details", "Stop", "Clear selection", "Apply"): keep the existing value if there is one, and do not duplicate the key. The French values use the typographic apostrophe (’) where the neighbouring Jira sentences do.
 - [ ] Run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` and `npm run test -- resources/js/lib/i18n` (if the front has a key test).
 - [ ] Commit: `chore(i18n): action items bulk, facets, In progress and export in four languages`.
 
-### Task 15: Deviations and documents
+### Task 18: Deviations and documents
 
 - [ ] `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`: D-19 — strike what this plan built (selection and bulk bar, priority / due date / source facets, "In progress", topbar "Export"); what remains: grouping by sprint (TM-1), whiteboard and survey sources (backlog). D-118 — "no long press" removed; the chips' wording stays.
 - [ ] `docs/superpowers/research/front-rewrite/feature-roadmap.md`: AI-1 to AI-4 "done, plan 24"; the backlog line under the table lists spec §3.
-- [ ] `docs/superpowers/research/front-rewrite/deviations.md`: the rows P24-01 to P24-10 (with the owner's answers) and those Task 13 added.
-- [ ] `docs/database.md`: in "The database holds keys, not rules", nothing changes (`started_at` is not derived); in the upgrade list of the release, add "`started_at` on action items (empty)".
-- [ ] Move the spec to `docs/superpowers/specs/2026-10-21-action-items-bulk-filters-status-export-design.md` and this plan to `docs/superpowers/plans/2026-10-21-plan-24-action-items.md`; fix the links between them.
-- [ ] Commit: `docs: plan 24 — spec and plan in place, roadmap and deviation rows updated`.
+- [ ] `docs/superpowers/research/front-rewrite/deviations.md`: the rows P24-01 to P24-12 (with the owner's answers) and those Task 16 added.
+- [ ] `docs/database.md`: in "The database holds keys, not rules", nothing changes (`started_at` is not derived); in the upgrade list of the release, add "`started_at` on action items (empty)" and "`started` as a value of `action_item_external_links.external_state` and `last_pushed_state` (no migration; links are corrected by their next read)".
+- [ ] The release note (where the project keeps it; read `docs/` for the release notes of plans 18 and 19, and ask if there is none): the status button now starts a to-do item (spec §14, "A gesture that changes"); "In progress" moves linked Jira and Linear issues, with "Start to" per project or team; the first read after the release may move an issue with an unpushed reopening back to its reopen target (spec §14, "The release").
+- [ ] Commit: `docs: plan 24 — roadmap, deviation rows, database notes and release note`.
 
-### Task 16: Full suites on the four engines, and the report
+### Task 19: Full suites on the four engines, and the report
 
 - [ ] `npm run test` (the whole Vitest suite), `npm run types:check`, `npm run check`, `npm run build:front`.
 - [ ] `vendor/bin/sail composer types:check` and `vendor/bin/pint --dirty --format agent`.
@@ -2557,12 +3562,14 @@ Produces: `MultiFacet<T extends string>({ label, icon, options: { value: T; labe
 
 ---
 
-## Self-review (done while writing; kept for the reader)
+## Self-review (done while revising on the owner's answers; kept for the reader)
 
-**Spec coverage.** §6.1 status and transitions → Task 1; sub-tasks → Task 1; §6.2 tracker read → Task 2; §6.3 filters, old values, counters, MCP → Task 3; §6.4 readers → Task 1 (presenter), Task 3 (MCP list), nothing for webhooks and recap (tests unchanged); §6.5 bulk → Tasks 4, 5 (server), 10, 11 (front, sync loop); §6.6 export → Task 6 (server), 12 (button); §7 permissions → Tasks 4, 5 (per item), 10 (selectable rows, enabled actions); §8 real time → Tasks 4, 5 (events per item asserted), 10 (`saveRow` / `removeRow`); §9.1 → 12; §9.2 → 9 and 7 (chips); §9.3, §9.4 → 10, 11; §9.5 → 11; §9.6, §9.7 → 8; §9.8 → 13; §10 → Task 1's Upgrade test; acceptance criteria 1–4 → Task 1; 5 → 2; 6–9 → 3; 10–13 → 4, 5; 14 → 5; 15 → 6; 16 → 10; 17, 18 → 11; 19 → 8; 20 → 13, 14; 21 → 16.
+**Spec coverage.** §5 rules 1, 2 → Tasks 6, 7, 8; rule 3 → Task 1; rule 4 → Tasks 5, 8, 9; rule 5 → Task 9; rule 6 → Tasks 2, 3; rule 7 → Task 8. §6.1 status, transitions and `ActionItemProgressChanged` → Task 1; sub-tasks → Task 1; §6.2 three-state reads and sync state → Task 2, pushes and start targets → Task 3, release note → Task 18; §6.3 filters, old values, counters, MCP → Task 5, `fromQuery` → Task 5; §6.4 readers → Task 1 (presenter), Task 2 (link state, front type), Task 4 (settings presentation), Task 5 (MCP list); §6.5 bulk → Tasks 6, 7 (ids), 8 (filters and count), 13, 14 (front, sync loop); §6.6 export → Task 9 (server), 15 (button); §6.7 start settings → Task 4; §7 permissions → Tasks 6, 7, 8 (per item), 4 (settings), 13 (selectable rows, enabled actions, assignees in "all matching" mode); §8 real time → Tasks 6, 7, 8 (events per item asserted), 13 (`saveRow` / `removeRow`, reload after "all matching"); §9.1 → 15; §9.2 → 12 and 10 (chips); §9.3, §9.4 → 13, 14; §9.5 → 14; §9.6, §9.7 → 11; §9.8 → 4; §9.9 → 16; §10 → Task 1's Upgrade test, Task 18 (database notes); §12 measurement → Task 8 step 5. Acceptance criteria 1–4 → Task 1; 5 → 2 (its GitHub part through `DoneMapping::itemState`, the one place GitHub differs); 6 → 3; 7 → 4; 8–11 → 5; 12, 13 → 6; 14 → 6 (ids, changes) and 8 (`ids` with `filters`, `filters` without `count`); 15 → 8; 16 → 6, 7, 8 (races); 17 → 7; 18 → 9; 19 → 13; 20 → 13, 14; 21, 22 → 14; 23 → 11; 24 → 16, 17; 25 → 19.
 
-**Placeholder scan.** Each back-end step carries its code and tests. The screen tasks carry composition, behaviours and test lists, as the project's screen tasks do; their components are new files named with their props. Three reading checks are written as instructions with the exact file to read (the search column of a legacy row in Task 1, the `statusSyncLink` helper in Task 2, the external-link factory in Task 6), each with the alternative to apply.
+**Placeholder scan.** Each back-end step carries its code and tests. The screen tasks carry composition, behaviours and test lists, as the project's screen tasks do; their components are new files named with their props. Reading checks are written as instructions with the exact file to read and the alternative to apply: the search column of a legacy row (Task 1), the registration of listeners (Task 3), the page-props reading of "presents the sync state without secrets" and the "Complete to" Vitest case (Task 4), the external-link factory (Task 9), `retroRequest`'s error (Task 13). The only blanks are the two measured numbers of Task 8's commit message, which the measurement fills.
 
-**Type consistency.** `ActionItem::currentStatus()` (not `status()`) everywhere; `ActionItemStatus::Doing` value `doing` on both sides; filter token `todo` (server and front) distinct from the status value `open`; `ActionItemBulkChanges::update/delete` return `changed` and `refused`, the controllers rename them `actionItems` / `deleted` and `refused`, and `bulk.ts` types match; route names `workspaces.actionItemBulkUpdates.store`, `workspaces.actionItemBulkDeletions.store`, `workspaces.actionItemCsvExports.show` in routes, tests and Wayfinder imports.
+**Type consistency.** `ActionItem::currentStatus()` (not `status()`) everywhere; `ActionItemStatus::Doing` value `doing` on both sides; `ExternalIssueState::Started` value `started` (fits `string(10)`), in PHP and in `ExternalLink.state`; `DoneMapping::itemState(ActionItem, IntegrationProvider)` in `ApplyIssueChanges`, `LinkStatusSync` and `PushActionItemState`; settings keys `startStatusId` / `startStateId` stored by Task 4 and read by Task 3 (`DoneMapping::configured`), request keys `start_status_id` / `start_state_id`; `ActionItemProgressChanged($actionItem, $origin, $actor)` fired in Task 1, listened in Task 3; filter token `todo` (server and front) distinct from the status value `open`; `ActionItemFilters::fromQuery()` (Task 5) used by `ActionItemBulkChanges::matching()` (Task 8); `ActionItemBulkChanges::update/delete` return `changed` and `refused` (`{id, title, message}`), the controllers answer `actionItems`, `changedCount` / `deleted` and `refused`, and `bulk.ts` types match (`BulkRefusal.title: string | null`, `BulkUpdateResult.changedCount`); `BulkTarget` (`{ids}` or `{filters, count}`) built by `matchingTarget()` and sent by `bulkUpdate` / `bulkDelete`; `MatchingCap` 500 on both sides; route names `workspaces.actionItemBulkUpdates.store`, `workspaces.actionItemBulkDeletions.store`, `workspaces.actionItemCsvExports.show` in routes, tests and Wayfinder imports.
 
-**Review Focus.** 1 → Task 3 ("reads the single values of before") and Task 7 (stored entry sent unchanged); 2 → Task 4 ("changes what it can and refuses the rest"); 3 → Tasks 4 and 5 races; 4 → Task 2 ("never puts a started item back", "reopens … into in progress"); 5 → Task 6 ("neutralises formulas").
+**Review Focus.** 1 → Task 5 ("reads the single values of before") and Task 10 (stored entry sent unchanged); 2 → Task 6 ("changes what it can and refuses the rest", titles); 3 → Tasks 6, 7, 8 races and Task 8 ("changes nothing when the list changed since the member counted it"); 4 → Task 2 ("puts a started item back to do…", "keeps a newer unpushed start and pushes it", "starts an open item when its issue is in progress…") and Task 3 ("refuses a start transition that needs other fields", "records a start the workflow cannot take…"); 5 → Task 9 ("neutralises formulas").
+
+**What the answers changed, by task.** New: Task 2 (replaces the read-only promotion), Task 3, Task 4, Task 8. Changed: Task 1 (the event), Task 5 (`fromQuery`), Task 6 (refusal titles, `changedCount`), Task 10 (bulk targets, "all matching" helpers), Task 13 ("all matching", confirmation), Task 14 (the "…" entry, sync disabled in that mode), Tasks 16 to 18 (states, keys, release note). Task count: 16 → 19.

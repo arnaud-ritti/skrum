@@ -1,7 +1,7 @@
 # Skrüm — Whiteboard toolbars rebuilt to the mockup (WB-1) — Design
 
 Date: 2026-10-03
-Status: **Draft — awaiting the owner's answers to §15** (the autonomy mandate covered plans 18, database portability and 19 only)
+Status: **Draft — §15 answered by the owner on 2026-10-03 (every answer is the recommended option); the pre-build deviations of §16 are still to approve by the owner** (the autonomy mandate covered plans 18, database portability and 19 only)
 Roadmap: plan 20, row WB-1 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`; clears the "toolbars" part of deviation **D-21** and deviation **D-49** (`docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup").
 Parent specs: `docs/superpowers/specs/2026-10-01-whiteboard-design.md` (the board: canvas, sync, access, facilitation) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (rules §5, rulings §6.5). Final location once approved: `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md`.
 Mockups (README and `preview.html` of each): `ScreenWhiteboard` (binding for the desktop board), `WhiteboardToolbar` (anatomy, states, keyboard), `MobileRituals` frame 1 (phone), `ExcalidrawTheme` (palette and theme, which stay), `KeyboardShortcuts` (the whiteboard section).
@@ -44,6 +44,8 @@ This spec reverses, for the toolbars only, three earlier rulings: the non-goal "
 | Element lock | only the facilitator changes it; the server enforces it | whiteboard spec §11.2 |
 | Captures | light, 1440, French only; no browser walkthrough written, edited or run | owner's working rules (plan 19) |
 | No new dependency | none needed | owner |
+| The seven questions of §15 | answered: sticky key N; "Styles" shows the themed native property panel; the hamburger's entries move into the board menu (with a "Canvas background" sub-menu); Shape / Connector sub-bars and "More tools"; the phone's compact bar of the mockup; minimap open from `lg`, remembered; with the single-key preference off, every single-character key is blocked except while typing | owner, 2026-10-03 |
+| Obsolete component tests | the deletion of `canvas-colors.test.tsx` and of the popover cases of `sticky-tool.test.tsx` is approved, their cases moved where a successor exists (plan, "Owner decisions") | owner, 2026-10-03 |
 
 ## 5. Rules (constraints on the build)
 
@@ -96,7 +98,7 @@ Placement over the canvas, from the mockup at 1440 × 900:
 
 | Bar | Place | Content, in order | Mockup classes |
 |---|---|---|---|
-| **Tool bar** `role="toolbar"` "Tools", `aria-orientation="vertical"` | left 1rem, vertically from 10.625rem (centred on the canvas height when the canvas is shorter than the bar plus 2rem) | Selection (V), Hand (H) · separator · Sticky note (N or S, §15 decision 1), Shape (R), Connector (C), Text (T), Pencil (P), Eraser (E), Frame (F) · separator · Image · "More tools" (§15 decision 4) | `sk-wbbar sk-wbbar--v`, `sk-tool`, `sk-tool-k`, `sk-sep`, active `is-on` |
+| **Tool bar** `role="toolbar"` "Tools", `aria-orientation="vertical"` | left 1rem, vertically from 10.625rem (centred on the canvas height when the canvas is shorter than the bar plus 2rem) | Selection (V), Hand (H) · separator · Sticky note (N, §15 decision 1), Shape (R), Connector (C), Text (T), Pencil (P), Eraser (E), Frame (F) · separator · Image · "More tools" (§15 decision 4) | `sk-wbbar sk-wbbar--v`, `sk-tool`, `sk-tool-k`, `sk-sep`, active `is-on` |
 | **Sub-bar** of the active tool, `role="toolbar"` named after the tool | to the right of the tool bar, aligned on the active tool's row, 0.5rem gap | Sticky note: the eight colours (`WhiteboardColorBar`); Shape: Rectangle, Diamond, Ellipse, then the eight colours; Connector: Arrow, Line; other tools: none | `sk-wbbar` (sub-bar of `WhiteboardToolbar` preview) |
 | **History** `role="toolbar"` "History" | bottom-left, 1rem | Undo, Redo (disabled when the library's stack is empty) | `sk-wbbar`, `sk-tool` |
 | **Zoom** `role="toolbar"` "Zoom" | bottom-right, 1rem | Zoom out (−), the percentage (a button: "Reset zoom to 100 %"), Zoom in (+) · separator · Fit to screen, Minimap (toggle, `aria-pressed`) | `sk-wbbar`, `wb-zoom-v` |
@@ -112,7 +114,7 @@ Tool → library mapping: Selection → `selection`; Hand → `hand`; Sticky not
 
 **States** (each a Vitest case, the main ones a capture): tool active (`is-on`, `aria-pressed="true"`); hover (`--accent`); tooltip with the key (`Tooltip` + `Kbd`, e.g. "Sticky note N"); sub-bar open; undo / redo disabled (50 %); zoom at 10 % and at 3000 % (buttons disabled at the ends; the library's range, so a wheel zoom never falls outside it); minimap open / closed; selection of one element, of several, of a group, of a locked element (non-facilitator), of an element without fill (no colours); count chip; property panel shown; dark theme (tokens; the minimap's sticky colours, like the canvas, are the stored light values shown through the theme's canvas filter, so they match the notes); reduced motion (no transitions; "Fit" does not animate).
 
-**Keyboard.** Each bar is one tab stop with roving `tabindex`; ↑/↓ in the vertical bar, ←/→ in horizontal ones; Home / End. Tool letters (V, H, R, T, P, E, F) are the library's own, answered while the canvas has the focus (as today); while the focus is in the tool bar, the same letters are answered by the bar. The keys the library does not have are ours: the sticky key (N or S), C (Connector: the library has no C), M (minimap), each through `useShortcut` scoped to the board, never while a field or the canvas text editor has the focus. ⇧1 (fit) and ⌘/Ctrl + / − / 0, ⌘/Ctrl Z / ⇧Z stay the library's. Every single-character key of the board, the library's included, obeys the "single-key shortcuts" preference (§15 decision 7). The keyboard shortcuts dialog's Whiteboard section lists exactly these keys (it lists the library's today, and says "The whiteboard uses the shortcuts of its own toolbar.": that note goes).
+**Keyboard.** Each bar is one tab stop with roving `tabindex`; ↑/↓ in the vertical bar, ←/→ in horizontal ones; Home / End. Tool letters (V, H, R, T, P, E, F) are the library's own, answered while the canvas has the focus (as today); while the focus is in the tool bar, the same letters are answered by the bar. The keys the library does not have are ours: the sticky key N, C (Connector: the library has no C), M (minimap), each through `useShortcut` scoped to the board, never while a field or the canvas text editor has the focus. ⇧1 (fit) and ⌘/Ctrl + / − / 0, ⌘/Ctrl Z / ⇧Z stay the library's. Every single-character key of the board, the library's included, obeys the "single-key shortcuts" preference (§15 decision 7). The keyboard shortcuts dialog's Whiteboard section lists exactly these keys (it lists the library's today, and says "The whiteboard uses the shortcuts of its own toolbar.": that note goes).
 
 ### 9.2 Desktop board, view mode
 
@@ -181,7 +183,7 @@ Each criterion names its proof: **V** Vitest (jsdom), **C** a capture of the fin
 15. A follower who zooms with the bar or moves the view with the minimap sees "Following paused · Resume"; "Resume" re-attaches. (V on `useWhiteboardFollow` with a fake API)
 16. On a phone in read mode the dock shows "Fit to screen" and "Modifier"; in edit mode the bottom bar shows Selection, Sticky note, Pencil and "…", whose drawer holds the other tools offered on a phone, Undo, Redo and Fit; no minimap, no zoom bar; no connector or frame tool. (V)
 17. Every bar is one tab stop with arrow-key navigation, Home and End; every tool's name, key (tooltip, `aria-keyshortcuts`) and pressed state are exposed. (V)
-18. The sticky key, C and M work while the canvas or a bar has the focus and never while a field, a dialog or the canvas text editor has it; with "single-key shortcuts" off, no single-character key does anything on the board, the library's included, and typing in the canvas text editor still works. (V)
+18. N (sticky note), C and M work while the canvas or a bar has the focus and never while a field, a dialog or the canvas text editor has it; with "single-key shortcuts" off, no single-character key does anything on the board, the library's included, and typing in the canvas text editor still works. (V)
 19. The keyboard shortcuts dialog's Whiteboard section lists the board's keys as built, without the old note. (V)
 20. A board created before this plan opens with the same scene and its stickies show their swatch selected in the selection bar. (V with a fixture of today's elements)
 21. No new dependency; `npm run types:check`, `npm run check`, `npm run build:front` and `npm run test` pass; `@excalidraw/excalidraw` still loads only on the whiteboard page. (gates)
@@ -195,7 +197,7 @@ Each criterion names its proof: **V** Vitest (jsdom), **C** a capture of the fin
 |---|---|---|
 | Hiding the library's chrome with CSS relies on 0.18.1 class names (`.App-toolbar-container`, the zoom and undo groups inside `.layer-ui__wrapper__footer-left` — not the whole group, which also holds the touch "Finalize" button —, `.layer-ui__wrapper__footer-right`, `.main-menu-trigger`, `.selected-shape-actions`, the mobile `.App-bottom-bar` tool row) | an upgrade brings the native chrome back on top of ours | every selector in `excalidraw-theme.css` under one commented block; `NativeChrome` (`canvas-commands.ts`) lists them; the version is pinned; a Vitest reads the library's CSS file from `node_modules` and fails when a selector is no longer in it |
 | Commands driven by the library's shortcuts (group, align, distribute, delete, lock) or by clicks on its hidden buttons (undo, redo) | an upgrade changes a key or a test id | one table in `canvas-commands.ts`, a Vitest that the dispatched event matches the library's `keyTest` as read in 0.18.1, fail-soft (§12) |
-| The library's keydown handler and ours on the same keys | a key doing two things | ours only on keys the library leaves free (N, C, M; S only if decision 1 says so, and then only with an empty selection rule); a capture listener for the preference (decision 7) |
+| The library's keydown handler and ours on the same keys | a key doing two things | ours only on keys the library leaves free (N, C, M; S stays the library's, decision 1); a capture listener for the preference (decision 7) |
 | The property panel shown beside our tool bar | overlap at small heights | panel placed with a left offset equal to the bar's width + 1rem; `max-height` already set by the library; capture at 1440 |
 | The selection bar following a moving selection | jitter, cost | hidden during drags; position recomputed once per frame from `onChange` |
 | Minimap cost on a 5 000-element board | slow frames | items recomputed only when the scene stamp changes (`sceneStamp`), drawn as one SVG, throttled to one frame |
@@ -205,7 +207,19 @@ Each criterion names its proof: **V** Vitest (jsdom), **C** a capture of the fin
 
 ## 15. Decisions for the owner
 
-Each question is a product choice the mockups and the standing rules do not settle. The plan is written on the recommended option; its table "Owner decisions" says which tasks change otherwise.
+**Answered by the owner on 2026-10-03: option A for each of the seven questions, the recommended option on which the plan was written.** The other options are kept below for the record; none of them applies.
+
+| # | Answer |
+|---|---|
+| 1 | A — N everywhere |
+| 2 | A — "Styles" shows the library's panel, themed, beside the tool bar; hidden by default |
+| 3 | A — hamburger hidden; its entries in the board menu, with a "Canvas background" sub-menu |
+| 4 | A — Shape and Connector sub-bars, "More tools" (laser, keep the tool, pen mode) |
+| 5 | A — MobileRituals' compact bottom bar and its drawer |
+| 6 | A — open by default from `lg`, remembered per browser |
+| 7 | A — with the preference off, every single-character key is swallowed before the library sees it, except while text is being typed |
+
+Each question is a product choice the mockups and the standing rules do not settle.
 
 1. **The sticky note's key.** ScreenWhiteboard writes "Post-it (S)"; WhiteboardToolbar and KeyboardShortcuts write N. In Excalidraw 0.18.1, S with a selection opens the stroke colour picker (and ⇧S is the stroke eyedropper).
    - A. **N** everywhere (two mockups of three; no clash with the library). *Recommended.*
@@ -235,15 +249,17 @@ Each question is a product choice the mockups and the standing rules do not sett
 
 ## 16. Deviations expected (to approve before the screens are built)
 
+Status of every row: **to approve by the owner** (not asked yet; the answers of §15 do not approve them).
+
 Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
 | # | Mockup element | Built | Reason |
 |---|---|---|---|
 | P20-01 | Topbar "Commentaires"; selection bar "Convertir en actions"; author line on stickies; "Suivre Camille"; "is typing" ring | not rendered, no place reserved | O: backlog (former plan 28) |
 | P20-02 | Canvas content drawn by the mockup (SVG shapes, `wb-sel` frame with eight handles and rotation dot) | the library's canvas and selection frame, themed in `--primary` | S §3 |
-| P20-03 | "Post-it (S)" (ScreenWhiteboard) | per decision 1 | O |
+| P20-03 | "Post-it (S)" (ScreenWhiteboard) | "Sticky note (N)" | O: decision 1 |
 | P20-04 | No "Styles" in the selection bar | "Styles" (decision 2) | O / parity |
-| P20-05 | No sub-bars for shapes and connectors; no "More tools" | per decision 4 | O / parity |
+| P20-05 | No sub-bars for shapes and connectors; no "More tools" | Shape and Connector sub-bars, "More tools" (decision 4) | O / parity |
 | P20-06 | Align icon alone | a menu of six commands (the mockup's icon opens it) | S: one icon cannot be six commands |
 | P20-07 | Phone read dock: "Déplacer la vue", "Réagir", "Commentaires" | "Fit to screen" and "Modifier" in the dock; reactions keep their own strip (D-58); no hand (read mode only pans); comments backlog | O: D-58; N |
 | P20-08 | ExcalidrawTheme's centred hint line | not shown (it lives in the library's hidden tool bar) | S §5 rule 3 |

@@ -1,7 +1,7 @@
 # Skrüm — Account, and what a guest picks — Design
 
 Date: 2026-10-03
-Status: draft for the owner. Nothing is built before the owner has read §15 ("Decisions for the owner"). The body is written on the option marked **recommended** of each decision; the plan carries a table of the tasks that change with another answer.
+Status: the owner answered the nine questions of §15 on 2026-10-03 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", "Plan 26"). Four answers differ from the drafted recommendation (1: an admin switch "Profile photos"; 2: the Active sessions card hidden without database sessions; 3: the IP address shown; 4: no confirmation for an account without a known password, an accepted risk, §5.12); the body below is written on the answers. The pre-build deviations of the plan are still to approve by the owner (not asked yet).
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13, §10).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — third round ("Account: photo upload, active sessions, linked accounts, presence colours, 'reduce animations', breach check"; "Guest colour picker and short session code"; the 18f security answers on `sso_required`), sixth round (informal register; a guest counts as a participant), the working rules of the fifth round as amended for plan 19.
 Roadmap rows: AC-1 to AC-6, GU-1, GU-2 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Deviation rows cleared: D-25 (in part: the account features; "other notification events", "last changed", "Change device" and revoked-token rows stay backlog by the owner's word), D-32, D-79.
@@ -30,11 +30,11 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 ## 2. Goals
 
 1. **AC-4** A person has one presence colour, chosen among twelve in the profile, used for their avatar ring and fallback, their live cursor and their avatar in the presence stack, on every session type and in mail. Without a choice it is the colour mail uses today.
-2. **AC-1** A member uploads a photo, which replaces the generated avatar everywhere an avatar shows; "Use initials" goes back to initials. No image metadata is published.
+2. **AC-1** While the admin switch "Profile photos" is on, a member uploads a photo, which replaces the generated avatar everywhere an avatar shows; "Use initials" (or "Remove photo") goes back to a generated avatar. No image metadata is published.
 3. **AC-5** "Reduce animations" on the account reduces motion as the system setting does, on every page the member opens signed in.
 4. **AC-6** The password card shows, while typing, whether the new password appears in known breaches, without the password or its full hash leaving the browser; an operator can turn the outbound check off; a failed check never stalls a save for 30 seconds.
-5. **AC-2** A member sees the devices signed in to the account, signs one out or all the others.
-6. **AC-3** A member links and unlinks SSO identities of the enabled providers; the last way in can never be removed; an account without a known password can still confirm itself and set a password.
+5. **AC-2** A member sees the devices signed in to the account, with their browser and IP address, and signs one out or all the others; where sessions are not kept in the database the card is not shown.
+6. **AC-3** A member links and unlinks SSO identities of the enabled providers; the last way in can never be removed; an account without a known password opens the security section without any confirmation (the owner's accepted risk, rule S-1 of §5.12) and can set a password.
 7. **GU-1** A guest picks a colour on the join page; colours already used in the session are disabled while free ones remain.
 8. **GU-2** Every guest-joinable session has a short code, shown in the Share dialog, entered at `/join`; regenerating the link replaces the code.
 9. All database code is Eloquent and the standard query builder, unchanged on PostgreSQL, MySQL, MariaDB and SQLite; every test that touches the database passes on the four.
@@ -42,13 +42,15 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 ## 3. Non-goals (stay backlog)
 
 - By the owner's word (roadmap): other notification events, "last changed" of the password, "Change device" and "last used" of the authenticator, struck-through revoked tokens.
-- Approximate location, "Unusual location" and any IP display in Active sessions (decision 3).
+- Approximate location and "Unusual location" in Active sessions (decision 3; the IP address itself is shown).
+- Listing or signing out sessions on an instance whose sessions are not in the database (decision 2: the card is hidden there; no `AuthenticateSession`).
+- Any way for an account without a known password to confirm itself ("Confirm with <provider>", an e-mail code): it needs none (decision 4, rule S-1).
 - A device model or browser version beyond `UserAgentSummary`'s labels ("MacBook Pro · Firefox 131" → "Firefox on macOS").
 - Theme stored on the account ("Stored on this account, synced across devices"): the theme stays on the device; not in the owner's list.
 - A guest changing name or colour after joining; members choosing a colour per session.
 - The "card lock" use of the colour (no card lock exists; RT-1 of plan 21 may consume the colour).
 - A `/s/{code}` short URL and QR changes (the QR keeps encoding the guest link).
-- Server-side image resizing (decision 1), animated images, SVG photos.
+- Server-side image resizing (decision 1: the browser crops), animated images, SVG photos.
 - The "Print" button of recovery codes (D-26 stays) and anything of the former plans 28 and 30 and scheduling.
 - Deleting an account that has no known password (the deletion form asks for the current password; `ProfileDeleteRequest`): left as it is, listed in §16.
 
@@ -63,6 +65,7 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 | Guests | a guest counts as a participant | sixth round |
 | Database | Eloquent only; four engines; races proved with `Race`; data migrations proved in `tests/Upgrade` | database portability, plan 19 |
 | Working rules | tests written and run per task (pgsql and sqlite per task; four engines for data migrations and races; whole suites at the end); no browser walkthrough; captures light / 1440 / fr only; no new dependency without approval | owner, plan 19 rules |
+| The nine questions of §15 | answered: 1 browser crop + admin switch "Profile photos"; 2 card hidden without database sessions; 3 IP and browser, no location; 4 no confirmation for an account without a known password (accepted risk, §5.12); 5 managed while `sso_required`; 6 live breach check; 7 `XXX-XXXX` random, 10 tries a minute; 8 taken = everyone who joined; 9 `/join` and a link on the login page | owner, 2026-10-03 |
 
 ## 5. Domain and data
 
@@ -73,7 +76,11 @@ The settings and guest-join screens were rebuilt to their mockups in plan 18e wi
 | `presence_color` | unsigned tiny integer, nullable | the chosen colour, 1 to 12; null = derived |
 | `avatar_photo_path` | string(64), nullable, hidden | `avatars/<40 lowercase letters and digits>.jpg` or `.png` on the `local` disk |
 | `reduce_motion` | boolean, default false | "Reduce animations" |
-| `password_set_at` | dateTime, nullable, hidden | when the owner of the account last chose a password; null = no password the owner knows (an account created by SSO) |
+| `password_set_at` | dateTime, nullable, hidden | when the owner of the account last chose a password; null = no password the owner knows (an account created by SSO). Null also exempts the account from every password confirmation of the account settings (rule S-1, §5.12) |
+
+### 5.1 bis Instance setting
+
+`InstanceSettingKey::ProfilePhotos` (`profile_photos`, boolean, default **off**: `InstanceSettings::DefaultProfilePhotos = false`), one of the Branding keys (the Branding reset clears it). Independent of "members choose their avatar" (`avatar_member_choice`): an admin may allow photos while keeping one generated style for everyone, or the reverse.
 
 ### 5.2 Column on the five participant tables
 
@@ -109,8 +116,8 @@ The taken colours of a session are the distinct `presenceColor()` of every parti
 - The browser crops the chosen file to a centred square and draws it at 512 × 512 on a canvas, encoded as JPEG (quality 0.85). This also drops the file's metadata.
 - The server accepts `image/jpeg` or `image/png` (by content, `mimetypes`), at most 1 MB and 4096 × 4096 pixels (`dimensions`, read by `getimagesize`, no GD), and strips metadata itself (`App\Support\Avatars\ImageMetadata::strip()`: JPEG APP1, APP13 and comments; PNG `eXIf`, `tEXt`, `zTXt`, `iTXt`, `tIME`), because a request may bypass the browser. A file it cannot parse is refused.
 - Stored on the `local` disk at a random name; served at `GET avatar-photos/{file}` with `Cache-Control: public, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff` and the `InertImage` CSP; public, like generated avatars (guests and mail recipients see avatars). The name changes with every upload, the previous file is deleted, and the file is deleted with the account.
-- Shown only while "members choose their avatar" is on (`avatarMemberChoice`); while it is off the photo is kept and neither offered nor shown.
-- "Use initials" removes the photo and sets the avatar style to `initials`.
+- Offered and shown only while the admin switch "Profile photos" is on (`InstanceSettings::profilePhotos()`, §5.1 bis, decision 1B); while it is off the stored photo is kept, neither offered nor shown, and the upload route answers 403. The switch sits in Administration › Branding, in the avatar group, under "members choose their avatar".
+- "Use initials" removes the photo and sets the avatar style to `initials`, when members may choose their style. When they may not, the button reads "Remove photo" and only removes the photo: the instance's style shows again (P26-13).
 
 ### 5.7 Reduce animations (AC-5)
 
@@ -125,9 +132,10 @@ The taken colours of a session are the distinct `presenceColor()` of every parti
 ### 5.9 Active sessions (AC-2, decisions 2 and 3)
 
 - Model `BrowserSession` over the framework's `sessions` table (string key, no timestamps). Read only when `config('session.driver') === 'database'`.
-- A row: `key` (sha256 of the session id; the id itself never leaves the server), `device` (`UserAgentSummary::describe()`, or "Unknown device"), `deviceKind` (`desktop` | `phone` | `unknown`, from the same header), `isCurrent`, `lastActiveAt` (ISO 8601). Sorted by last activity, newest first, then by key.
+- A row: `key` (sha256 of the session id; the id itself never leaves the server), `device` (`UserAgentSummary::describe()`, browser and system, or "Unknown device"), `deviceKind` (`desktop` | `phone` | `unknown`, from the same header), `ipAddress` (the `ip_address` column as the framework stored it, IPv4 or IPv6, null when absent; decision 3: shown in full, no location), `isCurrent`, `lastActiveAt` (ISO 8601). Sorted by last activity, newest first, then by key.
+- The address is the one the framework saw: behind a reverse proxy it is the client's only when `TRUSTED_PROXIES` is set (`App\Http\Middleware\TrustProxies`); otherwise every row shows the proxy's address. Shown only to the account's owner, behind the security section's protection.
 - "Sign out" deletes that row; "Sign out other sessions" deletes every row of the user but the current one. Both cycle the user's remember token, so that a remembered device does not come back through its cookie. The current device stays signed in for its session.
-- Driver other than `database`: the card shows one sentence and nothing else (decision 2A).
+- Driver other than `database`: the card is not rendered at all (decision 2C); the security props carry `browserSessions: null` and the two sign-out routes answer 404.
 
 ### 5.10 Ways in, linking and unlinking (AC-3, decisions 4 and 5)
 
@@ -140,12 +148,12 @@ The taken colours of a session are the distinct `presenceColor()` of every parti
 | `magic_link` | `SignInPolicy::allowsLocalCredentials()`, mail is enabled and the address is verified |
 | `passkey` | `allowsLocalCredentials()`, passkeys are enabled and the user has one |
 
-- **Link.** From the Linked accounts card: `GET settings/linked-accounts/{provider}` (password confirmed) stores an intent `link` in the session and sends to the provider. The callback route leaves the `guest` group and branches: a signed-in user with an intent links (or confirms, below); a signed-in user without one goes to the dashboard as before; a visitor signs in as today. `LinkSocialAccount` locks the user row, then refuses: an identity linked to another account; a second identity of the same provider on this account. The same identity again is a no-op.
-- **Unlink.** `DELETE settings/linked-accounts/{socialAccount}` (own accounts only, 404 otherwise; password confirmed). Locks the user row, then refuses when `remaining($user, $account)` is empty ("You can't unlink your last sign-in method: set a password or link another account first.") or when the account is managed by the admin.
-- **Managed by your admin** (decision 5C): while `sso_required` is in force, every linked identity of an enabled provider shows the badge "Managed by your admin" and has no "Unlink".
+- **Link.** From the Linked accounts card: `GET settings/linked-accounts/{provider}` (password confirmed, or no confirmation under rule S-1) stores an intent `link` in the session and sends to the provider. The callback route leaves the `guest` group and branches: a signed-in user with a `link` intent for themselves and this provider links; a signed-in user without one goes to the dashboard as before; a visitor signs in as today. There is no other intent (no "confirm" round trip: decision 4). `LinkSocialAccount` locks the user row, then refuses: an identity linked to another account; a second identity of the same provider on this account. The same identity again is a no-op.
+- **Unlink.** `DELETE settings/linked-accounts/{socialAccount}` (own accounts only, 404 otherwise; password confirmed, or rule S-1). Locks the user row, then refuses when `remaining($user, $account)` is empty ("You can't unlink your last sign-in method: set a password or link another account first.") or when the account is managed by the admin.
+- **Managed by your admin** (decision 5C, answered as recommended): while `sso_required` is in force, every linked identity of an enabled provider shows the badge "Managed by your admin" and has no "Unlink".
 - **A provider turned off**: its linked rows stay listed with "Not available on this instance", count for nothing, and can be unlinked.
-- **Confirming without a password** (decision 4A): the password-confirmation dialog of the settings page and the `auth/confirm-password` page offer "Confirm with <provider>" for each enabled provider the user has linked. `GET settings/confirmations/{provider}` stores an intent `confirm`; the callback accepts it only when the provider returns an identity linked to this user, and then marks the password confirmed (`session()->passwordConfirmed()`).
-- **Setting a password**: when `password_set_at` is null, the password card is titled "Set a password", has no current-password field, and its save requires a fresh confirmation. When `allowsPassword($user)` is false (non-admin under `sso_required`), the password card is not shown (the mockup: "hidden if the account only has SSO").
+- **An account without a known password** (decision 4, the owner's own answer): it is asked for no confirmation anywhere in the account settings; rule S-1 of §5.12 says exactly where, and states the accepted risk.
+- **Setting a password**: when `password_set_at` is null, the password card is titled "Set a password", has no current-password field, and its save needs no confirmation (rule S-1). From that save on, `password_set_at` is set and the account is confirmed like any other. When `allowsPassword($user)` is false (non-admin under `sso_required`), the password card is not shown (the mockup: "hidden if the account only has SSO").
 - `password_set_at` is written by registration (`CreateNewUser`, which the invitation account form also uses), password reset (`ResetUserPassword`) and the password card (`SecurityController`). An account created by SSO leaves it null.
 
 ### 5.11 Join codes (GU-2, decision 7)
@@ -154,17 +162,36 @@ The taken colours of a session are the distinct `presenceColor()` of every parti
 - Input is normalised: upper case, spaces removed, the hyphen optional (`k7qp4m2` → `K7Q-P4M2`); anything else of the wrong length is refused before a query.
 - `JoinCodes::for(Model $session): string` returns the session's code, creating it at first use (the share data of a viewer who may manage the link). Two first uses at once make one code (unique pair, the loser re-reads). A collision on `code` retries with a new code.
 - `JoinCodes::rotate()` gives a new code whenever the guest link is regenerated (the five guest-token controllers); the response carries `joinCode`.
-- Resolution: `POST join` with `code` → the code's session, if it still accepts guests by the same rule as its join page (retro, poker, whiteboard: `guest_access_enabled`; survey: guest access on, not a draft, not attached to a retro; game room: standalone with link access) → redirect to that session's join page. Otherwise one answer for every failure: "No session matches this code." Throttled at 10 attempts per minute per address.
+- Resolution: `POST join` with `code` → the code's session, if it still accepts guests by the same rule as its join page (retro, poker, whiteboard: `guest_access_enabled`; survey: guest access on, not a draft, not attached to a retro; game room: standalone with link access) → redirect to that session's join page. Otherwise one answer for every failure: "No session matches this code." Throttled at 10 attempts per minute per address (decision 7B, answered as recommended).
+
+### 5.12 Security rules the owner accepted (do not "fix" them back)
+
+The owner chose these rules on 2026-10-03 after the risk was spelled out to them. They are deliberate. An implementer or reviewer who finds them weak reports it; nobody adds a confirmation back, or narrows the rule, without the owner's new word. The code that carries a rule says so in its docblock with the rule's number.
+
+**S-1. An account without a known password is never asked to confirm it in the account settings.**
+
+1. *Who.* A signed-in user whose `password_set_at` is null (an account created by SSO, or one the backfill of §10 reads as such). Nothing else is required: not a linked identity, not a passkey.
+2. *Where.* Every confirmation of the account settings lets such a user through at once:
+   - the routes of `routes/settings.php` that ask for a fresh confirmation (opening the security and API-token sections, the e-mail second factor, signing sessions out, linking, unlinking, API tokens): they use `App\Http\Middleware\RequirePasswordUnlessNoneKnown` instead of the framework's `RequirePassword`;
+   - Fortify's routes behind the `password.confirm` alias (two-factor setup, confirmation, disabling, recovery codes shown or regenerated, passkey registration and deletion): the alias points to the same middleware;
+   - the protected props of the security and API-token sections (`AccountSettingsController`: `PasswordConfirmation::isSatisfied()`), and the settings page's gate, which opens no dialog for such a user;
+   - the "Set a password" save (`PasswordUpdateRequest`: no current password, no confirmation).
+3. *Where not.* The admin area (`routes/admin.php` keeps the framework's `RequirePassword`: an SSO-born admin sets a password first, or uses a passkey), account deletion (`ProfileDeleteRequest` still asks for the current password, §3), and anything outside the account settings.
+4. *Until when.* As soon as the account gets a password (the card's "Set a password", a password reset), `password_set_at` is set and the normal confirmation applies from the next request.
+5. *Accepted risk, in words.* Whoever holds a signed-in session of such an account (a stolen session cookie, an unlocked device left open) can, with nothing else, turn two-factor authentication off, read and regenerate the recovery codes, create API tokens, register a passkey of their own, link their own SSO identity (a lasting way in that survives the session), sign the owner's other devices out, and set a password. The owner was told the first three (2FA off, recovery codes, API tokens) and accepted the rule; the others follow from the same rule and are listed here so nobody discovers them later as a bug. The declined alternatives were a round trip to a linked provider ("Confirm with <provider>") and an e-mail code.
+6. *The backfill's reach.* The 60-second heuristic of §10 can read as "no known password" an account born by SSO whose owner later reset the password, or a registered account that signed in by SSO within a minute of registering: those accounts also skip confirmation until their next password change. Accepted with S-1.
+7. *Tests that hold the rule* (they assert the absence of a confirmation; a failing one means the rule was broken, not that a confirmation is missing): acceptance criterion 21 (§12), plan Task 13.
 
 ## 6. Permissions
 
 | Action | Who |
 |---|---|
-| Presence colour, photo, reduce animations | the signed-in user, for their own account (verified address not required for the profile, as today; required for appearance) |
-| Read sessions and linked accounts | the user, behind the fresh password confirmation of the security section (as the other protected props) |
-| Sign out a session, link, unlink | the user, password confirmed |
-| Confirm with SSO | a signed-in user with a linked identity of an enabled provider |
-| Set a password (no known password) | the user, password confirmed (through SSO or a passkey) |
+| Presence colour, reduce animations | the signed-in user, for their own account (verified address not required for the profile, as today; required for appearance) |
+| Photo | the signed-in user, for their own account, while the admin switch "Profile photos" is on (403 otherwise) |
+| Switch "Profile photos" | an instance admin, in Administration › Branding |
+| Read sessions and linked accounts | the user, behind the fresh password confirmation of the security section (as the other protected props); none for an account without a known password (S-1) |
+| Sign out a session, link, unlink | the user, password confirmed; none asked of an account without a known password (S-1) |
+| Set a password (no known password) | the user, with no confirmation (S-1) |
 | Breach range | a signed-in user (throttled 30 per minute) |
 | See a session's join code | whoever sees its guest link today (retro facilitator, poker and whiteboard non-guests, survey non-guests, game room manager) |
 | Resolve a code | anyone, throttled |
@@ -182,7 +209,7 @@ Each screen follows its mockup; the plan lists the deviations (P26-xx) for the o
 
 ### 8.1 Profile card — `ScreenUserSettings`, Profile
 
-Avatar xl, beside it the block "Avatar & presence colour" with its sentence "Used for your avatar, live cursor and card lock." (P26-01: "card lock" leaves the sentence), the twelve swatches (`role="radiogroup"`, ring on the selected one, ←/→, accessible names "Colour 5"), then "Upload photo" and "Use initials". The colour is saved with the card's **Save** (field `presence_color`). The photo acts at once: choose a file → crop and resize in the browser → upload; the avatar shows the new photo. States: no photo ("Use initials" hidden when the style is already initials and there is no photo), photo, uploading (button busy), refused file (message under the buttons: type, size, unreadable), member choice off (photo controls absent, colours present).
+Avatar xl, beside it the block "Avatar & presence colour" with its sentence "Used for your avatar, live cursor and card lock." (P26-01: "card lock" leaves the sentence), the twelve swatches (`role="radiogroup"`, ring on the selected one, ←/→, accessible names "Colour 5"), then "Upload photo" and "Use initials". The colour is saved with the card's **Save** (field `presence_color`). The photo acts at once: choose a file → crop and resize in the browser → upload; the avatar shows the new photo. States: no photo ("Use initials" hidden when the style is already initials and there is no photo), photo, uploading (button busy), refused file (message under the buttons: type, size, unreadable), member style choice off ("Remove photo" in place of "Use initials", shown only with a photo; P26-13), switch "Profile photos" off (photo controls absent, colours present).
 
 ### 8.2 Appearance card — `ScreenUserSettings`, Appearance
 
@@ -194,7 +221,7 @@ The rule list gains its breach line: while empty, "Not found in known data breac
 
 ### 8.4 Active sessions card — `ScreenSecurity`
 
-Title "Active sessions", sentence "Devices signed in to your account." (P26-03: the location half goes). Header action "Sign out other sessions" (confirm dialog). Table: Device (icon laptop / smartphone / monitor-off for unknown, label), Last active (relative, "Active now" under 2 minutes), action "Sign out" (none on the current row, which carries the badge "This device"). Phone: a list of cards. Empty of others: the current row alone and the header action disabled. Driver not `database`: the sentence "This instance keeps sessions outside its database, so they cannot be listed here." and nothing else.
+Title "Active sessions", sentence "Devices signed in to your account." (P26-03: the location half goes). Header action "Sign out other sessions" (confirm dialog). Table: Device (icon laptop / smartphone / monitor-off for unknown, label "Firefox on macOS"), IP address (in place of the mockup's "Approximate location": the address in `font-mono`, "Unknown" when null; no map pin, no "Unusual location"; P26-03), Last active (relative, "Active now" under 2 minutes), action "Sign out" (none on the current row, which carries the badge "This device"). Phone: a list of cards, the address under the device label. Empty of others: the current row alone and the header action disabled. Driver not `database`: the card is not rendered; the Security stack closes up (P26-14).
 
 ### 8.5 Linked accounts card — `ScreenSecurity`
 
@@ -202,7 +229,11 @@ Title "Linked accounts", sentence "Sign in with your company SSO or an existing 
 
 ### 8.6 Password-confirmation dialog and page
 
-The existing dialog of the settings page (`password-gate.tsx`) and `auth/confirm-password` gain one outline button per linked enabled provider, "Confirm with <provider>", above the passkey button.
+Unchanged for an account with a known password (password, or passkey). For an account without one (rule S-1) the settings page's gate (`password-gate.tsx`) opens no dialog: it loads the protected props when they were kept back and runs the action at once. `auth/confirm-password` is unchanged (it is only reached from the admin area for such an account, where S-1 does not apply).
+
+### 8.6 bis Administration › Branding — switch "Profile photos"
+
+In the avatar group (`avatar-style-grid.tsx`), under "Members can choose their own style": a `Switch` "Profile photos", help "Members can upload a photo that replaces their generated avatar. Photos are public, like avatars." Saved with the Branding form's **Save** (field `profile_photos`, `null` when left on its default, as the other switches). No mockup holds it (P26-15).
 
 ### 8.7 Guest join — `GuestJoin`, `MobileAccess`
 
@@ -225,16 +256,18 @@ Auth layout, card "Join a session", field "Session code" (mono, upper case, plac
 | GET `avatar-photos/{file}` | `avatarPhotos.show` | `AvatarPhotosController@show` | — (`file`: `[a-z0-9]{40}\.(jpg|png)`) |
 | PATCH `settings/motion` | `motionPreferences.update` | `Settings\MotionPreferencesController@update` | auth, verified |
 | POST `settings/password/breach-range` | `passwordBreachRanges.store` | `Settings\PasswordBreachRangesController@store` | auth, verified, throttle:30,1 |
-| DELETE `settings/sessions/{sessionKey}` | `browserSessions.destroy` | `Settings\BrowserSessionsController@destroy` | auth, verified, RequirePassword |
-| DELETE `settings/sessions` | `otherBrowserSessions.destroy` | `Settings\OtherBrowserSessionsController@destroy` | auth, verified, RequirePassword |
-| GET `settings/linked-accounts/{provider}` | `linkedAccounts.create` | `Settings\LinkedAccountsController@create` | auth, verified, RequirePassword |
-| DELETE `settings/linked-accounts/{socialAccount}` | `linkedAccounts.destroy` | `Settings\LinkedAccountsController@destroy` | auth, verified, RequirePassword |
-| GET `settings/confirmations/{provider}` | `ssoConfirmations.create` | `Settings\SsoConfirmationsController@create` | auth, throttle:10,1 |
+| DELETE `settings/sessions/{sessionKey}` | `browserSessions.destroy` | `Settings\BrowserSessionsController@destroy` | auth, verified, RequirePasswordUnlessNoneKnown |
+| DELETE `settings/sessions` | `otherBrowserSessions.destroy` | `Settings\OtherBrowserSessionsController@destroy` | auth, verified, RequirePasswordUnlessNoneKnown |
+| GET `settings/linked-accounts/{provider}` | `linkedAccounts.create` | `Settings\LinkedAccountsController@create` | auth, verified, RequirePasswordUnlessNoneKnown |
+| DELETE `settings/linked-accounts/{socialAccount}` | `linkedAccounts.destroy` | `Settings\LinkedAccountsController@destroy` | auth, verified, RequirePasswordUnlessNoneKnown |
 | GET `auth/{provider}/callback` | `sso.callback` (moved out of `guest`) | `SsoCallbacksController@show` | — |
+| PUT `admin/branding` (existing) | `admin.branding.update` | `Admin\BrandingController@update` | unchanged; gains the field `profile_photos` |
+
+Every existing use of `RequirePassword::class` in `routes/settings.php` becomes `RequirePasswordUnlessNoneKnown::class`, and the alias `password.confirm` (Fortify's two-factor and passkey routes) points to it (`bootstrap/app.php`). `routes/admin.php` is not touched (S-1.3).
 | GET `join` | `joinCodes.create` | `JoinCodesController@create` | — |
 | POST `join` | `joinCodes.store` | `JoinCodesController@store` | throttle:10,1,joinCodes |
 
-Validation: `presence_color` `['sometimes', 'nullable', 'integer', 'between:1,12']` on the profile; `photo` `['required', 'file', 'max:1024', 'mimetypes:image/jpeg,image/png', 'dimensions:max_width=4096,max_height=4096']`; `reduce_motion` `['required', 'boolean']`; `prefix` `['required', 'string', 'regex:/^[0-9A-Fa-f]{5}$/']`; `presence` on the five join POSTs `['sometimes', 'nullable', 'integer', 'between:1,12']`; `code` `['required', 'string', 'max:16']` then normalised.
+Validation: `presence_color` `['sometimes', 'nullable', 'integer', 'between:1,12']` on the profile; `photo` `['required', 'file', 'max:1024', 'mimetypes:image/jpeg,image/png', 'dimensions:max_width=4096,max_height=4096']`; `reduce_motion` `['required', 'boolean']`; `prefix` `['required', 'string', 'regex:/^[0-9A-Fa-f]{5}$/']`; `presence` on the five join POSTs `['sometimes', 'nullable', 'integer', 'between:1,12']`; `code` `['required', 'string', 'max:16']` then normalised; `profile_photos` on Branding `['present', 'nullable', 'boolean']`.
 
 Transactions lock the aggregate root first: the user row for link, unlink and sign-outs; the join-code issue relies on the unique pair, its insert in its own nested transaction.
 
@@ -251,99 +284,110 @@ Transactions lock the aggregate root first: the user row for link, unlink and si
 - Races (`tests/Concurrency`, `Race`, on pgsql, mariadb, mysql and a SQLite file): two links of one user at once make one; two unlinks that would each leave one way in make one; two first uses of a session's code make one code.
 - Upgrade test of the `password_set_at` backfill on the four engines.
 - Vitest for the pure front logic (photo crop rectangle, SHA-1 range split and match, code normalisation, presence lookup, motion helper) and for every changed component.
-- No browser walkthrough. Captures (light, 1440, fr) of the Profile card, the Appearance card, the Security section with both new cards, a guest join page, the Share dialog with its code and the join-by-code page.
+- Rule S-1 has tests of its own that assert the **absence** of a confirmation for an account without a known password, and its presence for an account with one and in the admin area (criterion 21).
+- No browser walkthrough. Captures (light, 1440, fr) of the Profile card, the Appearance card, the Security section with both new cards, the Branding avatar group with "Profile photos", a guest join page, the Share dialog with its code and the join-by-code page.
 
 ## 12. Acceptance criteria
 
 1. The profile shows twelve colours with the current one selected; saving another stores it; the value 13 is refused. A user who never chose has the colour `MailBrand::presence()` gives today, in mail and in sessions.
 2. The member data of the retro, poker, whiteboard, survey and game presence channels carries `presence`; for a member it is the user's colour, for a guest the colour picked at join.
 3. On every session type a member's cursor, avatar ring and presence-stack avatar use their presence colour; the same person has the same colour on two whiteboards.
-4. A JPEG or PNG of at most 1 MB uploads; a GIF, an SVG, a file of 1.1 MB, an image of 5000 px and an unreadable file are refused with a message. The stored file contains no Exif, XMP, IPTC, comment or PNG text chunk. The served response is immutable-cached, `nosniff`, with the inert CSP.
-5. After an upload, the user's avatar in the shared props, in a retro snapshot and in the presence channel is the photo; after "Use initials" it is the initials avatar and the file is gone; with member choice off, no photo shows and the controls are absent; deleting the account deletes the file.
+4. With "Profile photos" on, a JPEG or PNG of at most 1 MB uploads; a GIF, an SVG, a file of 1.1 MB, an image of 5000 px and an unreadable file are refused with a message. The stored file contains no Exif, XMP, IPTC, comment or PNG text chunk. The served response is immutable-cached, `nosniff`, with the inert CSP.
+5. After an upload, the user's avatar in the shared props, in a retro snapshot and in the presence channel is the photo; after "Use initials" it is the initials avatar and the file is gone; with member style choice off, "Remove photo" removes it and the instance style shows, and a photo still shows while "Profile photos" is on; with "Profile photos" off (the default), no photo shows, the controls are absent and the upload answers 403; an admin turns it on and off in Branding, and the Branding reset turns it back off; deleting the account deletes the file.
 6. "Reduce animations" on: the root element carries `reduce-motion` on the next page, the compiled CSS applies the reduced rules under it, and `prefersReducedMotion()` is true; off, the system setting still applies.
 7. With the check on in production, `POST settings/password/breach-range` with `21BD1` returns the suffixes with a non-zero count of that range; it caches the range; a failed fetch answers 503 and is not cached; with the check off it answers 404 and `Password::defaults()` has no `uncompromised` rule. The verifier's timeout is the configured one.
 8. Typing a breached password shows the not-met breach line before saving; a clean one shows the met line; without `crypto.subtle` the save-time sentence shows. No request carries more than five characters of the hash.
-9. With the database driver, the security section lists the user's sessions, newest first, with device, kind, "This device" and last activity, and no session id or IP. Another user's sessions never appear.
-10. "Sign out" deletes that session only and changes the remember token; signing out the current session is refused; an unknown key answers 404. "Sign out other sessions" leaves only the current one. Both require a fresh confirmation.
-11. With another driver, the section says the list is unavailable and offers no action.
+9. With the database driver, the security section lists the user's sessions, newest first, with device (browser and system), kind, IP address, "This device" and last activity, and no session id. Another user's sessions never appear.
+10. "Sign out" deletes that session only and changes the remember token; signing out the current session is refused; an unknown key answers 404. "Sign out other sessions" leaves only the current one. Both require a fresh confirmation from an account with a known password.
+11. With another driver, the security props carry `browserSessions: null`, the card is not rendered, and both sign-out routes answer 404.
 12. A signed-in user links Google from the card and comes back to the security section with the row linked; linking an identity linked to another account, or a second Google identity, is refused with its message; two links at once make one.
 13. Unlinking is refused when no other way in remains (cases: SSO-only account with one identity; `sso_required` with a non-admin; mail disabled and no password), allowed otherwise; two unlinks at once never leave the account without a way in; another user's account answers 404.
 14. While `sso_required` is in force, identities of enabled providers are "Managed by your admin" and cannot be unlinked.
-15. A user without a known password confirms through a linked provider and then opens the security section; a different identity from the provider is refused; the password card then offers "Set a password" without a current password, and saving sets `password_set_at`. A non-admin under `sso_required` sees no password card.
+15. A user without a known password opens the security section with no confirmation; the password card offers "Set a password" without a current password, and saving it (with no confirmation) sets `password_set_at`; from the next request that user is asked to confirm like any other. A non-admin under `sso_required` sees no password card.
 16. A visitor of each of the five join pages sees the colours taken in that session disabled, joins with a free one, and their row stores it; with twelve taken nothing is disabled; 0 and 13 are refused.
 17. A session's share data carries a code of the form `XXX-XXXX` from the alphabet of §5.11 for a viewer who sees the link, and none for a guest; regenerating the link changes the code and the old one stops resolving.
 18. `POST join` with the code, in any case, with or without the hyphen, redirects to the session's join page; an unknown code, a code of a session that no longer accepts guests and a code of a deleted session all answer the same error; the eleventh attempt in a minute is throttled.
 19. Every new string exists in the four languages, informal in French, Spanish and German (`InformalRegisterTest` passes); the captures of §11 are taken without horizontal overflow and compared with their mockups, the differences being rows of the plan's deviations table or fixed.
 20. The unit, feature, upgrade and arch suites pass on PostgreSQL, SQLite, MariaDB and MySQL through `bin/test-db`, and the concurrency suite on PostgreSQL, MariaDB, MySQL and a SQLite file; `tests/Arch/DatabasePortabilityTest.php` passes.
+21. **Rule S-1 holds, both ways.** For an account whose `password_set_at` is null, with no confirmation in the session: `settings/security` leads to the section; the security and API-token props are sent (`locked` false); enabling two-factor authentication, showing and regenerating recovery codes, disabling it, creating an API token, adding the e-mail second factor, signing a session out, linking and unlinking all pass without a 423 or a redirect to `password.confirm`. For an account with a known password, each of these still asks (423 or redirect). For the null account, `admin/branding` (an instance admin) still redirects to `password.confirm`, and deleting the account still asks for the current password.
 
 ## 13. Risks
 
-- **The SSO callback leaves the `guest` group.** The one route every provider calls back now serves three flows (sign-in, link, confirm). A signed-in user without an intent must still land on the dashboard, and an intent must never be honoured for another user or another provider. Each branch has its test; the intent is pulled (read once) and carries the user id and provider.
-- **Linking an identity is an account-takeover vector** if the intent can be planted: the link route requires a fresh confirmation, the intent lives in the server session, and the callback re-checks the signed-in user against it.
+- **Rule S-1, accepted by the owner (§5.12).** A stolen session of an account without a known password is enough to turn 2FA off, read recovery codes, create API tokens, add a passkey or link the thief's own SSO identity. Not mitigated by design; stated in §5.12, in the middleware's docblock and in the report, and held by tests that a "fix" would break (criterion 21). Mitigation left to the user: setting a password ends the exemption for their account.
+- **The SSO callback leaves the `guest` group.** The one route every provider calls back now serves two flows (sign-in, link). A signed-in user without an intent must still land on the dashboard, and an intent must never be honoured for another user or another provider. Each branch has its test; the intent is pulled (read once) and carries the user id and provider.
+- **Linking an identity is an account-takeover vector** if the intent can be planted: the link route requires a fresh confirmation (except under S-1, accepted), the intent lives in the server session, and the callback re-checks the signed-in user against it.
+- **The `password.confirm` alias is re-pointed.** Every Fortify route behind it now uses `RequirePasswordUnlessNoneKnown`; for an account with a known password it must behave exactly as the framework's middleware (same timeout, 423 for JSON, redirect otherwise). The class extends the framework's and overrides only `shouldConfirmPassword`; criterion 21 checks both sides.
+- **IP addresses are personal data.** They are already stored by the framework's session table; the card shows a user only their own, behind the security section. Behind a proxy without `TRUSTED_PROXIES`, every row shows the proxy's address (an operator setting, said in the README note of Task 25).
+- **Profile photos off by default.** An instance that upgrades shows no photo until an admin turns the switch on; stated in the README upgrade note.
 - **The remember token is cycled** by every sign-out: every remembered device must sign in again at the end of its session. Stated in the card's confirmation.
 - **Public photos.** Anyone with the URL sees a photo, as anyone sees a generated avatar today; names are random and change on each upload. Metadata is stripped server side; pixel content is the user's choice.
 - **Outbound call.** The live check sends a five-character prefix to the instance, which calls `api.pwnedpasswords.com`; an air-gapped operator turns it off with one variable.
 - **Tailwind variant override.** Redefining `motion-reduce` / `motion-safe` with `@custom-variant` must keep the media query; the plan checks the compiled CSS (Task 4). If Tailwind refuses the override, the fallback is the global CSS rules under `html.reduce-motion` only, and the 126 `motion-*` uses keep following the system setting alone (reported).
-- **`password_set_at` heuristic.** Wrong in one direction only (an SSO-born account that later reset its password reads "no password"): the consequence is the "Set a password" form behind a confirmation.
+- **`password_set_at` heuristic.** Wrong in one direction only (an SSO-born account that later reset its password, or a registered one that signed in by SSO within a minute, reads "no password"): the consequence is the "Set a password" form and, under S-1, no confirmation in the account settings until the next password change (S-1.6, accepted).
 - **Brute force of codes.** 2.75 × 10¹⁰ codes, 10 tries per minute per address; a code only leads to the join page, which still asks for a nickname and enforces guest access.
 - **Five copies.** Five participant tables, five join controllers, five share mounts, five token rotations: the plan treats them with datasets, not five hand-written tests.
 
 ## 14. Lanes and order (summary)
 
-One back-end task on `users` first (single writer), then five lanes in worktrees: Presence (AC-4, GU-1), Photo (AC-1), Motion (AC-5), Security (AC-6, AC-2, AC-3), Codes (GU-2). They share `routes/settings.php`, `routes/web.php`, `app/Models/User.php` (different methods), `AccountSettingsController`, `SecuritySettings`, `account-settings.tsx` (one mount line each) and the four `lang/*.json`.
+One back-end task on `users` first (single writer), then five lanes in worktrees: Presence (AC-4, GU-1), Photo (AC-1, with the Branding switch), Motion (AC-5), Security (AC-6, AC-2, AC-3, rule S-1), Codes (GU-2). They share `routes/settings.php`, `routes/web.php`, `app/Models/User.php` (different methods), `AccountSettingsController`, `SecuritySettings`, `account-settings.tsx` (one mount line each) and the four `lang/*.json`; the Photo lane alone touches `InstanceSettings`, `InstanceSettingKey` and the Branding files, the Security lane alone `bootstrap/app.php`.
 
-## 15. Decisions for the owner
+## 15. Decisions for the owner — answered 2026-10-03
 
-**1. The photo: who processes it, and when may it show?**
-- A. The browser crops and resizes to 512 px JPEG; the server checks type, size and dimensions and strips metadata; photos follow the existing switch "members choose their avatar". No new dependency, no new admin setting. **Recommended.**
-- B. As A, plus an admin switch "Profile photos" of its own (one instance setting, one row in Administration › Branding).
+The options are kept as they were put; the owner's answer follows each question. "≠ rec." marks an answer other than the drafted recommendation; the body above is written on the answers.
+
+**1. The photo: who processes it, and when may it show?** — **Answered: B (≠ rec.).** The browser crops to 512 px JPEG, the server checks and strips metadata, **plus** an admin switch "Profile photos" of its own (§5.1 bis, §5.6, §8.6 bis).
+- A. The browser crops and resizes to 512 px JPEG; the server checks type, size and dimensions and strips metadata; photos follow the existing switch "members choose their avatar". No new dependency, no new admin setting. (Was recommended.)
+- B. As A, plus an admin switch "Profile photos" of its own (one instance setting, one row in Administration › Branding). **Chosen.**
 - C. The server resizes and re-encodes: needs the GD extension in the production image (a dependency change to approve), and gives one size and format whatever the client.
 
-**2. Active sessions on an instance whose sessions are not in the database (the SQLite setup uses files).**
-- A. The card says the list is unavailable there, with no action. **Recommended:** honest, no change to the SQLite advice.
+**2. Active sessions on an instance whose sessions are not in the database (the SQLite setup uses files).** — **Answered: C (≠ rec.).** The card is hidden there (§5.9, §8.4).
+- A. The card says the list is unavailable there, with no action. (Was recommended.)
 - B. Add Laravel's `AuthenticateSession` so that "Sign out other sessions" works on every driver (by rehashing the password); it also changes what a password change does to other devices on every instance.
-- C. Hide the card where it cannot list.
+- C. Hide the card where it cannot list. **Chosen.**
 
-**3. Location in Active sessions.**
-- A. Not shown (no city, no "Unusual location"). **Recommended:** the owner did not ask for it; no IP is shown either.
+**3. Location in Active sessions.** — **Answered (the owner's own wording, ≠ rec. on the IP): IP address and browser shown, no location.** No city, no "Unusual location", no GeoLite2; the IP address is shown in full (§5.9, §8.4).
+- A. Not shown (no city, no "Unusual location"); no IP either. (Was recommended.)
 - B. A city from a GeoLite2 database: a new dependency, a licence key and a monthly download for the operator.
 
-**4. How does an account with no known password (created by SSO) confirm itself to open the security section?**
-- A. "Confirm with <provider>": a round trip to a provider it has linked. **Recommended:** works under `sso_required` and without mail.
-- B. An e-mail code (the second-factor code machinery with a new purpose); needs mail.
-- C. Nothing new: such a user first sets a password through "Forgot password" (impossible under `sso_required`).
+**4. How does an account with no known password (created by SSO) confirm itself to open the security section?** — **Answered (the owner's own answer, none of A–C): it needs no confirmation**, to open the security section or to act there. Confirmed by the owner after the risk was spelled out (a stolen session can turn 2FA off, see the recovery codes, create API tokens). Recorded as the accepted security rule S-1 (§5.12) with its tests (criterion 21).
+- A. "Confirm with <provider>": a round trip to a provider it has linked. (Was recommended; not built.)
+- B. An e-mail code (the second-factor code machinery with a new purpose); needs mail. (Not built.)
+- C. Nothing new: such a user first sets a password through "Forgot password" (impossible under `sso_required`). (Not built.)
 
-**5. Which linked identities are "Managed by your admin" and cannot be unlinked?**
+**5. Which linked identities are "Managed by your admin" and cannot be unlinked?** — **Answered: C, as recommended.**
 - A. None by themselves: only the last-way-in guard decides.
 - B. Always the company providers (Microsoft Entra and generic OIDC).
-- C. While `sso_required` is in force, every identity of an enabled provider. **Recommended:** the badge then says something true ("your admin requires SSO"), and outside that setting the guard is enough.
+- C. While `sso_required` is in force, every identity of an enabled provider. **Chosen.**
 
-**6. The breach check.**
+**6. The breach check.** — **Answered: B, as recommended** (live by k-anonymity through the instance, with its cache and its switch).
 - A. At save only, as today in production, plus the switch and the short timeout; the line keeps "Checked … when you save" (D-79 stays).
-- B. Live while typing, by k-anonymity through the instance (five characters of the hash), plus at save, plus the switch. **Recommended:** the mockup's met / not-met line without the password leaving the browser.
+- B. Live while typing, by k-anonymity through the instance (five characters of the hash), plus at save, plus the switch. **Chosen.**
 - C. Live, the browser calling `api.pwnedpasswords.com` directly: no server endpoint, but every user's browser talks to a third party.
 
-**7. The short code.**
+**7. The short code.** — **Answered: B, as recommended** (`XXX-XXXX` random, 10 tries a minute).
 - A. The mockup's literal form: three letters of the team, a hyphen, four digits (`ATL-4821`). 10 000 codes per team, easy to guess once the team is known.
-- B. The mockup's shape, seven random characters without look-alikes (`K7Q-P4M2`), 2.75 × 10¹⁰ codes, throttled. **Recommended.**
+- B. The mockup's shape, seven random characters without look-alikes (`K7Q-P4M2`), 2.75 × 10¹⁰ codes, throttled. **Chosen.**
 - C. Ten random characters (`K7QP-4M2X-9R`): safer still, breaks the mockup's "8 characters".
 
-**8. Guest colours.**
-- A. Taken = the colours of everyone who has joined the session; the picker disables them while free ones remain; the server accepts any colour. **Recommended:** simple, no lock, faithful to the picker's "taken" state.
+**8. Guest colours.** — **Answered: A, as recommended** (taken = everyone who joined).
+- A. Taken = the colours of everyone who has joined the session; the picker disables them while free ones remain; the server accepts any colour. **Chosen.**
 - B. Taken = the colours of the people online now: needs a presence roster for retro, whiteboard and survey (today only poker and games read one from Reverb).
 - C. Unique colours enforced by the server under a lock (a 422 "taken" when two guests pick the same at once).
 
-**9. Where is "join with a code" offered besides the Share dialog's "Join at …/join"?**
-- A. The page `/join`, and a link "Join a session with a code" on the login page. **Recommended:** the login page is where a visitor without a link lands (`/` redirects there).
+**9. Where is "join with a code" offered besides the Share dialog's "Join at …/join"?** — **Answered: A, as recommended** (`/join` and a link on the login page).
+- A. The page `/join`, and a link "Join a session with a code" on the login page. **Chosen.**
 - B. The page `/join` only.
 - C. A code field on the login page itself (the MobileAccess landing's button, on a page that has no mockup for it).
 
 ## 16. Not determined by reading
 
-1. Whether Tailwind 4 accepts `@custom-variant motion-reduce` over its built-in variant with a block holding both the media query and the class selector (Task 4 checks the compiled CSS).
+1. Whether Tailwind 4 accepts `@custom-variant motion-reduce` over its built-in variant with a block holding both the media query and the class selector (plan Task 8 checks the compiled CSS).
 2. Whether every browser the owner supports encodes a canvas to JPEG with `toBlob` at the quality given (all current ones do; the fallback is the original file, refused by the server if over 1 MB).
-3. How many existing accounts were created by SSO and later reset their password (the backfill's null case).
-4. Whether a production instance runs the database session driver (the SQLite compose file uses files).
+3. How many existing accounts were created by SSO and later reset their password (the backfill's null case): under S-1 they also skip confirmation until their next password change (S-1.6).
+4. Whether a production instance runs the database session driver (the SQLite compose file uses files): there, the Active sessions card is simply absent.
 5. Whether any provider configured by an operator rejects the callback URL being called for a signed-in user (it is the same URL; nothing changes on the provider's side).
-6. What `ProfileDeleteRequest` should ask of an account without a known password: deleting such an account is impossible today and stays so (out of scope, reported).
+6. What `ProfileDeleteRequest` should ask of an account without a known password: it still asks for the current password (S-1.3), so such an account sets a password first (now possible without confirmation), then deletes. Out of scope, reported.
 7. Whether the icebreaker players of a retro (game players carrying a `participant_id`) should show the participant's colour: they do through `HasGuestIdentity` of the participant; the plan verifies with a test.
+8. **Chosen while writing, for the owner to confirm:** the switch "Profile photos" is **off by default** (like "Members can choose their own style"), so an upgraded instance shows no photo until an admin allows it; and it is **independent** of the member style choice (a photo may show while members cannot pick a style; "Use initials" then reads "Remove photo", P26-13).
+9. **Chosen while writing, for the owner to confirm:** rule S-1 stops at the account settings; the admin area keeps its confirmation (an SSO-born admin without a password sets one first, or uses a passkey). The owner's words were "to open security or act there".
+10. The owner was told three consequences of S-1 (2FA off, recovery codes, API tokens); the rule also lets a stolen session add a passkey, link an SSO identity of its own and set a password (S-1.5). Listed so the owner can confirm they fall under the same answer.

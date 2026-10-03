@@ -1,7 +1,7 @@
 # Skrum — Games: room settings, turns and rounds, GIF captions and podium, the whole-word guess, and four new games — Design
 
 Date: 2026-10-03
-Status: Draft. Written on the option marked **recommended** of each question of §15; nothing is built before the owner has answered §15 and the pre-build deviations of the plan.
+Status: Draft, revised 2026-10-03 with the owner's answers to §15 (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 27"). Every question of §15 is answered: nine as recommended, one otherwise (question 9, option B: prepared statement sets for Two truths and a lie, one drawn answer per round for Guess who?). The body below follows the answers. Nothing is built before the owner has approved the pre-build deviations of the plan (P27-01 to P27-14, not asked yet).
 Parent specs: `docs/superpowers/specs/2026-09-29-games-design.md` (the game engine; every rule of it holds unless this spec changes it, and §4.9 lists what it changes) and `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13: the mockup is binding for presentation).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md` — group 6 (6-D1 cards, 6-D3 reactions in rooms, 6-D8 keyboard by locale), third round ("Games: settings card, turn order and rounds, GIF captions and podium, the four games the engine lacks"), round 4b (D-59: the whole-word guess goes to the games roadmap), fifth round (working rules, database portability, roadmap change: "the four extra games (GM-4) stay in plan 27", whole-word guess joins plan 27), sixth round (informal register fr tu / es tú / de du; a guest counts as a participant). Owner note at the top of the roadmap: plans 28 and 30 and scheduling are backlog.
 Roadmap rows: GM-1 to GM-4 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`, plus the whole-word guess of hangman (owner's roadmap change). Deviation rows cleared: D-20 (wholly, except the elements the roadmap keeps in the backlog, §3), D-59 (the whole-word field), D-61 (no caption) and the caption part of D-62's "no title or caption" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`.
@@ -27,7 +27,7 @@ Verification of the roadmap's "Back end" lines:
 | GM-1 | "A room stores name, access, language and reactions only" | True (plus host, timer end, current round and reset time). The word book has no theme: a word is `{word, drawable}`, two lists per locale, parallel across the four locales. |
 | GM-2 | "Hangman has no turns and a room no round total" | True. Also: no per-turn timer anywhere; the "endless rotation" of a drawer is a client rule (`lib/games/rotation.ts`) and the host's choice is sent as `leader_player_id`. |
 | GM-3 | "An answer has no caption; one vote per player and no ranking" | True. Also: one vote is enforced by a unique key (`game_gif_votes` on round and voter), and revealed answers carry their author except in the icebreaker of an anonymous retro, whereas the mockup hides authors until the votes close. |
-| GM-4 | "Four new `GameKind` cases with their rules classes, events and redaction" | True but incomplete: two of the games need answers that are not GIFs and votes that are not for a GIF (three small tables); three need a reveal or a close the engine only has for the GIF game (an interface for staged games); two need a question bank other than the GIF questions; the front holds six exhaustive maps per game (`Record<GameKind, …>`). |
+| GM-4 | "Four new `GameKind` cases with their rules classes, events and redaction" | True but incomplete: three of the games need choices or answers that are not GIFs, and Two truths needs statements written before its rounds (three small tables); three need a reveal or a close the engine only has for the GIF game (an interface for staged games); two need a question bank other than the GIF questions; the front holds six exhaustive maps per game (`Record<GameKind, …>`). |
 
 ## 2. Goals
 
@@ -62,7 +62,7 @@ From the roadmap ("Not requested, staying backlog") and D-20: "needs n more play
 
 ### 4.9 What this spec changes in the games spec
 
-- §2: `GameKind` gains four cases and `GameRoundOutcome` one; `game_rooms`, `game_rounds`, `game_gif_answers` gain columns; `game_gif_votes`' unique key changes; three tables are added (§6.13).
+- §2: `GameKind` gains four cases and `GameRoundOutcome` one; `game_rooms`, `game_rounds`, `game_gif_answers` gain columns; `game_gif_votes`' unique key changes; three tables are added (§6.13), one of them (`game_statement_sets`) holding per-room state that lives across rounds.
 - §4.2: the GIF vote is a budget of 1 to 3 votes (one per GIF), answers carry a caption, authors can stay hidden until the close, and the closed round has a ranking whose top authors win (§6.7).
 - §4.3: hangman can be played in turns, and a player can guess the whole word (§6.6).
 - §4.5: a room can restrict words to themes (§6.3).
@@ -87,9 +87,9 @@ From the roadmap ("Not requested, staying backlog") and D-20: "needs n more play
 | `DrawAndGuess` | `draw` | Draw & Guess / Dessine et devine (existing) | drawer | — (the round is the turn) | — | 2 |
 | `Decoded` | `decoded` | Decoded / Décodé (existing) | clue giver | — | — | 2 |
 | `SprintGif` | `gif` | Sprint in one GIF / Le sprint en un GIF (existing) | — | — | answer, vote | 1 |
-| `TwoTruths` (new) | `two_truths` | Two truths and a lie / Deux vérités, un mensonge | teller | — (the round is the turn) | write, vote | 3 |
+| `TwoTruths` (new) | `two_truths` | Two truths and a lie / Deux vérités, un mensonge | teller (a player with a prepared set) | — (the round is the turn) | vote (the statements are written before the round) | 3 |
 | `MoodWeather` (new) | `mood` | Mood weather / Météo de l'humeur | — | — | pick | 1 |
-| `GuessWho` (new) | `guess_who` | Guess who? / Devine qui ? | — | — | answer, attribute | 3 |
+| `GuessWho` (new) | `guess_who` | Guess who? / Devine qui ? | — | — | answer, vote for the author of the drawn answer | 3 |
 | `QuickQuestion` (new) | `quick_question` | Quick question / Question express | — | always | speak | 1 |
 
 "Players" is the existing UI-only rule ("Waiting for another player" under the count, Start disabled), extended: the server does not track who is online (games spec §4).
@@ -114,7 +114,7 @@ New columns of `game_rooms`; each existing room gets the value in "Existing room
 
 `PATCH /games/{room}` accepts them (snake case, each `sometimes`) for standalone rooms and for icebreaker rooms (where `name`, `access` and `reactions_enabled` stay prohibited), from a room manager (§7); it broadcasts `game.room.changed` as today. The snapshot's `room` gains `settings: {wordThemes: string[], turnSeconds: number|null, autoHints: bool, takesTurns: bool, roundsPerGame: number|null, gifVotes: number, gifAuthorsHidden: bool}`. A setting that does not apply to the game in play is stored and kept for when the host switches to a game it applies to.
 
-Which settings each card shows (§9.2): Hangman — word theme, time per turn, take turns, rounds, guests allowed; Draw & Guess — word theme ("Word list"), time per turn, auto hints, rounds; Decoded — categories (several themes), time per round, auto hints, rounds; Sprint in one GIF — votes, hidden authors, rounds; Two truths — time per turn, rounds; Mood weather — none (the card says "Answers are anonymous."); Guess who? — rounds; Quick question — time per person, rounds. "Guests allowed" is the existing room access (`team` / `link`), standalone only.
+Which settings each card shows (§9.2): Hangman — word theme, time per turn, take turns, rounds, guests allowed; Draw & Guess — word theme ("Word list"), time per turn, auto hints, rounds; Decoded — categories (several themes), time per round, auto hints, rounds; Sprint in one GIF — votes, hidden authors, rounds; Two truths — time per turn (the time to vote), rounds; Mood weather — none (the card says "Answers are anonymous."); Guess who? — rounds; Quick question — time per person, rounds. "Guests allowed" is the existing room access (`team` / `link`), standalone only.
 
 ### 6.3 Word themes
 
@@ -135,7 +135,7 @@ Which settings each card shows (§9.2): Hangman — word theme, time per turn, t
 
 **Turn end.** A turn ends when its player acts (hangman: a letter or a whole-word guess; Quick question: "Done"), when the host skips it, or when `turn_ends_at` passes. Then:
 - hangman in turns and Quick question: the turn passes to the next player of `turn_order` (wrapping round for hangman; for Quick question, after the last speaker the round ends `Finished`);
-- a game whose round is the turn: an expired deadline ends the round as the room timer does (`TimedOut`; Two truths: `Revealed` when the statements are written, §6.8).
+- a game whose round is the turn: an expired deadline ends the round as the room timer does (`TimedOut`; Two truths: `Revealed`, its statements being written before the round, §6.8).
 
 A delayed job (`CloseExpiredGameTurn`, one per `turn_ends_at`) ends an expired turn, and the existing lazy check of every game request (`ExpireGameRound`, run by `ResolveGamePlayer`) also checks the turn, so a late queue never shows a stale turn. A changed turn makes the job of the previous one a no-op (it compares `turn_ends_at`). The host's room timer (and the board timer of an icebreaker) is unchanged and still ends the round when it runs out.
 
@@ -149,7 +149,7 @@ For Draw & Guess and Decoded with `auto_hints`, the round copies `hint_seconds` 
 
 - **In turns** (`takes_turns` on the round's room at start): a letter or a whole-word guess from a player who is not `turn_player_id` → 403 "It's not your turn." Every letter or word guess passes the turn (hit or miss). An expired turn passes it with no penalty (decision 5). Without turns, hangman plays as today.
 - **Whole word**: `POST /games/{room}/rounds/{round}/word-guesses` `{text}` (1 to 50 characters; same rate limit as letters). Compared with `GuessMatch` (folded, normalised): correct → every position revealed, round `Solved`, winner = the guesser; wrong → `misses + 1` (6 misses → `Lost`). Stored as a `game_guesses` row (`is_correct`); a wrong guess is broadcast as `game.guess.made {roundId, guessId, playerId, text}` (shown in "Last moves"); a correct one is never broadcast (the round ends and the word is public then).
-- **Points**: unchanged for letters (1 per position revealed by the picker's hits); the solver (by letter or by word) gets the solve bonus 5, `is_win` (decision 1: the mockup's "+50" is "+5" on the product's scale). A player whose only act was a wrong word guess gets a 0-point row.
+- **Points**: unchanged for letters (1 per position revealed by the picker's hits); the solver (by letter or by word) gets the solve bonus 5, `is_win` (decision 1, answered A: the mockup's "+50" is the whole word "+5 pts" on the current scale). A player whose only act was a wrong word guess gets a 0-point row.
 - Round payload adds `wordGuesses: [{playerId, text}]` (the round's wrong word guesses, last 10).
 
 ### 6.7 Sprint in one GIF: caption, votes, hidden authors, podium (GM-3)
@@ -159,14 +159,15 @@ For Draw & Guess and Decoded with `auto_hints`, the round copies `hint_seconds` 
 - **Hidden authors**: the round copies `authors_hidden` from `gif_authors_hidden`. When set, revealed answers carry `playerId: null` until the round closes; closed answers carry their author (except in the icebreaker of an anonymous retro, where they never do, as today).
 - **Podium**: closed answers of a `Revealed` round carry `rank` (competition ranking by votes: 1, 2, 3, 4, 4, 6; null when votes are null). Authors of rank 1 with at least one vote win the round (`is_win`), except in the icebreaker of an anonymous retro, where every row stays 0 and no one wins (decision 7). Points stay 2 per vote received.
 
-### 6.8 Two truths and a lie
+### 6.8 Two truths and a lie (decision 9, answered B: prepared sets, one player's set per round)
 
-- **Start**: the host names the teller (`leader_player_id`, required; the UI proposes the next online player in join order, as for the drawer). The round starts in its writing stage.
-- **Write**: `PUT rounds/{round}/statements {statements: [string × 3], lie_index: 0|1|2}` by the teller: three distinct statements of 1 to 120 characters. Replaceable until the first vote (then 409 "Votes have started."). Broadcast `game.statements.set {roundId, statements}` — never the lie.
-- **Vote**: every player but the teller (403) picks the lie: `PUT rounds/{round}/choice {choice: "0"|"1"|"2"}` — before the statements → 409 "The statements are not written yet."; replaceable until the reveal; `DELETE rounds/{round}/choice` retracts. Broadcast `game.vote.changed {playerId, voted}`.
-- **Reveal**: the host or the teller (`POST rounds/{round}/reveal`), the turn deadline, or the room timer ends the round as `Revealed` (statements written) or `TimedOut` (not written). `game.round.ended` carries `statements`, `lieIndex` and `votes: [{index, playerIds}]`.
-- **Points**: a voter who found the lie 5, `is_win`; the teller 2 per voter fooled; others 0. `TimedOut` and `Passed`: 0 for the teller and every voter.
-- **Secrecy**: `lie_index` is hidden on the model; before the end it reaches the teller only (`lieIndex` in the teller's snapshot and response); votes are counted to nobody, the viewer's own choice excepted (`myChoice`).
+- **Prepared sets**: every player of the room (guests included) writes their own set before the rounds: `PUT /games/{room}/statements {statements: [string × 3], lie_index: 0|1|2}` — three distinct statements (case ignored) of 1 to 120 characters, and which one is the lie. Accepted while the room's game is Two truths (else 422 "This action does not apply to this game."), in any state of the room the game can be played in (`GameGuard::mutable`); one set per player and room (`game_statement_sets`). A set is **ready** until a round plays it, then **played**. Writing again replaces a ready set, or turns a played set into a new ready one (so a player can tell again in a later lap); `DELETE /games/{room}/statements` removes a ready set (a played set: 409 "Your statements have been played."). Broadcast `game.statements.changed {playerId, ready}` — never a statement, never the lie. The writer's response and snapshot carry their own set (`truthSets.mine`).
+- **Start**: the host names the teller (`leader_player_id`, required) among the players whose set is ready; a player without a ready set → 422 "This player has no statements ready." The UI proposes the next ready player after the previous teller, online first, in join order (the drawer's rotation, over ready players). Inside the start's locked transaction the round copies the set's statements and lie (`statements`, `lie_index` of `game_rounds`) and the set becomes played (`played_at`). The round starts in its voting stage: there is no writing stage. A round that ends `Passed` keeps the set played (its statements were seen).
+- **Vote**: every player but the teller (403) picks the lie: `PUT rounds/{round}/choice {choice: "0"|"1"|"2"}`; replaceable until the reveal; `DELETE rounds/{round}/choice` retracts. Broadcast `game.vote.changed {playerId, voted}`.
+- **Reveal**: the host or the teller (`POST rounds/{round}/reveal`), the turn deadline (the card's "Time per turn": time to vote), or the room timer ends the round as `Revealed`. `game.round.ended` carries `statements`, `lieIndex` and `votes: [{index, playerIds}]`.
+- **End of a game**: when no player has a ready set, the host's Start is disabled with "No one has statements ready." With a number of rounds (§6.4), the game ends at its last round as any game.
+- **Points**: a voter who found the lie 5, `is_win`; the teller 2 per voter fooled; others 0. `Passed`: 0 for the teller and every voter.
+- **Secrecy**: a set (its statements and its lie) reaches its author only until a round plays it; who has a ready set is public (`truthSets.ready`, as "who has answered"). On the round, `lie_index` is hidden on the model; before the end it reaches the teller only (`lieIndex` in the teller's snapshot); votes are counted to nobody, the viewer's own choice excepted (`myChoice`).
 
 ### 6.9 Mood weather
 
@@ -175,15 +176,15 @@ For Draw & Guess and Decoded with `auto_hints`, the round copies `hint_seconds` 
 - **Reveal**: the host (`POST reveal`) or the room timer ends the round as `Revealed`. The ended payload carries `answered` (the number of picks) and `weather: {sunny: n, …}` — or `weather: null` with fewer than 3 picks (decision 8: "Not enough answers to show the weather").
 - **Anonymity**: no snapshot, response, broadcast, history or "Games we played" entry ever ties a weather to a player, the viewer's own pick excepted (`myChoice`, active round only). Each picker gets a 0-point row (round played, streak kept); no winner.
 
-### 6.10 Guess who?
+### 6.10 Guess who? (decision 9, answered B: one drawn answer per round, one vote for its author)
 
 - **Start**: no leader. The server draws a prompt from `resources/games/prompts/{locale}.php` (≥ 60 prompts per locale, ≤ 200 characters, shared with Quick question), avoiding the room's last 20 questions; the host shuffles or types one until the first answer (`PUT rounds/{round}/question`, as for the GIF game).
-- **Answer**: every player writes one answer (1 to 120 characters), replaceable or removable until the reveal: `PUT / DELETE rounds/{round}/text-answer {text}`. Broadcast `game.answer.changed {playerId, answered}`.
-- **Reveal**: the host or the room timer opens the attribution stage (`revealed_at`), the round stays active. Broadcast `game.round.revealed {roundId, revealedAt, answers: [{id, text}]}`, answers in random order (random ids, as GIF answers), **without author**.
-- **Attribute**: every player names an author for any answer but their own: `PUT rounds/{round}/attributions/{answer} {player_id}` (a player who answered in this round; not the attributor; changeable until the close), `DELETE` retracts. Broadcast `game.vote.changed {playerId, voted}` (has made at least one attribution). The viewer receives their own attributions only (`myAttributions`, pairs of answer and player).
-- **Close**: the host (`POST close`), the room timer during the attribution stage, or the host starting the next round ends the round as `Revealed`. `game.round.ended` carries `answers: [{id, text, playerId, foundBy: [playerIds]}]`.
-- **Points**: 2 per correct attribution; attributors with the most correct attributions (at least one) win; authors get a 0-point row.
-- **Not available** in the icebreaker of an anonymous retro (decision 6).
+- **Answer**: every player writes one answer (1 to 120 characters), replaceable or removable until the draw: `PUT / DELETE rounds/{round}/text-answer {text}`. Broadcast `game.answer.changed {playerId, answered}` (who has answered is public).
+- **Draw**: the host (`POST rounds/{round}/reveal`) or the room timer draws **one** answer at random among those sent (`is_drawn` on `game_text_answers`, `revealed_at` on the round), the round stays active. At least 2 answers are needed: the host's reveal with fewer → 409 "At least 2 answers are needed."; the room timer with fewer ends the round `TimedOut`. Broadcast `game.round.revealed {roundId, revealedAt, answers: [{id, text}], candidates: [playerIds]}` — `answers` holds the drawn answer only, **without author**; `candidates` are the players who answered in this round (already public). The answers not drawn are never shown to anyone, at any time, and are pruned with the round.
+- **Vote**: every player but the drawn answer's author names one author: `PUT rounds/{round}/choice {choice: playerId}` (a candidate other than the voter; before the draw → 409 "No answer has been drawn yet."; the author → 403 "This is your answer."), replaceable until the close; `DELETE rounds/{round}/choice` retracts. Players who did not answer may vote. Broadcast `game.votes.counted {roundId, voted}` — **the number of voters only, never who voted**: since the author is the one player who never votes, a per-player "voted" mark would name the author by elimination. The viewer receives their own vote only (`myChoice`).
+- **Close**: the host (`POST close`), the room timer during the voting stage, or the host starting the next round ends the round as `Revealed`. `game.round.ended` carries `drawn: {id, text, playerId}` and `nominations: [{playerId, voterIds}]` (every candidate, with who named them).
+- **Points**: a voter who named the author 5, `is_win`; the drawn answer's author 2 per voter who named someone else; every other answerer and voter 0. `TimedOut` and `Passed`: no row.
+- **Not available** in the icebreaker of an anonymous retro (decision 6, answered A).
 
 ### 6.11 Quick question
 
@@ -198,9 +199,10 @@ For Draw & Guess and Decoded with `auto_hints`, the round copies `hint_seconds` 
 | Hangman | `Solved` by a whole-word guess | the guesser: their letter points plus 5, `is_win`; a wrong word guess alone: 0 |
 | Sprint in one GIF | `Revealed` | unchanged (2 per vote received); authors of rank 1 with ≥ 1 vote: `is_win` (not in an anonymous retro's icebreaker) |
 | Two truths | `Revealed` | voter who found the lie: 5, `is_win`; teller: 2 per voter fooled; other voters 0 |
-| Two truths | `TimedOut`, `Passed` | 0 for the teller and every voter |
+| Two truths | `Passed` | 0 for the teller and every voter |
 | Mood weather | `Revealed` | 0 for every picker |
-| Guess who? | `Revealed` | 2 per correct attribution; best attributors (≥ 1 correct): `is_win`; authors without attributions: 0 |
+| Guess who? | `Revealed` | voter who named the author: 5, `is_win`; the drawn answer's author: 2 per voter fooled; other answerers and voters: 0 |
+| Guess who? | `TimedOut`, `Passed` | no row |
 | Quick question | `Finished`, `TimedOut`, `Passed` | 0 for every player whose turn came |
 
 ### 6.13 Tables and columns
@@ -211,16 +213,16 @@ Migrations dated `2026_10_27_…`, Schema builder only, `up` only:
 - `game_rounds`: `number` (small unsigned, nullable), `rounds_total` (tiny unsigned, nullable), `turn_order` (JSON, nullable; null = no turns), `turn_player_id` (UUID, nullable, foreign key to `game_players`, null on delete), `turn_ends_at` (`dateTime`, nullable), `turn_seconds` (small unsigned, nullable), `hint_seconds` (small unsigned, nullable), `votes_allowed` (tiny unsigned, default 1), `authors_hidden` (boolean, default false), `statements` (JSON, nullable), `lie_index` (tiny unsigned, nullable).
 - `game_gif_answers.caption` (string 60, nullable).
 - `game_gif_votes`: unique (`game_round_id`, `voter_player_id`, `answer_id`) added, then unique (`game_round_id`, `voter_player_id`) dropped (in that order, so that MySQL always has an index for the round's foreign key).
-- `game_choices` (new): `id`, `game_round_id` (cascade), `player_id` (cascade), `choice` (string 20), timestamps; unique (`game_round_id`, `player_id`). Two truths (the lie) and Mood weather (the weather).
-- `game_text_answers` (new): `id` (random UUID, not time-ordered), `game_round_id` (cascade), `player_id` (cascade), `text` (string 120), timestamps; unique (`game_round_id`, `player_id`).
-- `game_attributions` (new): `id`, `game_round_id` (cascade), `guesser_player_id` (cascade), `answer_id` (to `game_text_answers`, cascade), `author_player_id` (cascade), timestamps; unique (`game_round_id`, `guesser_player_id`, `answer_id`).
+- `game_choices` (new): `id`, `game_round_id` (cascade), `player_id` (cascade), `choice` (string 36: a player id for Guess who?), timestamps; unique (`game_round_id`, `player_id`). Two truths (the lie), Mood weather (the weather), Guess who? (the named author).
+- `game_text_answers` (new): `id` (random UUID, not time-ordered), `game_round_id` (cascade), `player_id` (cascade), `text` (string 120), `is_drawn` (boolean, default false), timestamps; unique (`game_round_id`, `player_id`). The drawn answer is a flag on the answer rather than a key on the round, so that no foreign key runs from `game_rounds` to a table that cascades from it.
+- `game_statement_sets` (new): `id`, `game_room_id` (cascade), `player_id` (cascade), `statements` (JSON list, nullable without default, always written with three strings), `lie_index` (tiny unsigned), `played_at` (`dateTime`, nullable; null = ready), timestamps; unique (`game_room_id`, `player_id`). Room state, not round state: kept across rounds and game switches, deleted with the room or the player.
 
-JSON columns are nullable without a database default (rule 5); the model reads null as an empty list. Round pruning (last 20) takes the new rows with it by cascade.
+JSON columns are nullable without a database default (rule 5); the model reads null as an empty list. Round pruning (last 20) takes the round rows with it by cascade; statement sets are not round rows and are not pruned.
 
 ### 6.14 Secrecy (additions to games spec §8)
 
-- `lie_index` joins `word` and `picked_by` in `GameRound::$hidden`; it reaches the teller only before the end.
-- A Mood weather pick never leaves the server with its author; a Guess who? answer leaves with its author only once the round closed; attributions are known to their author only until the close.
+- `lie_index` joins `word` and `picked_by` in `GameRound::$hidden`; it reaches the teller only before the end. `GameStatementSet` hides `statements` and `lie_index`: a set reaches its author only until a round plays it, and the lie of the round only at its end.
+- A Mood weather pick never leaves the server with its author. A Guess who? answer leaves the server without its author only once drawn, with its author only once the round closed; an answer that is not drawn never leaves the server (beyond its author's own `myAnswer`). A Guess who? vote is known to its author only until the close, and no payload says who has voted before the close (the count only).
 - GIF answers, captions included, are never serialised before the reveal; with hidden authors, a revealed answer has no author until the close.
 - Hangman whole-word guesses that are correct are never serialised.
 - Every new payload goes through the rules' `presentActive`, `presentEnded` and `endedPayload`, and every new test walks the snapshot of each viewer and each broadcast (the `gamePayloadExposesWord` pattern).
@@ -230,15 +232,17 @@ JSON columns are nullable without a database default (rule 5); the model reads n
 | Action | Who |
 |---|---|
 | Change a room's game settings (§6.2) | room managers: the host, the creator, workspace Owners/Admins (standalone); the facilitator and workspace Owners/Admins (icebreaker, `GameRoom::isManager`), in any phase, as the language today. Guests never |
-| Start a round, reveal, close, change the question, skip a turn | host (Two truths reveal: host or teller; turn end: host or the turn's player) |
-| Write the statements | the teller |
+| Start a round, reveal (Guess who?: draw), close, change the question, skip a turn | host (Two truths reveal: host or teller; turn end: host or the turn's player) |
+| Write, replace or remove one's own statement set (Two truths) | any player of the room, guests included, for their own set only |
+| Be named teller | a player whose set is ready |
 | Pick a letter, guess the word | any player; in turns, the turn's player |
 | Vote the lie | any player but the teller |
-| Pick a weather, answer Guess who?, attribute, vote a GIF | any player, guests included (not one's own answer) |
+| Vote for the author of the drawn answer (Guess who?) | any player but that answer's author, guests included |
+| Pick a weather, answer Guess who?, vote a GIF | any player, guests included (not one's own GIF) |
 
 ## 8. Real time
 
-New events (on the room's channel, `game.*`): `game.turn.changed {roundId, turnPlayerId, turnEndsAt}` (a turn ended by act, skip or time), `game.statements.set {roundId, statements}`. Reused with new uses: `game.letter.picked` (adds `turnPlayerId`, `turnEndsAt`), `game.guess.made` (hangman wrong word guesses), `game.answer.changed` (Mood pick, Guess who answer), `game.vote.changed` (GIF budget, Two truths vote, Guess who attribution), `game.round.revealed` (Guess who answers), `game.question.changed` (Guess who, Quick question), `game.hint.revealed` (auto hints), `game.room.changed` (settings). The client adds the two new events to `use-game-channel.ts` and handles every reused event by the round's game.
+New events (on the room's channel, `game.*`): `game.turn.changed {roundId, turnPlayerId, turnEndsAt}` (a turn ended by act, skip or time), `game.statements.changed {playerId, ready}` (a Two truths set written, replaced or removed; room-level, no round), `game.votes.counted {roundId, voted}` (Guess who? votes: a count, no player). Reused with new uses: `game.letter.picked` (adds `turnPlayerId`, `turnEndsAt`), `game.guess.made` (hangman wrong word guesses), `game.answer.changed` (Mood pick, Guess who answer), `game.vote.changed` (GIF budget, Two truths vote), `game.round.revealed` (the drawn Guess who answer and its candidates), `game.round.started` (a Two truths round: its teller's set leaves the ready list), `game.question.changed` (Guess who, Quick question), `game.hint.revealed` (auto hints), `game.room.changed` (settings). The client adds the three new events to `use-game-channel.ts` and handles every reused event by the round's game.
 
 ## 9. Screens
 
@@ -273,7 +277,7 @@ Step 1, "Your pick": the preview, "Caption" field with "20 / 60" counter, "Send 
 
 ### 9.7 Two truths and a lie (no stage mockup: built on the shared grid `.g-*`)
 
-Left: players and "Order of tellers"; right: scores. Stage: teller — three text fields "Statement 1/2/3", a radio "This one is the lie" per field, "Send"; others — "Inès is writing…" then three statement cards (`sk-card`, large text), each a radio "It's the lie!" with the viewer's choice marked, "n of m voted"; host and teller: "Reveal the lie". After the end: the lie card marked "Lie" (destructive soft), the truths "True", the voters' avatars under each card, points on the end card.
+Left: players, each marked "Ready" when their set is ready, and "Order of tellers" (the ready players in the order the host's client proposes); right: scores. **My statements** (every player, outside the round they tell): a card with three text fields "Statement 1/2/3" (120, counter), a radio "This one is the lie" per field, "Save"; once saved, the badge "Ready" and "Edit" / "Remove"; once played, "Played" and "Write new ones" (to tell again). It sits on the waiting stage and the end card, and in the left column (a sheet on the phone) while another player's round is played. Start (host): "Who tells?" lists the ready players; "No one has statements ready." disables Start. Stage, a round in play: the teller's name ("Inès's statements"), three statement cards (`sk-card`, large text), each a radio "It's the lie!" with the viewer's choice marked, "n of m voted", the turn timer when timed; the teller sees their lie marked "Lie" and cannot vote; host and teller: "Reveal the lie". After the end: the lie card marked "Lie" (destructive soft), the truths "True", the voters' avatars under each card, points on the end card.
 
 ### 9.8 Mood weather (no stage mockup)
 
@@ -281,7 +285,7 @@ Stage: "What's the weather of your mood?" and five large weather buttons (lucide
 
 ### 9.9 Guess who? and Quick question (no stage mockup)
 
-Guess who? — stage: the prompt banner (host: shuffle / edit until the first answer, as the GIF question banner), the answer field (120, counter) and "Send"; "n have answered"; host "Reveal the answers". Attribution stage: the answers as cards in random order, each with a `Select` "Who wrote this?" (the players who answered, minus the viewer; the viewer's own card says "Your answer"); "n attributing"; host "Show the authors". After: each card with its author and the avatars of who found them; points.
+Guess who? — stage: the prompt banner (host: shuffle / edit until the first answer, as the GIF question banner), the answer field (120, counter) and "Send"; "n have answered"; host "Draw an answer" (disabled under 2 answers, "At least 2 answers are needed."). Voting stage: the drawn answer as one large card (`sk-card`, `text-lg`), and "Who wrote this?" as a radiogroup of the candidates' avatars and names, minus the viewer; the author sees "It's your answer — the others are guessing." and no choice; "n voted" (a count); host "Show the author". After: the card with its author, under each candidate the avatars of who named them, a check on the viewer's correct vote; points on the end card. The answers not drawn are never shown.
 Quick question — stage: the prompt banner, the speaker's avatar large with "Inès is speaking" and the turn timer, "Done" (speaker) / "Next" (host), the speaking order; host: "Another question" until the first turn ends. After: "Everyone has spoken." on the end card.
 
 ### 9.10 Elsewhere
@@ -306,16 +310,15 @@ New, under `games/{room}` (middleware `ResolveGamePlayer`, JSON, `whereUuid`):
 |---|---|---|---|
 | POST | `rounds/{round}/turn` | `GameTurnsController@store` | `games.rounds.turn.store` |
 | POST | `rounds/{round}/word-guesses` | `GameWordGuessesController@store` | `games.rounds.wordGuesses.store` |
-| PUT | `rounds/{round}/statements` | `GameStatementsController@update` | `games.rounds.statements.update` |
+| PUT, DELETE | `statements` (room-level: the viewer's own set) | `GameStatementsController@update`, `@destroy` | `games.statements.update`, `.destroy` |
 | PUT, DELETE | `rounds/{round}/choice` | `GameChoicesController@update`, `@destroy` | `games.rounds.choice.update`, `.destroy` |
 | PUT, DELETE | `rounds/{round}/text-answer` | `GameTextAnswersController@update`, `@destroy` | `games.rounds.textAnswer.update`, `.destroy` |
-| PUT, DELETE | `rounds/{round}/attributions/{answer}` | `GameAttributionsController@update`, `@destroy` | `games.rounds.attributions.update`, `.destroy` |
 
-Changed: `PATCH /games/{room}` (settings), `POST rounds` (`turn_order`), `PUT rounds/{round}/answer` (`caption`), `PUT / DELETE rounds/{round}/vote` (budget, `answer_id` on delete), `POST rounds/{round}/reveal` and `POST rounds/{round}/close` (any staged game), `PUT rounds/{round}/question` (any game that asks questions). Rate limits: the per-player `game-play` bucket (3 then 1/s) for votes, choices, attributions, text answers, statements, word guesses and turns; letters keep theirs.
+Changed: `PATCH /games/{room}` (settings), `POST rounds` (`turn_order`), `PUT rounds/{round}/answer` (`caption`), `PUT / DELETE rounds/{round}/vote` (budget, `answer_id` on delete), `POST rounds/{round}/reveal` and `POST rounds/{round}/close` (any staged game), `PUT rounds/{round}/question` (any game that asks questions). Rate limits: the per-player `game-play` bucket (3 then 1/s) for votes, choices, text answers, statement sets, word guesses and turns; letters keep theirs. The snapshot gains a top-level `truthSets: {ready: playerIds, mine: ?{statements, lieIndex, played}}`, present (not null) only while the room's game is Two truths.
 
 ## 12. Testing
 
-Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit tests for pure rules, `tests/Upgrade/GameSettingsUpgradeTest.php`, and races under `tests/Concurrency`: the GIF vote budget under concurrent votes; two "Done"/"Next" at once advance one turn; a double click on a hangman letter in turns picks one letter; two first picks of a weather keep one row. Per task: the tests run on PostgreSQL and SQLite; the Upgrade test and the races on the four engines; whole suites at merges and on the four engines at the end. Vitest for every new component and pure function. No browser walkthrough; captures in light, 1440, French only.
+Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit tests for pure rules, `tests/Upgrade/GameSettingsUpgradeTest.php`, and races under `tests/Concurrency`: the GIF vote budget under concurrent votes; two "Done"/"Next" at once advance one turn; a double click on a hangman letter in turns picks one letter; two first picks of a weather keep one row; two Guess who? draws at once draw one answer. Per task: the tests run on PostgreSQL and SQLite; the Upgrade test and the races on the four engines; whole suites at merges and on the four engines at the end. Vitest for every new component and pure function. No browser walkthrough; captures in light, 1440, French only.
 
 ## 13. Acceptance criteria
 
@@ -328,8 +331,8 @@ Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit t
 7. A correct whole-word guess solves the round for its guesser (+5, win); a wrong one costs a life and appears in "Last moves"; a correct guess text is never broadcast.
 8. With auto hints, letters are revealed on schedule up to half the word, and the "next letter" countdown matches.
 9. A GIF answer carries a caption of up to 60 characters, hidden until the reveal; a player uses up to the round's vote budget, never on their own GIF, and never more under concurrent requests; with hidden authors no revealed answer names its author before the close; a closed round ranks the GIFs with ties and its top authors win (not in an anonymous retro's icebreaker).
-10. Two truths and a lie, Mood weather, Guess who? and Quick question follow §6.8 to §6.11, in standalone rooms and in the icebreaker, with the points of §6.12.
-11. The lie, a weather's author, a Guess who answer's author before the close, another player's attributions and votes never reach a viewer who should not see them (every snapshot, response and broadcast tested).
+10. Two truths and a lie, Mood weather, Guess who? and Quick question follow §6.8 to §6.11, in standalone rooms and in the icebreaker, with the points of §6.12. In Two truths every player prepares a set before the rounds, a round plays one ready set chosen by the host (a teller without a ready set is refused), a played set is never played twice unless rewritten, and there is no writing stage. In Guess who? the draw keeps one answer among at least two, only the players who did not write it vote, one vote each, for one candidate.
+11. A prepared set (statements or lie) before its round, the lie before the end, a weather's author, a Guess who answer that was not drawn (ever), the drawn answer's author before the close, who has voted in Guess who?, and another player's votes never reach a viewer who should not see them (every snapshot, response and broadcast tested).
 12. Mood weather shows no distribution under 3 picks; Guess who? is unavailable in the icebreaker of an anonymous retro.
 13. The settings card, round line, turn timer, turn order, hangman turn banner and word field, GIF caption, votes and podium match their mockups (captures light/1440/fr), and every other difference is a pre-build deviation approved by the owner.
 14. The eight games appear in the picker, the session-create icebreaker fields, the team page, the leaderboard, the history and "Games we played".
@@ -345,54 +348,73 @@ Pest feature tests under `tests/Feature/Games/*` (new files per subject), unit t
 - **MySQL unique swap** on `game_gif_votes`: dropping the index the foreign key uses would fail. Mitigation: add the new unique first, then drop the old; Upgrade test on MySQL.
 - **Content.** Word themes in four languages and a 60-prompt bank in four languages are content work, reviewed by the translation pass; the dictionary tests pin counts, lengths and characters.
 - **Anonymity.** Mood weather with few players tells who picked what by elimination; the threshold of 3 reduces, not removes, it (accepted as for the GIF game).
-- **Shared files** across lanes: `routes/web.php`, `AppServiceProvider` (the registry list), `lang/*.json`, `tests/Pest.php`, `game-stage.tsx`, `round-detail.tsx`, `room-reducer.ts`. Mitigation: the foundation registers routes and maps for every game; each lane adds its own lines in marked blocks.
+- **Guess who? by elimination.** The drawn answer's author is the one player who cannot vote; a per-player "voted" mark, or a player who never votes in the UI, would name them. Mitigation: votes are broadcast and presented as a count only; the author's screen shows no choice but nothing others can see. Residual: in a room of three, a player can still reason from the answers they know; accepted (the game's point is to guess).
+- **Prepared sets.** A set written long before its round may be stale, and a player who never writes one never tells. Accepted: "Edit" and "Remove" until played; the host sees who is ready. A set written in a room keeps its lie on the server until the room or the player is deleted (no retention rule beyond the room's, as answers today).
+- **Shared files** across lanes: `routes/web.php`, `AppServiceProvider` (the registry list), `lang/*.json`, `tests/Pest.php`, `game-stage.tsx`, `round-detail.tsx`, `room-reducer.ts`; `BuildGameSnapshot.php` (the Two truths lane adds `truthSets`). Mitigation: the foundation registers routes and maps for every game; each lane adds its own lines in marked blocks.
 - **Plans 21 to 26 run before or beside** this one and touch `lang/*.json`, `routes/web.php` and the retro board; conflicts at merge only.
 
-## 15. Decisions for the owner
+## 15. Decisions for the owner — answered 2026-10-03
 
-The body above is written on the option marked **recommended**.
+All ten are answered (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 27"). The body above follows the answers.
 
-**1. Points of the whole-word guess (the mockup says "+50 pts", the product scores 1 per letter and 5 for solving).**
+| # | Answer | Owner's words |
+|---|---|---|
+| 1 | **A** (as recommended) | whole word "+5 pts" on the current scale |
+| 2 | **A** (as recommended) | "Take turns" switch on for new rooms |
+| 3 | **A** (as recommended) | rounds endless by default, host picks 3/5/6/8/10 |
+| 4 | **A** (as recommended) | four common themes |
+| 5 | **A** (as recommended) | expired turn passes |
+| 6 | **A** (as recommended) | Guess who? unavailable on anonymous retros |
+| 7 | **A** (as recommended) | GIF winner = author(s) of the most-voted GIF, counts as a win except on anonymous retros |
+| 8 | **A** (as recommended) | Mood weather from 3 answers |
+| 9 | **B** (differs from the recommendation) | prepared sets for Two truths (one player's set per round) and one drawn answer per round for Guess who? with one vote for its author — §6.8, §6.10 |
+| 10 | **A** (as recommended) | Quick question = spoken turns |
+
+Points of the two games under answer 9 B were not stated by the owner; this spec keeps the scale of the recommended option (finder 5 and a win; the teller or the author 2 per player fooled) — to confirm with the owner (plan, Owner decisions).
+
+The options as they were put:
+
+**1. Points of the whole-word guess (the mockup says "+50 pts", the product scores 1 per letter and 5 for solving).** — **Answered A.**
 - A. **Recommended.** Keep the product's scale: a correct word earns the solve bonus (+5) and the field reads "+5 pts". Leaderboards stay comparable with every round played so far.
 - B. Multiply every game's points by 10 from the release (letters 10, solve 50, guesser up to 100…); old rows kept as they are, so leaderboards mix both scales for 30 days.
 - C. As B, and multiply the stored points by 10 in a migration so that leaderboards stay consistent; rewrites every `game_points` row.
 
-**2. Turns in hangman.**
+**2. Turns in hangman.** — **Answered A.**
 - A. **Recommended.** A "Take turns" switch: on for rooms created after the release (the mockup), off for existing rooms (today's free-for-all kept).
 - B. Always in turns, existing rooms included (the free-for-all goes).
 - C. A switch, off by default everywhere.
 
-**3. Number of rounds by default.**
+**3. Number of rounds by default.** — **Answered A.**
 - A. **Recommended.** Endless by default (today's behaviour); the host picks 3, 5, 6, 8 or 10 in the card, and "Round n of m" appears then.
 - B. A default per game as the mockups show (hangman 3, Draw & Guess 6, Decoded 8, others 5).
 - C. Equal to the number of players at start (each draws or tells once), recomputed per game.
 
-**4. The word themes.**
+**4. The word themes.** — **Answered A.**
 - A. **Recommended.** Four themes for every word game: Team & tech, Everyday objects, Food, Nature & animals; hangman's "Team tools" and Draw's "Team & tech" of the mockups both read "Team & tech".
 - B. Two themes from today's split: "Team & tech" (abstract words) and "Everyday things" (drawable words); no content work, but Draw & Guess could not use "Team & tech".
 - C. The mockups' labels per game (hangman "Team tools", Draw "Team & tech", Decoded "Films · Team"); needs a film list and three partitions.
 
-**5. A hangman turn that runs out.**
+**5. A hangman turn that runs out.** — **Answered A.**
 - A. **Recommended.** The turn passes, nothing else.
 - B. It counts as a miss (−1 life), as a wrong letter.
 
-**6. Guess who? in the icebreaker of an anonymous retro.**
+**6. Guess who? in the icebreaker of an anonymous retro.** — **Answered A.**
 - A. **Recommended.** Not available there ("Not in an anonymous retro"): the game's point is to reveal authors.
 - B. Available; authors are revealed at the close as in any room (the players write knowing it).
 
-**7. A winner in Sprint in one GIF.**
+**7. A winner in Sprint in one GIF.** — **Answered A.**
 - A. **Recommended.** The author(s) of the most-voted GIF (at least one vote) win the round (`is_win`), as the mockup's "Winner"; not in an anonymous retro's icebreaker.
 - B. The "Winner" tag is shown, but no win is counted in the leaderboards (today: GIF rounds give no win).
 
-**8. Mood weather with few answers.**
+**8. Mood weather with few answers.** — **Answered A.**
 - A. **Recommended.** The weather is shown from 3 picks; under that, "Not enough answers to show the weather (3 needed)" (the threshold the surveys use).
 - B. Always shown (as the GIF game's accepted residual risk).
 
-**9. The rules of Two truths and a lie and Guess who? (no mockup beyond the picker).**
-- A. **Recommended.** Two truths: one teller per round writes three statements, the others vote the lie (§6.8). Guess who?: everyone answers one prompt, then everyone names the author of each answer (§6.10).
-- B. Two truths: every player writes their three statements before the game, one player's set per round, no writing stage. Guess who?: one answer per round, picked at random among those sent, and the others vote for its author (one choice, no matching).
+**9. The rules of Two truths and a lie and Guess who? (no mockup beyond the picker).** — **Answered B.**
+- A. Recommended. Two truths: one teller per round writes three statements, the others vote the lie. Guess who?: everyone answers one prompt, then everyone names the author of each answer.
+- B. **Chosen.** Two truths: every player writes their three statements before the game, one player's set per round, no writing stage (§6.8). Guess who?: one answer per round, picked at random among those sent, and the others vote for its author (one choice, no matching) (§6.10).
 
-**10. Quick question.**
+**10. Quick question.** — **Answered A.**
 - A. **Recommended.** Spoken turns ("2 min / pers." of the mockup): a prompt, a speaking order, a turn timer, "Done" / "Next"; nothing typed, no points.
 - B. Written: every player types a short answer, all shown together at the reveal (a wall), no turns.
 

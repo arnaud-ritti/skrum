@@ -1,44 +1,46 @@
 # Team invitations, the invite link and the four-step onboarding (Plan 25) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 22 only).
+> **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 23 only).
 
-**Status: draft of 2026-10-03, not approved.** Written on the recommended option of each item of spec §16. Before Task 1: the owner answers spec §16 and reads the pre-build deviations; plan 23 (TM-6, WS-1, WS-3) is merged.
+**Status: draft of 2026-10-03, revised the same day with the owner's answers to spec §16; not approved.** Written on the answers: 1 A, 2 B, 3 C, 4 A, 5 A, 6 B, 7 B, 8 A, 9 A (three differ from the recommendation: 2, 3, 7). Before Task 1: the owner approves the spec and reads the pre-build deviations (not put to them yet); plan 23 (TM-6, WS-1, WS-3) is merged (the owner's order: 22, then 23, then 25).
 
-**Goal:** A team inviter invites people to a team by e-mail (several at once, with a team role and a message) or shares the team's invite link; the invited person sees the team, the role and the message, accepts or declines (the inviter is told in the bell); a newcomer registers ("Create your workspace", "Team name") and, once verified, goes through the four steps of the mockup — workspace, team, invitations, first ritual — saved step by step.
+**Goal:** A team inviter (who manages the team's members, or a facilitator of the team) invites people to a team by e-mail (several at once, with a team role and a message) or shares the team's invite link (7 days, no use limit); the invited person sees the team, the role and the message, accepts or declines (the inviter is told in the bell); a newcomer registers ("Create your workspace", "Team name") and, once verified, goes through the four steps of the mockup — workspace, team, invitations, first ritual — saved step by step. Every team gets a slug, unique in its workspace, and `/t/<slug>` leads to it.
 
-**Architecture:** The existing aggregate `WorkspaceInvitation` gains a team, a team role, a message and a declined state; one action (`SendInvitation`) issues, mails and announces every invitation, from the workspace dialog, the team dialog and the onboarding. A new aggregate `TeamInviteLink` (one usable link per team, token encrypted and hashed, expiry and maximum of uses) is joined under its row lock. A new aggregate `Onboarding` (one row per user who must found a workspace) holds the step and the ids of what the steps created; `dashboard` routes to it. No data migration: every new column is nullable and every existing row keeps its meaning.
+**Architecture:** The existing aggregate `WorkspaceInvitation` gains a team, a team role, a message and a declined state; one action (`SendInvitation`) issues, mails and announces every invitation, from the workspace dialog, the team dialog and the onboarding. A new aggregate `TeamInviteLink` (one usable link per team, token encrypted and hashed, a fixed expiry, no use limit, the joins counted) is joined under its row lock. A new aggregate `Onboarding` (one row per user who must found a workspace) holds the step and the ids of what the steps created; `dashboard` routes to it. `teams.slug` (unique per workspace) is written by the model on creation through `TeamSlug`, by `CreateTeam` with a retry on a unique violation, and filled for existing teams by the plan's one data migration; `GET t/{slug}` resolves it among the account's workspaces. Every other new column is nullable and every existing row keeps its meaning.
 
 **Tech Stack:** Laravel 13, PHP 8.4, Fortify, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from this list.
 
-**Spec:** `.superpowers/sdd/roadmap/plan-25/spec.md` (moves to `docs/superpowers/specs/2026-10-25-invitations-and-onboarding-design.md` in Task 23). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenOnboarding`, `ScreenAuth`, `ScreenTeam`, `ScreenSettings`, `Emails`, `NotificationsPanel`, `PhaseStepper` — for each, the `README.md` and the `preview.html`.
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-25-invitations-onboarding-design.md` (renamed `docs/superpowers/specs/2026-10-25-invitations-and-onboarding-design.md` in Task 24). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenOnboarding`, `ScreenAuth`, `ScreenTeam`, `ScreenSettings`, `Emails`, `NotificationsPanel`, `PhaseStepper` — for each, the `README.md` and the `preview.html`.
 
-**Not in this plan:** spec §3 (backlog: "already in n teams", "Ask for a new invitation", the date of step 4 and all scheduling, the team slug, the workspace logo, the session banner after acceptance, bell buttons, invitations to several teams, MCP or API invitations); browser walkthroughs (owner's working rule: none is written or run).
+**Not in this plan:** spec §3 (backlog: "already in n teams", "Ask for a new invitation", the date of step 4 and all scheduling, session addresses under the team slug and a history of edited slugs, a use limit or a choice of expiry for the link, the workspace logo, the session banner after acceptance, bell buttons, invitations to several teams, MCP or API invitations); browser walkthroughs (owner's working rule: none is written or run).
 
-**Tasks:** 24. Step A, back end, single writer: 1 to 13. Step B, screens: 14 (single writer), then lanes Access (15, 16, 17), Team (18, 19), Onboarding (20). Final: 21 (translations), 22 (captures only: light, 1440, French), 23 (deviations and documents), 24 (full suites on four engines and report).
+**Tasks:** 25. Step A, back end, single writer: 1 to 14 (14: the team slug, its data migration and `/t/<slug>`). Step B, screens: 15 (single writer), then lanes Access (16, 17, 18), Team (19, 20), Onboarding (21). Final: 22 (translations), 23 (captures only: light, 1440, French), 24 (deviations and documents), 25 (full suites on four engines and report).
 
 ## Branch and run
 
-- Base: `main` once plan 23 is merged into it. Check before Task 1, and stop if one fails: `app/Enums/TeamRole.php` exists with the cases `Owner`, `Facilitator`, `Member`, `Observer` (values `owner`, `facilitator`, `member`, `observer`); `team_user` has a `role` column (`database/migrations/*team_user*` or a later migration); `Team::members()` declares `->withPivot('role')`; `TeamPolicy::manageMembers` reads the team role; `teams.description` exists (WS-1); the team-settings Members tab exists (WS-3, find it with `grep -rl "Members & rituals\|Membres & rituels" resources/js`). **Plan 23's names win**: where they differ from this plan's (`TeamRole`, `role`, `description`, the tab's file), each task uses plan 23's and reports the difference. If WS-1 is absent, Tasks 12 and 20 drop the description; if WS-3 is absent, Task 19 adds its rows to the team page's members card instead.
+- Base: `main` once plan 23 is merged into it. Check before Task 1, and stop if one fails: `app/Enums/TeamRole.php` exists with the cases `Owner`, `Facilitator`, `Member`, `Observer` (values `owner`, `facilitator`, `member`, `observer`); `Team::roleOf(User): ?TeamRole` exists (plan 23's draft names it so; Tasks 6, 7, 10, 12 use it) and `teamMember(Team $team, TeamRole $role = TeamRole::Member)` in `tests/Pest.php` attaches with a role; `team_user` has a `role` column (`database/migrations/*team_user*` or a later migration); `Team::members()` declares `->withPivot('role')`; `TeamPolicy::manageMembers` reads the team role; `teams.description` exists (WS-1); the team-settings Members tab exists (WS-3, find it with `grep -rl "Members & rituals\|Membres & rituels" resources/js`). **Plan 23's names win**: where they differ from this plan's (`TeamRole`, `role`, `description`, the tab's file), each task uses plan 23's and reports the difference. If WS-1 is absent, Tasks 12 and 21 drop the description; if WS-3 is absent, Task 19 adds its rows to the team page's members card instead and the slug is edited at step 2 only (Task 19 drops the General tab field). If plan 23 created teams through an action of its own, Task 14's `CreateTeam` extends that action instead of creating one. Plan 23's General tab: find it with `grep -rl "General\|Général" resources/js/components/teams`.
 - Branch `plan-25-invitations-onboarding` from that base. No merge into `main`, no push.
-- Step A runs with one writer. Lanes run in git worktrees on branches `lane/25-<name>`, cut from the head of Task 14; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and `bin/test-db pgsql -- tests/Feature/Invitations tests/Feature/Onboarding tests/Feature/Workspaces tests/Feature/Auth tests/Arch`.
+- Step A runs with one writer. Lanes run in git worktrees on branches `lane/25-<name>`, cut from the head of Task 15; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and `bin/test-db pgsql -- tests/Feature/Invitations tests/Feature/Onboarding tests/Feature/Workspaces tests/Feature/Auth tests/Arch`.
 - From a worktree, `bin/test-db` needs `TEST_DB_CONTAINER` and `TEST_DB_WORKDIR`; MariaDB and MySQL are started once with `docker compose up -d mariadb mysql`. Never run two whole suites at once in the shared container.
 - This plan was written from `main` at `18d3637e`. **Every task re-reads the files it touches**; a line or a body quoted here that no longer matches is followed in spirit and reported.
 
 ## Owner decisions
 
-The nine questions of spec §16. "Plan written on" is the recommended option. The last column names what changes with another answer.
+The nine questions of spec §16, **answered by the owner on 2026-10-03** (`.superpowers/sdd/roadmap/progress.md`, "Owner answers 2026-10-03", line "Plan 25"). The plan is written on the answers. "≠ rec." marks an answer that differs from the option the first draft was written on; the last column says where the plan carries it.
 
-| # | Question | Plan written on | If the owner answers otherwise |
+| # | Question | Answer | Where the plan carries it |
 |---|---|---|---|
-| 1 | What registration creates | **A**: the account only; "Team name" waits on the onboarding row | **B**: Task 11's `StartOnboarding` is replaced by a `RegisterWorkspace` action called from `CreateNewUser::register` (workspace named after the team, team, owner role, onboarding row at step `workspace` holding both ids); Task 12 step 1 renames. **C**: Task 17 drops the field; Task 11 drops `team_name` from the request |
-| 2 | Who may invite to a team | **A**: `TeamPolicy::invite` = `manageMembers` (TM-6) | **B**: Task 6's `invite` also returns true for `TeamRole::Facilitator`; tests gain a facilitator case. **C**: `invite` = `view` minus `Observer` |
-| 3 | Link limits | **A**: fixed 7 days, 20 uses | **B**: Task 9's request takes `expires_in_days` (1, 7, 30) and `max_uses` (5, 10, 20, 50); Task 18 adds a settings row. **C**: `max_uses` nullable, `isUsable` ignores it, Task 10's race is dropped |
-| 4 | Link and restricted signup | **A**: opens registration in `invite` mode; `domain` keeps its list | **B**: Task 10 leaves `SignupGate` unchanged (no `$link` parameter). **C**: `allows` returns true for a usable link before the mode match |
-| 5 | Telling the inviter of a decline | **A**: bell only | **B**: Task 8's notification adds `mail` and a Blade mail (`mail.invitation-declined`, text part), with `MailMockupTest` coverage. **C**: Task 8 notifies every team inviter too |
-| 6 | Step 1 logo and language | **B**: `workspaces.locale`, no logo | **A**: Task 2 drops `workspaces.locale`; Task 5 keeps today's locale rule; Task 12 drops the field. **C**: a new task (stored logo: disk, validation, serving route, `AvatarsController`-like cache headers) before Task 12 |
-| 7 | Team slug | **A**: omitted | **B**: a new task: `teams.slug` (unique per workspace, derived from the name, written by the model), `GET t/{slug}` redirect, the field in Task 20 |
-| 8 | "Create the retro" | **A**: completes, opens the team page with the "New session" dialog | **B**: Task 12's completion calls `CreateRetro`, `CreatePokerGame`, `CreateWhiteboard` or the game-room action with defaults and redirects to the session |
-| 9 | Teams per invitation | **A**: one | **B**: a satellite table `workspace_invitation_teams`; Tasks 1, 5, 7 and 19 change |
+| 1 | What registration creates | **A** (answered): the account only; "Team name" waits on the onboarding row and prefills step 2 | Tasks 11, 12, 18 |
+| 2 | Who may invite to a team | **B** (answered, ≠ rec.): `TeamPolicy::invite` = `manageMembers` (TM-6) **or** the team role `Facilitator`; the same people manage the team's link and resend or revoke the team's invitations | Task 1 (helper `teamFacilitator()`), Task 6 (policy and its tests: facilitator allowed, member and observer refused, a facilitator of another team refused), Task 9 (a facilitator manages the link), Task 19 (the Members tab shows invitations to a facilitator) |
+| 3 | Link limits | **C** (answered, ≠ rec.): expiry only (fixed 7 days), no use limit; `uses_count` kept and shown as the number of people who joined | Task 3 (no `max_uses`, no `usedUp()` state, `isUsable` = not revoked and not expired), Task 9 (no `maxUses` prop), Task 10 (no used-up refusal; the race proves that many joins at once all succeed and are counted), Task 12 (no `inviteLinkMaxUses`), Task 15 (`InviteLink` type and the line "Expires in :days days · :count joined"), Task 17 (link page states), Task 22 (strings); deviation P25-16 |
+| 4 | Link and restricted signup | **A** (answered): opens registration in `invite` mode; `domain` keeps its list | Task 10 |
+| 5 | Telling the inviter of a decline | **A** (answered): bell only | Task 8 |
+| 6 | Step 1 logo and language | **B** (answered): `workspaces.locale`, no logo (plan 26) | Tasks 2, 5, 12, 21; deviation P25-01 |
+| 7 | Team slug | **B** (answered, ≠ rec.): `teams.slug`, unique per workspace, derived from the name, editable; `GET t/{slug}` redirects to the team page | **New Task 14** (column, data migration and its upgrade test on four engines, `TeamSlug`, `CreateTeam` with its race, `teams.update` and step 2 accept `slug`, `GET t/{slug}` and Rule S-1), Task 15 (`lib/teams/team-slug.ts`, `TeamAddressField`), Task 19 (General tab field), Task 21 (step 2 field and preview); deviations P25-02 (now built), P25-17 |
+| 8 | "Create the retro" | **A** (answered): completes, opens the team page with the "New session" dialog | Task 12, Task 15 (`?new=icebreaker`) |
+| 9 | Teams per invitation | **A** (answered): one | Tasks 1, 5 |
+
+Readings this revision made on the owner's behalf, to be confirmed with the spec's approval (spec §16, notes after decision 9): a facilitator invites with the same three roles as an owner; `/t/<slug>` is resolved in the current workspace first, then the account's other workspaces by name (Rule S-1); decisions 3 and 4 together let a leaked link open registration to any number of people in `invite` mode for 7 days.
 
 ## File structure
 
@@ -50,6 +52,10 @@ Back end, created:
 | `database/migrations/2026_10_25_100100_add_color_to_teams_and_locale_to_workspaces.php` | `teams.color`, `workspaces.locale` |
 | `database/migrations/2026_10_25_100200_create_team_invite_links_table.php` | the link table |
 | `database/migrations/2026_10_25_100300_create_onboardings_table.php` | the onboarding table |
+| `database/migrations/2026_10_25_100400_add_slug_to_teams.php` | `teams.slug`: add, fill existing teams, not null, unique per workspace (the plan's one data migration) |
+| `app/Support/Teams/TeamSlug.php` | the slug's form, its derivation from a name and the first free slug of a workspace |
+| `app/Actions/Teams/CreateTeam.php` | creates a team, retrying on a slug taken at the same moment |
+| `app/Actions/Teams/ResolveTeamAddress.php`, `app/Http/Controllers/TeamAddressesController.php` | `GET t/{slug}` (Rule S-1) |
 | `app/Enums/OnboardingStep.php` | the four steps |
 | `app/Models/TeamInviteLink.php`, `app/Models/Onboarding.php` and their factories | the two aggregates |
 | `app/Support/Teams/TeamMark.php` | the team's colour, chosen or derived as `lib/mark-color.ts` derives it |
@@ -59,22 +65,22 @@ Back end, created:
 | `app/Actions/Onboarding/StartOnboarding.php`, `CloseOnboardingForJoiner.php`, `PresentOnboarding.php` | onboarding |
 | `app/Notifications/InvitationDeclinedNotification.php`, `app/Actions/Notifications/PresentInvitationDeclinedNotifications.php` | the decline in the bell |
 | `app/Policies/WorkspaceInvitationPolicy.php` | `manage` |
-| `app/Http/Requests/Invitations/TeamInvitationRequest.php`, `app/Http/Requests/Onboarding/OnboardingWorkspaceRequest.php`, `OnboardingTeamRequest.php` | validation |
+| `app/Http/Requests/Invitations/TeamInvitationRequest.php`, `app/Http/Requests/Onboarding/OnboardingWorkspaceRequest.php`, `OnboardingTeamRequest.php`, `app/Rules/TeamSlugRule.php` | validation |
 | `app/Http/Controllers/TeamInvitationsController.php`, `TeamInviteLinksController.php`, `WorkspaceInvitationResendsController.php`, `InvitationDeclinesController.php`, `InviteLinksController.php`, `InviteLinkMembershipsController.php`, `OnboardingsController.php`, `OnboardingWorkspacesController.php`, `OnboardingTeamsController.php`, `OnboardingInvitationsController.php`, `OnboardingStepsController.php`, `OnboardingCompletionsController.php` | HTTP |
 
-Back end, modified: `app/Models/WorkspaceInvitation.php`, `Team.php`, `Workspace.php`, `User.php`; `database/factories/WorkspaceInvitationFactory.php`; `app/Actions/Workspaces/CreateWorkspaceInvitation.php`, `AcceptWorkspaceInvitation.php`, `IssuedInvitation.php`; `app/Actions/Auth/SignupGate.php`, `ResolveSsoUser.php`; `app/Actions/Fortify/CreateNewUser.php`; `app/Actions/Notifications/ListNotifications.php`, `PresentInvitationNotifications.php`; `app/Notifications/WorkspaceInvitationNotification.php`; `app/Mail/WorkspaceInvitationMail.php`; `resources/views/mail/workspace-invitation.blade.php`, `mail/text/workspace-invitation.blade.php`; `app/Policies/TeamPolicy.php`; `app/Providers/FortifyServiceProvider.php`; `app/Http/Controllers/WorkspaceInvitationsController.php`, `InvitationLinksController.php`, `InvitationAcceptancesController.php`, `InvitationAccountsController.php`, `SsoCallbacksController.php`, `CurrentWorkspaceController.php`, `WorkspaceMembersController.php`, `TeamsController.php`; `routes/web.php`; `tests/Pest.php`.
+Back end, modified: `app/Models/WorkspaceInvitation.php`, `Team.php`, `Workspace.php`, `User.php`; `database/factories/WorkspaceInvitationFactory.php`; `app/Actions/Workspaces/CreateWorkspaceInvitation.php`, `AcceptWorkspaceInvitation.php`, `IssuedInvitation.php`; `app/Actions/Auth/SignupGate.php`, `ResolveSsoUser.php`; `app/Actions/Fortify/CreateNewUser.php`; `app/Actions/Notifications/ListNotifications.php`, `PresentInvitationNotifications.php`; `app/Notifications/WorkspaceInvitationNotification.php`; `app/Mail/WorkspaceInvitationMail.php`; `resources/views/mail/workspace-invitation.blade.php`, `mail/text/workspace-invitation.blade.php`; `app/Policies/TeamPolicy.php`; `app/Providers/FortifyServiceProvider.php`; `app/Http/Controllers/WorkspaceInvitationsController.php`, `InvitationLinksController.php`, `InvitationAcceptancesController.php`, `InvitationAccountsController.php`, `SsoCallbacksController.php`, `CurrentWorkspaceController.php`, `WorkspaceMembersController.php`, `TeamsController.php` (`store` through `CreateTeam`, `update` takes `slug`); `database/factories/TeamFactory.php` (nothing to add: the model's hook gives the slug; checked in Task 14); `routes/web.php`; `tests/Pest.php`.
 
-Tests, created: `tests/Feature/Invitations/{InvitationModelTest,TeamMarkTest,SendInvitationTest,TeamInvitationsTest,InvitationAcceptanceWithTeamTest,InvitationDeclineTest,TeamInviteLinksTest,InviteLinkJoinTest,InvitationListsTest}.php`; `tests/Feature/Onboarding/{OnboardingModelTest,OnboardingStartTest,OnboardingStepsTest}.php`; `tests/Concurrency/{InvitationIssueTest,InvitationAnswerTest,TeamInviteLinkTest,OnboardingStepTest}.php`; `tests/Browser/Visual/OnboardingVisualTest.php` (captures only).
+Tests, created: `tests/Feature/Invitations/{InvitationModelTest,TeamMarkTest,SendInvitationTest,TeamInvitationsTest,InvitationAcceptanceWithTeamTest,InvitationDeclineTest,TeamInviteLinksTest,InviteLinkJoinTest,InvitationListsTest}.php`; `tests/Feature/Onboarding/{OnboardingModelTest,OnboardingStartTest,OnboardingStepsTest}.php`; `tests/Feature/Teams/{TeamSlugTest,TeamAddressesTest}.php`; `tests/Upgrade/TeamSlugBackfillTest.php`; `tests/Concurrency/{InvitationIssueTest,InvitationAnswerTest,TeamInviteLinkTest,OnboardingStepTest,TeamSlugTest}.php`; `tests/Browser/Visual/OnboardingVisualTest.php` (captures only).
 
-Front end, created: `resources/js/lib/invitations/{types,email-chips}.ts`; `resources/js/components/skrum/{team-mark,email-chips-field}.tsx`; `resources/js/components/invitations/{team-invite-form,invite-link-block,team-invite-dialog,pending-invitations}.tsx`; `resources/js/components/auth/invite-link-card.tsx`; `resources/js/components/onboarding/{onboarding-page,onboarding-header,workspace-step,team-step,invite-step,ritual-step,team-preview}.tsx`; `resources/js/pages/onboarding/show.tsx`, `resources/js/pages/invite-links/show.tsx` (thin in Step A, built in Step B); each with its `.test.ts(x)`. `components/invitations/` and `components/onboarding/` are new domain folders under `components/`, in the pattern of the parent spec §6.1; not new base folders.
+Front end, created: `resources/js/lib/invitations/{types,email-chips}.ts`; `resources/js/lib/teams/team-slug.ts`; `resources/js/components/skrum/{team-mark,email-chips-field,team-address-field}.tsx`; `resources/js/components/invitations/{team-invite-form,invite-link-block,team-invite-dialog,pending-invitations}.tsx`; `resources/js/components/auth/invite-link-card.tsx`; `resources/js/components/onboarding/{onboarding-page,onboarding-header,workspace-step,team-step,invite-step,ritual-step,team-preview}.tsx`; `resources/js/pages/onboarding/show.tsx`, `resources/js/pages/invite-links/show.tsx` (thin in Step A, built in Step B); each with its `.test.ts(x)`. `components/invitations/` and `components/onboarding/` are new domain folders under `components/`, in the pattern of the parent spec §6.1; not new base folders.
 
 ## Global Constraints
 
-- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 22, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 23.
+- **Mockup first** (parent spec §5 rule 13). A screen follows its mockup: layout, placement, labels, states. A difference is fixed, or is a row of **Pre-build deviations**, put to the owner before its screen is built. Captures are taken once, in Task 23, in light, at 1440, in French, and compared with the mockup's `preview.html` in Task 24.
 - **Front rules** of the parent spec §5 on every front file: tokens only, rem, Tailwind scale, no overflow from 20rem to 60rem, visible focus, contrast, `prefers-reduced-motion`, lucide icons, the literal call shape `t('…')`, presentational `skrum/` components (no network, no router). Containers in `resources/js/components/<domain>/`. Reuse: `skrum/phase-stepper`, `skrum/column-color-picker` (`columnColors`, `useColumnColorName`), `skrum/text-field`, `skrum/loading-button`, `skrum/confirm-dialog` (`ConfirmDialog`, `FormDialog`), `skrum/avatar-stack`, `auth/sso-buttons`, `auth/password-field`, `auth/access-notice`, `auth/invitation-card`, `lib/mark-color.ts`, `teams/session-create/use-new-session-intent.ts`, `layouts/skrum/onboarding-layout.tsx`.
-- **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md` rules 1 to 12 apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. No raw query of any form; no driver test; migrations with the Schema builder only, `up` only, dated `2026_10_25_…`, no `enum()`, no `->after()`, no collation; a transaction locks its aggregate root first (invitation routes: the invitation row; link joins: the link row; link issue: the team row; onboarding steps: the onboarding row; invitation issue: the workspace row) and is retried with `Transactions::Attempts` only when it touches nothing but the database (no mail, no notification, no broadcast inside a retried callback); explicit tie-breakers; lists read by people sorted with `Alphabetical::sort()`; addresses compared through `LoginAddress::normalise()` and `User::whereAddress()`; tests never read SQL text and never change the schema; writes never skip model events.
-- **Tests per task (owner):** each task writes its tests and runs them on PostgreSQL and SQLite: `bin/test-db pgsql -- <paths>` and `bin/test-db sqlite -- <paths>`. Races (`tests/Concurrency`) run on the four engines: `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- <path>`, never on SQLite in memory, never in parallel. Data migrations would run on the four engines; this plan has none (spec §12). The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. The whole suites on the four engines run at the merges of the lanes and in Task 24.
-- **Working rules (owner):** browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run; captures only, in Task 22, light, 1440, French (`VISUAL_ONLY=light-1440-fr`). Vitest is written and run per task (`npm run test -- <pattern>`).
+- **Database (owner rule): Eloquent and the standard query builder only.** `docs/database.md` rules 1 to 12 apply to every line of PHP, migration and test; `tests/Arch/DatabasePortabilityTest.php` enforces them. No raw query of any form; no driver test; migrations with the Schema builder only, `up` only, dated `2026_10_25_…`, no `enum()`, no `->after()`, no collation; a transaction locks its aggregate root first (invitation routes: the invitation row; link joins: the link row; link issue: the team row; onboarding steps: the onboarding row; invitation issue: the workspace row; team creation takes no lock: `CreateTeam` inserts in a nested transaction and retries on the slug's unique index, Task 14) and is retried with `Transactions::Attempts` only when it touches nothing but the database (no mail, no notification, no broadcast inside a retried callback); explicit tie-breakers; lists read by people sorted with `Alphabetical::sort()`; addresses compared through `LoginAddress::normalise()` and `User::whereAddress()`; tests never read SQL text and never change the schema; writes never skip model events.
+- **Tests per task (owner):** each task writes its tests and runs them on PostgreSQL and SQLite: `bin/test-db pgsql -- <paths>` and `bin/test-db sqlite -- <paths>`. Races (`tests/Concurrency`) run on the four engines: `bin/test-db <pgsql|mariadb|mysql|sqlite-file> --concurrency -- <path>`, never on SQLite in memory, never in parallel. Data migrations run on the four engines: this plan has one, the team slug fill of Task 14, proved by `tests/Upgrade/TeamSlugBackfillTest.php` through `bin/test-db pgsql|mariadb|mysql|sqlite -- tests/Upgrade/TeamSlugBackfillTest.php` (spec §12). The red step may run once on SQLite in memory: `vendor/bin/sail artisan test --compact <path>`. The whole suites on the four engines run at the merges of the lanes and in Task 25.
+- **Working rules (owner):** browser walkthroughs (`tests/Browser/Walkthroughs`) are neither written, edited nor run; captures only, in Task 23, light, 1440, French (`VISUAL_ONLY=light-1440-fr`). Vitest is written and run per task (`npm run test -- <pattern>`).
 - **No new dependency**, PHP or JS, without the owner's approval.
 - **Four languages, informal.** Every new `__('…')` and `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it (`tests/Feature/TranslationKeysTest.php`), informal (French "tu", Spanish "tú", German "du"; `tests/Feature/InformalRegisterTest.php`). This overrides the mockups' "vous". A key that exists keeps its value.
 - **No test is deleted** without the owner's approval. Three tests change their expected redirect (Task 11, listed there).
@@ -95,12 +101,12 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** the spec, **O** an owner's answer.
+Put to the owner before the screen is built; **none has been asked yet** (each row is to approve by the owner). Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** the spec, **O** an owner's answer.
 
 | # | Screen | Mockup element | Built | Reason |
 |---|---|---|---|---|
 | P25-01 | Onboarding step 1 | "Logo · optional", "Upload" | not rendered, place left | S: decision 6 (stored images come with AC-1) |
-| P25-02 | Onboarding step 2 | "Team link skrum.nordlys.fr/t/atlas", "Edit" | not rendered, place left | S: decision 7 |
+| P25-02 | Onboarding step 2 | "Team link skrum.nordlys.fr/t/atlas", "Edit" | built as drawn (decision 7 B), the host being the instance's own (`config('app.url')`); "Edit" turns the slug into a field | O: decision 7 B — kept as a row only because the first draft listed it; no difference left but the host |
 | P25-03 | Onboarding step 2 | "Skip for now" (the frame) | not rendered: "Back" and "Continue" only | the README: "Skip on 3 and 4 only"; a team is what steps 3 and 4 act on |
 | P25-04 | Onboarding step 4 | "When · optional" date | not rendered, no place | O: scheduling is backlog |
 | P25-05 | Onboarding step 3, invite dialog | `skrum.nordlys.fr/join/8fK2-qT7w` | `…/invite/<40 characters>` | F: `/join/` is the retro guest join; a nine-character code is guessable |
@@ -114,29 +120,33 @@ Put to the owner before the screen is built. Reasons as in plan 18e: **F** false
 | P25-13 | Register | "Free up to 10 participants per session. No credit card." and "By creating an account, you accept the terms" | not rendered | F: a self-hosted instance has no plan or terms page (terms: backlog) |
 | P25-14 | Register | no "Confirm password" in the mockup | kept | D-52: the server validates the confirmation |
 | P25-15 | Onboarding | "In self-host with forced SSO, step 1 is filled by the admin and skipped" | step 1 always shown to a user without a workspace | N: no instance default workspace |
+| P25-16 | Onboarding step 3, invite dialog | "Expires in 7 days · up to 20 people" | "Expires in 7 days", followed by " · :count joined" once someone joined | O: decision 3 C (no use limit); the count is what lets an inviter see a leaked link |
+| P25-17 | Team settings, General tab | no "Team link" field (only the onboarding's step 2 draws one) | "Team link" under the team name, the step 2 component, for who may update the team | O: decision 7 B ("editable"); without it a slug could only be set once, at the onboarding |
 
 ## Review Focus
 
 The inputs the spec implies and that are most likely to bite, each pinned by a test in the task that owns the code.
 
-1. **A link used by more people at once than it has uses left**: no more joins than uses; the count equals the joins. Race in Task 10.
+1. **A link used by many people at once, or by one account twice at once** (no use limit, decision 3 C): every distinct account joins, one account joins once, and the count equals the joins. Races in Task 10.
 2. **Accept and decline of one invitation at the same moment**, or a double "Decline": one outcome, the other 410. Race in Task 8.
 3. **A double "Continue" on step 1 or 2** (double click, two tabs): one workspace, one team. Race in Task 12.
 4. **An existing user with no workspace, or an invitation issued before the deploy**: onboarding at step 1; the old invitation accepted as before. Tests in Tasks 7 and 11.
 5. **A signed-out visitor of a link who registers**: comes back to the link page after verification, creates no onboarding, joins with one click. Test in Task 11 (full path).
-6. **A team inviter who is not a workspace manager** resending or revoking an invitation of another team: 403. Test in Task 6.
+6. **A team inviter who is not a workspace manager** (an owner or a facilitator of the team) resending or revoking an invitation of another team: 403; a member or an observer inviting: 403. Tests in Task 6.
 7. **An inviter's message with markup or a link**: plain text in the page, the mail (both parts) and the bell. Test in Task 5.
+8. **Two teams of one name created at the same moment in one workspace**: both exist, with `atlas` and `atlas-2`. Race in Task 14. **Existing teams** after the upgrade: each has a slug, two teams of one name in one workspace differ, a second run writes nothing. Upgrade test in Task 14 on the four engines.
+9. **`/t/<slug>` asked by someone outside the workspace**, or for a team they may not view: 404, the same as no team; an account in two workspaces with the same slug reaches the current workspace's. Tests in Task 14 (Rule S-1).
 
 ## Lanes
 
 | Lane | Tasks | Cut from | Shares with other lanes |
 |---|---|---|---|
-| main | 1 to 14, 21 to 24 | — | — |
-| Access | 15, 16, 17 | head of Task 14 | `components/auth/invitation-card.tsx` (this lane only), `components/skrum/notifications-panel.tsx` (this lane only), `lang/*.json` |
-| Team | 18, 19 | head of Task 14 | `components/teams/team-page.tsx`, `team-members-card.tsx`, plan 23's Members tab, `components/workspaces/{invite-form,members-table}.tsx` (this lane only), `lang/*.json` |
-| Onboarding | 20 | head of Task 14 | `layouts/skrum/onboarding-layout.tsx`, `components/skrum/frames.tsx` (this lane only), `lang/*.json` |
+| main | 1 to 15, 22 to 25 | — | — |
+| Access | 16, 17, 18 | head of Task 15 | `components/auth/invitation-card.tsx` (this lane only), `components/skrum/notifications-panel.tsx` (this lane only), `lang/*.json` |
+| Team | 19, 20 | head of Task 15 | `components/teams/team-page.tsx`, `team-members-card.tsx`, plan 23's Members tab and General tab, `components/workspaces/{invite-form,members-table}.tsx` (this lane only), `lang/*.json` |
+| Onboarding | 21 | head of Task 15 | `layouts/skrum/onboarding-layout.tsx`, `components/skrum/frames.tsx` (this lane only), `lang/*.json` |
 
-The three lanes run in parallel. `components/invitations/team-invite-form.tsx` is built in Task 14 and used read-only by lanes Team and Onboarding; a lane that needs a change to it stops and asks. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in alphabetical blocks per lane). `tests/Pest.php`: Task 1 adds every helper of Step A.
+The three lanes run in parallel. `components/invitations/team-invite-form.tsx`, `components/skrum/team-address-field.tsx` and `lib/teams/team-slug.ts` are built in Task 15 and used read-only by lanes Team and Onboarding; a lane that needs a change to it stops and asks. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in alphabetical blocks per lane). `tests/Pest.php`: Task 1 adds `teamInviter()` and `teamFacilitator()`, Task 12 adds `onboardingAtInvite()`; no lane touches it.
 
 ---
 
@@ -153,7 +163,7 @@ Read first: the **Branch and run** checks; `docs/database.md` rules 5 and 9; `da
 
 **Interfaces:**
 - Consumes: `App\Enums\TeamRole` (plan 23).
-- Produces: `WorkspaceInvitation::team(): BelongsTo`, `isPending(): bool` (false once declined), `isDeclined(): bool`, casts `team_role` → `?TeamRole`, `declined_at` → `?Carbon`; `Team::invitations(): HasMany`; `TeamRole::invitable(): array<int, TeamRole>` (`Facilitator`, `Member`, `Observer`); factory states `declined()`, `forTeam(Team $team, TeamRole $role = TeamRole::Member)`, `withMessage(string $message)`; `App\Exceptions\InvitationUnavailable extends InvalidArgumentException`; Pest helper `teamInviter(Team $team): User` (a workspace member who is the team's `Owner`, not a workspace manager).
+- Produces: `WorkspaceInvitation::team(): BelongsTo`, `isPending(): bool` (false once declined), `isDeclined(): bool`, casts `team_role` → `?TeamRole`, `declined_at` → `?Carbon`; `Team::invitations(): HasMany`; `TeamRole::invitable(): array<int, TeamRole>` (`Facilitator`, `Member`, `Observer`); factory states `declined()`, `forTeam(Team $team, TeamRole $role = TeamRole::Member)`, `withMessage(string $message)`; `App\Exceptions\InvitationUnavailable extends InvalidArgumentException`; Pest helpers `teamInviter(Team $team): User` (a workspace member who is the team's `Owner`, not a workspace manager) and `teamFacilitator(Team $team): User` (a workspace member who is the team's `Facilitator`: decision 2 B makes them a team inviter too).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -268,7 +278,7 @@ namespace App\Exceptions;
 use InvalidArgumentException;
 
 /**
- * An invitation or an invite link that was answered, revoked, used up or
+ * An invitation or an invite link that was answered, revoked, turned off or
  * that expired between the page and the request.
  */
 class InvitationUnavailable extends InvalidArgumentException {}
@@ -352,13 +362,16 @@ In `tests/Pest.php`, next to `teamMember()`:
 ```php
 function teamInviter(Team $team): User
 {
-    $user = User::factory()->create();
-    $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    return teamMember($team, TeamRole::Owner);
+}
 
-    return $user;
+function teamFacilitator(Team $team): User
+{
+    return teamMember($team, TeamRole::Facilitator);
 }
 ```
+
+(`teamMember(Team, TeamRole)` is plan 23's helper: a workspace member, not a manager, attached to the team with the role. If it does not make the person a workspace member, these two attach them as `WorkspaceRole::Member` first.)
 
 - [ ] **Step 4: Run the tests on PostgreSQL and SQLite**
 
@@ -535,7 +548,7 @@ Expected: PASS.
 - Test: `tests/Feature/Invitations/TeamInviteLinksTest.php` (model part; Task 9 adds the routes)
 
 **Interfaces:**
-- Produces: `TeamInviteLink` with constants `ValidForDays = 7`, `MaxUses = 20`; `hashToken(string): string`, `findByToken(?string): ?self`, `isUsable(): bool`, `url(): string` (route `inviteLinks.show`, defined in Task 10 — until then the test asserts the path), relations `team()`, `createdBy()`; `Team::inviteLinks(): HasMany`, `Team::usableInviteLink(): ?TeamInviteLink`; factory states `expired()`, `revoked()`, `usedUp()`, `withToken(string)`.
+- Produces: `TeamInviteLink` with the constant `ValidForDays = 7` (no use limit: decision 3 C); `hashToken(string): string`, `findByToken(?string): ?self`, `isUsable(): bool` (not revoked, not expired), `url(): string` (route `inviteLinks.show`, defined in Task 10 — until then the test asserts the path), relations `team()`, `createdBy()`; `Team::inviteLinks(): HasMany`, `Team::usableInviteLink(): ?TeamInviteLink`; factory states `expired()`, `revoked()`, `joinedBy(int $count)`, `withToken(string)`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -556,7 +569,7 @@ it('keeps the token encrypted and finds the link by its hash', function () {
         ->and($link->toArray())->not->toHaveKeys(['token', 'token_hash']);
 });
 
-it('is usable until it expires, is revoked or is used up', function (string $state, bool $usable) {
+it('is usable until it expires or is turned off', function (string $state, bool $usable) {
     $factory = TeamInviteLink::factory();
     $link = ($state === 'fresh' ? $factory : $factory->{$state}())->create();
 
@@ -565,8 +578,11 @@ it('is usable until it expires, is revoked or is used up', function (string $sta
     ['fresh', true],
     ['expired', false],
     ['revoked', false],
-    ['usedUp', false],
 ]);
+
+it('stays usable however many people joined through it', function () {
+    expect(TeamInviteLink::factory()->joinedBy(10_000)->create()->isUsable())->toBeTrue();
+});
 
 it('gives a team its one usable link', function () {
     $team = Team::factory()->create();
@@ -611,7 +627,6 @@ return new class extends Migration
             $table->foreignUuid('created_by_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('team_role', 20);
             $table->dateTime('expires_at');
-            $table->unsignedSmallInteger('max_uses');
             $table->unsignedInteger('uses_count')->default(0);
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
@@ -647,13 +662,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $created_by_id
  * @property TeamRole $team_role
  * @property Carbon $expires_at
- * @property int $max_uses
  * @property int $uses_count
  * @property Carbon|null $revoked_at
  * @property-read Team $team
  * @property-read User|null $createdBy
  */
-#[Fillable(['token', 'token_hash', 'created_by_id', 'team_role', 'expires_at', 'max_uses', 'uses_count', 'revoked_at'])]
+#[Fillable(['token', 'token_hash', 'created_by_id', 'team_role', 'expires_at', 'uses_count', 'revoked_at'])]
 #[Hidden(['token', 'token_hash'])]
 class TeamInviteLink extends Model
 {
@@ -663,8 +677,6 @@ class TeamInviteLink extends Model
     use HasUuids;
 
     public const int ValidForDays = 7;
-
-    public const int MaxUses = 20;
 
     public static function hashToken(string $token): string
     {
@@ -698,11 +710,7 @@ class TeamInviteLink extends Model
             return false;
         }
 
-        if (! $this->expires_at->isFuture()) {
-            return false;
-        }
-
-        return $this->uses_count < $this->max_uses;
+        return $this->expires_at->isFuture();
     }
 
     public function url(): string
@@ -717,7 +725,6 @@ class TeamInviteLink extends Model
             'team_role' => TeamRole::class,
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
-            'max_uses' => 'integer',
             'uses_count' => 'integer',
         ];
     }
@@ -741,7 +748,7 @@ class TeamInviteLink extends Model
     }
 ```
 
-Factory `definition()`: `team_id` → `Team::factory()`, `token` → `$token = Str::random(40)`, `token_hash` → hash of it (use `afterMaking`/a closure so both use one token: `'token' => $token = Str::random(40), 'token_hash' => TeamInviteLink::hashToken($token)` inside `definition()`), `team_role` → `TeamRole::Member`, `expires_at` → `now()->addDays(TeamInviteLink::ValidForDays)`, `max_uses` → `TeamInviteLink::MaxUses`, `uses_count` → 0. States: `expired()` (`expires_at` a minute ago), `revoked()` (`revoked_at` now), `usedUp()` (`uses_count` = `max_uses`), `withToken(string $token)` (both columns).
+Factory `definition()`: `team_id` → `Team::factory()`, `token` → `$token = Str::random(40)`, `token_hash` → hash of it (use `afterMaking`/a closure so both use one token: `'token' => $token = Str::random(40), 'token_hash' => TeamInviteLink::hashToken($token)` inside `definition()`), `team_role` → `TeamRole::Member`, `expires_at` → `now()->addDays(TeamInviteLink::ValidForDays)`, `uses_count` → 0. States: `expired()` (`expires_at` a minute ago), `revoked()` (`revoked_at` now), `joinedBy(int $count)` (`uses_count`), `withToken(string $token)` (both columns). There is no `max_uses` column and no used-up state (decision 3 C): a limit would be a later migration.
 
 `url()` needs the route of Task 10: until then, the model test does not call it; Task 10's test does.
 
@@ -1207,7 +1214,7 @@ Expected: PASS everywhere; the existing workspace invitation tests pass unchange
 
 **Interfaces:**
 - Consumes: Task 5 (`SendInvitation`, `InvitationTerms`).
-- Produces: `TeamPolicy::invite(User, Team): bool`; `WorkspaceInvitationPolicy::manage(User, WorkspaceInvitation): bool`; `SendTeamInvitations::handle(Team $team, User $inviter, array $emails, TeamRole $role, ?string $message): array<int, IssuedInvitation>` (throws `ValidationException` keyed `emails.<index>`); routes `teams.invitations.store`, `workspaces.invitations.resend.store`.
+- Produces: `TeamPolicy::invite(User, Team): bool` (decision 2 B: `manageMembers` or the team role `Facilitator`); `WorkspaceInvitationPolicy::manage(User, WorkspaceInvitation): bool`; `SendTeamInvitations::handle(Team $team, User $inviter, array $emails, TeamRole $role, ?string $message): array<int, IssuedInvitation>` (throws `ValidationException` keyed `emails.<index>`); routes `teams.invitations.store`, `workspaces.invitations.resend.store`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1280,22 +1287,45 @@ it('invites a member of the workspace who is not in the team', function () {
     expect($team->invitations()->count())->toBe(1);
 });
 
-it('refuses the owner role and refuses people who may not invite', function () {
+it('lets a facilitator of the team invite, with any role but owner', function (string $role) {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => $role])
+        ->assertSessionHasNoErrors();
+
+    expect($team->invitations()->sole()->team_role->value)->toBe($role);
+})->with(['facilitator', 'member', 'observer']);
+
+it('refuses the owner role', function () {
     $team = Team::factory()->create();
 
     $this->actingAs(teamInviter($team))
         ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => 'owner'])
         ->assertSessionHasErrors('role');
-
-    $this->actingAs(teamMember($team))
-        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => 'member'])
-        ->assertForbidden();
 });
 
-it('lets a team inviter resend and revoke the invitations of the team and of no other', function () {
+it('refuses people who may not invite to the team', function (string $who) {
     $team = Team::factory()->create();
     $other = Team::factory()->for($team->workspace)->create();
-    $inviter = teamInviter($team);
+    $user = match ($who) {
+        'member' => teamMember($team, TeamRole::Member),
+        'observer' => teamMember($team, TeamRole::Observer),
+        'facilitator of another team' => teamFacilitator($other),
+        'workspace member outside the team' => tap(User::factory()->create(), fn (User $user) => $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value])),
+    };
+
+    $this->actingAs($user)
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => 'member'])
+        ->assertForbidden();
+
+    expect(WorkspaceInvitation::query()->count())->toBe(0);
+})->with(['member', 'observer', 'facilitator of another team', 'workspace member outside the team']);
+
+it('lets a team inviter resend and revoke the invitations of the team and of no other', function (string $who) {
+    $team = Team::factory()->create();
+    $other = Team::factory()->for($team->workspace)->create();
+    $inviter = $who === 'owner' ? teamInviter($team) : teamFacilitator($team);
     $own = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'own@example.com']);
     $foreign = WorkspaceInvitation::factory()->forTeam($other)->create();
     $workspaceOnly = WorkspaceInvitation::factory()->for($team->workspace)->create();
@@ -1313,19 +1343,23 @@ it('lets a team inviter resend and revoke the invitations of the team and of no 
 
     $this->actingAs($inviter)->delete(route('workspaces.invitations.destroy', [$team->workspace, $resent]))->assertRedirect();
     expect($team->invitations()->count())->toBe(0);
-});
+})->with(['owner', 'facilitator']);
 ```
 
 - [ ] **Step 2: Run them to see them fail** — Expected: FAIL (route `teams.invitations.store` not defined).
 
 - [ ] **Step 3: Implement**
 
-`TeamPolicy`:
+`TeamPolicy` (decision 2 B — who manages the members, plus the team's facilitators; read plan 23's `manageMembers` first and keep it unchanged: a facilitator still cannot change a role or remove a member):
 
 ```php
     public function invite(User $user, Team $team): bool
     {
-        return $this->manageMembers($user, $team);
+        if ($this->manageMembers($user, $team)) {
+            return true;
+        }
+
+        return $team->roleOf($user) === TeamRole::Facilitator;
     }
 ```
 
@@ -1549,7 +1583,7 @@ it('joins the workspace and the team with their roles and opens the team page', 
         ->assertRedirect(route('teams.show', [$team->workspace, $team]));
 
     expect($user->roleIn($team->workspace))->toBe(WorkspaceRole::Member)
-        ->and($team->members()->whereKey($user->id)->first()?->pivot->role)->toBe(TeamRole::Facilitator->value);
+        ->and($team->roleOf($user))->toBe(TeamRole::Facilitator);
 });
 
 it('never changes a role the account already has', function () {
@@ -1561,7 +1595,7 @@ it('never changes a role the account already has', function () {
     $this->actingAs($user)->post(route('invitations.acceptance.store', 'team-token'));
 
     expect($user->roleIn($team->workspace))->toBe(WorkspaceRole::Admin)
-        ->and($team->members()->whereKey($user->id)->first()?->pivot->role)->toBe(TeamRole::Owner->value);
+        ->and($team->roleOf($user))->toBe(TeamRole::Owner);
 });
 
 it('joins the team when the account is created on the card', function () {
@@ -1933,14 +1967,14 @@ Route, outside the auth groups: `Route::post('invitations/{token}/decline', [Inv
 - Modify: `app/Http/Controllers/TeamsController.php`, `routes/web.php`, `tests/Feature/Invitations/TeamInviteLinksTest.php`
 
 **Interfaces:**
-- Produces: `IssueTeamInviteLink::handle(Team, User): TeamInviteLink`; routes `teams.inviteLink.store|destroy`; team page props `canInvite: bool`, `inviteRoles: array<int, string>`, `inviteLink` (optional prop: `array{url: string, expiresAt: string, maxUses: int, usesCount: int}|null`), `pendingInvitations: array<int, array{id: string, email: string, teamRole: string, status: 'pending'|'expired'|'declined', invitedAt: string}>` (empty unless `canInvite`), `team.color: string` (chosen or derived).
+- Produces: `IssueTeamInviteLink::handle(Team, User): TeamInviteLink`; routes `teams.inviteLink.store|destroy`; team page props `canInvite: bool`, `inviteRoles: array<int, string>`, `inviteLink` (optional prop: `array{url: string, expiresAt: string, usesCount: int}|null`), `pendingInvitations: array<int, array{id: string, email: string, teamRole: string, status: 'pending'|'expired'|'declined', invitedAt: string}>` (empty unless `canInvite`), `team.color: string` (chosen or derived).
 
-- [ ] **Step 1: Write the failing tests** (appended to `TeamInviteLinksTest.php`)
+- [ ] **Step 1: Write the failing tests** (appended to `TeamInviteLinksTest.php`; add the imports `App\Enums\TeamRole`, `App\Models\WorkspaceInvitation` and `Inertia\Testing\AssertableInertia as Assert`)
 
 ```php
-it('creates the link, replaces it, and turns it off', function () {
+it('creates the link, replaces it, and turns it off', function (string $who) {
     $team = Team::factory()->create();
-    $inviter = teamInviter($team);
+    $inviter = $who === 'owner' ? teamInviter($team) : teamFacilitator($team);
 
     $this->actingAs($inviter)->post(route('teams.inviteLink.store', [$team->workspace, $team]))->assertRedirect();
     $first = $team->usableInviteLink();
@@ -1951,23 +1985,24 @@ it('creates the link, replaces it, and turns it off', function () {
     expect($first?->fresh()->revoked_at)->not->toBeNull()
         ->and($second?->is($first))->toBeFalse()
         ->and($second?->created_by_id)->toBe($inviter->id)
-        ->and($second?->max_uses)->toBe(TeamInviteLink::MaxUses)
+        ->and($second?->uses_count)->toBe(0)
         ->and($second?->expires_at->diffInDays(now(), true))->toBeGreaterThan(6.9);
 
     $this->actingAs($inviter)->delete(route('teams.inviteLink.destroy', [$team->workspace, $team]))->assertRedirect();
     expect($team->usableInviteLink())->toBeNull();
-});
+})->with(['owner', 'facilitator']);
 
-it('refuses the link to someone who may not invite', function () {
+it('refuses the link to someone who may not invite', function (TeamRole $role) {
     $team = Team::factory()->create();
 
-    $this->actingAs(teamMember($team))->post(route('teams.inviteLink.store', [$team->workspace, $team]))->assertForbidden();
-});
+    $this->actingAs(teamMember($team, $role))->post(route('teams.inviteLink.store', [$team->workspace, $team]))->assertForbidden();
+    $this->actingAs(teamMember($team, $role))->delete(route('teams.inviteLink.destroy', [$team->workspace, $team]))->assertForbidden();
+})->with([TeamRole::Member, TeamRole::Observer]);
 
 it('gives the team page the link and the pending invitations of the team to its inviters only', function () {
     $team = Team::factory()->create();
     $inviter = teamInviter($team);
-    $link = TeamInviteLink::factory()->for($team)->withToken('page-token-0123456789abcdefghijklmnopqrstu')->create();
+    TeamInviteLink::factory()->for($team)->joinedBy(3)->withToken('page-token-0123456789abcdefghijklmnopqrstu')->create();
     WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'b@example.com']);
     WorkspaceInvitation::factory()->forTeam($team)->declined()->create(['email' => 'a@example.com']);
 
@@ -1982,7 +2017,12 @@ it('gives the team page the link and the pending invitations of the team to its 
             ->missing('inviteLink')
             ->reloadOnly('inviteLink', fn (Assert $reload) => $reload
                 ->where('inviteLink.url', route('inviteLinks.show', 'page-token-0123456789abcdefghijklmnopqrstu'))
-                ->where('inviteLink.usesCount', 0)));
+                ->where('inviteLink.usesCount', 3)
+                ->missing('inviteLink.maxUses')));
+
+    $this->actingAs(teamFacilitator($team))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('canInvite', true)->has('pendingInvitations', 2));
 
     $this->actingAs(teamMember($team))
         ->get(route('teams.show', [$team->workspace, $team]))
@@ -2055,7 +2095,6 @@ class IssueTeamInviteLink
                 'created_by_id' => $creator->id,
                 'team_role' => TeamRole::Member,
                 'expires_at' => now()->addDays(TeamInviteLink::ValidForDays),
-                'max_uses' => TeamInviteLink::MaxUses,
                 'uses_count' => 0,
             ]);
         }, Transactions::Attempts);
@@ -2080,7 +2119,7 @@ class IssueTeamInviteLink
 with
 
 ```php
-    /** @return array{url: string, expiresAt: string, maxUses: int, usesCount: int}|null */
+    /** @return array{url: string, expiresAt: string, usesCount: int}|null */
     private function inviteLink(Team $team): ?array
     {
         $link = $team->usableInviteLink();
@@ -2092,7 +2131,6 @@ with
         return [
             'url' => $link->url(),
             'expiresAt' => $link->expires_at->toIso8601String(),
-            'maxUses' => $link->max_uses,
             'usesCount' => $link->uses_count,
         ];
     }
@@ -2106,12 +2144,12 @@ with
 ### Task 10: Opening and joining the link; registration and SSO know the link
 
 **Files:**
-- Create: `app/Actions/Teams/JoinTeamByLink.php`, `app/Http/Controllers/InviteLinksController.php`, `app/Http/Controllers/InviteLinkMembershipsController.php`, `resources/js/pages/invite-links/show.tsx` (thin), `tests/Feature/Invitations/InviteLinkJoinTest.php`
+- Create: `app/Actions/Teams/JoinTeamByLink.php`, `app/Http/Controllers/InviteLinksController.php`, `app/Http/Controllers/InviteLinkMembershipsController.php`, `app/Support/Invitations/InviteLinkSession.php`, `resources/js/pages/invite-links/show.tsx` (thin), `tests/Feature/Invitations/InviteLinkJoinTest.php`
 - Modify: `app/Actions/Auth/SignupGate.php`, `app/Actions/Fortify/CreateNewUser.php`, `app/Actions/Auth/ResolveSsoUser.php`, `app/Http/Controllers/SsoCallbacksController.php`, `app/Providers/FortifyServiceProvider.php` (register and login views read the link), `routes/web.php`, `tests/Concurrency/TeamInviteLinkTest.php`
 
 **Interfaces:**
 - Consumes: Tasks 3, 9.
-- Produces: `JoinTeamByLink::handle(TeamInviteLink, User): Team` (throws `InvitationUnavailable`); session key `invite_link_token` (constant `InviteLinksController::SessionKey`); `SignupGate::allows(string $email, ?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool`, `canShowRegistration(?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool`; `ResolveSsoUser::handle(SsoProvider, AbstractUser, ?WorkspaceInvitation, ?TeamInviteLink $link = null): User`; page `invite-links/show` props `isInvalid`, `isUsable`, `token`, `teamName`, `team` (mark), `workspaceName`, `inviter`, `membersCount`, `members`, `teamRole`, `isLoggedIn`, `isVerified`, `canRegister`, `ssoRequired`, `ssoProviders`.
+- Produces: `JoinTeamByLink::handle(TeamInviteLink, User): Team` (throws `InvitationUnavailable`); session key `invite_link_token` (constant `App\Support\Invitations\InviteLinkSession::Key`, read by the controllers and by `CreateNewUser`: actions may not use `App\Http`); `SignupGate::allows(string $email, ?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool`, `canShowRegistration(?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool`; `ResolveSsoUser::handle(SsoProvider, AbstractUser, ?WorkspaceInvitation, ?TeamInviteLink $link = null): User`; page `invite-links/show` props `isInvalid`, `isUsable`, `token`, `teamName`, `team` (mark), `workspaceName`, `inviter`, `membersCount`, `members`, `teamRole`, `isLoggedIn`, `isVerified`, `canRegister`, `ssoRequired`, `ssoProviders`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2134,7 +2172,7 @@ it('adds a verified account to the workspace and the team and counts the use', f
         ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]));
 
     expect($user->roleIn($link->team->workspace))->toBe(WorkspaceRole::Member)
-        ->and($link->team->members()->whereKey($user->id)->first()?->pivot->role)->toBe(TeamRole::Member->value)
+        ->and($link->team->roleOf($user))->toBe(TeamRole::Member)
         ->and($link->fresh()->uses_count)->toBe(1)
         ->and($user->fresh()->current_workspace_id)->toBe($link->team->workspace_id);
 });
@@ -2148,13 +2186,23 @@ it('counts nothing for someone already in the team', function () {
     expect($link->fresh()->uses_count)->toBe(0);
 });
 
-it('refuses a link that expired, was turned off or is used up', function (string $state) {
+it('refuses a link that expired or was turned off', function (string $state) {
     TeamInviteLink::factory()->{$state}()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
 
     $this->actingAs(User::factory()->create())
         ->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'))
         ->assertStatus(410);
-})->with(['expired', 'revoked', 'usedUp']);
+})->with(['expired', 'revoked']);
+
+it('keeps letting people join however many joined before (no use limit)', function () {
+    $link = TeamInviteLink::factory()->joinedBy(500)->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'))
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]));
+
+    expect($link->fresh()->uses_count)->toBe(501);
+});
 
 it('asks an unverified account to verify its address before joining', function () {
     TeamInviteLink::factory()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
@@ -2193,8 +2241,8 @@ it('opens registration through a link by signup mode', function (string $mode, s
     'open mode' => ['open', 'anyone@example.com', true],
 ]);
 
-it('shows the link page of a used-up link as no longer working, naming its creator', function () {
-    $link = TeamInviteLink::factory()->usedUp()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
+it('shows the link page of an expired link as no longer working, naming its creator', function () {
+    $link = TeamInviteLink::factory()->expired()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
 
     $this->get(route('inviteLinks.show', 'join-token-0123456789abcdefghijklmnopqrst'))
         ->assertInertia(fn (Assert $page) => $page->where('isUsable', false)->where('inviter.name', $link->createdBy?->name));
@@ -2208,10 +2256,10 @@ it('answers 404 with the invalid card for an unknown token', function () {
 Append to `tests/Concurrency/TeamInviteLinkTest.php`:
 
 ```php
-it('lets no more people join than the link has uses left', function () {
-    $link = TeamInviteLink::factory()->create(['max_uses' => 3]);
+it('lets every person join when many use the link at the same instant, and counts each once', function () {
+    $link = TeamInviteLink::factory()->create();
     $linkId = $link->id;
-    $userIds = User::factory()->count(4)->create()->modelKeys();
+    $userIds = User::factory()->count(5)->create()->modelKeys();
 
     $outcomes = Race::run(array_map(
         static fn (string $userId) => static fn (): string => resolve(\App\Actions\Teams\JoinTeamByLink::class)
@@ -2219,10 +2267,10 @@ it('lets no more people join than the link has uses left', function () {
         $userIds,
     ));
 
-    expect(collect($outcomes)->where('ok', true)->count())->toBe(3)
-        ->and(collect($outcomes)->where('ok', false)->pluck('error')->all())->toBe([\App\Exceptions\InvitationUnavailable::class])
-        ->and($link->team->members()->count())->toBe(3)
-        ->and($link->fresh()->uses_count)->toBe(3);
+    expect(array_column($outcomes, 'ok'))->each->toBeTrue()
+        ->and($link->team->members()->count())->toBe(5)
+        ->and($link->team->workspace->members()->count())->toBe(5)
+        ->and($link->fresh()->uses_count)->toBe(5);
 });
 
 it('counts one use when one account joins twice at the same instant', function () {
@@ -2240,7 +2288,7 @@ it('counts one use when one account joins twice at the same instant', function (
 });
 ```
 
-The protection proved: the link row is locked; membership and the count are read and written under it.
+The protection proved: the link row is locked; membership and the count are read and written under it. Without the lock, one account joining twice at once attaches twice (the second attach fails on the pivot's primary key) or is counted twice; with no use limit (decision 3 C) the five-account race proves the lock serialises the joins without refusing any.
 
 - [ ] **Step 2: Run them to see them fail** — Expected: FAIL (routes not defined).
 
@@ -2304,8 +2352,6 @@ class JoinTeamByLink
 `InviteLinksController::show(Request $request, string $token, SignupGate $signupGate, SignInPolicy $signInPolicy): Response|RedirectResponse|SymfonyResponse` — built on `InvitationLinksController::show`:
 
 ```php
-    public const string SessionKey = 'invite_link_token';
-
     public function show(Request $request, string $token, SignupGate $signupGate, SignInPolicy $signInPolicy): Response|RedirectResponse|SymfonyResponse
     {
         $link = TeamInviteLink::findByToken($token);
@@ -2318,7 +2364,7 @@ class JoinTeamByLink
         $team = $link->team;
 
         if ($user !== null && $team->hasMember($user)) {
-            $request->session()->forget(self::SessionKey);
+            $request->session()->forget(InviteLinkSession::Key);
 
             return to_route('teams.show', [$team->workspace, $team]);
         }
@@ -2327,7 +2373,7 @@ class JoinTeamByLink
             redirect()->setIntendedUrl($request->fullUrl());
         }
 
-        $request->session()->put(self::SessionKey, $token);
+        $request->session()->put(InviteLinkSession::Key, $token);
 
         $canRegister = Features::enabled(Features::registration())
             && $signInPolicy->allowsLocalCredentials()
@@ -2355,7 +2401,7 @@ class JoinTeamByLink
     }
 ```
 
-`InviteLinkMembershipsController::store(Request $request, string $token, JoinTeamByLink $join): RedirectResponse`: `findByToken` → 404; `try { $team = $join->handle($link, $request->user()); } catch (InvitationUnavailable) { abort(410); }`; forget `SessionKey`; `to_route('teams.show', [$team->workspace, $team])`.
+`InviteLinkMembershipsController::store(Request $request, string $token, JoinTeamByLink $join): RedirectResponse`: `findByToken` → 404; `try { $team = $join->handle($link, $request->user()); } catch (InvitationUnavailable) { abort(410); }`; forget `InviteLinkSession::Key`; `to_route('teams.show', [$team->workspace, $team])`.
 
 Routes:
 
@@ -2408,9 +2454,9 @@ Route::post('invite/{token}/membership', [InviteLinkMembershipsController::class
     }
 ```
 
-`CreateNewUser::create` passes `TeamInviteLink::findByToken(request()->session()->get(InviteLinksController::SessionKey))` to `register`, which passes it to `SignupGate::allows`. (`App\Actions` may not use `App\Http`: put the key in `App\Support\Invitations\InviteLinkSession::Key` and have the controller use that constant instead.) `ResolveSsoUser::handle` gains `?TeamInviteLink $link = null` and passes it to `allows`; `SsoCallbacksController` reads it from the session. `FortifyServiceProvider` register and login views pass the link to `canShowRegistration`.
+`app/Support/Invitations/InviteLinkSession.php`: `class InviteLinkSession { public const string Key = 'invite_link_token'; }`. `CreateNewUser::create` passes `TeamInviteLink::findByToken(request()->session()->get(InviteLinkSession::Key))` to `register`, which passes it to `SignupGate::allows`. `ResolveSsoUser::handle` gains `?TeamInviteLink $link = null` and passes it to `allows`; `SsoCallbacksController` reads it from the session. `FortifyServiceProvider` register and login views pass the link to `canShowRegistration`.
 
-`resources/js/pages/invite-links/show.tsx` (thin until Task 15):
+`resources/js/pages/invite-links/show.tsx` (thin until Task 16):
 
 ```tsx
 import { Head } from '@inertiajs/react';
@@ -2669,16 +2715,17 @@ Route: inside `['auth', 'verified']`: `Route::get('onboarding', [OnboardingsCont
 type OnboardingProps = {
     step: 'workspace' | 'team' | 'invite' | 'ritual';
     workspace: { name: string; locale: string } | null;
-    team: { id: string; name: string; color: ColumnColor; description: string | null } | null;
+    team: { id: string; name: string; color: ColumnColor; description: string | null; slug: string } | null; // slug: Task 14
+    teamAddressBase: string;          // Task 14: the instance's address followed by "/t/"
     teamName: string | null;          // from registration, until the team exists
-    defaultColor: ColumnColor;        // derived from the user id
+    defaultColor: ColumnColor;        // derived from the workspace id (spec §8.5), the user id before step 1
     locales: { value: string; label: string }[];
     userLocale: string;
     inviteRoles: string[];
     invitedCount: number;             // pending invitations of the team
     inviteLinkUrl: string | null;     // usable link of the team, on step invite
     inviteLinkExpiresInDays: number;
-    inviteLinkMaxUses: number;
+    inviteLinkUsesCount: number;      // no use limit (decision 3 C)
     membersCount: number;
 };
 ```
@@ -2729,7 +2776,7 @@ it('creates the team at step two with its colour, the user its owner, prefilled 
 
     expect($team->color)->toBe(ColumnColor::Lagoon)
         ->and($team->workspace_id)->toBe($onboarding->fresh()->workspace_id)
-        ->and($team->members()->whereKey($onboarding->user_id)->first()?->pivot->role)->toBe(TeamRole::Owner->value)
+        ->and($team->roleOf($onboarding->user))->toBe(TeamRole::Owner)
         ->and($onboarding->fresh()->step)->toBe(OnboardingStep::Invite);
 
     $this->actingAs($onboarding->user)->put(route('onboarding.step.update'), ['step' => 'workspace']);
@@ -2909,7 +2956,7 @@ The shared `lockedOnboarding(User): Onboarding` lives in a trait `app/Http/Contr
 
 `OnboardingCompletionsController::store`: body `ritual` nullable in `['retro', 'poker', 'whiteboard', 'icebreaker']`; requires `step === Ritual` and a team (else the same validation error); sets `completed_at`; redirects to `route('teams.show', [$workspace, $team]).($ritual === null ? '' : "?new={$ritual}")`.
 
-`PresentOnboarding::handle(Onboarding, User): array` builds the props above (`defaultColor` = `TeamMark::derived($user->id)->value`; `inviteLinkUrl` = `$team?->usableInviteLink()?->url()`; `locales` from `config('skrum.locales')` with their own names — reuse what `LocalesController` sends if it has a label list; `invitedCount` = pending invitations of the team). `OnboardingsController::show` renders it.
+`PresentOnboarding::handle(Onboarding, User): array` builds the props above (`defaultColor` = `TeamMark::derived($onboarding->workspace_id ?? $user->id)->value`; `inviteLinkUrl` = `$team?->usableInviteLink()?->url()`; `locales` from `config('skrum.locales')` with their own names — reuse what `LocalesController` sends if it has a label list; `invitedCount` = pending invitations of the team). `OnboardingsController::show` renders it.
 
 Routes, in the `['auth', 'verified']` group:
 
@@ -2966,15 +3013,589 @@ it('lists each invitation with its team and status, and offers the teams to invi
 - [ ] **Step 4: Run on PostgreSQL and SQLite** — `tests/Feature/Invitations/InvitationListsTest.php tests/Feature/Workspaces/WorkspaceMembersTest.php`. Expected: PASS.
 - [ ] **Step 5: Commit** — `feat(invitations): the members page shows each invitation's team and status` (trailer).
 
-## Step B — the screens
-
-Each screen task: read the mockup's `README.md` and `preview.html` first; compose from the components named; write Vitest for the behaviours listed (the states of the spec §10 the task owns); keep every existing test of the component green (a changed expectation is listed in the commit message); add the translation keys in the four languages; no capture (Task 22).
-
-### Task 14: Front foundation — types, the address chips, the team mark, the shared invite form
+### Task 14: The team slug — column, data migration, creation, edits and `/t/<slug>` (decision 7 B)
 
 **Files:**
-- Create: `resources/js/lib/invitations/types.ts`, `resources/js/lib/invitations/email-chips.ts` (+ `.test.ts`), `resources/js/components/skrum/team-mark.tsx` (+ test), `resources/js/components/skrum/email-chips-field.tsx` (+ test), `resources/js/components/invitations/team-invite-form.tsx` (+ test), `resources/js/components/invitations/invite-link-block.tsx` (+ test)
-- Modify: `resources/js/components/teams/session-create/use-new-session-intent.ts` (`icebreaker` in `IntentTypes`; its test gains the case), `resources/js/types/index.d.ts` or the file that declares `TeamSummary` (`color`)
+- Create: `database/migrations/2026_10_25_100400_add_slug_to_teams.php`, `app/Support/Teams/TeamSlug.php`, `app/Actions/Teams/CreateTeam.php`, `app/Actions/Teams/ResolveTeamAddress.php`, `app/Http/Controllers/TeamAddressesController.php`, `tests/Feature/Teams/TeamSlugTest.php`, `tests/Feature/Teams/TeamAddressesTest.php`, `tests/Upgrade/TeamSlugBackfillTest.php`, `tests/Concurrency/TeamSlugTest.php`
+- Modify: `app/Models/Team.php` (`slug` fillable, `creating` hook), `app/Http/Controllers/TeamsController.php` (`store` through `CreateTeam`; `update` takes `slug`; `show` sends `team.slug` and `team.address`), `app/Http/Controllers/OnboardingTeamsController.php`, `app/Http/Requests/Onboarding/OnboardingTeamRequest.php`, `app/Actions/Onboarding/PresentOnboarding.php` (Task 12's files), `routes/web.php`
+
+Read first: spec §6.1 (the slug's rule), §8.7 and Rule S-1; `docs/database.md` rules 5, 6 and 7 and "Upgrading"; `database/migrations/2026_10_19_100200_add_email_key_to_users_table.php` and `tests/Upgrade/EmailKeyBackfillTest.php` (a re-runnable fill and its upgrade test: copy their shape); `tests/Concurrency/Support/Race.php` (where it pauses; how a busy SQLite file is reported in the other races of `sqlite-file`); plan 23's team creation (if it added an action, `CreateTeam` is that action, extended) and its General tab's save (if it moved `teams.update` to another controller, the `slug` field goes there).
+
+**Interfaces:**
+- Consumes: Task 12 (`OnboardingTeamsController`, `OnboardingTeamRequest`, `PresentOnboarding`).
+- Produces: `TeamSlug::MaxLength = 50`, `MinLength = 2`, `Pattern`, `fromName(string): string`, `firstFree(string $base, array $taken): string`, `availableIn(string $workspaceId, string $base, ?string $exceptTeamId = null): string`; `Team::$slug` (fillable, filled on `creating` when empty); `CreateTeam::handle(Workspace, array $attributes): Team` (throws `ValidationException` on `slug` when a given slug is taken); `ResolveTeamAddress::handle(User, string $slug): ?Team`; route `teamAddresses.show` (`GET t/{slug}`); team page `team.slug`, `team.address`; onboarding props `team.slug`, `teamAddressBase`; `PUT onboarding/team` and `PATCH teams/{team}` accept `slug`.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Teams/TeamSlugTest.php`:
+
+```php
+<?php
+
+use App\Enums\TeamRole;
+use App\Models\Onboarding;
+use App\Models\Team;
+use App\Models\Workspace;
+use App\Support\Teams\TeamSlug;
+
+it('derives a slug from a name', function (string $name, string $slug) {
+    expect(TeamSlug::fromName($name))->toBe($slug);
+})->with([
+    ['Atlas', 'atlas'],
+    ['  Équipe  Nord ', 'equipe-nord'],
+    ['!!!', 'team'],
+    ['A', 'team'],
+    [str_repeat('platform ', 10), 'platform-platform-platform-platform-platform'],
+]);
+
+it('keeps a numbered slug within fifty characters', function () {
+    $base = str_repeat('a', 50);
+
+    expect(TeamSlug::firstFree($base, [$base]))->toBe(str_repeat('a', 48).'-2')
+        ->and(TeamSlug::firstFree('atlas', ['atlas', 'atlas-2']))->toBe('atlas-3');
+});
+
+it('gives a new team a slug unique in its workspace, and the same slug in another workspace', function () {
+    $workspace = Workspace::factory()->create();
+    $first = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $second = Team::factory()->for($workspace)->create(['name' => 'atlas']);
+    $elsewhere = Team::factory()->create(['name' => 'Atlas']);
+
+    expect($first->slug)->toBe('atlas')
+        ->and($second->slug)->toBe('atlas-2')
+        ->and($elsewhere->slug)->toBe('atlas');
+});
+
+it('creates a team from the workspace page with a derived slug', function () {
+    $workspace = Workspace::factory()->create();
+
+    $this->actingAs(workspaceManager($workspace))
+        ->post(route('teams.store', $workspace), ['name' => 'Atlas'])
+        ->assertRedirect();
+
+    expect($workspace->teams()->sole()->slug)->toBe('atlas');
+});
+
+it('keeps the slug when the team is renamed', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+
+    $this->actingAs(workspaceManager($team->workspace))
+        ->patch(route('teams.update', [$team->workspace, $team]), ['name' => 'Atlas Platform'])
+        ->assertSessionHasNoErrors();
+
+    expect($team->fresh()->slug)->toBe('atlas');
+});
+
+it('lets who may update the team edit its slug, checked for form and uniqueness', function (string $slug, ?string $error) {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    Team::factory()->for($team->workspace)->create(['name' => 'Borealis']);
+
+    $response = $this->actingAs(teamInviter($team))
+        ->patch(route('teams.update', [$team->workspace, $team]), ['name' => 'Atlas', 'slug' => $slug]);
+
+    if ($error === null) {
+        $response->assertSessionHasNoErrors();
+        expect($team->fresh()->slug)->toBe($slug);
+
+        return;
+    }
+
+    $response->assertSessionHasErrors('slug');
+    expect($team->fresh()->slug)->toBe('atlas');
+})->with([
+    'valid' => ['atlas-core', null],
+    'taken in the workspace' => ['borealis', 'slug'],
+    'capitals' => ['Atlas', 'slug'],
+    'double hyphen' => ['atlas--core', 'slug'],
+    'too short' => ['a', 'slug'],
+    'too long' => [str_repeat('a', 51), 'slug'],
+]);
+
+it('refuses a slug edit to who may not update the team', function (TeamRole $role) {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+
+    $this->actingAs(teamMember($team, $role))
+        ->patch(route('teams.update', [$team->workspace, $team]), ['name' => 'Atlas', 'slug' => 'mine'])
+        ->assertForbidden();
+})->with([TeamRole::Facilitator, TeamRole::Member, TeamRole::Observer]);
+
+it('creates the onboarding team with the slug typed at step two, or a derived one', function (?string $slug, string $expected) {
+    $onboarding = Onboarding::factory()->create();
+    $this->actingAs($onboarding->user)->put(route('onboarding.workspace.update'), ['name' => 'Nordlys', 'locale' => 'en']);
+
+    $this->actingAs($onboarding->user)
+        ->put(route('onboarding.team.update'), array_filter(['name' => 'Atlas', 'color' => 'lagoon', 'slug' => $slug]))
+        ->assertSessionHasNoErrors();
+
+    expect($onboarding->fresh()->team->slug)->toBe($expected);
+})->with([
+    [null, 'atlas'],
+    ['atlas-team', 'atlas-team'],
+]);
+```
+
+`tests/Feature/Teams/TeamAddressesTest.php`:
+
+```php
+<?php
+
+use App\Models\Team;
+use App\Models\User;
+use App\Models\Workspace;
+
+it('leads to the team of the current workspace first', function () {
+    $user = User::factory()->create();
+    $mine = Team::factory()->for(Workspace::factory()->create(['name' => 'Aurora']))->create(['name' => 'Atlas']);
+    $current = Team::factory()->for(Workspace::factory()->create(['name' => 'Zephyr']))->create(['name' => 'Atlas']);
+    foreach ([$mine, $current] as $team) {
+        $team->workspace->members()->attach($user, ['role' => 'member']);
+        $team->members()->attach($user, ['role' => 'member']);
+    }
+    $user->forceFill(['current_workspace_id' => $current->workspace_id])->save();
+
+    $this->actingAs($user)->get('/t/atlas')->assertRedirect(route('teams.show', [$current->workspace, $current]));
+});
+
+it('looks in the other workspaces of the account when the current one has no such team', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $member = teamMember($team);
+    $member->forceFill(['current_workspace_id' => Workspace::factory()->withMember($member)->create()->id])->save();
+
+    $this->actingAs($member)->get('/t/atlas')->assertRedirect(route('teams.show', [$team->workspace, $team]));
+});
+
+it('answers 404 alike for no team, a team of another workspace and a team the account may not view', function () {
+    $foreign = Team::factory()->create(['name' => 'Atlas']);
+    $hidden = Team::factory()->create(['name' => 'Borealis']);
+    $outsider = User::factory()->create();
+    $hidden->workspace->members()->attach($outsider, ['role' => 'member']);
+
+    $this->actingAs($outsider)->get('/t/nothing')->assertNotFound();
+    $this->actingAs($outsider)->get("/t/{$foreign->slug}")->assertNotFound();
+    $this->actingAs($outsider)->get("/t/{$hidden->slug}")->assertNotFound();
+});
+
+it('sends a signed-out visitor to sign in and back', function () {
+    $this->get('/t/atlas')->assertRedirect(route('login'));
+
+    expect(session('url.intended'))->toBe(url('/t/atlas'));
+});
+```
+
+(The pivot values `'member'` follow the workspace and team role strings; use plan 23's helpers or `WorkspaceRole`/`TeamRole` values where they exist, and `Workspace::factory()->withMember()` as Task 12 does.)
+
+`tests/Upgrade/TeamSlugBackfillTest.php`, in the shape of `EmailKeyBackfillTest.php`:
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Tests\Support\SqlProbe;
+
+const TeamSlugMigration = '2026_10_25_100400_add_slug_to_teams.php';
+
+function migrateUpToTeamSlug(): void
+{
+    $earlier = collect(glob(database_path('migrations/*.php')))
+        ->filter(fn (string $path): bool => basename($path) < TeamSlugMigration)
+        ->values()
+        ->all();
+
+    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+}
+
+function runTeamSlugMigration(): void
+{
+    Artisan::call('migrate', ['--path' => [database_path('migrations/'.TeamSlugMigration)], '--realpath' => true]);
+}
+
+function workspaceBeforeTeamSlug(string $name): string
+{
+    $id = (string) Str::uuid7();
+    DB::table('workspaces')->insert(['id' => $id, 'name' => $name, 'slug' => Str::slug($name).'-'.Str::lower(Str::random(6)), 'created_at' => now(), 'updated_at' => now()]);
+
+    return $id;
+}
+
+function teamBeforeTeamSlug(string $workspaceId, string $name, string $createdAt): string
+{
+    $id = (string) Str::uuid7();
+    DB::table('teams')->insert(['id' => $id, 'workspace_id' => $workspaceId, 'name' => $name, 'created_at' => $createdAt, 'updated_at' => $createdAt]);
+
+    return $id;
+}
+
+it('gives every existing team a slug, unique in its workspace, in creation order', function () {
+    migrateUpToTeamSlug();
+    $nordlys = workspaceBeforeTeamSlug('Nordlys');
+    $other = workspaceBeforeTeamSlug('Other');
+    $newer = teamBeforeTeamSlug($nordlys, 'Atlas', '2026-03-02 10:00:00');
+    $older = teamBeforeTeamSlug($nordlys, 'atlas ', '2026-03-01 10:00:00');
+    $elsewhere = teamBeforeTeamSlug($other, 'Atlas', '2026-03-03 10:00:00');
+    $symbols = teamBeforeTeamSlug($other, '???', '2026-03-03 10:00:00');
+
+    runTeamSlugMigration();
+
+    expect(DB::table('teams')->where('id', $older)->value('slug'))->toBe('atlas')
+        ->and(DB::table('teams')->where('id', $newer)->value('slug'))->toBe('atlas-2')
+        ->and(DB::table('teams')->where('id', $elsewhere)->value('slug'))->toBe('atlas')
+        ->and(DB::table('teams')->where('id', $symbols)->value('slug'))->toBe('team')
+        ->and(DB::table('teams')->whereNull('slug')->count())->toBe(0)
+        ->and(Schema::hasIndex('teams', ['workspace_id', 'slug'], 'unique'))->toBeTrue()
+        ->and(collect(Schema::getColumns('teams'))->firstWhere('name', 'slug')['nullable'])->toBeFalse();
+});
+
+it('can run a second time, and then writes no team that already has its slug', function () {
+    migrateUpToTeamSlug();
+    teamBeforeTeamSlug(workspaceBeforeTeamSlug('Nordlys'), 'Atlas', '2026-03-01 10:00:00');
+    runTeamSlugMigration();
+    DB::table('migrations')->where('migration', Str::beforeLast(TeamSlugMigration, '.php'))->delete();
+
+    $updates = SqlProbe::updateConditions('teams', fn () => runTeamSlugMigration());
+
+    expect($updates)->toBe([])
+        ->and(DB::table('teams')->value('slug'))->toBe('atlas');
+});
+```
+
+(Read the current `workspaces` and `teams` columns at that date with `database-schema` and fill every not-null column the inserts need; a global `const` in a Pest file may clash with another upgrade test: if one does, use a function returning the name.)
+
+`tests/Concurrency/TeamSlugTest.php`:
+
+```php
+<?php
+
+use App\Actions\Teams\CreateTeam;
+use App\Models\Workspace;
+use Tests\Concurrency\Support\Race;
+
+it('creates both teams when two of one name are created at the same instant in one workspace', function () {
+    $workspaceId = Workspace::factory()->create()->id;
+
+    $outcomes = Race::run(array_fill(0, 2, static fn (): string => resolve(CreateTeam::class)
+        ->handle(Workspace::query()->findOrFail($workspaceId), ['name' => 'Atlas'])->slug));
+
+    expect(array_column($outcomes, 'ok'))->each->toBeTrue()
+        ->and(Workspace::query()->findOrFail($workspaceId)->teams()->pluck('slug')->sort()->values()->all())->toBe(['atlas', 'atlas-2']);
+});
+```
+
+The protection proved: both contenders read the free slug `atlas` before either inserts (the pause after the first query of the transaction, which is `availableIn`'s read); the unique index refuses the second insert, and `CreateTeam` derives the next free slug and inserts again. Without the retry the second creation fails with a unique-constraint error.
+
+- [ ] **Step 2: Run them to see them fail** — `vendor/bin/sail artisan test --compact tests/Feature/Teams/TeamSlugTest.php tests/Feature/Teams/TeamAddressesTest.php` — Expected: FAIL (class `TeamSlug` not found; route `t/{slug}` not defined). `bin/test-db pgsql -- tests/Upgrade/TeamSlugBackfillTest.php` — Expected: FAIL (the migration file does not exist).
+
+- [ ] **Step 3: Implement**
+
+`app/Support/Teams/TeamSlug.php`:
+
+```php
+<?php
+
+namespace App\Support\Teams;
+
+use App\Models\Team;
+use Illuminate\Support\Str;
+
+class TeamSlug
+{
+    public const int MaxLength = 50;
+
+    public const int MinLength = 2;
+
+    public const string Pattern = '/^[a-z0-9]+(-[a-z0-9]+)*$/';
+
+    public const string Fallback = 'team';
+
+    public static function fromName(string $name): string
+    {
+        $slug = self::cut(Str::slug($name), self::MaxLength);
+
+        if (strlen($slug) < self::MinLength) {
+            return self::Fallback;
+        }
+
+        return $slug;
+    }
+
+    /** @param array<int, string> $taken */
+    public static function firstFree(string $base, array $taken): string
+    {
+        if (! in_array($base, $taken, true)) {
+            return $base;
+        }
+
+        $number = 2;
+
+        while (in_array(self::numbered($base, $number), $taken, true)) {
+            $number++;
+        }
+
+        return self::numbered($base, $number);
+    }
+
+    public static function availableIn(string $workspaceId, string $base, ?string $exceptTeamId = null): string
+    {
+        /** @var array<int, string> $taken */
+        $taken = Team::query()
+            ->where('workspace_id', $workspaceId)
+            ->when($exceptTeamId !== null, fn ($query) => $query->whereKeyNot($exceptTeamId))
+            ->pluck('slug')
+            ->all();
+
+        return self::firstFree($base, $taken);
+    }
+
+    private static function numbered(string $base, int $number): string
+    {
+        $suffix = "-{$number}";
+
+        return self::cut($base, self::MaxLength - strlen($suffix)).$suffix;
+    }
+
+    private static function cut(string $slug, int $length): string
+    {
+        if (strlen($slug) <= $length) {
+            return $slug;
+        }
+
+        $cut = substr($slug, 0, $length);
+        $lastHyphen = strrpos($cut, '-');
+
+        if ($lastHyphen !== false && $lastHyphen >= self::MinLength) {
+            return substr($cut, 0, $lastHyphen);
+        }
+
+        return rtrim($cut, '-');
+    }
+}
+```
+
+The set read by `availableIn` is the slugs of one workspace's teams: bounded (rule 2).
+
+`Team`: `'slug'` in `#[Fillable]`, `@property string $slug`, and
+
+```php
+    protected static function booted(): void
+    {
+        static::creating(function (Team $team): void {
+            if ($team->slug !== null && $team->slug !== '') {
+                return;
+            }
+
+            $team->slug = TeamSlug::availableIn($team->workspace_id, TeamSlug::fromName($team->name));
+        });
+    }
+```
+
+(merge with a `booted()` plan 23 may have added). Factories and seeders need nothing: the hook fills the slug.
+
+`app/Actions/Teams/CreateTeam.php`:
+
+```php
+<?php
+
+namespace App\Actions\Teams;
+
+use App\Models\Team;
+use App\Models\Workspace;
+use App\Support\Teams\TeamSlug;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class CreateTeam
+{
+    public const int Attempts = 5;
+
+    /** @param array<string, mixed> $attributes name, and optionally color, description, slug */
+    public function handle(Workspace $workspace, array $attributes): Team
+    {
+        $chosenSlug = $attributes['slug'] ?? null;
+
+        if (is_string($chosenSlug) && $chosenSlug !== '') {
+            return $this->createWithChosenSlug($workspace, $attributes, $chosenSlug);
+        }
+
+        return $this->createWithDerivedSlug($workspace, $attributes);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function createWithChosenSlug(Workspace $workspace, array $attributes, string $slug): Team
+    {
+        try {
+            return DB::transaction(fn (): Team => $workspace->teams()->create([...$attributes, 'slug' => $slug]));
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['slug' => __('This link is already taken in :workspace.', ['workspace' => $workspace->name])]);
+        }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function createWithDerivedSlug(Workspace $workspace, array $attributes): Team
+    {
+        $base = TeamSlug::fromName((string) $attributes['name']);
+        $attempt = 1;
+
+        while (true) {
+            try {
+                return DB::transaction(fn (): Team => $workspace->teams()->create([
+                    ...$attributes,
+                    'slug' => TeamSlug::availableIn($workspace->id, $base),
+                ]));
+            } catch (UniqueConstraintViolationException $exception) {
+                if ($attempt >= self::Attempts) {
+                    throw $exception;
+                }
+
+                $attempt++;
+            }
+        }
+    }
+}
+```
+
+Each insert runs in its own (nested, when called inside a transaction) `DB::transaction` (rule 6), so a refused insert rolls back to its savepoint and the outer transaction goes on, on every engine.
+
+`TeamsController::store`: `$team = $createTeam->handle($workspace, $validated);`. `TeamsController::update`: validation adds `'slug' => ['sometimes', 'string', 'min:'.TeamSlug::MinLength, 'max:'.TeamSlug::MaxLength, 'regex:'.TeamSlug::Pattern, Rule::unique('teams', 'slug')->where('workspace_id', $workspace->id)->ignore($team->id)]` with the messages `regex` → `__('Use lower-case letters, digits and hyphens.')` and `unique` → `__('This link is already taken in :workspace.', ['workspace' => $workspace->name])`; the update runs in a nested `DB::transaction` and maps a `UniqueConstraintViolationException` (two edits at once) to the same `slug` error. `show`: `team` gains `'slug' => $team->slug, 'address' => route('teamAddresses.show', $team->slug)` (merged with Task 9's keys).
+
+`OnboardingTeamRequest`: `slug` → `['nullable', 'string', 'min:2', 'max:50', 'regex:'.TeamSlug::Pattern, Rule::unique('teams', 'slug')->where('workspace_id', $this->user()->onboarding?->workspace_id)->ignore($this->user()->onboarding?->team_id)]`, same messages. `OnboardingTeamsController::update` (Task 12): creating → `$createTeam->handle($onboarding->workspace, $request->safe()->only(['name', 'color', 'description', 'slug']))`; updating → the update as before, plus `slug` when the request carries one (in a nested transaction, a unique violation mapped to the `slug` error). A rename never touches the slug. `PresentOnboarding`: `team.slug`, `'teamAddressBase' => url('t').'/'`.
+
+`ResolveTeamAddress`:
+
+```php
+<?php
+
+namespace App\Actions\Teams;
+
+use App\Models\Team;
+use App\Models\User;
+use App\Support\Alphabetical;
+
+class ResolveTeamAddress
+{
+    /** Rule S-1: the current workspace first, then the account's other workspaces by name; never a workspace the account is not in. */
+    public function handle(User $user, string $slug): ?Team
+    {
+        $workspaceIds = $user->workspaces()->pluck('workspaces.id')->all();
+
+        $teams = Team::query()
+            ->where('slug', $slug)
+            ->whereIn('workspace_id', $workspaceIds)
+            ->with('workspace')
+            ->get();
+
+        $current = $teams->where('workspace_id', $user->current_workspace_id);
+        $others = Alphabetical::sort(
+            $teams->where('workspace_id', '!=', $user->current_workspace_id)->sortBy('workspace_id'),
+            fn (Team $team): string => $team->workspace->name,
+        );
+
+        return $current->concat($others)->first(fn (Team $team): bool => $user->can('view', $team));
+    }
+}
+```
+
+(Check `Alphabetical::sort()`'s signature and stability first; the `sortBy('workspace_id')` before it is the tie-breaker of rule 7 when two workspaces share a name.)
+
+`TeamAddressesController::show(Request $request, string $slug, ResolveTeamAddress $resolve): RedirectResponse`: `$team = $resolve->handle($request->user(), $slug); abort_if($team === null, 404); return to_route('teams.show', [$team->workspace, $team]);`.
+
+Route, in the `['auth', 'verified']` group, outside `w/{workspace}`:
+
+```php
+    Route::get('t/{slug}', [TeamAddressesController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->middleware('throttle:60,1,teamAddresses')
+        ->name('teamAddresses.show');
+```
+
+`database/migrations/2026_10_25_100400_add_slug_to_teams.php`:
+
+```php
+<?php
+
+use App\Support\Teams\TeamSlug;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Off, so that the teams table is not locked while its rows are filled. The work can then
+     * stop midway: up() fills only the teams without a slug and can be run again.
+     *
+     * @var bool
+     */
+    public $withinTransaction = false;
+
+    public function up(): void
+    {
+        if (! Schema::hasColumn('teams', 'slug')) {
+            Schema::table('teams', function (Blueprint $table): void {
+                $table->string('slug', TeamSlug::MaxLength)->nullable();
+            });
+        }
+
+        DB::table('teams')
+            ->whereNull('slug')
+            ->distinct()
+            ->pluck('workspace_id')
+            ->each(fn (string $workspaceId) => $this->fillWorkspace($workspaceId));
+
+        $hasIndex = Schema::hasIndex('teams', ['workspace_id', 'slug'], 'unique');
+
+        Schema::table('teams', function (Blueprint $table) use ($hasIndex): void {
+            $table->string('slug', TeamSlug::MaxLength)->nullable(false)->change();
+
+            if (! $hasIndex) {
+                $table->unique(['workspace_id', 'slug']);
+            }
+        });
+    }
+
+    private function fillWorkspace(string $workspaceId): void
+    {
+        $teams = DB::table('teams')->where('workspace_id', $workspaceId)->get(['id', 'name', 'slug', 'created_at']);
+
+        /** @var array<int, string> $taken */
+        $taken = $teams->whereNotNull('slug')->pluck('slug')->all();
+
+        $teams->whereNull('slug')
+            ->sortBy([
+                fn (object $a, object $b): int => strcmp((string) $a->created_at, (string) $b->created_at),
+                fn (object $a, object $b): int => strcmp((string) $a->id, (string) $b->id),
+            ])
+            ->each(function (object $team) use (&$taken): void {
+                $slug = TeamSlug::firstFree(TeamSlug::fromName((string) $team->name), $taken);
+                $taken[] = $slug;
+
+                DB::table('teams')->where('id', $team->id)->update(['slug' => $slug]);
+            });
+    }
+};
+```
+
+The order is computed in PHP (rule 7: where NULL sorts is not left to the engine; a team without `created_at` sorts first, then by id). One workspace's teams are a bounded set. `teams` has no derived column of rule 9, so writing it through `DB::table` skips nothing.
+
+- [ ] **Step 4: Run on PostgreSQL and SQLite; the upgrade test and the race on the four engines**
+
+Run: `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/Onboarding tests/Feature/Workspaces`, then `sqlite`. Then `bin/test-db <engine> -- tests/Upgrade/TeamSlugBackfillTest.php` for `pgsql`, `mariadb`, `mysql`, `sqlite`; and `bin/test-db <engine> --concurrency -- tests/Concurrency/TeamSlugTest.php` for `pgsql`, `mariadb`, `mysql`, `sqlite-file`. Then `bin/check-pg-upgrade` (the fixture's teams receive slugs; the schema equals a fresh install's).
+Expected: PASS everywhere; existing team tests unchanged except an exact-match assertion on the `team` prop, which gains `slug` and `address` (listed in the commit message).
+
+- [ ] **Step 5: Commit** — `feat(teams): a slug per team, unique in its workspace, and /t/<slug>` (trailer; the body lists any existing test whose expected `team` prop changed).
+
+## Step B — the screens
+
+Each screen task: read the mockup's `README.md` and `preview.html` first; compose from the components named; write Vitest for the behaviours listed (the states of the spec §10 the task owns); keep every existing test of the component green (a changed expectation is listed in the commit message); add the translation keys in the four languages; no capture (Task 23).
+
+### Task 15: Front foundation — types, the address chips, the team mark, the shared invite form, the team address field
+
+**Files:**
+- Create: `resources/js/lib/invitations/types.ts`, `resources/js/lib/invitations/email-chips.ts` (+ `.test.ts`), `resources/js/components/skrum/team-mark.tsx` (+ test), `resources/js/components/skrum/email-chips-field.tsx` (+ test), `resources/js/components/invitations/team-invite-form.tsx` (+ test), `resources/js/components/invitations/invite-link-block.tsx` (+ test), `resources/js/lib/teams/team-slug.ts` (+ `.test.ts`), `resources/js/components/skrum/team-address-field.tsx` (+ test)
+- Modify: `resources/js/components/teams/session-create/use-new-session-intent.ts` (`icebreaker` in `IntentTypes`; its test gains the case), `resources/js/types/index.d.ts` or the file that declares `TeamSummary` (`color`, `slug`, `address`)
 
 **Interfaces:**
 - Produces:
@@ -2982,7 +3603,7 @@ Each screen task: read the mockup's `README.md` and `preview.html` first; compos
 ```ts
 // lib/invitations/types.ts
 export type TeamRoleValue = 'owner' | 'facilitator' | 'member' | 'observer';
-export type InviteLink = { url: string; expiresAt: string; maxUses: number; usesCount: number };
+export type InviteLink = { url: string; expiresAt: string; usesCount: number }; // no use limit (decision 3 C)
 export type PendingInvitation = {
     id: string; email: string; teamRole: TeamRoleValue | null;
     status: 'pending' | 'expired' | 'declined'; invitedAt: string;
@@ -2998,9 +3619,15 @@ export function normaliseAddress(address: string): string;         // trim + low
 export function isPlausibleAddress(address: string): boolean;      // local@domain.tld, one @, a dot after it
 export function addChips(chips: EmailChip[], text: string): EmailChip[]; // dedupe on normalised value, cap at 20
 export function removeChip(chips: EmailChip[], value: string): EmailChip[];
+
+// lib/teams/team-slug.ts — the preview of TeamSlug::fromName (Task 14); the server derives and decides
+export const TeamSlugMaxLength = 50;
+export const TeamSlugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export function slugFromName(name: string): string;   // NFKD, accents dropped, lower case, runs of other characters to one hyphen, cut at 50 at a hyphen, 'team' under 2
+export function isValidTeamSlug(slug: string): boolean;
 ```
 
-`TeamMark({ team, size }: { team: TeamMarkData; size?: 'sm' | 'md' })` (presentational: the initial on `col-<color>`, `.ob-mark` of the mockup); `EmailChipsField({ id, label, chips, onChange, errors })` (presentational: chips with remove buttons, an input that turns typed text into chips on Enter, comma, space, paste or blur; an invalid chip carries `aria-invalid` and the message "“:address” looks incomplete." under the field; a server error on `emails.<i>` shows under the field naming the address); `TeamInviteForm({ team, roles, defaultRole, inviteLink, onSubmit, onSkip?, submitLabelCount })` — the content of onboarding step 3 and of the team dialog: `EmailChipsField`, role `Select` (labels "Facilitator", "Member", "Observer"), "Message · optional" (`Textarea`, 500, counter), `InviteLinkBlock`, actions; `InviteLinkBlock({ link, canManage, onCreate, onReplace, onTurnOff })` — "Or share this link", the URL in `font-mono`, "Copy" (clipboard, "Copied" for 2 s, `aria-live`), "Expires in :days days · up to :count people" (days from `expiresAt`, `Math.ceil`), "Create a new link" (`ConfirmDialog`: "The current link stops working."), "Turn off the link", and "Create a link" when `link` is null.
+`TeamMark({ team, size }: { team: TeamMarkData; size?: 'sm' | 'md' })` (presentational: the initial on `col-<color>`, `.ob-mark` of the mockup); `EmailChipsField({ id, label, chips, onChange, errors })` (presentational: chips with remove buttons, an input that turns typed text into chips on Enter, comma, space, paste or blur; an invalid chip carries `aria-invalid` and the message "“:address” looks incomplete." under the field; a server error on `emails.<i>` shows under the field naming the address); `TeamInviteForm({ team, roles, defaultRole, inviteLink, onSubmit, onSkip?, submitLabelCount })` — the content of onboarding step 3 and of the team dialog: `EmailChipsField`, role `Select` (labels "Facilitator", "Member", "Observer"), "Message · optional" (`Textarea`, 500, counter), `InviteLinkBlock`, actions; `InviteLinkBlock({ link, canManage, onCreate, onReplace, onTurnOff })` — "Or share this link", the URL in `font-mono`, "Copy" (clipboard, "Copied" for 2 s, `aria-live`), "Expires in :days days" (days from `expiresAt`, `Math.ceil`) followed by " · :count joined" when `usesCount` > 0 (P25-16; decision 3 C: no use limit, so no "up to :count people"), "Create a new link" (`ConfirmDialog`: "The current link stops working."), "Turn off the link", and "Create a link" when `link` is null; `TeamAddressField({ id, base, slug, name, isEdited, onChange, error })` (presentational, decision 7: the label "Team link", `base` — the instance's address and `/t/` — in `font-mono` muted, then the slug in `font-mono` strong, and the ghost "Edit" with `square-pen` as drawn in ScreenOnboarding step 2; "Edit" turns the slug into an input that keeps `base` as its prefix; until edited the slug shown is `slugFromName(name)`; an invalid typed slug shows "Use lower-case letters, digits and hyphens." under the field, the server's `slug` error likewise).
 
 - [ ] **Step 1: Write the Vitest for the pure logic**
 
@@ -3082,10 +3709,10 @@ export function removeChip(chips: EmailChip[], value: string): EmailChip[] {
 }
 ```
 
-- [ ] **Step 4: The components and their Vitest** — behaviours to test: `TeamMark` renders the initial with `col-<color>` and is `aria-hidden` (the name is said next to it); `EmailChipsField` turns typed text into chips on Enter and on paste, removes a chip with its button and with Backspace in an empty input, announces an invalid chip and shows the server error of `emails.1` under the field naming the second address; `TeamInviteForm` disables submit with no valid chip or any invalid chip, labels it "Send :count invitations" (`trans_choice`-style keys "Send one invitation" / "Send :count invitations"), sends `{ emails, role, message }`, shows the sentence of P25-07 for the selected role; `InviteLinkBlock` copies the URL (mock `navigator.clipboard`), computes "Expires in 7 days · up to 20 people" from props, asks confirmation before "Create a new link". `use-new-session-intent.test.ts`: `?new=icebreaker` is read.
-- [ ] **Step 5: Front gates and commit** — `npm run test -- invitations team-mark email-chips use-new-session-intent`, `npm run types:check`, `npm run check`, `npm run build:front`; commit `feat(invitations): front foundation — chips, team mark, the shared invite form` (trailer).
+- [ ] **Step 4: The components and their Vitest** — behaviours to test: `TeamMark` renders the initial with `col-<color>` and is `aria-hidden` (the name is said next to it); `EmailChipsField` turns typed text into chips on Enter and on paste, removes a chip with its button and with Backspace in an empty input, announces an invalid chip and shows the server error of `emails.1` under the field naming the second address; `TeamInviteForm` disables submit with no valid chip or any invalid chip, labels it "Send :count invitations" (`trans_choice`-style keys "Send one invitation" / "Send :count invitations"), sends `{ emails, role, message }`, shows the sentence of P25-07 for the selected role; `InviteLinkBlock` copies the URL (mock `navigator.clipboard`), computes "Expires in 7 days" from props, adds " · 3 joined" for `usesCount` 3 and nothing for 0, never shows a use limit, asks confirmation before "Create a new link"; `slugFromName` gives the slugs of Task 14's PHP dataset (`Atlas` → `atlas`, `  Équipe  Nord ` → `equipe-nord`, `!!!` → `team`, `A` → `team`, ten times `platform ` → five `platform` joined by hyphens) — the preview may differ from the server for letters outside Latin with accents (the server's transliteration is wider), which is why an unedited slug is not sent; `TeamAddressField` follows the name until "Edit", then keeps the typed slug, and marks an invalid one. `use-new-session-intent.test.ts`: `?new=icebreaker` is read.
+- [ ] **Step 5: Front gates and commit** — `npm run test -- invitations team-mark email-chips use-new-session-intent team-slug team-address-field`, `npm run types:check`, `npm run check`, `npm run build:front`; commit `feat(invitations): front foundation — chips, team mark, the shared invite form, the team address field` (trailer).
 
-### Task 15 (lane Access): The invitation card — team, message, decline, declined
+### Task 16 (lane Access): The invitation card — team, message, decline, declined
 
 **Files:** Modify `resources/js/components/auth/invitation-card.tsx` (+ test), `resources/js/pages/invitations/show.tsx`.
 
@@ -3095,17 +3722,17 @@ Behaviours to test: each new prop renders in its place and nothing renders when 
 
 Commit: `feat(invitations): the invitation card shows the team, the message and Decline` (trailer).
 
-### Task 16 (lane Access): The invite link page and the bell
+### Task 17 (lane Access): The invite link page and the bell
 
 **Files:** Create `resources/js/components/auth/invite-link-card.tsx` (+ test); modify `resources/js/pages/invite-links/show.tsx`, `resources/js/components/skrum/notifications-panel.tsx` (+ test), and the bell container that maps the server's items (find it from `NotificationsPanel`'s importers).
 
-Link card (P25-11): the invitation card's frame (`Card` `w-120`-equivalent rem width, `p-8`, raised shadow), inviter avatar + `TeamMark`, the sentence, the members `AvatarStack` with "n members · you join as Member"; signed out: `SsoButtons`, "Sign in" (link to `login`), "Create an account" (link to `register`) when `canRegister`, the SSO-required variant without the two; signed in, verified: "Join :team as :name?", "Join :team" (posts `inviteLinks.membership.store`), "Not you? Switch account"; signed in, unverified: `AccessNotice` "Verify your address to join :team" with the resend button of the verify page (`verification.send`); not usable: `AccessNotice` "This link no longer works." + "Ask :name for a new one." (or "Ask a team owner for a new one."); invalid: today's invalid card.
+Link card (P25-11): the invitation card's frame (`Card` `w-120`-equivalent rem width, `p-8`, raised shadow), inviter avatar + `TeamMark`, the sentence, the members `AvatarStack` with "n members · you join as Member"; signed out: `SsoButtons`, "Sign in" (link to `login`), "Create an account" (link to `register`) when `canRegister`, the SSO-required variant without the two; signed in, verified: "Join :team as :name?", "Join :team" (posts `inviteLinks.membership.store`), "Not you? Switch account"; signed in, unverified: `AccessNotice` "Verify your address to join :team" with the resend button of the verify page (`verification.send`); not usable (expired or turned off — there is no used-up state, decision 3 C): `AccessNotice` "This link no longer works." + "Ask :name for a new one." (or "Ask a team owner for a new one."); invalid: today's invalid card.
 
 Bell (P25-12): `NotificationKind` gains `'invitation_declined'`; the item reads ":email declined your invitation to join :team" with an initial avatar of the address, links to `href` ("View the team"), no buttons. Behaviours to test: the five link states; the bell item text and link; an unknown kind is still ignored.
 
 Commit: `feat(invitations): the invite link page; the declined invitation in the bell` (trailer).
 
-### Task 17 (lane Access): Register — "Create your workspace"
+### Task 18 (lane Access): Register — "Create your workspace"
 
 **Files:** Modify `resources/js/components/auth/register-form.tsx` (+ test), `resources/js/pages/auth/register.tsx`.
 
@@ -3113,15 +3740,15 @@ Mockup: ScreenAuth "Inscription". When `asksTeamName`: title "Create your worksp
 
 Commit: `feat(onboarding): register follows "Create your workspace" with a team name` (trailer).
 
-### Task 18 (lane Team): "Invite" on the team page, and the team's pending invitations
+### Task 19 (lane Team): "Invite" on the team page, the team's pending invitations, and the team link in the General tab
 
-**Files:** Create `resources/js/components/invitations/team-invite-dialog.tsx` (+ test), `resources/js/components/invitations/pending-invitations.tsx` (+ test); modify `resources/js/components/teams/team-page.tsx`, `resources/js/pages/teams/show.tsx` (props), plan 23's Members tab file (or `team-members-card.tsx` when WS-3 is absent).
+**Files:** Create `resources/js/components/invitations/team-invite-dialog.tsx` (+ test), `resources/js/components/invitations/pending-invitations.tsx` (+ test); modify `resources/js/components/teams/team-page.tsx`, `resources/js/pages/teams/show.tsx` (props), plan 23's Members tab file (or `team-members-card.tsx` when WS-3 is absent), plan 23's General tab file (dropped when WS-3 is absent: the slug is then edited at step 2 only).
 
-Mockups: ScreenTeam (members card header: ghost "Invite" with `UserPlus`), ScreenSettings a (Members card header ":count members · :pending pending invitations", "Invitation link", "Invite"; pending rows). Composition: the team page passes `inviteAction` = the "Invite" button when `canInvite`; it opens `TeamInviteDialog` (`Dialog`, `Drawer` below `md`) holding `TeamInviteForm`; opening it does `router.reload({ only: ['inviteLink'] })`; "Create a link", "Create a new link" and "Turn off the link" post or delete `teams.inviteLink.*` with `preserveScroll` and reload `inviteLink`; sending posts `teams.invitations.store`, toasts the count from the flash `invitationsSent`, clears the chips, and on mail-only instances shows the flashed URLs as copyable lines (as the workspace page does with `invitationUrl`). `PendingInvitations` (in the Members tab): one row per `pendingInvitations` item — address, "Invited on :date", badge "Pending invitation" (warning) / "Expired" / "Declined" (muted), the role, "Resend" (posts `workspaces.invitations.resend.store`, toast), revoke (`ConfirmDialog`, 9-D5, deletes `workspaces.invitations.destroy`); "Invitation link" opens the dialog with focus on the link block. Behaviours to test: "Invite" only with `canInvite`; the dialog loads the link on open; send, resend, revoke flows with their requests; the header count.
+Mockups: ScreenTeam (members card header: ghost "Invite" with `UserPlus`), ScreenSettings a (Members card header ":count members · :pending pending invitations", "Invitation link", "Invite"; pending rows). Composition: the team page passes `inviteAction` = the "Invite" button when `canInvite`; it opens `TeamInviteDialog` (`Dialog`, `Drawer` below `md`) holding `TeamInviteForm`; opening it does `router.reload({ only: ['inviteLink'] })`; "Create a link", "Create a new link" and "Turn off the link" post or delete `teams.inviteLink.*` with `preserveScroll` and reload `inviteLink`; sending posts `teams.invitations.store`, toasts the count from the flash `invitationsSent`, clears the chips, and on mail-only instances shows the flashed URLs as copyable lines (as the workspace page does with `invitationUrl`). `PendingInvitations` (in the Members tab): one row per `pendingInvitations` item — address, "Invited on :date", badge "Pending invitation" (warning) / "Expired" / "Declined" (muted), the role, "Resend" (posts `workspaces.invitations.resend.store`, toast), revoke (`ConfirmDialog`, 9-D5, deletes `workspaces.invitations.destroy`); "Invitation link" opens the dialog with focus on the link block. The Members tab is also what plan 23 shows a facilitator (members read-only): with `canInvite` true for them (decision 2 B, Task 9), "Invitation link", "Invite" and the pending rows with "Resend" and revoke appear for a facilitator as for an owner, while plan 23's role select and "Remove from team" stay hidden for them. General tab (P25-17, decision 7 B): `TeamAddressField` (Task 15) under the team name, `base` = `team.address` without its slug, `slug` = `team.slug`, already "edited" (an existing slug never follows the name); saved with the name through the tab's existing save (`teams.update` with `slug`); the server's `slug` error under the field; shown only to who may update the team (the tab's own condition). Behaviours to test: "Invite" only with `canInvite`, and present for a facilitator's props; the dialog loads the link on open and shows "· :count joined" from `usesCount`; send, resend, revoke flows with their requests; the header count; the General tab sends `slug` with the name, shows the server error, and a rename alone sends the unchanged slug.
 
-Commit: `feat(invitations): invite from the team page; pending invitations in the team settings` (trailer).
+Commit: `feat(invitations): invite from the team page; pending invitations in the team settings; the team link field` (trailer).
 
-### Task 19 (lane Team): The workspace invite dialog and table
+### Task 20 (lane Team): The workspace invite dialog and table
 
 **Files:** Modify `resources/js/components/workspaces/invite-form.tsx` (+ test), `members-table.tsx` (+ test), `invitations-table.tsx`, `pages/workspaces/members.tsx`.
 
@@ -3129,7 +3756,7 @@ Composition: fill `InviteSlots.inviteTeamsField` with "Team · optional" (`Selec
 
 Commit: `feat(invitations): the workspace invite dialog picks a team and takes a message` (trailer).
 
-### Task 20 (lane Onboarding): The onboarding page
+### Task 21 (lane Onboarding): The onboarding page
 
 **Files:** Create `resources/js/components/onboarding/{onboarding-page,onboarding-header,workspace-step,team-step,invite-step,ritual-step,team-preview}.tsx` (+ tests); modify `resources/js/pages/onboarding/show.tsx`, `resources/js/layouts/skrum/onboarding-layout.tsx` (header end: language switcher, avatar, "Log out" — P25-06), `components/skrum/frames.tsx` only if the progress bar under the header needs a slot (`OnboardingFrame` gains `progress?: ReactNode`).
 
@@ -3141,58 +3768,58 @@ Mockup: ScreenOnboarding a and c. Composition:
 | Progress | `Progress` value `step/4`, 0.1875rem, under the header | `components/ui/progress` |
 | Form column | "Step :n of 4" (overline), title (`font-display`, the display-lg size), sentence, fields, actions row; under step 2 "Everything can be changed later in Team settings." | `TextField`, `Select`, `Textarea` |
 | Step 1 | "Name your workspace", "The workspace groups your teams, templates and members.", "Workspace name" (autofocus, 100), "Default language" (`Select` of `locales`, default `workspace.locale ?? userLocale`), the logo's place left empty (P25-01), "Continue" | `useForm` → `onboarding.workspace.update` |
-| Step 2 | "Create your first team", "A team is the people who run their rituals together. You can add more teams to :workspace later.", "Team name" (autofocus, prefilled `team?.name ?? teamName`, help "Shown in the sidebar, on invitations and in session links."), "Team colour" (radiogroup of the eight colours with the chosen name under it — the picker of `column-color-picker.tsx`, its inline form), the team link's place left empty (P25-02), "Description · optional", "Back" (`onboarding.step.update` `workspace`) and "Continue" (lg) | `columnColors`, `useColumnColorName` |
-| Step 3 | "Invite your teammates", sentence of P25-07, `TeamInviteForm` with `onSkip` ("Skip" → `onboarding.step.update` `ritual`) posting `onboarding.invitations.store`; when `inviteLinkUrl` is null on mount, post `teams.inviteLink.store` once and reload | `TeamInviteForm` (Task 14) |
+| Step 2 | "Create your first team", "A team is the people who run their rituals together. You can add more teams to :workspace later.", "Team name" (autofocus, prefilled `team?.name ?? teamName`, help "Shown in the sidebar, on invitations and in session links."), "Team colour" (radiogroup of the eight colours with the chosen name under it — the picker of `column-color-picker.tsx`, its inline form), "Team link" (`TeamAddressField`, Task 15, decision 7 B: `base` = `teamAddressBase`; follows the typed name until "Edit"; after a "Back", `team.slug` shown as edited; the request sends `slug` only once it was edited, so the server derives an unedited one — P25-02), "Description · optional", "Back" (`onboarding.step.update` `workspace`) and "Continue" (lg) | `columnColors`, `useColumnColorName` |
+| Step 3 | "Invite your teammates", sentence of P25-07, `TeamInviteForm` with `onSkip` ("Skip" → `onboarding.step.update` `ritual`) posting `onboarding.invitations.store`; when `inviteLinkUrl` is null on mount, post `teams.inviteLink.store` once and reload | `TeamInviteForm` (Task 15) |
 | Step 4 | "What do you want to start with?", four radio cards (`.ob-rit`: icon on its column colour — Retro `sun`, Poker `iris`, Whiteboard `sky`, Icebreaker `coral`; the mockup's lines "Writing → vote → actions", "Estimate the backlog", "A free canvas", "5 minutes to warm up"), no date (P25-04), "Go to the dashboard instead" (ghost) and the primary "Create the retro" / "Create the poker game" / "Create the whiteboard" / "Create the icebreaker", both posting `onboarding.completion.store` | `RadioGroup` |
-| Aside (from `lg`) | dot-grid panel: "Preview", a team switcher row and the team card (`TeamMark` live from the typed name and colour, ":workspace · :count member(s)", static skeletons, "No sessions yet"), then "Coming next" with the steps after the current one | `TeamPreview`, `Skeleton` |
+| Aside (from `lg`) | dot-grid panel: "Preview", a team switcher row and the team card (`TeamMark` live from the typed name and colour, the team's address `teamAddressBase` + slug under the name as drawn, ":workspace · :count member(s)", static skeletons, "No sessions yet"), then "Coming next" with the steps after the current one | `TeamPreview`, `Skeleton` |
 | Phone | form full width, `p-4`, aside hidden, actions `sticky bottom-0` with a top border | — |
 
-Behaviours to test: each step renders its fields and actions; the preview follows the typed name and colour; "Back" and "Skip" call the step route; step 3 creates the link once when absent; step 4 changes the button label with the type and posts the ritual; field errors under their field; the stepper marks done and current steps; the phone layout hides the aside (class assertions on the breakpoint).
+Behaviours to test: each step renders its fields and actions; the preview follows the typed name, colour and slug; step 2 sends no `slug` until "Edit" was used, then the typed one, and shows the server's `slug` error under the field; "Back" and "Skip" call the step route; step 3 creates the link once when absent; step 4 changes the button label with the type and posts the ritual; field errors under their field; the stepper marks done and current steps; the phone layout hides the aside (class assertions on the breakpoint).
 
 Commit: `feat(onboarding): the four-step onboarding page` (trailer).
 
 ## Final
 
-### Task 21: Translations
+### Task 22: Translations
 
-- [ ] Collect every key added by Tasks 1 to 20 (`git diff main -- lang/en.json`); check each exists in `fr.json`, `es.json`, `de.json`, informal (French "tu": "Nomme ton espace de travail", "Crée ta première équipe", "Invite tes coéquipiers", "Par quoi veux-tu commencer ?", "Refuser l'invitation", ":name sera prévenu·e. Le lien cessera de fonctionner.", "Invitation refusée", ":name a été prévenu·e. Tu peux fermer cette page.", "Rejoindre :team en tant que :name ?", "Ce n'est pas toi ? Changer de compte", "Ou partage ce lien", "Expire dans :days jours · jusqu'à :count personnes", "« :address » semble incomplète.", "Crée ton espace", "Nom de l'équipe", "Tout reste modifiable dans Paramètres de l'équipe."; Spanish "tú", German "du"), terms consistent with `docs/superpowers/research/front-rewrite/translations-review.md` (glossary: "équipe", "espace de travail", "facilitateur·rice", "observateur·rice", "lien d'invitation").
+- [ ] Collect every key added by Tasks 1 to 21 (`git diff main -- lang/en.json`); check each exists in `fr.json`, `es.json`, `de.json`, informal (French "tu": "Nomme ton espace de travail", "Crée ta première équipe", "Invite tes coéquipiers", "Par quoi veux-tu commencer ?", "Refuser l'invitation", ":name sera prévenu·e. Le lien cessera de fonctionner.", "Invitation refusée", ":name a été prévenu·e. Tu peux fermer cette page.", "Rejoindre :team en tant que :name ?", "Ce n'est pas toi ? Changer de compte", "Ou partage ce lien", "Expire dans :days jours", ":count ont rejoint" (P25-16: no use limit, decision 3 C), "« :address » semble incomplète.", "Crée ton espace", "Nom de l'équipe", "Tout reste modifiable dans Paramètres de l'équipe.", "Lien de l'équipe", "Modifier", "Utilise des minuscules, des chiffres et des tirets.", "Ce lien est déjà pris dans :workspace."; Spanish "tú", German "du"), terms consistent with `docs/superpowers/research/front-rewrite/translations-review.md` (glossary: "équipe", "espace de travail", "facilitateur·rice", "observateur·rice", "lien d'invitation").
 - [ ] Run `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php` and `sqlite`. Expected: PASS.
 - [ ] Commit `chore(i18n): plan 25 strings in four languages, informal` (trailer).
 
-### Task 22: Captures (light, 1440, French)
+### Task 23: Captures (light, 1440, French)
 
-- [ ] Add `tests/Browser/Visual/OnboardingVisualTest.php` in the pattern of `tests/Browser/Visual/AccessPagesVisualTest.php` (read it first): fixtures built with the factories; captures of the onboarding at steps 1, 2 (name and colour typed), 3 (three chips, one invalid, link shown) and 4; the register page with "Team name"; the invitation card of a team invitation with a message (signed out, signed in), its declined state; the invite link page (signed out, signed in); the team page's invite dialog; the team settings Members card with a pending, an expired and a declined invitation.
+- [ ] Add `tests/Browser/Visual/OnboardingVisualTest.php` in the pattern of `tests/Browser/Visual/AccessPagesVisualTest.php` (read it first): fixtures built with the factories; captures of the onboarding at steps 1, 2 (name and colour typed, the team link following the name; and the team link being edited), 3 (three chips, one invalid, link shown with "· 3 joined") and 4; the register page with "Team name"; the invitation card of a team invitation with a message (signed out, signed in), its declined state; the invite link page (signed out, signed in); the team page's invite dialog; the team settings Members card with a pending, an expired and a declined invitation (as an owner, and as a facilitator); the General tab with the team link field.
 - [ ] Run `VISUAL_ONLY=light-1440-fr vendor/bin/sail pest tests/Browser/Visual/OnboardingVisualTest.php` and the harness's overflow check. No walkthrough is written or run.
 - [ ] Commit `test(visual): plan 25 captures` (trailer).
 
-### Task 23: Deviations and documents
+### Task 24: Deviations and documents
 
-- [ ] Compare each capture with its mockup's `preview.html` (ScreenOnboarding a–d, ScreenAuth, ScreenTeam, ScreenSettings a, NotificationsPanel); fix what fits no reason; add a row P25-16… for each difference kept, with its reason.
-- [ ] Update `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md` deviation rows: D-30 (cleared except "already in n teams", backlog), D-33 (cleared), D-52 (cleared), D-18 ("Invite" cleared), D-54 (the button names the team). Update `docs/superpowers/research/front-rewrite/feature-roadmap.md`: IN-1 to IN-4 and ON-1 "done, plan 25", the registration line, ON-1's dependency on SE-2 removed. Move the spec to `docs/superpowers/specs/2026-10-25-invitations-and-onboarding-design.md` and this plan to `docs/superpowers/plans/2026-10-25-plan-25-invitations-onboarding.md`.
+- [ ] Compare each capture with its mockup's `preview.html` (ScreenOnboarding a–d, ScreenAuth, ScreenTeam, ScreenSettings a, NotificationsPanel); fix what fits no reason; add a row P25-18… for each difference kept, with its reason.
+- [ ] Update `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md` deviation rows: D-30 (cleared except "already in n teams", backlog), D-33 (cleared), D-52 (cleared), D-18 ("Invite" cleared), D-54 (the button names the team). Update `docs/superpowers/research/front-rewrite/feature-roadmap.md`: IN-1 to IN-4 and ON-1 "done, plan 25", the registration line, ON-1's dependency on SE-2 removed. Rename (`git mv`) the spec `docs/superpowers/specs/2026-10-21-plan-25-invitations-onboarding-design.md` to `docs/superpowers/specs/2026-10-25-invitations-and-onboarding-design.md` and this plan to `docs/superpowers/plans/2026-10-25-plan-25-invitations-onboarding.md`. In `docs/database.md` "Upgrading", add the team slug fill to the list of what an upgrade does (one write per team; teams of one name in one workspace get `-2`, `-3`, … in creation order).
 - [ ] Commit `docs: plan 25 — spec and plan in place, roadmap and deviation rows updated` (trailer).
 
-### Task 24: Full suites and report
+### Task 25: Full suites and report
 
 - [ ] `vendor/bin/pint --format agent`; `vendor/bin/sail composer types:check`; `vendor/bin/sail composer rector:check`.
 - [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (one engine at a time) — Expected: `test-db <engine>: PASS` on each.
 - [ ] `bin/test-db pgsql --concurrency`, `mariadb --concurrency`, `mysql --concurrency`, `sqlite-file --concurrency` — Expected: PASS on each.
 - [ ] `bin/check-pg-upgrade` — Expected: PASS (the upgraded schema equals a fresh install's).
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS.
-- [ ] Report `docs/superpowers/research/plan-25-report.md`: per acceptance criterion of spec §14, the test that proves it and the engines it passed on; plan 23's names as found and every place this plan followed them; which registration path Fortify took (§17 item 2); the differences that remain with each mockup; every existing test edited and why (the three redirects of Task 11, any `team` prop assertion of Task 9); every decision taken on the owner's behalf.
+- [ ] Report `docs/superpowers/research/plan-25-report.md`: per acceptance criterion of spec §14, the test that proves it and the engines it passed on; plan 23's names as found and every place this plan followed them; which registration path Fortify took (§17 item 2); the differences that remain with each mockup; every existing test edited and why (the three redirects of Task 11, any `team` prop assertion of Tasks 9 and 14); the slug fill's run on the `bin/check-pg-upgrade` fixture (teams filled, pairs numbered); every decision taken on the owner's behalf, the three readings of spec §16 (a facilitator's roles, Rule S-1's order, decisions 3 and 4 together) included.
 - [ ] Commit `docs: plan 25 report` (trailer). Then ask the owner to read it. No merge into `main`, no push.
 
 ---
 
-## Self-review (done while writing; kept for the reader)
+## Self-review (done while writing, redone after the owner's answers of 2026-10-03; kept for the reader)
 
-**Spec coverage.** §6.1 invitation columns: Task 1; team colour and workspace language: Task 2; §6.2 link: Task 3, onboarding: Task 4; §6.3 who gets an onboarding: Task 11; §7 permissions: Tasks 6 (invite, manage), 7 (accept), 8 (decline), 10 (join, signup), 12 (steps); §8.1 sending: Tasks 5, 6; §8.2 mail: Task 5; §8.3 decline: Tasks 8, 15, 16; §8.4 link: Tasks 9, 10, 16, 18; §8.5 onboarding: Tasks 11, 12, 20; §8.6 registration: Tasks 11, 17; §9 real time: nothing to build (the existing listener; Task 8's notification is on the `database` channel); §10 screens: Tasks 15 to 20; §11 routes: Tasks 6 to 12; §12 existing data: Tasks 1 (legacy row), 7 (old invitation accepted), 11 (existing users), 2 (no colour); §14 criteria: 1 → 5; 2 → 6; 3 → 5; 4 → 5; 5 → 7, 15; 6 → 7; 7 → 8, 15; 8 → 9; 9 → 10; 10 → 10, 11; 11 → 11, 17; 12, 13 → 12; 14 → 12, 20; 15 → 12, 14, 20; 16 → 11; 17 → 7, 11; 18 → 6, 9, 18; 19 → 13, 19; 20 → 7, 8, 16; 21 → 21, 22, 23; 22 → 24.
+**Owner's answers.** Each of the nine is carried where the Owner decisions table says. The three that differ from the first draft: decision 2 B — `TeamPolicy::invite` (Task 6) adds the facilitator; tests for facilitator allowed, member, observer and another team's facilitator refused (Task 6), the link managed by a facilitator (Task 9), the Members tab for a facilitator (Task 19); decision 3 C — no `max_uses` anywhere (Tasks 3, 9, 10, 12, 15), no used-up state, the race now proves that concurrent joins all succeed and are counted once each (Task 10), P25-16 for the mockup's "up to 20 people"; decision 7 B — new Task 14 (column, the plan's one data migration and its upgrade test on the four engines, `TeamSlug`, `CreateTeam` and its race, `teams.update` and step 2 taking `slug`, `GET t/{slug}` with Rule S-1's tests), the front in Tasks 15, 19, 21, P25-02 now built and P25-17 for the General tab.
 
-**Placeholders.** Back-end tasks carry their tests and code. Screen tasks carry composition, behaviours and the code of their pure logic (Task 14), not full component code: they follow the screen procedure of plan 18e, where the mockup is the specification of the markup. Two places depend on code not yet written and say how to adapt: plan 23's names (Branch and run) and Fortify's intended-URL behaviour (Task 11).
+**Spec coverage.** §6.1 invitation columns: Task 1; team colour and workspace language: Task 2; team slug and its data migration: Task 14; §6.2 link: Task 3, onboarding: Task 4; §6.3 who gets an onboarding: Task 11; §7 permissions: Tasks 6 (invite, facilitator included; manage), 7 (accept), 8 (decline), 9 (link), 10 (join, signup), 12 (steps), 14 (slug edit, `/t/`); §8.1 sending: Tasks 5, 6; §8.2 mail: Task 5; §8.3 decline: Tasks 8, 16, 17; §8.4 link: Tasks 9, 10, 15, 17, 19; §8.5 onboarding: Tasks 11, 12, 14 (step 2's slug), 21; §8.6 registration: Tasks 11, 18; §8.7 slug and `/t/<slug>`: Tasks 14, 15, 19, 21; §9 real time: nothing to build (the existing listener; Task 8's notification is on the `database` channel); §10 screens: Tasks 16 to 21; §11 routes: Tasks 6 to 12 and 14; §12 existing data: Tasks 1 (legacy row), 7 (old invitation accepted), 11 (existing users), 2 (no colour), 14 (slug fill); §14 criteria: 1 → 5; 2 → 6; 3 → 5; 4 → 5; 5 → 7, 16; 6 → 7; 7 → 8, 16; 8 → 9, 15, 19; 9 → 10; 10 → 10, 11; 11 → 11, 18; 12 → 12; 13 → 12, 14, 21; 14 → 12, 21; 15 → 12, 15, 21; 16 → 11; 17 → 7, 11; 18 → 6, 9, 19; 19 → 13, 20; 20 → 7, 8, 17; 21 → 22, 23, 24; 22 → 14, 15, 19, 21; 23 → 25.
 
-**Type consistency.** `InvitationTerms` is built in Tasks 5, 6, 12 with the same five arguments. `CreateWorkspaceInvitation::handle(Workspace, User, InvitationTerms)` has one caller left (`SendInvitation`). `InvitationUnavailable` is thrown by `AcceptWorkspaceInvitation`, `DeclineWorkspaceInvitation` and `JoinTeamByLink` and mapped to 410 by their three controllers. `TeamInviteLink::url()` uses `inviteLinks.show`, defined in Task 10; Task 9's page test runs after it. The session key lives in `App\Support\Invitations\InviteLinkSession::Key` (Task 10) and is read by `CreateNewUser`, `CurrentWorkspaceController`, `SsoCallbacksController` and the register view. `PendingInvitation.status` and `WorkspaceInvitation::status()` share the three values. The props of `onboarding/show` (Task 12) are those Task 20 reads.
+**Placeholders.** Back-end tasks carry their tests and code. Screen tasks carry composition, behaviours and the code of their pure logic (Task 15), not full component code: they follow the screen procedure of plan 18e, where the mockup is the specification of the markup. Three places depend on code not yet written and say how to adapt: plan 23's names (Branch and run: `TeamRole`, `Team::roleOf()`, `teamMember(Team, TeamRole)`, the Members and General tabs, a team-creation action), Fortify's intended-URL behaviour (Task 11), and the columns `workspaces` and `teams` require at the date of the slug migration (Task 14's upgrade test).
 
-**Review Focus.** Each line has its test: link uses under a race (Task 10), accept against decline (Task 8), double "Continue" (Task 12), existing users and old invitations (Tasks 7, 11), the link visitor's registration path (Task 11), a team inviter on another team's invitation (Task 6), markup in a message (Task 5).
+**Type consistency.** `InvitationTerms` is built in Tasks 5, 6, 12 with the same five arguments. `CreateWorkspaceInvitation::handle(Workspace, User, InvitationTerms)` has one caller left (`SendInvitation`). `InvitationUnavailable` is thrown by `AcceptWorkspaceInvitation`, `DeclineWorkspaceInvitation` and `JoinTeamByLink` and mapped to 410 by their three controllers. `TeamInviteLink` has `uses_count` and no `max_uses` in Tasks 3, 9, 10, the team page's `inviteLink` (`{url, expiresAt, usesCount}`), Task 12's `inviteLinkUsesCount` and Task 15's `InviteLink`. `TeamInviteLink::url()` uses `inviteLinks.show`, defined in Task 10; Task 9's page test runs after it. The session key lives in `App\Support\Invitations\InviteLinkSession::Key` (Task 10) and is read by `CreateNewUser`, `CurrentWorkspaceController`, `SsoCallbacksController`, `InviteLinksController`, `InviteLinkMembershipsController` and the register view. `PendingInvitation.status` and `WorkspaceInvitation::status()` share the three values. `TeamSlug::Pattern`, `MinLength` and `MaxLength` (Task 14) are the rules of `teams.update`, `OnboardingTeamRequest` and the route constraint, and `lib/teams/team-slug.ts` (Task 15) mirrors them. The props of `onboarding/show` (Tasks 12 and 14: `team.slug`, `teamAddressBase`) are those Task 21 reads; `team.slug` and `team.address` (Tasks 9 and 14) those Task 19 reads.
 
-**Known weak points of this draft.** Nothing was run. Plan 23 does not exist yet: `TeamRole`, the pivot `role` and `TeamPolicy::manageMembers`'s new rule are assumed, and `teamMember()` (which attaches without a role today) may be changed by plan 23. The mail's team colour needs column colours in the mail palette, which was not checked (Task 5 says what to do). The onboarding's GET never writes; step 3 creates the link through its own POST.
-</content>
-</invoke>
+**Review Focus.** Each line has its test: concurrent link joins (Task 10), accept against decline (Task 8), double "Continue" (Task 12), existing users and old invitations (Tasks 7, 11), the link visitor's registration path (Task 11), a team inviter on another team's invitation and a member or observer inviting (Task 6), markup in a message (Task 5), two teams of one name at once and the slug fill (Task 14), `/t/<slug>` from outside the workspace (Task 14).
+
+**Known weak points of this draft.** Nothing was run. Plan 23 does not exist yet: its draft names `TeamRole`, `Team::roleOf()`, the `TeamMembership` pivot and `teamMember(Team, TeamRole)`, which this plan now uses; its General tab and its save are assumed. The mail's team colour needs column colours in the mail palette, which was not checked (Task 5 says what to do). The onboarding's GET never writes; step 3 creates the link through its own POST. The slug race on `sqlite-file` serialises writers: if the harness reports a busy database there instead of two creations, the test follows what the other `sqlite-file` races assert and the report says so. The browser's slug preview (Task 15) can differ from the server's derivation for letters the browser does not transliterate; an unedited slug is therefore never sent.

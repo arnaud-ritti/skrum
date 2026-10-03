@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 20 only).
 
-**Status: draft of 2026-10-03.** Written on the recommended option of each decision of spec §15. Nothing starts before the owner has answered §15 and the pre-build deviations. Lanes S and K may start before plan 21 is merged; lane C may not (see **Branch and run**).
+**Status: draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 3 and 6 answered B, not the recommended A; the others as recommended). Nothing starts before the owner has approved the pre-build deviations (P22-01 to P22-15, to approve by the owner, not asked yet). Lanes S and K may start before plan 21 is merged; lane C may not (see **Branch and run**).
 
-**Goal:** A team member opens the team's Sessions page (Upcoming, Live, Finished, every session kind, "Load more", "New session"); the "New session" dialog sets max votes per card and phase timers for a retro, and a task timer, "change vote after reveal", the estimate write-back and a tracker import for poker, all editable again inside the session; the poker story card shows the ticket's type, labels and acceptance criteria.
+**Goal:** A team member opens the team's Sessions page (Upcoming, Live, Finished, every session kind, "Load more", "New session"); the "New session" dialog sets phase durations for a retro (offered to the facilitator, never started by themselves), and a task timer, "change vote after reveal", the estimate write-back and a tracker import for poker, all editable again inside the session; the poker story card shows the ticket's type and labels, and the description's "Acceptance criteria" section apart.
 
-**Architecture:** No new aggregate. The Sessions page reads the five session tables through one action (`ListTeamSessions`) that computes a state per kind from stored data and merges five ordered queries in PHP behind a `(updated_at, id)` cursor. The "New session" dialog's props move out of `TeamsController@show` into `PresentNewSessionOptions`, used by the team page and the Sessions page. Creation options are columns on `retros` (one JSON column, `phase_durations`) and `poker_games` (four columns); behaviour sits where the rule already lives: `ChangeRetroPhase` starts a phase timer, `StartPokerRound` starts a task timer, a new `PokerGuard::acceptsCard` opens a revealed round to card changes, `RequestEstimateSync` and `JiraIssueTracker::writeEstimate` read the per-game write-back. The creation import fetches tickets before the game exists, then writes them in the creation transaction through the code that imports inside a game. Ticket details are three `external_*` columns of `poker_tasks`, filled by every tracker through `TrackerIssue`.
+**Architecture:** No new aggregate. The Sessions page reads the five session tables through one action (`ListTeamSessions`) that computes a state per kind from stored data and merges five ordered queries in PHP behind a `(updated_at, id)` cursor. The "New session" dialog's props move out of `TeamsController@show` into `PresentNewSessionOptions`, used by the team page and the Sessions page. Creation options are columns on `retros` (one JSON column, `phase_durations`) and `poker_games` (four columns); behaviour sits where the rule already lives: the retro's durations travel in the board snapshot and the facilitator's `BoardTimer` offers the current phase's one (no back-end timer change: the offer calls the existing start endpoint), `StartPokerRound` starts a task timer, a new `PokerGuard::acceptsCard` opens a revealed round to card changes, `RequestEstimateSync` and `JiraIssueTracker::writeEstimate` read the per-game write-back. The creation import fetches tickets before the game exists, then writes them in the creation transaction through the code that imports inside a game. Ticket type and labels are two `external_*` columns of `poker_tasks`, filled by every tracker through `TrackerIssue`; acceptance criteria are not stored: `AcceptanceCriteriaSection` splits them out of the description when `PresentPokerTask` renders it.
 
 **Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race`. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major version differs from these.
 
@@ -14,11 +14,11 @@
 
 **Not in this plan:** scheduling (SE-2: "Schedule…", a start time, "starts in 5 min"), which is backlog by the owner's word, with no place reserved; the "ROTI at the end" switch; the invitation link inside the dialog (D-08); the team dashboard's recent sessions table and next retro (TM-1, TM-2: plan 23, which calls `ListTeamSessions`); the rest of spec §3; browser walkthroughs (owner's working rule).
 
-**Tasks:** 22. Step A, single writer: 1. Lane S (Sessions page): 2, 3, 4, 14. Lane K (ticket details): 5, 6, 15. Lane C (creation options, after plan 21): 7 to 12, 16, 17, 18. Step C foundation, single writer: 13. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
+**Tasks:** 22 (unchanged by the answers: tasks 5, 6, 7, 15 and 16 were rewritten in place). Step A, single writer: 1. Lane S (Sessions page): 2, 3, 4, 14. Lane K (ticket details and criteria section): 5, 6, 15. Lane C (creation options, after plan 21): 7 to 12, 16, 17, 18. Step C foundation, single writer: 13. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
 
 ## Branch and run
 
-- Base: `main` once plan 21 (retro facilitation, RT-1 to RT-10) is merged — lane C needs RT-3 (the per-card vote cap: its column, its validation in `RetroSettingsController`, its check in the vote endpoint) and the retro timer as RT-2 (pause) and RT-5 (per-topic timer) leave it. Before Task 1 check, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Actions/Search/ListRecentSessions.php`, `app/Actions/Integrations/ImportPokerTasks.php` and `resources/js/components/teams/session-create/new-session-dialog.tsx` exist; the last migration of `database/migrations` is dated before `2026_10_22_100000` (plan 21 may have used `2026_10_21_…`; if it used `2026_10_22_…`, date this plan's migrations `2026_10_23_…` and say so in the report).
+- Base: `main` once plan 21 (retro facilitation, RT-1 to RT-10) is merged — lane C needs RT-3 (the per-card cap `max_votes_per_card`, which plan 21 also puts in the dialog: plan 22 adds nothing for it), the retro timer and its controls as RT-2 (pause) and RT-5 (time per topic) leave them (the phase timer offer sits on them), and plan 21's edits of `RetroSettingsController` and `retro-session-fields.tsx`. Before Task 1 check, and stop if one fails: `bin/test-db` exists and `bin/test-db pgsql -- tests/Arch` passes; `tests/Concurrency/Support/Race.php` exists; `app/Actions/Search/ListRecentSessions.php`, `app/Actions/Integrations/ImportPokerTasks.php` and `resources/js/components/teams/session-create/new-session-dialog.tsx` exist; the last migration of `database/migrations` is dated before `2026_10_22_100000` (plan 21 may have used `2026_10_21_…`; if it used `2026_10_22_…`, date this plan's migrations `2026_10_23_…` and say so in the report).
 - **If plan 21 is not merged yet**, Task 1 and lanes S and K may run from `main` as it is; lane C waits. Record in `.superpowers/sdd/roadmap/plan-22/progress.md` which base each lane was cut from.
 - Branch `plan-22-sessions` from that base. No merge into `main`, no push.
 - Lanes run in git worktrees on branches `lane/22-<name>`, cut from the head named in **Lanes**; the controller merges one lane at a time and runs the gates after each merge: `npm run types:check`, `npm run check`, `npm run build:front`, `vendor/bin/pint --dirty --format agent`, `vendor/bin/sail composer types:check`, and `bin/test-db pgsql -- tests/Feature/Sessions tests/Feature/Poker tests/Feature/Retros tests/Feature/Integrations tests/Arch`.
@@ -27,18 +27,18 @@
 
 ## Owner decisions
 
-Spec §15. "Plan written on" is the recommended option; the last column names what changes with another answer.
+Spec §15, **answered by the owner on 2026-10-03**. The plan follows the answers; the last column says what the answer changed in this plan.
 
-| # | Question | Plan written on | If the owner answers otherwise |
+| # | Question | Owner's answer | Effect on the plan |
 |---|---|---|---|
-| 1 | "Upcoming" without scheduling | **A**: created and not started | **B**: Task 2 drops `SessionState::Upcoming` (its rows join Live), Task 14 renders two tabs. **C**: Task 2 returns an empty Upcoming; Task 14's empty state says scheduling comes later |
-| 2 | Whiteboards and rooms, which never end | **A**: board by 15-minute activity, room by round in play | **B**: Task 2's whiteboard and room Live clauses become "has elements / has rounds", Finished is empty for them. **C**: a new column and action (about two more tasks); Task 2 reads `archived_at` |
-| 3 | "Timer per phase" | **A**: starts by itself at phase entry | **B**: Task 7 drops the change to `ChangeRetroPhase`; the snapshot's `phaseDurations` feeds the facilitator's timer menu (Task 16 adds the first entry "Phase: n min"). **C**: Task 1 adds `retros.phase_timers_auto` (boolean), Task 7 reads it, Task 16 adds the switch |
-| 4 | "Timer per task" at expiry | **A**: today's round timer (reveal only with auto reveal) | **B**: Task 9 replaces the timer by a delayed job that notifies non-voters (new event, new toast). **C**: Task 9 adds a `force` flag to `RevealPokerRoundOnTimer` |
-| 5 | "Write estimates" | **A**: per game, on/off and field | **B**: Task 10 writes the team connection's `storyPointFieldOverride` from the creation request (with `manageIntegrations`), drops `estimate_field_id`. **C**: Task 10 drops `estimate_field_id`; Task 17 shows the field read-only |
-| 6 | Acceptance criteria source | **A**: a detected Jira text field, changeable | **B**: Task 5 parses a description section instead (no setting, Task 15 drops the settings select). **C**: Task 5 drops the column and Task 15 the block; D-16 keeps that part |
-| 7 | Trackers offered by the creation import | **A**: every connected tracker | **B**: Task 12 restricts `{source}` to `jira|jira_dc`; Task 18 has no source select for Linear or GitHub |
-| 8 | Dates on rows | **A**: last activity on Upcoming and Finished rows | **B**: Task 14 drops the date |
+| 1 | "Upcoming" without scheduling | **A**: created and not started (= recommendation) | none: Task 2 as drafted |
+| 2 | Whiteboards and rooms, which never end | **A**: board by 15-minute activity, room by round in play (= recommendation) | none: Task 2 as drafted |
+| 3 | "Timer per phase" | **B**: offered to the facilitator, nothing starts by itself (≠ recommendation A) | Task 7 no longer touches `ChangeRetroPhase` or the timer: it stores, validates and sends the durations, and proves a phase change starts nothing. Task 16 adds the offer to `BoardTimer` (a `suggestion` on `Timer` / `SessionTimer`: one-click button and first menu entry). In Discussing the offer goes through plan 21's per-topic start (spec §6.2, §16.2). New deviation row P22-15. Task 20 adds the capture `retro-phase-timer-offer` |
+| 4 | "Timer per task" at expiry | **A**: the round timer; reveals with auto reveal, otherwise rings (= recommendation) | none: Task 9 as drafted |
+| 5 | "Write estimates" | **A**: per game, on/off and field (= recommendation) | none: Tasks 10, 11, 17 as drafted |
+| 6 | Acceptance criteria source | **B**: a section of the description headed "Acceptance criteria" (≠ recommendation A) | No `external_acceptance_criteria` column (Task 1), no Jira text-field detection, no `ensureTextFields`, no integration setting or select (Tasks 5, 12, 15). Task 5 now carries type and labels for all three trackers; Task 6 adds `AcceptanceCriteriaSection` (spec rules AC-1 to AC-7) and splits the description at presentation, for every task. P22-11 reworded; P22-14 withdrawn |
+| 7 | Trackers offered by the creation import | **A**: every connected tracker (= recommendation) | none: Tasks 12 and 18 as drafted |
+| 8 | Dates on rows | **A**: last activity on Upcoming and Finished rows (= recommendation) | none: Task 14 as drafted |
 
 ## File structure
 
@@ -47,22 +47,23 @@ Back end, created:
 | File | Responsibility |
 |---|---|
 | `database/migrations/2026_10_22_100000_add_session_options_to_retros_and_poker_games.php` | `retros.phase_durations`; the four `poker_games` columns |
-| `database/migrations/2026_10_22_100100_add_ticket_details_to_poker_tasks.php` | `external_type`, `external_labels`, `external_acceptance_criteria` |
+| `database/migrations/2026_10_22_100100_add_ticket_details_to_poker_tasks.php` | `external_type`, `external_labels` |
 | `app/Enums/SessionState.php` | Upcoming, Live, Finished |
 | `app/Support/Sessions/SessionCursor.php` | the `(updated_at, id)` cursor and its string form |
 | `app/Actions/Sessions/ListTeamSessions.php` | the five queries, the merge, the rows |
 | `app/Actions/Teams/PresentNewSessionOptions.php` | the props of the "New session" dialog |
 | `app/Http/Controllers/TeamSessionsController.php` | the Sessions page |
-| `app/Support/Retros/PhaseDurations.php` | the timed phases, the standard set, validation, seconds per phase |
+| `app/Support/Retros/PhaseDurations.php` | the timed phases, the standard set, validation, normalisation |
+| `app/Support/Poker/AcceptanceCriteriaSection.php` | splits a description into the text shown and its "Acceptance criteria" section (spec §6.5, rules AC-1 to AC-6) |
 | `app/Actions/Poker/PokerGameSettingsRules.php` | validation of the four poker settings, shared by creation and settings |
 | `app/Actions/Integrations/FetchPokerImport.php`, `PokerImportBatch.php` | the creation import: resolve, fetch, map tracker errors to validation |
 | `app/Http/Controllers/Integrations/TeamPokerImportContainersController.php`, `TeamPokerImportIterationsController.php`, `TeamPokerImportPreviewsController.php` | team-scoped browse |
 
-Back end, modified: `app/Models/Retro.php`, `PokerGame.php`, `PokerTask.php`; `database/factories/TeamIntegrationFactory.php`; `app/Http/Controllers/TeamsController.php`, `TeamRetrosController.php`, `TeamPokerGamesController.php`, `Retros/RetroSettingsController.php`, `Poker/PokerSettingsController.php`; `app/Actions/Retros/NewRetro.php`, `CreateRetro.php`, `ChangeRetroPhase.php`, `BuildBoardSnapshot.php`; `app/Actions/Poker/NewPokerGame.php`, `CreatePokerGame.php`, `PokerGuard.php`, `PlayPokerCard.php`, `StartPokerRound.php`, `BuildPokerSnapshot.php`, `PresentPokerTask.php`; `app/Actions/Integrations/ImportPokerTasks.php`, `ApplyPokerTaskIssues.php`, `RefreshPokerTasks.php`, `RequestEstimateSync.php`, `PokerTaskSync.php`, `ListPokerSources.php`, `DetectJiraStoryPointFields.php`, `UpdateTeamIntegration.php`, `PresentTeamIntegration.php`; `app/Support/Integrations/Trackers/TrackerIssue.php`, `JiraIssueTracker.php`, `LinearTracker.php`, `GitHubTracker.php`; `routes/web.php`; `tests/Pest.php`.
+Back end, modified: `app/Models/Retro.php`, `PokerGame.php`, `PokerTask.php`; `app/Http/Controllers/TeamsController.php`, `TeamRetrosController.php`, `TeamPokerGamesController.php`, `Retros/RetroSettingsController.php`, `Poker/PokerSettingsController.php`; `app/Actions/Retros/NewRetro.php`, `CreateRetro.php`, `BuildBoardSnapshot.php` (`ChangeRetroPhase.php` is **not** modified: decision 3, B); `app/Actions/Poker/NewPokerGame.php`, `CreatePokerGame.php`, `PokerGuard.php`, `PlayPokerCard.php`, `StartPokerRound.php`, `BuildPokerSnapshot.php`, `PresentPokerTask.php`; `app/Actions/Integrations/ImportPokerTasks.php`, `ApplyPokerTaskIssues.php`, `RequestEstimateSync.php`, `PokerTaskSync.php`, `ListPokerSources.php`; `app/Support/Integrations/Trackers/TrackerIssue.php`, `JiraIssueTracker.php`, `LinearTracker.php`, `GitHubTracker.php`; `routes/web.php`. (No integration setting changes: decision 6, B.)
 
-Tests, created: `tests/Feature/Sessions/TeamSessionsTest.php`, `ListTeamSessionsTest.php`, `NewSessionOptionsTest.php`; `tests/Unit/Support/SessionCursorTest.php`, `PhaseDurationsTest.php`; `tests/Feature/Retros/PhaseTimersTest.php`; `tests/Feature/Poker/RevoteAfterRevealTest.php`, `TaskTimerTest.php`, `PokerGameOptionsTest.php`; `tests/Feature/Integrations/PokerEstimateWriteBackOptionTest.php`, `PokerCreationImportTest.php`, `TicketDetailsTest.php`; `tests/Concurrency/RevoteAfterRevealTest.php`; `tests/Browser/Visual/SessionsPagesVisualTest.php` (captures only).
+Tests, created: `tests/Feature/Sessions/TeamSessionsTest.php`, `ListTeamSessionsTest.php`, `NewSessionOptionsTest.php`; `tests/Unit/Support/SessionCursorTest.php`, `PhaseDurationsTest.php`, `TrackerIssueLabelsTest.php`, `AcceptanceCriteriaSectionTest.php`; `tests/Feature/Retros/PhaseTimersTest.php`; `tests/Feature/Poker/RevoteAfterRevealTest.php`, `TaskTimerTest.php`, `PokerGameOptionsTest.php`; `tests/Feature/Integrations/PokerEstimateWriteBackOptionTest.php`, `PokerCreationImportTest.php`, `TicketDetailsTest.php`; `tests/Concurrency/RevoteAfterRevealTest.php`; `tests/Browser/Visual/SessionsPagesVisualTest.php` (captures only).
 
-Front end, created: `resources/js/pages/teams/sessions.tsx`; `resources/js/components/teams/sessions-page.tsx`, `team-new-session-dialog.tsx`; `resources/js/components/skrum/session-row.tsx`; `resources/js/lib/teams/sessions.ts`; `resources/js/lib/retro/phase-durations.ts`; `resources/js/components/teams/session-create/phase-timers-field.tsx`, `poker-import-field.tsx`; `resources/js/components/poker/tracker-issue-picker.tsx`, `ticket-details.tsx`; `resources/js/lib/poker/tracker-browse.ts`; each with its `.test.ts(x)`. Modified: `components/teams/team-page.tsx`, `session-create/retro-session-fields.tsx`, `poker-session-fields.tsx`, `poker-tasks-field.tsx`; `components/skrum/session-type-picker.tsx` (exports the kind tones), `app-sidebar.tsx` (nothing but tests), `mobile-tab-bar.tsx`; `hooks/use-sidebar-model.ts`; `components/retro/board-settings.tsx`; `components/poker/room-topbar.tsx` (settings popover), `room-dock.tsx`, `story-card.tsx`, `import-tasks-dialog.tsx`; `components/integrations/story-points-field.tsx` (sibling select); `lib/poker/types.ts`, `lib/retro/types.ts`, `types/*.ts`.
+Front end, created: `resources/js/pages/teams/sessions.tsx`; `resources/js/components/teams/sessions-page.tsx`, `team-new-session-dialog.tsx`; `resources/js/components/skrum/session-row.tsx`; `resources/js/lib/teams/sessions.ts`; `resources/js/lib/retro/phase-durations.ts`; `resources/js/components/teams/session-create/phase-timers-field.tsx`, `poker-import-field.tsx`; `resources/js/components/poker/tracker-issue-picker.tsx`, `ticket-details.tsx`; `resources/js/lib/poker/tracker-browse.ts`; each with its `.test.ts(x)`. Modified: `components/teams/team-page.tsx`, `session-create/retro-session-fields.tsx`, `poker-session-fields.tsx`, `poker-tasks-field.tsx`; `components/skrum/session-type-picker.tsx` (exports the kind tones), `app-sidebar.tsx` (nothing but tests), `mobile-tab-bar.tsx`; `hooks/use-sidebar-model.ts`; `components/retro/board-settings.tsx`, `board-topbar.tsx` (`BoardTimer`: the phase timer offer); `components/skrum/timer.tsx` and `components/session/session-timer.tsx` (the optional `suggestion`); `components/poker/room-topbar.tsx` (settings popover), `room-dock.tsx`, `story-card.tsx`, `import-tasks-dialog.tsx`; `lib/poker/types.ts`, `lib/retro/types.ts`, `types/*.ts`.
 
 ## Global Constraints
 
@@ -91,24 +92,25 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 
 ## Pre-build deviations
 
-Put to the owner before the screen is built. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
+**Status: to approve by the owner (not asked yet).** Every row below, P22-01 to P22-15, is put to the owner before its screen is built; the answers to spec §15 settle the decisions, not these rows. Reasons as in plan 18e: **F** false or unsafe, **A** accessibility, **N** no such data or concept, **S** this spec, **O** an owner's answer.
 
 | # | Screen | Mockup element | Built | Reason |
 |---|---|---|---|---|
-| P22-01 | Sessions page | rows without a date | the last activity date ends the meta line on Upcoming and Finished rows | S: decision 8 |
-| P22-02 | Sessions page | the Upcoming tab | sessions created and not started (spec §6.1) | N: no scheduling (backlog); decision 1 |
+| P22-01 | Sessions page | rows without a date | the last activity date ends the meta line on Upcoming and Finished rows | O: decision 8, answered A |
+| P22-02 | Sessions page | the Upcoming tab | sessions created and not started (spec §6.1) | N: no scheduling (backlog); O: decision 1, answered A |
 | P22-03 | Sessions page | — (Live tab only drawn) | empty states per tab, "Load more" and its end line from the `Pagination` mockup | N: no frame for them |
 | P22-04 | Dialog, retro | "ROTI at the end" switch | not rendered | O: backlog (ROTI is always a phase) |
 | P22-05 | Dialog, retro | "Timer per phase" select showing "Custom (5 phases)" | options "No timer", "Standard", "Custom (5 phases)"; Custom opens five minute steppers under the row | N: the mockup draws the closed select only |
 | P22-06 | Dialog, poker | "Timer per task: 2 minutes" | the choices Off, 1, 3, 5, 10 minutes | O: X5 (one list 1/3/5/10) |
 | P22-07 | Dialog, poker | "Schedule…" in the footer | not rendered, no place | O: scheduling is backlog |
-| P22-08 | Dialog, poker | "Import from Jira" | "Import from <source>", with a source select when the team has two trackers or more | S: decision 7 |
+| P22-08 | Dialog, poker | "Import from Jira" | "Import from <source>", with a source select when the team has two trackers or more | O: decision 7, answered A |
 | P22-09 | Dialog, poker | "Write estimates to Jira · Story points" | for Linear and GitHub the row reads "Write estimates to <source>" with "Write" / "Don't write" | N: no field choice on those sources |
 | P22-10 | Dialog, retro and poker | the invitation link "skrum.atlas.dev/j/R7K-42Q · Copy link" | unchanged (still not rendered: D-08) | N: the link exists only once the session does |
-| P22-11 | Poker room | acceptance criteria as a plain list | the field's Markdown rendered (a list when the field holds one) | N: the source's own format |
+| P22-11 | Poker room | acceptance criteria as a plain list | the description's "Acceptance criteria" section rendered as Markdown (a list when the writer wrote one), under the heading "Acceptance criteria" of the app; nothing when the description has no such section | N: the source's own format; O: decision 6, B (a section of the description) |
 | P22-12 | Poker room | settings popover (D-70) | three more rows: Timer per task, Change vote after reveal, Write estimates | S: spec §9.4 ("les réglages restent modifiables dans la session") |
 | P22-13 | Retro | settings popover | one more row: Timer per phase | S: spec §9.4 |
-| P22-14 | Team integrations | — | "Acceptance criteria field" select beside the story-points field | S: decision 6; no mockup for the settings of a connection |
+| P22-14 | — | — | **withdrawn**: no "Acceptance criteria field" select (decision 6 answered B: no setting). The number is kept so that the other rows keep theirs | — |
+| P22-15 | Retro board | the topbar `Timer` with its menu 1, 3, 5, 10 (`Timer`, `FacilitatorBar`) | facilitator only, in a phase with a duration: a one-click "<n> min" start button while no timer runs or is paused, and the first menu entry "<Phase> · <n> min" ("… per topic" in Discussing) before the list | O: decision 3, B (offered, nothing starts by itself); no mockup draws the offer |
 
 ## Review Focus
 
@@ -116,7 +118,9 @@ Put to the owner before the screen is built. Reasons as in plan 18e: **F** false
 2. **A card changed after reveal while the facilitator saves the estimate**: either applied before the save or refused after it, never after. Race in Task 8.
 3. **The reveal and the timer endpoints after `acceptsCard`**: a revealed round must still refuse a second reveal and a timer. Test in Task 8.
 4. **An import at creation whose tracker fails** (expired token, a 500): no game is left behind, the message is on the import tab. Test in Task 12.
-5. **A guest reading a poker payload**: ticket details yes, assignee and sync errors no. Test in Task 6.
+5. **A guest reading a poker payload**: type, labels and the criteria section yes, assignee and sync errors no. Test in Task 6.
+6. **The criteria split** (spec rules AC-1 to AC-7): the stored description is never changed; a heading in a code block, a second heading and another wording split nothing more than the rules say; old cached HTML is not served. Unit test and feature test in Task 6.
+7. **A phase change starts no timer** (decision 3, B): no `TimerChanged`, a running timer runs on, a paused one stays paused. Test in Task 7.
 
 ## Lanes
 
@@ -124,10 +128,10 @@ Put to the owner before the screen is built. Reasons as in plan 18e: **F** false
 |---|---|---|---|
 | main | 1, 13, 19 to 22 | — | — |
 | S (Sessions page) | 2, 3, 4, then 14 | head of Task 1 (14 after Task 13 is merged into it) | `routes/web.php` (one block), `app/Http/Controllers/TeamsController.php` (Task 3 only), `lang/*.json` |
-| K (ticket details) | 5, 6, then 15 | head of Task 1 (15 after Task 13) | `app/Actions/Integrations/ImportPokerTasks.php` and `ApplyPokerTaskIssues.php` (also lane C, Task 12: K merges first), `database/factories/TeamIntegrationFactory.php`, `tests/Pest.php` (one block), `lang/*.json` |
-| C (creation options) | 7 to 12, then 16, 17, 18 | head of Task 1 **with plan 21 merged** and lanes S and K merged (Task 12 needs K's `ImportPokerTasks`, Task 11's props go through S's `PresentNewSessionOptions`) | `routes/web.php`, `PokerSettingsController`, `RetroSettingsController`, `retro-session-fields.tsx`, `poker-session-fields.tsx`, `lang/*.json` |
+| K (ticket details) | 5, 6, then 15 | head of Task 1 (15 after Task 13) | `app/Actions/Integrations/ImportPokerTasks.php` and `ApplyPokerTaskIssues.php` (also lane C, Task 12: K merges first), `app/Actions/Poker/PresentPokerTask.php`, `lang/*.json` |
+| C (creation options) | 7 to 12, then 16, 17, 18 | head of Task 1 **with plan 21 merged** and lanes S and K merged (Task 12 needs K's `ImportPokerTasks`, Task 11's props go through S's `PresentNewSessionOptions`) | `routes/web.php`, `PokerSettingsController`, `RetroSettingsController`, `retro-session-fields.tsx`, `poker-session-fields.tsx`, `board-topbar.tsx`, `skrum/timer.tsx`, `session/session-timer.tsx`, `lang/*.json` |
 
-Task 13 (front foundation: `TeamNewSessionDialog`, kind tones, shared types) runs on main after lanes S and K's back-end tasks are merged and before any screen task. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in alphabetical blocks per lane). `tests/Pest.php`: lane K adds its helpers in one block at the end of the file; lane C in another.
+Task 13 (front foundation: `TeamNewSessionDialog`, kind tones, shared types) runs on main after lanes S and K's back-end tasks are merged and before any screen task. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in alphabetical blocks per lane). `tests/Pest.php`: lane C adds its helpers, if any, in one block at the end of the file (lane K needs none since decision 6 was answered B).
 
 ---
 
@@ -143,7 +147,7 @@ Task 13 (front foundation: `TeamNewSessionDialog`, kind tones, shared types) run
 Read first: `docs/database.md` rule 5 and rule 10; `app/Models/PokerGame.php` (`#[Fillable]`, `casts()`); `app/Models/Retro.php` (`#[Fillable]`, `casts()`); `app/Models/PokerTask.php` (the `external_*` columns are not fillable: written with `forceFill` by the trackers only).
 
 **Interfaces:**
-- Produces: `retros.phase_durations` (JSON, nullable; cast `array`; fillable); `poker_games.revote_after_reveal` (bool, default false), `task_timer_seconds` (unsigned small int, nullable), `writes_estimates` (bool, default true), `estimate_field_id` (string 100, nullable), all fillable and cast; `PokerGame::TaskTimerChoices = [60, 180, 300, 600]`; `poker_tasks.external_type` (string 60, nullable), `external_labels` (JSON, nullable, cast `array`), `external_acceptance_criteria` (text, nullable), not fillable; `App\Enums\SessionState` (`Upcoming = 'upcoming'`, `Live = 'live'`, `Finished = 'finished'`).
+- Produces: `retros.phase_durations` (JSON, nullable; cast `array`; fillable); `poker_games.revote_after_reveal` (bool, default false), `task_timer_seconds` (unsigned small int, nullable), `writes_estimates` (bool, default true), `estimate_field_id` (string 100, nullable), all fillable and cast; `PokerGame::TaskTimerChoices = [60, 180, 300, 600]`; `poker_tasks.external_type` (string 60, nullable), `external_labels` (JSON, nullable, cast `array`), not fillable (no criteria column: decision 6, B); `App\Enums\SessionState` (`Upcoming = 'upcoming'`, `Live = 'live'`, `Finished = 'finished'`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -193,12 +197,12 @@ it('stores phase durations as an object of minutes, null by default', function (
 it('keeps ticket details out of mass assignment', function () {
     $task = PokerTask::factory()->create();
 
-    $task->fill(['external_type' => 'Story', 'external_labels' => ['ui'], 'external_acceptance_criteria' => 'x'])->save();
+    $task->fill(['external_type' => 'Story', 'external_labels' => ['ui']])->save();
 
-    expect($task->fresh()->only(['external_type', 'external_labels', 'external_acceptance_criteria']))
-        ->toBe(['external_type' => null, 'external_labels' => null, 'external_acceptance_criteria' => null]);
+    expect($task->fresh()->only(['external_type', 'external_labels']))
+        ->toBe(['external_type' => null, 'external_labels' => null]);
 
-    $task->forceFill(['external_type' => 'Story', 'external_labels' => ['ui', 'api'], 'external_acceptance_criteria' => '- one'])->save();
+    $task->forceFill(['external_type' => 'Story', 'external_labels' => ['ui', 'api']])->save();
 
     expect($task->fresh()->external_labels)->toBe(['ui', 'api'])
         ->and($task->fresh()->external_type)->toBe('Story');
@@ -255,7 +259,6 @@ return new class extends Migration
         Schema::table('poker_tasks', function (Blueprint $table) {
             $table->string('external_type', 60)->nullable();
             $table->json('external_labels')->nullable();
-            $table->text('external_acceptance_criteria')->nullable();
         });
     }
 };
@@ -293,7 +296,7 @@ and in `casts()`: `'revote_after_reveal' => 'boolean'`, `'task_timer_seconds' =>
 
 `app/Models/Retro.php`: `'phase_durations'` in `#[Fillable]`, `@property array<string, int>|null $phase_durations`, and `'phase_durations' => 'array'` in `casts()`.
 
-`app/Models/PokerTask.php`: `@property` lines for the three columns (not fillable); in `casts()` `'external_labels' => 'array'`. Extend the class docblock sentence: "The external_*, needs_sync, sync_error and synced_at columns — ticket details included — are written only by the tracker imports, refreshes and write-back".
+`app/Models/PokerTask.php`: `@property` lines for the two columns (not fillable); in `casts()` `'external_labels' => 'array'`. Extend the class docblock sentence: "The external_*, needs_sync, sync_error and synced_at columns — ticket details included — are written only by the tracker imports, refreshes and write-back".
 
 - [ ] **Step 4: Run the tests on pgsql and sqlite**
 
@@ -304,7 +307,7 @@ Expected: PASS on both. Then `bin/test-db mariadb -- tests/Feature/Poker/PokerGa
 
 ```bash
 git add database/migrations/2026_10_22_1000*.php app/Enums/SessionState.php app/Models/Retro.php app/Models/PokerGame.php app/Models/PokerTask.php tests/Feature/Poker/PokerGameOptionsTest.php
-git commit -m "feat(sessions): columns for phase timers, poker options and ticket details
+git commit -m "feat(sessions): columns for phase durations, poker options and ticket details
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
@@ -1049,22 +1052,22 @@ export default function TeamSessions() {
 
 ---
 
-## Lane K — ticket details (back end)
+## Lane K — ticket details and the criteria section (back end)
 
-### Task 5: `TrackerIssue` carries type, labels and acceptance criteria; Jira reads them
+Decision 6 was answered **B**: acceptance criteria are a section of the description, split at presentation. Nothing in this lane detects a Jira field, adds an integration setting or stores the criteria. Spec §6.5 rules AC-1 to AC-7 are binding: do not widen the headings, add a tracker field or a setting "to make it work better" — the owner accepted the fragility (AC-7).
+
+### Task 5: `TrackerIssue` carries type and labels; Jira, Linear and GitHub read them; the import writes them
 
 **Files:**
-- Modify: `app/Support/Integrations/Trackers/TrackerIssue.php`, `JiraIssueTracker.php`; `app/Actions/Integrations/DetectJiraStoryPointFields.php`, `UpdateTeamIntegration.php`, `PresentTeamIntegration.php`; `database/factories/TeamIntegrationFactory.php`; `tests/Pest.php`
-- Test: `tests/Feature/Integrations/TicketDetailsTest.php`, `tests/Unit/Support/TrackerIssueLabelsTest.php`
+- Modify: `app/Support/Integrations/Trackers/TrackerIssue.php`, `JiraIssueTracker.php`, `LinearTracker.php`, `GitHubTracker.php`; `app/Actions/Integrations/ImportPokerTasks.php`
+- Test: `tests/Unit/Support/TrackerIssueLabelsTest.php`, `tests/Feature/Integrations/TicketDetailsTest.php`
 
-Read first: `JiraIssueTracker::issue()`, `requestedFields()`, `storyPointFieldIds()`; `JiraTracker::description()` (ADF) and `JiraDataCenterTracker::description()` (wiki markup); `DetectJiraStoryPointFields` whole; `UpdateTeamIntegration::rules()` and `handle()`; `PresentTeamIntegration` (the settings keys exposed per provider); `tests/Feature/Integrations/JiraFieldDetectionTest.php` or the test that covers detection (find it with `grep -rl DetectJiraStoryPointFields tests`).
+Read first: `TrackerIssue` whole; `JiraIssueTracker::issue()`, `BaseFields`, `requestedFields()`; `LinearTracker::IssueFields` and its mapping (around the `new TrackerIssue(` call); `GitHubTracker::IssueFields` (GraphQL fragment) and the REST mapping used by `iterationIssues` (`list()`); `ImportPokerTasks::store()`; `tests/Feature/Integrations/PokerImportBrowsingTest.php` (how GitHub is faked).
 
 **Interfaces:**
-- Produces: `TrackerIssue` constructor gains, after `issueStatus`, `public ?string $type = null`, `public array $labels = []` (list<string>), `public ?string $acceptanceCriteria = null`; constants `TypeLength = 60`, `LabelLength = 60`, `MaxLabels = 10`, `AcceptanceCriteriaLength = 5000`; static `TrackerIssue::labels(mixed $value): list<string>` (strings only, trimmed, non-empty, unique in order, cut to 60, at most 10); static `TrackerIssue::longText(?string $markdown): ?string` (trimmed, null when empty, cut to 5000). `JiraIssueTracker::acceptanceCriteriaFieldId(TeamIntegration): ?string`. Integration settings `textFields` (list of `{id, name}`), `acceptanceCriteriaField` (`?string`), `acceptanceCriteriaFieldChosen` (bool). `DetectJiraStoryPointFields::ensureTextFields(TeamIntegration): void`. Validation key `acceptance_criteria_field_id` (nullable) on Jira and Jira Data Center connections. Test helper `jiraTextField(string $id, string $name): array`.
+- Produces: `TrackerIssue` constructor gains, after `issueStatus`, `public ?string $type = null` and `public array $labels = []` (list<string>); constants `TypeLength = 60`, `LabelLength = 60`, `MaxLabels = 10`; static `TrackerIssue::labels(mixed $value): list<string>` (strings only, trimmed, non-empty, unique in order, cut to 60, at most 10). `ImportPokerTasks::store()` writes `external_type` and `external_labels`. Task 6 adds the refresh writer and the presenter; Task 12 extracts `storeIssues()` from this version.
 
-- [ ] **Step 1: Keep existing tests quiet.** In `TeamIntegrationFactory::jira()` and `jiraDataCenter()` add `'textFields' => []` to `settings`, so that no existing test triggers the detection of Step 5 (they fake no `field` endpoint and prevent stray requests).
-
-- [ ] **Step 2: Write the failing tests**
+- [ ] **Step 1: Write the failing tests**
 
 `tests/Unit/Support/TrackerIssueLabelsTest.php`:
 
@@ -1082,42 +1085,27 @@ it('keeps ten clean labels in the source order', function () {
 it('reads no labels from something that is not a list', function (mixed $value) {
     expect(TrackerIssue::labels($value))->toBe([]);
 })->with([[null], ['ui'], [['name' => 'ui']]]);
-
-it('cuts long criteria and drops empty ones', function () {
-    expect(TrackerIssue::longText("  \n "))->toBeNull()
-        ->and(mb_strlen((string) TrackerIssue::longText(str_repeat('é', 6000))))->toBe(5000);
-});
 ```
 
 Note: `['name' => 'ui']` is a map, not a list: `labels()` reads `array_is_list($value)` first and returns `[]` otherwise.
 
-`tests/Feature/Integrations/TicketDetailsTest.php` (Jira part; lane K adds Linear and GitHub cases in Task 6):
+`tests/Feature/Integrations/TicketDetailsTest.php`:
 
 ```php
 <?php
 
-use App\Actions\Integrations\DetectJiraStoryPointFields;
+use App\Enums\IntegrationProvider;
 use App\Models\PokerTask;
-use App\Models\TeamIntegration;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(fn () => Http::preventStrayRequests());
 
-it('imports the type, labels and acceptance criteria of a Jira issue', function () {
+it('imports the type and labels of a Jira issue', function () {
     $table = trackerTable();
-    $table['integration']->mergeSettings([
-        'textFields' => [jiraTextField('customfield_10100', 'Acceptance criteria')],
-        'acceptanceCriteriaField' => 'customfield_10100',
-    ]);
     fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', [
         'issuetype' => ['name' => 'Story'],
         'labels' => ['actions', 'csv'],
-        'customfield_10100' => ['type' => 'doc', 'version' => 1, 'content' => [
-            ['type' => 'bulletList', 'content' => [
-                ['type' => 'listItem', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'UTF-8 encoding']]]]],
-            ]],
-        ]],
     ])]);
 
     $this->actingAs($table['member'])
@@ -1127,94 +1115,48 @@ it('imports the type, labels and acceptance criteria of a Jira issue', function 
     $task = PokerTask::query()->where('external_id', '10001')->sole();
 
     expect($task->external_type)->toBe('Story')
-        ->and($task->external_labels)->toBe(['actions', 'csv'])
-        ->and($task->external_acceptance_criteria)->toContain('UTF-8 encoding');
+        ->and($task->external_labels)->toBe(['actions', 'csv']);
 
     Http::assertSent(fn (Request $request) => str_contains($request->url(), 'search/jql')
         && in_array('issuetype', (array) $request['fields'], true)
-        && in_array('labels', (array) $request['fields'], true)
-        && in_array('customfield_10100', (array) $request['fields'], true));
+        && in_array('labels', (array) $request['fields'], true));
 });
 
-it('asks for no criteria field when the connection has none', function () {
+it('stores no labels as null, not as an empty list', function () {
     $table = trackerTable();
-    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', ['customfield_10100' => 'ignored'])]);
+    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', ['labels' => []])]);
 
     $this->actingAs($table['member'])
         ->postJson(route('poker.imports.store', [$table['game'], 'jira']), ['external_ids' => ['10001']])
         ->assertCreated();
 
-    expect(PokerTask::query()->where('external_id', '10001')->sole()->external_acceptance_criteria)->toBeNull();
+    expect(PokerTask::query()->where('external_id', '10001')->sole()->external_labels)->toBeNull();
 });
 
-it('detects the criteria field by name and keeps a chosen one', function () {
-    $table = trackerTable();
-    $integration = $table['integration'];
-    Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/api/3/field' => Http::response([
-        ['id' => 'customfield_10016', 'name' => 'Story point estimate', 'custom' => true, 'schema' => ['type' => 'number']],
-        ['id' => 'customfield_10100', 'name' => 'ACCEPTANCE CRITERIA', 'custom' => true, 'schema' => ['type' => 'string']],
-        ['id' => 'customfield_10200', 'name' => 'Notes', 'custom' => true, 'schema' => ['type' => 'string']],
-    ])]);
-
-    app(DetectJiraStoryPointFields::class)->handle($integration);
-
-    expect($integration->fresh()->setting('acceptanceCriteriaField'))->toBe('customfield_10100')
-        ->and(collect($integration->fresh()->setting('textFields'))->pluck('id')->all())->toBe(['customfield_10100', 'customfield_10200']);
-
-    $this->actingAs(integrationAdmin($integration->team))
-        ->patch(route('teams.integrations.update', [$integration->team->workspace, $integration->team, $integration]), ['acceptance_criteria_field_id' => 'customfield_10200'])
-        ->assertSessionHasNoErrors();
-
-    app(DetectJiraStoryPointFields::class)->handle($integration->fresh());
-
-    expect($integration->fresh()->setting('acceptanceCriteriaField'))->toBe('customfield_10200');
-
-    $this->actingAs(integrationAdmin($integration->team))
-        ->patch(route('teams.integrations.update', [$integration->team->workspace, $integration->team, $integration]), ['acceptance_criteria_field_id' => 'customfield_99999'])
-        ->assertSessionHasErrors('acceptance_criteria_field_id');
-});
-
-it('detects the text fields once for a connection detected before this release', function () {
-    $table = trackerTable();
-    $settings = $table['integration']->settings;
-    unset($settings['textFields']);
-    $table['integration']->forceFill(['settings' => $settings])->save();
-
-    Http::fake([
-        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/field' => Http::response([
-            ['id' => 'customfield_10100', 'name' => 'Acceptance criteria', 'custom' => true, 'schema' => ['type' => 'string']],
-        ]),
-    ]);
-    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', ['customfield_10100' => 'Must export'])]);
+it('imports the labels of a Linear issue and no type', function () {
+    $table = trackerTable(IntegrationProvider::Linear);
+    fakeLinearGraphql(['issues(' => ['issues' => ['nodes' => [
+        linearTrackerIssue('uuid-1', 'ENG-1', ['labels' => ['nodes' => [['name' => 'backend'], ['name' => 'p1']]]]),
+    ]]]]);
 
     $this->actingAs($table['member'])
-        ->postJson(route('poker.imports.store', [$table['game'], 'jira']), ['external_ids' => ['10001']])
+        ->postJson(route('poker.imports.store', [$table['game'], 'linear']), ['external_ids' => ['uuid-1']])
         ->assertCreated();
 
-    expect(PokerTask::query()->where('external_id', '10001')->sole()->external_acceptance_criteria)->toBe('Must export')
-        ->and(TeamIntegration::query()->find($table['integration']->id)->setting('acceptanceCriteriaField'))->toBe('customfield_10100');
+    $task = PokerTask::query()->where('external_id', 'uuid-1')->sole();
+
+    expect($task->external_labels)->toBe(['backend', 'p1'])
+        ->and($task->external_type)->toBeNull();
 });
 ```
 
-The Cloud field above holds a plain string in the last test (a single-line text field): Step 4 converts an ADF document and keeps a plain string as it is. The route name and HTTP verb of the integration update are those of `routes/web.php` (`teams.integrations.update`, PATCH); `Http::fake` calls accumulate patterns, the first match wins: the `field` pattern is registered before `fakeJiraTrackerApi` adds its own.
+`fakeLinearGraphql` matches the first key found in the query text: the Linear tracker's issue query contains `issues(`. Add the GitHub case the same way with `gitHubIssue(7, ['labels' => [['name' => 'bug']], 'type' => ['name' => 'Bug']])` through the fake used by `PokerImportBrowsingTest.php`, and expect `['bug']` and `'Bug'`.
 
-In `tests/Pest.php`, lane K block:
+- [ ] **Step 2: Run them to see them fail.** Expected: FAIL.
 
-```php
-/**
- * @return array{id: string, name: string}
- */
-function jiraTextField(string $id, string $name): array
-{
-    return ['id' => $id, 'name' => $name];
-}
-```
+- [ ] **Step 3: Implement**
 
-- [ ] **Step 3: Run them to see them fail.** Expected: FAIL.
-
-- [ ] **Step 4: `TrackerIssue` and `JiraIssueTracker`**
-
-`TrackerIssue`: the three new constructor parameters with their defaults (every existing `new TrackerIssue(...)` call uses named arguments and keeps compiling), the constants, and:
+`TrackerIssue`: the two new constructor parameters with their defaults (every existing `new TrackerIssue(...)` call uses named arguments and keeps compiling), the constants, and:
 
 ```php
     /**
@@ -1240,134 +1182,97 @@ function jiraTextField(string $id, string $name): array
 
         return array_slice($labels, 0, self::MaxLabels);
     }
-
-    public static function longText(?string $markdown): ?string
-    {
-        $text = trim((string) $markdown);
-
-        return $text === '' ? null : mb_substr($text, 0, self::AcceptanceCriteriaLength);
-    }
 ```
 
-`JiraIssueTracker`: `BaseFields` gains `'issuetype'` and `'labels'`; `requestedFields()` appends the criteria field id when there is one:
+- `JiraIssueTracker`: `BaseFields` gains `'issuetype'` and `'labels'`; `issue()` passes `type: TrackerIssue::shorten(data_get($fields, 'issuetype.name'), TrackerIssue::TypeLength)` and `labels: TrackerIssue::labels($fields['labels'] ?? null)`.
+- `LinearTracker::IssueFields` gains `labels(first: 10) { nodes { name } }`; its mapping passes `labels: TrackerIssue::labels(array_column((array) data_get($node, 'labels.nodes', []), 'name'))`.
+- `GitHubTracker::IssueFields` gains `labels(first: 10) { nodes { name } } issueType { name }`; the GraphQL mapping passes `labels: TrackerIssue::labels(array_column((array) data_get($raw, 'labels.nodes', []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'issueType.name'), TrackerIssue::TypeLength)`; the REST mapping passes `labels: TrackerIssue::labels(array_column((array) ($raw['labels'] ?? []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'type.name'), TrackerIssue::TypeLength)`. If GitHub's GraphQL refuses `issueType` on the supported API version (a 200 with `errors`), drop it from the fragment and say so in the report (spec §16.3).
+- `ImportPokerTasks::store()`: the `forceFill` gains `'external_type' => $issue->type` and `'external_labels' => $issue->labels === [] ? null : $issue->labels`.
 
-```php
-    protected function requestedFields(TeamIntegration $integration): array
-    {
-        $criteria = self::acceptanceCriteriaFieldId($integration);
+- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/TrackerIssueLabelsTest.php tests/Feature/Integrations tests/Arch`, then `sqlite`. Expected: PASS (all existing integration tests included).
 
-        return [...self::BaseFields, ...self::storyPointFieldIds($integration), ...($criteria === null ? [] : [$criteria])];
-    }
+- [ ] **Step 5: Commit** — `feat(integrations): ticket type and labels from Jira, Linear and GitHub` (trailers).
 
-    public static function acceptanceCriteriaFieldId(TeamIntegration $integration): ?string
-    {
-        $chosen = $integration->setting('acceptanceCriteriaField');
-
-        if (! is_string($chosen)) {
-            return null;
-        }
-
-        $known = collect((array) $integration->setting('textFields', []))
-            ->contains(fn (mixed $field): bool => is_array($field) && ($field['id'] ?? null) === $chosen);
-
-        return $known ? $chosen : null;
-    }
-```
-
-and in `issue()` the three named arguments:
-
-```php
-            type: TrackerIssue::shorten(data_get($fields, 'issuetype.name'), TrackerIssue::TypeLength),
-            labels: TrackerIssue::labels($fields['labels'] ?? null),
-            acceptanceCriteria: $this->acceptanceCriteria($integration, $fields),
-```
-
-with
-
-```php
-    /**
-     * Cloud gives a rich-text field as an ADF document and a one-line field as
-     * a string; Data Center gives wiki markup. `description()` converts the
-     * first and the last; a plain string on Cloud is kept as written.
-     *
-     * @param  array<array-key, mixed>  $fields
-     */
-    private function acceptanceCriteria(TeamIntegration $integration, array $fields): ?string
-    {
-        $fieldId = self::acceptanceCriteriaFieldId($integration);
-
-        if ($fieldId === null) {
-            return null;
-        }
-
-        $value = $fields[$fieldId] ?? null;
-
-        return TrackerIssue::longText($this->description($value) ?? (is_string($value) ? $value : null));
-    }
-```
-
-- [ ] **Step 5: Detection, override, and the once-only detection**
-
-`DetectJiraStoryPointFields::handle()`: in the same loop over `field`, collect `$textFields[] = ['id' => …, 'name' => …]` for `custom === true` and `schema.type === 'string'`; merge `textFields`; unless `acceptanceCriteriaFieldChosen` is true, merge `acceptanceCriteriaField` = the id of the first text field whose `Alphabetical::key($name) === Alphabetical::key('Acceptance criteria')`, or null. Add:
-
-```php
-    /**
-     * A connection detected before text fields were listed learns them once,
-     * quietly, the first time an import or a refresh needs them.
-     */
-    public function ensureTextFields(TeamIntegration $integration): void
-    {
-        if (! in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)) {
-            return;
-        }
-
-        if (is_array($integration->setting('textFields'))) {
-            return;
-        }
-
-        $this->handleQuietly($integration);
-    }
-```
-
-Call `ensureTextFields($integration)` at the start of `ImportPokerTasks::handle()` and `fromSource()` (after the guards) and in `RefreshPokerTasks::handle()` before `issues()` for each active integration. (Lane C's Task 12 calls it in the creation import too.)
-
-`UpdateTeamIntegration::rules()`: for `Jira` and `JiraDataCenter`, `'acceptance_criteria_field_id' => ['sometimes', 'nullable', 'string', Rule::in($this->ids($integration->setting('textFields', []), 'id'))]`. `handle()`: when the key is present, `mergeSettings(['acceptanceCriteriaField' => $validated['acceptance_criteria_field_id'], 'acceptanceCriteriaFieldChosen' => true])`. `PresentTeamIntegration`: add `textFields` and `acceptanceCriteriaField` to the exposed keys of `jira` and `jira_dc`.
-
-- [ ] **Step 6: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/TrackerIssueLabelsTest.php tests/Feature/Integrations tests/Arch`, then `sqlite`. Expected: PASS (all existing integration tests included).
-
-- [ ] **Step 7: Commit** — `feat(integrations): Jira ticket type, labels and acceptance criteria` (trailers).
-
-### Task 6: Linear and GitHub labels; every writer and the presenter carry the details
+### Task 6: The criteria section; the refresh writer and the presenter
 
 **Files:**
-- Modify: `app/Support/Integrations/Trackers/LinearTracker.php`, `GitHubTracker.php`; `app/Actions/Integrations/ImportPokerTasks.php`, `ApplyPokerTaskIssues.php`; `app/Actions/Poker/PresentPokerTask.php`
-- Test: `tests/Feature/Integrations/TicketDetailsTest.php` (more cases), `tests/Feature/Poker/PokerRedactionTest.php` (one case added)
+- Create: `app/Support/Poker/AcceptanceCriteriaSection.php`
+- Modify: `app/Actions/Integrations/ApplyPokerTaskIssues.php`; `app/Actions/Poker/PresentPokerTask.php`
+- Test: `tests/Unit/Support/AcceptanceCriteriaSectionTest.php`, `tests/Feature/Integrations/TicketDetailsTest.php` (more cases), `tests/Feature/Poker/PokerRedactionTest.php` (one case added)
 
-Read first: `LinearTracker::IssueFields` and its `issue()` mapping (around the `new TrackerIssue(` call); `GitHubTracker::IssueFields` (GraphQL fragment) and the REST mapping used by `iterationIssues` (`list()`); `ApplyPokerTaskIssues::fields()`; `ImportPokerTasks::store()`; `PresentPokerTask::external()`.
+Read first: spec §6.5 (rules AC-1 to AC-7) — the rules, not this plan's code, are the reference; `ApplyPokerTaskIssues::fields()`; `PresentPokerTask` whole (`descriptionHtml()`, its cache key, `external()`); `RenderTaskMarkdown::handle()`; `App\Support\Alphabetical::key()`; `AdfToMarkdown::block()` (headings as `#` lines, `strong` as `**…**`) and `WikiMarkupToMarkdown` (`h1.`–`h6.` as `#` lines, `*bold*` as `**bold**`) to see what reaches the description.
 
 **Interfaces:**
 - Consumes: Task 5.
-- Produces: `PresentPokerTask`'s `external` block gains, for every viewer, `type: ?string`, `labels: list<string>`, `acceptanceCriteriaHtml: string` (empty when none; rendered with `RenderTaskMarkdown`, cached like the description). Lane C's Task 12 relies on `ImportPokerTasks::storeIssues()` being the only writer of imported tasks (extracted there, not here).
+- Produces: `AcceptanceCriteriaSection::Headings = ['acceptance criteria']`; `AcceptanceCriteriaSection::split(?string $markdown): array{description: ?string, criteria: ?string}` — when nothing is split, `description` is the input unchanged (null for null or blank) and `criteria` null. `PresentPokerTask`'s task gains `acceptanceCriteriaHtml: string` (empty when none) beside `descriptionHtml`, which now renders the description without the section; `description` (raw) is unchanged. The `external` block gains, for every viewer, `type: ?string` and `labels: list<string>`.
 
-- [ ] **Step 1: Write the failing tests** (append to `TicketDetailsTest.php`):
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Unit/Support/AcceptanceCriteriaSectionTest.php`:
 
 ```php
-it('imports the labels of a Linear issue and no type', function () {
-    $table = trackerTable(App\Enums\IntegrationProvider::Linear);
-    fakeLinearGraphql(['issues(' => ['issues' => ['nodes' => [
-        linearTrackerIssue('uuid-1', 'ENG-1', ['labels' => ['nodes' => [['name' => 'backend'], ['name' => 'p1']]]]),
-    ]]]]);
+<?php
 
-    $this->actingAs($table['member'])
-        ->postJson(route('poker.imports.store', [$table['game'], 'linear']), ['external_ids' => ['uuid-1']])
-        ->assertCreated();
+use App\Support\Poker\AcceptanceCriteriaSection;
 
-    $task = PokerTask::query()->where('external_id', 'uuid-1')->sole();
+it('splits a section under an ATX heading, up to the next heading of the same level', function () {
+    $split = AcceptanceCriteriaSection::split("Export invoices.\n\n## Acceptance criteria\n\n- UTF-8\n- semicolon\n\n### Edge case\n\n- empty file\n\n## Notes\n\nSee ATLAS-12.");
 
-    expect($task->external_labels)->toBe(['backend', 'p1'])
-        ->and($task->external_type)->toBeNull();
+    expect($split['criteria'])->toBe("- UTF-8\n- semicolon\n\n### Edge case\n\n- empty file")
+        ->and($split['description'])->toBe("Export invoices.\n\n## Notes\n\nSee ATLAS-12.");
 });
 
+it('reads every heading markup of rule AC-1, in any case', function (string $heading) {
+    $split = AcceptanceCriteriaSection::split("Intro\n{$heading}\n- one");
+
+    expect($split['criteria'])->toBe('- one')
+        ->and($split['description'])->toBe('Intro');
+})->with([
+    'atx' => ['# ACCEPTANCE CRITERIA'],
+    'atx closed' => ['### Acceptance criteria ###'],
+    'atx colon' => ['## Acceptance Criteria:'],
+    'bold' => ['**Acceptance criteria**'],
+    'bold colon inside' => ['**Acceptance criteria:**'],
+    'bold colon outside' => ['__Acceptance criteria__:'],
+    'plain colon' => ['acceptance criteria:'],
+]);
+
+it('ends a bold or colon section at the next heading or bold line', function () {
+    $split = AcceptanceCriteriaSection::split("**Acceptance criteria**\n- one\n**Out of scope**\n- two");
+
+    expect($split['criteria'])->toBe('- one')
+        ->and($split['description'])->toBe("**Out of scope**\n- two");
+});
+
+it('splits nothing outside the rules', function (string $markdown) {
+    expect(AcceptanceCriteriaSection::split($markdown))->toBe(['description' => $markdown, 'criteria' => null]);
+})->with([
+    'in a code block' => ["```\n## Acceptance criteria\n- one\n```"],
+    'empty section' => ["Intro\n## Acceptance criteria\n\n## Notes\nx"],
+    'other wording' => ["## Definition of done\n- one"],
+    'translated' => ["## Critères d'acceptation\n- un"],
+    'setext' => ["Acceptance criteria\n---\n- one"],
+    'inside a sentence' => ['The acceptance criteria: see below.'],
+    'list item' => ["- Acceptance criteria:\n- one"],
+]);
+
+it('keeps a second heading in the body of the first', function () {
+    expect(AcceptanceCriteriaSection::split("## Acceptance criteria\n- one\n\n## Acceptance criteria\n- two")['criteria'])
+        ->toBe("- one\n\n## Acceptance criteria\n- two");
+});
+
+it('gives no description when the section is all there is', function () {
+    expect(AcceptanceCriteriaSection::split("## Acceptance criteria\n- one"))->toBe(['description' => null, 'criteria' => '- one'])
+        ->and(AcceptanceCriteriaSection::split(null))->toBe(['description' => null, 'criteria' => null])
+        ->and(AcceptanceCriteriaSection::split("  \n"))->toBe(['description' => null, 'criteria' => null]);
+});
+```
+
+The "keeps a second heading" case is rule AC-2: a repeated criteria heading is never an end, even at the first heading's level (AC-4 says so in its first clause). `endsSection()` checks that first.
+
+Append to `tests/Feature/Integrations/TicketDetailsTest.php`:
+
+```php
 it('follows the source on refresh', function () {
     $table = trackerTable();
     $task = importedPokerTask($table['game'], ['external_id' => '10001', 'external_key' => 'PROJ-1', 'external_labels' => ['old'], 'external_type' => 'Bug']);
@@ -1381,58 +1286,246 @@ it('follows the source on refresh', function () {
         ->and($task->fresh()->external_type)->toBe('Story');
 });
 
-it('shows ticket details to a guest, and the assignee to the team only', function () {
+it('shows ticket details and the criteria section to a guest, and the assignee to the team only', function () {
     $table = trackerTable();
-    importedPokerTask($table['game'], [
+    $task = importedPokerTask($table['game'], [
         'external_type' => 'Story',
         'external_labels' => ['csv'],
-        'external_acceptance_criteria' => "- UTF-8\n- semicolon",
         'external_assignee' => 'Jane Doe',
+        'description' => "Export invoices.\n\n## Acceptance criteria\n\n- UTF-8\n- semicolon",
     ]);
     $guest = pokerGuest($table['game']);
 
     $payload = $this->withCookies(pokerGuestCookie($guest))
         ->getJson(route('poker.snapshot.show', $table['game']))
         ->assertOk()
-        ->json('tasks.0.external');
+        ->json('tasks.0');
 
-    expect($payload['type'])->toBe('Story')
-        ->and($payload['labels'])->toBe(['csv'])
+    expect($payload['external']['type'])->toBe('Story')
+        ->and($payload['external']['labels'])->toBe(['csv'])
+        ->and($payload['external'])->not->toHaveKey('assignee')
         ->and($payload['acceptanceCriteriaHtml'])->toContain('<li>UTF-8</li>')
-        ->and($payload)->not->toHaveKey('assignee');
+        ->and($payload['descriptionHtml'])->toContain('Export invoices.')
+        ->and($payload['descriptionHtml'])->not->toContain('UTF-8')
+        ->and($payload['description'])->toBe($task->description);
+});
+
+it('splits the criteria of a task typed by hand and leaves its stored description whole', function () {
+    $table = trackerTable();
+    $task = App\Models\PokerTask::factory()->create([
+        'poker_game_id' => $table['game']->id,
+        'description' => "**Acceptance criteria:**\n- one",
+    ]);
+
+    $this->actingAs($table['member'])
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.descriptionHtml', '')
+        ->assertJsonPath('tasks.0.external', null);
+
+    expect($task->fresh()->description)->toBe("**Acceptance criteria:**\n- one");
+});
+
+it('never serves the html cached for the whole description', function () {
+    $table = trackerTable();
+    $description = "Intro\n\n## Acceptance criteria\n\n- one";
+    $task = App\Models\PokerTask::factory()->create(['poker_game_id' => $table['game']->id, 'description' => $description]);
+    Illuminate\Support\Facades\Cache::forever('poker-task-description:'.$task->id.':'.hash('xxh128', $description), '<p>stale</p>');
+
+    $this->actingAs($table['member'])
+        ->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.descriptionHtml', fn (string $html) => ! str_contains($html, 'stale') && str_contains($html, 'Intro'));
 });
 ```
 
-`fakeLinearGraphql` matches the first key found in the query text: the Linear tracker's issue query contains `issues(`. The GitHub case: add one with `gitHubIssue(7, ['labels' => [['name' => 'bug']]])` through the REST milestone listing (read `tests/Feature/Integrations/PokerImportBrowsingTest.php` for how GitHub is faked) and expect `['bug']`. The snapshot route name and the guest cookie helper are those of `tests/Feature/Poker/PokerSnapshotTest.php`; adapt the two names if they differ.
+The snapshot route name, its JSON path to the tasks, the guest cookie helper and the factory's default `description` are those of `tests/Feature/Poker/PokerSnapshotTest.php` and `PokerTaskFactory`; adapt the names, not the meaning. In `PokerRedactionTest.php` add one case: a guest's task payload has `external.type`, `external.labels` and `acceptanceCriteriaHtml`, and no `external.assignee`.
 
 - [ ] **Step 2: Run them to see them fail.** Expected: FAIL.
 
 - [ ] **Step 3: Implement**
-  - `LinearTracker::IssueFields` gains `labels(first: 10) { nodes { name } }`; its mapping passes `labels: TrackerIssue::labels(array_column((array) data_get($node, 'labels.nodes', []), 'name'))`.
-  - `GitHubTracker::IssueFields` gains `labels(first: 10) { nodes { name } } issueType { name }`; the GraphQL mapping passes `labels: TrackerIssue::labels(array_column((array) data_get($raw, 'labels.nodes', []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'issueType.name'), TrackerIssue::TypeLength)`; the REST mapping passes `labels: TrackerIssue::labels(array_column((array) ($raw['labels'] ?? []), 'name'))` and `type: TrackerIssue::shorten(data_get($raw, 'type.name'), TrackerIssue::TypeLength)`. If GitHub's GraphQL refuses `issueType` on the supported API version (a 200 with `errors`), drop it from the fragment and say so in the report (spec §16.3).
-  - `ImportPokerTasks::store()`: the `forceFill` gains `'external_type' => $issue->type`, `'external_labels' => $issue->labels === [] ? null : $issue->labels`, `'external_acceptance_criteria' => $issue->acceptanceCriteria`.
-  - `ApplyPokerTaskIssues::fields()`: the same three keys.
-  - `PresentPokerTask`: a private `details(PokerTask $task): array` returning the three keys, spread into **both** branches of `external()` (with and without a `PokerTaskSync`); `acceptanceCriteriaHtml` cached under `poker-task-criteria:{id}:{hash}` exactly as `descriptionHtml`. Add the keys to the `TaskExternal` phpstan type.
 
-- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Feature/Integrations tests/Feature/Poker`, then `sqlite`. Expected: PASS.
+`app/Support/Poker/AcceptanceCriteriaSection.php`:
 
-- [ ] **Step 5: Commit** — `feat(poker): ticket details from every tracker, kept up to date` (trailers).
+```php
+<?php
+
+namespace App\Support\Poker;
+
+use App\Support\Alphabetical;
+
+/**
+ * Spec plan 22 §6.5, rules AC-1 to AC-7 (owner, decision 6, B): the
+ * criteria are the description's section under an "Acceptance criteria"
+ * heading. The owner accepted that another wording or heading style splits
+ * nothing (AC-7): do not widen these rules without the owner.
+ */
+class AcceptanceCriteriaSection
+{
+    /** Folded heading texts. English only until the owner answers spec §16.8. */
+    public const array Headings = ['acceptance criteria'];
+
+    private const string AtxHeading = '/^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/u';
+
+    private const string BoldLine = '/^[ \t]*(\*\*|__)(.+?)\1:?[ \t]*$/u';
+
+    private const string ColonLine = '/^[ \t]*(\p{L}[\p{L} \t\'’-]*):[ \t]*$/u';
+
+    private const string Fence = '/^ {0,3}(```|~~~)/u';
+
+    /**
+     * @return array{description: ?string, criteria: ?string}
+     */
+    public static function split(?string $markdown): array
+    {
+        $unchanged = ['description' => trim((string) $markdown) === '' ? null : $markdown, 'criteria' => null];
+        $lines = preg_split('/\R/u', (string) $markdown) ?: [];
+        $start = null;
+        $level = 0;
+        $end = count($lines);
+        $inFence = false;
+
+        foreach ($lines as $index => $line) {
+            if (preg_match(self::Fence, $line) === 1) {
+                $inFence = ! $inFence;
+
+                continue;
+            }
+
+            if ($inFence) {
+                continue;
+            }
+
+            if ($start === null) {
+                $headingLevel = self::criteriaHeadingLevel($line);
+
+                if ($headingLevel !== null) {
+                    $start = $index;
+                    $level = $headingLevel;
+                }
+
+                continue;
+            }
+
+            if (self::endsSection($line, $level)) {
+                $end = $index;
+
+                break;
+            }
+        }
+
+        if ($start === null) {
+            return $unchanged;
+        }
+
+        $criteria = self::text(array_slice($lines, $start + 1, $end - $start - 1));
+
+        if ($criteria === null) {
+            return $unchanged;
+        }
+
+        $parts = array_filter(
+            [self::text(array_slice($lines, 0, $start)), self::text(array_slice($lines, $end))],
+            fn (?string $part): bool => $part !== null,
+        );
+
+        return ['description' => $parts === [] ? null : implode("\n\n", $parts), 'criteria' => $criteria];
+    }
+
+    /**
+     * 1 to 6 for an ATX heading, 0 for a bold or a colon line, null when the
+     * line is not the criteria heading.
+     */
+    private static function criteriaHeadingLevel(string $line): ?int
+    {
+        if (preg_match(self::AtxHeading, $line, $match) === 1) {
+            return self::isCriteria($match[2]) ? strlen($match[1]) : null;
+        }
+
+        if (preg_match(self::BoldLine, $line, $match) === 1) {
+            return self::isCriteria($match[2]) ? 0 : null;
+        }
+
+        if (preg_match(self::ColonLine, $line, $match) === 1) {
+            return self::isCriteria($match[1]) ? 0 : null;
+        }
+
+        return null;
+    }
+
+    private static function endsSection(string $line, int $level): bool
+    {
+        if (self::criteriaHeadingLevel($line) !== null) {
+            return false;
+        }
+
+        if (preg_match(self::AtxHeading, $line, $match) === 1) {
+            return $level === 0 || strlen($match[1]) <= $level;
+        }
+
+        return $level === 0 && preg_match(self::BoldLine, $line) === 1;
+    }
+
+    private static function isCriteria(string $text): bool
+    {
+        $words = preg_replace('/\s+/u', ' ', trim(rtrim(trim($text), ':')));
+
+        return in_array(Alphabetical::key((string) $words), self::Headings, true);
+    }
+
+    /**
+     * @param  list<string>  $lines
+     */
+    private static function text(array $lines): ?string
+    {
+        $text = trim(implode("\n", $lines));
+
+        return $text === '' ? null : $text;
+    }
+}
+```
+
+`ColonLine` starts with a letter, so a list item (`- …`, `1. …`), a quote (`> …`) or a table row never matches; a sentence with words after the colon never matches either (the colon must end the line).
+
+- `ApplyPokerTaskIssues::fields()`: `'external_type' => $issue->type`, `'external_labels' => $issue->labels === [] ? null : $issue->labels`.
+- `PresentPokerTask`: split once per task — `$parts = AcceptanceCriteriaSection::split($task->description);` — then `'descriptionHtml' => $this->html('poker-task-description', $task, $parts['description'])` and `'acceptanceCriteriaHtml' => $this->html('poker-task-criteria', $task, $parts['criteria'])`, with `descriptionHtml()` generalised:
+
+```php
+    private function html(string $prefix, PokerTask $task, ?string $markdown): string
+    {
+        if ($markdown === null || $markdown === '') {
+            return '';
+        }
+
+        $key = "{$prefix}:{$task->id}:".hash('xxh128', $markdown);
+
+        return Cache::rememberForever($key, fn (): string => $this->renderTaskMarkdown->handle($markdown));
+    }
+```
+
+  The key hashes the text rendered (AC-6): a description without a section keeps the key and the HTML it has today; a split one gets a new key. A private `details(PokerTask $task): array` returns `type` and `labels` (`external_labels ?? []`), spread into **both** branches of `external()` (with and without a `PokerTaskSync`). Add `acceptanceCriteriaHtml: string` to the `Task` phpstan type and `type: ?string, labels: list<string>` to `TaskExternal`.
+
+- [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/AcceptanceCriteriaSectionTest.php tests/Feature/Integrations tests/Feature/Poker tests/Arch`, then `sqlite`. Expected: PASS.
+
+- [ ] **Step 5: Commit** — `feat(poker): acceptance criteria from the description, ticket details for every viewer` (trailers).
 
 ---
 
 ## Lane C — creation options (back end; after plan 21)
 
-Before Task 7, read plan 21's changes to `app/Models/Retro.php`, `RetroSettingsController`, `RetroTimersController`, `ChangeRetroPhase` and the retro vote endpoint, and note in `progress.md` the name of the per-card cap column (written `max_votes_per_card` below; use plan 21's name) and the method that starts the retro timer after RT-2 (written "set `timer_ends_at`" below; use plan 21's way if it added a paused state).
+Before Task 7, read plan 21's changes to `app/Models/Retro.php`, `RetroSettingsController`, `RetroTimersController`, `TeamRetrosController`, `retro-session-fields.tsx`, `board-topbar.tsx` (`BoardTimer`) and its facilitator bar, and note in `progress.md`: that `max_votes_per_card` is sent from the dialog and accepted by `teams.retros.store` (plan 21's spec §6.3 and §9.7 say so — **if it is not, stop and report**: plan 22 does not add it), how a timer start in Discussing sets the time per topic (`topic_seconds`), and how a paused timer is shown and restarted. Task 16's offer calls whatever plan 21 leaves as the start of the timer.
 
-### Task 7: Retro — phase durations at creation and in the settings; the timer starts at phase entry; max per card at creation
+### Task 7: Retro — phase durations at creation, in the settings and in the snapshot; a phase change starts nothing
+
+Decision 3 was answered **B**: the durations are offered to the facilitator; nothing starts by itself. This task writes no timer and does not modify `ChangeRetroPhase`.
 
 **Files:**
 - Create: `app/Support/Retros/PhaseDurations.php`
-- Modify: `app/Actions/Retros/NewRetro.php`, `CreateRetro.php`, `ChangeRetroPhase.php`, `BuildBoardSnapshot.php`; `app/Http/Controllers/TeamRetrosController.php`, `Retros/RetroSettingsController.php`
+- Modify: `app/Actions/Retros/NewRetro.php`, `CreateRetro.php`, `BuildBoardSnapshot.php`; `app/Http/Controllers/TeamRetrosController.php`, `Retros/RetroSettingsController.php`
 - Test: `tests/Unit/Support/PhaseDurationsTest.php`, `tests/Feature/Retros/PhaseTimersTest.php`
 
 **Interfaces:**
-- Produces: `PhaseDurations::TimedPhases` (list of the five `RetroPhase` values: `writing`, `grouping`, `voting`, `discussing`, `actions`); `PhaseDurations::Standard = ['writing' => 7, 'grouping' => 5, 'voting' => 3, 'discussing' => 15, 'actions' => 5]`; `PhaseDurations::rules(string $attribute): array<string, array<int, mixed>>` (for `phase_durations` and `phase_durations.*`); `PhaseDurations::normalise(?array $durations): ?array` (keeps the timed phases with 1–60, null when none); `PhaseDurations::secondsFor(?array $durations, RetroPhase $phase): ?int`. `NewRetro` gains `?array $phaseDurations = null` and `?int $maxVotesPerCard = null`. The board snapshot's retro gains `phaseDurations: array<string, int>|null`.
+- Produces: `PhaseDurations::TimedPhases` (list of the five `RetroPhase` values: `writing`, `grouping`, `voting`, `discussing`, `actions`); `PhaseDurations::Standard = ['writing' => 7, 'grouping' => 5, 'voting' => 3, 'discussing' => 15, 'actions' => 5]`; `PhaseDurations::rules(string $attribute): array<string, array<int, mixed>>` (for `phase_durations` and `phase_durations.*`); `PhaseDurations::normalise(?array $durations): ?array` (keeps the timed phases with 1–60, null when none). `NewRetro` gains `?array $phaseDurations = null`. The board snapshot's retro gains `phaseDurations: array<string, int>|null` (Task 16's offer reads it).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1441,19 +1534,13 @@ Before Task 7, read plan 21's changes to `app/Models/Retro.php`, `RetroSettingsC
 ```php
 <?php
 
-use App\Enums\RetroPhase;
 use App\Support\Retros\PhaseDurations;
 
 it('keeps the timed phases that have minutes', function () {
     expect(PhaseDurations::normalise(['writing' => 7, 'voting' => 0, 'roti' => 5, 'grouping' => null]))->toBe(['writing' => 7])
         ->and(PhaseDurations::normalise([]))->toBeNull()
-        ->and(PhaseDurations::normalise(null))->toBeNull();
-});
-
-it('gives the seconds of a phase', function () {
-    expect(PhaseDurations::secondsFor(PhaseDurations::Standard, RetroPhase::Discussing))->toBe(900)
-        ->and(PhaseDurations::secondsFor(PhaseDurations::Standard, RetroPhase::Roti))->toBeNull()
-        ->and(PhaseDurations::secondsFor(null, RetroPhase::Writing))->toBeNull();
+        ->and(PhaseDurations::normalise(null))->toBeNull()
+        ->and(PhaseDurations::normalise(PhaseDurations::Standard))->toBe(PhaseDurations::Standard);
 });
 ```
 
@@ -1500,9 +1587,8 @@ it('refuses a duration out of range or an untimed phase', function (array $durat
     'not a number' => [['writing' => 'seven']],
 ]);
 
-it('starts the phase timer when the retro enters a timed phase', function () {
+it('starts no timer when the retro enters a phase that has a duration', function () {
     Event::fake([TimerChanged::class]);
-    $this->freezeSecond();
     $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['phase_durations' => ['grouping' => 5]]);
     [$user] = retroFacilitator($retro);
 
@@ -1510,18 +1596,15 @@ it('starts the phase timer when the retro enters a timed phase', function () {
         ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Grouping->value])
         ->assertSuccessful();
 
-    $retro->refresh();
+    expect($retro->fresh()->timer_ends_at)->toBeNull();
 
-    expect($retro->timer_ends_at?->equalTo(now()->addMinutes(5)))->toBeTrue()
-        ->and($retro->started_at)->not->toBeNull();
-
-    Event::assertDispatched(fn (TimerChanged $event) => $event->retroId === $retro->id);
+    Event::assertNotDispatched(TimerChanged::class);
 });
 
-it('leaves a running timer alone when the next phase has no duration', function () {
+it('leaves a running timer alone across a phase change', function () {
     $this->freezeSecond();
     $endsAt = now()->addMinutes(2);
-    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['phase_durations' => ['writing' => 7], 'timer_ends_at' => $endsAt]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['phase_durations' => PhaseDurations::Standard, 'timer_ends_at' => $endsAt]);
     [$user] = retroFacilitator($retro);
 
     $this->actingAs($user)
@@ -1563,22 +1646,22 @@ it('sends the durations in the board snapshot', function () {
         ->assertJsonPath('retro.phaseDurations.writing', 7);
 });
 
-it('passes max per card from the dialog to plan 21 setting', function () {
-    $team = Team::factory()->create();
+it('starts the offered duration through the existing timer endpoint', function () {
+    $this->freezeSecond();
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['phase_durations' => ['writing' => 7]]);
+    [$user] = retroFacilitator($retro);
 
-    $this->actingAs(teamMember($team))
-        ->post(route('teams.retros.store', [$team->workspace, $team]), [
-            'title' => 'R', 'template' => 'start_stop_continue', 'votes_per_participant' => 5, 'max_votes_per_card' => 2,
-        ])
-        ->assertSessionHasNoErrors();
+    $this->actingAs($user)
+        ->putJson(route('retros.timer.update', $retro), ['seconds' => 7 * 60])
+        ->assertOk();
 
-    expect(Retro::query()->sole()->max_votes_per_card)->toBe(2);
+    expect($retro->fresh()->timer_ends_at?->equalTo(now()->addMinutes(7)))->toBeTrue();
 });
 ```
 
-The phase route (`retros.phase.update`, verb and body), the snapshot route and its key path, the `TimerChanged` property name, and the 403 of a member on settings (it may be a 403 from `RetroGuard::facilitator`, rendered as JSON) are read from `tests/Feature/Retros/` before running; adapt names, not meaning. The last case uses plan 21's column and validation; **skip it (and Step 3's max-per-card lines) if plan 21 already sends it from the dialog**, and say so.
+The phase route (`retros.phase.update`, verb and body), the timer route (`retros.timer.update`, verb), the snapshot route and its key path, and the 403 of a member on settings (it may be a 403 from `RetroGuard::facilitator`, rendered as JSON) are read from `tests/Feature/Retros/` before running; adapt names, not meaning. "Leaves a running timer alone" also holds a paused timer after plan 21: if plan 21 is merged, add the case with `timer_paused_seconds` set and assert it is unchanged after the phase change. The last case pins the contract Task 16 relies on (minutes × 60 through the existing endpoint), not a new behaviour.
 
-- [ ] **Step 2: Run them to see them fail.** Expected: FAIL.
+- [ ] **Step 2: Run them to see them fail.** Expected: FAIL (the starts-nothing and running-timer cases pass already: they guard the answer).
 
 - [ ] **Step 3: Implement**
 
@@ -1589,12 +1672,11 @@ The phase route (`retros.phase.update`, verb and body), the snapshot route and i
 
 namespace App\Support\Retros;
 
-use App\Enums\RetroPhase;
 use Closure;
 
 /**
- * Spec plan 22 §6.2: whole minutes per timed phase; entering a phase that
- * has one starts the retro's timer.
+ * Spec plan 22 §6.2: whole minutes per timed phase, offered to the
+ * facilitator. Nothing starts by itself (owner, decision 3, B).
  */
 class PhaseDurations
 {
@@ -1634,16 +1716,6 @@ class PhaseDurations
         return $kept === [] ? null : $kept;
     }
 
-    /**
-     * @param  ?array<string, int>  $durations
-     */
-    public static function secondsFor(?array $durations, RetroPhase $phase): ?int
-    {
-        $minutes = self::normalise($durations)[$phase->value] ?? null;
-
-        return $minutes === null ? null : $minutes * 60;
-    }
-
     private static function onlyTimedPhases(): Closure
     {
         return function (string $attribute, mixed $value, Closure $fail): void {
@@ -1659,33 +1731,14 @@ class PhaseDurations
 
 Validated integers arrive as integers from JSON and as strings from a form post: `normalise()` is called on `array_map('intval', …)` of the validated array in both controllers (`TeamRetrosController@store`, `RetroSettingsController@update`).
 
-- `TeamRetrosController@store`: `...PhaseDurations::rules()` in `validate()`; `phaseDurations: PhaseDurations::normalise(array_map('intval', $validated['phase_durations'] ?? []))`; `max_votes_per_card` (plan 21's rule) → `maxVotesPerCard:`. `NewRetro` gains both parameters; `CreateRetro` writes `'phase_durations' => $data->phaseDurations` and plan 21's column.
-- `RetroSettingsController@update`: `...PhaseDurations::rules()`; `phase_durations` written (normalised) only while the retro is open (add it to `OpenPhaseSettings`); it announces `RetroSettingsChanged` as the other settings do.
-- `ChangeRetroPhase::handle()`: after `$this->move($locked, $phase)` call
-
-```php
-    private function startPhaseTimer(Retro $locked, RetroPhase $phase): void
-    {
-        $seconds = PhaseDurations::secondsFor($locked->phase_durations, $phase);
-
-        if ($seconds === null) {
-            return;
-        }
-
-        $endsAt = now()->addSeconds($seconds)->startOfSecond();
-
-        $locked->update(['timer_ends_at' => $endsAt]);
-
-        (new TimerChanged($locked->id, $endsAt->toIso8601String()))->sendToOthers();
-    }
-```
-
-(after plan 21's RT-2, write the timer the way plan 21's start does — it may clear a paused remainder too.) `markRetroStarted` already runs right after `move` in `handle()`; keep the order `move` → `startPhaseTimer` → `markRetroStarted`.
+- `TeamRetrosController@store`: `...PhaseDurations::rules()` in `validate()`; `phaseDurations: PhaseDurations::normalise(array_map('intval', $validated['phase_durations'] ?? []))`. `NewRetro` gains the parameter; `CreateRetro` writes `'phase_durations' => $data->phaseDurations`.
+- `RetroSettingsController@update`: `...PhaseDurations::rules()`; `phase_durations` written (normalised) while the retro is open (add it to `OpenPhaseSettings`); it announces `RetroSettingsChanged` as the other settings do.
 - `BuildBoardSnapshot`: `'phaseDurations' => $retro->phase_durations` beside `timerEndsAt`.
+- `ChangeRetroPhase`, `RetroTimersController`: **not modified**.
 
 - [ ] **Step 4: Run the tests on pgsql and sqlite** — `bin/test-db pgsql -- tests/Unit/Support/PhaseDurationsTest.php tests/Feature/Retros`, then `sqlite`. Expected: PASS.
 
-- [ ] **Step 5: Commit** — `feat(retro): timers per phase, started at phase entry` (trailers).
+- [ ] **Step 5: Commit** — `feat(retro): durations per phase, offered to the facilitator` (trailers).
 
 ### Task 8: Poker — change vote after reveal
 
@@ -2222,7 +2275,7 @@ class PokerGameSettingsRules
 - Test: `tests/Feature/Integrations/PokerCreationImportTest.php`
 
 **Interfaces:**
-- Consumes: `ResolvePokerTracker`, `ListPokerIterations`, `PreviewPokerImport::fetch`, `Trackers::for()->issues()`, `TrackerBrowseLimit`, `DetectJiraStoryPointFields::ensureTextFields` (Task 5), `NewPokerGame::$import` (Task 11).
+- Consumes: `ResolvePokerTracker`, `ListPokerIterations`, `PreviewPokerImport::fetch`, `Trackers::for()->issues()`, `TrackerBrowseLimit`, `NewPokerGame::$import` (Task 11).
 - Produces: `PokerImportBatch` (public `TeamIntegration $integration`, `array $externalIds` list<string>, `array $issues` array<string, TrackerIssue>); `FetchPokerImport::handle(Team $team, string $source, array $externalIds): PokerImportBatch` (throws `ValidationException` on `import_ids` with the tracker's `userMessage()`); `ImportPokerTasks::storeIssues(PokerGame $locked, TeamIntegration $integration, array $externalIds, array $issues): array{imported: int, skipped: int}` (no lock, no guard: the caller holds the game lock); routes `teams.pokerImports.containers.index`, `teams.pokerImports.iterations.index`, `teams.pokerImports.preview.store`.
 
 - [ ] **Step 1: Write the failing test**
@@ -2382,7 +2435,6 @@ class FetchPokerImport
     public function __construct(
         private ResolvePokerTracker $resolvePokerTracker,
         private Trackers $trackers,
-        private DetectJiraStoryPointFields $detectJiraStoryPointFields,
     ) {}
 
     /**
@@ -2394,7 +2446,6 @@ class FetchPokerImport
         $externalIds = array_values(array_unique($externalIds));
 
         try {
-            $this->detectJiraStoryPointFields->ensureTextFields($integration);
             $issues = $this->trackers->for($integration->provider)->issues($integration, $externalIds);
         } catch (IntegrationException $exception) {
             throw ValidationException::withMessages(['import_ids' => $exception->userMessage()]);
@@ -2431,7 +2482,7 @@ Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPrevi
 
 **Files:**
 - Create: `resources/js/components/teams/team-new-session-dialog.tsx` (+ `.test.tsx`), `resources/js/lib/teams/sessions.ts` (+ `.test.ts`)
-- Modify: `resources/js/components/teams/team-page.tsx`, `resources/js/components/skrum/session-type-picker.tsx` (export `sessionKindTone(kind)` and `sessionKindIcon(kind)`), `resources/js/types/*.ts` (the `NewSessionOptions` type), `resources/js/lib/poker/types.ts` (`PokerTrackerSourceRow` with `estimateFields`, `defaultEstimateFieldId`; `PokerTask['external']` with `type`, `labels`, `acceptanceCriteriaHtml`; game fields of Task 11), `resources/js/lib/retro/types.ts` (`phaseDurations`)
+- Modify: `resources/js/components/teams/team-page.tsx`, `resources/js/components/skrum/session-type-picker.tsx` (export `sessionKindTone(kind)` and `sessionKindIcon(kind)`), `resources/js/types/*.ts` (the `NewSessionOptions` type), `resources/js/lib/poker/types.ts` (`PokerTrackerSourceRow` with `estimateFields`, `defaultEstimateFieldId`; `PokerTask` with `acceptanceCriteriaHtml` and `PokerTask['external']` with `type`, `labels`; game fields of Task 11), `resources/js/lib/retro/types.ts` (`phaseDurations`)
 
 **Interfaces:**
 - Produces: `TeamNewSessionDialog({ workspace, team, options, intent, trigger })` — the `NewSessionDialog` with the five forms exactly as `team-page.tsx` builds them today, `options: NewSessionOptions` (the keys of `PresentNewSessionOptions`); `team-page.tsx` uses it. `lib/teams/sessions.ts`: `type TeamSession` (the server row), `SessionTabs: readonly ['upcoming', 'live', 'finished']`, `sessionMeta(row, t): string` (the meta line), `sessionsHref(workspace, team, tab, before?)`.
@@ -2506,13 +2557,13 @@ The real `t` handles plurals (`:count people` with a plural form): use `t(':coun
 
 - [ ] **Step 1:** Write the Vitest files (cases above). **Step 2:** Build. **Step 3:** `npm run test -- session-row sessions-page use-sidebar-model mobile-tab-bar use-team-anchor app-layout`, `npm run types:check`, `npm run check`, `npm run build:front`; `bin/test-db pgsql -- tests/Feature/Sessions tests/Arch/FrontEndPagesTest.php`. **Step 4:** Commit `feat(sessions): the Sessions page — tabs, rows, load more, empty states` (trailers).
 
-### Task 15 (lane K): Ticket details on the story card; the criteria field in the integration settings
+### Task 15 (lane K): Ticket details and the criteria section on the story card
 
 **Mockup:** `ScreenPokerBefore` (the story card: "ATLAS-1287 · Story · Actions · 3 / 6 de la séance", title, description, "Critères d'acceptation" list).
 
 **Files:**
 - Create: `resources/js/components/poker/ticket-details.tsx` (+ test)
-- Modify: `resources/js/components/poker/story-card.tsx` (+ test), `resources/js/components/integrations/story-points-field.tsx` (+ test) or a sibling `acceptance-criteria-field.tsx` rendered beside it, `resources/js/types/integrations.ts`
+- Modify: `resources/js/components/poker/story-card.tsx` (+ test). No integration settings change (decision 6, B: no setting).
 
 **Composition:**
 
@@ -2522,24 +2573,24 @@ The real `t` handles plurals (`:count people` with a plural form): use `t(':coun
 | type ("Story") | `Badge variant="outline"` after the key, `data-slot="ticket-type"` |
 | label ("Actions") | one `Badge variant="secondary"` per label (wrap, at most 10), `data-slot="ticket-label"` |
 | position | existing ":position / :total in this game" |
-| description | existing rendered Markdown |
-| "Acceptance criteria" + list | `TicketCriteria`: an `h3` small label "Acceptance criteria" and the server's `acceptanceCriteriaHtml` in `MarkdownClasses`, after the description |
+| description | existing rendered Markdown, now the server's `descriptionHtml` without the criteria section (Task 6) |
+| "Acceptance criteria" + list | `TicketCriteria`: an `h3` small label `t('Acceptance criteria')` (the app's heading, whatever the source wrote) and the server's `acceptanceCriteriaHtml` in `MarkdownClasses`, after the description; `data-slot="ticket-criteria"` |
 
-`StoryCard`'s top line renders `<TicketChips external={task.external} />` right after `TaskSourceLink`; the `details` prop (reserved by 18e for PK-1) is removed and its comment with it; `TicketCriteria` renders after the description. Nothing renders for a missing field.
+`StoryCard`'s top line renders `<TicketChips external={task.external} />` right after `TaskSourceLink`; the `details` prop (reserved by 18e for PK-1) is removed and its comment with it; `TicketCriteria` renders after the description for **every** task whose `acceptanceCriteriaHtml` is not empty (a task typed by hand included). Nothing renders for a missing field. The task edit dialog (`room-dialogs.tsx`) keeps editing the raw `description`, section included: no change there.
 
-Integration settings: under the story-points field select of a Jira or Jira DC connection, the select "Acceptance criteria field" (options "None" and `settings.textFields`, value `settings.acceptanceCriteriaField`), saved with the same request helper as the story-points field (`acceptance_criteria_field_id`).
+**Vitest:** (a) type and labels after the key, in order; (b) the criteria block after the description, from the HTML; (c) a typed task with `acceptanceCriteriaHtml` shows the block and no chips; (d) nothing for an imported task with no details and no criteria; (e) a description that is all criteria (`descriptionHtml` empty) shows the criteria block and no empty description block.
 
-**Vitest:** (a) type and labels after the key, in order; (b) the criteria block after the description, from the HTML; (c) nothing for a typed task, nothing for an imported task with no details; (d) the settings select lists "None" and the text fields, sends `acceptance_criteria_field_id: null` for "None".
+- [ ] **Steps:** failing Vitest; build; `npm run test -- story-card ticket-details`, the three front gates; commit `feat(poker): ticket type, labels and acceptance criteria on the story card` (trailers).
 
-- [ ] **Steps:** failing Vitest; build; `npm run test -- story-card ticket-details story-points-field`, the three front gates; commit `feat(poker): ticket type, labels and acceptance criteria on the story card` (trailers).
+### Task 16 (lane C): The retro form's "Timer per phase"; the settings popover row; the phase timer offer on the board
 
-### Task 16 (lane C): The retro form — Max per card and Timer per phase; the settings popover row
+Decision 3 was answered **B**: the board offers the phase's duration to the facilitator; nothing starts by itself. "Max per card" is plan 21's row: this task does not touch it.
 
-**Mockup:** `ScreenSessionCreate` frames a and c, the "Settings" rows.
+**Mockup:** `ScreenSessionCreate` frames a and c, the "Settings" rows; `Timer` and `FacilitatorBar` for the offer (no frame draws it: deviation P22-15, to approve by the owner before this task).
 
 **Files:**
 - Create: `resources/js/lib/retro/phase-durations.ts` (+ test), `resources/js/components/teams/session-create/phase-timers-field.tsx` (+ test)
-- Modify: `resources/js/components/teams/session-create/retro-session-fields.tsx` (+ its tests in `new-session-dialog.test.tsx` or a new `retro-session-fields.test.tsx`), `resources/js/components/retro/board-settings.tsx` (+ test)
+- Modify: `resources/js/components/teams/session-create/retro-session-fields.tsx` (+ its tests in `new-session-dialog.test.tsx` or a new `retro-session-fields.test.tsx`), `resources/js/components/retro/board-settings.tsx` (+ test), `resources/js/components/retro/board-topbar.tsx` (`BoardTimer`, + `board-topbar.test.tsx`), `resources/js/components/skrum/timer.tsx` (+ test), `resources/js/components/session/session-timer.tsx` (+ test)
 
 **Pure logic** (`lib/retro/phase-durations.ts`):
 
@@ -2591,17 +2642,40 @@ export function summary(durations: PhaseDurations | null, label: (phase: TimedPh
         .map((phase) => `${label(phase)} ${kept[phase]}`)
         .join(' · ');
 }
+
+export type PhaseTimerOffer = { phase: TimedPhase; seconds: number; perTopic: boolean };
+
+/** Spec §6.2: the current phase's duration, offered to the facilitator; null when the phase has none. */
+export function offerFor(durations: PhaseDurations | null, phase: string): PhaseTimerOffer | null {
+    if (durations === null || !(TimedPhases as readonly string[]).includes(phase)) {
+        return null;
+    }
+
+    const minutes = durations[phase as TimedPhase];
+
+    if (minutes === undefined || minutes < 1) {
+        return null;
+    }
+
+    return { phase: phase as TimedPhase, seconds: minutes * 60, perTopic: phase === 'discussing' };
+}
 ```
 
-Vitest for it: `choiceOf` of null, of the standard set, of one changed value; `toPayload` drops zeros and returns null when empty; `summary` lists phases in phase order, not key order.
+Vitest for it: `choiceOf` of null, of the standard set, of one changed value; `toPayload` drops zeros and returns null when empty; `summary` lists phases in phase order, not key order; `offerFor` gives 420 s in Writing with the standard set, `perTopic` only in Discussing, null in ROTI, in Icebreaker, for a phase without minutes and for null durations.
 
-**Composition (dialog):** after "Votes per person": "Max per card" — the stepper of the row above (the file's `Stepper`), `heart` icon, help "Votes one person can stack", min 1, max the votes per person (20 with "Automatic"), sent as plan 21's key; then "Timer per phase" — `timer` icon, help = `summary(…)` or "Off", control `ui/select` with "No timer", "Standard", "Custom (5 phases)"; with Custom, `PhaseTimersField` under the row: five rows (phase label, stepper 0–60 where 0 is "Off"). Sent as `phase_durations: toPayload(…)`. Ids: `#new-retro-max-per-card`, `#new-retro-phase-timers`, `#new-retro-phase-<phase>`.
+**Composition (dialog):** after plan 21's "Max per card" row: "Timer per phase" — `timer` icon, help = `summary(…)` or "Off", then " · " and "Offered to the facilitator, never started by itself" (the second part hidden under 40rem), control `ui/select` with "No timer", "Standard", "Custom (5 phases)"; with Custom, `PhaseTimersField` under the row: five rows (phase label, stepper 0–60 where 0 is "Off"). Sent as `phase_durations: toPayload(…)`. Ids: `#new-retro-phase-timers`, `#new-retro-phase-<phase>`.
 
 **Settings popover:** the same select and field in `board-settings.tsx`, facilitator only, open retro only, saved through the existing settings request with `phase_durations`.
 
-**Vitest:** (a) the two rows in the mockup's order; (b) "Standard" sends the five values; "No timer" sends `null`; Custom with writing 10 and the rest off sends `{ writing: 10 }`; (c) the max-per-card stepper is capped by the votes per person; (d) the popover row is absent for a participant who is not the facilitator; (e) a server error on `phase_durations` shows under the row.
+**The offer** (spec §9.5):
+- `Timer` gains `suggestion?: TimerPreset & { startLabel: string }`. When `onStart` and `suggestion` are given: while `remainingSeconds === null` and not `paused`, a ghost button before the menu trigger, `Play` icon and `presetLabel(suggestion)` ("7 min"), `aria-label={suggestion.startLabel}`, `data-slot="timer-suggestion"`, calling `onStart(suggestion.seconds)`; in the menu, the suggestion first (its `label`), keyed `suggestion` (not by seconds: it may equal a preset), then a `DropdownMenuSeparator`, then the presets as today. Without `suggestion`, `Timer` renders exactly as today.
+- `SessionTimer` passes `suggestion` through; its comment "Never passed by a page" on `presets` stays true (the list is unchanged).
+- `BoardTimer`: `const offer = canControl ? offerFor(retro.phaseDurations, retro.phase) : null;` and passes `suggestion` when `offer` is not null: `label` = `t(':phase · :count min', …)` or, when `offer.perTopic`, `t(':phase · :count min per topic', …)`; `startLabel` = `t('Start the :phase timer, :count minutes', …)` or `t('Start the :phase timer, :count minutes per topic', …)`. `:phase` is the phase's label the board already shows (the phase stepper's; find it with `grep -rn "Discussing" resources/js/components/retro`). Taking it calls the existing `set(offer.seconds)` (the same `RetroTimersController.update` request as the list; after plan 21, whatever `set` became).
+- Participants: `canControl` is false, no `onStart`, so neither button nor menu, as today.
 
-- [ ] **Steps:** failing Vitest; build; `npm run test -- phase-durations phase-timers-field retro-session-fields board-settings new-session-dialog`, the three gates; commit `feat(retro): max per card and timers per phase in the dialog and the settings` (trailers).
+**Vitest:** (a) the "Timer per phase" row in the mockup's place, after plan 21's row; (b) "Standard" sends the five values; "No timer" sends `null`; Custom with writing 10 and the rest off sends `{ writing: 10 }`; (c) the popover row is absent for a participant who is not the facilitator; (d) a server error on `phase_durations` shows under the row; (e) `Timer` with a suggestion: the button while idle, absent while running or paused, the menu's first entry then a separator then 1, 3, 5, 10; a suggestion of 180 s and the 3-minute preset both render (no duplicate key warning); without a suggestion the DOM matches today's test cases; (f) `BoardTimer` for the facilitator in Writing with the standard set sends `{ seconds: 420 }` on one click; in Discussing the labels say "per topic"; in a phase without minutes no button; for a participant nothing.
+
+- [ ] **Steps:** failing Vitest; build; `npm run test -- phase-durations phase-timers-field retro-session-fields board-settings board-topbar timer session-timer new-session-dialog`, the three gates; commit `feat(retro): timers per phase in the dialog and the settings, offered on the board` (trailers).
 
 ### Task 17 (lane C): The poker form's settings; the room settings popover; the dock after reveal
 
@@ -2642,7 +2716,7 @@ Vitest for it: `choiceOf` of null, of the standard set, of one changed value; `t
 
 ### Task 19: Translations
 
-- [ ] List every key added by Tasks 2 to 18 (`git diff main -- lang/en.json`) and review `fr.json`, `es.json`, `de.json` for each: informal register (tu / tú / du), the glossary of `docs/superpowers/research/front-rewrite/translations-review.md` (session, poll ↔ sondage / encuesta / Umfrage, facilitator, estimate), the mockup's French where it exists: "Sessions", "À venir", "En cours", "Terminées", "Rétros, poker, whiteboards, sondages et icebreakers de :team", "Max par carte", "Votes cumulables sur une carte", "Timer par phase", "Personnalisé (5 phases)", "Timer par tâche", "Relance après le délai", "Revoter après révélation", "Avant l'enregistrement", "Écrire l'estimation dans :source", "Champ utilisé pour l'estimation", "Les estimations sont écrites dans :source quand le facilitateur clique sur « Enregistrer l'estimation ». Les tickets non cochés restent dans le backlog.", "Importer de :source", "Saisie manuelle", "Plus tard", ":selected sur :total sélectionnés", "Tout sélectionner", "Critères d'acceptation".
+- [ ] List every key added by Tasks 2 to 18 (`git diff main -- lang/en.json`) and review `fr.json`, `es.json`, `de.json` for each: informal register (tu / tú / du), the glossary of `docs/superpowers/research/front-rewrite/translations-review.md` (session, poll ↔ sondage / encuesta / Umfrage, facilitator, estimate), the mockup's French where it exists: "Sessions", "À venir", "En cours", "Terminées", "Rétros, poker, whiteboards, sondages et icebreakers de :team", "Timer par phase", "Personnalisé (5 phases)", "Proposé au facilitateur, jamais lancé tout seul", ":phase · :count min", ":phase · :count min par sujet", "Lancer le timer :phase, :count minutes", "Lancer le timer :phase, :count minutes par sujet", "Timer par tâche", "Relance après le délai", "Revoter après révélation", "Avant l'enregistrement", "Écrire l'estimation dans :source", "Champ utilisé pour l'estimation", "Les estimations sont écrites dans :source quand le facilitateur clique sur « Enregistrer l'estimation ». Les tickets non cochés restent dans le backlog.", "Importer de :source", "Saisie manuelle", "Plus tard", ":selected sur :total sélectionnés", "Tout sélectionner", "Critères d'acceptation".
 - [ ] `bin/test-db pgsql -- tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php`, then `sqlite`. Expected: PASS.
 - [ ] Commit `chore(lang): plan 22 strings in four languages, informal` (trailers).
 
@@ -2650,17 +2724,18 @@ Vitest for it: `choiceOf` of null, of the standard set, of one changed value; `t
 
 No browser walkthrough is written, edited or run. Captures only, through `tests/Browser/Visual` (`CapturesVisuals::captureVisuals`, honouring `VISUAL_ONLY`).
 
-**Files:** Create `tests/Browser/Visual/SessionsPagesVisualTest.php`; modify `SessionCreateVisualTest.php` (the two dialog variants) and the poker room visual file (the story card with details).
+**Files:** Create `tests/Browser/Visual/SessionsPagesVisualTest.php`; modify `SessionCreateVisualTest.php` (the two dialog variants), the retro board visual file (the timer offer) and the poker room visual file (the story card with details).
 
 | Name | Screen |
 |---|---|
 | `sessions-live` | the Sessions page, Live tab, one session of each kind (frame a's list: "Sprint 42 retro", "Sprint 43 refinement", "Q4 architecture", "Team health · October") |
 | `sessions-finished` | the Finished tab with 25 sessions ("Load more" visible) |
-| `session-create-retro-options` | the dialog on retro with "Max per card" 2 and "Timer per phase" Custom open |
+| `session-create-retro-options` | the dialog on retro with "Timer per phase" Custom open (plan 21's "Max per card" row as plan 21 left it) |
+| `retro-phase-timer-offer` | the retro board in Writing, facilitator, standard durations, no timer running: the "7 min" button and the open timer menu with "Écriture · 7 min" first (P22-15) |
 | `session-create-poker-import` | the dialog on poker, Jira import tab with a query and 12 tickets, 9 selected, the three settings rows (fixtures with `Http::fake` of the team-scoped preview) |
-| `poker-story-details` | the poker room before reveal with ATLAS-1287 "Story", "Actions", three acceptance criteria |
+| `poker-story-details` | the poker room before reveal with ATLAS-1287 "Story", "Actions", a description ending with a "## Acceptance criteria" section of three items, shown apart |
 
-- [ ] Run as the 18e captures were taken: `npm run build:front`, then `docker compose exec -e VISUAL_ONLY=light-1440-fr laravel.test php artisan test --compact tests/Browser/Visual/SessionsPagesVisualTest.php` and the two modified files. The overflow check must pass. Only `-light-1440-fr.png` files are written.
+- [ ] Run as the 18e captures were taken: `npm run build:front`, then `docker compose exec -e VISUAL_ONLY=light-1440-fr laravel.test php artisan test --compact tests/Browser/Visual/SessionsPagesVisualTest.php` and the three modified files. The overflow check must pass. Only `-light-1440-fr.png` files are written.
 - [ ] Commit `test(visual): sessions page, creation options and story card captures` (trailers).
 
 ### Task 21: Deviations and documents
@@ -2681,19 +2756,21 @@ No browser walkthrough is written, edited or run. Captures only, through `tests/
 - [ ] `bin/test-db pgsql --concurrency`, `mariadb --concurrency`, `mysql --concurrency`, `sqlite-file --concurrency`. Expected: PASS on each.
 - [ ] `bin/check-pg-upgrade`. Expected: PASS.
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front`. Expected: PASS.
-- [ ] Report `docs/superpowers/research/plan-22-report.md`: each acceptance criterion of spec §12 with the test that proves it and the engines it passed on; the differences left with each mockup; existing tests edited and why; plan 21's names used (column, timer method) and any plan-21 task this plan skipped; whether GitHub's `issueType` was kept (spec §16.3); the decisions taken on the owner's behalf.
+- [ ] Report `docs/superpowers/research/plan-22-report.md`: each acceptance criterion of spec §12 with the test that proves it and the engines it passed on; the differences left with each mockup; existing tests edited and why; plan 21's names used (column, timer method, the per-topic start in Discussing) and any plan-21 task this plan skipped; whether GitHub's `issueType` was kept (spec §16.3); the owner's answers to spec §16.2 (Discussing per topic or whole phase) and §16.8 (translated criteria headings) if given meanwhile; the decisions taken on the owner's behalf.
 - [ ] Commit `docs: plan 22 report` (trailers). Ask the owner to read the report. No merge into `main`, no push.
 
 ---
 
-## Self-review (done while writing; kept for the reader)
+## Self-review (done while writing, redone after the owner's answers of 2026-10-03; kept for the reader)
 
-**Spec coverage.** §6.1 states and cursor: Task 2; rows' meta: Tasks 2 and 13; §6.2 phase durations: Task 7 (back), 16 (front); max per card at creation: Tasks 7 and 16 (plan 21's column); §6.3 revote: Task 8 (+ dock in 17); task timer: Task 9 (+ 17); write-back per game: Task 10 (+ 17); options at creation and in the room: Task 11; §6.4 import at creation: Task 12 (back), 18 (front); §6.5 ticket details: Tasks 5, 6 (back), 15 (front); §7 permissions: Tasks 4 (view), 2 (drafts), 7 and 11 (facilitator), 12 (`createPokerGame`), 5 (`manageIntegrations` through the integration update route); §8 real time: Tasks 7 (`TimerChanged`), 8 (`PokerRoundChanged`), 11 (`PokerGameChanged`, existing); §9 screens: 14, 16, 17, 18, 15; §10 no migration of data: Task 1 defaults, Task 2's card rule, Task 5's once-only detection; §11 routes: Tasks 4 and 12; §12 criteria: 1 → 4, 14; 2 → 2; 3 → 2 (walk), 22 (four engines); 4 → 2, 14; 5 → 3, 13, 14; 6 → 7; 7 → 7; 8 → 9; 9 → 8; 10 → 10, 11; 11 → 12; 12 → 12; 13 → 5, 6; 14 → 15; 15 → 5, 15; 16 → 19; 17 → 20, 21; 18 → 22.
+**Answers folded in.** Decision 3 (B): Task 7 stores and sends durations and proves a phase change starts nothing; Task 16 builds the offer; P22-15 added; capture `retro-phase-timer-offer` added; no task writes the retro timer. Decision 6 (B): no criteria column, no detection, no setting; Task 5 = type and labels for the three trackers, Task 6 = `AcceptanceCriteriaSection` and the presenter; Task 12 no longer calls the detection; Task 15 has no integration select; P22-11 reworded, P22-14 withdrawn. Max per card left to plan 21 (its draft spec puts it in the dialog). Task count unchanged: 22.
+
+**Spec coverage.** §6.1 states and cursor: Task 2; rows' meta: Tasks 2 and 13; §6.2 phase durations: Task 7 (back: storage, validation, snapshot, nothing starts), 16 (front: dialog, popover, the offer); max per card: plan 21 (Task 7 checks it); §6.3 revote: Task 8 (+ dock in 17); task timer: Task 9 (+ 17); write-back per game: Task 10 (+ 17); options at creation and in the room: Task 11; §6.4 import at creation: Task 12 (back), 18 (front); §6.5 type and labels: Tasks 5, 6 (back), 15 (front); criteria section (rules AC-1 to AC-7): Task 6 (unit and feature), 15 (front); §7 permissions: Tasks 4 (view), 2 (drafts), 7 and 11 (facilitator; the offer through the existing facilitator-only timer endpoint, Task 7's last case), 12 (`createPokerGame`); §8 real time: Task 7 (no `TimerChanged` on a phase change; `RetroSettingsChanged` on a durations change), 8 (`PokerRoundChanged`), 11 (`PokerGameChanged`, existing); §9 screens: 14, 16 (§9.2, §9.4 retro, §9.5 offer), 17, 18, 15 (§9.7); §10 no migration of data: Task 1 defaults, Task 2's card rule, Task 6's split at presentation; §11 routes: Tasks 4 and 12; §12 criteria: 1 → 4, 14; 2 → 2; 3 → 2 (walk), 22 (four engines); 4 → 2, 14; 5 → 3, 13, 14; 6 → 7; 7 → 16 (and Task 7's endpoint case); 8 → 9; 9 → 8; 10 → 10, 11; 11 → 12; 12 → 12; 13 → 5, 6; 14 → 15; 15 → 6, 15; 16 → 19; 17 → 20, 21; 18 → 22.
 
 **Placeholders.** Back-end tasks carry their tests and code; where the plan names a route, a helper or a relation it has not read line by line (the retro phase route, the snapshot paths, `surveyFacilitatorFor`, the toast flash key, `PokerRound::task`), the step says where to read the real name. Screen tasks carry composition tables, behaviours, hooks and the code of their pure logic (`lib/teams/sessions.ts`, `lib/retro/phase-durations.ts`, `lib/poker/tracker-browse.ts`), following the screen procedure of plan 18e.
 
-**Type consistency.** `TeamSession` (Task 2) = `TeamSession` of `lib/teams/sessions.ts` (Task 13) = the rows read in Task 14. `PokerGame::TaskTimerChoices` (Task 1) feeds `PokerGameSettingsRules` (Task 11) and the select values of Task 17 (60/180/300/600). `PhaseDurations::Standard` (Task 7) = `StandardDurations` (Task 16). `TrackerIssue::$type/$labels/$acceptanceCriteria` (Task 5) are written by `ImportPokerTasks` and `ApplyPokerTaskIssues` (Task 6) and by `storeIssues` (extracted in Task 12 from the Task 6 version: lane K merges before lane C). `PresentPokerTask.external.{type,labels,acceptanceCriteriaHtml}` (Task 6) = `PokerTask['external']` in `lib/poker/types.ts` (Task 13) read by Task 15. `pokerSources[].estimateFields/defaultEstimateFieldId` (Task 11) read by Task 17. `IssueTracker::writeEstimate` gains `?string $preferredFieldId = null` in Task 10 for all four trackers.
+**Type consistency.** `TeamSession` (Task 2) = `TeamSession` of `lib/teams/sessions.ts` (Task 13) = the rows read in Task 14. `PokerGame::TaskTimerChoices` (Task 1) feeds `PokerGameSettingsRules` (Task 11) and the select values of Task 17 (60/180/300/600). `PhaseDurations::Standard` and `TimedPhases` (Task 7) = `StandardDurations` and `TimedPhases` (Task 16); the snapshot's `retro.phaseDurations` (Task 7) = `lib/retro/types.ts` (Task 13) read by `offerFor` (Task 16). `TrackerIssue::$type/$labels` (Task 5) are written by `ImportPokerTasks::store` (Task 5), `ApplyPokerTaskIssues` (Task 6) and `storeIssues` (extracted in Task 12 from the Task 5 version: lane K merges before lane C). `PresentPokerTask.external.{type,labels}` and `PresentPokerTask.acceptanceCriteriaHtml` (Task 6) = `PokerTask['external']` and `PokerTask` in `lib/poker/types.ts` (Task 13) read by Task 15. `AcceptanceCriteriaSection::split` returns `{description, criteria}` and is called only by `PresentPokerTask`. `pokerSources[].estimateFields/defaultEstimateFieldId` (Task 11) read by Task 17. `IssueTracker::writeEstimate` gains `?string $preferredFieldId = null` in Task 10 for all four trackers.
 
-**Review Focus.** 1 → Task 2's walk test; 2 → Task 8's race; 3 → Task 8 ("still refuses a second reveal and a timer"); 4 → Task 12 ("creates nothing when the tracker fails"); 5 → Task 6 (guest payload).
+**Review Focus.** 1 → Task 2's walk test; 2 → Task 8's race; 3 → Task 8 ("still refuses a second reveal and a timer"); 4 → Task 12 ("creates nothing when the tracker fails"); 5 → Task 6 (guest payload); 6 → Task 6 (unit cases per rule, the stale-cache case, the stored description); 7 → Task 7 (starts no timer, leaves a running timer alone).
 
-**Known weak points.** Nothing was run. Plan 21 is not on disk: Task 7's max-per-card lines and its timer write follow plan 21's names, read at the start of lane C. Task 2's state test ages a whiteboard through the clock; if `Whiteboard::updated_at` does not move when elements are written (spec §16.5), the Live rule of whiteboards reads the board's own updates only and the report says so. The race of Task 8 asserts order through `Race`'s timings; the fallback assertion is written in the step.
+**Known weak points.** Nothing was run. Plan 21 is a draft on disk (2026-10-21 files), revised in parallel: Task 7 relies on its `max_votes_per_card` in the dialog and Task 16 on its timer start, its pause and its per-topic rule in Discussing, all re-read at the start of lane C. The criteria regexes of Task 6 were written, not run: the unit test is the reference, and a regex that fails a case is fixed toward the spec's rules, never by loosening them. Task 2's state test ages a whiteboard through the clock; if `Whiteboard::updated_at` does not move when elements are written (spec §16.5), the Live rule of whiteboards reads the board's own updates only and the report says so. The race of Task 8 asserts order through `Race`'s timings; the fallback assertion is written in the step.

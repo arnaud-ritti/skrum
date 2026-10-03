@@ -2,19 +2,19 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 20 only).
 
-**Status: draft v1 (2026-10-03).** Written on the recommended option of each decision of spec §15. Nothing is built before the owner has answered spec §15 and read the pre-build deviations. The table **Owner decisions** says which tasks change with another answer.
+**Status: draft v2 (2026-10-03), the owner's answers applied.** Every decision of spec §15 is answered; decisions 1 (C, a server-relayed writing count) and 10 (B, voting again takes "finished" back) differ from draft v1 and the tasks that depend on them are rewritten (Tasks 1, 5, 10, 11, 13, 19 and the new Task 23). The pre-build deviations are still to be approved by the owner before their screen is built.
 
 **Goal:** The retro board shows who is writing, moving a card or taking notes; the facilitator pauses the timer; a retro caps the votes per card and each participant says "I have finished voting"; every topic of the discussion gets the same time, its shared notes, a "discussed" mark and the action items made for it; the facilitator reveals the ROTI in its phase and nudges the last voters; the retro's action items go to the tracker in one dialog.
 
-**Architecture:** Seven nullable columns and one table (`topic_notes`) added to the retro aggregate; every write locks the retro row first and broadcasts on `presence-retro.{id}` after commit, as the board already does. Activity indicators are client events on the same presence channel, sender stamped by Reverb, nothing stored. The bulk export is a browser loop over the existing per-item export endpoint. The front fills the places plan 18e left in each phase (`02-retro.md`, "Places left").
+**Architecture:** Eight nullable columns and one table (`topic_notes`) added to the retro aggregate; every write locks the retro row first and broadcasts on `presence-retro.{id}` after commit, as the board already does. Activity indicators are client events on the same presence channel, sender stamped by Reverb, nothing stored; on an anonymous retro, writing is instead a heartbeat to the server (`participants.writing_until`, 8 s) and a `writing.count` event that carries a count and nothing else (spec §6.11). The bulk export is a browser loop over the existing per-item export endpoint. The front fills the places plan 18e left in each phase (`02-retro.md`, "Places left").
 
 **Tech Stack:** Laravel 13, PHP 8.4, Pest (feature, unit, arch, concurrency), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb (client events), dnd-kit; PostgreSQL, MariaDB, MySQL and SQLite through `bin/test-db`; `Tests\Concurrency\Support\Race` for races. Run `composer show --direct` and read `package.json` before Task 1 and stop if a major differs from the list.
 
-**Spec:** `.superpowers/sdd/roadmap/plan-21/spec.md` (moves to `docs/superpowers/specs/2026-10-21-retro-facilitation-design.md` in Task 21). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenRetroWriting`, `ScreenRetroGrouping`, `ScreenRetroVote`, `ScreenRetroDiscussion`, `ScreenRetroActions`, `ScreenRetroROTI`, `ScreenSessionCreate`, `SessionSettingsPopover`, `FacilitatorBar`, `Timer`, `VoteDots`, `ROTIWidget`, `PresenceStack`, `ActionItem` — for each, the `README.md` and the `preview.html`.
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md` (draft v2, the owner's answers applied). Parent: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenRetroWriting`, `ScreenRetroGrouping`, `ScreenRetroVote`, `ScreenRetroDiscussion`, `ScreenRetroActions`, `ScreenRetroROTI`, `ScreenSessionCreate`, `SessionSettingsPopover`, `FacilitatorBar`, `Timer`, `VoteDots`, `ROTIWidget`, `PresenceStack`, `ActionItem` — for each, the `README.md` and the `preview.html`.
 
 **Not in this plan:** the backlog of spec §3 ("Reveal the cards" button, duplicates, "Undo last group", "n/n following", retro exports, ROTI delta and sparkline, "Timer per phase" (plan 22), pause of other timers, co-editing, notes outside the recap e-mail and the AI summary, bell nudges); browser walkthroughs (owner's working rule: none is written or run); anything of the former plans 28 and 30 and scheduling.
 
-**Tasks:** 22. Step A, back end: Task 1 (single writer), then lanes T (2, 3), V (4, 5), D (6, 7, 9) and R (8) in parallel. Step B, front foundation: Task 10 (single writer). Step C, screens: lanes W (11, 12), Vf (13), Df (14, 15), Af (16, 18), Rf (17) in parallel. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
+**Tasks:** 23. Step A, back end: Task 1 (single writer), then lanes T (2, 3), V (4, 5, 23), D (6, 7, 9) and R (8) in parallel. (Task 23, the writing count, was added with the owner's answer to decision 1; it is numbered last so the other numbers stay as the drafts and the roadmap cite them, and it runs in lane V after Task 5.) Step B, front foundation: Task 10 (single writer). Step C, screens: lanes W (11, 12), Vf (13), Df (14, 15), Af (16, 18), Rf (17) in parallel. Final: 19 (translations), 20 (captures), 21 (deviations and documents), 22 (four-engine suites and report).
 
 ## Branch and run
 
@@ -26,20 +26,20 @@
 
 ## Owner decisions
 
-The ten questions of spec §15. "Plan written on" is the recommended option. The last column names what changes with another answer.
+The ten questions of spec §15, answered by the owner on 2026-10-03. Two answers differ from the option draft v1 was written on (**≠ rec.**); the last column says where the plan carries each answer.
 
-| # | Question | Plan written on | If the owner answers otherwise |
+| # | Question | Owner's answer | Where in the plan |
 |---|---|---|---|
-| 1 | "Is writing…" on an anonymous retro | **B**: nothing sent on an anonymous retro | **A**: `kindsShownIn` of Task 11 keeps `writing` on anonymous retros (label "Participant"); its test flips; deviation P21-05 goes. **C**: a new task after Task 5: `POST retros/{retro}/writing` (throttled), event `writing.count` with a count per retro, a banner count in Task 11 |
-| 2 | Which timers pause | **A**: the retro's only | **B**: three tasks more after Task 2 (poker round, whiteboard, game room), each with its pause controller, its job no-op test (`RevealPokerRoundOnTimer`, `CloseExpiredGameRound`) and its front in Task 12 |
-| 3 | How the time per topic is set | **A**: from the topic's timer | **B**: Task 3 drops the `topic_seconds` write of `RetroTimersController`; `RetroSettingsController` takes `topic_seconds` (60 to 3600, any open phase); Task 14 adds a stepper row "Time per topic" to `useRetroSettingGroups` (P21-10 new) |
-| 4 | When a topic is "discussed" | **C**: automatic on moving on, and by hand | **A**: Task 3 drops `MoveTopicFocus::markLeftTopic` and its tests. **B**: Task 3 drops `CardDiscussionsController`, its routes and tests; Task 14 drops the toggle |
-| 5 | Editing the notes | **A**: one writer at a time, version check | **B**: Task 6 becomes a `topic_note_entries` table (one row per participant and topic, author-only edit), Task 15 a list editor. **C**: needs a dependency the owner approves first (a CRDT library); Tasks 6 and 15 are rewritten around it |
-| 6 | Notes after the discussion | **A**: recap e-mail and AI summary input | **B**: Task 16 adds a "Discussion notes" card to the session end (with a pre-build deviation row). **C**: Task 9 is dropped |
-| 7 | Reveal closes the ROTI vote | **A**: yes | **B**: Task 8 leaves `Retro::takesRotiVotes` unchanged and adds `RotiChanged` → refetch of results while revealed; Task 17 keeps the widget votable beside the result. **C**: Task 8 adds `DELETE roti/reveal` (hide) |
-| 8 | What the nudge sends | **A**: live, on the board | **B**: Task 8 adds a notification class `RotiVoteAwaited` (database and mail channels, a preference row in `NotificationPreferencesController`) sent to members without a vote |
-| 9 | How the bulk export runs | **A**: browser loop over the existing endpoint | **B**: a back-end task in lane R: `POST retros/{retro}/action-item-exports` (`RetroActionItemBatchExportsController@store`, at most 25 ids, per-item outcome, synchronous); Task 18 sends one request. **C**: the same with a queued job `ExportRetroActionItems` and an event `action-items.export.progress` |
-| 10 | Voting while "finished" | **A**: votes frozen until "Change my votes" | **B**: Task 5 replaces the 422 of `CardVotesController` by clearing `voting_finished_at` (and broadcasting `voting.finished`); Task 13 keeps the vote buttons enabled |
+| 1 | "Is writing…" on an anonymous retro | **C** (≠ rec.): a count relayed by the server, no ids, no column; the timing risk is accepted (spec §6.11 rule 8) | Task 1 (`participants.writing_until`), **Task 23** (heartbeat routes, `WritingCountChanged`, limiter), Task 10 (`writing.count` listener), Task 11 (heartbeat instead of the whisper, the count in the presence line), Task 19 (strings); deviation P21-05 reworded |
+| 2 | Which timers pause | **A**: the retro's only | Tasks 2, 12 |
+| 3 | How the time per topic is set | **A**: from the topic's timer | Tasks 3, 14 |
+| 4 | When a topic is "discussed" | **C**: automatic on moving on, and by hand | Tasks 3, 14 |
+| 5 | Editing the notes | **A**: one writer at a time, version check | Tasks 6, 15 |
+| 6 | Notes after the discussion | **A**: recap e-mail and AI summary input | Task 9 |
+| 7 | Reveal closes the ROTI vote | **A**: yes | Tasks 8, 17 |
+| 8 | What the nudge sends | **A**: live toast and pulse only | Tasks 8, 17 |
+| 9 | How the bulk export runs | **A**: browser loop over the existing endpoint | Task 18 |
+| 10 | Voting while "finished" | **B** (≠ rec.): a vote cast or retracted takes "finished" back by itself | Task 5 (the vote transactions clear the flag, broadcast `voting.finished`, answer `finishedIds`; race rewritten), Task 10 (`blocked` loses `'finished'`), Task 13 (buttons stay enabled, status line), Task 19 (strings) |
 
 ## File structure
 
@@ -47,21 +47,21 @@ Back end, created:
 
 | File | Responsibility |
 |---|---|
-| `database/migrations/2026_10_21_100000_add_retro_facilitation_columns.php` | the seven columns of spec §6.1 |
+| `database/migrations/2026_10_21_100000_add_retro_facilitation_columns.php` | the eight columns of spec §6.1 |
 | `database/migrations/2026_10_21_100100_create_topic_notes_table.php` | `topic_notes` |
 | `app/Models/TopicNote.php`, `database/factories/TopicNoteFactory.php` | the note of a topic |
 | `app/Actions/Retros/PresentTopicNote.php` | the note as the board reads it |
 | `app/Actions/Retros/MoveTopicFocus.php` | the shared topic changes: restart the topic timer, mark the topic left |
-| `app/Events/Retros/VotingFinishedChanged.php`, `TopicDiscussed.php`, `TopicNoteSaved.php`, `RotiRevealed.php`, `RotiNudged.php` | the new events |
-| `app/Http/Controllers/Retros/RetroTimerPausesController.php`, `VotingCompletionsController.php`, `CardDiscussionsController.php`, `TopicNotesController.php`, `RetroRotiRevealsController.php`, `RetroRotiNudgesController.php` | HTTP |
+| `app/Events/Retros/VotingFinishedChanged.php`, `WritingCountChanged.php`, `TopicDiscussed.php`, `TopicNoteSaved.php`, `RotiRevealed.php`, `RotiNudged.php` | the new events |
+| `app/Http/Controllers/Retros/RetroTimerPausesController.php`, `VotingCompletionsController.php`, `RetroWritersController.php`, `CardDiscussionsController.php`, `TopicNotesController.php`, `RetroRotiRevealsController.php`, `RetroRotiNudgesController.php` | HTTP |
 
-Back end, modified: `app/Models/Retro.php`, `Card.php`, `Participant.php`, `ActionItem.php`; `app/Events/Retros/TimerChanged.php`; `app/Actions/Retros/BuildBoardSnapshot.php`, `PresentCard.php`, `PresentActionItem.php`, `ChangeRetroPhase.php`, `NewRetro.php`, `CreateRetro.php`, `BuildSummaryInput.php`; `app/Actions/ActionItems/ActionItemRules.php`, `CreateActionItem.php`; `app/Actions/Integrations/BuildRetroRecap.php`; `app/Support/Integrations/Messages/RetroRecap.php`, `RetroRecapMail.php`, `RecapText.php`; `app/Http/Controllers/TeamRetrosController.php`; `app/Http/Controllers/Retros/RetroTimersController.php`, `RetroTimerExtensionsController.php`, `RetroHighlightsController.php`, `RetroSettingsController.php`, `CardVotesController.php`, `ActionItemsController.php`; `routes/web.php`; `database/factories/RetroFactory.php`; `tests/Pest.php`.
+Back end, modified: `app/Models/Retro.php`, `Card.php`, `Participant.php`, `ActionItem.php`; `app/Events/Retros/TimerChanged.php`; `app/Actions/Retros/BuildBoardSnapshot.php`, `PresentCard.php`, `PresentActionItem.php`, `ChangeRetroPhase.php`, `NewRetro.php`, `CreateRetro.php`, `BuildSummaryInput.php`; `app/Actions/ActionItems/ActionItemRules.php`, `CreateActionItem.php`; `app/Actions/Integrations/BuildRetroRecap.php`; `app/Support/Integrations/Messages/RetroRecap.php`, `RetroRecapMail.php`, `RecapText.php`; `app/Http/Controllers/TeamRetrosController.php`; `app/Http/Controllers/Retros/RetroTimersController.php`, `RetroTimerExtensionsController.php`, `RetroHighlightsController.php`, `RetroSettingsController.php`, `CardVotesController.php`, `ActionItemsController.php`; `app/Providers/AppServiceProvider.php` (the `retro-writing` limiter); `routes/web.php`; `database/factories/RetroFactory.php`; `tests/Pest.php`.
 
-Tests, created: `tests/Feature/Retros/RetroFacilitationSchemaTest.php`, `TimerPauseTest.php`, `TopicTimerTest.php`, `TopicDiscussedTest.php`, `MaxVotesPerCardTest.php`, `VotingCompletionTest.php`, `TopicNotesTest.php`, `ActionItemTopicsTest.php`, `RotiRevealTest.php`, `RotiNudgeTest.php`, `TopicNotesRecapTest.php`; `tests/Concurrency/MaxVotesPerCardTest.php`, `VotingCompletionTest.php`, `TopicNotesTest.php`, `RotiRevealTest.php`; `tests/Browser/Visual/RetroFacilitationVisualTest.php` (captures only).
+Tests, created: `tests/Feature/Retros/RetroFacilitationSchemaTest.php`, `TimerPauseTest.php`, `TopicTimerTest.php`, `TopicDiscussedTest.php`, `MaxVotesPerCardTest.php`, `VotingCompletionTest.php`, `WritingCountTest.php`, `TopicNotesTest.php`, `ActionItemTopicsTest.php`, `RotiRevealTest.php`, `RotiNudgeTest.php`, `TopicNotesRecapTest.php`; `tests/Concurrency/MaxVotesPerCardTest.php`, `VotingCompletionTest.php`, `TopicNotesTest.php`, `RotiRevealTest.php`; `tests/Browser/Visual/RetroFacilitationVisualTest.php` (captures only).
 
 Front end, created: `resources/js/lib/retro/activity.ts`, `topic-estimate.ts`, `note-editor.ts`; `resources/js/lib/action-items/bulk-export.ts`; `resources/js/hooks/use-retro-activity.ts`; `resources/js/components/retro/activity-line.tsx`, `voting-finished.tsx`, `topic-timer.tsx`, `topic-meta.tsx`, `topic-notes.tsx`, `topic-actions.tsx`, `roti-facilitation.tsx`, `bulk-export-dialog.tsx`; `resources/js/components/action-items/export-target-fields.tsx` (extracted from `item-export.tsx`); each with its `.test.ts(x)`.
 
-Front end, modified: `resources/js/lib/retro/types.ts`, `board-reducer.ts`, `hooks/use-retro-board.ts`, `components/retro/board-context.tsx`, `board.tsx`, `board-topbar.tsx` (`BoardTimer`), `components/session/session-timer.tsx`, `components/retro/facilitator-dock.tsx`, `board-column.tsx`, `columns-board.tsx`, `phase-voting-bar.tsx`, `phase-discussing.tsx`, `topics-list.tsx`, `topic-focus.tsx`, `phase-actions.tsx`, `phase-roti.tsx`, `action-items-list.tsx`, `results/action-items.tsx`, `board-settings.tsx`, `components/skrum/session-settings-popover.tsx`, `components/teams/session-create/retro-session-fields.tsx`, `components/action-items/item-export.tsx`, the four `lang/*.json`.
+Front end, modified: `resources/js/lib/retro/types.ts`, `board-reducer.ts`, `hooks/use-retro-board.ts`, `components/retro/board-context.tsx`, `board.tsx`, `board-topbar.tsx` (`BoardTimer`, `BoardPresence`), `components/session/session-timer.tsx`, `components/session/session-presence.tsx`, `components/skrum/presence-stack.tsx` (`typingCount`), `components/retro/facilitator-dock.tsx`, `board-column.tsx`, `columns-board.tsx`, `phase-voting-bar.tsx`, `phase-discussing.tsx`, `topics-list.tsx`, `topic-focus.tsx`, `phase-actions.tsx`, `phase-roti.tsx`, `action-items-list.tsx`, `results/action-items.tsx`, `board-settings.tsx`, `components/skrum/session-settings-popover.tsx`, `components/teams/session-create/retro-session-fields.tsx`, `components/action-items/item-export.tsx`, the four `lang/*.json`.
 
 ## Global Constraints
 
@@ -99,7 +99,7 @@ Put to the owner before the screen is built (owner's rule of the fifth round). R
 | P21-02 | Discussing | "8/8" following count in the focus banner | not rendered, place kept | N: backlog (roadmap) |
 | P21-03 | Writing | "Reveal the cards" beside the next-phase button | not rendered | N: backlog (D-10 keeps it) |
 | P21-04 | Grouping | duplicates suggestion, "Undo last group" | not rendered | N: backlog (D-10 keeps them) |
-| P21-05 | Writing | "Inès is writing a card…" with "Anonymity: on" | no writing indicator on an anonymous retro | F: it would tie a hidden card to its author (decision 1) |
+| P21-05 | Writing | "Inès is writing a card…" under a column, ringed avatar, with "Anonymity: on" | on an anonymous retro, only the presence line "Someone is writing…" / ":count people are writing…": no name, no ring, no column line | F + O: a name or a column would tie a hidden card to its author; the owner chose a server-relayed count (decision 1, answer C) |
 | P21-06 | Voting | "max 2 per card" with a stepper default of 2 in creation and settings | "Max per card" with "No limit" on by default | O: existing behaviour kept (a retro has no cap today) |
 | P21-07 | Discussing | the topic timer is the only timer on screen; no timer in the topbar | the topbar keeps no timer in Discussing; the stage holds it | S: §9.4 (as the mockup) — listed because plan 18e kept the topbar timer in every phase |
 | P21-08 | Actions | "Exporter vers Jira" opens nothing drawn | the per-item export dialog with a list of items and a progress | N: no mockup of the dialog |
@@ -118,6 +118,8 @@ The inputs the spec implies and that are most likely to bite, each pinned by a t
 5. **A late ROTI vote right after the reveal**: refused, never counted into a distribution on screen. Feature test and race in Task 8.
 6. **A bulk export that meets an item exported meanwhile by someone else, a 403, and a network error**: each row says why, nothing is exported twice, "Retry the failed ones" retries only failures. Vitest in Task 18.
 7. **Moving the shared topic back to a topic already discussed**: it stays discussed; the timer restarts for it. Feature test in Task 3.
+8. **Anything that would put an id, a name or a column into the anonymous writing count** (a payload key added "for debugging", a `writing` whisper sent on an anonymous retro by a refactor): the exact-keys test of Task 23 and the no-whisper Vitest of Task 11 fail. The timing risk that remains is the owner's accepted risk (spec §6.11 rule 8); nobody "fixes" it by going back to named indicators.
+9. **A finished participant who votes while someone else's finish or vote is on its way**: the vote is saved and "finished" is cleared in the same transaction as the vote; the voter's own board reads `finishedIds` from the answer. Feature tests and race in Task 5.
 
 ## Lanes
 
@@ -125,7 +127,7 @@ The inputs the spec implies and that are most likely to bite, each pinned by a t
 |---|---|---|---|
 | main | 1, 10, 19 to 22 | — | — |
 | T (timers) | 2, 3 | head of Task 1 | `routes/web.php` (its own block), `lang/*.json` |
-| V (voting) | 4, 5 | head of Task 1 | `routes/web.php`, `lang/*.json`; `CardVotesController.php` is this lane's only |
+| V (voting) | 4, 5, 23 | head of Task 1 | `routes/web.php`, `lang/*.json`, `app/Providers/AppServiceProvider.php` (the `retro-writing` limiter only); `CardVotesController.php` is this lane's only |
 | D (discussion) | 6, 7, 9 | head of Task 1 | `routes/web.php`, `lang/*.json` |
 | R (ROTI) | 8 | head of Task 1 | `routes/web.php`, `lang/*.json`, `app/Models/Retro.php` (`takesRotiVotes` only) |
 | W (writing and grouping) | 11, 12 | head of Task 10 | `lang/*.json`, `components/retro/facilitator-dock.tsx` (the `pause` action only; lane Rf touches the `roti` tools), `board-topbar.tsx` |
@@ -134,7 +136,7 @@ The inputs the spec implies and that are most likely to bite, each pinned by a t
 | Af (actions front) | 16, 18 | head of Task 10 | `lang/*.json`, `action-items-list.tsx`, `phase-actions.tsx`, `phase-discussing.tsx` (the `linkedTo` and the right column only: merged after Df) |
 | Rf (ROTI front) | 17 | head of Task 10 | `lang/*.json`, `facilitator-dock.tsx` (the `roti` tools only) |
 
-Task 1 writes every column, the snapshot keys, the presenters and the `ChangeRetroPhase` rules, so the back-end lanes do not touch `BuildBoardSnapshot`, `ChangeRetroPhase` or the models (except lane R's one method). Task 10 writes every front type, reducer action and channel case, so the front lanes do not touch `types.ts`, `board-reducer.ts` or `use-retro-board.ts`. `routes/web.php`: each lane adds its lines in the `retros/{retro}` group, after `retros.timer.extension.store` (T), after `retros.cards.votes.destroy` (V), after `retros.cards.comments.store` (D), after `retros.roti.destroy` (R); the controller resolves the import block at merge. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in one alphabetical block per lane). `tests/Pest.php`: only Task 1 adds helpers. The merge order of the front lanes: W, Vf, Rf, Df, then Af (it builds on Df's right column).
+Task 1 writes every column, the snapshot keys, the presenters and the `ChangeRetroPhase` rules, so the back-end lanes do not touch `BuildBoardSnapshot`, `ChangeRetroPhase` or the models (except lane R's one method). Task 10 writes every front type, reducer action and channel case, so the front lanes do not touch `types.ts`, `board-reducer.ts` or `use-retro-board.ts`. `routes/web.php`: each lane adds its lines in the `retros/{retro}` group, after `retros.timer.extension.store` (T), after `retros.cards.votes.destroy` (V), after `retros.cards.comments.store` (D), after `retros.roti.destroy` (R); Task 23 adds its two lines after Task 5's; the controller resolves the import block at merge. `lang/*.json` conflicts are resolved by the controller at each merge (keys appended in one alphabetical block per lane). `tests/Pest.php`: only Task 1 adds helpers. The merge order of the front lanes: W, Vf, Rf, Df, then Af (it builds on Df's right column).
 
 ---
 
@@ -152,7 +154,7 @@ Read first: `docs/database.md` ("Rules for database code"); `app/Models/Retro.ph
 **Interfaces:**
 - Consumes: `App\Actions\Retros\SummarizeRoti::handle(Retro): array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int}`; `Retro::voteLimit(): int`; `RetroPhase`.
 - Produces:
-  - columns of spec §6.1 and the table `topic_notes`; `TopicNote` (`MaxLength = 5000`; relations `retro()`, `card()`, `updatedBy()`); `Retro::topicNotes(): HasMany<TopicNote>`, `Retro::maxVotesPerCard(): ?int`, `Retro::votingFinishedIds(): array<int, string>`; `Card::note(): HasOne<TopicNote>`; `Participant::hasFinishedVoting(): bool`; `ActionItem::card(): BelongsTo<Card>`; the `Retro` invariant on the timer columns.
+  - columns of spec §6.1 and the table `topic_notes`; `TopicNote` (`MaxLength = 5000`; relations `retro()`, `card()`, `updatedBy()`); `Retro::topicNotes(): HasMany<TopicNote>`, `Retro::maxVotesPerCard(): ?int`, `Retro::votingFinishedIds(): array<int, string>`; `Card::note(): HasOne<TopicNote>`; `Participant::hasFinishedVoting(): bool`; `participants.writing_until` (cast `datetime`, fillable; used by Task 23 only, never presented); `ActionItem::card(): BelongsTo<Card>`; the `Retro` invariant on the timer columns.
   - `TimerChanged::of(Retro $retro): TimerChanged` with `broadcastWith(): array{timerEndsAt: ?string, timerPausedSeconds: ?int, topicSeconds: ?int}`.
   - `PresentTopicNote::handle(?TopicNote $note, string $cardId): array{cardId: string, body: string, version: int, updatedAt: ?string}`.
   - Snapshot keys: `retro.timerPausedSeconds`, `retro.topicSeconds`, `retro.maxVotesPerCard`, `retro.maxVotesPerCardSetting`; `voting.finishedIds`; `cards[].discussedAt` (from `PresentCard`, so every card payload carries it); `topicNotes`; `roti.revealed`, `roti.results`; `actionItems[].cardId` (from `PresentActionItem`).
@@ -193,6 +195,17 @@ it('keeps the behaviour of today on a retro with none of the new values', functi
         ->and($retro->roti_revealed_at)->toBeNull()
         ->and($retro->maxVotesPerCard())->toBeNull()
         ->and($retro->votingFinishedIds())->toBe([]);
+});
+
+it('never puts who is writing in the board snapshot', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['is_anonymous' => true]);
+    [, $participant] = retroMember($retro);
+    $participant->update(['writing_until' => now()->addSeconds(8)]);
+
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+
+    expect(json_encode($snapshot))->not->toContain('writing_until')
+        ->and(json_encode($snapshot))->not->toContain('writingUntil');
 });
 
 it('lets the vote limit win over a higher cap per card', function () {
@@ -352,6 +365,7 @@ return new class extends Migration
 
         Schema::table('participants', function (Blueprint $table): void {
             $table->dateTime('voting_finished_at')->nullable();
+            $table->dateTime('writing_until')->nullable();
         });
 
         Schema::table('cards', function (Blueprint $table): void {
@@ -547,7 +561,7 @@ class TopicNoteFactory extends Factory
     }
 ```
 
-`app/Models/Participant.php`: `@property Carbon|null $voting_finished_at`; `Fillable` adds `'voting_finished_at'`; add `casts()` (or extend it) with `'voting_finished_at' => 'datetime'`; method:
+`app/Models/Participant.php`: `@property Carbon|null $voting_finished_at`, `@property Carbon|null $writing_until`; `Fillable` adds `'voting_finished_at', 'writing_until'`; add `casts()` (or extend it) with `'voting_finished_at' => 'datetime'`, `'writing_until' => 'datetime'`; method:
 
 ```php
     public function hasFinishedVoting(): bool
@@ -1713,16 +1727,20 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ```
 
-### Task 5 (lane V): "I have finished voting" (RT-4)
+### Task 5 (lane V): "I have finished voting" (RT-4, decision 10 B)
 
 **Files:**
 - Create: `app/Events/Retros/VotingFinishedChanged.php`, `app/Http/Controllers/Retros/VotingCompletionsController.php`
-- Modify: `app/Http/Controllers/Retros/CardVotesController.php`, `routes/web.php`, the four `lang/*.json`
+- Modify: `app/Http/Controllers/Retros/CardVotesController.php`, `routes/web.php`
 - Test: `tests/Feature/Retros/VotingCompletionTest.php`, `tests/Concurrency/VotingCompletionTest.php`
+
+Read first: `CardVotesController` on the lane's head (both transactions run with `Transactions::Attempts`; `store` already locks the participant row after the retro, `destroy` does not; `tally()` builds the answer outside the transaction; Task 4 added the cap check in `store`). `RetroBroadcastEvent` implements `ShouldDispatchAfterCommit`, so an event sent inside a retried transaction leaves only once, after the commit that succeeds.
 
 **Interfaces:**
 - Consumes: `participants.voting_finished_at`, `Participant::hasFinishedVoting()`, `Retro::votingFinishedIds()` (Task 1); the reset on entering Voting (Task 1).
-- Produces: routes `retros.votingCompletion.update` (`PUT retros/{retro}/voting-completion`) and `retros.votingCompletion.destroy` (`DELETE …`), both answering `{finishedIds: string[]}`; event `VotingFinishedChanged(string $retroId, array $finishedIds)`, name `voting.finished`.
+- Produces: routes `retros.votingCompletion.update` (`PUT retros/{retro}/voting-completion`) and `retros.votingCompletion.destroy` (`DELETE …`), both answering `{finishedIds: string[]}`; event `VotingFinishedChanged(string $retroId, array $finishedIds)`, name `voting.finished`; the vote answer of `retros.cards.votes.store|destroy` gains `finishedIds: string[] | null` (the new list when the vote took "finished" back, null otherwise).
+
+Owner's answer (decision 10, B): a participant who has finished may still vote; casting or retracting a vote takes "finished" back in the same transaction. There is no 422 for "finished" and no new string on the server.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1776,8 +1794,53 @@ it('refuses to finish outside the Voting phase', function () {
     $this->actingAs($user)->putJson(route('retros.votingCompletion.update', $retro))->assertForbidden();
 });
 
-it('freezes the votes of a participant who has finished', function () {
+it('takes finished back when a finished participant casts a vote', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 3]);
+    [$user, $participant] = retroMember($retro);
+    [, $other] = retroMember($retro);
+    $card = topicCard($retro);
+    $participant->update(['voting_finished_at' => now()]);
+    $other->update(['voting_finished_at' => now()]);
+
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))
+        ->assertCreated()
+        ->assertJsonPath('myVotes', 1)
+        ->assertJsonPath('finishedIds', [$other->id]);
+
+    expect($participant->fresh()->hasFinishedVoting())->toBeFalse()
+        ->and($other->fresh()->hasFinishedVoting())->toBeTrue();
+    Event::assertDispatched(fn (VotingFinishedChanged $event) => $event->broadcastWith() === ['finishedIds' => [$other->id]]);
+});
+
+it('takes finished back when a finished participant retracts a vote', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 3]);
+    [$user, $participant] = retroMember($retro);
+    $card = topicCard($retro);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $participant->id]);
+    $participant->update(['voting_finished_at' => now()]);
+
+    $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
+        ->assertOk()
+        ->assertJsonPath('myVotes', 0)
+        ->assertJsonPath('finishedIds', []);
+
+    expect($participant->fresh()->hasFinishedVoting())->toBeFalse();
+});
+
+it('answers a null finishedIds and sends nothing when the voter had not finished', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 3]);
+    [$user] = retroMember($retro);
+    $card = topicCard($retro);
+
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))
+        ->assertCreated()
+        ->assertJsonPath('finishedIds', null);
+
+    Event::assertNotDispatched(VotingFinishedChanged::class);
+});
+
+it('keeps finished when the vote is refused', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 1]);
     [$user, $participant] = retroMember($retro);
     $card = topicCard($retro);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $participant->id]);
@@ -1785,12 +1848,10 @@ it('freezes the votes of a participant who has finished', function () {
 
     $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['votes' => 'You have finished voting. Take it back to change your votes.']);
-    $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('votes');
+        ->assertJsonValidationErrors(['votes' => 'You have no votes left.']);
 
-    expect(Vote::query()->where('participant_id', $participant->id)->count())->toBe(1);
+    expect($participant->fresh()->hasFinishedVoting())->toBeTrue();
+    Event::assertNotDispatched(VotingFinishedChanged::class);
 });
 
 it('lists who has finished in the order of their ids', function () {
@@ -1805,6 +1866,8 @@ it('lists who has finished in the order of their ids', function () {
 });
 ```
 
+(If an existing test of `tests/Feature/Retros/VotingTest.php` compares the vote answer with `assertExactJson`, it gains `'finishedIds' => null`; list it in the commit message as an expectation changed by decision 10.)
+
 `tests/Concurrency/VotingCompletionTest.php`:
 
 ```php
@@ -1816,7 +1879,7 @@ use App\Models\Retro;
 use App\Models\Vote;
 use Tests\Concurrency\Support\Race;
 
-it('counts a vote only if it was cast before the participant finished', function () {
+it('leaves the participant finished only if the finish came after the vote', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 3]);
     [$user, $participant] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id]);
@@ -1830,24 +1893,38 @@ it('counts a vote only if it was cast before the participant finished', function
     ]);
 
     $finishedAt = $participant->fresh()->voting_finished_at;
-    $vote = Vote::query()->where('participant_id', $participant->id)->first();
+    $vote = Vote::query()->where('participant_id', $participant->id)->sole();
 
-    // Protection: both lock the retro row first, so the vote reads the flag the finish wrote, or none.
+    // Protection: both lock the retro row first, then the participant; a vote that commits after the finish clears it.
     expect($outcomes['finish']['value'])->toBe(200)
-        ->and($finishedAt)->not->toBeNull()
-        ->and($outcomes['vote']['value'])->toBeIn([201, 422])
-        ->and($vote === null)->toBe($outcomes['vote']['value'] === 422);
+        ->and($outcomes['vote']['value'])->toBe(201);
 
-    if ($vote !== null) {
+    if ($finishedAt !== null) {
         expect($vote->created_at->lte($finishedAt))->toBeTrue();
     }
+});
+
+it('never leaves a finished participant whose vote committed last', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 8]);
+    [$user, $participant] = retroMember($retro);
+    $participant->update(['voting_finished_at' => now()]);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $userId = $user->id;
+    $voteUri = route('retros.cards.votes.store', [$retro, $card], false);
+
+    $outcomes = Race::run(array_fill(0, 4, static fn (): int => Race::request($userId, 'POST', $voteUri)));
+
+    // Protection: each vote clears the flag under the participant's row lock; no vote can re-set it.
+    expect(array_column($outcomes, 'value'))->each->toBe(201)
+        ->and($participant->fresh()->voting_finished_at)->toBeNull()
+        ->and(Vote::query()->where('participant_id', $participant->id)->count())->toBe(4);
 });
 ```
 
 - [ ] **Step 2: Run them to see them fail**
 
 Run: `bin/test-db pgsql -- tests/Feature/Retros/VotingCompletionTest.php`
-Expected: FAIL.
+Expected: FAIL (unknown routes; `finishedIds` missing from the vote answer).
 
 - [ ] **Step 3: Implementation**
 
@@ -1941,19 +2018,33 @@ class VotingCompletionsController extends Controller
 }
 ```
 
-`CardVotesController`:
-- `store`: the existing `Participant::query()->whereKey($participant->id)->lockForUpdate()->first();` becomes `$voter = Participant::query()->whereKey($participant->id)->lockForUpdate()->firstOrFail();` followed by `$this->ensureStillVoting($voter);`.
-- `destroy`: right after `RetroGuard::unlocked($locked);` inside the transaction: `$this->ensureStillVoting(Participant::query()->whereKey($participant->id)->lockForUpdate()->firstOrFail());`.
+`CardVotesController` (decision 10, B):
+- `store`: the existing `Participant::query()->whereKey($participant->id)->lockForUpdate()->first();` becomes `$voter = Participant::query()->whereKey($participant->id)->lockForUpdate()->firstOrFail();`. After `$locked->votes()->create([...])` and before `$locked->increment('votes_version')`: `$finishedIds = $this->takeBackFinished($locked, $voter);`. The array the transaction returns gains `'finishedIds' => $finishedIds`.
+- `destroy`: right after `RetroGuard::unlocked($locked);` inside the transaction: `$voter = Participant::query()->whereKey($participant->id)->lockForUpdate()->firstOrFail();` (the participant is locked after the retro and before the vote row, the order `store` uses). After `$vote->delete();`: `$finishedIds = $this->takeBackFinished($locked, $voter);`; the returned array gains `'finishedIds' => $finishedIds`.
+- The budget, cap and "not voted" refusals throw before `takeBackFinished`, so a refused vote leaves "finished" as it was.
+- `tally()`: its `@param` shape gains `finishedIds: ?array<int, string>` and its `@return` shape gains `finishedIds: ?array<int, string>`; it returns `'finishedIds' => $totals['finishedIds']` last.
 - New private method:
 
 ```php
-    private function ensureStillVoting(Participant $voter): void
+    /**
+     * Decision 10 (owner, B): a vote cast or taken back by a participant who
+     * had finished takes "finished" back.
+     *
+     * @return array<int, string>|null the new list, or null when nothing changed
+     */
+    private function takeBackFinished(Retro $locked, Participant $voter): ?array
     {
         if (! $voter->hasFinishedVoting()) {
-            return;
+            return null;
         }
 
-        throw ValidationException::withMessages(['votes' => __('You have finished voting. Take it back to change your votes.')]);
+        $voter->update(['voting_finished_at' => null]);
+
+        $finishedIds = $locked->votingFinishedIds();
+
+        (new VotingFinishedChanged($locked->id, $finishedIds))->sendToOthers();
+
+        return $finishedIds;
     }
 ```
 
@@ -1966,21 +2057,273 @@ class VotingCompletionsController extends Controller
 
 - [ ] **Step 4: Translations**
 
-`You have finished voting. Take it back to change your votes.`
+None on the server (decision 10 B has no refusal). The front strings are in Task 13.
 
-- [ ] **Step 5: Run the tests on the four engines, and the race**
+- [ ] **Step 5: Run the tests on the four engines, and the races**
 
 Run: `bin/test-db pgsql -- tests/Feature/Retros/VotingCompletionTest.php tests/Feature/Retros/VotingTest.php tests/Feature/Retros/MaxVotesPerCardTest.php`, then `sqlite`, `mariadb`, `mysql`.
-Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/VotingCompletionTest.php tests/Concurrency/VoteLimitTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
-Expected: PASS on each (`VoteLimitTest`'s deadlock case still sees one rollback: the participant is locked after the retro, as before).
+Run: `bin/test-db pgsql --concurrency -- tests/Concurrency/VotingCompletionTest.php tests/Concurrency/VoteLimitTest.php tests/Concurrency/MaxVotesPerCardTest.php`, then `mariadb`, `mysql`, `sqlite-file`.
+Expected: PASS on each (`VoteLimitTest`'s deadlock case still sees one rollback: the participant is locked after the retro, as before; `destroy` now locks the participant too, after the retro, so no new lock order appears).
 
 - [ ] **Step 6: Gates and commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
 vendor/bin/sail composer types:check
-git add app/Events/Retros/VotingFinishedChanged.php app/Http/Controllers/Retros routes/web.php lang tests/Feature/Retros/VotingCompletionTest.php tests/Concurrency/VotingCompletionTest.php
-git commit -m "feat(retro): I have finished voting
+git add app/Events/Retros/VotingFinishedChanged.php app/Http/Controllers/Retros routes/web.php tests/Feature/Retros/VotingCompletionTest.php tests/Feature/Retros/VotingTest.php tests/Concurrency/VotingCompletionTest.php
+git commit -m "feat(retro): I have finished voting, taken back by a new vote
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
+```
+
+### Task 23 (lane V, after Task 5): The writing count of an anonymous retro (RT-1, decision 1 C)
+
+Numbered last so the other task numbers stay stable; it runs in Step A, in lane V, after Task 5. It carries spec §6.11, whose rules are the owner's answer with its accepted risk: **never add an id, a name or a column to the count**, and never "fix" the timing risk of rule 8 by going back to named indicators.
+
+**Files:**
+- Create: `app/Events/Retros/WritingCountChanged.php`, `app/Http/Controllers/Retros/RetroWritersController.php`
+- Modify: `app/Providers/AppServiceProvider.php` (the limiter), `routes/web.php`
+- Test: `tests/Feature/Retros/WritingCountTest.php`
+
+Read first: `Participant::current`, the `retros/{retro}` route group and its middleware (which one puts the participant in the request attributes), `RetroGuard` (`phase`, `unlocked`), the `whiteboard-writes` limiter of `AppServiceProvider::boot`, `docs/database.md` rule 6.
+
+**Interfaces:**
+- Consumes: `participants.writing_until` (Task 1).
+- Produces: routes `retros.writing.update` (`PUT retros/{retro}/writing`) and `retros.writing.destroy` (`DELETE …`), both answering `{count: int}`; event `WritingCountChanged(string $retroId, int $count)`, name `writing.count`, `broadcastWith(): array{count: int}`; constants `RetroWritersController::WritingSeconds = 8`; limiter `retro-writing` (40 per minute per participant).
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Retros/WritingCountTest.php`:
+
+```php
+<?php
+
+use App\Enums\RetroPhase;
+use App\Events\Retros\WritingCountChanged;
+use App\Models\Retro;
+use Illuminate\Support\Facades\Event;
+
+beforeEach(function () {
+    Event::fake();
+});
+
+function anonymousWritingRetro(array $attributes = []): Retro
+{
+    return Retro::factory()->inPhase(RetroPhase::Writing)->create(['is_anonymous' => true, ...$attributes]);
+}
+
+it('counts the people writing and sends the count with nothing else', function () {
+    $retro = anonymousWritingRetro();
+    [$first] = retroMember($retro);
+    [$second] = retroMember($retro);
+
+    $this->actingAs($first)->putJson(route('retros.writing.update', $retro))
+        ->assertOk()
+        ->assertExactJson(['count' => 1]);
+    $this->actingAs($second)->putJson(route('retros.writing.update', $retro))
+        ->assertOk()
+        ->assertExactJson(['count' => 2]);
+
+    // Spec §6.11 rule 4 (owner's answer C): the payload is the count, never an id, a name or a column.
+    Event::assertDispatched(fn (WritingCountChanged $event) => $event->broadcastWith() === ['count' => 2]);
+    Event::assertDispatched(WritingCountChanged::class, fn (WritingCountChanged $event) => array_keys($event->broadcastWith()) === ['count']);
+});
+
+it('sends the count again on every heartbeat', function () {
+    $retro = anonymousWritingRetro();
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)->putJson(route('retros.writing.update', $retro))->assertOk();
+    $this->actingAs($user)->putJson(route('retros.writing.update', $retro))->assertExactJson(['count' => 1]);
+
+    Event::assertDispatchedTimes(WritingCountChanged::class, 2);
+});
+
+it('stops counting a writer who stops or goes quiet', function () {
+    $retro = anonymousWritingRetro();
+    [$first, $one] = retroMember($retro);
+    [$second] = retroMember($retro);
+
+    $this->actingAs($first)->putJson(route('retros.writing.update', $retro))->assertOk();
+    $this->actingAs($second)->putJson(route('retros.writing.update', $retro))->assertExactJson(['count' => 2]);
+
+    $this->actingAs($first)->deleteJson(route('retros.writing.destroy', $retro))->assertExactJson(['count' => 1]);
+
+    expect($one->fresh()->writing_until)->toBeNull();
+
+    $this->travel(9)->seconds();
+
+    $this->actingAs($first)->putJson(route('retros.writing.update', $retro))->assertExactJson(['count' => 1]);
+});
+
+it('lets a guest say they are writing', function () {
+    $retro = anonymousWritingRetro();
+    $guest = retroGuest($retro);
+
+    $this->withCookies(retroGuestCookie($guest))->withCredentials()
+        ->putJson(route('retros.writing.update', $retro))
+        ->assertExactJson(['count' => 1]);
+});
+
+it('refuses a named retro, another phase and a locked board', function () {
+    $named = Retro::factory()->inPhase(RetroPhase::Writing)->create(['is_anonymous' => false]);
+    [$user] = retroMember($named);
+    $this->actingAs($user)->putJson(route('retros.writing.update', $named))->assertForbidden();
+
+    $grouping = anonymousWritingRetro(['phase' => RetroPhase::Grouping]);
+    [$user] = retroMember($grouping);
+    $this->actingAs($user)->putJson(route('retros.writing.update', $grouping))->assertForbidden();
+
+    $locked = anonymousWritingRetro(['is_locked' => true]);
+    [$user] = retroMember($locked);
+    $this->actingAs($user)->putJson(route('retros.writing.update', $locked))->assertStatus(423);
+
+    Event::assertNotDispatched(WritingCountChanged::class);
+});
+
+it('limits the heartbeats of one participant', function () {
+    $retro = anonymousWritingRetro();
+    [$user] = retroMember($retro);
+    [$other] = retroMember($retro);
+
+    foreach (range(1, 40) as $beat) {
+        $this->actingAs($user)->putJson(route('retros.writing.update', $retro))->assertOk();
+    }
+
+    $this->actingAs($user)->putJson(route('retros.writing.update', $retro))->assertTooManyRequests();
+    $this->actingAs($other)->putJson(route('retros.writing.update', $retro))->assertOk();
+});
+```
+
+(Check `RetroGuard::unlocked`'s status on the lane's head: the spec says 423; if the guard answers another status for a locked board, use the guard's and report it.)
+
+- [ ] **Step 2: Run them to see them fail**
+
+Run: `bin/test-db pgsql -- tests/Feature/Retros/WritingCountTest.php`
+Expected: FAIL (unknown route).
+
+- [ ] **Step 3: Implementation**
+
+`app/Events/Retros/WritingCountChanged.php`:
+
+```php
+<?php
+
+namespace App\Events\Retros;
+
+/**
+ * How many people write a card on an anonymous retro. Spec §6.11 rule 4
+ * (owner's answer C): the count only — no id, no name, no column.
+ */
+class WritingCountChanged extends RetroBroadcastEvent
+{
+    public function __construct(string $retroId, public int $count)
+    {
+        parent::__construct($retroId);
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'writing.count';
+    }
+
+    public function broadcastWith(): array
+    {
+        return ['count' => $this->count];
+    }
+}
+```
+
+`app/Http/Controllers/Retros/RetroWritersController.php`:
+
+```php
+<?php
+
+namespace App\Http\Controllers\Retros;
+
+use App\Actions\Retros\RetroGuard;
+use App\Enums\RetroPhase;
+use App\Events\Retros\WritingCountChanged;
+use App\Http\Controllers\Controller;
+use App\Models\Participant;
+use App\Models\Retro;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * The writing heartbeat of an anonymous retro (spec §6.11): `update` says
+ * "I am writing" for the next few seconds, `destroy` says "I stopped".
+ * One row written, no lock: a count read a moment early is corrected by the
+ * next heartbeat.
+ */
+class RetroWritersController extends Controller
+{
+    public const int WritingSeconds = 8;
+
+    public function update(Request $request, Retro $retro): JsonResponse
+    {
+        return response()->json(['count' => $this->write($request, $retro, now()->addSeconds(self::WritingSeconds))]);
+    }
+
+    public function destroy(Request $request, Retro $retro): JsonResponse
+    {
+        return response()->json(['count' => $this->write($request, $retro, null)]);
+    }
+
+    private function write(Request $request, Retro $retro, mixed $writingUntil): int
+    {
+        $participant = Participant::current($request);
+
+        abort_unless($retro->is_anonymous, 403);
+        RetroGuard::phase($retro, RetroPhase::Writing);
+        RetroGuard::unlocked($retro);
+
+        Participant::query()->whereKey($participant->id)->update(['writing_until' => $writingUntil]);
+
+        $count = $retro->participants()->where('writing_until', '>', now())->count();
+
+        (new WritingCountChanged($retro->id, $count))->sendToOthers();
+
+        return $count;
+    }
+}
+```
+
+(Type `$writingUntil` as `?CarbonInterface` with the import, not `mixed`, once PHPStan confirms what `now()->addSeconds()` returns on the lane's head.)
+
+`AppServiceProvider::boot`, after the `whiteboard-writes` limiter:
+
+```php
+        RateLimiter::for('retro-writing', function (Request $request): Limit {
+            $participant = $request->attributes->get('participant');
+            $key = $participant instanceof Participant ? $participant->id : $request->ip();
+
+            return Limit::perMinute(40)->by("retro-writing|{$key}");
+        });
+```
+
+(import `App\Models\Participant`).
+
+`routes/web.php`, after Task 5's two lines:
+
+```php
+        Route::put('writing', [RetroWritersController::class, 'update'])->middleware('throttle:retro-writing')->name('retros.writing.update');
+        Route::delete('writing', [RetroWritersController::class, 'destroy'])->middleware('throttle:retro-writing')->name('retros.writing.destroy');
+```
+
+- [ ] **Step 4: Run the tests on the four engines**
+
+Run: `bin/test-db pgsql -- tests/Feature/Retros/WritingCountTest.php tests/Feature/Retros/RetroFacilitationSchemaTest.php`, then `sqlite`, `mariadb`, `mysql`.
+Expected: PASS on each. No race: the count protects no invariant (spec §6.11 rule 2).
+
+- [ ] **Step 5: Gates and commit**
+
+```bash
+vendor/bin/pint --dirty --format agent
+vendor/bin/sail composer types:check
+git add app/Events/Retros/WritingCountChanged.php app/Http/Controllers/Retros/RetroWritersController.php app/Providers/AppServiceProvider.php routes/web.php tests/Feature/Retros/WritingCountTest.php
+git commit -m "feat(retro): a count of people writing on an anonymous retro, with no ids
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
@@ -2962,17 +3305,18 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 ### Task 10: Types, reducer actions, channel events, the nudge listener
 
 **Files:**
-- Modify: `resources/js/lib/retro/types.ts`, `board-reducer.ts` (+ `board-reducer.test.ts`), `adapters.ts` (+ `adapters.test.ts`), `resources/js/hooks/use-retro-board.ts`, `resources/js/components/retro/board-context.tsx`, every test fixture of a `Snapshot` that `npm run types:check` flags (add the new keys with their empty values)
+- Modify: `resources/js/lib/retro/types.ts`, `board-reducer.ts` (+ `board-reducer.test.ts`), `adapters.ts` (+ `adapters.test.ts`), `resources/js/hooks/use-retro-board.ts`, `resources/js/components/retro/board-context.tsx`, `resources/js/components/retro/phase-voting-bar.tsx` (`useCardVote` only, + its test), every test fixture of a `Snapshot` that `npm run types:check` flags (add the new keys with their empty values)
 
 Read first: `types.ts` (`Snapshot`, `BoardCard`, `CardPayload`, `RotiState`, the board's `ActionItem`), `board-reducer.ts` (`timer.set`, `roti.set`), `adapters.ts` (`cardVoting`, `CardVoting`), `use-retro-board.ts` (`onEvent`, `subscribeGameEvents` — the pattern of a listener set exposed through the context).
 
 **Interfaces:**
-- Consumes: the snapshot keys of Task 1 and the events of Tasks 2 to 8 (`timer.changed` with three keys, `voting.finished`, `topic.discussed`, `topic.note.saved`, `roti.revealed`, `roti.nudged`).
+- Consumes: the snapshot keys of Task 1 and the events of Tasks 2 to 8 and 23 (`timer.changed` with three keys, `voting.finished`, `writing.count`, `topic.discussed`, `topic.note.saved`, `roti.revealed`, `roti.nudged`); the vote answer's `finishedIds` (Task 5).
 - Produces:
   - types: `TopicNote = { cardId: string; body: string; version: number; updatedAt: string | null }`; `TimerState = { timerEndsAt: string | null; timerPausedSeconds: number | null; topicSeconds: number | null }`; `Snapshot.retro` gains `timerPausedSeconds: number | null`, `topicSeconds: number | null`, `maxVotesPerCard: number | null`, `maxVotesPerCardSetting: number | null`; `Snapshot` gains `voting: { finishedIds: string[] }` and `topicNotes: TopicNote[]`; `RotiState` gains `revealed: boolean` and `results: RotiResults | null`; `BoardCard` and `CardPayload` gain `discussedAt: string | null`; the board's `ActionItem` gains `cardId: string | null`.
   - reducer actions: `{ type: 'timer.set'; timerEndsAt: string | null; timerPausedSeconds?: number | null; topicSeconds?: number | null }` (the two new fields optional: callers that send only the end keep working); `{ type: 'voting.finished'; finishedIds: string[] }`; `{ type: 'topic.discussed'; cardId: string; discussedAt: string | null }`; `{ type: 'topicNote.set'; note: TopicNote }`.
-  - `CardVoting.blocked: 'locked' | 'finished' | 'spent' | 'cap' | null` and `CardVoting.maxPerCard: number | null`; `cardVoting(card, board: Pick<Snapshot, 'retro' | 'viewer' | 'voting'>)`.
-  - `BoardContextValue.subscribeRotiNudges: (listener: () => void) => () => void`.
+  - `CardVoting.blocked: 'locked' | 'spent' | 'cap' | null` and `CardVoting.maxPerCard: number | null`; `cardVoting(card, board: Pick<Snapshot, 'retro' | 'viewer'>)` — "finished" never blocks a vote (decision 10, B).
+  - `useCardVote` (`phase-voting-bar.tsx`): its `Tally` type gains `finishedIds: string[] | null`; when non-null it applies `{ type: 'voting.finished', finishedIds }` after the tally.
+  - `BoardContextValue.subscribeRotiNudges: (listener: () => void) => () => void` and `BoardContextValue.subscribeWritingCount: (listener: (count: number) => void) => () => void` (the count is transient: it never enters the snapshot or the reducer).
 
 - [ ] **Step 1: Failing reducer and adapter tests**
 
@@ -3075,7 +3419,7 @@ describe('boardReducer facilitation', () => {
 Append to `resources/js/lib/retro/adapters.test.ts`:
 
 ```ts
-describe('cardVoting with a cap and a finished voter', () => {
+describe('cardVoting with a cap, and a finished voter', () => {
     const board = (overrides: {
         maxVotesPerCard?: number | null;
         finishedIds?: string[];
@@ -3092,7 +3436,7 @@ describe('cardVoting with a cap and a finished voter', () => {
                 remainingVotes: overrides.remainingVotes ?? 3,
             },
             voting: { finishedIds: overrides.finishedIds ?? [] },
-        }) as unknown as Pick<Snapshot, 'retro' | 'viewer' | 'voting'>;
+        }) as unknown as Pick<Snapshot, 'retro' | 'viewer'>;
     const card = {
         id: 'c',
         parentCardId: null,
@@ -3110,10 +3454,10 @@ describe('cardVoting with a cap and a finished voter', () => {
         });
     });
 
-    it('freezes both ways once the viewer has finished', () => {
+    it('lets a viewer who has finished still vote both ways (decision 10, B)', () => {
         expect(
             cardVoting(card, board({ finishedIds: ['me'] })),
-        ).toMatchObject({ canVote: false, canUnvote: false, blocked: 'finished' });
+        ).toMatchObject({ canVote: true, canUnvote: true, blocked: null });
     });
 
     it('says the budget is spent before the cap', () => {
@@ -3192,21 +3536,17 @@ export type CardVoting = {
     canVote: boolean;
     canUnvote: boolean;
     /** Why "Add a vote" is disabled; the first reason that applies. */
-    blocked: 'locked' | 'finished' | 'spent' | 'cap' | null;
+    blocked: 'locked' | 'spent' | 'cap' | null;
     /** The cap in force, for the dots of a group; null without one. */
     maxPerCard: number | null;
 };
 
 function voteBlock(
     card: BoardCard,
-    board: Pick<Snapshot, 'retro' | 'viewer' | 'voting'>,
+    board: Pick<Snapshot, 'retro' | 'viewer'>,
 ): CardVoting['blocked'] {
     if (!isBoardEditable(board)) {
         return 'locked';
-    }
-
-    if (board.voting.finishedIds.includes(board.viewer.participantId)) {
-        return 'finished';
     }
 
     if (board.viewer.remainingVotes <= 0) {
@@ -3224,7 +3564,7 @@ function voteBlock(
 
 export function cardVoting(
     card: BoardCard,
-    board: Pick<Snapshot, 'retro' | 'viewer' | 'voting'>,
+    board: Pick<Snapshot, 'retro' | 'viewer'>,
 ): CardVoting | null {
     if (board.retro.phase !== 'voting') {
         return null;
@@ -3235,19 +3575,31 @@ export function cardVoting(
     }
 
     const blocked = voteBlock(card, board);
-    const frozen = blocked === 'locked' || blocked === 'finished';
 
     return {
         votes: { total: card.votes, mine: card.myVotes },
         canVote: blocked === null,
-        canUnvote: !frozen && card.myVotes > 0,
+        canUnvote: blocked !== 'locked' && card.myVotes > 0,
         blocked,
         maxPerCard: board.retro.maxVotesPerCard,
     };
 }
 ```
 
-(Keep the existing `CardVoting` fields and their meaning; if `votes` has another shape in the file, keep that shape.) Every caller of `cardVoting` passes a board that already has `voting` (the full snapshot).
+(Keep the existing `CardVoting` fields and their meaning; if `votes` has another shape in the file, keep that shape.) `cardVoting` does not read `voting`: a finished viewer votes as before, and the server takes "finished" back (Task 5).
+
+`phase-voting-bar.tsx`, `useCardVote`: `Tally` gains `finishedIds: string[] | null`; after the two `ctx.apply` calls of the answer:
+
+```ts
+                if (tally.finishedIds !== null) {
+                    ctx.apply({
+                        type: 'voting.finished',
+                        finishedIds: tally.finishedIds,
+                    });
+                }
+```
+
+Its Vitest (in `phase-voting-bar.test.tsx`, or the file that tests `useCardVote`): an answer with `finishedIds: ['p2']` applies `voting.finished`; an answer with `finishedIds: null` does not.
 
 `use-retro-board.ts`, in `onEvent`:
 
@@ -3287,15 +3639,20 @@ export function cardVoting(
                 case 'roti.nudged':
                     rotiNudgeListeners.current.forEach((listener) => listener());
                     break;
+                case 'writing.count':
+                    writingCountListeners.current.forEach((listener) =>
+                        listener(payload.count as number),
+                    );
+                    break;
 ```
 
-with `const rotiNudgeListeners = useRef(new Set<() => void>());` and, returned with the board value as `subscribeGameEvents` is, `subscribeRotiNudges: (listener) => { rotiNudgeListeners.current.add(listener); return () => rotiNudgeListeners.current.delete(listener); }` (wrapped in `useCallback`). `board-context.tsx` declares it in `BoardContextValue`. Add `'timer.changed'`, `'voting.finished'`, `'topic.discussed'`, `'topic.note.saved'`, `'roti.revealed'`, `'roti.nudged'` to the list of event names the channel hook listens to, if the hook keeps one (read `use-retro-channel` or the place `onEvent` is wired).
+with `const rotiNudgeListeners = useRef(new Set<() => void>());` and, returned with the board value as `subscribeGameEvents` is, `subscribeRotiNudges: (listener) => { rotiNudgeListeners.current.add(listener); return () => rotiNudgeListeners.current.delete(listener); }` (wrapped in `useCallback`). `subscribeWritingCount` is built the same way over `const writingCountListeners = useRef(new Set<(count: number) => void>());`. `board-context.tsx` declares both in `BoardContextValue`. Add `'timer.changed'`, `'voting.finished'`, `'writing.count'`, `'topic.discussed'`, `'topic.note.saved'`, `'roti.revealed'`, `'roti.nudged'` to the list of event names the channel hook listens to, if the hook keeps one (read `use-retro-channel` or the place `onEvent` is wired).
 
 Every board fixture the type check flags (Vitest files, `pages/dev/sections/*`) gains `voting: { finishedIds: [] }`, `topicNotes: []`, the four `retro` keys at `null`, `roti.revealed: false`, `roti.results: null`, `discussedAt: null` on cards and `cardId: null` on items.
 
 - [ ] **Step 4: Run the tests and the gates**
 
-Run: `npm run test -- board-reducer adapters use-retro-board`, `npm run types:check`, `npm run check`, `npm run build:front`.
+Run: `npm run test -- board-reducer adapters use-retro-board phase-voting-bar`, `npm run types:check`, `npm run check`, `npm run build:front`.
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -3314,17 +3671,17 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 
 Screen tasks carry the pure logic in full (with its Vitest) and, for the components, the composition, the behaviours, the states and the hooks later tests rely on: the mockup is the specification of the markup (plan 18e's screen procedure). Every task ends with its Vitest, `npm run types:check`, `npm run check`, `npm run build:front`, and one commit with the two trailers.
 
-### Task 11 (lane W): Who is writing, moving a card, taking notes (RT-1)
+### Task 11 (lane W): Who is writing, moving a card, taking notes; the writing count of an anonymous retro (RT-1, decision 1 C)
 
 **Mockups:** `ScreenRetroWriting` ("Inès écrit une carte…", ringed avatar), `ScreenRetroGrouping` ("Yuki déplace une carte…"), `ScreenRetroDiscussion` ("Inès prend des notes…"), `PresenceStack` (typing). Deviation P21-05.
 
 **Files:**
 - Create: `resources/js/lib/retro/activity.ts` (+ `activity.test.ts`), `resources/js/hooks/use-retro-activity.ts` (+ test), `resources/js/components/retro/activity-line.tsx` (+ test)
-- Modify: `components/retro/board.tsx` (provides the activity), `board-column.tsx` (`typing`, `moving` slots filled), `columns-board.tsx` (send `moving` on drag start, end on drop and cancel), the card editor of a column (send `writing` on keystrokes; find it from `board-column.tsx`'s composing state), `board-topbar.tsx` (`BoardPresence` passes `typing` per member to `SessionPresence`), `components/session/session-presence.tsx` (`typingFor?: (member) => boolean`, own commit)
+- Modify: `components/retro/board.tsx` (provides the activity), `board-column.tsx` (`typing`, `moving` slots filled), `columns-board.tsx` (send `moving` on drag start, end on drop and cancel), the card editor of a column (send `writing` on keystrokes; find it from `board-column.tsx`'s composing state), `board-topbar.tsx` (`BoardPresence` passes `typing` per member, or the count, to `SessionPresence`), `components/session/session-presence.tsx` (`typingFor?: (member) => boolean`, `typingCount?: number`, own commit), `components/skrum/presence-stack.tsx` (`typingCount?: number`, + its test, own commit)
 
 **Interfaces:**
-- Consumes: `presence: WhisperChannel | null`, `online`, `board.retro.{phase,isAnonymous}`, `board.viewer.participantId` (context); `whisperTransport` (`lib/realtime/whisper-transport.ts`).
-- Produces: `useRetroActivity(): { entries: ActivityEntry[]; announce: (kind: ActivityKind, targetId: string) => void; end: (kind: ActivityKind, targetId: string) => void }`, exposed to the board's components through a small `ActivityContext` in `use-retro-activity.ts` (`ActivityProvider`, `useActivity`); `ActivityLine({ kind, targetId })`.
+- Consumes: `presence: WhisperChannel | null`, `online`, `board.retro.{phase,isAnonymous}`, `board.viewer.participantId`, `subscribeWritingCount` (context, Task 10); `whisperTransport` (`lib/realtime/whisper-transport.ts`); routes `retros.writing.update|destroy` (Task 23, Wayfinder `RetroWritersController`).
+- Produces: `useRetroActivity(): { entries: ActivityEntry[]; writingCount: number; announce: (kind: ActivityKind, targetId: string) => void; end: (kind: ActivityKind, targetId: string) => void }` (`writingCount`: others writing on an anonymous retro, 0 elsewhere), exposed to the board's components through a small `ActivityContext` in `use-retro-activity.ts` (`ActivityProvider`, `useActivity`); `ActivityLine({ kind, targetId })`.
 
 - [ ] **Step 1: The pure logic, test first**
 
@@ -3337,7 +3694,9 @@ import {
     applyActivity,
     kindsShownIn,
     liveActivity,
+    othersWriting,
     parseActivity,
+    WritingCountTtlMs,
 } from './activity';
 
 describe('parseActivity', () => {
@@ -3359,8 +3718,25 @@ describe('kindsShownIn', () => {
         expect(kindsShownIn('voting', false)).toEqual([]);
     });
 
-    it('never shows writing on an anonymous retro', () => {
+    it('never takes a writing client event on an anonymous retro (the count goes through the server)', () => {
         expect(kindsShownIn('writing', true)).toEqual(['moving']);
+    });
+});
+
+describe('othersWriting', () => {
+    const at = (count: number, receivedAt: number) => ({ count, receivedAt });
+
+    it('leaves the viewer out of the count', () => {
+        expect(othersWriting(at(3, 0), true, 1000)).toBe(2);
+        expect(othersWriting(at(3, 0), false, 1000)).toBe(3);
+        expect(othersWriting(at(1, 0), true, 1000)).toBe(0);
+        expect(othersWriting(at(0, 0), true, 1000)).toBe(0);
+    });
+
+    it('drops a count that has not been refreshed for eight seconds', () => {
+        expect(othersWriting(at(2, 0), false, WritingCountTtlMs - 1)).toBe(2);
+        expect(othersWriting(at(2, 0), false, WritingCountTtlMs)).toBe(0);
+        expect(othersWriting(null, false, 0)).toBe(0);
     });
 });
 
@@ -3467,6 +3843,14 @@ export const ActivityTtlMs = 5000;
 /** A sender repeats an ongoing activity at most this often. */
 export const ActivityRefreshMs = 2000;
 
+/** Anonymous retro: the writing heartbeat to the server (spec §6.11 rule 1). */
+export const WritingHeartbeatMs = 3000;
+
+/** Anonymous retro: a count not refreshed for this long is dropped (rule 5). */
+export const WritingCountTtlMs = 8000;
+
+export type WritingCount = { count: number; receivedAt: number };
+
 const Kinds: ActivityKind[] = ['writing', 'moving', 'notes'];
 
 export function parseActivity(raw: unknown): ActivityMessage | null {
@@ -3492,8 +3876,9 @@ export function parseActivity(raw: unknown): ActivityMessage | null {
 }
 
 /**
- * What a phase shows. A writer on an anonymous retro is never shown: the
- * column and the moment would tie the hidden card to its author.
+ * Which client events a phase takes. On an anonymous retro `writing` is never
+ * a client event — its presence id and column would tie the hidden card to
+ * its author — and goes through the server as a count (spec §6.11).
  */
 export function kindsShownIn(
     phase: RetroPhase,
@@ -3559,6 +3944,19 @@ export function liveActivity(
     return entries.filter((entry) => entry.expiresAt > now);
 }
 
+/** How many other people are writing on an anonymous retro (spec §6.11 rule 5). */
+export function othersWriting(
+    last: WritingCount | null,
+    viewerIsWriting: boolean,
+    now: number,
+): number {
+    if (last === null || now - last.receivedAt >= WritingCountTtlMs) {
+        return 0;
+    }
+
+    return Math.max(0, last.count - (viewerIsWriting ? 1 : 0));
+}
+
 export function activityNames(
     entries: ActivityEntry[],
     kind: ActivityKind,
@@ -3573,9 +3971,13 @@ export function activityNames(
 
 - [ ] **Step 2: The hook**
 
-`use-retro-activity.ts`: inside the board, `useRetroActivity()` holds `entries` in state; on `presence` (re)binding it listens with `whisperTransport(presence, 'activity', accept)` where `accept(senderId)` is true when `senderId !== viewer.participantId` and `online` has `senderId`; each accepted message is parsed with `parseActivity`, dropped when its kind is not in `kindsShownIn(phase, isAnonymous)`, and applied with `applyActivity(…, Date.now())`. A one-second interval replaces `entries` with `liveActivity(entries, Date.now())` while any entry exists. `announce(kind, targetId)` sends `{kind, targetId, active: true}` at most once per `ActivityRefreshMs` per `kind:targetId` (a `useRef` map of last send times), and never a kind its own phase does not show (so an anonymous retro sends no `writing`); `end(kind, targetId)` sends `active: false` once and clears the throttle. On unmount, and when the phase changes, it ends whatever it announced. The names come from `online` with the cursors' rule (`showsRetroCursors` is not consulted; the label is "Participant" on an anonymous retro: reuse the `labelFor` of `board-cursors.tsx`, moved to `lib/retro/activity.ts` as `activityLabel(member, isAnonymous, t)` with its test).
+`use-retro-activity.ts`: inside the board, `useRetroActivity()` holds `entries` in state; on `presence` (re)binding it listens with `whisperTransport(presence, 'activity', accept)` where `accept(senderId)` is true when `senderId !== viewer.participantId` and `online` has `senderId`; each accepted message is parsed with `parseActivity`, dropped when its kind is not in `kindsShownIn(phase, isAnonymous)`, and applied with `applyActivity(…, Date.now())`. A one-second interval replaces `entries` with `liveActivity(entries, Date.now())` while any entry exists. `announce(kind, targetId)` sends `{kind, targetId, active: true}` at most once per `ActivityRefreshMs` per `kind:targetId` (a `useRef` map of last send times), and never a kind its own phase does not show (so an anonymous retro sends no `writing`); `end(kind, targetId)` sends `active: false` once and clears the throttle. On unmount, and when the phase changes, it ends whatever it announced.
 
-Vitest of the hook, with a fake `WhisperChannel` (`listen` stores the callback, `whisper` records): a message from an online member appears and expires after 5 s (fake timers); a message whose metadata `user_id` is the viewer, or a member not online, is ignored; a `writing` message on an anonymous retro is ignored; `announce` twice within 2 s sends once; `end` sends `active: false`; changing the phase to Voting sends the `end` of an announced `moving`.
+**Anonymous retro in Writing (decision 1, C; spec §6.11).** `announce('writing', columnId)` never whispers: it sends `PUT retros.writing.update` (no body) at most once per `WritingHeartbeatMs`, and `end('writing', …)` sends `DELETE retros.writing.destroy` once (also on `pagehide`, unmount and leaving Writing); the column id stays in the browser. Each answer and each `writing.count` event (through `subscribeWritingCount`) sets `last = { count, receivedAt: Date.now() }`; a one-second interval re-renders while `last` is set; `writingCount = othersWriting(last, viewerIsWriting, Date.now())`, where `viewerIsWriting` is true between the first announce and the end. Leaving Writing sets `last` to null. A failed heartbeat (429, network) is ignored: the next one retries. A `writing` whisper that arrives anyway is dropped by `kindsShownIn`.
+
+The names come from `online` with the cursors' rule (`showsRetroCursors` is not consulted; the label is "Participant" on an anonymous retro: reuse the `labelFor` of `board-cursors.tsx`, moved to `lib/retro/activity.ts` as `activityLabel(member, isAnonymous, t)` with its test).
+
+Vitest of the hook, with a fake `WhisperChannel` (`listen` stores the callback, `whisper` records): a message from an online member appears and expires after 5 s (fake timers); a message whose metadata `user_id` is the viewer, or a member not online, is ignored; a `writing` message on an anonymous retro is ignored; `announce` twice within 2 s sends once; **on an anonymous retro `announce('writing', …)` never calls `whisper`** (spec §6.11 rule 4: assert the fake channel recorded no `writing` message at all), sends one `PUT` per 3 s with an empty body, and `end` sends one `DELETE`; a `writing.count` of 3 while the viewer writes gives `writingCount` 2, and 0 eight seconds later without a new count; `end` sends `active: false`; changing the phase to Voting sends the `end` of an announced `moving`.
 
 - [ ] **Step 3: Components and wiring**
 
@@ -3585,18 +3987,23 @@ Vitest of the hook, with a fake `WhisperChannel` (`listen` stores the callback, 
 | column, Writing | `BoardColumn typing={<ActivityLine kind="writing" targetId={column.id} />}` | under the cards, above "Add a card" (the mockup) |
 | column, Grouping and Writing | `moving={<ActivityLine kind="moving" targetId={…} />}`, with `targetId` every card of the column: `ActivityLine` takes `targetIds?: string[]` for this use | the line sits under the cards of the column the moved card belongs to |
 | presence | `BoardPresence` passes `typingFor={(member) => entries.some((e) => e.kind === 'writing' && e.senderId === member.id)}` to `SessionPresence`, which sets `typing` on the `PresenceStack` participant | the existing ring and the stack's ":names is writing…" line |
+| presence, anonymous retro | `BoardPresence` passes `typingCount={writingCount}` (and no `typingFor`); `SessionPresence` forwards it; `PresenceStack` (own commit) shows, when `typingCount > 0` and no participant has `typing`, the trema and t('Someone is writing…') (1) or t(':count people are writing…', { count }) (2 or more) in its `presence-stack-typing` line | no ring, no name, no column line (`ActivityLine kind="writing"` renders nothing on an anonymous retro); P21-05 |
 | editor | the card editor calls `announce('writing', columnId)` on each change of a non-empty text, `end('writing', columnId)` on publish, cancel, blur and unmount | also for the edit of an existing card in Writing |
 | drag | `columns-board.tsx`: `onDragStart` → `announce('moving', cardId)`; `onDragEnd` and `onDragCancel` → `end('moving', cardId)`; a keyboard pick-up goes through the same dnd-kit callbacks | the phone's "Add to group…" drawer sends nothing (no drag) |
 
 The `notes` kind is wired by Task 15 (it uses `announce`/`end` and `ActivityLine kind="notes"`).
 
-- [ ] **Step 4: Tests kept for later**: `data-slot="retro-activity"` on the line with `data-kind`; the presence ring is the existing `PresenceStack` one.
+- [ ] **Step 4: Tests kept for later**: `data-slot="retro-activity"` on the line with `data-kind`; the presence ring is the existing `PresenceStack` one; the anonymous count is in `data-slot="presence-stack-typing"`. `PresenceStack`'s Vitest: `typingCount` 1 and 3 give the two sentences, 0 renders nothing, named `typing` participants win over the count.
 
 - [ ] **Step 5: Gates and commits**
 
-`npm run test -- activity use-retro-activity activity-line board-column columns-board session-presence`, `npm run types:check`, `npm run check`, `npm run build:front`.
+`npm run test -- activity use-retro-activity activity-line board-column columns-board session-presence presence-stack`, `npm run types:check`, `npm run check`, `npm run build:front`.
 
 ```bash
+git commit -m "feat(skrum): PresenceStack — a count of people writing, without names
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 git commit -m "feat(session): SessionPresence takes who is typing
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
@@ -3644,7 +4051,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 - Modify: `components/retro/phase-voting-bar.tsx` (`cap`, `finished`, `done` filled by the board), `board.tsx` (passes them), `useVoteBlockedLabel` (in `phase-voting-bar.tsx`), the card and group vote controls (they read `CardVoting.maxPerCard`), `components/skrum/session-settings-popover.tsx` (+ test, own commit), `components/retro/board-settings.tsx`, `components/teams/session-create/retro-session-fields.tsx` (+ test)
 
 **Interfaces:**
-- Consumes: `retro.maxVotesPerCard`, `retro.maxVotesPerCardSetting`, `voting.finishedIds` (Task 10); `CardVoting.blocked` `'cap' | 'finished'` (Task 10); routes `retros.votingCompletion.update|destroy`; field `max_votes_per_card` of `teams.retros.store` and `retros.settings.update`.
+- Consumes: `retro.maxVotesPerCard`, `retro.maxVotesPerCardSetting`, `voting.finishedIds` (Task 10); `CardVoting.blocked` `'cap'` (Task 10; no `'finished'`: decision 10, B); the vote answer's `finishedIds` applied by `useCardVote` (Task 10); routes `retros.votingCompletion.update|destroy`; field `max_votes_per_card` of `teams.retros.store` and `retros.settings.update`.
 - Produces: `finishedCount(board, online): { finished: number; total: number }` in `lib/retro/adapters.ts` (+ test): `total = online.length || 1` (the viewer alone before presence answers), `finished` = online members whose id is in `finishedIds`.
 
 | Part | Content | Behaviour |
@@ -3652,15 +4059,16 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
 | `cap` | `t(' · max :count per card', { count })` after "of n" in `VoteBudget detail` | only when `maxVotesPerCard !== null`; stays in the phone's stuck budget |
 | `finished` | `voting-finished.tsx` `FinishedCount`: "5/8 have finished" (`aria-label` ":finished of :total have finished") | live from `voting.finished` and presence |
 | `done` | `FinishButton`: "I have finished voting" (outline, `CircleCheck`); once finished: "Change my votes" (ghost) | PUT / DELETE `voting-completion`, applying `voting.finished` from the answer; disabled while the request runs; hidden outside Voting |
-| card | `useVoteBlockedLabel`: `'cap'` → t('Max :count votes per card', {count}), `'finished'` → t('You have finished voting') | the vote button stays `aria-disabled` with the label as tooltip (VoteDots rule); a group's dots get `maxPerCard` |
+| taken back by a vote | `FinishButton` watches the viewer's id leave `finishedIds` while no PUT/DELETE of its own is running: it returns to "I have finished voting" and an `aria-live="polite"` line says t("You changed your votes: you're no longer marked as finished.") for 5 s | decision 10, B: the vote buttons are never disabled for "finished" |
+| card | `useVoteBlockedLabel`: `'cap'` → t('Max :count votes per card', {count}) | the vote button stays `aria-disabled` with the label as tooltip (VoteDots rule); a group's dots get `maxPerCard` |
 | popover | in `useRetroSettingGroups`, Voting group, after `votes_per_participant`: a stepper `max_votes_per_card` "Max per card", help "Votes one person can stack", `min 1`, `max` = `context.votesPerParticipant`, `auto: { label: t('No limit per card'), fallback: min(2, votesPerParticipant) }`, the same `disabledReason` as the vote limit | read-only for a participant (the value, or "No limit") |
 | creation | `retro-session-fields.tsx`: the row "Max per card" after "Votes per person" (the place 18e left), the same stepper with "No limit" on by default, bounded by the votes per person; sends `max_votes_per_card` (null when "No limit") | the form's error under the row |
 
-States: no cap; at the cap on one card; finished (all buttons disabled, "Change my votes"); everyone finished; phone (budget stuck with the cap, the finished line scrolls).
+States: no cap; at the cap on one card; finished (vote buttons still enabled, "Change my votes"); taken back by a vote (status line); everyone finished; phone (budget stuck with the cap, the finished line scrolls).
 
 - [ ] **Step 1:** `finishedCount` with its Vitest (three cases: nobody online yet, two of three online finished, a finished participant who left is not counted).
 - [ ] **Step 2:** `SessionSettingsPopover` row (own commit) and its Vitest (row present, bounded, "No limit" sends null, disabled after Grouping, read-only text for a participant).
-- [ ] **Step 3:** the vote bar slots, `voting-finished.tsx` and its Vitest (count, finish, take back, error toast on 422).
+- [ ] **Step 3:** the vote bar slots, `voting-finished.tsx` and its Vitest (count, finish, take back, error toast on a failed request; a `voting.finished` without the viewer, while finished and with no request of its own running, shows the status line and the "I have finished voting" button; the same change caused by its own DELETE shows no status line).
 - [ ] **Step 4:** the card labels and the creation row with their Vitest.
 - [ ] **Step 5: Gates and commits.**
 
@@ -4305,7 +4713,6 @@ Every key this plan introduces, with its values. A key that already exists keeps
 | Only a topic can be marked as discussed. | Seul un sujet peut être marqué comme discuté. | Solo un tema se puede marcar como tratado. | Nur ein Thema kann als besprochen markiert werden. |
 | You can put only one vote on a card. | Tu ne peux mettre qu'un vote par carte. | Solo puedes poner un voto por tarjeta. | Du kannst nur eine Stimme pro Karte vergeben. |
 | You can put at most :count votes on one card. | Tu peux mettre au plus :count votes sur une carte. | Puedes poner como máximo :count votos en una tarjeta. | Du kannst höchstens :count Stimmen auf eine Karte setzen. |
-| You have finished voting. Take it back to change your votes. | Tu as terminé de voter. Annule-le pour changer tes votes. | Has terminado de votar. Deshazlo para cambiar tus votos. | Du hast fertig abgestimmt. Nimm das zurück, um deine Stimmen zu ändern. |
 | Notes belong to a topic, not to a card inside a group. | Les notes appartiennent à un sujet, pas à une carte d'un groupe. | Las notas pertenecen a un tema, no a una tarjeta de un grupo. | Notizen gehören zu einem Thema, nicht zu einer Karte in einer Gruppe. |
 | Someone else changed these notes. | Quelqu'un d'autre a modifié ces notes. | Otra persona ha cambiado estas notas. | Jemand anderes hat diese Notizen geändert. |
 | Choose a topic of this retrospective. | Choisis un sujet de cette rétrospective. | Elige un tema de esta retrospectiva. | Wähle ein Thema dieser Retrospektive. |
@@ -4322,7 +4729,9 @@ Every key this plan introduces, with its values. A key that already exists keeps
 | Resume | Reprendre | Reanudar | Fortsetzen |
 | ' · max :count per card' (with its leading space) | ' · max :count par carte' | ' · máx. :count por tarjeta' | ' · max. :count pro Karte' |
 | Max :count votes per card | :count votes max par carte | Máximo :count votos por tarjeta | Höchstens :count Stimmen pro Karte |
-| You have finished voting | Tu as terminé de voter | Has terminado de votar | Du hast fertig abgestimmt |
+| You changed your votes: you're no longer marked as finished. | Tu as changé tes votes : tu n'es plus marqué comme ayant terminé. | Has cambiado tus votos: ya no figuras como que has terminado. | Du hast deine Stimmen geändert: Du giltst nicht mehr als fertig. |
+| Someone is writing… | Quelqu'un écrit… | Alguien está escribiendo… | Jemand schreibt… |
+| :count people are writing… | :count personnes écrivent… | :count personas están escribiendo… | :count Personen schreiben… |
 | :finished/:total have finished | :finished/:total ont terminé | :finished/:total han terminado | :finished/:total sind fertig |
 | :finished of :total have finished | :finished sur :total ont terminé | :finished de :total han terminado | :finished von :total sind fertig |
 | I have finished voting | J'ai terminé de voter | He terminado de votar | Ich bin fertig mit Abstimmen |
@@ -4392,7 +4801,8 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 | Name | Screen |
 |---|---|
 | `retro-writing-paused` | Writing, facilitator, a paused timer ("Resume" in the bar) — the activity line is left out unless the harness can seed it (spec §16 item 6); if it can, "Inès écrit une carte…" in one column |
-| `retro-voting-cap-finished` | Voting, participant at the cap on one card, "5/8 ont terminé", "Modifier mes votes" |
+| `retro-writing-anonymous-count` | Writing, anonymous retro, "3 personnes écrivent…" in the presence line, no column line — only if the harness can seed the count (spec §16 item 6); else left out and listed |
+| `retro-voting-cap-finished` | Voting, participant at the cap on one card, "5/8 ont terminé", "Modifier mes votes", the other vote buttons enabled |
 | `retro-discussing-topic-timer` | Discussing, facilitator, time per topic 5 min, topic 2 of 6 shared, topic 1 discussed with 2 actions, notes filled, "Actions du sujet" with one item |
 | `retro-actions-linked` | Actions, the quick add linked to the shared topic, items with their topic, "Exporter vers Jira" |
 | `retro-actions-bulk-export` | the bulk export dialog mid-run (one exported, one running, one pending) — through a seeded state if the harness cannot hold a tracker; else left out and listed |
@@ -4407,7 +4817,7 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 
 - [ ] For each capture of Task 20, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** with the owner's word. A difference that fits no reason stops the task.
 - [ ] Documents, in one commit:
-  - move the spec to `docs/superpowers/specs/2026-10-21-retro-facilitation-design.md` and this plan to `docs/superpowers/plans/2026-10-21-plan-21-retro-facilitation.md`, with the owner's answers to spec §15 folded in;
+  - the spec (`docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md`) and this plan, in place: status "built", and every difference found while building folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: a "Status" column for the retro section with RT-1 to RT-10 "done, plan 21" (as the surveys section has), and the "Not requested" line completed with spec §3;
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-10 reduced to the three backlog elements; D-11 removed; D-12 reduced to "8/8 following"; D-13 and D-14 removed; D-105 reduced to the vote button (the "finished" sentence exists); D-106's first point removed ("Topic actions" exists);
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: §6.4 (retro) amended with a pointer to the new spec (pause, cap per card, finished voting, time per topic, notes, linked items, ROTI reveal and nudge, bulk export);
@@ -4421,20 +4831,22 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 - [ ] `bin/test-db pgsql --concurrency`, `bin/test-db mariadb --concurrency`, `bin/test-db mysql --concurrency`, `bin/test-db sqlite-file --concurrency` — Expected: PASS on each.
 - [ ] `bin/check-pg-upgrade` — Expected: PASS (the upgraded schema equals a fresh install's).
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS.
-- [ ] Report `.superpowers/sdd/roadmap/plan-21/report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it and the engines it passed on; the differences that remain with each mockup; every existing test that was edited and why; every translation key added outside Task 19's table; the captures left out (activity, bulk export) and why; every decision of spec §15 as answered; what spec §16 could now be determined.
+- [ ] Report `.superpowers/sdd/roadmap/plan-21/report.md` (asked for by this plan): what is done, per acceptance criterion of spec §13 with the test that proves it and the engines it passed on; the differences that remain with each mockup; every existing test that was edited and why; every translation key added outside Task 19's table; the captures left out (activity, bulk export) and why; every decision of spec §15 as answered (and how decisions 1 C and 10 B behave in the tests); what spec §16 could now be determined.
 - [ ] Commit `docs: plan 21 report` with the two trailers. Then ask the owner to read the report. **No merge into `main`, no push.**
 
 ---
 
 ## Self-review (done while writing; kept for the reader)
 
-**Spec coverage.** §6.1 schema: Task 1. §6.2 pause: Tasks 1 (invariant, completion), 2 (routes, Icebreaker, "+2 min"), 12 (screen). §6.3 cap: Tasks 1 (`maxVotesPerCard`), 4 (endpoint, creation, settings, race), 13 (screen, popover, creation row). §6.4 finished voting: Tasks 1 (reset on entering Voting, snapshot), 5 (routes, frozen votes, race), 10 (`cardVoting`), 13 (screen). §6.5 time per topic and discussed: Tasks 1 (snapshot), 3 (timer, highlight, mark routes), 14 (screen, estimate). §6.6 notes: Tasks 1 (table, snapshot), 6 (route, version, races), 9 (recap e-mail, AI input), 15 (editor, soft lock). §6.7 linked items: Tasks 1 (column, presenter), 7 (routes), 16 (screens, session end). §6.8 ROTI: Tasks 1 (snapshot, reset on entering ROTI), 8 (reveal, nudge, race), 17 (screen). §6.9 activity: Task 11. §6.10 bulk export: Task 18. §7 permissions: the guard tests of Tasks 2 to 8. §8 real time: events in Tasks 1 to 8, the channel in Task 10. §9 screens: Tasks 11 to 18. §10 no data migration: Task 1's "as before" test. §11 routes: Tasks 2 to 8. §12 testing: per task on four engines; races in Tasks 4, 5, 6, 8; captures in Task 20. §13 criteria: 1–4 → 11; 5–6 → 1, 2, 12; 7 → 4, 13; 8–9 → 5, 10, 13; 10–12 → 3, 14; 13–14 → 6, 15; 15 → 9; 16–17 → 7, 16; 18–19 → 8, 17; 20 → 18; 21 → 4, 13; 22 → 1; 23 → 19; 24 → 20, 21; 25 → 22.
+**Spec coverage.** §6.1 schema: Task 1. §6.2 pause: Tasks 1 (invariant, completion), 2 (routes, Icebreaker, "+2 min"), 12 (screen). §6.3 cap: Tasks 1 (`maxVotesPerCard`), 4 (endpoint, creation, settings, race), 13 (screen, popover, creation row). §6.4 finished voting (decision 10 B): Tasks 1 (reset on entering Voting, snapshot), 5 (routes, a vote takes "finished" back, `finishedIds` in the vote answer, races), 10 (`cardVoting` never blocks for "finished", `useCardVote` applies `finishedIds`), 13 (screen, status line). §6.5 time per topic and discussed: Tasks 1 (snapshot), 3 (timer, highlight, mark routes), 14 (screen, estimate). §6.6 notes: Tasks 1 (table, snapshot), 6 (route, version, races), 9 (recap e-mail, AI input), 15 (editor, soft lock). §6.7 linked items: Tasks 1 (column, presenter), 7 (routes), 16 (screens, session end). §6.8 ROTI: Tasks 1 (snapshot, reset on entering ROTI), 8 (reveal, nudge, race), 17 (screen). §6.9 activity: Task 11. §6.10 bulk export: Task 18. §6.11 writing count (decision 1 C): Tasks 1 (`writing_until`, never in the snapshot), 23 (routes, event with the count only, guards, limiter), 10 (`writing.count` listener), 11 (heartbeat, no whisper, the presence line). §7 permissions: the guard tests of Tasks 2 to 8 and 23. §8 real time: events in Tasks 1 to 8 and 23, the channel in Task 10. §9 screens: Tasks 11 to 18. §10 no data migration: Task 1's "as before" test. §11 routes: Tasks 2 to 8 and 23. §12 testing: per task on four engines; races in Tasks 4, 5, 6, 8; captures in Task 20. §13 criteria: 1, 3, 4 → 11; 2 → 11, 23; 5–6 → 1, 2, 12; 7 → 4, 13; 8–9 → 5, 10, 13; 10–12 → 3, 14; 13–14 → 6, 15; 15 → 9; 16–17 → 7, 16; 18–19 → 8, 17; 20 → 18; 21 → 4, 13; 22 → 1; 23 → 19; 24 → 20, 21; 25 → 22.
 
 **Placeholders.** Back-end tasks carry their tests and code. Three steps adapt to names the plan could not read with certainty and say so: the accessors of `RetroRecapMail` and `SummaryInput` (Task 9), the fixture of a workspace item an author may edit (Task 7), the `legacyRoti()` factory state (Task 8, it exists in `RetroFactory`). Screen tasks carry the pure logic in full and the composition, behaviours and states of their components, as the plan-18e procedure has it.
 
-**Type consistency.** `TimerChanged::of(Retro)` (Task 1) is what Tasks 2 and 3 send and answer, and its three keys are `TimerState` (Task 10) and the `timer.set` action. `MoveTopicFocus::handle` returns `timer` and `discussed`, which Task 14 applies. `PresentTopicNote::handle` (Task 1) gives the `TopicNote` shape of Tasks 6, 10 and 15. `CardVoting.blocked` gains `'finished' | 'cap'` in Task 10 and `useVoteBlockedLabel` reads them in Task 13. `actionCountByTopic` (Task 14) is reused by Task 16; `topicLabel` (Task 16) by the session end. `useActivity` (Task 11) is used by Task 15. `ExportTargetFields` (Task 18) keeps `ItemExportDialog`'s behaviour.
+**Type consistency.** `TimerChanged::of(Retro)` (Task 1) is what Tasks 2 and 3 send and answer, and its three keys are `TimerState` (Task 10) and the `timer.set` action. `MoveTopicFocus::handle` returns `timer` and `discussed`, which Task 14 applies. `PresentTopicNote::handle` (Task 1) gives the `TopicNote` shape of Tasks 6, 10 and 15. `CardVoting.blocked` gains `'cap'` (and has no `'finished'`, decision 10 B) in Task 10 and `useVoteBlockedLabel` reads it in Task 13. The vote answer's `finishedIds: ?array` (Task 5) is the `Tally.finishedIds: string[] | null` of Task 10. `WritingCountChanged::broadcastWith(): array{count: int}` (Task 23) is what `subscribeWritingCount` passes (Task 10) and `othersWriting` reads (Task 11). `actionCountByTopic` (Task 14) is reused by Task 16; `topicLabel` (Task 16) by the session end. `useActivity` (Task 11) is used by Task 15. `ExportTargetFields` (Task 18) keeps `ItemExportDialog`'s behaviour.
 
-**Review Focus.** Each line has its test: the cap under concurrency (Task 4, `Race`), two first or concurrent note saves (Task 6, `Race`; Task 15, Vitest), a paused timer resumed in Icebreaker (Task 2), a spoofed or stale activity event (Task 11), a late ROTI vote (Task 8, feature and `Race`), a bulk export meeting 409, 403 and network errors (Task 18), a topic discussed twice (Task 3).
+**Review Focus.** Each line has its test: the cap under concurrency (Task 4, `Race`), two first or concurrent note saves (Task 6, `Race`; Task 15, Vitest), a paused timer resumed in Icebreaker (Task 2), a spoofed or stale activity event (Task 11), a late ROTI vote (Task 8, feature and `Race`), a bulk export meeting 409, 403 and network errors (Task 18), a topic discussed twice (Task 3), an id or a column in the anonymous writing count (Task 23 exact keys, Task 11 no-whisper Vitest), a finished participant voting under concurrency (Task 5, feature and `Race`).
 
-**Known weak points of this draft.** Nothing was run. The `RetroRecapMail` accessor and the exact shape of `SummaryInput` were not read in full. The visual harness may not be able to show client events (spec §16 item 6). Reverb relaying guest client events is assumed from its configuration (spec §16 item 1).
+**Known weak points of this draft.** Nothing was run. The `RetroRecapMail` accessor and the exact shape of `SummaryInput` were not read in full. The visual harness may not be able to show client events (spec §16 item 6). Reverb relaying guest client events is assumed from its configuration (spec §16 item 1). The `retro-writing` limiter's key depends on the participant attribute being set before the throttle middleware runs (spec §16 item 8); Task 23's 429 test proves it.
+
+**v2 (owner's answers of 2026-10-03).** Decisions 1 and 10 changed from the draft: Task 23 is new (23 tasks); Tasks 1, 5, 10, 11, 13, 19, 20 and this review were rewritten on the answers. The pre-build deviations, P21-05 reworded, are still to be approved by the owner.
 

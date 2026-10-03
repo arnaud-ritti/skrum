@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 18 only).
 
-**Status: draft of 2026-10-03, not approved.** Written on the recommended option of each question of spec §15. Execution waits for the owner's answers and approval (the autonomy mandate covered plans 18, database portability and 19 only).
+**Status: draft of 2026-10-03, revised the same day with the owner's answers.** The seven questions of spec §15 are answered, each with the recommended option this plan was written on, and the test removals are approved (see **Owner decisions**). Execution still waits for the owner's approval of the **Pre-build deviations** and of the plan (the autonomy mandate covered plans 18, database portability and 19 only).
 
 **Goal:** The whiteboard shows the four floating bars of ScreenWhiteboard — a vertical tool bar with sub-bars, a selection bar with an element count, the history at the bottom left, the zoom and a minimap at the bottom right — and the compact bottom bar of MobileRituals on a phone, in place of Excalidraw's own chrome, with every tool, style, menu entry and shortcut of today still reachable.
 
@@ -10,7 +10,7 @@
 
 **Tech Stack:** Inertia 3, React 19, Tailwind 4, `@excalidraw/excalidraw` 0.18.1 (pinned), vite-plus (Vitest, jsdom, `@testing-library/react`), lucide-react; Laravel 13 / Pest only for the translation tests; `bin/test-db` for PHP runs. Read `package.json` before Task 1 and stop if `@excalidraw/excalidraw` is not exactly `0.18.1`.
 
-**Spec:** `.superpowers/sdd/roadmap/plan-20/spec.md` (moves to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` in Task 19). Parents: `docs/superpowers/specs/2026-10-01-whiteboard-design.md`, `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenWhiteboard`, `WhiteboardToolbar`, `MobileRituals` (frame 1), `ExcalidrawTheme`, `KeyboardShortcuts` — for each, the `README.md` and the `preview.html`; bar classes in `docs/design-system/components/_preview-bundle.css` (`sk-wbbar`, `sk-wbbar--v`, `sk-tool`, `sk-tool-k`, `sk-minimap`, `sk-minimap-view`, lines 438–444).
+**Spec:** `docs/superpowers/specs/2026-10-21-plan-20-whiteboard-toolbars-design.md` (renamed to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` in Task 19). Parents: `docs/superpowers/specs/2026-10-01-whiteboard-design.md`, `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` §5. Mockups: `docs/design-system/components/ScreenWhiteboard`, `WhiteboardToolbar`, `MobileRituals` (frame 1), `ExcalidrawTheme`, `KeyboardShortcuts` — for each, the `README.md` and the `preview.html`; bar classes in `docs/design-system/components/_preview-bundle.css` (`sk-wbbar`, `sk-wbbar--v`, `sk-tool`, `sk-tool-k`, `sk-minimap`, `sk-minimap-view`, lines 438–444).
 
 **Not in this plan:** anything of the former plan 28 (comments, follow a person, sticky authors, convert to actions) — backlog, no place reserved; the `selectionActions` slot of `canvas-colors.tsx` goes with that component; any back-end change; an Excalidraw upgrade; browser walkthroughs (owner's working rule: none is written, edited or run).
 
@@ -38,19 +38,19 @@ No two lanes edit the same source file. The lanes only meet in `board.tsx`, whic
 
 ## Owner decisions
 
-The seven questions of spec §15. "Plan written on" is the recommended option. The last column names what changes with another answer.
+The seven questions of spec §15, **answered by the owner on 2026-10-03**. Every answer is the recommended option the plan was written on, so no task changes; the tasks below are binding as written.
 
-| # | Question | Plan written on | If the owner answers otherwise |
+| # | Question | Owner's answer (2026-10-03) | Tasks that carry it |
 |---|---|---|---|
-| 1 | Sticky note key | **A**: N | **B**: `StickyKey = 'S'` in Task 2; Task 8 handles S only when the selection is empty and calls `preventDefault` + `stopPropagation` in a capture listener on `.whiteboard-canvas` so the library's stroke picker does not open; Task 16's dialog lists S; P20-03 removed. **C**: `ToolKeys.sticky` becomes a list in Task 2, both handled in Task 8 |
-| 2 | Library's property panel | **A**: "Styles" toggles it, hidden by default | **B**: six more tasks after Task 12 (a `StylesPopover` with stroke width, stroke style, sloppiness, edges, arrowheads, font family, font size, text align, opacity, layer order, centre alignments, each over `updateScene` with `bumpVersion`), and Task 13 hides the panel for good. **C**: Task 12 drops "Styles"; Task 13 does not hide `.selected-shape-actions` |
-| 3 | Library's hamburger | **A**: hidden, entries in the board menu | **B**: Task 14 is dropped; Task 13 keeps `.main-menu-trigger` visible and moves it above the tool bar (`top: 1rem; left: 1rem`), the tool bar starting at 4.5rem. **C**: Task 14 adds only "Save as image" and "Find on canvas" |
-| 4 | Tools the mockup lacks | **A**: shape and connector sub-bars + "More tools" (laser, keep the tool, pen mode) | **B**: Task 8 drops "More tools"; Task 16 lists K, Q in the dialog. **C**: as B, and Task 16 does not list them |
-| 5 | Phone edit mode | **A**: compact bottom bar + drawer | **B**: Task 15 is reduced to the read dock's "Fit to screen"; Task 13 does not hide `.App-bottom-bar` tool rows on `.excalidraw--mobile`; a deviation row "phone edit mode keeps the library's UI" |
-| 6 | Minimap default | **A**: open from `lg`, remembered | **B**: `useLocalPreference('skrum.whiteboardMinimap', false)` in Task 10 |
-| 7 | Single-key preference | **A**: the board swallows every single-character key when off | **B**: Task 16 Step 1 is dropped (only `useShortcut` keys obey the preference); a deviation row |
+| 1 | Sticky note key | **A** (answered): N; S stays the library's stroke picker | 2 (`StickyKey = 'N'`), 8, 16, 18 |
+| 2 | Library's property panel | **A** (answered): "Styles" toggles the themed native panel, hidden by default | 12, 13 |
+| 3 | Library's hamburger | **A** (answered): hidden; its entries in the board menu, with a "Canvas background" sub-menu | 13, 14 |
+| 4 | Tools the mockup lacks | **A** (answered): Shape and Connector sub-bars + "More tools" (laser, keep the tool, pen mode) | 2, 7, 8 |
+| 5 | Phone edit mode | **A** (answered): the compact bottom bar of MobileRituals + drawer | 13, 15 |
+| 6 | Minimap default | **A** (answered): open from `lg`, remembered per browser | 10 |
+| 7 | Single-key preference | **A** (answered): when off, the board swallows every single-character key, the library's included, except while text is being typed | 16 |
 
-**Tests removed with the component they test** (the owner's approval is asked with this plan; global constraint "no test is deleted"): `resources/js/components/whiteboard/canvas-colors.test.tsx` (5 cases: its behaviours move to `canvas-tools.test.tsx` and `canvas-selection.test.tsx`, each case named in Tasks 8 and 12) and the four cases of `sticky-tool.test.tsx` that test the popover (`opens the eight colours with Sun chosen`, `adds a selected note … in the middle of the view`, `moves the choice with the arrow keys …`, `has the look of a canvas tool inside the shapes toolbar`): the second and third move to `canvas-tools.test.tsx` (Task 8), the first and fourth have no successor (the popover and the library toolbar slot no longer exist).
+**Tests removed with the component they test — approved by the owner on 2026-10-03** (cases moved where a successor exists; this is the approval the global constraint "no test is deleted" asks for): `resources/js/components/whiteboard/canvas-colors.test.tsx` (5 cases: "shows the eight colours with the current one checked" and "makes the colour the fill of the next shapes when nothing is selected" move to `canvas-tools.test.tsx` (Task 8 case 5), "recolours the selected shapes that have a fill, and only them" moves to `canvas-selection.test.tsx` (Task 12 case 3); "renders nothing while the bar has no use" has no direct successor (its intent is covered by Task 12 case 3, "absent when nothing selected has a fill") and "keeps a place after the bar for the actions on a selection" has none (the `selectionActions` slot is removed, spec §3)) and the four cases of `sticky-tool.test.tsx` that test the popover (`opens the eight colours with Sun chosen`, `adds a selected note … in the middle of the view`, `moves the choice with the arrow keys …`, `has the look of a canvas tool inside the shapes toolbar`): the second and third move to `canvas-tools.test.tsx` (Task 8), the first and fourth have no successor (the popover and the library toolbar slot no longer exist).
 
 ## File structure
 
@@ -86,7 +86,7 @@ Deleted (Task 13): `resources/js/components/whiteboard/canvas-colors.tsx` and it
 - **No browser walkthrough** is written, edited or run (`tests/Browser/Walkthroughs`). Captures only, in Task 18, light, 1440, French. The shared browser helper and the whiteboard visual test are updated in Task 18 because the captures and the smoke test use them.
 - **No new dependency**, PHP or JS, without the owner's approval. None is needed: `Tooltip`, `Kbd`, `ToggleGroup`, `DropdownMenu`, `Drawer`, `Separator` exist in `components/ui/`.
 - **Four languages, informal.** Every new `t('…')` key is added to `lang/en.json`, `fr.json`, `es.json`, `de.json` in the commit that introduces it, in the informal register (French "tu", Spanish "tú", German "du"); a key that exists keeps its value; Task 17 holds the values of every key and reviews them.
-- **No test is deleted** without the owner's approval; the deletions this plan needs are listed under **Owner decisions** and wait for that approval.
+- **No test is deleted** without the owner's approval; the deletions this plan needs are listed under **Owner decisions** and were approved on 2026-10-03. Any other deletion is asked first.
 - Front gates after every task: `npm run types:check`, `npm run check`, `npm run build:front`.
 - One commit per task, in the repository's style (`feat(whiteboard): …`, `test(visual): …`, `docs: …`); a change to a shared `skrum/` component is its own commit inside the task. Every commit message ends with:
 
@@ -109,7 +109,7 @@ The inputs the spec implies and no task would exercise without being told, most 
 
 ## Pre-build deviations
 
-Put to the owner before the screens are built (owner's rule of the fifth round). Spec §16.
+Put to the owner before the screens are built (owner's rule of the fifth round). Spec §16. Status of every row: **to approve by the owner** (not asked yet; Task 7 does not start before the answers).
 
 | # | Mockup element | Built | Reason |
 |---|---|---|---|
@@ -1483,7 +1483,7 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 
 - [ ] For each capture of Task 18, open it beside ScreenWhiteboard's or WhiteboardToolbar's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** with the owner's word. A difference that fits no reason stops the task.
 - [ ] Documents, in one commit:
-  - move the spec to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` and this plan to `docs/superpowers/plans/2026-10-21-plan-20-whiteboard-toolbars.md`, with the owner's answers to spec §15 folded in;
+  - rename the spec `docs/superpowers/specs/2026-10-21-plan-20-whiteboard-toolbars-design.md` to `docs/superpowers/specs/2026-10-21-whiteboard-toolbars-design.md` (this plan stays where it is); the owner's answers to spec §15 are already in both, so only the answers to the pre-build deviations are folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: row WB-1 marked done, plan 20; rows WB-2 to WB-5 untouched (backlog by the owner's note at the top);
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-21 reduced to "comments, convert to actions, follow; sticky authors — backlog (former plan 28)"; D-49 removed; the P20 rows approved by the owner added after D-127 with their status; `docs/superpowers/research/front-rewrite/deviations.md` counts updated;
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: §3 non-goal "Recoding the Excalidraw toolbar" and §6.4 "Whiteboard", rulings 5 and 29, each with a pointer to the new spec;
@@ -1497,7 +1497,7 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 - [ ] `bin/test-db pgsql`, then `bin/test-db sqlite`, `bin/test-db mariadb`, `bin/test-db mysql` (one engine at a time) — Expected: `test-db <engine>: PASS` on each.
 - [ ] `bin/test-db pgsql --concurrency` (unchanged code; run because the owner's rule asks for the whole suites at the end of a plan) — Expected: PASS.
 - [ ] `npm run test`, `npm run types:check`, `npm run check`, `npm run build:front` — Expected: PASS; and `grep -l "excalidraw" public/build/assets/*.js` lists only the whiteboard chunk(s) (spec criterion 21).
-- [ ] Report `docs/superpowers/research/plan-20-report.md`: per acceptance criterion of spec §13 the test or capture that proves it; the differences that remain with each mockup; every existing test edited or removed and why (with the owner's approval of the removals); every library internal the board now relies on (`NativeChrome` and `CommandKeys` of `canvas-commands.ts`); the stale walkthrough files; every decision taken on the owner's behalf.
+- [ ] Report `docs/superpowers/research/plan-20-report.md`: per acceptance criterion of spec §13 the test or capture that proves it; the differences that remain with each mockup; every existing test edited or removed and why (the removals approved by the owner on 2026-10-03); every library internal the board now relies on (`NativeChrome` and `CommandKeys` of `canvas-commands.ts`); the stale walkthrough files; every decision taken on the owner's behalf.
 - [ ] Commit `docs: plan 20 report`. Then ask the owner to read the report. **No merge into `main`, no push.**
 
 ---
@@ -1511,5 +1511,7 @@ The owner's working rule: no browser walkthrough is written, edited or run. Capt
 **Placeholders.** Pure logic (Tasks 1–5) carries its tests and code; Task 6 carries its contract and cases. Screen tasks carry their interfaces, composition and behaviours, not full component code: they follow the screen procedure of plan 18e, where the mockup is the specification of the markup. Two facts are left to be read at execution, each with the place to read them: the class of the library's mobile tool row (Task 15 Step 1) and the confirmation that every line of Task 1's "Read first" still holds.
 
 **Type consistency.** `CanvasSnapshot` (Task 6) is what Tasks 8, 10, 12, 13, 15 take; `CanvasView` and `Rect` come from `viewport.ts` (Task 3) everywhere; `CanvasCommand` gains `clearCanvas` in Task 14 (the table and its test, in `canvas-commands.ts`); `AlignCommand` (Task 11) is a subset of `CanvasCommand`; `ToolKeys.sticky` = `StickyKey` is read by Tasks 7, 8, 16 and 18.
+
+**Revision with the owner's answers (2026-10-03).** All seven answers of spec §15 equal the option the plan was written on; the test removals are approved. Changed: the status line, the **Owner decisions** table (answers and the tasks carrying them, in place of the "otherwise" column), the test-deletion global constraint, the spec path (the committed `docs/` copy), Task 19 (the spec is renamed, the plan stays) and Task 20's report line. No task, code block, test case, lane or task count changed: still 20 tasks. Pre-build deviations stay to approve by the owner. Fixed while revising: **Owner decisions** said all five cases of `canvas-colors.test.tsx` move, while "Gaps found" and Tasks 8 and 12 move three; the list now names each of the five cases, checked against the file on `main`.
 
 **Known weak points of this draft.** Nothing was run. The library facts were read in `dist/dev`; the browser build uses the `production` export condition (`dist/prod`, minified), which holds the same code: the contract test reads `dist/dev` because it is legible, and Task 1 checks that `package.json`'s `exports` point both conditions at the same version. Between 48rem and 64rem the history, reactions and zoom bars share the bottom edge and no capture covers that width (owner's rule: 1440 only).
