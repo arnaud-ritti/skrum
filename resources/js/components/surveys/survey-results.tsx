@@ -11,7 +11,7 @@ import { deltasByQuestion } from '@/lib/surveys/compare';
 import type { SurveySnapshot, SurveyStatus } from '@/lib/surveys/types';
 import { ResultsCompare } from './results-compare';
 import { ResultsFreeText, takesFreeText } from './results-free-text';
-import { ResultsHeader } from './results-header';
+import { ResultsHeader, ResultsStatus } from './results-header';
 import { ResultsState, resultsStateOf } from './results-states';
 import { ResultsSummary } from './results-summary';
 import { SurveyShare } from './survey-share';
@@ -20,7 +20,9 @@ export type ResultsTab = 'summary' | 'free-text' | 'compare';
 
 export type ResultsLayoutProps = {
     snapshot: SurveySnapshot;
-    /** The status badge and the actions, for the topbar. */
+    /** The status badge, beside the breadcrumb. */
+    status: ReactNode;
+    /** The actions, at the end of the topbar. */
     actions: ReactNode;
     children: ReactNode;
 };
@@ -33,9 +35,10 @@ type SurveyResultsProps = {
 
 const TabParameter = 'tab';
 
-function BareLayout({ actions, children }: ResultsLayoutProps) {
+function BareLayout({ status, actions, children }: ResultsLayoutProps) {
     return (
         <>
+            {status}
             {actions}
             {children}
         </>
@@ -151,10 +154,12 @@ export function SurveyResults({
                     snapshot={snapshot}
                     online={online}
                     dispatch={dispatch}
+                    label={t('Share with the team')}
                 />
             }
         />
     );
+    const status = <ResultsStatus status={survey.status} />;
 
     const line = [
         t(':responses answers out of :audience participants · anonymous', {
@@ -251,14 +256,17 @@ export function SurveyResults({
                 aria-labelledby={headingId}
                 className="mx-auto flex w-full max-w-page min-w-0 flex-col gap-4 px-4 py-6 md:px-10"
             >
-                <div className="flex justify-end">{header}</div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    {status}
+                    {header}
+                </div>
                 {content}
             </main>
         );
     }
 
     return (
-        <Layout snapshot={snapshot} actions={header}>
+        <Layout snapshot={snapshot} status={status} actions={header}>
             <section
                 aria-labelledby={headingId}
                 className="flex min-w-0 flex-col gap-4"

@@ -1,10 +1,16 @@
-import { Check, FileDown, Lock, RotateCcw } from 'lucide-react';
+import { Check, Ellipsis, FileDown, Lock, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import type { SurveyStatus } from '@/lib/surveys/types';
 
@@ -22,7 +28,31 @@ export type ResultsHeaderProps = {
 
 const ActionLabel = 'truncate max-md:sr-only';
 
-/** The status badge and the actions of the results, at the end of the topbar; on a phone the actions keep their icons, their names read out. */
+/** The status of the survey, beside the breadcrumb. */
+export function ResultsStatus({ status }: { status: SurveyStatus }) {
+    const { t } = useTrans();
+
+    if (status === 'closed') {
+        return (
+            <Badge variant="success" icon={Check}>
+                <span className="truncate">{t('Survey closed')}</span>
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="soft" dot="var(--skrum-success)">
+            <span className="truncate">{t('Open')}</span>
+        </Badge>
+    );
+}
+
+/**
+ * The actions of the results, at the end of the topbar, as the mockup: "Export
+ * CSV" and the share trigger; "Close the survey" while it is open, and
+ * "Reopen" in the "…" menu of an editor once it is closed. On a phone the
+ * actions keep their icons, their names read out.
+ */
 export function ResultsHeader({
     status,
     isEditor,
@@ -66,17 +96,8 @@ export function ResultsHeader({
             data-slot="survey-results-header"
             className="flex shrink-0 items-center gap-2"
         >
-            {isClosed ? (
-                <Badge variant="success" icon={Check}>
-                    <span className="truncate">{t('Survey closed')}</span>
-                </Badge>
-            ) : (
-                <Badge variant="soft" dot="var(--skrum-success)">
-                    <span className="truncate">{t('Open')}</span>
-                </Badge>
-            )}
             {canExport && (
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                     <a href={exportUrl}>
                         <FileDown aria-hidden="true" />
                         <span className={ActionLabel}>{t('Export CSV')}</span>
@@ -88,7 +109,6 @@ export function ResultsHeader({
                 <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                         setCloseError(undefined);
                         setConfirming(true);
@@ -99,16 +119,28 @@ export function ResultsHeader({
                 </Button>
             )}
             {isEditor && isClosed && (
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={reopening}
-                    onClick={() => void reopen()}
-                >
-                    <RotateCcw aria-hidden="true" />
-                    <span className={ActionLabel}>{t('Reopen')}</span>
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0"
+                            aria-label={t('More actions')}
+                        >
+                            <Ellipsis aria-hidden="true" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            disabled={reopening}
+                            onSelect={() => void reopen()}
+                        >
+                            <RotateCcw aria-hidden="true" />
+                            {t('Reopen')}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             )}
             {isEditor && (
                 <ConfirmDialog

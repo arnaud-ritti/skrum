@@ -9,7 +9,12 @@ import type { BreadcrumbItem } from '@/types';
 type Props = { snapshot: SurveySnapshot };
 
 /** team › Surveys › title, as the builder; the team's sessions hold the surveys. */
-function MemberLayout({ snapshot, actions, children }: ResultsLayoutProps) {
+function MemberLayout({
+    snapshot,
+    status,
+    actions,
+    children,
+}: ResultsLayoutProps) {
     const { t } = useTrans();
     const { survey, links } = snapshot;
     const breadcrumbs: BreadcrumbItem[] =
@@ -25,6 +30,7 @@ function MemberLayout({ snapshot, actions, children }: ResultsLayoutProps) {
         <AppLayout
             active="sessions"
             breadcrumbs={breadcrumbs}
+            status={status}
             actions={actions}
         >
             {children}

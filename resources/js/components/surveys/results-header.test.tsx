@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import { ResultsHeader } from './results-header';
+import { ResultsHeader, ResultsStatus } from './results-header';
 
 const exportUrl = '/surveys/survey-1/export';
 
@@ -10,13 +10,16 @@ describe('ResultsHeader', () => {
         const onSetStatus = vi.fn().mockResolvedValue(undefined);
 
         renderWithProviders(
-            <ResultsHeader
-                status="open"
-                isEditor
-                canExport={false}
-                exportUrl={exportUrl}
-                onSetStatus={onSetStatus}
-            />,
+            <>
+                <ResultsStatus status="open" />
+                <ResultsHeader
+                    status="open"
+                    isEditor
+                    canExport={false}
+                    exportUrl={exportUrl}
+                    onSetStatus={onSetStatus}
+                />
+            </>,
         );
 
         const badge = screen.getByText('Open').closest('[data-slot="badge"]');
@@ -24,6 +27,9 @@ describe('ResultsHeader', () => {
         expect(badge?.querySelector('[data-slot="badge-dot"]')).not.toBeNull();
         expect(screen.queryByRole('link', { name: 'Export CSV' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Reopen' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'More actions' }),
+        ).toBeNull();
 
         fireEvent.click(
             screen.getByRole('button', { name: 'Close the survey' }),
@@ -73,17 +79,21 @@ describe('ResultsHeader', () => {
         ).toContain('Something went wrong. Please try again.');
     });
 
-    it('shows a closed survey, with the export link and Reopen for an editor', async () => {
+    it('shows a closed survey with the export link and the share trigger only, Reopen in the "…" menu of an editor', async () => {
         const onSetStatus = vi.fn().mockResolvedValue(undefined);
 
         renderWithProviders(
-            <ResultsHeader
-                status="closed"
-                isEditor
-                canExport
-                exportUrl={exportUrl}
-                onSetStatus={onSetStatus}
-            />,
+            <>
+                <ResultsStatus status="closed" />
+                <ResultsHeader
+                    status="closed"
+                    isEditor
+                    canExport
+                    exportUrl={exportUrl}
+                    onSetStatus={onSetStatus}
+                    share={<button type="button">Share with the team</button>}
+                />
+            </>,
         );
 
         const badge = screen
@@ -91,40 +101,62 @@ describe('ResultsHeader', () => {
             .closest('[data-slot="badge"]');
 
         expect(badge?.querySelector('svg')).not.toBeNull();
-        expect(
-            screen
-                .getByRole('link', { name: 'Export CSV' })
-                .getAttribute('href'),
-        ).toBe(exportUrl);
-        expect(
-            screen.queryByRole('button', { name: 'Close the survey' }),
-        ).toBeNull();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
+        const header = document.querySelector(
+            '[data-slot="survey-results-header"]',
+        ) as HTMLElement;
+        const export_ = within(header).getByRole('link', {
+            name: 'Export CSV',
+        });
+
+        expect(export_.getAttribute('href')).toBe(exportUrl);
+        expect(within(header).queryByText('Survey closed')).toBeNull();
+        expect(
+            within(header).queryByRole('button', { name: 'Reopen' }),
+        ).toBeNull();
+        expect(
+            within(header).queryByRole('button', { name: 'Close the survey' }),
+        ).toBeNull();
+        expect(
+            within(header)
+                .getAllByRole('button')
+                .map(
+                    (button) =>
+                        button.getAttribute('aria-label') ?? button.textContent,
+                ),
+        ).toEqual(['Share with the team', 'More actions']);
+
+        const menu = within(header).getByRole('button', {
+            name: 'More actions',
+        });
+
+        fireEvent.pointerDown(menu, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Reopen' }),
+        );
 
         await waitFor(() => expect(onSetStatus).toHaveBeenCalledWith('open'));
     });
 
-    it('keeps the actions to their icons on a phone, under their full names, and the status in words', () => {
+    it('keeps the actions to their icons on a phone, under their full names', () => {
         renderWithProviders(
-            <ResultsHeader
-                status="closed"
-                isEditor
-                canExport
-                exportUrl={exportUrl}
-                onSetStatus={vi.fn()}
-            />,
+            <>
+                <ResultsStatus status="closed" />
+                <ResultsHeader
+                    status="closed"
+                    isEditor
+                    canExport
+                    exportUrl={exportUrl}
+                    onSetStatus={vi.fn()}
+                />
+            </>,
         );
 
-        for (const action of [
-            screen.getByRole('link', { name: 'Export CSV' }),
-            screen.getByRole('button', { name: 'Reopen' }),
-        ]) {
-            expect(action.querySelector('span')?.className).toContain(
-                'max-md:sr-only',
-            );
-        }
-
+        expect(
+            screen
+                .getByRole('link', { name: 'Export CSV' })
+                .querySelector('span')?.className,
+        ).toContain('max-md:sr-only');
         expect(screen.getByText('Survey closed').className).not.toContain(
             'sr-only',
         );
@@ -132,13 +164,16 @@ describe('ResultsHeader', () => {
 
     it('gives a viewer who does not edit the status only', () => {
         renderWithProviders(
-            <ResultsHeader
-                status="closed"
-                isEditor={false}
-                canExport={false}
-                exportUrl={exportUrl}
-                onSetStatus={vi.fn()}
-            />,
+            <>
+                <ResultsStatus status="closed" />
+                <ResultsHeader
+                    status="closed"
+                    isEditor={false}
+                    canExport={false}
+                    exportUrl={exportUrl}
+                    onSetStatus={vi.fn()}
+                />
+            </>,
         );
 
         expect(screen.getByText('Survey closed')).not.toBeNull();

@@ -24,10 +24,13 @@ export function SurveyShare({
     snapshot,
     online,
     dispatch,
+    label,
 }: {
     snapshot: SurveySnapshot;
     online: readonly PresenceMember[];
     dispatch: Dispatch<SurveyAction>;
+    /** The name of the trigger, "Share" unless the screen names it otherwise. */
+    label?: string;
 }) {
     const { t } = useTrans();
     const isMobile = useIsMobile();
@@ -119,12 +122,14 @@ export function SurveyShare({
         <>
             <Button
                 type="button"
-                aria-label={t('Share')}
+                aria-label={label ?? t('Share')}
                 onClick={() => setOpen(true)}
                 className="shrink-0 max-lg:size-9 max-lg:px-0"
             >
                 <Share2 aria-hidden />
-                <span className="truncate max-lg:sr-only">{t('Share')}</span>
+                <span className="truncate max-lg:sr-only">
+                    {label ?? t('Share')}
+                </span>
             </Button>
             <ShareDialog
                 open={open}

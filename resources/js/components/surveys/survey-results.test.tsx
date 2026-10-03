@@ -311,7 +311,7 @@ describe('SurveyResults', () => {
         ).toBeNull();
     });
 
-    it('shows a closed survey with its export and reopening to an editor', () => {
+    it('shows a closed survey with its export, and reopening in the "…" menu of an editor', () => {
         renderWithProviders(
             <SurveyResults
                 initial={surveySnapshot({
@@ -329,7 +329,10 @@ describe('SurveyResults', () => {
                 .getByRole('link', { name: 'Export CSV' })
                 .getAttribute('href'),
         ).toBe('/surveys/survey-1/export');
-        expect(screen.getByRole('button', { name: 'Reopen' })).not.toBeNull();
+        expect(screen.queryByRole('button', { name: 'Reopen' })).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'More actions' }),
+        ).not.toBeNull();
     });
 
     it('gives a guest its own main, without the compare tab', () => {
@@ -350,10 +353,12 @@ describe('SurveyResults', () => {
         expect(screen.getByRole('main', { name: 'Results' })).not.toBeNull();
         expect(screen.queryByRole('tab', { name: 'Compare' })).toBeNull();
         expect(screen.getByText('Open')).not.toBeNull();
-        expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Share with the team' }),
+        ).toBeNull();
     });
 
-    it('puts Share in the header of a member, opening the Share dialog', () => {
+    it('puts "Share with the team" in the header of a member, opening the Share dialog', () => {
         renderWithProviders(
             <SurveyResults
                 initial={surveySnapshot()}
@@ -369,19 +374,22 @@ describe('SurveyResults', () => {
         fireEvent.click(
             within(
                 document.querySelector('[data-test="topbar"]') as HTMLElement,
-            ).getByRole('button', { name: 'Share' }),
+            ).getByRole('button', { name: 'Share with the team' }),
         );
 
         expect(screen.getByRole('dialog')).not.toBeNull();
     });
 
-    it('hands its header to the layout of a member', () => {
+    it('hands its status and its actions to the layout of a member', () => {
         renderWithProviders(
             <SurveyResults
                 initial={surveySnapshot()}
-                layout={({ actions, children }) => (
+                layout={({ status, actions, children }) => (
                     <>
-                        <header data-test="topbar">{actions}</header>
+                        <header data-test="topbar">
+                            <span data-test="status">{status}</span>
+                            {actions}
+                        </header>
                         {children}
                     </>
                 )}
@@ -393,6 +401,9 @@ describe('SurveyResults', () => {
                 document.querySelector('[data-test="topbar"]') as HTMLElement,
             ).getByRole('button', { name: 'Close the survey' }),
         ).not.toBeNull();
+        expect(
+            document.querySelector('[data-test="status"]')?.textContent,
+        ).toBe('Open');
     });
 
     it('closes through the API, then reads the closed survey', async () => {
