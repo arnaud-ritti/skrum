@@ -65,7 +65,15 @@ class PokerTaskSync
     }
 
     /**
-     * @return array<string, array{connected: bool, canWrite: bool}|null>
+     * The connections as the room shows them: the facilitator's write-back
+     * setting needs the Jira fields an estimate can go to.
+     *
+     * @return array<string, array{
+     *     connected: bool,
+     *     canWrite: bool,
+     *     estimateFields: list<array{id: string, name: string}>,
+     *     defaultEstimateFieldId: ?string
+     * }|null>
      */
     public function summary(): array
     {
@@ -77,6 +85,8 @@ class PokerTaskSync
             $summary[$provider->value] = $provider->isEnabled() ? [
                 'connected' => $integration?->isActive() ?? false,
                 'canWrite' => $integration?->canWrite() ?? false,
+                'estimateFields' => $integration === null ? [] : ListPokerSources::estimateFields($integration),
+                'defaultEstimateFieldId' => $integration === null ? null : ListPokerSources::defaultEstimateFieldId($integration),
             ] : null;
         }
 

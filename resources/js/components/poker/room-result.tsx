@@ -2,7 +2,11 @@ import { usePage } from '@inertiajs/react';
 import { PokerResultBar } from '@/components/skrum/poker-result-bar';
 import type { PokerResultLayout } from '@/components/skrum/poker-result-bar';
 import { useTrans } from '@/hooks/use-trans';
-import { seatsFrom, storyFrom } from '@/lib/poker/room-adapters';
+import {
+    acceptsCardAfterReveal,
+    seatsFrom,
+    storyFrom,
+} from '@/lib/poker/room-adapters';
 import { useGame } from './game-context';
 import type { RoundActions } from './use-round-actions';
 
@@ -61,6 +65,8 @@ export function RoomResult({ layout, actions, className }: Props) {
                         <strong className="font-semibold text-foreground">
                             {round.myVote}
                         </strong>
+                        {acceptsCardAfterReveal(snapshot) &&
+                            ` — ${t('you can still change it until the estimate is saved.')}`}
                     </span>
                 ) : undefined
             }

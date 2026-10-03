@@ -286,7 +286,12 @@ describe('TaskQueue, adding', () => {
             <TaskQueue />,
             pokerSnapshot({
                 integrations: {
-                    jira: { connected: true, canWrite: true },
+                    jira: {
+                        connected: true,
+                        canWrite: true,
+                        estimateFields: [],
+                        defaultEstimateFieldId: null,
+                    },
                     linear: null,
                     jira_dc: null,
                     github: null,

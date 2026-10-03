@@ -64,6 +64,7 @@ export function TeamNewSessionDialog({
                           deckOptions: options.pokerDeckOptions,
                           savedDecks: options.pokerDecks,
                           defaultPokerDeck: options.defaultPokerDeck,
+                          pokerSources: options.pokerSources,
                       })
                     : undefined
             }

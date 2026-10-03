@@ -1,9 +1,11 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
 import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import type { PokerSessionFormProps } from '@/components/teams/session-create/poker-session-fields';
 import { Button } from '@/components/ui/button';
+import type { PokerTrackerSourceRow } from '@/lib/poker/types';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({ post: vi.fn(), reload: vi.fn() }));
@@ -115,6 +117,13 @@ function typeCards(value: string): void {
     });
 }
 
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
+
 beforeEach(() => {
     mocks.post.mockReset();
     mocks.reload.mockReset();
@@ -206,6 +215,8 @@ describe('the poker form', () => {
             deck: 'fibonacci',
             auto_reveal: false,
             spectator: false,
+            task_timer_seconds: null,
+            revote_after_reveal: false,
             guest_access_enabled: false,
         });
     });
@@ -482,5 +493,189 @@ describe('the poker form', () => {
         });
 
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+});
+
+function trackerSource(
+    overrides: Partial<PokerTrackerSourceRow> = {},
+): PokerTrackerSourceRow {
+    return {
+        source: 'jira',
+        siteName: 'Acme',
+        status: 'active',
+        access: 'write',
+        canImport: true,
+        canWriteBack: true,
+        writeBackUnavailableReason: null,
+        canSyncStatus: false,
+        syncMode: 'off',
+        estimateFields: [
+            { id: 'customfield_10016', name: 'Story point estimate' },
+            { id: 'customfield_10020', name: 'Size' },
+        ],
+        defaultEstimateFieldId: 'customfield_10016',
+        ...overrides,
+    };
+}
+
+async function choose(name: string, option: string): Promise<void> {
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('combobox', { name }));
+    await user.click(screen.getByRole('option', { name: option }));
+}
+
+function settingLabels(): (string | null)[] {
+    return Array.from(
+        document.querySelectorAll('[data-slot="setting-row"] label'),
+    ).map((label) => label.textContent);
+}
+
+describe('the poker form, the game settings', () => {
+    it('lists the settings in the mockup order and sends the timer and the revote switch', async () => {
+        const dialog = open({ pokerSources: [trackerSource()] });
+
+        expect(settingLabels()).toEqual([
+            'Auto reveal',
+            'Facilitator in “Watch only”',
+            'Timer per task',
+            'Change vote after reveal',
+            'Write estimates to Jira',
+            'Anonymous guests allowed',
+        ]);
+        expect(
+            document.querySelector('#new-poker-task-timer')?.textContent,
+        ).toBe('Off');
+        expect(
+            document
+                .querySelector('#new-poker-revote')
+                ?.getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(
+            document.querySelector('#new-poker-write-back')?.textContent,
+        ).toBe('Story point estimate');
+        expect(within(dialog).getByRole('note').textContent).toBe(
+            'Estimates are written to Jira when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.',
+        );
+
+        await choose('Timer per task', '3 minutes');
+        fireEvent.click(screen.getByLabelText('Change vote after reveal'));
+        await choose('Write estimates to Jira', 'Size');
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({
+            task_timer_seconds: 180,
+            revote_after_reveal: true,
+            writes_estimates: true,
+            estimate_field_id: 'customfield_10020',
+        });
+    });
+
+    it('offers each delay of the list', async () => {
+        open();
+
+        await userEvent
+            .setup()
+            .click(screen.getByRole('combobox', { name: 'Timer per task' }));
+
+        expect(
+            screen.getAllByRole('option').map((option) => option.textContent),
+        ).toEqual(['Off', '1 minute', '3 minutes', '5 minutes', '10 minutes']);
+    });
+
+    it('sends the connection field by default, and nothing with "Don\'t write"', async () => {
+        const dialog = open({ pokerSources: [trackerSource()] });
+
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({
+            writes_estimates: true,
+            estimate_field_id: 'customfield_10016',
+        });
+
+        await choose('Write estimates to Jira', "Don't write");
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({
+            writes_estimates: false,
+            estimate_field_id: null,
+        });
+    });
+
+    it('has no write row and no note without a source that can write', () => {
+        const dialog = open({
+            pokerSources: [
+                trackerSource({
+                    canWriteBack: false,
+                    writeBackUnavailableReason: 'Read-only.',
+                }),
+            ],
+        });
+
+        expect(document.querySelector('#new-poker-write-back')).toBeNull();
+        expect(within(dialog).queryByRole('note')).toBeNull();
+
+        submit(dialog);
+
+        expect(lastPost()[1]).not.toHaveProperty('writes_estimates');
+        expect(lastPost()[1]).not.toHaveProperty('estimate_field_id');
+    });
+
+    it('offers "Write" and "Don\'t write" only for Linear, the first source that can write', async () => {
+        const dialog = open({
+            pokerSources: [
+                trackerSource({ canWriteBack: false }),
+                trackerSource({
+                    source: 'linear',
+                    estimateFields: [],
+                    defaultEstimateFieldId: null,
+                }),
+            ],
+        });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Write estimates to Linear' })
+                .textContent,
+        ).toBe('Write');
+
+        await userEvent.setup().click(
+            screen.getByRole('combobox', {
+                name: 'Write estimates to Linear',
+            }),
+        );
+
+        expect(
+            screen.getAllByRole('option').map((option) => option.textContent),
+        ).toEqual(["Don't write", 'Write']);
+
+        await userEvent
+            .setup()
+            .click(screen.getByRole('option', { name: 'Write' }));
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({
+            writes_estimates: true,
+            estimate_field_id: null,
+        });
+    });
+
+    it('shows the server errors under their rows', () => {
+        const dialog = open({ pokerSources: [trackerSource()] });
+
+        submit(dialog);
+
+        act(() => {
+            lastPost()[2].onError?.({
+                task_timer_seconds: 'The selected task timer is invalid.',
+                estimate_field_id: 'The selected field is invalid.',
+            });
+        });
+
+        expect(
+            document.getElementById('new-poker-task-timer-error')?.textContent,
+        ).toBe('The selected task timer is invalid.');
+        expect(
+            document.getElementById('new-poker-write-back-error')?.textContent,
+        ).toBe('The selected field is invalid.');
     });
 });

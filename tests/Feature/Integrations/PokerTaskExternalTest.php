@@ -37,7 +37,12 @@ it('shows the full external object and the connections to non-guest players', fu
         'syncMode' => 'off',
         'isManaged' => true,
     ])
-        ->and($response->json('integrations'))->toBe(['jira' => ['connected' => true, 'canWrite' => true], 'linear' => null, 'jira_dc' => null, 'github' => null])
+        ->and($response->json('integrations'))->toBe([
+            'jira' => ['connected' => true, 'canWrite' => true, 'estimateFields' => [['id' => 'customfield_10016', 'name' => 'Story point estimate']], 'defaultEstimateFieldId' => 'customfield_10016'],
+            'linear' => null,
+            'jira_dc' => null,
+            'github' => null,
+        ])
         ->and($response->json('tasks.0.external.syncState'))->toBe('synced');
 });
 

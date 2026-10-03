@@ -5,7 +5,8 @@ import {
     waitFor,
     within,
 } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     CustomTimerDialog,
     GameSettings,
@@ -107,6 +108,13 @@ const teamScale = {
     cards: ['1', '2', '4'],
     scope: 'team' as const,
 };
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     mocks.request.mockReset();
@@ -333,6 +341,167 @@ describe('game settings', () => {
             (screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement)
                 .disabled,
         ).toBe(true);
+    });
+});
+
+const jiraConnected = {
+    jira: {
+        connected: true,
+        canWrite: true,
+        estimateFields: [
+            { id: 'customfield_10016', name: 'Story point estimate' },
+            { id: 'customfield_10020', name: 'Size' },
+        ],
+        defaultEstimateFieldId: 'customfield_10016',
+    },
+    linear: null,
+    jira_dc: null,
+    github: null,
+};
+
+async function pick(trigger: Element, option: string): Promise<void> {
+    const user = userEvent.setup();
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('option', { name: option }));
+}
+
+describe('game settings, the round options', () => {
+    it('gives the facilitator the task timer, the change after reveal and the write-back, and sends them', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: { hasVotes: true, estimateFieldId: 'customfield_10020' },
+                integrations: jiraConnected,
+            }),
+        );
+
+        expect(within(dialog).getByText('Timer per task')).toBeTruthy();
+        expect(
+            within(dialog).getByText('Change vote after reveal'),
+        ).toBeTruthy();
+        expect(
+            within(dialog).getByText('Write estimates to Jira'),
+        ).toBeTruthy();
+        expect(dialog.querySelector('#poker-task-timer')?.textContent).toBe(
+            'Off',
+        );
+        expect(
+            dialog.querySelector('#poker-revote')?.getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(dialog.querySelector('#poker-write-back')?.textContent).toBe(
+            'Size',
+        );
+
+        await pick(dialog.querySelector('#poker-task-timer')!, '5 minutes');
+        fireEvent.click(dialog.querySelector('#poker-revote')!);
+        await pick(dialog.querySelector('#poker-write-back')!, "Don't write");
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Apply (3)' }));
+        });
+
+        expect(sent()).toEqual([
+            {
+                route: 'PATCH /poker/game-1/settings',
+                body: {
+                    task_timer_seconds: 300,
+                    revote_after_reveal: true,
+                    writes_estimates: false,
+                    estimate_field_id: null,
+                },
+            },
+        ]);
+    });
+
+    it('turns the task timer off and writes to the chosen field', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: {
+                    hasVotes: true,
+                    taskTimerSeconds: 180,
+                    writesEstimates: false,
+                },
+                integrations: jiraConnected,
+            }),
+        );
+
+        expect(dialog.querySelector('#poker-task-timer')?.textContent).toBe(
+            '3 minutes',
+        );
+        expect(dialog.querySelector('#poker-write-back')?.textContent).toBe(
+            "Don't write",
+        );
+
+        await pick(dialog.querySelector('#poker-task-timer')!, 'Off');
+        await pick(dialog.querySelector('#poker-write-back')!, 'Size');
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Apply (2)' }));
+        });
+
+        expect(sent()[0].body).toEqual({
+            task_timer_seconds: null,
+            writes_estimates: true,
+            estimate_field_id: 'customfield_10020',
+        });
+    });
+
+    it('has no write-back row without a tracker that can write', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: { hasVotes: true },
+                integrations: {
+                    ...jiraConnected,
+                    jira: { ...jiraConnected.jira, canWrite: false },
+                },
+            }),
+        );
+
+        expect(dialog.querySelector('#poker-task-timer')).not.toBeNull();
+        expect(dialog.querySelector('#poker-write-back')).toBeNull();
+        expect(within(dialog).queryByText(/Write estimates/)).toBeNull();
+    });
+
+    it('shows a refused field under the write-back row', async () => {
+        mocks.request.mockRejectedValue(
+            new RetroRequestError(422, 'The selected field is invalid.', {
+                estimate_field_id: ['The selected field is invalid.'],
+            }),
+        );
+
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: { hasVotes: true },
+                integrations: jiraConnected,
+            }),
+            { handleError: (error) => (error as Error).message },
+        );
+
+        await pick(dialog.querySelector('#poker-write-back')!, 'Size');
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Apply (1)' }));
+        });
+
+        expect(
+            within(dialog).getAllByText('The selected field is invalid.'),
+        ).toHaveLength(1);
+    });
+
+    it('shows none of them to a player who does not facilitate', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: { revoteAfterReveal: true, taskTimerSeconds: 60 },
+                me: { isFacilitator: false, playerId: 'bob' },
+                integrations: jiraConnected,
+            }),
+        );
+
+        expect(within(dialog).queryByText('Timer per task')).toBeNull();
+        expect(
+            within(dialog).queryByText('Change vote after reveal'),
+        ).toBeNull();
+        expect(within(dialog).queryByText(/Write estimates/)).toBeNull();
     });
 });
 

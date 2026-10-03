@@ -5137,5 +5137,15 @@
     "Timer per phase": "Minuteur par phase",
     "Offered to the facilitator, never started by itself": "Proposé au facilitateur, jamais lancé tout seul",
     "Custom (5 phases)": "Personnalisé (5 phases)",
-    "Minutes, 0 for off": "Minutes, 0 pour désactiver"
+    "Minutes, 0 for off": "Minutes, 0 pour désactiver",
+    "1 minute": "1 minute",
+    "Timer per task": "Minuteur par tâche",
+    "Nudges after the delay": "Relance une fois le délai écoulé",
+    "Change vote after reveal": "Changer de vote après la révélation",
+    "Before the estimate is saved": "Tant que l'estimation n'est pas enregistrée",
+    "Write estimates to :source": "Écrire les estimations dans :source",
+    "Field used for the estimate": "Champ utilisé pour l'estimation",
+    "Don't write": "Ne pas écrire",
+    "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Les estimations sont écrites dans :source quand le facilitateur clique sur « Enregistrer l'estimation ». Les tickets non sélectionnés restent dans le backlog.",
+    "you can still change it until the estimate is saved.": "tu peux encore la changer tant que l'estimation n'est pas enregistrée."
 }

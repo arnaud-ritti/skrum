@@ -471,6 +471,110 @@ describe('RoomDock, the facilitator', () => {
     });
 });
 
+describe('RoomDock, a card changed after the reveal', () => {
+    const revoting = (overrides: Parameters<typeof pokerSnapshot>[0] = {}) =>
+        pokerSnapshot({
+            game: { revoteAfterReveal: true },
+            current: { taskId: 't1', round: revealed },
+            ...overrides,
+        });
+
+    it('keeps the deck playable beside the result while the task has no estimate', async () => {
+        mocks.request.mockResolvedValue({
+            roundId: 'round-1',
+            myVote: '5',
+            votesCount: 2,
+            version: 2,
+            revealed: true,
+        });
+        const { container, ctx } = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            revoting({ me: { isFacilitator: false } }),
+        );
+
+        expect(
+            container.querySelector('[aria-labelledby="poker-result"]'),
+        ).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="poker-dock-status"]')
+                ?.textContent,
+        ).toBe(
+            'Your card · 8 — you can still change it until the estimate is saved.',
+        );
+
+        const card = screen.getByRole('button', { name: 'Play 5' });
+
+        expect(card).toHaveProperty('disabled', false);
+
+        await act(async () => {
+            fireEvent.click(card);
+        });
+
+        expect(mocks.request.mock.calls[0][0].method).toBe('put');
+        expect(mocks.request.mock.calls[0][1]).toEqual({ value: '5' });
+        expect(ctx.refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not withdraw the card after the reveal', async () => {
+        renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            revoting(),
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: /^Play 8/ }));
+        });
+
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
+    it('closes the deck without the setting, once the estimate is saved, and for a watcher', () => {
+        const without = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            revoting({ game: { revoteAfterReveal: false } }),
+        );
+
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        without.unmount();
+
+        const estimated = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            revoting({
+                tasks: [
+                    pokerTask('t1', 'Login page', {
+                        position: 1,
+                        estimate: '5',
+                        estimatedAt: '2026-10-02T09:02:00Z',
+                    }),
+                    pokerTask('t2', 'Password reset', { position: 2 }),
+                ],
+            }),
+        );
+
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        estimated.unmount();
+
+        renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            revoting({ me: { isSpectator: true, canVote: false } }),
+        );
+
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        expect(
+            screen.queryByRole('group', { name: 'Fibonacci deck' }),
+        ).toBeNull();
+    });
+
+    it('offers the whole deck on a phone after the reveal', () => {
+        renderInRoom(
+            <RoomDock actions={roundActions()} compact />,
+            revoting({ me: { isFacilitator: false } }),
+        );
+
+        expect(screen.getByRole('button', { name: 'All deck' })).toBeTruthy();
+    });
+});
+
 describe('RoomDock on a phone', () => {
     it('opens the whole deck in the vote drawer and plays the validated card', async () => {
         mocks.request.mockResolvedValue({

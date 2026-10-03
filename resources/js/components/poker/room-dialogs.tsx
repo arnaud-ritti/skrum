@@ -55,7 +55,17 @@ import {
     toCustomDeck,
     toDecks,
 } from '@/lib/poker/deck-adapter';
-import type { PokerTask } from '@/lib/poker/types';
+import {
+    taskTimerChoice,
+    taskTimerFromChoice,
+    taskTimerOptions,
+    writeBackChoice,
+    writeBackOptions,
+    writeBackPayload,
+} from '@/lib/poker/game-options';
+import type { WriteBackTarget } from '@/lib/poker/game-options';
+import { TrackerLabels, isPokerTrackerSource } from '@/lib/poker/types';
+import type { PokerSnapshot, PokerTask } from '@/lib/poker/types';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
 import { cn } from '@/lib/utils';
@@ -131,9 +141,72 @@ const SettingKeys = [
     'title',
     'auto_reveal',
     'anonymous_votes',
+    'task_timer_seconds',
+    'revote_after_reveal',
+    'writes_estimates',
+    'estimate_field_id',
     'cursors_enabled',
     'reactions_enabled',
 ];
+
+/** The popover's one "Write estimates" select stands for these two fields. */
+const WriteBackKey = 'write_back';
+
+/** The first connected tracker of the room that can take the estimates back. */
+function roomWriteBackTarget(
+    integrations: PokerSnapshot['integrations'],
+): WriteBackTarget | null {
+    if (integrations === null) {
+        return null;
+    }
+
+    for (const [source, connection] of Object.entries(integrations)) {
+        if (
+            isPokerTrackerSource(source) &&
+            connection !== null &&
+            connection.connected &&
+            connection.canWrite
+        ) {
+            return {
+                source,
+                estimateFields: connection.estimateFields,
+                defaultEstimateFieldId: connection.defaultEstimateFieldId,
+            };
+        }
+    }
+
+    return null;
+}
+
+/** The popover's values as the server takes them. */
+function settingsPayload(
+    settings: Partial<SessionSettingsValues>,
+): Record<string, unknown> {
+    const {
+        task_timer_seconds: taskTimer,
+        [WriteBackKey]: writeBack,
+        ...rest
+    } = settings;
+
+    return {
+        ...rest,
+        ...(typeof taskTimer === 'string'
+            ? { task_timer_seconds: taskTimerFromChoice(taskTimer) }
+            : {}),
+        ...(typeof writeBack === 'string' ? writeBackPayload(writeBack) : {}),
+    };
+}
+
+/** The server's messages, the two write-back fields under their one row. */
+function settingsErrors(
+    errors: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+    const writeBack = errors.estimate_field_id ?? errors.writes_estimates;
+
+    return writeBack === undefined
+        ? errors
+        : { ...errors, [WriteBackKey]: writeBack };
+}
 
 /** A message of the server is shown beside its field when the form has one for it. */
 function hasFieldFor(key: string): boolean {
@@ -353,7 +426,7 @@ export function GameSettings() {
     ): Promise<void> => {
         const { deck, ...settings } = patch;
         const changes: Record<string, unknown> = {
-            ...settings,
+            ...settingsPayload(settings),
             ...(typeof deck === 'string' ? deckPayloadOf(deck) : {}),
         };
 
@@ -393,7 +466,7 @@ export function GameSettings() {
                     ? firstErrors(caught.errors)
                     : {};
 
-            setErrors(fieldErrors);
+            setErrors(settingsErrors(fieldErrors));
 
             if (!Object.keys(fieldErrors).some(hasFieldFor)) {
                 setError(message);
@@ -417,6 +490,40 @@ export function GameSettings() {
     };
 
     const anonymous = draft.anonymous_votes ?? game.anonymousVotes;
+    const writeTarget = roomWriteBackTarget(ctx.snapshot.integrations);
+    const roundSettings: SessionSettingGroup['settings'] = readOnly
+        ? []
+        : [
+              {
+                  type: 'select',
+                  key: 'task_timer_seconds',
+                  id: 'poker-task-timer',
+                  label: t('Timer per task'),
+                  help: t('Nudges after the delay'),
+                  options: taskTimerOptions(t),
+              },
+              {
+                  type: 'switch',
+                  key: 'revote_after_reveal',
+                  id: 'poker-revote',
+                  label: t('Change vote after reveal'),
+                  help: t('Before the estimate is saved'),
+              },
+              ...(writeTarget === null
+                  ? []
+                  : [
+                        {
+                            type: 'select' as const,
+                            key: WriteBackKey,
+                            id: 'poker-write-back',
+                            label: t('Write estimates to :source', {
+                                source: TrackerLabels[writeTarget.source],
+                            }),
+                            help: t('Field used for the estimate'),
+                            options: writeBackOptions(writeTarget, t),
+                        },
+                    ]),
+          ];
     const groups: SessionSettingGroup[] = [
         {
             id: 'general',
@@ -460,6 +567,7 @@ export function GameSettings() {
                         .filter((sentence) => sentence !== null)
                         .join(' '),
                 },
+                ...roundSettings,
             ],
         },
         {
@@ -509,6 +617,17 @@ export function GameSettings() {
                 title: game.title,
                 auto_reveal: game.autoReveal,
                 anonymous_votes: game.anonymousVotes,
+                task_timer_seconds: taskTimerChoice(game.taskTimerSeconds),
+                revote_after_reveal: game.revoteAfterReveal,
+                ...(writeTarget === null
+                    ? {}
+                    : {
+                          [WriteBackKey]: writeBackChoice(
+                              writeTarget,
+                              game.writesEstimates,
+                              game.estimateFieldId,
+                          ),
+                      }),
                 cursors_enabled: game.cursorsEnabled,
                 reactions_enabled: game.reactionsEnabled,
                 deck: currentToken,

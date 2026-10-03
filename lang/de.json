@@ -5137,5 +5137,15 @@
     "Timer per phase": "Timer pro Phase",
     "Offered to the facilitator, never started by itself": "Wird der Moderation angeboten, startet nie von selbst",
     "Custom (5 phases)": "Benutzerdefiniert (5 Phasen)",
-    "Minutes, 0 for off": "Minuten, 0 für aus"
+    "Minutes, 0 for off": "Minuten, 0 für aus",
+    "1 minute": "1 Minute",
+    "Timer per task": "Timer pro Aufgabe",
+    "Nudges after the delay": "Erinnert nach Ablauf der Zeit",
+    "Change vote after reveal": "Stimme nach dem Aufdecken ändern",
+    "Before the estimate is saved": "Solange die Schätzung nicht gespeichert ist",
+    "Write estimates to :source": "Schätzungen in :source schreiben",
+    "Field used for the estimate": "Feld für die Schätzung",
+    "Don't write": "Nicht schreiben",
+    "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Die Schätzungen werden in :source geschrieben, wenn die Moderation auf „Schätzung speichern“ klickt. Nicht ausgewählte Tickets bleiben im Backlog.",
+    "you can still change it until the estimate is saved.": "du kannst sie noch ändern, bis die Schätzung gespeichert ist."
 }

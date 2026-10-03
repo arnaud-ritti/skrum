@@ -64,7 +64,13 @@ export type PokerTaskExternal = {
     syncMode?: 'webhook' | 'polling' | 'off';
 };
 
-type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
+type PokerTrackerConnection = {
+    connected: boolean;
+    canWrite: boolean;
+    /** Jira only: the number fields an estimate can be written to. */
+    estimateFields: { id: string; name: string }[];
+    defaultEstimateFieldId: string | null;
+};
 
 type PokerIntegrations = Record<
     PokerTrackerSource,

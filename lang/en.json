@@ -4917,5 +4917,15 @@
     "Timer per phase": "Timer per phase",
     "Offered to the facilitator, never started by itself": "Offered to the facilitator, never started by itself",
     "Custom (5 phases)": "Custom (5 phases)",
-    "Minutes, 0 for off": "Minutes, 0 for off"
+    "Minutes, 0 for off": "Minutes, 0 for off",
+    "1 minute": "1 minute",
+    "Timer per task": "Timer per task",
+    "Nudges after the delay": "Nudges after the delay",
+    "Change vote after reveal": "Change vote after reveal",
+    "Before the estimate is saved": "Before the estimate is saved",
+    "Write estimates to :source": "Write estimates to :source",
+    "Field used for the estimate": "Field used for the estimate",
+    "Don't write": "Don't write",
+    "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.": "Estimates are written to :source when the facilitator clicks “Save estimate”. Unselected tickets stay in the backlog.",
+    "you can still change it until the estimate is saved.": "you can still change it until the estimate is saved."
 }

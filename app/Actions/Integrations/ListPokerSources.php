@@ -56,8 +56,8 @@ class ListPokerSources
                 'writeBackUnavailableReason' => $reason,
                 'canSyncStatus' => $integration->isActive() && $integration->setting('statusSync') === true,
                 'syncMode' => $integration->inbound_mode->value,
-                'estimateFields' => $this->estimateFields($integration),
-                'defaultEstimateFieldId' => $this->defaultEstimateFieldId($integration),
+                'estimateFields' => self::estimateFields($integration),
+                'defaultEstimateFieldId' => self::defaultEstimateFieldId($integration),
             ];
         }
 
@@ -65,11 +65,14 @@ class ListPokerSources
     }
 
     /**
+     * The number fields of a Jira connection an estimate can be written to;
+     * none for the other trackers.
+     *
      * @return list<array{id: string, name: string}>
      */
-    private function estimateFields(TeamIntegration $integration): array
+    public static function estimateFields(TeamIntegration $integration): array
     {
-        if (! $this->isJira($integration)) {
+        if (! self::isJira($integration)) {
             return [];
         }
 
@@ -86,9 +89,9 @@ class ListPokerSources
         return $fields;
     }
 
-    private function defaultEstimateFieldId(TeamIntegration $integration): ?string
+    public static function defaultEstimateFieldId(TeamIntegration $integration): ?string
     {
-        if (! $this->isJira($integration)) {
+        if (! self::isJira($integration)) {
             return null;
         }
 
@@ -97,7 +100,7 @@ class ListPokerSources
         return is_string($id) ? $id : null;
     }
 
-    private function isJira(TeamIntegration $integration): bool
+    private static function isJira(TeamIntegration $integration): bool
     {
         return in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true);
     }
