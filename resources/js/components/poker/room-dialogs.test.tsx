@@ -569,7 +569,7 @@ describe('share', () => {
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
     });
 
-    it('shows the session code and where to enter it, and none to who has no link', async () => {
+    it('shows the session code and where to enter it', async () => {
         open(
             'share',
             pokerSnapshot({

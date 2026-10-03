@@ -87,7 +87,7 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
 
     const regenerate = async () => {
         const result = await ctx.run(
-            retroRequest<{ guestUrl: string | null; joinCode?: string }>(
+            retroRequest<{ guestUrl: string | null; joinCode: string | null }>(
                 GameGuestTokensController.store(room.id),
             ),
         );
