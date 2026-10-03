@@ -142,6 +142,7 @@ use App\Http\Controllers\Retros\SurveyDraftsController;
 use App\Http\Controllers\Retros\SurveyReactionsController;
 use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
+use App\Http\Controllers\Retros\VotingCompletionsController;
 use App\Http\Controllers\SearchResultsController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
@@ -498,6 +499,8 @@ Route::prefix('retros/{retro}')
         Route::post('group-name-suggestions', [GroupNameSuggestionsController::class, 'store'])->name('retros.group-name-suggestions.store');
         Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
+        Route::put('voting-completion', [VotingCompletionsController::class, 'update'])->name('retros.votingCompletion.update');
+        Route::delete('voting-completion', [VotingCompletionsController::class, 'destroy'])->name('retros.votingCompletion.destroy');
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
         Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy')->whereUuid('card');
         Route::post('cards/{card}/comments', [CardCommentsController::class, 'store'])->name('retros.cards.comments.store')->whereUuid('card');
