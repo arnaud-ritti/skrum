@@ -235,6 +235,8 @@ export type GameRound = {
     /** The secret word: only ever present for the round's leader, and in Draw & Guess for who found it. */
     word?: string;
     maxHints?: number;
+    /** Client only: the auto hints scheduled for the first word, kept after "New word". */
+    hintSlots?: number;
     guesses?: GameGuessEntry[];
     /** Hangman: the latest wrong whole-word guesses, oldest first. */
     wordGuesses?: GameWordGuess[];
@@ -299,6 +301,7 @@ export type GameRoundDetail = GameHistoryRound & {
     votes?: GameStatementVotes[];
     answered?: number;
     weather?: GameWeatherCount[] | null;
+    threshold?: number;
     drawn?: GameDrawnAnswer | null;
     nominations?: GameNomination[];
     finders?: GameFinder[];
@@ -326,6 +329,7 @@ export type GameRoundEnded = {
     votes?: GameStatementVotes[];
     answered?: number;
     weather?: GameWeatherCount[] | null;
+    threshold?: number;
     drawn?: GameDrawnAnswer | null;
     nominations?: GameNomination[];
     finders?: GameFinder[];

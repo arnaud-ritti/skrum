@@ -62,6 +62,17 @@ describe('AutoHintCountdown', () => {
         expect(screen.getByText('next letter now')).toBeTruthy();
     });
 
+    it('counts to the next slot after a new word, past two auto hints', () => {
+        renderCountdown({
+            startedAt: secondsAgo(45),
+            hintSlots: 4,
+            maxHints: 4,
+            mask: [null, null, null, null, null, null, null, null],
+        });
+
+        expect(screen.getByText('next letter in 0:15')).toBeTruthy();
+    });
+
     it('shows nothing without auto hints', () => {
         renderCountdown({ hintSeconds: null });
 

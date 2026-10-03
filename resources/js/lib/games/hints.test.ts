@@ -23,4 +23,44 @@ describe('nextAutoHintAt', () => {
     it('reveals nothing without an interval', () => {
         expect(nextAutoHintAt(startedAt, null, 0, 3)).toBeNull();
     });
+
+    describe('after a new word', () => {
+        const at = (seconds: number) => Date.parse(startedAt) + seconds * 1000;
+
+        it('waits for the next scheduled slot, not the first one', () => {
+            expect(
+                nextAutoHintAt(startedAt, 20, 0, 4, {
+                    hintSlots: 4,
+                    now: at(45),
+                }),
+            ).toBe(at(60));
+        });
+
+        it('counts from the letters shown when they are ahead of the clock', () => {
+            expect(
+                nextAutoHintAt(startedAt, 20, 3, 5, {
+                    hintSlots: 5,
+                    now: at(45),
+                }),
+            ).toBe(at(80));
+        });
+
+        it('reveals nothing more once the first word slots are spent', () => {
+            expect(
+                nextAutoHintAt(startedAt, 20, 1, 5, {
+                    hintSlots: 3,
+                    now: at(61),
+                }),
+            ).toBeNull();
+        });
+
+        it('reveals nothing more past the new word hints', () => {
+            expect(
+                nextAutoHintAt(startedAt, 20, 2, 2, {
+                    hintSlots: 4,
+                    now: at(45),
+                }),
+            ).toBeNull();
+        });
+    });
 });

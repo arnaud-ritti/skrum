@@ -149,12 +149,13 @@ function withClientRoundState(
         return fresh;
     }
 
-    const { committedOpIds, recentPicks, finders } = previous.round;
+    const { committedOpIds, recentPicks, finders, hintSlots } = previous.round;
 
     if (
         committedOpIds === undefined &&
         recentPicks === undefined &&
-        finders === undefined
+        finders === undefined &&
+        hintSlots === undefined
     ) {
         return fresh;
     }
@@ -164,6 +165,7 @@ function withClientRoundState(
         round: {
             ...fresh.round,
             ...(committedOpIds !== undefined ? { committedOpIds } : {}),
+            ...(hintSlots !== undefined ? { hintSlots } : {}),
             ...(recentPicks !== undefined &&
             fresh.round.recentPicks === undefined
                 ? { recentPicks }
@@ -579,6 +581,7 @@ export function roomReducer(
                 ...round,
                 mask: action.change.mask,
                 maxHints: action.change.maxHints,
+                hintSlots: round.hintSlots ?? round.maxHints,
                 drawing: [],
                 committedOpIds: [],
             }));

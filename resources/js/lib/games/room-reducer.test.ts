@@ -466,4 +466,30 @@ describe('roomReducer, Draw & Guess finders', () => {
             committedOpIds: [],
         });
     });
+
+    it('keeps the hint slots of the first word across new words', () => {
+        const change = (maxHints: number) => ({
+            type: 'word.changed' as const,
+            change: {
+                roundId: 'round-1',
+                mask: [null, null, null, null],
+                maxHints,
+            },
+        });
+        const first = roomReducer(
+            stateOf({ id: 'round-1', game: 'draw', mask: [], maxHints: 3 }),
+            change(2),
+        );
+        const second = roomReducer(first, change(5));
+
+        expect(first.snapshot.round?.hintSlots).toBe(3);
+        expect(second.snapshot.round?.hintSlots).toBe(3);
+
+        const refetched = roomReducer(second, {
+            type: 'replace',
+            snapshot: snapshot({ id: 'round-1', game: 'draw', maxHints: 5 }),
+        });
+
+        expect(refetched.snapshot.round?.hintSlots).toBe(3);
+    });
 });
