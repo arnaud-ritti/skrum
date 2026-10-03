@@ -9,6 +9,7 @@ function player(id: string): GamePlayer {
         name: id,
         avatarUrl: '',
         isGuest: false,
+        presence: 0,
     };
 }
 
