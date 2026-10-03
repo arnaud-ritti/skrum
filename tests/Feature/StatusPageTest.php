@@ -6,7 +6,7 @@ it('shows every component with its state in words, without a session', function 
     expect($response->headers->getCookies())->toBe([])
         ->and($response->headers->get('Cache-Control'))->toContain('no-store');
     $response->assertSee('lang="fr"', false)
-        ->assertSee('État de l’instance')
+        ->assertSee('État de l\'instance')
         ->assertSee('Base de données')
         ->assertSee('data-slot="status-component"', false)
         ->assertDontSee('<script', false);
