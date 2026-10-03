@@ -160,8 +160,8 @@ class CompareSurveys
         $values = match ($question->kind) {
             TeamSurveyQuestionKind::Scale => $this->scale($question, $match, $current, $other),
             TeamSurveyQuestionKind::Nps => [
-                'current' => ['nps' => $current['nps'], 'responses' => $current['responses']],
-                'other' => ['nps' => $other['nps'], 'responses' => $other['responses']],
+                'current' => ['nps' => $current['nps'], 'responses' => $current['responses'], 'shares' => $this->shares($current['buckets'])],
+                'other' => ['nps' => $other['nps'], 'responses' => $other['responses'], 'shares' => $this->shares($other['buckets'])],
                 'delta' => $current['nps'] === null || $other['nps'] === null ? null : $current['nps'] - $other['nps'],
             ],
             TeamSurveyQuestionKind::Single, TeamSurveyQuestionKind::Multiple => $this->choice($current, $other),
@@ -192,10 +192,28 @@ class CompareSurveys
         $otherMean = $this->onHealthScale($other['buckets'], (int) $match->scale_max);
 
         return [
-            'current' => ['mean' => $currentMean, 'responses' => $current['responses']],
-            'other' => ['mean' => $otherMean, 'responses' => $other['responses']],
+            'current' => ['mean' => $currentMean, 'responses' => $current['responses'], 'shares' => $this->shares($current['buckets'])],
+            'other' => ['mean' => $otherMean, 'responses' => $other['responses'], 'shares' => $this->shares($other['buckets'])],
             'delta' => $currentMean === null || $otherMean === null ? null : round($currentMean - $otherMean, 1),
         ];
+    }
+
+    /**
+     * The share of the answers that gave each value, so that the two surveys
+     * can be drawn in one chart however many answered each.
+     *
+     * @param  array<int, array{key: string, label: string, count: int}>  $buckets
+     * @return array<int, array{key: string, label: string, percent: int}>
+     */
+    private function shares(array $buckets): array
+    {
+        $answers = array_sum(array_column($buckets, 'count'));
+
+        return array_map(fn (array $bucket): array => [
+            'key' => $bucket['key'],
+            'label' => $bucket['label'],
+            'percent' => $answers === 0 ? 0 : (int) round($bucket['count'] / $answers * 100),
+        ], $buckets);
     }
 
     /**

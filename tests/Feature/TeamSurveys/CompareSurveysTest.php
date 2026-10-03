@@ -42,7 +42,9 @@ it('pairs questions by key, then by kind and label, and gives each difference', 
 
     expect($comparison['other'])->toMatchArray(['id' => $before->id, 'title' => 'Sprint 41'])
         ->and($comparison['belowThreshold'])->toBeFalse()
-        ->and($pairs['scale'])->toMatchArray(['label' => 'New wording', 'current' => ['mean' => 4.5, 'responses' => 2], 'other' => ['mean' => 3.0, 'responses' => 2], 'delta' => 1.5])
+        ->and($pairs['scale'])->toMatchArray(['label' => 'New wording', 'delta' => 1.5])
+        ->and($pairs['scale']['current'])->toMatchArray(['mean' => 4.5, 'responses' => 2])
+        ->and($pairs['scale']['other'])->toMatchArray(['mean' => 3.0, 'responses' => 2])
         ->and($pairs['nps']['delta'])->toBe(100)
         ->and($pairs['single']['delta'])->toBe([['optionId' => $ritual->options()->where('label', 'Retro')->value('id'), 'label' => 'Retro', 'delta' => 50]])
         ->and(array_column($pairs['single']['current']['options'], 'id'))->toBe($ritual->options()->orderBy('position')->pluck('id')->all())
@@ -59,9 +61,32 @@ it('compares a scale of ten with a scale of five on five, the old one read halve
 
     $pair = resolve(CompareSurveys::class)->handle($now, $before)['pairs'][0];
 
-    expect($pair['current'])->toBe(['mean' => 4.5, 'responses' => 2])
-        ->and($pair['other'])->toBe(['mean' => 3.8, 'responses' => 2])
-        ->and($pair['delta'])->toBe(0.7);
+    expect($pair['current'])->toMatchArray(['mean' => 4.5, 'responses' => 2])
+        ->and($pair['other'])->toMatchArray(['mean' => 3.8, 'responses' => 2])
+        ->and($pair['delta'])->toBe(0.7)
+        ->and($pair['current']['shares'])->toHaveCount(5)
+        ->and($pair['other']['shares'])->toHaveCount(10);
+});
+
+it('gives the share of each value of a scale and of an NPS on both sides, to draw them in one chart', function () {
+    $team = Team::factory()->create();
+    $before = closedSurvey($team, '2026-09-01 10:00:00');
+    $now = closedSurvey($team, '2026-10-01 10:00:00');
+    answeredBy(surveyQuestion($before, TeamSurveyQuestionKind::Scale, ['match_key' => 'workload']), [3, 3, 4, 5]);
+    answeredBy(surveyQuestion($now, TeamSurveyQuestionKind::Scale, ['match_key' => 'workload']), [4, 5]);
+    answeredBy(surveyQuestion($before, TeamSurveyQuestionKind::Nps, ['match_key' => 'nps']), [0, 10, 10]);
+    answeredBy(surveyQuestion($now, TeamSurveyQuestionKind::Nps, ['match_key' => 'nps']), [9]);
+
+    $pairs = collect(resolve(CompareSurveys::class)->handle($now, $before)['pairs'])->keyBy('kind');
+    $percents = fn (array $side): array => array_column($side['shares'], 'percent', 'key');
+
+    expect($percents($pairs['scale']['current']))->toBe(['1' => 0, '2' => 0, '3' => 0, '4' => 50, '5' => 50])
+        ->and($percents($pairs['scale']['other']))->toBe(['1' => 0, '2' => 0, '3' => 50, '4' => 25, '5' => 25])
+        ->and($pairs['scale']['current']['shares'][0])->toBe(['key' => '1', 'label' => '1', 'percent' => 0])
+        ->and($percents($pairs['nps']['current']))->toHaveCount(11)
+        ->and($percents($pairs['nps']['current'])['9'])->toBe(100)
+        ->and($percents($pairs['nps']['other'])['0'])->toBe(33)
+        ->and($percents($pairs['nps']['other'])['10'])->toBe(67);
 });
 
 it('compares with the source by default, and a health check with the team\'s previous closed health check', function () {
