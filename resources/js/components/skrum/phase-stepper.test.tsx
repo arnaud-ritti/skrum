@@ -14,7 +14,7 @@ function steps(optional = true): PhaseStep[] {
 
     return optional
         ? [
-              { id: 'health_check', label: 'Health check' },
+              { id: 'check_in', label: 'Check-in' },
               { id: 'icebreaker', label: 'Icebreaker' },
               ...base,
           ]
@@ -30,7 +30,7 @@ describe('PhaseStepper', () => {
         });
 
         expect(items).toHaveLength(6);
-        expect(items[0].textContent).toContain('Health check');
+        expect(items[0].textContent).toContain('Check-in');
         expect(items[4].querySelector('[aria-current="step"]')).not.toBeNull();
         expect(items[4].getAttribute('data-state')).toBe('current');
         expect(items[1].getAttribute('data-state')).toBe('done');
@@ -168,7 +168,7 @@ describe('PhaseStepper', () => {
             );
         }
 
-        expect(items[0].textContent).toContain('Health check');
+        expect(items[0].textContent).toContain('Check-in');
     });
 
     it('shows every label and the names of Previous and Next once the session header is wide enough for the full rail', () => {
