@@ -191,4 +191,16 @@ describe('ProfileCard', () => {
                 ?.textContent,
         ).toBe('coloursphoto');
     });
+
+    it('paints the avatar in the presence colour it is given', () => {
+        renderWithProviders(
+            <ProfileCard user={verified} mustVerifyEmail presence={4} />,
+        );
+
+        expect(
+            document
+                .querySelector('[data-slot="avatar-fallback"]')
+                ?.classList.contains('bg-skrum-presence-4'),
+        ).toBe(true);
+    });
 });

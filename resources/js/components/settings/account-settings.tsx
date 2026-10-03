@@ -12,6 +12,7 @@ import { DeleteAccountCard } from '@/components/settings/delete-account-card';
 import { NotificationsCard } from '@/components/settings/notifications-card';
 import type { NotificationPreferences } from '@/components/settings/notifications-card';
 import { PasswordGateProvider } from '@/components/settings/password-gate';
+import { PresenceColourPicker } from '@/components/settings/presence-colour-picker';
 import { ProfileCard } from '@/components/settings/profile-card';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
@@ -28,6 +29,7 @@ import {
 } from '@/components/settings/settings-shell';
 import type { SettingsSectionId } from '@/components/settings/settings-shell';
 import { useVisibleSection } from '@/components/settings/use-visible-section';
+import type { AvatarPresence } from '@/components/ui/avatar';
 import type {
     ApiToken,
     ApiTokenExpiration,
@@ -49,6 +51,8 @@ export type ProfileSettings = {
     avatarStyle: string | null;
     instanceAvatarStyle: string;
     avatarStyles: ProfileAvatarStyle[];
+    /** The chosen colour, or the one derived from the avatar seed: 1 to 12. */
+    presenceColor: number;
 };
 
 /** What the security section says about the account: sent only behind a confirmed password. */
@@ -214,6 +218,7 @@ export function AccountSettings({
     };
     const sections = SettingsSections.filter((section) => held[section]);
     const { current, select } = useVisibleSection(sections, page.url);
+    const [presence, setPresence] = useState(profile.presenceColor);
 
     return (
         <SettingsShell
@@ -231,6 +236,13 @@ export function AccountSettings({
                             user={auth.user}
                             mustVerifyEmail={profile.mustVerifyEmail}
                             status={profile.status ?? undefined}
+                            presence={presence as AvatarPresence}
+                            presenceColours={
+                                <PresenceColourPicker
+                                    value={presence}
+                                    onChange={setPresence}
+                                />
+                            }
                         />
                         <DeleteAccountCard />
                     </div>

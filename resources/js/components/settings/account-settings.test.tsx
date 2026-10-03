@@ -18,6 +18,9 @@ const seen = vi.hoisted(() => ({
     concealed: undefined as Record<string, unknown> | undefined,
     serverUrl: undefined as unknown,
     gate: undefined as Record<string, unknown> | undefined,
+    profile: undefined as
+        | { presence?: number; presenceColours?: ReactNode }
+        | undefined,
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -37,7 +40,14 @@ vi.mock('@/components/settings/password-gate', () => ({
     },
 }));
 vi.mock('@/components/settings/profile-card', () => ({
-    ProfileCard: () => <p>profile card</p>,
+    ProfileCard: (props: {
+        presence?: number;
+        presenceColours?: ReactNode;
+    }) => {
+        seen.profile = props;
+
+        return <p>profile card</p>;
+    },
 }));
 vi.mock('@/components/settings/delete-account-card', () => ({
     DeleteAccountCard: () => <p>delete account card</p>,
@@ -131,6 +141,7 @@ function unlocked(): AccountSettingsProps {
             avatarStyle: null,
             instanceAvatarStyle: 'thumbs',
             avatarStyles: [],
+            presenceColor: 7,
         },
         security: {
             passwordRules: 'minlength: 12;',
@@ -232,6 +243,7 @@ beforeEach(() => {
     seen.concealed = undefined;
     seen.serverUrl = undefined;
     seen.gate = undefined;
+    seen.profile = undefined;
     window.history.replaceState(null, '', '/settings');
     scrollIntoView.mockClear();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
@@ -275,6 +287,24 @@ describe('AccountSettings', () => {
         expect(cards('API tokens')).toBe(
             'create token formtoken listserver https://skrum.test/mcp',
         );
+    });
+
+    it('mounts the presence colour picker, the avatar following the choice before it is saved', () => {
+        renderWithProviders(<AccountSettings {...unlocked()} />);
+
+        expect(seen.profile?.presence).toBe(7);
+
+        renderWithProviders(<>{seen.profile?.presenceColours}</>);
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Colour 3' }));
+
+        expect(seen.profile?.presence).toBe(3);
     });
 
     it('hands the protected state to the cards once the server sent it', () => {
