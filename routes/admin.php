@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
+use App\Http\Controllers\Admin\McpKeysController;
 use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Controllers\Admin\UserDeactivationsController;
 use App\Http\Controllers\Admin\UsersController;
@@ -53,6 +54,11 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
             ->middleware(['throttle:60,1,adminCandidates', KeepFlashedSessionData::class])
             ->name('admin.adminCandidates.index');
+
+        Route::get('admin/mcp-keys', [McpKeysController::class, 'index'])->name('admin.mcpKeys.index');
+        Route::delete('admin/mcp-keys/{token}', [McpKeysController::class, 'destroy'])
+            ->whereUuid('token')
+            ->name('admin.mcpKeys.destroy');
 
         Route::get('admin/users', [UsersController::class, 'index'])->name('admin.users.index');
         Route::post('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'store'])

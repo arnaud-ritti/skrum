@@ -23,6 +23,7 @@ export type AdminSection =
     | 'general'
     | 'branding'
     | 'signIn'
+    | 'mcpKeys'
     | 'users'
     | 'admins';
 
