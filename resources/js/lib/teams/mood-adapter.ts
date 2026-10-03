@@ -50,7 +50,8 @@ export function toMoodPoints(
 
 /**
  * One point per retro that has a ROTI, in the order received (oldest first).
- * The product has no sprint number: the axis shows the day the retro closed.
+ * The axis names the sprint of each retro ("S35") when every one of them was
+ * created inside a sprint, the day it closed otherwise.
  */
 export function toRotiPoints(
     trend: TeamMoodPoint[],
@@ -60,21 +61,18 @@ export function toRotiPoints(
         day: 'numeric',
         month: 'short',
     });
+    const retros = trend.filter((retro) => retro.roti !== null);
+    const bySprint = retros.every((retro) => Boolean(retro.sprintLabel));
 
-    return trend.flatMap((retro) => {
-        if (retro.roti === null) {
-            return [];
-        }
-
-        return [
-            {
-                id: retro.retroId ?? retro.url,
-                label: day.format(new Date(retro.completedAt)),
-                title: retro.title,
-                mean: retro.roti,
-            },
-        ];
-    });
+    return retros.map((retro) => ({
+        id: retro.retroId ?? retro.url,
+        label:
+            bySprint && retro.sprintLabel
+                ? retro.sprintLabel
+                : day.format(new Date(retro.completedAt)),
+        title: retro.title,
+        mean: retro.roti ?? 0,
+    }));
 }
 
 /** Change of the last point since the one before it; null under two points. */

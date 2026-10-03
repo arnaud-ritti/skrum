@@ -11,11 +11,19 @@ import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
+import type { ActionItem } from '@/lib/retro/types';
+import { DEFAULT_STROKE, POSTIT } from '@/lib/whiteboard/palette';
+import type { PostItColor } from '@/lib/whiteboard/palette';
 import type {
     PokerGameSummary,
+    RecentSessionRow,
+    TeamActivityLine,
     TeamHealthStatement,
     TeamMember,
     TeamMoodPoint,
+    TeamRole,
+    WhiteboardPreview,
+    WhiteboardPreviewShape,
 } from '@/types';
 
 export const group: BenchGroup = 'layouts';
@@ -23,6 +31,43 @@ export const group: BenchGroup = 'layouts';
 function avatar(digit: string): string {
     return `/avatars/${digit.repeat(32)}.svg`;
 }
+
+const memberRoles: TeamRole[] = ['owner', 'facilitator', 'member', 'observer'];
+
+const sticky = (
+    x: number,
+    y: number,
+    color: PostItColor,
+): WhiteboardPreviewShape => ({
+    kind: 'rect',
+    x,
+    y,
+    width: 64,
+    height: 52,
+    fill: POSTIT[color].bg,
+    stroke: POSTIT[color].stroke,
+    points: [],
+});
+
+const boardPreview: WhiteboardPreview = {
+    width: 320,
+    height: 160,
+    shapes: [
+        sticky(20, 20, 'sun'),
+        sticky(110, 34, 'sky'),
+        sticky(200, 18, 'moss'),
+        {
+            kind: 'ellipse',
+            x: 214,
+            y: 100,
+            width: 72,
+            height: 36,
+            fill: null,
+            stroke: DEFAULT_STROKE,
+            points: [],
+        },
+    ],
+};
 
 /** Names, titles and labels come from the server, already in the user's language. */
 const members: TeamMember[] = [
@@ -40,6 +85,7 @@ const members: TeamMember[] = [
     name,
     email: `${name.toLowerCase().replaceAll(' ', '.')}@nordlys.example`,
     avatarUrl: avatar(index.toString()),
+    role: memberRoles[index] ?? 'member',
 }));
 
 const healthStatements: TeamHealthStatement[] = [
@@ -132,7 +178,142 @@ const moodTrend: TeamMoodPoint[] = [
     moodVoters: moodVoters ?? 0,
     roti,
     rotiVoters: rotiVoters ?? 0,
+    sprintLabel: `S${sprint}`,
 }));
+
+const recentSessions: RecentSessionRow[] = [
+    {
+        kind: 'poker',
+        id: 'game-1',
+        title: 'Sprint 43 refinement',
+        url: '/poker/game-1',
+        state: 'live',
+        updatedAt: minutesAgo(12),
+        participants: 8,
+        meta: { tasks: 6 },
+        outcome: null,
+    },
+    {
+        kind: 'retro',
+        id: 'retro-3',
+        title: 'Sprint 41 retrospective',
+        url: '/retros/retro-3',
+        state: 'finished',
+        updatedAt: '2026-09-18T10:00:00+00:00',
+        participants: 9,
+        meta: { phaseLabel: 'Completed', cards: 31 },
+        outcome: { kind: 'actions', count: 6 },
+    },
+    {
+        kind: 'survey',
+        id: 'survey-2',
+        title: 'Workload Q3',
+        url: '/surveys/survey-2',
+        state: 'finished',
+        updatedAt: '2026-09-16T10:00:00+00:00',
+        participants: 7,
+        meta: { questions: 5 },
+        outcome: { kind: 'answers', count: 7 },
+    },
+    {
+        kind: 'whiteboard',
+        id: 'board-1',
+        title: 'Invite flow — user journey',
+        url: '/whiteboards/board-1',
+        state: 'upcoming',
+        updatedAt: '2026-09-11T10:00:00+00:00',
+        participants: 5,
+        meta: { facilitatorName: 'Inès Benali' },
+        outcome: null,
+    },
+];
+
+const activity: TeamActivityLine[] = [
+    {
+        id: 'activity-1',
+        kind: 'action_item_completed',
+        actor: { name: 'Noa Kim', avatarUrl: avatar('6') },
+        subject: { title: 'Quarantine the flaky E2E tests', url: null },
+        at: minutesAgo(12),
+    },
+    {
+        id: 'activity-2',
+        kind: 'poker_started',
+        actor: { name: 'Camille Roux', avatarUrl: avatar('1') },
+        subject: { title: 'Sprint 43 refinement', url: '/poker/game-1' },
+        at: minutesAgo(34),
+    },
+    {
+        id: 'activity-3',
+        kind: 'action_item_completed',
+        actor: { name: 'Jira', avatarUrl: null },
+        subject: { title: 'Automate the release changelog', url: null },
+        at: minutesAgo(60 * 26),
+    },
+];
+
+function openItem(values: Partial<ActionItem>): ActionItem {
+    return {
+        id: 'item',
+        retroId: null,
+        teamId: 'atlas',
+        content: '',
+        priority: 'medium',
+        dueOn: null,
+        isOverdue: false,
+        status: 'open',
+        completedAt: null,
+        completedVia: null,
+        assignee: null,
+        createdBy: null,
+        isMine: false,
+        commentCount: 0,
+        source: null,
+        themeId: null,
+        themeName: null,
+        recurrence: null,
+        previousOccurrenceId: null,
+        subtasks: [],
+        createdAt: null,
+        externalLinks: null,
+        cardId: null,
+        ...values,
+    };
+}
+
+const openActionItems: ActionItem[] = [
+    openItem({
+        id: 'item-1',
+        content: 'Review the definition of ready with the PO',
+        priority: 'medium',
+        dueOn: '2026-09-29',
+        isOverdue: true,
+        assignee: {
+            id: 'member-0',
+            kind: 'member',
+            name: 'Arnaud Ritti',
+            avatarUrl: avatar('0'),
+            isTeamMember: true,
+        },
+        source: {
+            retroTitle: 'Sprint 41 retrospective',
+            retroCreatedAt: null,
+            retroUrl: '/retros/retro-3',
+        },
+    }),
+    openItem({
+        id: 'item-2',
+        content: 'Automate the release changelog',
+        priority: 'low',
+        dueOn: '2026-09-26',
+        isOverdue: true,
+        source: {
+            retroTitle: 'Sprint 40 retrospective',
+            retroCreatedAt: null,
+            retroUrl: '/retros/retro-4',
+        },
+    }),
+];
 
 const page: TeamPageProps = {
     workspace: { id: 'nordlys', name: 'Nordlys', slug: 'nordlys' },
@@ -159,7 +340,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
             viewerHasJoined: false,
-            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
+            stats: { participants: 8, cards: 23, groups: 0, actionItems: 0 },
         },
         {
             id: 'retro-2',
@@ -171,7 +352,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
             viewerHasJoined: true,
-            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
+            stats: { participants: 7, cards: 31, groups: 6, actionItems: 0 },
         },
         {
             id: 'retro-3',
@@ -183,7 +364,7 @@ const page: TeamPageProps = {
             facilitator: { name: 'Arnaud Ritti', avatarUrl: avatar('0') },
             rotiAverage: 4.1,
             viewerHasJoined: false,
-            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
+            stats: { participants: 8, cards: 27, groups: 5, actionItems: 4 },
         },
         {
             id: 'retro-4',
@@ -195,7 +376,7 @@ const page: TeamPageProps = {
             facilitator: null,
             rotiAverage: 3.8,
             viewerHasJoined: false,
-            stats: { participants: 0, cards: 0, groups: 0, actionItems: 0 },
+            stats: { participants: 9, cards: 31, groups: 7, actionItems: 6 },
         },
     ],
     templateCategories: [],
@@ -223,7 +404,7 @@ const page: TeamPageProps = {
             updatedAt: '2026-09-24T08:00:00+00:00',
             facilitatorName: 'Inès Benali',
             canDelete: true,
-            preview: null,
+            preview: boardPreview,
         },
         {
             id: 'board-2',
@@ -314,15 +495,28 @@ const page: TeamPageProps = {
     retroFacilitators: [],
     suggestedFacilitatorId: null,
     facilitatorRotation: false,
-    roleOptions: [],
+    roleOptions: [
+        { value: 'owner', label: 'Owner' },
+        { value: 'facilitator', label: 'Facilitator' },
+        { value: 'member', label: 'Member' },
+        { value: 'observer', label: 'Observer' },
+    ],
     viewerRole: 'owner',
     canManageRituals: true,
-    schedule: null,
-    hasSprints: false,
-    activity: [],
-    recentSessions: [],
-    openActionItems: [],
-    overdueActionItemCount: 0,
+    schedule: {
+        sprint: {
+            id: 'sprint-42',
+            number: 42,
+            startsOn: '2026-09-21',
+            endsOn: '2026-10-04',
+        },
+        nextRetro: { date: '2026-10-02', time: '14:00' },
+    },
+    hasSprints: true,
+    activity,
+    recentSessions,
+    openActionItems,
+    overdueActionItemCount: 2,
 };
 
 function Example({

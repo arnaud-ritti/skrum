@@ -5188,5 +5188,15 @@
     ":count estimated": ":count estimées",
     "created in :date": "créée en :date",
     "joined": "connectés",
-    "action items": "actions"
+    "action items": "actions",
+    "Observers cannot start sessions.": "Les observateurs ne peuvent pas lancer de session.",
+    "Add as": "Ajouter comme",
+    "Start the first sprint": "Lancer le premier sprint",
+    "Activity": "Activité",
+    "Nothing has happened in this team yet.": "Il ne s'est encore rien passé dans cette équipe.",
+    "Open action items": "Actions ouvertes",
+    "Gathered from every session of the team · overdue first.": "Agrégées depuis toutes les sessions de l'équipe · en retard d'abord.",
+    "See all": "Tout voir",
+    "All sessions": "Toutes les sessions",
+    "Session": "Session"
 }

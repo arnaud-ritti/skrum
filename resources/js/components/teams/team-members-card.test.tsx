@@ -1,6 +1,6 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
 import { renderWithProviders } from '@/test/render';
 import type { TeamMember } from '@/types';
@@ -90,6 +90,21 @@ function card(props: Partial<Parameters<typeof TeamMembersCard>[0]> = {}) {
         />,
     );
 }
+
+beforeAll(() => {
+    vi.stubGlobal(
+        'ResizeObserver',
+        class {
+            observe(): void {}
+            unobserve(): void {}
+            disconnect(): void {}
+        },
+    );
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     mocks.post.mockReset();
@@ -220,6 +235,60 @@ describe('the members card of a team', () => {
         expect(
             screen.getByRole('combobox', { name: 'Add a member' }),
         ).toBeTruthy();
+    });
+
+    it('adds the chosen person with the role picked in "Add as", Member by default', async () => {
+        const user = userEvent.setup();
+        const roleOptions = [
+            { value: 'owner', label: 'Owner' },
+            { value: 'facilitator', label: 'Facilitator' },
+            { value: 'member', label: 'Member' },
+            { value: 'observer', label: 'Observer' },
+        ] as const;
+
+        const { container } = card({ roleOptions: [...roleOptions] });
+        const role = screen.getByRole('combobox', { name: 'Add as' });
+
+        expect(role.id).toBe('add-member-role');
+        expect(role.textContent).toBe('Member');
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'Add a member' }),
+        );
+        await user.click(screen.getByRole('option', { name: 'Olga New' }));
+        await user.click(role);
+
+        expect(
+            screen.getAllByRole('option').map((option) => option.textContent),
+        ).toEqual(['Owner', 'Facilitator', 'Member', 'Observer']);
+
+        await user.click(screen.getByRole('option', { name: 'Facilitator' }));
+        await user.click(screen.getByRole('button', { name: 'Add' }));
+
+        expect(mocks.post).toHaveBeenCalledTimes(1);
+        expect(mocks.post.mock.calls[0][0]).toBe(
+            '/w/nordlys/teams/team-1/members',
+        );
+        expect(mocks.post.mock.calls[0][1]).toEqual({
+            user_id: 'user-20',
+            role: 'facilitator',
+        });
+        expect(container.querySelector('#add-member-role')).not.toBeNull();
+    });
+
+    it('posts no role when the viewer is given no role to choose', async () => {
+        const user = userEvent.setup();
+        card();
+
+        expect(screen.queryByRole('combobox', { name: 'Add as' })).toBeNull();
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'Add a member' }),
+        );
+        await user.click(screen.getByRole('option', { name: 'Olga New' }));
+        await user.click(screen.getByRole('button', { name: 'Add' }));
+
+        expect(mocks.post.mock.calls[0][1]).toEqual({ user_id: 'user-20' });
     });
 
     it('has no add form when nobody is left to add', () => {

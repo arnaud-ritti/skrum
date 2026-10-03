@@ -57,6 +57,43 @@ describe('the ROTI card of a team', () => {
         ).toBe('4.1 / 5');
     });
 
+    it('labels the points with their sprint when every point has one, and the badge "since" the first sprint', () => {
+        const { container } = renderWithProviders(
+            <TeamRotiCard
+                trend={[
+                    { ...trend[0], sprintLabel: 'S40' },
+                    trend[1],
+                    { ...trend[2], sprintLabel: 'S42' },
+                ]}
+            />,
+        );
+        const labels = Array.from(
+            container.querySelectorAll('[data-slot="roti-trend-label"]'),
+        ).map((label) => label.textContent);
+
+        expect(labels).toEqual(['S40', 'S42']);
+        expect(
+            container.querySelector('[data-slot="roti-trend-delta"]')
+                ?.textContent,
+        ).toBe('+0.9 since S40');
+    });
+
+    it('labels the points with the day the retro closed when one of them has no sprint', () => {
+        const { container } = renderWithProviders(
+            <TeamRotiCard
+                trend={[
+                    { ...trend[0], sprintLabel: 'S40' },
+                    { ...trend[2], sprintLabel: null },
+                ]}
+            />,
+        );
+        const labels = Array.from(
+            container.querySelectorAll('[data-slot="roti-trend-label"]'),
+        ).map((label) => label.textContent);
+
+        expect(labels).toEqual(['Aug 4', 'Sep 1']);
+    });
+
     it('says so for a team without a ROTI', () => {
         const { container } = renderWithProviders(
             <TeamRotiCard trend={[trend[1]]} />,

@@ -284,4 +284,6 @@ export type TeamMoodPoint = {
     moodVoters: number;
     roti: number | null;
     rotiVoters: number;
+    /** "S35": the sprint the retro was created in; null outside every sprint. */
+    sprintLabel?: string | null;
 };
