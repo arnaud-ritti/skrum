@@ -2,7 +2,6 @@ import { Link } from '@inertiajs/react';
 import {
     ArrowRight,
     ChartColumn,
-    Check,
     CircleAlert,
     Dices,
     Gamepad2,
@@ -13,9 +12,14 @@ import {
     VenetianMask,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Fragment, useId, useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
+import { Fragment, useId, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { LoadingButton } from '@/components/skrum/loading-button';
+import {
+    nextFreePresence,
+    PresenceNumbers,
+    PresenceSwatches,
+} from '@/components/skrum/presence-swatches';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
@@ -88,10 +92,6 @@ export type GuestJoinProps = {
 };
 
 const MaxNameLength = 50;
-const PresenceNumbers: AvatarPresence[] = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-];
-
 const kinds: Record<GuestJoinSessionKind, { icon: LucideIcon; tone: string }> =
     {
         retro: {
@@ -116,40 +116,6 @@ const kinds: Record<GuestJoinSessionKind, { icon: LucideIcon; tone: string }> =
         },
     };
 
-const swatchClasses: Record<AvatarPresence, string> = {
-    1: 'bg-skrum-presence-1 text-skrum-presence-1-foreground',
-    2: 'bg-skrum-presence-2 text-skrum-presence-2-foreground',
-    3: 'bg-skrum-presence-3 text-skrum-presence-3-foreground',
-    4: 'bg-skrum-presence-4 text-skrum-presence-4-foreground',
-    5: 'bg-skrum-presence-5 text-skrum-presence-5-foreground',
-    6: 'bg-skrum-presence-6 text-skrum-presence-6-foreground',
-    7: 'bg-skrum-presence-7 text-skrum-presence-7-foreground',
-    8: 'bg-skrum-presence-8 text-skrum-presence-8-foreground',
-    9: 'bg-skrum-presence-9 text-skrum-presence-9-foreground',
-    10: 'bg-skrum-presence-10 text-skrum-presence-10-foreground',
-    11: 'bg-skrum-presence-11 text-skrum-presence-11-foreground',
-    12: 'bg-skrum-presence-12 text-skrum-presence-12-foreground',
-};
-
-function nextFree(
-    from: number,
-    step: 1 | -1,
-    taken: number[],
-): AvatarPresence | null {
-    for (let offset = 1; offset <= PresenceNumbers.length; offset++) {
-        const index =
-            (from - 1 + step * offset + PresenceNumbers.length * 2) %
-            PresenceNumbers.length;
-        const candidate = PresenceNumbers[index];
-
-        if (!taken.includes(candidate)) {
-            return candidate;
-        }
-    }
-
-    return null;
-}
-
 export function GuestJoin({
     session,
     defaultName,
@@ -172,8 +138,6 @@ export function GuestJoin({
     const nameId = 'name';
     const helpId = `${ids}-help`;
     const errorId = `${ids}-error`;
-    const colorLabelId = `${ids}-colors`;
-    const swatchRefs = useRef<Partial<Record<number, HTMLButtonElement>>>({});
 
     const [name, setName] = useState(initialName);
     const [syncedInitialName, setSyncedInitialName] = useState(initialName);
@@ -192,7 +156,7 @@ export function GuestJoin({
 
     const showColors = takenColors !== undefined;
     const taken = takenColors ?? [];
-    const firstFree = nextFree(12, 1, taken);
+    const firstFree = nextFreePresence(12, 1, taken);
     const color =
         chosenColor !== null && !taken.includes(chosenColor)
             ? chosenColor
@@ -284,36 +248,6 @@ export function GuestJoin({
             },
             formData,
         );
-    };
-
-    const chooseColor = (value: AvatarPresence) => {
-        setChosenColor(value);
-        swatchRefs.current[value]?.focus();
-    };
-
-    const onSwatchKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-        if (color === null) {
-            return;
-        }
-
-        const step =
-            event.key === 'ArrowRight' || event.key === 'ArrowDown'
-                ? 1
-                : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-                  ? -1
-                  : null;
-
-        if (step === null) {
-            return;
-        }
-
-        event.preventDefault();
-
-        const target = nextFree(color, step, taken);
-
-        if (target !== null) {
-            chooseColor(target);
-        }
     };
 
     return (
@@ -422,65 +356,15 @@ export function GuestJoin({
 
                 {showColors && (
                     <div className="flex flex-col gap-2">
-                        <span id={colorLabelId} className="text-sm font-medium">
+                        <span aria-hidden className="text-sm font-medium">
                             {t('Avatar colour')}
                         </span>
-                        <div
-                            role="radiogroup"
-                            aria-labelledby={colorLabelId}
-                            className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] justify-items-center @sm:grid-cols-[repeat(auto-fill,minmax(2rem,1fr))]"
-                        >
-                            {PresenceNumbers.map((number) => {
-                                const isTaken = taken.includes(number);
-                                const isSelected = color === number;
-
-                                return (
-                                    <button
-                                        key={number}
-                                        ref={(element) => {
-                                            if (element) {
-                                                swatchRefs.current[number] =
-                                                    element;
-                                            }
-                                        }}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={isSelected}
-                                        aria-disabled={isTaken || undefined}
-                                        aria-label={
-                                            isTaken
-                                                ? t('Colour :number (taken)', {
-                                                      number,
-                                                  })
-                                                : t('Colour :number', {
-                                                      number,
-                                                  })
-                                        }
-                                        disabled={isTaken}
-                                        tabIndex={isSelected ? 0 : -1}
-                                        onClick={() => chooseColor(number)}
-                                        onKeyDown={onSwatchKeyDown}
-                                        className="group flex size-11 items-center justify-center rounded-full outline-none @sm:size-8"
-                                    >
-                                        <span
-                                            className={cn(
-                                                'flex size-6.5 items-center justify-center rounded-full transition-shadow duration-140 group-focus-visible:ring-2 group-focus-visible:ring-ring group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-card group-disabled:opacity-35 motion-reduce:transition-none',
-                                                swatchClasses[number],
-                                                isSelected &&
-                                                    'ring-2 ring-foreground ring-offset-2 ring-offset-card',
-                                            )}
-                                        >
-                                            {isSelected && (
-                                                <Check
-                                                    className="size-3.5"
-                                                    aria-hidden
-                                                />
-                                            )}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        <PresenceSwatches
+                            value={color}
+                            onChange={setChosenColor}
+                            taken={taken}
+                            label={t('Avatar colour')}
+                        />
                     </div>
                 )}
 
