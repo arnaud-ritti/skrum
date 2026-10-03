@@ -28,12 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function (): void {
             Route::group([], base_path('routes/webhooks.php'));
+            Route::group([], base_path('routes/status.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
 
         $middleware->replace(FrameworkTrustProxies::class, TrustProxies::class);
+
+        $middleware->preventRequestsDuringMaintenance(except: ['status']);
 
         $isInboundWebhook = fn (Request $request): bool => $request->is('integrations/webhooks/*');
 

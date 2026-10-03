@@ -4541,5 +4541,19 @@
     "Results, scale 1-5 as a histogram with its ends": "Ergebnisse, Skala 1-5 als Histogramm mit ihren Enden",
     "Share with the team": "Mit dem Team teilen",
     "Survey builder settings": "Einstellungen",
-    "Option": "Option"
+    "Option": "Option",
+    "All systems operational": "Alle Systeme funktionieren",
+    "Application": "Anwendung",
+    "Background jobs": "Hintergrundaufgaben",
+    "Cache": "Cache",
+    "Checked at :time UTC": "Geprüft um :time UTC",
+    "Database": "Datenbank",
+    "Degraded": "Eingeschränkt",
+    "Instance status": "Instanzstatus",
+    "Maintenance in progress": "Wartung läuft",
+    "Operational": "Betriebsbereit",
+    "Real time": "Echtzeit",
+    "Refresh": "Aktualisieren",
+    "Scheduled tasks": "Geplante Aufgaben",
+    "Some systems are degraded": "Einige Systeme sind eingeschränkt"
 }
