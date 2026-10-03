@@ -81,6 +81,7 @@ const base: WorkspaceOverviewProps = {
     adminsCount: 2,
     otherAdminName: 'Camille R',
     canManage: true,
+    canEditDetails: true,
 };
 
 function overview(
@@ -298,15 +299,62 @@ describe('WorkspaceOverview', () => {
         ).toBeTruthy();
     });
 
-    it('keeps a place for the description of a team', () => {
+    it('shows the description of a team on its tile', () => {
         overview({
-            slots: {
-                teamDescriptionFor: (shown) => (
-                    <span data-testid={`description-${shown.id}`}>squad</span>
-                ),
+            teams: [team('t1', 'Atlas', { description: 'Product squad' })],
+        });
+
+        expect(
+            document.querySelector('[data-slot="team-description"]')
+                ?.textContent,
+        ).toBe('Product squad');
+    });
+
+    it('shows the description of the workspace under the facts line', () => {
+        overview({
+            workspace: {
+                ...base.workspace,
+                description: 'Every product team of Nordlys',
             },
         });
 
-        expect(screen.getByTestId('description-t1').textContent).toBe('squad');
+        expect(
+            document.querySelector('[data-slot="workspace-description"]')
+                ?.textContent,
+        ).toBe('Every product team of Nordlys');
+    });
+
+    it('renders nothing under the facts line without a description', () => {
+        overview({ workspace: { ...base.workspace, description: null } });
+
+        expect(
+            document.querySelector('[data-slot="workspace-description"]'),
+        ).toBeNull();
+    });
+
+    it('opens the workspace dialog from the edit button of a manager', async () => {
+        overview();
+
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'Edit the workspace name and description',
+            }),
+        );
+
+        const dialog = screen.getByRole('dialog', { name: 'Workspace' });
+
+        expect(
+            (within(dialog).getByLabelText('Name') as HTMLInputElement).value,
+        ).toBe('Nordlys');
+    });
+
+    it('offers no edit button to a member', () => {
+        overview({ role: 'member', canManage: false, canEditDetails: false });
+
+        expect(
+            screen.queryByRole('button', {
+                name: 'Edit the workspace name and description',
+            }),
+        ).toBeNull();
     });
 });

@@ -264,6 +264,11 @@ export type WorkspaceTemplateSummary = {
     author: TemplateAuthor | null;
     /** Retros created from this template, in every team of the workspace. */
     usageCount: number;
+    visibility: TemplateVisibility;
+    /** The team of a team template. */
+    team: TeamSummary | null;
+    /** The viewer may edit and delete it. */
+    canManage: boolean;
     columns: TemplateColumn[];
 };
 

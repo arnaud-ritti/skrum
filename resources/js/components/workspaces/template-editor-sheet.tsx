@@ -6,6 +6,7 @@ import { TemplateEditor } from '@/components/skrum/template-editor';
 import type {
     TemplateDraft,
     TemplateEditorErrors,
+    TemplateTeamOption,
 } from '@/components/skrum/template-editor';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useTrans } from '@/hooks/use-trans';
@@ -41,6 +42,10 @@ type Props = {
     onDuplicate: (draft: TemplateDraft) => void;
     /** A new template is a team template of this team. */
     teamId?: string;
+    /** "Workspace" is disabled without it. */
+    canShareWorkspace?: boolean;
+    /** The teams the person may create team templates for. */
+    teams?: TemplateTeamOption[];
 };
 
 /** The template editor in a side sheet: full width on a phone. */
@@ -85,6 +90,8 @@ function EditorBody({
     onClose,
     onDuplicate,
     teamId,
+    canShareWorkspace,
+    teams,
 }: Props & { target: TemplateEditorTarget }) {
     const { t } = useTrans();
     const [draft, setDraft] = useState(target.draft);
@@ -178,6 +185,8 @@ function EditorBody({
             }}
             errors={errors}
             categories={categories}
+            canShareWorkspace={canShareWorkspace}
+            teams={teams}
             startFrom={builtIns.map((item) => ({
                 key: item.key,
                 name: item.name,

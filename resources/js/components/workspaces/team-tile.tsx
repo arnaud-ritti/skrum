@@ -1,6 +1,13 @@
 import { Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
-import { ArrowRight, CircleDot, Layers, ListChecks, Spade } from 'lucide-react';
+import {
+    ArrowRight,
+    CircleDot,
+    Layers,
+    ListChecks,
+    PenTool,
+    Spade,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
@@ -71,17 +78,9 @@ type TeamTileProps = {
     locale: string;
     /** The present, in milliseconds: the last retro is told from it. */
     now: number;
-    /** Place left (WS-1): the description of the team, under its name. */
-    description?: ReactNode;
 };
 
-export function TeamTile({
-    team,
-    href,
-    locale,
-    now,
-    description,
-}: TeamTileProps) {
+export function TeamTile({ team, href, locale, now }: TeamTileProps) {
     const { t } = useTrans();
     const { activity } = team;
 
@@ -93,6 +92,21 @@ export function TeamTile({
               : t(':count active poker games', {
                     count: activity.openPokerGames,
                 });
+
+    const whiteboards =
+        activity.whiteboardsEditedToday === 1
+            ? t('1 whiteboard edited today')
+            : t(':count whiteboards edited today', {
+                  count: activity.whiteboardsEditedToday,
+              });
+
+    const showsWhiteboards =
+        activity.openPokerGames === 0 && activity.whiteboardsEditedToday > 0;
+
+    const openRetroName =
+        activity.openRetroSprint === null
+            ? activity.openRetroTitle
+            : t('Sprint :number', { number: activity.openRetroSprint });
 
     const openItems =
         activity.openActionItems === 0
@@ -129,7 +143,14 @@ export function TeamTile({
                     <span className="truncate text-base font-title">
                         {team.name}
                     </span>
-                    {description}
+                    {team.description !== null && team.description !== '' && (
+                        <span
+                            data-slot="team-description"
+                            className="truncate text-xs text-muted-foreground"
+                        >
+                            {team.description}
+                        </span>
+                    )}
                 </span>
             </div>
             <ul
@@ -141,7 +162,7 @@ export function TeamTile({
                         <span className="font-semibold text-skrum-success-text">
                             {t('Retro in progress')}
                         </span>{' '}
-                        · {activity.openRetroTitle}
+                        · {openRetroName}
                     </ActivityLine>
                 )}
                 {activity.openRetroTitle === null && (
@@ -157,9 +178,16 @@ export function TeamTile({
                               })}
                     </ActivityLine>
                 )}
-                <ActivityLine icon={Spade} slot="team-poker">
-                    {pokerGames}
-                </ActivityLine>
+                {showsWhiteboards && (
+                    <ActivityLine icon={PenTool} slot="team-whiteboards">
+                        {whiteboards}
+                    </ActivityLine>
+                )}
+                {!showsWhiteboards && (
+                    <ActivityLine icon={Spade} slot="team-poker">
+                        {pokerGames}
+                    </ActivityLine>
+                )}
                 <ActivityLine icon={ListChecks} slot="team-actions">
                     {actionItems}
                 </ActivityLine>

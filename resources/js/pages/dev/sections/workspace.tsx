@@ -33,7 +33,7 @@ const teams: WorkspaceTeamTile[] = [
     {
         id: 'team-atlas',
         name: 'Atlas',
-        description: null,
+        description: 'Product squad · retro app',
         membersCount: 9,
         members: members(
             [
@@ -47,19 +47,19 @@ const teams: WorkspaceTeamTile[] = [
         ),
         isMember: true,
         activity: {
-            openRetroTitle: 'Sprint 42',
+            openRetroTitle: 'Sprint 42 retro',
             lastRetroAt: '2026-09-18T10:00:00+00:00',
             openPokerGames: 3,
             openActionItems: 7,
             overdueActionItems: 2,
-            openRetroSprint: null,
+            openRetroSprint: 42,
             whiteboardsEditedToday: 0,
         },
     },
     {
         id: 'team-borealis',
         name: 'Borealis',
-        description: null,
+        description: 'Platform & infrastructure',
         membersCount: 8,
         members: members(
             ['Bao Lin', 'Hugo Petit', 'Yuki Tanaka', 'Noa Kim', 'Zoé Petit'],
@@ -73,7 +73,7 @@ const teams: WorkspaceTeamTile[] = [
             openActionItems: 4,
             overdueActionItems: 0,
             openRetroSprint: null,
-            whiteboardsEditedToday: 0,
+            whiteboardsEditedToday: 1,
         },
     },
     {
@@ -95,7 +95,12 @@ const teams: WorkspaceTeamTile[] = [
     },
 ];
 
-const workspace = { id: 'workspace-nordlys', name: 'Nordlys', slug: 'nordlys' };
+const workspace = {
+    id: 'workspace-nordlys',
+    name: 'Nordlys',
+    slug: 'nordlys',
+    description: 'Every product team of Nordlys, from the app to the platform.',
+};
 
 const page: WorkspaceOverviewProps = {
     workspace,
@@ -104,6 +109,7 @@ const page: WorkspaceOverviewProps = {
     adminsCount: 2,
     otherAdminName: 'Camille Roux',
     canManage: true,
+    canEditDetails: true,
 };
 
 const longNames: WorkspaceOverviewProps = {
@@ -205,6 +211,9 @@ const templates: TemplatesPageProps = {
             category: 'essentials',
             author: author('Camille Roux', '4'),
             usageCount: 12,
+            visibility: 'workspace',
+            team: null,
+            canManage: true,
             columns: [
                 { title: 'Liked', description: null, color: 'moss' },
                 { title: 'Learned', description: null, color: 'sky' },
@@ -218,6 +227,9 @@ const templates: TemplatesPageProps = {
             category: 'essentials',
             author: author('Arnaud Ritti', '1'),
             usageCount: 9,
+            visibility: 'team',
+            team: { id: 'team-atlas', name: 'Atlas' },
+            canManage: true,
             columns: [
                 { title: 'Start', description: null, color: 'moss' },
                 { title: 'Stop', description: null, color: 'coral' },
@@ -230,6 +242,9 @@ const templates: TemplatesPageProps = {
             category: 'team_mood',
             author: author('Malik Kone', '6'),
             usageCount: 4,
+            visibility: 'personal',
+            team: null,
+            canManage: false,
             columns: [
                 { title: 'Mad', description: null, color: 'coral' },
                 { title: 'Sad', description: null, color: 'iris' },
@@ -242,6 +257,9 @@ const templates: TemplatesPageProps = {
             category: 'themed',
             author: null,
             usageCount: 2,
+            visibility: 'workspace',
+            team: null,
+            canManage: true,
             columns: [
                 { title: 'Wind', description: null, color: 'lagoon' },
                 { title: 'Anchors', description: null, color: 'apricot' },
@@ -276,6 +294,12 @@ const templates: TemplatesPageProps = {
     ],
     canCreatePokerDeck: true,
     canManage: true,
+    canCreate: true,
+    canShareWorkspace: true,
+    teamTemplateTeams: [
+        { id: 'team-atlas', name: 'Atlas' },
+        { id: 'team-borealis', name: 'Borealis' },
+    ],
     catalogue: [
         {
             key: 'went_well_to_improve_actions',
@@ -423,6 +447,7 @@ export default function WorkspaceSection() {
                     teams={teams.slice(0, 1)}
                     otherAdminName={null}
                     canManage={false}
+                    canEditDetails={false}
                     role="member"
                     now={Now}
                 />
@@ -450,6 +475,7 @@ export default function WorkspaceSection() {
                     teams={[]}
                     otherAdminName={null}
                     canManage={false}
+                    canEditDetails={false}
                     role="member"
                     now={Now}
                 />
@@ -511,8 +537,14 @@ export default function WorkspaceSection() {
                         ...deck,
                         canManage: false,
                     }))}
+                    templates={templates.templates.map((template) => ({
+                        ...template,
+                        canManage: template.visibility === 'personal',
+                    }))}
                     canCreatePokerDeck={false}
                     canManage={false}
+                    canShareWorkspace={false}
+                    teamTemplateTeams={[]}
                     team="team-atlas"
                 />
             </Example>

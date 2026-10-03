@@ -24,6 +24,9 @@ const template: WorkspaceTemplateSummary = {
     category: 'team_mood',
     author: { name: 'Ada Lovelace', avatarUrl: '' },
     usageCount: 3,
+    visibility: 'workspace',
+    team: null,
+    canManage: true,
     columns: [{ title: 'Energy', description: null, color: 'moss' }],
 };
 

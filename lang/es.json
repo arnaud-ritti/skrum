@@ -5244,5 +5244,10 @@
     "Sprint actions": "Acciones del sprint",
     "Sprints": "Sprints",
     "Start the next sprint": "Iniciar el siguiente sprint",
-    "The :count latest sprints are listed.": "Se muestran los :count últimos sprints."
+    "The :count latest sprints are listed.": "Se muestran los :count últimos sprints.",
+    "Team · :team": "Equipo · :team",
+    "Edit the workspace name and description": "Editar el nombre y la descripción del espacio de trabajo",
+    "The workspace address does not change.": "La dirección del espacio de trabajo no cambia.",
+    "1 whiteboard edited today": "1 pizarra editada hoy",
+    ":count whiteboards edited today": ":count pizarras editadas hoy"
 }
