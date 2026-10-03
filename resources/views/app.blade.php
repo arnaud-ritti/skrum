@@ -3,7 +3,7 @@
 @inject('brandAssets', 'App\Support\Branding\BrandAssets')
 @php($brandCss = $brandStyle->css())
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark', 'reduce-motion' => (bool) auth()->user()?->reduce_motion])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -4,6 +4,7 @@ use App\Http\Controllers\Settings\AccountSettingsController;
 use App\Http\Controllers\Settings\ApiTokensController;
 use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
+use App\Http\Controllers\Settings\MotionPreferencesController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -45,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');
 
     Route::patch('settings/shortcuts', [ShortcutPreferencesController::class, 'update'])->name('shortcutPreferences.update');
+    Route::patch('settings/motion', [MotionPreferencesController::class, 'update'])->name('motionPreferences.update');
 
     Route::middleware(EnsureMcpIsEnabled::class)->group(function (): void {
         Route::redirect('settings/api-tokens', '/settings#api-tokens')

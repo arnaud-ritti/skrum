@@ -50,7 +50,7 @@ it('shows every section on one page, and nothing the account settings protect, b
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/account')
             ->where('profile.mustVerifyEmail', true)
-            ->where('appearance', true)
+            ->where('appearance.reduceMotion', false)
             ->has('notificationPreferences.preferences')
             ->where('security.locked', true)
             ->where('security.protected', null)
