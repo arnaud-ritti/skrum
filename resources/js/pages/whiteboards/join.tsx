@@ -12,6 +12,8 @@ type Props =
           session: JoinSession;
           boardTitle: string;
           suggestedName: string;
+          takenColors?: number[];
+          suggestedPresence?: number | null;
       };
 
 export default function JoinWhiteboard(props: Props) {
@@ -40,6 +42,8 @@ export default function JoinWhiteboard(props: Props) {
                 session={props.session}
                 storeUrl={WhiteboardJoinsController.store.url(props.guestToken)}
                 suggestedName={props.suggestedName}
+                takenColors={props.takenColors}
+                suggestedPresence={props.suggestedPresence}
             />
         </>
     );

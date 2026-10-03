@@ -115,4 +115,38 @@ describe('retros/join page', () => {
         ).toBeTruthy();
         expect(document.querySelector('#name')).toBeNull();
     });
+    it('offers the colours left free, the suggested one first, and posts the colour', () => {
+        renderWithProviders(
+            <JoinRetro
+                isInvalid={false}
+                guestToken="tok-123"
+                retroTitle="Sprint 42 retro"
+                session={session}
+                suggestedName="Guest Gia"
+                takenColors={[2, 5]}
+                suggestedPresence={7}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 2 (taken)' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/join/tok-123',
+            { name: 'Guest Gia', presence: 7 },
+            expect.anything(),
+        );
+    });
 });

@@ -110,4 +110,37 @@ describe('games/join', () => {
         expect(document.querySelector('#name')).toBeNull();
         expect(headTitles).toEqual(['Join a game']);
     });
+    it('offers the colours left free, the suggested one first, and posts the colour', () => {
+        renderWithProviders(
+            <JoinGameRoom
+                isInvalid={false}
+                guestToken="abc"
+                session={session}
+                suggestedName="Happy Otter"
+                takenColors={[2, 5]}
+                suggestedPresence={7}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 2 (taken)' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/play/abc',
+            { name: 'Happy Otter', presence: 7 },
+            expect.anything(),
+        );
+    });
 });

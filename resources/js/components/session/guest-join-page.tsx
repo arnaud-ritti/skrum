@@ -35,6 +35,13 @@ type GuestJoinPageProps = {
      * draws another one on every visit, including the one after a refused join.
      */
     suggestedName?: string | null;
+    /**
+     * Colours already worn in the session (`PresentJoinSession::colours`).
+     * The colour picker is only shown when the page sends this list.
+     */
+    takenColors?: number[];
+    /** The visitor's own colour when it is still free. */
+    suggestedPresence?: number | null;
     /** Extra named controls, e.g. the poker `#spectator` switch. */
     children?: ReactNode;
     /** Extra fields of the POST body read from the form (`spectator`). */
@@ -68,6 +75,8 @@ export function GuestJoinPage({
     session,
     storeUrl,
     suggestedName,
+    takenColors,
+    suggestedPresence,
     children,
     extraFields = [],
 }: GuestJoinPageProps) {
@@ -95,7 +104,7 @@ export function GuestJoinPage({
         );
     }
 
-    const join: GuestJoinProps['onSubmit'] = ({ name }, formData) => {
+    const join: GuestJoinProps['onSubmit'] = ({ name, presence }, formData) => {
         const extras: Record<string, string> = {};
 
         for (const field of extraFields) {
@@ -108,7 +117,11 @@ export function GuestJoinPage({
 
         router.post(
             storeUrl,
-            { name, ...extras },
+            {
+                name,
+                ...(presence !== undefined ? { presence } : {}),
+                ...extras,
+            },
             {
                 onStart: () => setProcessing(true),
                 onFinish: () => setProcessing(false),
@@ -136,6 +149,9 @@ export function GuestJoinPage({
             <GuestJoin
                 session={toCardSession(kind, session)}
                 initialName={nickname}
+                takenColors={takenColors}
+                initialPresence={suggestedPresence ?? undefined}
+                swatchSize={isMobile ? 'lg' : 'md'}
                 onRandomName={drawName}
                 drawingName={drawingName}
                 error={nameError}

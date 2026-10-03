@@ -11,6 +11,8 @@ type Props =
           guestToken: string;
           session: GameJoinSession;
           suggestedName: string;
+          takenColors?: number[];
+          suggestedPresence?: number | null;
       };
 
 export default function JoinGameRoom(props: Props) {
@@ -31,6 +33,10 @@ export default function JoinGameRoom(props: Props) {
                         : GameJoinsController.store.url(props.guestToken)
                 }
                 suggestedName={props.isInvalid ? null : props.suggestedName}
+                takenColors={props.isInvalid ? undefined : props.takenColors}
+                suggestedPresence={
+                    props.isInvalid ? null : props.suggestedPresence
+                }
             />
         </>
     );

@@ -12,6 +12,8 @@ type Props =
           guestToken: string;
           session: JoinSession;
           suggestedName: string;
+          takenColors?: number[];
+          suggestedPresence?: number | null;
       };
 
 export default function JoinPokerGame(props: Props) {
@@ -36,6 +38,10 @@ export default function JoinPokerGame(props: Props) {
                         : PokerJoinsController.store.url(props.guestToken)
                 }
                 suggestedName={props.isInvalid ? null : props.suggestedName}
+                takenColors={props.isInvalid ? undefined : props.takenColors}
+                suggestedPresence={
+                    props.isInvalid ? null : props.suggestedPresence
+                }
                 extraFields={['spectator']}
             >
                 <Switch

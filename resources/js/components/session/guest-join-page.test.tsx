@@ -464,6 +464,117 @@ describe('GuestJoinPage', () => {
         ).toBe(true);
     });
 
+    it('offers the colours, disables the taken ones, selects the first free one and posts it', () => {
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Guest Gia"
+                takenColors={[1, 5]}
+            />,
+        );
+
+        expect(
+            screen.getByRole('radiogroup', { name: 'Avatar colour' }),
+        ).toBeTruthy();
+
+        for (const taken of [1, 5]) {
+            expect(
+                screen
+                    .getByRole('radio', { name: `Colour ${taken} (taken)` })
+                    .getAttribute('aria-disabled'),
+            ).toBe('true');
+        }
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 2' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/join/abc',
+            { name: 'Guest Gia', presence: 2 },
+            expect.anything(),
+        );
+    });
+
+    it('selects the suggested colour first and posts the one picked', () => {
+        renderWithProviders(
+            <GuestJoinPage
+                kind="poker"
+                invalidTitle="Join a planning poker game"
+                session={{ title: 'Sprint 12 estimates' }}
+                storeUrl="/poker/join/abc"
+                suggestedName="Guest Gia"
+                takenColors={[2, 5]}
+                suggestedPresence={7}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 7' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Colour 9' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/poker/join/abc',
+            { name: 'Guest Gia', presence: 9 },
+            expect.anything(),
+        );
+    });
+
+    it('offers no colour when the page sends no taken colours', () => {
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Guest Gia"
+            />,
+        );
+
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+    });
+
+    it('lays the colours out as a 6 × 2 grid of 48 px targets on a phone', () => {
+        isMobile.value = true;
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                takenColors={[]}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('radiogroup', { name: 'Avatar colour' })
+                .classList.contains('grid-cols-6'),
+        ).toBe(true);
+        expect(
+            screen
+                .getByRole('radio', { name: 'Colour 1' })
+                .classList.contains('size-12'),
+        ).toBe(true);
+    });
+
     it('shows one logo, the one of the frame, so a rebranded instance never shows the Skrüm mark in the card', () => {
         renderWithProviders(
             <GuestJoinPage
