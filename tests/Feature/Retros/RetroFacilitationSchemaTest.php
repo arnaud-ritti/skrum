@@ -150,6 +150,19 @@ it('hides the ROTI again when the phase is entered again', function () {
     expect($retro->fresh()->roti_revealed_at)->toBeNull();
 });
 
+it('hides the ROTI when the facilitator goes back from a revealed ROTI', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create(['roti_revealed_at' => now()]);
+    [, $participant] = retroMember($retro);
+
+    DB::transaction(fn () => resolve(ChangeRetroPhase::class)->handle(Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail(), RetroPhase::Actions));
+
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+
+    expect($retro->fresh()->roti_revealed_at)->toBeNull()
+        ->and($snapshot['roti']['revealed'])->toBeFalse()
+        ->and($snapshot['roti']['results'])->toBeNull();
+});
+
 it('clears every timer column when the retro is completed', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create(['timer_paused_seconds' => 60, 'topic_seconds' => 300, 'roti_revealed_at' => now()]);
 

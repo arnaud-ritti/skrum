@@ -106,7 +106,7 @@ class ChangeRetroPhase
             'timer_ends_at' => $isCompleting ? null : $locked->timer_ends_at,
             'timer_paused_seconds' => $isCompleting ? null : $locked->timer_paused_seconds,
             'topic_seconds' => $isCompleting ? null : $locked->topic_seconds,
-            'roti_revealed_at' => $phase === RetroPhase::Roti ? null : $locked->roti_revealed_at,
+            'roti_revealed_at' => $isCompleting ? $locked->roti_revealed_at : null,
         ]);
     }
 
