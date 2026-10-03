@@ -56,6 +56,14 @@ describe('ResultsSummary', () => {
         ).not.toBeNull();
     });
 
+    it('counts the answers of a text card in its header, as the other cards do', () => {
+        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+
+        expect(
+            within(card('A word for the team?')).getByText('7 responses'),
+        ).not.toBeNull();
+    });
+
     it('shows the first six text answers as tinted cards, marks the viewer own, and leads to all of them', () => {
         const onShowFreeText = vi.fn();
 

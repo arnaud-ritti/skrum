@@ -89,17 +89,18 @@ describe('surveyReducer', () => {
         expect(cleared.progress.responses).toBe(1);
     });
 
-    it('moves the counters from an event and keeps the audience', () => {
+    it('moves the counters and the audience from an event, as a whole', () => {
         const next = surveyReducer(snapshot(), {
             type: 'progress.set',
             responses: 7,
             completed: 5,
+            audience: 13,
         });
 
         expect(next.progress).toEqual({
             responses: 7,
             completed: 5,
-            audience: 11,
+            audience: 13,
         });
     });
 

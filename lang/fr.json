@@ -4453,5 +4453,8 @@
     "The comparison could not be loaded.": "La comparaison n'a pas pu être chargée.",
     "The other survey does not have enough answers.": "L'autre sondage n'a pas assez de réponses.",
     "higher": "en hausse",
-    "lower": "en baisse"
+    "lower": "en baisse",
+    "Close the survey": "Clôturer le sondage",
+    "Survey closed": "Clôturé",
+    "No option in common.": "Aucune option en commun."
 }

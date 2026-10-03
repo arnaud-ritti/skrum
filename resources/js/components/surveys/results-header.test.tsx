@@ -25,7 +25,9 @@ describe('ResultsHeader', () => {
         expect(screen.queryByRole('link', { name: 'Export CSV' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Reopen' })).toBeNull();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Close the survey' }),
+        );
 
         const dialog = await screen.findByRole('alertdialog');
 
@@ -37,7 +39,9 @@ describe('ResultsHeader', () => {
         ).not.toBeNull();
         expect(onSetStatus).not.toHaveBeenCalled();
 
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Close the survey' }),
+        );
 
         await waitFor(() => expect(onSetStatus).toHaveBeenCalledWith('closed'));
     });
@@ -55,10 +59,14 @@ describe('ResultsHeader', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Close the survey' }),
+        );
         const dialog = await screen.findByRole('alertdialog');
 
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Close the survey' }),
+        );
 
         expect(
             (await within(dialog).findByRole('alert')).textContent,
@@ -78,7 +86,9 @@ describe('ResultsHeader', () => {
             />,
         );
 
-        const badge = screen.getByText('Closed').closest('[data-slot="badge"]');
+        const badge = screen
+            .getByText('Survey closed')
+            .closest('[data-slot="badge"]');
 
         expect(badge?.querySelector('svg')).not.toBeNull();
         expect(
@@ -86,11 +96,38 @@ describe('ResultsHeader', () => {
                 .getByRole('link', { name: 'Export CSV' })
                 .getAttribute('href'),
         ).toBe(exportUrl);
-        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Close the survey' }),
+        ).toBeNull();
 
         fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
 
         await waitFor(() => expect(onSetStatus).toHaveBeenCalledWith('open'));
+    });
+
+    it('keeps the actions to their icons on a phone, under their full names, and the status in words', () => {
+        renderWithProviders(
+            <ResultsHeader
+                status="closed"
+                isEditor
+                canExport
+                exportUrl={exportUrl}
+                onSetStatus={vi.fn()}
+            />,
+        );
+
+        for (const action of [
+            screen.getByRole('link', { name: 'Export CSV' }),
+            screen.getByRole('button', { name: 'Reopen' }),
+        ]) {
+            expect(action.querySelector('span')?.className).toContain(
+                'max-md:sr-only',
+            );
+        }
+
+        expect(screen.getByText('Survey closed').className).not.toContain(
+            'sr-only',
+        );
     });
 
     it('gives a viewer who does not edit the status only', () => {
@@ -104,7 +141,7 @@ describe('ResultsHeader', () => {
             />,
         );
 
-        expect(screen.getByText('Closed')).not.toBeNull();
+        expect(screen.getByText('Survey closed')).not.toBeNull();
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.queryByRole('button')).toBeNull();
     });

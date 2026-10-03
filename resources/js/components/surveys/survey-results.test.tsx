@@ -193,6 +193,9 @@ describe('SurveyResults', () => {
                 url: '/surveys/survey-1/results?tab=free-text',
             }),
         );
+        expect(document.activeElement).toBe(
+            screen.getByRole('heading', { name: 'A word for the team?' }),
+        );
     });
 
     it('says nothing compares yet when no other survey is closed', () => {
@@ -207,6 +210,66 @@ describe('SurveyResults', () => {
         expect(screen.getByRole('tabpanel').textContent).toContain(
             'Nothing to compare with yet.',
         );
+    });
+
+    it('shows the threshold of this survey in the Compare tab, not a verdict on the other', () => {
+        window.history.replaceState(
+            null,
+            '',
+            '/surveys/survey-1/results?tab=compare',
+        );
+        api.comparison.mockResolvedValue({
+            comparison: { ...mockupComparison, belowThreshold: true },
+        });
+
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    progress: { responses: 1, completed: 1 },
+                    results: {
+                        belowThreshold: true,
+                        responses: 1,
+                        questions: {},
+                    },
+                    comparable: mockupComparable,
+                })}
+            />,
+        );
+
+        const panel = screen.getByRole('tabpanel');
+
+        expect(panel.textContent).toContain(
+            'Results appear from 3 answers. 1 so far.',
+        );
+        expect(panel.textContent).not.toContain(
+            'The other survey does not have enough answers.',
+        );
+        expect(api.comparison).not.toHaveBeenCalled();
+    });
+
+    it('tells a member who may not see results yet when they will, in the Compare tab too', () => {
+        window.history.replaceState(
+            null,
+            '',
+            '/surveys/survey-1/results?tab=compare',
+        );
+
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    me: { isEditor: false, canSeeResults: false },
+                    results: null,
+                    comparable: null,
+                })}
+            />,
+        );
+
+        const panel = screen.getByRole('tabpanel');
+
+        expect(panel.textContent).toContain(
+            'Results will show when the survey is closed.',
+        );
+        expect(panel.textContent).not.toContain('Nothing to compare with yet.');
     });
 
     it('shows the threshold below it, and no card', () => {
@@ -243,7 +306,9 @@ describe('SurveyResults', () => {
         expect(screen.getByRole('status').textContent).toContain(
             'Results will show when the survey is closed.',
         );
-        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Close the survey' }),
+        ).toBeNull();
     });
 
     it('shows a closed survey with its export and reopening to an editor', () => {
@@ -258,7 +323,7 @@ describe('SurveyResults', () => {
             />,
         );
 
-        expect(screen.getByText('Closed')).not.toBeNull();
+        expect(screen.getByText('Survey closed')).not.toBeNull();
         expect(
             screen
                 .getByRole('link', { name: 'Export CSV' })
@@ -303,7 +368,7 @@ describe('SurveyResults', () => {
         expect(
             within(
                 document.querySelector('[data-test="topbar"]') as HTMLElement,
-            ).getByRole('button', { name: 'Close' }),
+            ).getByRole('button', { name: 'Close the survey' }),
         ).not.toBeNull();
     });
 
@@ -321,9 +386,13 @@ describe('SurveyResults', () => {
 
         renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Close the survey' }),
+        );
         const dialog = await screen.findByRole('alertdialog');
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Close the survey' }),
+        );
 
         expect(
             await screen.findByRole('link', { name: 'Export CSV' }),
@@ -350,19 +419,19 @@ describe('SurveyResults live', () => {
         return { editor, member };
     }
 
-    it('moves the header count of both at once', () => {
+    it('moves the header count of both at once, the audience with it', () => {
         const { editor, member } = renderTwoViewers();
 
         broadcast({
             name: 'survey.responses.changed',
-            payload: { responses: 10, completed: 10 },
+            payload: { responses: 10, completed: 10, audience: 12 },
         });
 
         for (const view of [editor, member]) {
             expect(
                 within(view.container).getByRole('region', { name: 'Results' })
                     .textContent,
-            ).toContain('10 answers out of 11 participants');
+            ).toContain('10 answers out of 12 participants');
         }
     });
 
@@ -379,7 +448,7 @@ describe('SurveyResults live', () => {
 
         broadcast({
             name: 'survey.responses.changed',
-            payload: { responses: 10, completed: 10 },
+            payload: { responses: 10, completed: 10, audience: 11 },
         });
 
         expect(api.snapshot).not.toHaveBeenCalled();
@@ -421,7 +490,7 @@ describe('SurveyResults live', () => {
                 within(editor).getByRole('link', { name: 'Export CSV' }),
             ).not.toBeNull(),
         );
-        expect(within(editor).getByText('Closed')).not.toBeNull();
+        expect(within(editor).getByText('Survey closed')).not.toBeNull();
         expect(within(editor).queryByText('Open')).toBeNull();
     });
 });

@@ -20,7 +20,9 @@ export type ResultsHeaderProps = {
     share?: ReactNode;
 };
 
-/** The status badge and the actions of the results, at the end of the topbar. */
+const ActionLabel = 'truncate max-md:sr-only';
+
+/** The status badge and the actions of the results, at the end of the topbar; on a phone the actions keep their icons, their names read out. */
 export function ResultsHeader({
     status,
     isEditor,
@@ -62,11 +64,11 @@ export function ResultsHeader({
     return (
         <div
             data-slot="survey-results-header"
-            className="flex min-w-0 items-center gap-2"
+            className="flex shrink-0 items-center gap-2"
         >
             {isClosed ? (
                 <Badge variant="success" icon={Check}>
-                    <span className="truncate">{t('Closed')}</span>
+                    <span className="truncate">{t('Survey closed')}</span>
                 </Badge>
             ) : (
                 <Badge variant="soft" dot="var(--skrum-success)">
@@ -77,7 +79,7 @@ export function ResultsHeader({
                 <Button asChild variant="outline" size="sm">
                     <a href={exportUrl}>
                         <FileDown aria-hidden="true" />
-                        <span className="truncate">{t('Export CSV')}</span>
+                        <span className={ActionLabel}>{t('Export CSV')}</span>
                     </a>
                 </Button>
             )}
@@ -93,7 +95,7 @@ export function ResultsHeader({
                     }}
                 >
                     <Lock aria-hidden="true" />
-                    <span className="truncate">{t('Close')}</span>
+                    <span className={ActionLabel}>{t('Close the survey')}</span>
                 </Button>
             )}
             {isEditor && isClosed && (
@@ -105,7 +107,7 @@ export function ResultsHeader({
                     onClick={() => void reopen()}
                 >
                     <RotateCcw aria-hidden="true" />
-                    <span className="truncate">{t('Reopen')}</span>
+                    <span className={ActionLabel}>{t('Reopen')}</span>
                 </Button>
             )}
             {isEditor && (
@@ -116,7 +118,7 @@ export function ResultsHeader({
                     description={t(
                         'People can no longer answer. You can reopen it.',
                     )}
-                    confirmLabel={t('Close')}
+                    confirmLabel={t('Close the survey')}
                     error={closeError}
                     onConfirm={close}
                 />

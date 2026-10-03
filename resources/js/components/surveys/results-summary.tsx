@@ -63,6 +63,7 @@ function TextCard({
     const { t } = useTrans();
     const labelId = useId();
     const answers = summary?.answers ?? [];
+    const responses = summary?.responses ?? 0;
 
     return (
         <article
@@ -80,6 +81,14 @@ function TextCard({
                     <Badge variant="muted">
                         <span className="truncate">{t('Free text')}</span>
                     </Badge>
+                    <span
+                        data-slot="survey-response-count"
+                        className="tabular-nums"
+                    >
+                        {responses === 1
+                            ? t('1 response')
+                            : t(':count responses', { count: responses })}
+                    </span>
                 </div>
                 <h3
                     id={labelId}

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     SurveyQuestionPayload,
@@ -14,12 +14,27 @@ export function takesFreeText(question: SurveyQuestionPayload): boolean {
 function FreeTextSection({
     label,
     entries,
+    isTarget,
+    onReached,
 }: {
     label: string;
     entries: SurveyTextEntry[];
+    isTarget: boolean;
+    onReached?: () => void;
 }) {
     const { t } = useTrans();
     const headingId = useId();
+    const heading = useRef<HTMLHeadingElement>(null);
+
+    useEffect(() => {
+        if (!isTarget || heading.current === null) {
+            return;
+        }
+
+        heading.current.scrollIntoView?.({ block: 'start' });
+        heading.current.focus({ preventScroll: true });
+        onReached?.();
+    }, [isTarget, onReached]);
 
     return (
         <section
@@ -27,8 +42,10 @@ function FreeTextSection({
             className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-card"
         >
             <h3
+                ref={heading}
                 id={headingId}
-                className="font-display text-base font-semibold break-words"
+                tabIndex={-1}
+                className="scroll-mt-20 font-display text-base font-semibold break-words"
             >
                 {label}
             </h3>
@@ -57,8 +74,19 @@ function FreeTextSection({
     );
 }
 
+type ResultsFreeTextProps = {
+    snapshot: SurveySnapshot;
+    /** The question to bring into view and focus, as the summary's text card asked. */
+    targetQuestionId?: string | null;
+    onTargetReached?: () => void;
+};
+
 /** Every text answer and every comment, per question, in the server's order. */
-export function ResultsFreeText({ snapshot }: { snapshot: SurveySnapshot }) {
+export function ResultsFreeText({
+    snapshot,
+    targetQuestionId = null,
+    onTargetReached,
+}: ResultsFreeTextProps) {
     const summaries = snapshot.results?.questions ?? {};
 
     return (
@@ -75,6 +103,8 @@ export function ResultsFreeText({ snapshot }: { snapshot: SurveySnapshot }) {
                         key={question.id}
                         label={question.label}
                         entries={entries ?? []}
+                        isTarget={question.id === targetQuestionId}
+                        onReached={onTargetReached}
                     />
                 );
             })}

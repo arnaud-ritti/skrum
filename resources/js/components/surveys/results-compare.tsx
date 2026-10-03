@@ -31,7 +31,7 @@ type ResultsCompareProps = {
     onRetryDefault?: () => void;
 };
 
-type ChoicePercent = { label: string; percent: number };
+type ChoicePercent = { id: string; label: string; percent: number };
 
 type Figures = { now: string; before: string; difference: string | null };
 
@@ -181,22 +181,25 @@ function PairFigures({ pair }: { pair: SurveyComparisonPair }) {
     }
 }
 
-/** One line per option both surveys offer, in percentage points. */
+/** One line per option of this survey that the other offers too, in percentage points. */
 function ChoiceFigures({ pair }: { pair: SurveyComparisonPair }) {
     const { t } = useTrans();
     const written = useWrittenDifference();
     const deltas = Array.isArray(pair.delta) ? pair.delta : [];
-    const nowByLabel = new Map(
-        percentsOf(pair.current).map((option) => [
-            option.label,
-            option.percent,
-        ]),
+    const nowById = new Map(
+        percentsOf(pair.current).map((option) => [option.id, option.percent]),
     );
 
     if (deltas.length === 0) {
+        const bothAnswered =
+            (numberOf(pair.current, 'responses') ?? 0) > 0 &&
+            (numberOf(pair.other, 'responses') ?? 0) > 0;
+
         return (
             <p className="text-sm text-muted-foreground">
-                {t('No answers to compare.')}
+                {bothAnswered
+                    ? t('No option in common.')
+                    : t('No answers to compare.')}
             </p>
         );
     }
@@ -204,11 +207,11 @@ function ChoiceFigures({ pair }: { pair: SurveyComparisonPair }) {
     return (
         <ul className="flex flex-col gap-3">
             {deltas.map((option) => {
-                const now = nowByLabel.get(option.label) ?? 0;
+                const now = nowById.get(option.optionId) ?? 0;
 
                 return (
                     <li
-                        key={option.label}
+                        key={option.optionId}
                         className="flex min-w-0 flex-col gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0"
                     >
                         <span className="text-sm break-words text-foreground">

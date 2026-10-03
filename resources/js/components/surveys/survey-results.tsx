@@ -117,10 +117,14 @@ export function SurveyResults({
         ...(me.isGuest ? [] : (['compare'] as const)),
     ];
     const [tab, selectTab] = useResultsTab(available);
+    const [freeTextTarget, setFreeTextTarget] = useState<string | null>(null);
+    const clearFreeTextTarget = useCallback(() => setFreeTextTarget(null), []);
     const showsCards = resultsStateOf(snapshot) === 'summary';
     const defaultComparison = useSurveyComparison(
         survey.id,
-        me.isGuest ? null : (snapshot.comparable?.defaultId ?? null),
+        me.isGuest || !showsCards
+            ? null
+            : (snapshot.comparable?.defaultId ?? null),
     );
     const deltas =
         defaultComparison.load.status === 'ready'
@@ -198,7 +202,10 @@ export function SurveyResults({
                     <ResultsSummary
                         snapshot={snapshot}
                         deltas={deltas}
-                        onShowFreeText={() => selectTab('free-text')}
+                        onShowFreeText={(questionId) => {
+                            setFreeTextTarget(questionId);
+                            selectTab('free-text');
+                        }}
                     />
                 ) : (
                     <ResultsState snapshot={snapshot} />
@@ -207,7 +214,11 @@ export function SurveyResults({
             {available.includes('free-text') && (
                 <TabsContent value="free-text">
                     {showsCards ? (
-                        <ResultsFreeText snapshot={snapshot} />
+                        <ResultsFreeText
+                            snapshot={snapshot}
+                            targetQuestionId={freeTextTarget}
+                            onTargetReached={clearFreeTextTarget}
+                        />
                     ) : (
                         <ResultsState snapshot={snapshot} />
                     )}
@@ -215,12 +226,16 @@ export function SurveyResults({
             )}
             {available.includes('compare') && (
                 <TabsContent value="compare">
-                    <ResultsCompare
-                        surveyId={survey.id}
-                        comparable={snapshot.comparable}
-                        defaultLoad={defaultComparison.load}
-                        onRetryDefault={defaultComparison.retry}
-                    />
+                    {showsCards ? (
+                        <ResultsCompare
+                            surveyId={survey.id}
+                            comparable={snapshot.comparable}
+                            defaultLoad={defaultComparison.load}
+                            onRetryDefault={defaultComparison.retry}
+                        />
+                    ) : (
+                        <ResultsState snapshot={snapshot} />
+                    )}
                 </TabsContent>
             )}
         </Tabs>

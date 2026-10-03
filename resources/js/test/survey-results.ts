@@ -269,20 +269,20 @@ export const mockupComparison: SurveyComparison = {
             current: {
                 responses: 9,
                 options: [
-                    { label: 'Retrospective', percent: 56 },
-                    { label: 'Daily', percent: 22 },
+                    { id: 'o-retro', label: 'Retrospective', percent: 56 },
+                    { id: 'o-daily', label: 'Daily', percent: 22 },
                 ],
             },
             other: {
                 responses: 8,
                 options: [
-                    { label: 'Retrospective', percent: 56 },
-                    { label: 'Daily', percent: 32 },
+                    { id: 'o41-retro', label: 'Retrospective', percent: 56 },
+                    { id: 'o41-daily', label: 'Daily', percent: 32 },
                 ],
             },
             delta: [
-                { label: 'Retrospective', delta: 0 },
-                { label: 'Daily', delta: -10 },
+                { optionId: 'o-retro', label: 'Retrospective', delta: 0 },
+                { optionId: 'o-daily', label: 'Daily', delta: -10 },
             ],
         },
         {

@@ -97,6 +97,73 @@ describe('ResultsCompare', () => {
         expect(row('A word for the team?').textContent).toContain('5 answers');
     });
 
+    it('tells each option of a choice apart by its id, even when two share a label', async () => {
+        const [, , single] = mockupComparison.pairs;
+
+        api.comparison.mockResolvedValue({
+            comparison: {
+                ...mockupComparison,
+                pairs: [
+                    {
+                        ...single,
+                        current: {
+                            responses: 9,
+                            options: [
+                                { id: 'o-a', label: 'Other', percent: 40 },
+                                { id: 'o-b', label: 'Other', percent: 10 },
+                            ],
+                        },
+                        delta: [
+                            { optionId: 'o-a', label: 'Other', delta: 5 },
+                            { optionId: 'o-b', label: 'Other', delta: -5 },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
+        );
+
+        const choice = await screen.findByRole('listitem', {
+            name: 'Which ritual must we keep?',
+        });
+        const nows = within(choice)
+            .getAllByText('Now')
+            .map((term) => term.nextElementSibling?.textContent);
+
+        expect(nows).toEqual(['40%', '10%']);
+    });
+
+    it('says no option is in common when both surveys have answers but no shared option', async () => {
+        const [, , single] = mockupComparison.pairs;
+
+        api.comparison.mockResolvedValue({
+            comparison: {
+                ...mockupComparison,
+                pairs: [{ ...single, delta: [] }],
+            },
+        });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
+        );
+
+        const choice = await screen.findByRole('listitem', {
+            name: 'Which ritual must we keep?',
+        });
+
+        expect(choice.textContent).toContain('No option in common.');
+        expect(choice.textContent).not.toContain('No answers to compare.');
+    });
+
     it('lists the questions that only one of the two surveys asks', async () => {
         api.comparison.mockResolvedValue({ comparison: mockupComparison });
 

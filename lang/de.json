@@ -4453,5 +4453,8 @@
     "The comparison could not be loaded.": "Der Vergleich konnte nicht geladen werden.",
     "The other survey does not have enough answers.": "Die andere Umfrage hat nicht genug Antworten.",
     "higher": "höher",
-    "lower": "niedriger"
+    "lower": "niedriger",
+    "Close the survey": "Umfrage schließen",
+    "Survey closed": "Geschlossen",
+    "No option in common.": "Keine gemeinsame Option."
 }

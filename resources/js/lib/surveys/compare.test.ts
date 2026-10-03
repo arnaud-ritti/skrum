@@ -27,7 +27,7 @@ function comparison(
             pair({
                 questionId: 'q-single',
                 kind: 'single',
-                delta: [{ label: 'Daily', delta: 10 }],
+                delta: [{ optionId: 'o-daily', label: 'Daily', delta: 10 }],
             }),
             pair({ questionId: 'q-text', kind: 'text', delta: 2 }),
             pair({ questionId: 'q-empty', kind: 'scale', delta: null }),
