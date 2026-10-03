@@ -251,7 +251,7 @@ it('[P18e-07-05] renders the export card of the canvas without overflow', functi
     );
 });
 
-it('[P20-18] renders the toolbars of the board to the facilitator without overflow', function (string $name, string $surface) {
+it('[P20-18] renders the toolbars of the board to the facilitator without overflow', function (string $name, string $surface, string $phoneSurface) {
     ['board' => $board, 'fran' => $fran] = p20VisualBoard();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -259,8 +259,10 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
     $this->captureVisuals(
         $name,
         $this->whiteboardPath($board),
-        function (string $path, array $options, int $width) use ($fran, $name, $surface) {
+        function (string $path, array $options, int $width) use ($fran, $name, $surface, $phoneSurface) {
             $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+            $isPhone = $width === 390;
+            $selects = in_array($name, ['whiteboard-toolbars', 'whiteboard-align-menu', 'whiteboard-styles'], true);
 
             User::query()->whereKey($fran->id)->update(['locale' => $locale]);
 
@@ -268,15 +270,35 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
                 ->assertPresent('[data-scene^="5:"]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
-            $page->resize($width, $width === 390 ? 844 : 900);
-            $page->assertPresent('.whiteboard-canvas [data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"]');
+            // The board opens wide, so it stays in edit mode at 390; the phone selects at that size and shows its compact tool bar.
+            if ($isPhone && $selects) {
+                $name === 'whiteboard-styles'
+                    ? $this->dragOnWhiteboard($page, [540, 180], [540, 180], 1)
+                    : $this->dragOnWhiteboard($page, [170, 30], [910, 290]);
+            }
 
-            match ($name) {
-                'whiteboard-toolbars', 'whiteboard-align-menu' => $this->dragOnWhiteboard($page, [170, 30], [910, 290]),
-                'whiteboard-styles' => $this->dragOnWhiteboard($page, [540, 180], [540, 180], 1),
-                'whiteboard-shape-tool' => $this->selectWhiteboardTool($page, 'rectangle'),
-                'whiteboard-sticky-tool' => $page->click('[data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"] button[aria-keyshortcuts="N"]'),
-            };
+            $page->resize($width, $isPhone ? 844 : 900);
+
+            if ($isPhone) {
+                $page->assertPresent('.whiteboard-canvas [data-slot="read-mode-dock"] [data-slot="phone-toolbar"]')
+                    ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-tools"]');
+
+                match ($name) {
+                    'whiteboard-sticky-tool' => $page->click('[data-slot="phone-toolbar"] [data-toolbar-item="sticky"]'),
+                    'whiteboard-shape-tool' => $page->click('[data-slot="phone-toolbar"] button[aria-haspopup="dialog"]')
+                        ->click('[data-slot="phone-drawer-tools"] button:nth-child(2)'),
+                    default => $page->assertPresent('[data-slot="whiteboard-selection-bar"]'),
+                };
+            } else {
+                $page->assertPresent('.whiteboard-canvas [data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"]');
+
+                match ($name) {
+                    'whiteboard-toolbars', 'whiteboard-align-menu' => $this->dragOnWhiteboard($page, [170, 30], [910, 290]),
+                    'whiteboard-styles' => $this->dragOnWhiteboard($page, [540, 180], [540, 180], 1),
+                    'whiteboard-shape-tool' => $this->selectWhiteboardTool($page, 'rectangle'),
+                    'whiteboard-sticky-tool' => $page->click('[data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"] button[aria-keyshortcuts="N"]'),
+                };
+            }
 
             if ($name === 'whiteboard-styles') {
                 $page->click('[data-slot="whiteboard-selection-bar"] [data-toolbar-item="styles"]')
@@ -287,15 +309,15 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
                 $page->click('[data-slot="whiteboard-selection-bar"] [data-selection-item="align"]');
             }
 
-            return $page->assertPresent($surface);
+            return $page->assertPresent($isPhone ? $phoneSurface : $surface);
         },
     );
 })->with([
-    'tool bar, selection bar, history, zoom and minimap' => ['whiteboard-toolbars', '[data-slot="whiteboard-selection-count"]'],
-    'sticky note tool' => ['whiteboard-sticky-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]'],
-    'shape tool' => ['whiteboard-shape-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]'],
-    'styles' => ['whiteboard-styles', '.whiteboard-canvas.skrum-whiteboard--styles .selected-shape-actions'],
-    'align menu' => ['whiteboard-align-menu', '[role="menu"] [role="menuitem"]'],
+    'tool bar, selection bar, history, zoom and minimap' => ['whiteboard-toolbars', '[data-slot="whiteboard-selection-count"]', '[data-slot="whiteboard-selection-count"]'],
+    'sticky note tool' => ['whiteboard-sticky-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]', '[data-slot="phone-sub-bar"] [data-slot="whiteboard-color-bar"]'],
+    'shape tool' => ['whiteboard-shape-tool', '[data-slot="canvas-tools"] [data-slot="whiteboard-sub-bar"] [data-slot="whiteboard-color-bar"]', '[data-slot="phone-sub-bar"] [data-slot="whiteboard-color-bar"]'],
+    'styles' => ['whiteboard-styles', '.whiteboard-canvas.skrum-whiteboard--styles .selected-shape-actions', '.whiteboard-canvas.skrum-whiteboard--styles'],
+    'align menu' => ['whiteboard-align-menu', '[role="menu"] [role="menuitem"]', '[role="menu"] [role="menuitem"]'],
 ]);
 
 it('[P18e-07-05] renders the cursor of another member in the presence colour of that member without overflow', function () {

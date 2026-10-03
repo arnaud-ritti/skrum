@@ -87,6 +87,14 @@ Captures were taken in one configuration only (light, 1440, French). The dark, 3
 whiteboard screens still in `tests/visual/__screenshots__` were not retaken: they show the board before this plan
 and are stale until the next full visual run.
 
+Fix round after review: the [P20-18] cases asserted the desktop tool bar after resizing to 390, where `BoardChrome`
+mounts the phone's compact bar instead, so they would have failed in every 390 configuration. They now branch on the
+width: at 390 they assert the phone tool bar in the dock and no desktop tool bar; the selection cases select at the
+size the board opened at (it stays in edit mode), the sticky and shape cases open their sub-bar from the phone bar and
+its "More tools" drawer, and "Styles" is checked through its pressed state. The locked-guest case was left as it is:
+its desktop assertions run before `captureVisuals` resizes the page, so they hold at 390 too. These cases were not run
+in this round (no capture asked); the next full visual run takes them.
+
 ## 4. Existing tests edited or removed
 
 Removed, approved by the owner on 2026-10-03 (plan, **Owner decisions**):
