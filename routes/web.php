@@ -211,6 +211,7 @@ use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
+use App\Http\Controllers\WorkspaceDetailsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacePokerDecksController;
@@ -333,6 +334,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::get('/', [WorkspacesController::class, 'show'])->name('workspaces.show');
             Route::delete('/', [WorkspacesController::class, 'destroy'])->name('workspaces.destroy');
+            Route::put('details', [WorkspaceDetailsController::class, 'update'])->name('workspaces.details.update');
 
             Route::post('teams', [TeamsController::class, 'store'])->name('teams.store');
             Route::get('teams/{team}', [TeamsController::class, 'show'])->name('teams.show');

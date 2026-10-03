@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string|null $description
  * @property string|null $default_poker_deck
  * @property string|null $default_saved_poker_deck_id
  * @property int|null $sprint_length_weeks
@@ -34,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'name',
+    'description',
     'default_poker_deck',
     'default_saved_poker_deck_id',
     'sprint_length_weeks',

@@ -89,7 +89,8 @@ class WorkspacesController extends Controller
             ->all();
 
         return Inertia::render('workspaces/show', [
-            'workspace' => $workspace->only(['id', 'name', 'slug']),
+            'workspace' => $workspace->only(['id', 'name', 'slug', 'description']),
+            'canEditDetails' => $user->can('update', $workspace),
             'membersCount' => $workspace->members()->count(),
             'adminsCount' => $workspace->members()->wherePivotIn('role', $managerRoles)->count(),
             'otherAdminName' => $canManage
@@ -102,7 +103,7 @@ class WorkspacesController extends Controller
                     ?->name
                 : null,
             'teams' => $teams->map(fn (Team $team): array => [
-                ...$team->only(['id', 'name']),
+                ...$team->only(['id', 'name', 'description']),
                 'membersCount' => $team->members_count,
                 'members' => Alphabetical::sort($team->members, fn (User $member): string => $member->name)->map(fn (User $member): array => [
                     'name' => $member->name,

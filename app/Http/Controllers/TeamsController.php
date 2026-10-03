@@ -146,6 +146,7 @@ class TeamsController extends Controller
 
         $team->update($request->validate([
             'name' => ['required', 'string', 'max:100'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:200'],
         ]));
 
         return back();

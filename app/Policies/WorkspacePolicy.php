@@ -13,6 +13,11 @@ class WorkspacePolicy
         return $user->belongsToWorkspace($workspace);
     }
 
+    public function update(User $user, Workspace $workspace): bool
+    {
+        return $user->canManage($workspace);
+    }
+
     public function manageMembers(User $user, Workspace $workspace): bool
     {
         return $user->canManage($workspace);
