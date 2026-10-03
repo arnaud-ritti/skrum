@@ -1,13 +1,18 @@
 import { Form } from '@inertiajs/react';
 import { CircleCheck } from 'lucide-react';
 import { useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import { PasswordField } from '@/components/auth/password-field';
+import {
+    BreachLine,
+    BreachLineId,
+} from '@/components/settings/security/breach-line';
 import {
     PasswordRules,
     PasswordStrength,
 } from '@/components/settings/security/password-strength';
+import { useBreachCheck } from '@/components/settings/security/use-breach-check';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { useTrans } from '@/hooks/use-trans';
@@ -18,17 +23,31 @@ const NewPasswordId = 'password';
 type PasswordCardProps = {
     /** The server's rule, as `Password::defaults()->toPasswordRulesString()`. */
     passwordRules: string;
-    /** Last item of the rule list: `PasswordBreachCheck` when the server's rule has one. */
-    breachCheck?: ReactNode;
+    /** The server refuses a password found in known data breaches. */
+    checksCompromisedPasswords: boolean;
+    /** The instance answers the breach ranges, so the password is checked while it is typed. */
+    liveBreachCheck: boolean;
+    /**
+     * False when the account has no password its owner knows: the card sets
+     * a first one, without a current password and without a confirmation
+     * (rule S-1, the owner's accepted risk).
+     */
+    isSet?: boolean;
 };
 
 export function PasswordCard({
     passwordRules,
-    breachCheck,
+    checksCompromisedPasswords,
+    liveBreachCheck,
+    isSet = true,
 }: PasswordCardProps): ReactElement {
     const { t } = useTrans();
     const [password, setPassword] = useState('');
     const [confirmation, setConfirmation] = useState('');
+    const breach = useBreachCheck(
+        password,
+        liveBreachCheck && checksCompromisedPasswords,
+    );
     const matches = confirmation !== '' && confirmation === password;
 
     const clear = (): void => {
@@ -63,7 +82,7 @@ export function PasswordCard({
         >
             {({ errors, processing }) => (
                 <SettingsCard
-                    title={t('Password')}
+                    title={isSet ? t('Password') : t('Set a password')}
                     description={t(
                         'Ensure your account is using a long, random password to stay secure',
                     )}
@@ -76,20 +95,24 @@ export function PasswordCard({
                             className="max-w-full"
                         >
                             <span className="truncate">
-                                {t('Update password')}
+                                {isSet
+                                    ? t('Update password')
+                                    : t('Set the password')}
                             </span>
                         </LoadingButton>
                     }
                 >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <PasswordField
-                            id={CurrentPasswordId}
-                            name="current_password"
-                            label={t('Current password')}
-                            autoComplete="current-password"
-                            error={errors.current_password}
-                        />
-                    </div>
+                    {isSet && (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <PasswordField
+                                id={CurrentPasswordId}
+                                name="current_password"
+                                label={t('Current password')}
+                                autoComplete="current-password"
+                                error={errors.current_password}
+                            />
+                        </div>
+                    )}
 
                     <div className="grid items-start gap-4 sm:grid-cols-2">
                         <div className="flex min-w-0 flex-col gap-1.5">
@@ -99,6 +122,11 @@ export function PasswordCard({
                                 label={t('New password')}
                                 autoComplete="new-password"
                                 passwordrules={passwordRules}
+                                aria-describedby={
+                                    breach === 'breached'
+                                        ? BreachLineId
+                                        : undefined
+                                }
                                 value={password}
                                 onChange={(event) =>
                                     setPassword(event.target.value)
@@ -133,7 +161,15 @@ export function PasswordCard({
                     <PasswordRules
                         rules={passwordRules}
                         password={password}
-                        breachCheck={breachCheck}
+                        breachCheck={
+                            checksCompromisedPasswords ? (
+                                <BreachLine
+                                    state={breach}
+                                    liveBreachCheck={liveBreachCheck}
+                                    checksCompromisedPasswords
+                                />
+                            ) : undefined
+                        }
                     />
                 </SettingsCard>
             )}

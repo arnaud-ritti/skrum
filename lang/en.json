@@ -4344,5 +4344,10 @@
     "You can't unlink your last sign-in method: set a password or link another account first.": "You can't unlink your last sign-in method: set a password or link another account first.",
     "This account is managed by your admin.": "This account is managed by your admin.",
     ":provider is linked.": ":provider is linked.",
-    ":provider is unlinked.": ":provider is unlinked."
+    ":provider is unlinked.": ":provider is unlinked.",
+    "Not found in known data breaches": "Not found in known data breaches",
+    "Checking known data breaches…": "Checking known data breaches…",
+    "Found in known data breaches: choose another one": "Found in known data breaches: choose another one",
+    "Set a password": "Set a password",
+    "Set the password": "Set the password"
 }

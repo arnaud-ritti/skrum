@@ -111,12 +111,19 @@ function PasskeyConfirmation({
 export function PasswordGateProvider({
     locked,
     passkeys,
+    needsConfirmation,
     children,
 }: {
     /** The server kept the protected props back on the last load. */
     locked: boolean;
     /** The instance offers passkeys: one may stand for the password. */
     passkeys: boolean;
+    /**
+     * False for an account without a password its owner knows: the server
+     * asks it no confirmation in the account settings (rule S-1, the
+     * owner's accepted risk), so the gate opens no dialog either.
+     */
+    needsConfirmation: boolean;
     children: ReactNode;
 }): ReactElement {
     const { t } = useTrans();
@@ -135,6 +142,16 @@ export function PasswordGateProvider({
 
     const guard = (action: () => void): void => {
         void (async () => {
+            if (!needsConfirmation) {
+                if (keptBack.current) {
+                    await loadProtectedProps();
+                }
+
+                action();
+
+                return;
+            }
+
             let accepted = false;
 
             try {

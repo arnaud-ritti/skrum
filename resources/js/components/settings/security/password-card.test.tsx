@@ -1,15 +1,30 @@
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps, ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFormState } from '@/test/inertia-form';
 import { renderWithProviders } from '@/test/render';
 import { PasswordCard } from './password-card';
+import type { BreachState } from './use-breach-check';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const form = vi.hoisted(() => ({
     processing: false,
     errors: {} as Record<string, string>,
     props: {} as Record<string, unknown>,
+}));
+
+const breach = vi.hoisted(() => ({
+    state: 'idle' as BreachState,
+    calls: [] as Array<[string, boolean]>,
+}));
+
+vi.mock('./use-breach-check', () => ({
+    useBreachCheck: (password: string, enabled: boolean) => {
+        breach.calls.push([password, enabled]);
+
+        return breach.state;
+    },
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
@@ -24,8 +39,23 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
 beforeEach(() => {
     page.props = { translations: {} };
+    breach.state = 'idle';
+    breach.calls = [];
     Object.assign(form, createFormState());
 });
+
+function Card(
+    props: Partial<ComponentProps<typeof PasswordCard>>,
+): ReactElement {
+    return (
+        <PasswordCard
+            passwordRules="minlength: 8;"
+            checksCompromisedPasswords={false}
+            liveBreachCheck={false}
+            {...props}
+        />
+    );
+}
 
 function field(label: string): HTMLInputElement {
     return screen.getByLabelText(label) as HTMLInputElement;
@@ -33,9 +63,7 @@ function field(label: string): HTMLInputElement {
 
 describe('PasswordCard', () => {
     it('keeps the ids, the names and the save hook of the old form', () => {
-        const { container } = renderWithProviders(
-            <PasswordCard passwordRules="minlength: 8;" />,
-        );
+        const { container } = renderWithProviders(<Card />);
 
         expect(field('Current password').id).toBe('current_password');
         expect(field('Current password').name).toBe('current_password');
@@ -66,7 +94,7 @@ describe('PasswordCard', () => {
     });
 
     it('can show each of the three passwords', async () => {
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         expect(
             screen.getAllByRole('button', { name: 'Show password' }).length,
@@ -74,7 +102,7 @@ describe('PasswordCard', () => {
     });
 
     it('measures the new password as it is typed and states the rule of the server', async () => {
-        renderWithProviders(<PasswordCard passwordRules="minlength: 12;" />);
+        renderWithProviders(<Card passwordRules="minlength: 12;" />);
 
         await userEvent.type(field('New password'), 'abcdefghijklmn');
 
@@ -88,7 +116,7 @@ describe('PasswordCard', () => {
     });
 
     it('marks the confirmation once it matches the new password', async () => {
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         await userEvent.type(field('New password'), 'correct horse');
         await userEvent.type(field('Confirm new password'), 'correct');
@@ -106,7 +134,7 @@ describe('PasswordCard', () => {
 
     it('shows a refusal under its field', () => {
         form.errors = { current_password: 'The password is incorrect.' };
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         expect(
             document.getElementById('current_password-error')?.textContent,
@@ -117,7 +145,7 @@ describe('PasswordCard', () => {
     });
 
     it('empties the new password and focuses the refused field after an error', async () => {
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         await userEvent.type(field('New password'), 'short');
         await userEvent.type(field('Confirm new password'), 'short');
@@ -134,7 +162,7 @@ describe('PasswordCard', () => {
     });
 
     it('empties the fields and the meter once the password is changed', async () => {
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         await userEvent.type(field('New password'), 'abcdefghijklmn');
 
@@ -148,7 +176,7 @@ describe('PasswordCard', () => {
 
     it('disables the button while the password is saved', () => {
         form.processing = true;
-        renderWithProviders(<PasswordCard passwordRules="minlength: 8;" />);
+        renderWithProviders(<Card />);
 
         expect(
             screen
@@ -157,17 +185,77 @@ describe('PasswordCard', () => {
         ).toBe(true);
     });
 
-    it('leaves the end of the rules to the breach check', () => {
+    it.each([
+        ['idle', 'Not found in known data breaches'],
+        ['checking', 'Checking known data breaches…'],
+        ['clear', 'Not found in known data breaches(met)'],
+        ['breached', 'Found in known data breaches: choose another one'],
+        ['unavailable', 'Checked against known data breaches when you save'],
+    ] as Array<[BreachState, string]>)(
+        'ends the rules with the breach line while %s',
+        async (state, text) => {
+            breach.state = state;
+            renderWithProviders(
+                <Card checksCompromisedPasswords liveBreachCheck />,
+            );
+
+            await userEvent.type(field('New password'), 'p');
+
+            expect(
+                screen.getByRole('list', { name: 'Password rules' })
+                    .lastElementChild?.textContent,
+            ).toBe(text);
+            expect(breach.calls.at(-1)).toEqual(['p', true]);
+        },
+    );
+
+    it('points the new password at the breach line once the password is found in a breach', () => {
+        breach.state = 'breached';
         renderWithProviders(
-            <PasswordCard
-                passwordRules="minlength: 8;"
-                breachCheck={<li>Not found in known data breaches</li>}
-            />,
+            <Card checksCompromisedPasswords liveBreachCheck />,
+        );
+
+        expect(field('New password').getAttribute('aria-describedby')).toBe(
+            'password-breach-line',
+        );
+        expect(
+            document.getElementById('password-breach-line')?.textContent,
+        ).toBe('Found in known data breaches: choose another one');
+    });
+
+    it('checks only at save when the instance does not check live', () => {
+        renderWithProviders(
+            <Card checksCompromisedPasswords liveBreachCheck={false} />,
         );
 
         expect(
             screen.getByRole('list', { name: 'Password rules' })
                 .lastElementChild?.textContent,
-        ).toBe('Not found in known data breaches');
+        ).toBe('Checked against known data breaches when you save');
+        expect(breach.calls.at(-1)).toEqual(['', false]);
+    });
+
+    it('lists no breach line when the server does not check', () => {
+        breach.state = 'breached';
+        renderWithProviders(<Card liveBreachCheck />);
+
+        expect(screen.queryByText(/data breaches/)).toBeNull();
+        expect(breach.calls.at(-1)?.[1]).toBe(false);
+    });
+
+    it('sets a first password without the current one when the account has none it knows (rule S-1)', () => {
+        renderWithProviders(<Card isSet={false} />);
+
+        expect(screen.getByText('Set a password')).toBeTruthy();
+        expect(screen.queryByLabelText('Current password')).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Set the password' }),
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Update password' }),
+        ).toBeNull();
+        expect(document.querySelector('form')?.getAttribute('action')).toBe(
+            '/settings/password?_method=PUT',
+        );
     });
 });

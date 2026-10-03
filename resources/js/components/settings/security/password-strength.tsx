@@ -185,8 +185,9 @@ export function PasswordStrength({
 }
 
 /**
- * The breach check of the server's rule. It runs when the form is saved, so
- * the line informs and carries no met / not met mark.
+ * The breach check of the server's rule where it cannot run while typing
+ * (`BreachLine` falls back to it): it runs when the form is saved, so the
+ * line informs and carries no met / not met mark.
  */
 export function PasswordBreachCheck(): ReactElement {
     const { t } = useTrans();
@@ -212,7 +213,7 @@ export function PasswordRules({
     /** The server's rule, as `toPasswordRulesString()` writes it. */
     rules: string;
     password: string;
-    /** Last item of the list: `PasswordBreachCheck` when the server's rule has one. */
+    /** Last item of the list: `BreachLine` when the server's rule has one. */
     breachCheck?: ReactNode;
 }): ReactElement | null {
     const { t } = useTrans();

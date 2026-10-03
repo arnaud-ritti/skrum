@@ -18,7 +18,6 @@ import { ProfileCard } from '@/components/settings/profile-card';
 import { ProfilePhoto } from '@/components/settings/profile-photo';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
-import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
 import { SecurityStack } from '@/components/settings/security/security-stack';
 import {
     TwoFactorCard,
@@ -59,6 +58,8 @@ export type ProfileSettings = {
     hasPhoto: boolean;
     /** The admin switch "Profile photos". */
     photosAllowed: boolean;
+    /** False for an account without a known password: rule S-1, no confirmation in the account settings. */
+    needsPasswordConfirmation: boolean;
 };
 
 export type AppearanceSettings = {
@@ -71,12 +72,20 @@ export type ProtectedSecuritySettings = {
     twoFactor: TwoFactorSummary;
     passkeys: Passkey[];
     emailSecondFactor: EmailSecondFactor;
+    password: {
+        /** False when the account has no password its owner knows: the card sets a first one. */
+        isSet: boolean;
+        /** False when the sign-in policy refuses a password to this account: no password card. */
+        allowed: boolean;
+    };
 };
 
 export type SecuritySettings = {
     passwordRules: string;
     /** The server refuses a password found in known data breaches. */
     checksCompromisedPasswords: boolean;
+    /** The instance answers the breach ranges: the password is checked while typed. */
+    liveBreachCheck: boolean;
     canManageTwoFactor: boolean;
     canManagePasskeys: boolean;
     /** The instance can send the e-mail code. */
@@ -135,14 +144,16 @@ function SecuritySection({
 
     return (
         <SecurityStack>
-            <PasswordCard
-                passwordRules={security.passwordRules}
-                breachCheck={
-                    security.checksCompromisedPasswords ? (
-                        <PasswordBreachCheck />
-                    ) : undefined
-                }
-            />
+            {account?.password.allowed !== false && (
+                <PasswordCard
+                    passwordRules={security.passwordRules}
+                    checksCompromisedPasswords={
+                        security.checksCompromisedPasswords
+                    }
+                    liveBreachCheck={security.liveBreachCheck}
+                    isSet={account?.password.isSet ?? true}
+                />
+            )}
             {account === null &&
                 (security.canManageTwoFactor ||
                     security.canManageEmailCode) && (
@@ -240,6 +251,7 @@ export function AccountSettings({
             <PasswordGateProvider
                 locked={security?.locked === true || apiTokens?.locked === true}
                 passkeys={security?.canManagePasskeys === true}
+                needsConfirmation={profile.needsPasswordConfirmation}
             >
                 <SettingsSection id="profile">
                     <div className="flex min-w-0 flex-col gap-4">

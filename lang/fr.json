@@ -4564,5 +4564,10 @@
     "You can't unlink your last sign-in method: set a password or link another account first.": "Tu ne peux pas délier ton dernier moyen de connexion : définis d'abord un mot de passe ou lie un autre compte.",
     "This account is managed by your admin.": "Ce compte est géré par ton administrateur.",
     ":provider is linked.": ":provider est lié.",
-    ":provider is unlinked.": ":provider est délié."
+    ":provider is unlinked.": ":provider est délié.",
+    "Not found in known data breaches": "Absent des fuites de données connues",
+    "Checking known data breaches…": "Vérification dans les fuites de données connues…",
+    "Found in known data breaches: choose another one": "Présent dans des fuites de données connues : choisis-en un autre",
+    "Set a password": "Définir un mot de passe",
+    "Set the password": "Définir le mot de passe"
 }

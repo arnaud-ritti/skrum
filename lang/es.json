@@ -4564,5 +4564,10 @@
     "You can't unlink your last sign-in method: set a password or link another account first.": "No puedes desvincular tu último método de inicio de sesión: primero define una contraseña o vincula otra cuenta.",
     "This account is managed by your admin.": "Esta cuenta la gestiona tu administrador.",
     ":provider is linked.": ":provider está vinculado.",
-    ":provider is unlinked.": ":provider está desvinculado."
+    ":provider is unlinked.": ":provider está desvinculado.",
+    "Not found in known data breaches": "No aparece en filtraciones de datos conocidas",
+    "Checking known data breaches…": "Comprobando las filtraciones de datos conocidas…",
+    "Found in known data breaches: choose another one": "Aparece en filtraciones de datos conocidas: elige otra",
+    "Set a password": "Definir una contraseña",
+    "Set the password": "Definir la contraseña"
 }

@@ -4564,5 +4564,10 @@
     "You can't unlink your last sign-in method: set a password or link another account first.": "Du kannst deine letzte Anmeldemethode nicht entfernen: Lege zuerst ein Passwort fest oder verknüpfe ein anderes Konto.",
     "This account is managed by your admin.": "Dieses Konto wird von deinem Admin verwaltet.",
     ":provider is linked.": ":provider ist verknüpft.",
-    ":provider is unlinked.": ":provider ist nicht mehr verknüpft."
+    ":provider is unlinked.": ":provider ist nicht mehr verknüpft.",
+    "Not found in known data breaches": "Nicht in bekannten Datenlecks gefunden",
+    "Checking known data breaches…": "Bekannte Datenlecks werden geprüft…",
+    "Found in known data breaches: choose another one": "In bekannten Datenlecks gefunden: Wähle ein anderes",
+    "Set a password": "Ein Passwort festlegen",
+    "Set the password": "Passwort festlegen"
 }

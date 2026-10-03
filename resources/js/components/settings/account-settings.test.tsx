@@ -18,6 +18,7 @@ const seen = vi.hoisted(() => ({
     concealed: undefined as Record<string, unknown> | undefined,
     serverUrl: undefined as unknown,
     gate: undefined as Record<string, unknown> | undefined,
+    password: undefined as Record<string, unknown> | undefined,
     profile: undefined as
         | { presence?: number; presenceColours?: ReactNode; photo?: ReactNode }
         | undefined,
@@ -62,12 +63,16 @@ vi.mock('@/components/settings/avatar-style-card', () => ({
     AvatarStyleCard: () => <p>avatar style card</p>,
 }));
 vi.mock('@/components/settings/security/password-card', () => ({
-    PasswordCard: ({ breachCheck }: { breachCheck?: ReactNode }) => (
-        <p>password card{breachCheck !== undefined && ' with breach check'}</p>
-    ),
-}));
-vi.mock('@/components/settings/security/password-strength', () => ({
-    PasswordBreachCheck: () => null,
+    PasswordCard: (props: { checksCompromisedPasswords: boolean }) => {
+        seen.password = props;
+
+        return (
+            <p>
+                password card
+                {props.checksCompromisedPasswords && ' with breach check'}
+            </p>
+        );
+    },
 }));
 vi.mock('@/components/settings/security/two-factor-card', () => ({
     TwoFactorCard: (props: Record<string, unknown>) => {
@@ -162,10 +167,12 @@ function unlocked(): AccountSettingsProps {
             presenceColor: 7,
             hasPhoto: true,
             photosAllowed: true,
+            needsPasswordConfirmation: true,
         },
         security: {
             passwordRules: 'minlength: 12;',
             checksCompromisedPasswords: true,
+            liveBreachCheck: true,
             canManageTwoFactor: true,
             canManagePasskeys: true,
             canManageEmailCode: true,
@@ -185,6 +192,7 @@ function unlocked(): AccountSettingsProps {
                     address: 'mona@example.com',
                     resendIn: 0,
                 },
+                password: { isSet: true, allowed: true },
             },
         },
         appearance: { reduceMotion: true },
@@ -264,6 +272,7 @@ beforeEach(() => {
     seen.serverUrl = undefined;
     seen.gate = undefined;
     seen.profile = undefined;
+    seen.password = undefined;
     window.history.replaceState(null, '', '/settings');
     scrollIntoView.mockClear();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
@@ -417,7 +426,11 @@ describe('AccountSettings', () => {
             <AccountSettings {...locked()} />,
         );
 
-        expect(seen.gate).toEqual({ locked: true, passkeys: true });
+        expect(seen.gate).toEqual({
+            locked: true,
+            passkeys: true,
+            needsConfirmation: true,
+        });
 
         unmount();
         renderWithProviders(
@@ -427,7 +440,77 @@ describe('AccountSettings', () => {
             />,
         );
 
-        expect(seen.gate).toEqual({ locked: false, passkeys: false });
+        expect(seen.gate).toEqual({
+            locked: false,
+            passkeys: false,
+            needsConfirmation: true,
+        });
+    });
+
+    it('tells the gate that an account without a known password is asked no confirmation (rule S-1)', () => {
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                profile={{ ...props.profile, needsPasswordConfirmation: false }}
+            />,
+        );
+
+        expect(seen.gate).toMatchObject({ needsConfirmation: false });
+    });
+
+    it('hands the password card the breach check of the instance and whether the account has a password', () => {
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{
+                    ...props.security!,
+                    liveBreachCheck: false,
+                    protected: {
+                        ...props.security!.protected!,
+                        password: { isSet: false, allowed: true },
+                    },
+                }}
+            />,
+        );
+
+        expect(seen.password).toEqual({
+            passwordRules: 'minlength: 12;',
+            checksCompromisedPasswords: true,
+            liveBreachCheck: false,
+            isSet: false,
+        });
+    });
+
+    it('updates a password before the confirmation, the state of the account being unknown', () => {
+        renderWithProviders(<AccountSettings {...locked()} />);
+
+        expect(seen.password).toMatchObject({ isSet: true });
+    });
+
+    it('draws no password card when the sign-in policy refuses a password to the account', () => {
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{
+                    ...props.security!,
+                    protected: {
+                        ...props.security!.protected!,
+                        password: { isSet: false, allowed: false },
+                    },
+                }}
+            />,
+        );
+
+        expect(seen.password).toBeUndefined();
+        expect(sectionNamed('Security').textContent).not.toContain(
+            'password card',
+        );
     });
 
     it('draws no two-factor card before the confirmation when the instance offers no method', () => {

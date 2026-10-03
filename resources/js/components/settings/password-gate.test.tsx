@@ -113,9 +113,13 @@ function Card() {
     );
 }
 
-function gate(locked: boolean, passkeys = false) {
+function gate(locked: boolean, passkeys = false, needsConfirmation = true) {
     return renderWithProviders(
-        <PasswordGateProvider locked={locked} passkeys={passkeys}>
+        <PasswordGateProvider
+            locked={locked}
+            passkeys={passkeys}
+            needsConfirmation={needsConfirmation}
+        >
             <Card />
         </PasswordGateProvider>,
     );
@@ -314,5 +318,38 @@ describe('PasswordGateProvider', () => {
         expect(
             screen.queryByRole('button', { name: 'Confirm with passkey' }),
         ).toBeNull();
+    });
+});
+
+describe('PasswordGateProvider, for an account without a known password', () => {
+    it('runs a guarded action at once, asking the server nothing and opening no dialog (rule S-1)', async () => {
+        gate(false, true, false);
+
+        await ask();
+
+        await waitFor(() => expect(action).toHaveBeenCalledOnce());
+        expect(server.status).not.toHaveBeenCalled();
+        expect(server.post).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(router.reload).not.toHaveBeenCalled();
+    });
+
+    it('loads the props the server kept back before the action, still without a dialog (rule S-1)', async () => {
+        router.reload.mockImplementation((options: ReloadOptions) => {
+            expect(action).not.toHaveBeenCalled();
+            options.onFinish?.();
+        });
+        gate(true, false, false);
+
+        await ask();
+
+        await waitFor(() => expect(action).toHaveBeenCalledOnce());
+        expect(router.reload).toHaveBeenCalledOnce();
+        expect(router.reload.mock.calls[0][0].only).toEqual([
+            'security',
+            'apiTokens',
+        ]);
+        expect(server.status).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 });
