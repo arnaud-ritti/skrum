@@ -53,6 +53,7 @@ export function retroSnapshot({
             timerEndsAt: null,
             timerPausedSeconds: null,
             topicSeconds: null,
+            phaseDurations: null,
             maxVotesPerCard: null,
             maxVotesPerCardSetting: null,
             highlightedCardId: null,

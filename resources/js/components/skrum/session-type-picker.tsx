@@ -69,6 +69,15 @@ const kinds: Record<SessionType, { icon: LucideIcon; tone: string }> = {
     },
 };
 
+/** The tile colours of a kind: border, background and text tokens. */
+export function sessionKindTone(kind: SessionType): string {
+    return kinds[kind].tone;
+}
+
+export function sessionKindIcon(kind: SessionType): LucideIcon {
+    return kinds[kind].icon;
+}
+
 export function useDefaultSessionTypeOptions(): SessionTypeOption[] {
     const { t } = useTrans();
 

@@ -22,6 +22,8 @@ const imported = pokerTask('t1', 'Login form', {
         source: 'linear',
         key: 'ENG-1',
         url: 'https://linear.app/acme/issue/ENG-1',
+        type: null,
+        labels: [],
         isManaged: true,
         assignee: 'Sam Lee',
         sourceEstimate: '2',

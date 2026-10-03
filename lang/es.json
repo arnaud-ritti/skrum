@@ -5114,5 +5114,7 @@
     "Puzzle :number": "Acertijo :number",
     "Puzzle in progress": "Acertijo en curso",
     "Puzzles": "Acertijos",
-    "Only writing, grouping, voting, discussing and actions can have a timer.": "Solo las fases de escritura, agrupación, votación, discusión y acciones pueden tener un temporizador."
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Solo las fases de escritura, agrupación, votación, discusión y acciones pueden tener un temporizador.",
+    ":count people": ":count personas",
+    ":count tasks": ":count tareas"
 }

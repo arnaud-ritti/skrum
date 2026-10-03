@@ -82,6 +82,7 @@ const base: TeamPageProps = {
     defaultPokerDeck: { deck: null, savedDeckId: null },
     pokerDeckOptions: [],
     canCreatePokerGame: true,
+    pokerSources: [],
     canManageIntegrations: false,
     pokerDecks: [],
     whiteboards: [],

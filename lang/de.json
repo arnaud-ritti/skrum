@@ -5114,5 +5114,7 @@
     "Puzzle :number": "Rätsel :number",
     "Puzzle in progress": "Rätsel läuft",
     "Puzzles": "Rätsel",
-    "Only writing, grouping, voting, discussing and actions can have a timer.": "Nur die Phasen Schreiben, Gruppieren, Abstimmen, Diskutieren und Aktionen können einen Timer haben."
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Nur die Phasen Schreiben, Gruppieren, Abstimmen, Diskutieren und Aktionen können einen Timer haben.",
+    ":count people": ":count Personen",
+    ":count tasks": ":count Aufgaben"
 }

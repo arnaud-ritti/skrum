@@ -315,6 +315,8 @@ export type Snapshot = {
         timerPausedSeconds: number | null;
         /** The time each topic of the discussion gets; null without one. */
         topicSeconds: number | null;
+        /** Minutes offered to the facilitator per timed phase; null without any. */
+        phaseDurations: PhaseDurations | null;
         /** The cap in force in Voting; null without one. */
         maxVotesPerCard: number | null;
         /** The cap as set, for the settings. */
@@ -369,6 +371,16 @@ export type Snapshot = {
     emojiData: { baseUrl: string; locale: string };
     serverTime: string;
 };
+
+/** The phases a duration can be set for (`PhaseDurations::TimedPhases`). */
+export type TimedPhase =
+    | 'writing'
+    | 'grouping'
+    | 'voting'
+    | 'discussing'
+    | 'actions';
+
+export type PhaseDurations = Partial<Record<TimedPhase, number>>;
 
 /** The shared notes of a topic; version 0 before the first save. */
 export type TopicNote = {

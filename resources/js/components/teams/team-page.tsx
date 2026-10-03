@@ -1,20 +1,11 @@
-import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { teamSettingsHref as settingsHrefOf } from '@/lib/teams/settings-href';
-import {
-    icebreakerSessionForm,
-    roomLimitReason,
-} from '@/components/teams/session-create/icebreaker-session-fields';
-import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
-import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
-import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
-import { surveySessionForm } from '@/components/teams/session-create/survey-session-fields';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
-import { whiteboardSessionForm } from '@/components/teams/session-create/whiteboard-session-fields';
 import { TeamHeader } from '@/components/teams/team-header';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
+import { TeamNewSessionDialog } from '@/components/teams/team-new-session-dialog';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
@@ -25,29 +16,19 @@ import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type {
-    SurveyTemplateOption,
-    TeamSurveySummary,
-} from '@/lib/surveys/types';
-import type {
-    CatalogueTemplate,
-    CategoryOption,
-    GameOption,
-    LlmAvailability,
-    PokerDeckOption,
+    NewSessionOptions,
     PokerGameSummary,
     RetroSummary,
-    SavedPokerDeck,
     TeamHealthStatement,
     TeamMember,
     TeamMoodPoint,
     TeamSummary,
-    WhiteboardGalleryItem,
     WhiteboardSummary,
     WhiteboardTemplateSummary,
     WorkspaceSummary,
 } from '@/types';
 
-export type TeamPageProps = {
+export type TeamPageProps = NewSessionOptions & {
     workspace: WorkspaceSummary;
     team: TeamSummary;
     members: TeamMember[];
@@ -55,30 +36,12 @@ export type TeamPageProps = {
     canManage: boolean;
     openActionItemCount: number;
     retros: RetroSummary[];
-    templateCategories: CategoryOption[];
-    topTemplates: string[];
-    catalogue?: CatalogueTemplate[];
-    canCreateRetro: boolean;
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
-    llm: LlmAvailability;
-    icebreakerGames: GameOption[];
-    gameOptions: GameOption[];
-    canCreateGameRoom: boolean;
-    roomLimit: number;
     pokerGames: PokerGameSummary[];
-    defaultPokerDeck: { deck: string | null; savedDeckId: string | null };
-    pokerDeckOptions: PokerDeckOption[];
-    canCreatePokerGame: boolean;
     canManageIntegrations: boolean;
-    pokerDecks: SavedPokerDeck[];
     whiteboards: WhiteboardSummary[];
-    canCreateWhiteboard: boolean;
     whiteboardTemplates: WhiteboardTemplateSummary[];
-    whiteboardGallery?: WhiteboardGalleryItem[];
-    surveys: TeamSurveySummary[];
-    canCreateSurvey: boolean;
-    surveyTemplates: SurveyTemplateOption[];
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     pokerPresence?: Record<string, number | null> | null;
@@ -133,12 +96,8 @@ export function TeamPage({
     ...props
 }: TeamPageProps & { slots?: TeamPageSlots }) {
     const { t } = useTrans();
-    const { currentWorkspace } = usePage().props;
     const newSessionIntent = useNewSessionIntent();
     const { workspace, team } = props;
-    const canManageTemplates =
-        currentWorkspace?.role === 'owner' ||
-        currentWorkspace?.role === 'admin';
 
     return (
         <div data-slot="team-page" className="flex min-w-0 flex-col gap-8">
@@ -150,7 +109,11 @@ export function TeamPage({
                 settingsHref={teamSettingsHref(props)}
                 schedule={slots.schedule}
                 newSession={
-                    <NewSessionDialog
+                    <TeamNewSessionDialog
+                        workspace={workspace}
+                        team={team}
+                        options={props}
+                        intent={newSessionIntent}
                         trigger={
                             <Button>
                                 <Plus aria-hidden />
@@ -159,56 +122,6 @@ export function TeamPage({
                                 </span>
                             </Button>
                         }
-                        team={team}
-                        intent={newSessionIntent}
-                        retro={
-                            props.canCreateRetro
-                                ? retroSessionForm({
-                                      workspaceSlug: workspace.slug,
-                                      categories: props.templateCategories,
-                                      catalogue: props.catalogue,
-                                      topTemplates: props.topTemplates,
-                                      llm: props.llm,
-                                      icebreakerGames: props.icebreakerGames,
-                                      canSaveTemplate: canManageTemplates,
-                                  })
-                                : undefined
-                        }
-                        poker={
-                            props.canCreatePokerGame
-                                ? pokerSessionForm({
-                                      workspaceSlug: workspace.slug,
-                                      deckOptions: props.pokerDeckOptions,
-                                      savedDecks: props.pokerDecks,
-                                      defaultPokerDeck: props.defaultPokerDeck,
-                                  })
-                                : undefined
-                        }
-                        whiteboard={
-                            props.canCreateWhiteboard
-                                ? whiteboardSessionForm({
-                                      workspaceSlug: workspace.slug,
-                                      gallery: props.whiteboardGallery,
-                                  })
-                                : undefined
-                        }
-                        survey={surveySessionForm({
-                            workspaceSlug: workspace.slug,
-                            templates: props.surveyTemplates,
-                            surveys: props.surveys,
-                            disabledReason: props.canCreateSurvey
-                                ? undefined
-                                : t('You cannot create a survey in this team.'),
-                        })}
-                        icebreaker={icebreakerSessionForm({
-                            workspaceSlug: workspace.slug,
-                            gameOptions: props.gameOptions,
-                            disabledReason: roomLimitReason(
-                                props.canCreateGameRoom,
-                                props.roomLimit,
-                                t,
-                            ),
-                        })}
                     />
                 }
             />

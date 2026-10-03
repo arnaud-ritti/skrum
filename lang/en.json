@@ -4894,5 +4894,7 @@
     "Puzzle :number": "Puzzle :number",
     "Puzzle in progress": "Puzzle in progress",
     "Puzzles": "Puzzles",
-    "Only writing, grouping, voting, discussing and actions can have a timer.": "Only writing, grouping, voting, discussing and actions can have a timer."
+    "Only writing, grouping, voting, discussing and actions can have a timer.": "Only writing, grouping, voting, discussing and actions can have a timer.",
+    ":count people": ":count people",
+    ":count tasks": ":count tasks"
 }

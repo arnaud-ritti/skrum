@@ -28,6 +28,8 @@ function external(
         source: 'jira',
         key: 'PROJ-1',
         url: 'https://acme.atlassian.net/browse/PROJ-1',
+        type: null,
+        labels: [],
         isManaged: true,
         ...overrides,
     };
