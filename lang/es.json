@@ -5256,5 +5256,6 @@
     ":inviter invited you to join :team on :workspace": ":inviter te invita a unirte a :team en :workspace",
     ":inviter invited you to join the :team team in the :workspace workspace": ":inviter te invita a unirte al equipo :team en el espacio :workspace",
     ":workspace workspace": "Espacio :workspace",
-    "This person is already in :team.": "Esta persona ya está en :team."
+    "This person is already in :team.": "Esta persona ya está en :team.",
+    ":email is already in :team.": ":email ya está en :team."
 }

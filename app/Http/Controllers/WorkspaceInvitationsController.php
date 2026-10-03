@@ -69,7 +69,7 @@ class WorkspaceInvitationsController extends Controller
 
     public function destroy(Workspace $workspace, WorkspaceInvitation $invitation, ForgetInvitationNotifications $forgetNotifications): RedirectResponse
     {
-        Gate::authorize('manageMembers', $workspace);
+        Gate::authorize('manage', $invitation);
 
         $invitation->delete();
         $forgetNotifications->handle([$invitation->id]);

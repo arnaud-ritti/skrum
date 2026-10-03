@@ -173,6 +173,7 @@ use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
+use App\Http\Controllers\TeamInvitationsController;
 use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
@@ -214,6 +215,7 @@ use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
 use App\Http\Controllers\WorkspaceDetailsController;
+use App\Http\Controllers\WorkspaceInvitationResendsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacePokerDecksController;
@@ -475,6 +477,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
             Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
+            Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
+            Route::post('teams/{team}/invitations', [TeamInvitationsController::class, 'store'])->name('teams.invitations.store')->middleware('throttle:10,1,teamInvitations');
 
             Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');

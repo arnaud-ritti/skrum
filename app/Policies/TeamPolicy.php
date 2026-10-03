@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
@@ -35,6 +36,18 @@ class TeamPolicy
     public function manageMembers(User $user, Team $team): bool
     {
         return $user->managesTeam($team);
+    }
+
+    /**
+     * Who manages the team's members, and the team's facilitators (owner's decision 2 B).
+     */
+    public function invite(User $user, Team $team): bool
+    {
+        if ($this->manageMembers($user, $team)) {
+            return true;
+        }
+
+        return $team->roleOf($user) === TeamRole::Facilitator;
     }
 
     public function manageRituals(User $user, Team $team): bool
