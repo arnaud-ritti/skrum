@@ -7,7 +7,7 @@ import {
     Timer as TimerIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -51,6 +51,8 @@ export type TimerProps = {
     /** Seconds added by the "+" control and the + key; one minute by default. A multiple of 60: the label counts minutes. */
     addSeconds?: number;
     onDone?: () => void;
+    /** A line beside the time, before the controls: "of 5:00 · this topic". */
+    caption?: ReactNode;
     className?: string;
 };
 
@@ -104,6 +106,7 @@ export function Timer({
     onAdd,
     addSeconds = 60,
     onDone,
+    caption,
     className,
 }: TimerProps) {
     const { t } = useTrans();
@@ -277,6 +280,14 @@ export function Timer({
                         {formatSeconds(remainingSeconds)}
                     </span>
                 </div>
+            )}
+            {hasTimer && caption !== undefined && (
+                <span
+                    data-slot="timer-caption"
+                    className="text-xs whitespace-nowrap text-muted-foreground"
+                >
+                    {caption}
+                </span>
             )}
             <span
                 data-slot="timer-announcement"

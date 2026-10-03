@@ -11,6 +11,37 @@ function state(container: HTMLElement): string | null | undefined {
 }
 
 describe('Timer', () => {
+    it('puts its caption right after the time, before the controls', () => {
+        const { container } = renderWithProviders(
+            <Timer
+                remainingSeconds={252}
+                caption="of 5:00 · this topic"
+                onAdd={vi.fn()}
+                addSeconds={120}
+            />,
+        );
+        const caption = container.querySelector('[data-slot="timer-caption"]');
+
+        expect(caption?.textContent).toBe('of 5:00 · this topic');
+        expect(caption?.previousElementSibling?.getAttribute('role')).toBe(
+            'timer',
+        );
+    });
+
+    it('draws no caption without a timer', () => {
+        const { container } = renderWithProviders(
+            <Timer
+                remainingSeconds={null}
+                caption="of 5:00"
+                onStart={vi.fn()}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="timer-caption"]'),
+        ).toBeNull();
+    });
+
     it('says its size on the root, medium by default', () => {
         const medium = renderWithProviders(<Timer remainingSeconds={30} />);
 
