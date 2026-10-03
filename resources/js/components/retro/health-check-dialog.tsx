@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { HealthResult } from './results/health';
 import { useHealthCheckSubmission } from './use-health-check-submission';
+import type { HealthCheckSubmission } from './use-health-check-submission';
 
 type Props = {
     open: boolean;
@@ -34,12 +35,17 @@ type Props = {
 
 type Confirming = 'close' | 'remove' | null;
 
-/** While open: the form, sent at once. Once closed: the results, to everyone. */
-function HealthCheckBody() {
+/**
+ * While open: the form, sent at once. Once closed: the results, to everyone.
+ * The unsent scores live in the dialog, which stays mounted when it closes.
+ */
+function HealthCheckBody({
+    submission: { answers, setAnswer, submit, submitting },
+}: {
+    submission: HealthCheckSubmission;
+}) {
     const ctx = useBoard();
     const { t } = useTrans();
-    const { answers, setAnswer, submit, submitting } =
-        useHealthCheckSubmission();
     const healthCheck = ctx.board.healthCheck;
 
     if (healthCheck === null) {
@@ -82,7 +88,7 @@ function HealthCheckBody() {
     );
 }
 
-/** "Close the health check", "Reopen" and "Remove", for the facilitator. */
+/** For the facilitator: "Close the health check" and "Remove" while open, "Reopen" once closed. */
 function FacilitatorActions({ onRemoved }: { onRemoved: () => void }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -127,16 +133,18 @@ function FacilitatorActions({ onRemoved }: { onRemoved: () => void }) {
             data-slot="health-check-facilitator"
             className="flex flex-wrap items-center justify-end gap-2"
         >
-            <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={() => setConfirming('remove')}
-            >
-                <Trash2 aria-hidden />
-                <span className="truncate">{t('Remove')}</span>
-            </Button>
+            {!healthCheck.isClosed && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => setConfirming('remove')}
+                >
+                    <Trash2 aria-hidden />
+                    <span className="truncate">{t('Remove')}</span>
+                </Button>
+            )}
             {healthCheck.isClosed ? (
                 <Button
                     type="button"
@@ -176,13 +184,9 @@ function FacilitatorActions({ onRemoved }: { onRemoved: () => void }) {
                 open={confirming === 'remove'}
                 onOpenChange={(next) => setConfirming(next ? 'remove' : null)}
                 title={t('Remove the health check')}
-                description={
-                    healthCheck.respondents > 0
-                        ? t(
-                              'Its answers are kept and come back if you add it again.',
-                          )
-                        : t('It has no answer yet.')
-                }
+                description={t(
+                    'Any answers it holds are kept and come back if you add it again.',
+                )}
                 confirmLabel={t('Remove')}
                 tone="destructive"
                 onConfirm={remove}
@@ -199,6 +203,7 @@ export function HealthCheckDialog({ open, onOpenChange }: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
+    const submission = useHealthCheckSubmission();
     const healthCheck = ctx.board.healthCheck;
 
     if (healthCheck === null) {
@@ -210,7 +215,7 @@ export function HealthCheckDialog({ open, onOpenChange }: Props) {
     const titleClass = cn(!healthCheck.isClosed && 'sr-only');
     const body: ReactNode = (
         <div className="flex min-w-0 flex-col gap-4">
-            <HealthCheckBody />
+            <HealthCheckBody submission={submission} />
             <FacilitatorActions onRemoved={() => onOpenChange(false)} />
         </div>
     );

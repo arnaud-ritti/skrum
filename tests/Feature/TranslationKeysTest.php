@@ -130,6 +130,7 @@ it('words an english key differently from its text only where that is meant', fu
     $reworded = array_filter($english, fn (string $text, string $key): bool => $text !== $key, ARRAY_FILTER_USE_BOTH);
 
     expect($reworded)->toBe([
+        'Built-in survey' => 'Built-in',
         'Two-factor on' => 'On',
         'Two-factor off' => 'Off',
     ]);

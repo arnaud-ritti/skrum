@@ -55,6 +55,11 @@ describe('the health check page of a team', () => {
             screen.getByRole('heading', { level: 1, name: 'Health check' }),
         ).toBeTruthy();
         expect(
+            screen.getByText(
+                /scores from 1 to 5 in every health check, and the mood they give\.$/,
+            ),
+        ).toBeTruthy();
+        expect(
             screen.getByRole('region', { name: 'Health check statements' }),
         ).toBeTruthy();
         expect(screen.getByRole('textbox', { name: 'Statement' })).toBeTruthy();

@@ -23,14 +23,23 @@ function useHealthCheckEntry() {
     }
 
     const { respondents: answered, participants: total } = healthCheck;
+    const awaitsViewer = !healthCheck.isClosed && !healthCheck.hasSubmitted;
 
     return {
         count: `${answered}/${total}`,
-        label: t('Health check, :answered of :total answered', {
-            answered,
-            total,
-        }),
-        awaitsViewer: !healthCheck.isClosed && !healthCheck.hasSubmitted,
+        label: awaitsViewer
+            ? t(
+                  'Health check, :answered of :total answered, your answers not sent',
+                  {
+                      answered,
+                      total,
+                  },
+              )
+            : t('Health check, :answered of :total answered', {
+                  answered,
+                  total,
+              }),
+        awaitsViewer,
     };
 }
 

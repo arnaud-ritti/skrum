@@ -448,7 +448,7 @@ describe('BoardActions', () => {
             renderInBoard(actions, boardContext(attached()));
 
             const healthButton = screen.getByRole('button', {
-                name: 'Health check, 1 of 3 answered',
+                name: 'Health check, 1 of 3 answered, your answers not sent',
             });
             const shareButton = screen.getByRole('button', { name: 'Share' });
 
@@ -474,7 +474,7 @@ describe('BoardActions', () => {
 
             expect(
                 screen.getByRole('button', {
-                    name: 'Health check, 1 of 3 answered',
+                    name: 'Health check, 1 of 3 answered, your answers not sent',
                 }),
             ).toBeTruthy();
         });
@@ -517,7 +517,7 @@ describe('BoardActions', () => {
             await user.click(screen.getByRole('button', { name: 'Menu' }));
             await user.click(
                 screen.getByRole('menuitem', {
-                    name: 'Health check, 1 of 3 answered',
+                    name: 'Health check, 1 of 3 answered, your answers not sent',
                 }),
             );
 

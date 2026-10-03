@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HealthCheckDialog } from '@/components/retro/health-check-dialog';
 import { ReactionBar } from '@/components/skrum/reaction-bar';
@@ -185,6 +186,51 @@ describe('HealthCheckDialog', () => {
         );
     });
 
+    it('keeps the unsent scores when the dialog is closed and opened again', async () => {
+        function Harness() {
+            const [open, setOpen] = useState(true);
+
+            return (
+                <>
+                    <button type="button" onClick={() => setOpen(true)}>
+                        Open again
+                    </button>
+                    <HealthCheckDialog open={open} onOpenChange={setOpen} />
+                </>
+            );
+        }
+
+        renderInBoard(
+            <Harness />,
+            boardContext(
+                retroSnapshot({
+                    healthCheck: {
+                        surveyId: 'survey-1',
+                        isClosed: false,
+                        scale: 5,
+                        respondents: 0,
+                        participants: 2,
+                        hasSubmitted: false,
+                        statements: [statement(), vision],
+                        results: null,
+                    },
+                }),
+            ),
+        );
+
+        fireEvent.click(score(Interaction, 4));
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Open again' }),
+        );
+
+        expect(score(Interaction, 4).getAttribute('aria-checked')).toBe('true');
+        expect(retroRequest).not.toHaveBeenCalled();
+    });
+
     it('is read-only once sent, names nobody and offers no Clear', () => {
         show({
             state: {
@@ -278,6 +324,7 @@ describe('HealthCheckDialog', () => {
         expect(
             screen.queryByRole('button', { name: 'Close the health check' }),
         ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
 
         await userEvent.click(screen.getByRole('button', { name: 'Reopen' }));
 
@@ -300,7 +347,7 @@ describe('HealthCheckDialog', () => {
         const alert = await confirm('Remove', 'Remove');
 
         expect(alert.textContent).toContain(
-            'Its answers are kept and come back if you add it again.',
+            'Any answers it holds are kept and come back if you add it again.',
         );
         await waitFor(() =>
             expect(retroRequest).toHaveBeenCalledWith(
@@ -316,7 +363,7 @@ describe('HealthCheckDialog', () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('says a health check without answers has none to keep', async () => {
+    it('says the same true thing whether or not anyone has answered yet', async () => {
         show();
 
         await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
@@ -324,7 +371,9 @@ describe('HealthCheckDialog', () => {
         expect(
             (await screen.findByRole('alertdialog', { name: /^Remove/ }))
                 .textContent,
-        ).toContain('It has no answer yet.');
+        ).toContain(
+            'Any answers it holds are kept and come back if you add it again.',
+        );
     });
 
     it('gives a participant no facilitator action', () => {

@@ -751,7 +751,7 @@ function AddSurveyMenu({
                         description={t(':count statements', {
                             count: surveys.healthCheckStatements,
                         })}
-                        badge={t('Built-in')}
+                        badge={t('Built-in survey')}
                         disabled={surveys.healthCheckAttached}
                         onSelect={() => {
                             chosen.current = 'health_check';

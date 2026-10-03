@@ -51,7 +51,7 @@ export function TeamHealthCheckPage({
                     </h1>
                     <p className="text-body-sm text-muted-foreground">
                         {t(
-                            'The statements :team scores from 1 to 10 in a retro, and the mood they give.',
+                            'The statements :team scores from 1 to 5 in every health check, and the mood they give.',
                             { team: team.name },
                         )}
                     </p>

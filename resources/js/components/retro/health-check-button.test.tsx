@@ -58,7 +58,11 @@ describe('HealthCheckButton', () => {
         const onOpen = vi.fn();
         const { container } = renderInBoard(
             <HealthCheckButton onOpen={onOpen} />,
-            boardContext(retroSnapshot({ healthCheck: healthCheck() })),
+            boardContext(
+                retroSnapshot({
+                    healthCheck: healthCheck({ hasSubmitted: true }),
+                }),
+            ),
         );
 
         const button = screen.getByRole('button', {
@@ -98,6 +102,19 @@ describe('HealthCheckButton', () => {
         expect(dot({ isClosed: true })).toBe(false);
     });
 
+    it('tells a screen reader that the viewer has not sent their answers', () => {
+        renderInBoard(
+            <HealthCheckButton onOpen={vi.fn()} />,
+            boardContext(retroSnapshot({ healthCheck: healthCheck() })),
+        );
+
+        expect(
+            screen.getByRole('button', {
+                name: 'Health check, 3 of 8 answered, your answers not sent',
+            }),
+        ).toBeTruthy();
+    });
+
     it('renders nothing without a health check', () => {
         const { container } = renderInBoard(
             <HealthCheckButton onOpen={vi.fn()} />,
@@ -125,7 +142,7 @@ describe('HealthCheckMenuItem', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Menu' }));
         await userEvent.click(
             screen.getByRole('menuitem', {
-                name: 'Health check, 3 of 8 answered',
+                name: 'Health check, 3 of 8 answered, your answers not sent',
             }),
         );
 

@@ -694,7 +694,7 @@ describe('SessionSettingsPopover', () => {
         const items = within(menu).getAllByRole('menuitem');
 
         expect(items.map((item) => item.textContent)).toEqual([
-            'Health check6 statementsBuilt-in',
+            'Health check6 statementsBuilt-in survey',
             'Quick pollOne question, answered on the board',
         ]);
         expect(within(menu).getByText('Add to this retro')).toBeTruthy();
