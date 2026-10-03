@@ -114,6 +114,7 @@ function fakeApi(snapshot: CanvasSnapshot) {
 }
 
 type Options = {
+    bottomInset?: number;
     isFacilitator?: boolean;
     editing?: boolean;
     stylesShown?: boolean;
@@ -129,6 +130,7 @@ function Board({
     editing = true,
     stylesShown = false,
     onStylesChange = () => {},
+    bottomInset,
 }: Options & { api: ReturnType<typeof fakeApi>; snapshot: CanvasSnapshot }) {
     const canvas = useRef<HTMLDivElement>(null);
 
@@ -147,6 +149,7 @@ function Board({
                 editing={editing}
                 stylesShown={stylesShown}
                 onStylesChange={onStylesChange}
+                bottomInset={bottomInset}
             />
         </div>
     );
@@ -411,6 +414,13 @@ describe('CanvasSelection', () => {
             (screen.getByRole('radio', { name: 'Sun' }) as HTMLButtonElement)
                 .disabled,
         ).toBe(true);
+        expect(
+            document.getElementById(
+                screen
+                    .getByRole('radiogroup')
+                    .getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Only the facilitator can change a locked element.');
     });
 
     it('toggles the styles panel, and closes it when the selection goes', () => {
@@ -471,6 +481,41 @@ describe('CanvasSelection', () => {
 
         expect(bar()?.style.left).toBe(`${place.left}px`);
         expect(bar()?.style.top).toBe(`${place.top}px`);
+    });
+
+    it("wraps the bar within a phone's width and keeps it inside the screen, above the dock", () => {
+        const phone: CanvasView = { ...View, width: 390, height: 700 };
+        const unwrapped = { width: 453, height: 46 };
+        vi.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect',
+        ).mockImplementation(function (this: HTMLElement) {
+            const room = parseFloat(this.style.maxWidth);
+
+            return (
+                Number.isNaN(room) || room >= unwrapped.width
+                    ? unwrapped
+                    : { width: room, height: unwrapped.height * 2 }
+            ) as DOMRect;
+        });
+        const note = element('note', 'rectangle', { x: 300, y: 560 });
+
+        renderWithProviders(
+            <Board
+                api={fakeApi(snapshotOf([note], ['note']))}
+                snapshot={{ ...snapshotOf([note], ['note']), view: phone }}
+                bottomInset={80}
+            />,
+        );
+
+        const left = parseFloat(bar()?.style.left ?? '');
+        const top = parseFloat(bar()?.style.top ?? '');
+
+        expect(bar()?.className).toContain('flex-wrap');
+        expect(bar()?.style.maxWidth).toBe('358px');
+        expect(left).toBeGreaterThanOrEqual(16);
+        expect(left + 358).toBeLessThanOrEqual(390 - 16);
+        expect(top + unwrapped.height * 2).toBeLessThanOrEqual(700 - 16 - 80);
     });
 
     it('keeps no place for actions on a selection', () => {

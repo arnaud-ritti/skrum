@@ -20,6 +20,8 @@ export type WhiteboardColorBarProps = {
     onActivate?: (color: PostItColor) => void;
     orientation?: 'horizontal' | 'vertical';
     disabled?: boolean;
+    /** The id of what says why the colours are disabled. */
+    describedBy?: string;
     className?: string;
 };
 
@@ -55,6 +57,7 @@ export function WhiteboardColorBar({
     onActivate,
     orientation = 'horizontal',
     disabled = false,
+    describedBy,
     className,
 }: WhiteboardColorBarProps) {
     const { t } = useTrans();
@@ -103,6 +106,7 @@ export function WhiteboardColorBar({
             role="radiogroup"
             aria-label={t('Fill colour')}
             aria-orientation={orientation}
+            aria-describedby={describedBy}
             className={cn(
                 'inline-flex max-w-full items-center gap-1 rounded-xl border border-border bg-popover p-1 shadow-raised',
                 isVertical ? 'flex-col' : 'flex-wrap',

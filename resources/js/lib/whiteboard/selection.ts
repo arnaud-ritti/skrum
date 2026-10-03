@@ -39,6 +39,15 @@ export const BarGap = 12;
 export const ChipHeight = 26;
 export const EdgeMargin = 16;
 
+/**
+ * Pixels on screen kept free at the bottom of the canvas for the bars docked
+ * there: the phone's dock (bottom 1.5rem, 3.5rem high) and, on a wider
+ * screen, the history and zoom bars (bottom 1rem, 2.875rem high), with a
+ * gap of 0.25rem.
+ */
+export const PhoneDockBand = 80;
+export const DesktopBarsBand = 64;
+
 const Filled: readonly string[] = ['rectangle', 'diamond', 'ellipse'];
 
 export function selectionSummary(
@@ -100,6 +109,7 @@ export function selectionBarPlacement(
     bounds: Rect,
     view: CanvasView,
     bar: { width: number; height: number },
+    bottomInset = 0,
 ): Placement {
     const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
     const bottomRight = toScreen(
@@ -112,7 +122,7 @@ export function selectionBarPlacement(
         EdgeMargin,
         view.width - EdgeMargin - bar.width,
     );
-    const lowestTop = view.height - EdgeMargin - bar.height;
+    const lowestTop = view.height - EdgeMargin - bottomInset - bar.height;
     const below = bottomRight.y + BarGap;
 
     if (below <= lowestTop) {

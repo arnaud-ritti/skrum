@@ -138,6 +138,42 @@ describe('useCanvasSnapshot', () => {
         expect(result.current?.view.scrollX).toBe(3);
     });
 
+    it('keeps the snapshot when a change reports the same scene, view and state', () => {
+        const scene = [element('a')];
+        const fake = fakeApi(scene);
+        let renders = 0;
+        const { result } = renderHook(() => {
+            renders += 1;
+
+            return useCanvasSnapshot(fake.api);
+        });
+        const first = result.current;
+        const rendersBefore = renders;
+
+        act(() => {
+            fake.emit(scene, appState({ selectedElementIds: {} }));
+            vi.advanceTimersByTime(16);
+        });
+
+        act(() => {
+            fake.emit(scene, appState());
+            vi.advanceTimersByTime(16);
+        });
+
+        expect(renders).toBe(rendersBefore);
+        expect(result.current).toBe(first);
+
+        act(() => {
+            fake.emit(scene, appState({ selectedElementIds: { a: true } }));
+            vi.advanceTimersByTime(16);
+        });
+
+        expect(renders).toBe(rendersBefore + 1);
+        expect(result.current?.appState.selectedElementIds).toEqual({
+            a: true,
+        });
+    });
+
     it('stamps the scene with sceneStamp', () => {
         const fake = fakeApi([element('a', 2)]);
         const { result } = renderHook(() => useCanvasSnapshot(fake.api));

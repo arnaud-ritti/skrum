@@ -1,11 +1,12 @@
 import { Scan } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { WhiteboardToolButton } from '@/components/skrum/whiteboard-toolbar';
-import type { CanvasSnapshot } from '@/hooks/use-canvas-snapshot';
+import { useCanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import { DesktopBarsBand, PhoneDockBand } from '@/lib/whiteboard/selection';
 import { CanvasSelection } from './canvas-selection';
 import { CanvasTools } from './canvas-tools';
 import { CanvasView, fitToScreen } from './canvas-view';
@@ -14,16 +15,20 @@ import { ReadModeLayer } from './read-mode-toggle';
 import { useCanvasKeyGuard } from './use-canvas-key-guard';
 
 type Props = {
-    /** Null until the canvas is ready. */
+    /** Null until the canvas is ready: no bar is shown. */
     api: ExcalidrawImperativeAPI | null;
-    /** Null while the canvas is loading: no bar is shown. */
-    snapshot: CanvasSnapshot | null;
     editing: boolean;
     isPhone: boolean;
     isFacilitator: boolean;
     /** The phone's read mode, for a viewer who may switch it (`canSwitchReadMode`). */
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
-    /** The library's canvas and what sits over it. */
+    /** The canvas background, told to the board's menu when it changes. */
+    onBackgroundChange?: (color: string) => void;
+    /**
+     * The library's canvas and what sits over it. The bars follow the canvas
+     * frame by frame here, under the board: this element stays the same
+     * object, so the library is not rendered again for them.
+     */
     children: ReactNode;
 };
 
@@ -37,24 +42,38 @@ type Props = {
  */
 export function BoardChrome({
     api,
-    snapshot,
     editing,
     isPhone,
     isFacilitator,
     readMode,
+    onBackgroundChange,
     children,
 }: Props) {
     const { t } = useTrans();
     const canvas = useRef<HTMLDivElement | null>(null);
-    const [stylesShown, setStylesShown] = useState(false);
+    const snapshot = useCanvasSnapshot(api);
+    const [stylesChosen, setStylesChosen] = useState(false);
     const ready = api !== null && snapshot !== null;
+    const background = snapshot?.appState.viewBackgroundColor;
+    /** The library closes its own "shape" menu on a phone (a tap on it, Escape): the menu says whether it is open. */
+    const stylesShown = isPhone
+        ? snapshot?.appState.openMenu === 'shape'
+        : stylesChosen;
 
     useCanvasKeyGuard(canvas);
+
+    useEffect(() => {
+        if (background === undefined) {
+            return;
+        }
+
+        onBackgroundChange?.(background);
+    }, [background, onBackgroundChange]);
 
     /** The phone's panel of shape actions opens only on the library's own "shape" menu. */
     const changeStyles = useCallback(
         (shown: boolean): void => {
-            setStylesShown(shown);
+            setStylesChosen(shown);
 
             if (!isPhone || api === null) {
                 return;
@@ -125,6 +144,7 @@ export function BoardChrome({
                     editing={editing}
                     stylesShown={stylesShown}
                     onStylesChange={changeStyles}
+                    bottomInset={isPhone ? PhoneDockBand : DesktopBarsBand}
                 />
             )}
             {api !== null && readMode !== undefined && (

@@ -9,7 +9,6 @@ import {
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
-import { useCanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
@@ -92,7 +91,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
     const appliedStroke = useRef<string>(DEFAULT_STROKE);
-    const canvasSnapshot = useCanvasSnapshot(api);
+    const [background, setBackground] = useState<string | null>(null);
     const initial = useRef(snapshot);
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
@@ -115,7 +114,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         facilitatorId: board.facilitatorMemberId,
     });
     const forgetCursor = useRef(cursors.forget);
-    const background = canvasSnapshot?.appState.viewBackgroundColor ?? null;
     const canvasActions = useMemo<BoardCanvasActions | undefined>(() => {
         if (!api || background === null) {
             return undefined;
@@ -289,7 +287,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 />
                 <BoardChrome
                     api={api}
-                    snapshot={canvasSnapshot}
                     editing={!viewMode}
                     isPhone={isPhone}
                     isFacilitator={me.isFacilitator}
@@ -298,6 +295,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             ? { reading, onChange: setReading }
                             : undefined
                     }
+                    onBackgroundChange={setBackground}
                 >
                     <Excalidraw
                         viewModeEnabled={viewMode ? true : undefined}

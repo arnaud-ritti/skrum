@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BoardChrome } from '@/components/whiteboard/board-chrome';
 import type {
@@ -35,7 +35,10 @@ const Note = {
     versionNonce: 1,
 };
 
-function snapshotWith(selected: string[] = ['note']): CanvasSnapshot {
+function snapshotWith(
+    selected: string[] = ['note'],
+    appState: Partial<CanvasAppState> = {},
+): CanvasSnapshot {
     return {
         elements: [Note] as never,
         appState: {
@@ -54,26 +57,47 @@ function snapshotWith(selected: string[] = ['note']): CanvasSnapshot {
             penDetected: false,
             currentItemBackgroundColor: POSTIT.sun.bg,
             currentItemStrokeColor: POSTIT.sun.stroke,
+            viewBackgroundColor: '#ffffff',
+            openMenu: null,
+            ...appState,
         } as unknown as CanvasAppState,
         view: View,
         stamp: 'stamp',
     };
 }
 
-function fakeApi() {
+type ChangeListener = (elements: unknown, appState: unknown) => void;
+
+function libraryState(snapshot: CanvasSnapshot) {
+    return { ...snapshot.appState, ...View, zoom: { value: View.zoom } };
+}
+
+function fakeApi(snapshot: CanvasSnapshot = snapshotWith()) {
+    const listeners: ChangeListener[] = [];
+
     return {
         setActiveTool: vi.fn(),
         updateScene: vi.fn(),
         scrollToContent: vi.fn(),
-        getAppState: vi.fn(() => ({
-            ...View,
-            zoom: { value: 1 },
-            selectedElementIds: { note: true },
-        })),
-        getSceneElements: vi.fn(() => [Note]),
-        getSceneElementsIncludingDeleted: vi.fn(() => [Note]),
+        getAppState: vi.fn(() => libraryState(snapshot)),
+        getSceneElements: vi.fn(() => snapshot.elements),
+        getSceneElementsIncludingDeleted: vi.fn(() => snapshot.elements),
         onPointerDown: vi.fn(() => () => {}),
         onScrollChange: vi.fn(() => () => {}),
+        onChange: vi.fn((listener: ChangeListener) => {
+            listeners.push(listener);
+
+            return () => {};
+        }),
+        /** What the library reports after one of its updates, flushed with the next frame. */
+        report(next: CanvasSnapshot): void {
+            act(() => {
+                listeners.forEach((listener) =>
+                    listener(next.elements, libraryState(next)),
+                );
+                vi.advanceTimersToNextFrame();
+            });
+        },
     };
 }
 
@@ -97,23 +121,25 @@ function renderChrome({
     withApi = true,
     isPhone = false,
     readMode,
-    api = fakeApi(),
+    api = fakeApi(snapshot),
+    onBackgroundChange,
 }: {
-    snapshot?: CanvasSnapshot | null;
+    snapshot?: CanvasSnapshot;
     editing?: boolean;
     withApi?: boolean;
     isPhone?: boolean;
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     api?: ReturnType<typeof fakeApi>;
+    onBackgroundChange?: (color: string) => void;
 } = {}) {
     return renderWithProviders(
         <BoardChrome
             api={withApi ? (api as never) : null}
-            snapshot={snapshot}
             editing={editing}
             isPhone={isPhone}
             isFacilitator
             readMode={readMode}
+            onBackgroundChange={onBackgroundChange}
         >
             <div data-testid="library-canvas" />
         </BoardChrome>,
@@ -126,6 +152,7 @@ function toolbar(name: string): HTMLElement | null {
 
 describe('BoardChrome', () => {
     afterEach(() => {
+        vi.useRealTimers();
         localStorage.clear();
     });
 
@@ -161,14 +188,72 @@ describe('BoardChrome', () => {
 
     it('shows no bar while the canvas is loading', () => {
         setScreen(true);
-        renderChrome({ snapshot: null });
-
-        expect(screen.queryAllByRole('toolbar')).toHaveLength(0);
-        expect(screen.getByTestId('library-canvas')).toBeTruthy();
-
         renderChrome({ withApi: false });
 
         expect(screen.queryAllByRole('toolbar')).toHaveLength(0);
+        expect(screen.getByTestId('library-canvas')).toBeTruthy();
+    });
+
+    it('follows the canvas without rendering the library again, and tells the board its background', () => {
+        setScreen(true);
+        vi.useFakeTimers();
+        const onBackgroundChange = vi.fn();
+        const library = vi.fn(() => <div data-testid="library-canvas" />);
+        function Library() {
+            return library();
+        }
+        const api = fakeApi(snapshotWith([]));
+
+        renderWithProviders(
+            <BoardChrome
+                api={api as never}
+                editing
+                isPhone={false}
+                isFacilitator
+                onBackgroundChange={onBackgroundChange}
+            >
+                <Library />
+            </BoardChrome>,
+        );
+
+        expect(toolbar('Selection')).toBeNull();
+        expect(onBackgroundChange).toHaveBeenLastCalledWith('#ffffff');
+
+        const rendersBefore = library.mock.calls.length;
+
+        api.report(snapshotWith(['note'], { viewBackgroundColor: '#fdf1c2' }));
+        vi.useRealTimers();
+
+        expect(toolbar('Selection')).not.toBeNull();
+        expect(onBackgroundChange).toHaveBeenLastCalledWith('#fdf1c2');
+        expect(library.mock.calls.length).toBe(rendersBefore);
+    });
+
+    it('presses "Styles" on a phone while the library\'s shape menu is open, and not once the library closes it', () => {
+        setScreen(false);
+        vi.useFakeTimers();
+        const api = fakeApi(snapshotWith(['note'], { openMenu: 'shape' }));
+
+        renderChrome({
+            isPhone: true,
+            readMode: { reading: false, onChange: vi.fn() },
+            api,
+        });
+
+        const styles = () => screen.getByRole('button', { name: 'Styles' });
+
+        expect(styles().getAttribute('aria-pressed')).toBe('true');
+
+        api.report(snapshotWith(['note'], { openMenu: null }));
+        vi.useRealTimers();
+
+        expect(styles().getAttribute('aria-pressed')).toBe('false');
+
+        fireEvent.click(styles());
+
+        expect(api.updateScene).toHaveBeenLastCalledWith({
+            appState: { openMenu: 'shape' },
+        });
     });
 
     it('wears its own chrome and shows the library panel while "Styles" is on', () => {
@@ -209,7 +294,7 @@ describe('BoardChrome', () => {
 
     it('docks "Fit to screen" before "Edit" on a phone in read mode, with no tool bar, zoom bar or minimap', () => {
         setScreen(false);
-        const api = fakeApi();
+        const api = fakeApi(snapshotWith());
         const { container } = renderChrome({
             isPhone: true,
             editing: false,

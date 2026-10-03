@@ -21,6 +21,7 @@ import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 import { postItAppState, recolorElements } from '@/lib/whiteboard/palette';
 import type { PostItColor } from '@/lib/whiteboard/palette';
 import {
+    EdgeMargin,
     selectionBarPlacement,
     selectionBarShown,
     selectionCountPlacement,
@@ -43,6 +44,8 @@ type Props = {
     /** Lifted to the board, which shows the library's property panel (owner decision 2). */
     stylesShown: boolean;
     onStylesChange: (shown: boolean) => void;
+    /** Pixels kept free at the bottom of the canvas for the bars docked there. */
+    bottomInset?: number;
 };
 
 type BarSize = { width: number; height: number };
@@ -81,6 +84,7 @@ export function CanvasSelection({
     editing,
     stylesShown,
     onStylesChange,
+    bottomInset = 0,
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const [barSize, setBarSize] = useState<BarSize>({ width: 0, height: 0 });
@@ -129,7 +133,12 @@ export function CanvasSelection({
     const lockedReason = t('Only the facilitator can change a locked element.');
     const group = groupControl(summary);
     const bounds = boundsOf(snapshot, summary);
-    const place = selectionBarPlacement(bounds, snapshot.view, barSize);
+    const place = selectionBarPlacement(
+        bounds,
+        snapshot.view,
+        barSize,
+        bottomInset,
+    );
     const corner = selectionCountPlacement(bounds, snapshot.view);
 
     return (
@@ -148,6 +157,7 @@ export function CanvasSelection({
                               ).value,
                               onChange: recolour,
                               disabled: lockedForMe,
+                              reason: lockedForMe ? lockedReason : undefined,
                           }
                         : undefined
                 }
@@ -178,7 +188,11 @@ export function CanvasSelection({
                     disabled: lockedForMe,
                     reason: lockedForMe ? lockedReason : undefined,
                 }}
-                style={{ left: place.left, top: place.top }}
+                style={{
+                    left: place.left,
+                    top: place.top,
+                    maxWidth: snapshot.view.width - 2 * EdgeMargin,
+                }}
                 onSize={setBarSize}
             />
         </>

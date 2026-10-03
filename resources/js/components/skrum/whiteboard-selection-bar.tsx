@@ -52,6 +52,8 @@ export type WhiteboardSelectionBarProps = {
         value: PostItColor | null;
         onChange: (color: PostItColor) => void;
         disabled?: boolean;
+        /** Why the colours are disabled, told to a screen reader. */
+        reason?: string;
     };
     /** Null: the selection is neither two ungrouped elements nor one group. */
     group: { kind: 'group' | 'ungroup'; onPress: () => void } | null;
@@ -95,6 +97,9 @@ export function WhiteboardSelectionBar({
     const rootRef = useRef<HTMLDivElement>(null);
     const reportSize = useRef(onSize);
     const [focusedKey, setFocusedKey] = useState<string | null>(null);
+    const colourReasonId = useId();
+    const describesColourReason =
+        colour?.disabled === true && colour.reason !== undefined;
 
     useLayoutEffect(() => {
         reportSize.current = onSize;
@@ -179,7 +184,7 @@ export function WhiteboardSelectionBar({
                 }
             }}
             className={cn(
-                'inline-flex items-center gap-0.5 rounded-xl border border-border bg-popover p-1 text-foreground shadow-raised',
+                'inline-flex flex-wrap items-center justify-center gap-0.5 rounded-xl border border-border bg-popover p-1 text-foreground shadow-raised',
                 style && 'absolute z-10',
             )}
         >
@@ -189,8 +194,16 @@ export function WhiteboardSelectionBar({
                         value={colour.value}
                         onChange={colour.onChange}
                         disabled={colour.disabled}
-                        className="flex-nowrap border-0 bg-transparent p-0 shadow-none"
+                        describedBy={
+                            describesColourReason ? colourReasonId : undefined
+                        }
+                        className="justify-center border-0 bg-transparent p-0 shadow-none"
                     />
+                    {describesColourReason && (
+                        <span id={colourReasonId} className="sr-only">
+                            {colour.reason}
+                        </span>
+                    )}
                     <Separator
                         data-slot="whiteboard-toolbar-separator"
                         orientation="vertical"

@@ -24,6 +24,7 @@ export type CanvasAppState = Pick<
     | 'currentItemBackgroundColor'
     | 'currentItemStrokeColor'
     | 'viewBackgroundColor'
+    | 'openMenu'
 >;
 
 type LibraryState = CanvasAppState &
@@ -63,6 +64,7 @@ function snapshotOf(
             currentItemBackgroundColor: state.currentItemBackgroundColor,
             currentItemStrokeColor: state.currentItemStrokeColor,
             viewBackgroundColor: state.viewBackgroundColor,
+            openMenu: state.openMenu,
         },
         view: {
             scrollX: state.scrollX,
@@ -73,6 +75,58 @@ function snapshotOf(
         },
         stamp: sceneStamp(elements),
     };
+}
+
+function sameEntries(previous: unknown, next: unknown): boolean {
+    if (Object.is(previous, next)) {
+        return true;
+    }
+
+    if (
+        typeof previous !== 'object' ||
+        typeof next !== 'object' ||
+        previous === null ||
+        next === null
+    ) {
+        return false;
+    }
+
+    const previousKeys = Object.keys(previous);
+
+    return (
+        previousKeys.length === Object.keys(next).length &&
+        previousKeys.every((key) =>
+            Object.is(
+                (previous as Record<string, unknown>)[key],
+                (next as Record<string, unknown>)[key],
+            ),
+        )
+    );
+}
+
+/**
+ * The library reports a change on every update of its own, even one that
+ * changed nothing: a snapshot that would hold the same scene (the library
+ * keeps the array while no element changes), view and state is not taken.
+ */
+function unchanged(
+    snapshot: CanvasSnapshot,
+    elements: readonly SceneElement[],
+    state: LibraryState,
+): boolean {
+    const { view, appState } = snapshot;
+
+    return (
+        snapshot.elements === elements &&
+        view.scrollX === state.scrollX &&
+        view.scrollY === state.scrollY &&
+        view.zoom === state.zoom.value &&
+        view.width === state.width &&
+        view.height === state.height &&
+        (Object.keys(appState) as (keyof CanvasAppState)[]).every((key) =>
+            sameEntries(appState[key], state[key]),
+        )
+    );
 }
 
 function readSnapshot(api: ExcalidrawImperativeAPI): CanvasSnapshot {
@@ -111,10 +165,15 @@ export function useCanvasSnapshot(
                 return;
             }
 
-            setHeld({
-                api,
-                snapshot: snapshotOf(latest.elements, latest.state),
-            });
+            const { elements, state } = latest;
+
+            setHeld((previous) =>
+                previous !== null &&
+                previous.api === api &&
+                unchanged(previous.snapshot, elements, state)
+                    ? previous
+                    : { api, snapshot: snapshotOf(elements, state) },
+            );
         };
 
         const unsubscribe = api.onChange((elements, appState) => {

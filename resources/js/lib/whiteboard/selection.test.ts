@@ -140,6 +140,26 @@ describe('selection', () => {
         });
     });
 
+    it('keeps the bar above the bars docked at the bottom of the canvas', () => {
+        const below = selectionBarPlacement(
+            { x: 100, y: 640, width: 200, height: 100 },
+            view,
+            { width: 200, height: 44 },
+            80,
+        );
+
+        expect(below.side).toBe('above');
+        expect(below.top + 44).toBeLessThanOrEqual(844 - 16 - 80);
+        expect(
+            selectionBarPlacement(
+                { x: 100, y: 1000, width: 200, height: 100 },
+                { ...view, height: 200 },
+                { width: 200, height: 44 },
+                80,
+            ).top,
+        ).toBe(200 - 16 - 80 - 44);
+    });
+
     it('keeps the bar inside the canvas when the selection is scrolled above it', () => {
         expect(
             selectionBarPlacement(
