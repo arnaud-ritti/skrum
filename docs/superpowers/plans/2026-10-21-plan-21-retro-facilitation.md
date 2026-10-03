@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 20 only).
 
-**Status: v3 (2026-10-03), ready to build.** Every decision of spec §15 is answered; decisions 1 (C, a server-relayed writing count) and 10 (B, voting again takes "finished" back) differ from draft v1 and the tasks that depend on them are rewritten (Tasks 1, 5, 10, 11, 13, 19 and the new Task 23). Every pre-build deviation P21-01 to P21-11 is answered by the owner (2026-10-03): P21-07, P21-08 and P21-10 as listed, the others approved as listed; none changes what is built, and no screen waits for an answer. Per-task verification runs on PostgreSQL only; the four-engine matrix runs once at the end of the roadmap (owner, 2026-10-03).
+**Status: built (2026-10-03).** Every task ran in numeric order on the branch `plan-21-retro-facilitation` (the lanes flattened by the controller), PostgreSQL only. The differences found while building are folded into spec §18 and, for the screens, into the rows P21-12 to P21-15 below (ruled while building). Was: **v3 (2026-10-03), ready to build.** Every decision of spec §15 is answered; decisions 1 (C, a server-relayed writing count) and 10 (B, voting again takes "finished" back) differ from draft v1 and the tasks that depend on them are rewritten (Tasks 1, 5, 10, 11, 13, 19 and the new Task 23). Every pre-build deviation P21-01 to P21-11 is answered by the owner (2026-10-03): P21-07, P21-08 and P21-10 as listed, the others approved as listed; none changes what is built, and no screen waits for an answer. Per-task verification runs on PostgreSQL only; the four-engine matrix runs once at the end of the roadmap (owner, 2026-10-03).
 
 **Goal:** The retro board shows who is writing, moving a card or taking notes; the facilitator pauses the timer; a retro caps the votes per card and each participant says "I have finished voting"; every topic of the discussion gets the same time, its shared notes, a "discussed" mark and the action items made for it; the facilitator reveals the ROTI in its phase and nudges the last voters; the retro's action items go to the tracker in one dialog.
 
@@ -106,6 +106,10 @@ Put to the owner before the screen is built (owner's rule of the fifth round): *
 | P21-09 | Discussing | the right card is "Topic actions" only | "Topic actions", then "Other action items (n)", collapsed | O: no feature lost (2-D9) | approved as listed |
 | P21-10 | Voting | "5/8 have finished" in place of the votes-cast progress | the progress "n of m votes cast" stays, followed by "5/8 have finished" | parity row 57 of plan 18e (kept by D-105) | both: the progress and "5/8 have finished" (Task 13) |
 | P21-11 | ROTI | "Results appear for everyone when the facilitator ends the session." | "… when the facilitator reveals them or ends the session." | F: the reveal exists now | approved as listed |
+| P21-12 | Discussing | the topic timer: the time, "of 5:00 · this topic" and "+1 min" | the time, the caption, pause, "+2 min" and the facilitator's duration menu (1/3/5/10); at 1440 the menu wraps under the time, the row keeps "Previous topic" and "Next topic" at its ends | S: §9.4 (pause, the menu that sets the time per topic); P21-01 for "+2 min" | ruled while building (Task 21) |
+| P21-13 | Discussing | no control to mark a topic discussed | "Mark as discussed" on the line of the topic's rank and column, beside the votes | S: §9.4, decision 4 C (by hand as well as on moving on) | ruled while building (Task 21) |
+| P21-14 | Discussing | the FacilitatorBar holds "Everyone follows" and "Actions" | "Pause" (or "Resume") first, then "Everyone follows", "Previous topic", "Next topic", "Actions" | S: §9.1 and §9.2 put "Pause" first in the bar; Task 12 keeps it in every phase where the retro's timer runs, Discussing included, since the topic timer is that timer (decision 2 A); the topic moves: D-106 | ruled while building (Task 21) |
+| P21-15 | Writing, facilitator | the full phase stepper beside the timer | with a timer running or paused and a writer named in the presence line, the compact stepper of the header shortens the phase name at 1440 ("Phase 1/6 É…"); "Phase 1/6" stays | the header of plan 18e gives the phases the room left by the timer (D-99 keeps "+2 min" and the menu beside the countdown) and the presence line (§9.1); shortening the name was ruled better than hiding the writer's name | ruled while building (Task 21) |
 
 ## Review Focus
 
@@ -4822,14 +4826,14 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 
 ### Task 21: Deviations and documents
 
-- [ ] For each capture of Task 20, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is one of the answered rows P21-01 to P21-11, or is ruled under the owner's autonomy mandate (2026-10-03) and added as a row marked "ruled while building", with its reason; the report lists every such ruling for the owner.
-- [ ] Documents, in one commit:
+- [x] For each capture of Task 20, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is one of the answered rows P21-01 to P21-11, or is ruled under the owner's autonomy mandate (2026-10-03) and added as a row marked "ruled while building", with its reason; the report lists every such ruling for the owner.
+- [x] Documents, in one commit:
   - the spec (`docs/superpowers/specs/2026-10-21-plan-21-retro-facilitation-design.md`) and this plan, in place: status "built", and every difference found while building folded in;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: a "Status" column for the retro section with RT-1 to RT-10 "done, plan 21" (as the surveys section has), and the "Not requested" line completed with spec §3;
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-10 reduced to the three backlog elements; D-11 removed; D-12 reduced to "8/8 following"; D-13 and D-14 removed; D-105 reduced to the vote button (the "finished" sentence exists); D-106's first point removed ("Topic actions" exists);
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: §6.4 (retro) amended with a pointer to the new spec (pause, cap per card, finished voting, time per topic, notes, linked items, ROTI reveal and nudge, bulk export);
   - `docs/database.md`: nothing to add unless a task found a new rule.
-- [ ] Commit `docs: plan 21 — spec and plan in place, roadmap and deviation rows updated` with the two trailers.
+- [x] Commit `docs: plan 21 — spec and plan in place, roadmap and deviation rows updated` with the two trailers.
 
 ### Task 22: Full suites on PostgreSQL, and report
 

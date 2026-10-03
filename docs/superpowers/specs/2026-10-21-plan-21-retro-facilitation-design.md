@@ -1,7 +1,7 @@
 # Skrum — Retro facilitation (roadmap plan 21, RT-1 to RT-10) — Design
 
-Date: 2026-10-03, v3 (the owner's answers and pre-build deviation answers of 2026-10-03 applied)
-Status: **approved, ready to build** (owner, 2026-10-03: "Oui vas y", the roadmap plans run autonomously once revised). Every question of §15 has the owner's answer (2026-10-03). Eight follow the recommended option; two differ and the body is rewritten on them: decision 1 (an anonymous retro shows a count of people writing, relayed by the server, with no id and no column) and decision 10 (a vote cast or taken back after "I have finished voting" takes the "finished" back by itself). Every pre-build deviation of the plan, P21-01 to P21-11, is answered (2026-10-03, §17): each answer is the row as written, so nothing built changes. Per-plan verification runs on PostgreSQL; the four-engine matrix runs once at the end of the roadmap (§12).
+Date: 2026-10-03, v3 (the owner's answers and pre-build deviation answers of 2026-10-03 applied); built 2026-10-03
+Status: **built** (plan 21, branch `plan-21-retro-facilitation`; the differences found while building are folded in below and in §18). Was: **approved, ready to build** (owner, 2026-10-03: "Oui vas y", the roadmap plans run autonomously once revised). Every question of §15 has the owner's answer (2026-10-03). Eight follow the recommended option; two differ and the body is rewritten on them: decision 1 (an anonymous retro shows a count of people writing, relayed by the server, with no id and no column) and decision 10 (a vote cast or taken back after "I have finished voting" takes the "finished" back by itself). Every pre-build deviation of the plan, P21-01 to P21-11, is answered (2026-10-03, §17): each answer is the row as written, so nothing built changes. Per-plan verification runs on PostgreSQL; the four-engine matrix runs once at the end of the roadmap (§12).
 Parent spec: `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` (§5 rule 13 "rewrite first, features after", §6.4 retro, §9.1 the phase matrix).
 Owner's word: `docs/superpowers/research/front-rewrite/owner-answers-2026-10-02.md`, every round: mockup binding for presentation, existing features kept, simple data added, informal register (fr "tu", es "tú", de "du"), a guest counts as a participant, "+2 min" on every timer (2-D8, third round points 3/4), Eloquent only. Roadmap changes of the fifth round: plans 28 and 30 and scheduling are backlog.
 Roadmap rows: RT-1 to RT-10 of `docs/superpowers/research/front-rewrite/feature-roadmap.md`. Deviation rows cleared: D-10 (in part), D-11, D-12 (in part), D-13, D-14 of plan 18e; D-105 (the "finished" sentence) and D-106 (the "Topic actions" card) in part.
@@ -203,7 +203,7 @@ The owner chose a count relayed by the server, with no id (answer C). The rules 
 4. **No id anywhere.** The payload of `writing.count` holds the count only; a test asserts its exact keys. The front never sends a `writing` client event on an anonymous retro (a Vitest asserts the whisper is never called with `writing` there), and ignores one if it arrives.
 5. **Receivers.** A board keeps the last count and the time it arrived, and drops it to 0 when no `writing.count` has come for 8 s (a closed tab stops its heartbeats). The viewer is not counted on their own board: the shown number is the count minus 1 when the viewer is writing (own state, known locally), never below 0. Entering or leaving Writing resets it to 0.
 6. **Shown.** In the presence stack's line only: "Someone is writing…" (1) or ":count people are writing…" (2 or more), with the trema; no avatar is ringed and no column line appears.
-7. **Guards.** Any participant, guests included; the retro is anonymous (403 otherwise: a named retro uses the client events); the phase is Writing (403 otherwise); the board is unlocked (423 otherwise). Rate limit `retro-writing`: 40 requests per minute per participant (429 beyond).
+7. **Guards.** Any participant, guests included; the retro is anonymous (403 otherwise: a named retro uses the client events); the phase is Writing (403 otherwise); the board is unlocked (423 otherwise). Rate limit `retro-writing`: 40 requests per minute per person of the retro (429 beyond), keyed on the signed-in user or the retro's guest cookie, else the IP: the throttle runs before the participant is resolved (§16 item 8).
 8. **Accepted risk.** In a small room a count can still be read with timing: in a room of two, "Someone is writing…" names the other person, and a count dropping just as a card appears hints at its author. The owner chose the count knowing this (option C of decision 1 said "still timing-revealing in a small room"). With no column and no id, the count tells nothing the room could not guess from who is typing on their keyboard.
 
 The writing count changes nothing for a named retro (client events, names, columns, as §6.9).
@@ -446,12 +446,10 @@ All ten are answered. The body follows the answers: eight are the recommended op
 3. Whether the SQLite schema grammar adds the `card_id` foreign key to `action_items` without trouble (Laravel rebuilds the table on SQLite); plan 19 added foreign keys after creation the same way.
 4. The real latency of a Jira create on the instances in use, hence how long a bulk export of 10 items takes.
 5. Whether `RetroRecap`, built with named arguments in `BuildRetroRecap`, is also constructed in tests or the mail preview (`MailPreviewsController`); the plan adds an optional argument with a default so that every caller keeps working.
-6. Whether the visual harness can show activity indicators without a live Reverb: the captures of the indicators are taken with a seeded reducer state through a test-only prop, or are left out and listed.
+6. Whether the visual harness can show activity indicators without a live Reverb: the captures of the indicators are taken with a seeded reducer state through a test-only prop, or are left out and listed. **Determined while building:** the harness runs other participants as real browser contexts, so "Inès is writing a card…" and the anonymous count were captured live (Task 20); no test-only prop exists.
 7. Whether `useCountdown` handles a null end time with paused seconds without a flash; the plan passes the paused seconds to `Timer` directly.
-8. Whether the named rate limiter `retro-writing` runs after the middleware that puts the participant in the request attributes (route middleware run after the group's, so it should); the limiter falls back to the IP when no participant is there, and the plan's 429 test proves the key on a member and on a guest.
+8. Whether the named rate limiter `retro-writing` runs after the middleware that puts the participant in the request attributes (route middleware run after the group's, so it should); the limiter falls back to the IP when no participant is there, and the plan's 429 test proves the key on a member and on a guest. **Determined while building:** it runs before, so the key is the signed-in user or the retro's guest cookie (hashed), else the IP; the 429 tests of Task 23 prove it on a member and on a guest.
 9. Whether a `DELETE writing` sent from `pagehide` reaches the server (browsers may drop it); the 8 s expiry of `writing_until` and the receivers' 8 s timeout cover a lost stop.
-</content>
-</invoke>
 
 ## 17. Pre-build deviations — answered 2026-10-03
 
@@ -472,3 +470,18 @@ The plan's table "Pre-build deviations" lists what is built differently from the
 | P21-11 | ROTI | "Results appear for everyone when the facilitator reveals them or ends the session." | approved as listed | §9.6 |
 
 No gate waits for the owner any more. A new difference found while building is fixed or ruled under the owner's autonomy mandate of 2026-10-03, added to the plan's table as "ruled while building", and listed in the plan's report.
+
+## 18. As built — differences found while building (2026-10-03)
+
+Folded in from the plan's tasks and its comparison with the mockups (plan 21, Task 21). None changes a decision of §15 or a criterion of §13.
+
+- **Timer invariant.** "Running or paused, never both" is checked in `Retro::save()`, as `ActionItem` and `SavedPokerDeck` do, because a `saving` listener is skipped under `Event::fake()`. `action_items.card_id` is indexed (§6.1).
+- **Recap and AI input (§6.6, decision 6).** The notes reach `RetroRecapMail::build(...)->sections` and `SummaryInput::$payload`, the names these classes expose.
+- **Writing count (§6.11).** The `retro-writing` limiter keys on the signed-in user or the retro's guest cookie, else the IP (§16 item 8).
+- **ROTI (§6.8).** The nudge slot is taken with one atomic hit, so a double click sends one nudge. The reveal ends when the phase is left, except towards Completed, where the results stay shown.
+- **Notes (§6.6).** A draft is saved from the version it was written on: a newer note from someone else does not move that version, so a retry or a late save gets the 409 instead of overwriting their text. Unsaved or failed text is sent once more when the topic in front of the viewer changes.
+- **Activity (§6.9).** Only the editor that announced writing ends the announcement; a card held longer than the receivers' memory is announced again every two seconds; the anonymous count no longer leaves out a viewer the server forgot after a long pause.
+- **Server clock.** The offset to the server clock is taken once per server time (the React Compiler had moved `Date.now()` out of its memo, so a countdown that re-rendered itself stood still).
+- **Translations (§13 criterion 23).** The German ROTI sentence says "die Moderation", as its sibling key does; two French values take the no-break space before the colon and inside the guillemets.
+- **Discussing stage (§9.4).** "Previous topic", the topic timer and "Next topic" share one row from a 36rem stage up, as the mockup draws them; the timer's controls wrap under the time when the row is short, and on a narrower stage the timer takes its own row above the two buttons. Fixed after the comparison of the captures (the first build put "Next topic" on a second row at 1440).
+- **Rulings while building**, with the owner's autonomy mandate of 2026-10-03: rows P21-12 to P21-15 of the plan's "Pre-build deviations" table.

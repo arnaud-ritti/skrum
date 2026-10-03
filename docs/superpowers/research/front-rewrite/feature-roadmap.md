@@ -57,20 +57,20 @@ Not requested, staying backlog (spec `2026-10-19-standalone-surveys-design.md` �
 
 ## Retro — plan 21
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| RT-1 | "is writing…" and "is moving a card…" indicators | ScreenRetroWriting, ScreenRetroGrouping | D-10 | None stored: two client events on the retro's presence channel, with masking on an anonymous retro | — |
-| RT-2 | Pause of the timer | ScreenRetroWriting (FacilitatorBar) | D-10 | A timer is an end time only: a paused state with the remaining seconds, on the four timers or the retro's alone | — |
-| RT-3 | Maximum votes per card | ScreenRetroVote; ScreenSessionCreate ("Max per card") | D-11, D-07 | No per-card cap: a retro setting and its check in the vote endpoint | — |
-| RT-4 | "I have finished voting" and "x/y have finished" | ScreenRetroVote | D-11 | No per-participant flag | — |
-| RT-5 | Per-topic timer and time estimates | ScreenRetroDiscussion | D-12 | One timer per retro: a duration per topic and the remaining estimate | RT-7 |
-| RT-6 | Shared discussion notes per topic | ScreenRetroDiscussion | D-12 | No notes model; collaborative editing and its place in the recap | — |
-| RT-7 | "Discussed" flag on a topic | ScreenRetroDiscussion | D-12 | No flag on a card or a group | — |
-| RT-8 | Action items linked to a card | ScreenRetroDiscussion, ScreenRetroActions | D-12 | `action_items` has no card reference | — |
-| RT-9 | ROTI reveal and nudge | ScreenRetroROTI | D-14 | Results are shown at completion: a reveal state in the `roti` phase, and a notification to those who have not voted | — |
-| RT-10 | Bulk export of a retro's action items to Jira | ScreenRetroActions | D-13 | Export is per item: a batch over the existing export action | — |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| RT-1 | "is writing…" and "is moving a card…" indicators | ScreenRetroWriting, ScreenRetroGrouping | D-10 | None stored: two client events on the retro's presence channel, with masking on an anonymous retro | — | done, plan 21 |
+| RT-2 | Pause of the timer | ScreenRetroWriting (FacilitatorBar) | D-10 | A timer is an end time only: a paused state with the remaining seconds, on the four timers or the retro's alone | — | done, plan 21 |
+| RT-3 | Maximum votes per card | ScreenRetroVote; ScreenSessionCreate ("Max per card") | D-11, D-07 | No per-card cap: a retro setting and its check in the vote endpoint | — | done, plan 21 |
+| RT-4 | "I have finished voting" and "x/y have finished" | ScreenRetroVote | D-11 | No per-participant flag | — | done, plan 21 |
+| RT-5 | Per-topic timer and time estimates | ScreenRetroDiscussion | D-12 | One timer per retro: a duration per topic and the remaining estimate | RT-7 | done, plan 21 |
+| RT-6 | Shared discussion notes per topic | ScreenRetroDiscussion | D-12 | No notes model; collaborative editing and its place in the recap | — | done, plan 21 |
+| RT-7 | "Discussed" flag on a topic | ScreenRetroDiscussion | D-12 | No flag on a card or a group | — | done, plan 21 |
+| RT-8 | Action items linked to a card | ScreenRetroDiscussion, ScreenRetroActions | D-12 | `action_items` has no card reference | — | done, plan 21 |
+| RT-9 | ROTI reveal and nudge | ScreenRetroROTI | D-14 | Results are shown at completion: a reveal state in the `roti` phase, and a notification to those who have not voted | — | done, plan 21 |
+| RT-10 | Bulk export of a retro's action items to Jira | ScreenRetroActions | D-13 | Export is per item: a batch over the existing export action | — | done, plan 21 |
 
-Not requested, staying backlog: "Reveal the cards" as a separate button, duplicate detection, "Undo last group", the "n/n following" count, the export of a retro as PDF, CSV or Markdown, the ROTI delta and sparkline of the session-end screen.
+Not requested, staying backlog (spec `2026-10-21-plan-21-retro-facilitation-design.md` §3): "Reveal the cards" as a separate button, duplicate detection and "Auto-group duplicates", "Undo last group", the "n/n following" count, the export of a retro as PDF, CSV or Markdown, the ROTI delta and sparkline of the session-end screen; "⌘J create the Jira ticket too" of the Actions quick add; the pause of the poker, whiteboard and game-room timers; real co-editing of the notes; activity indicators on other session types and a stored history of who wrote or moved what; notes in the chat recaps, the webhook payload, search and MCP tools; a bell notification for the ROTI nudge; template defaults for "Max per card" ("Timer per phase" is SE-3, plan 22).
 
 ## Sessions and poker — plan 22
 
