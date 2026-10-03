@@ -4572,5 +4572,15 @@
     "Unlock": "Desbloquear",
     "Styles": "Estilos",
     "1 element": "1 elemento",
-    ":count elements": ":count elementos"
+    ":count elements": ":count elementos",
+    "Save as image": "Guardar como imagen",
+    "Find on canvas": "Buscar en el lienzo",
+    "Canvas help": "Ayuda del lienzo",
+    "Clear canvas": "Vaciar el lienzo",
+    "Canvas background": "Fondo del lienzo",
+    "Paper": "Papel",
+    "Light grey": "Gris claro",
+    "Light blue": "Azul claro",
+    "Light yellow": "Amarillo claro",
+    "Light beige": "Beige claro"
 }

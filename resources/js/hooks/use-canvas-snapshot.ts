@@ -23,6 +23,7 @@ export type CanvasAppState = Pick<
     | 'penDetected'
     | 'currentItemBackgroundColor'
     | 'currentItemStrokeColor'
+    | 'viewBackgroundColor'
 >;
 
 type LibraryState = CanvasAppState &
@@ -61,6 +62,7 @@ function snapshotOf(
             penDetected: state.penDetected,
             currentItemBackgroundColor: state.currentItemBackgroundColor,
             currentItemStrokeColor: state.currentItemStrokeColor,
+            viewBackgroundColor: state.viewBackgroundColor,
         },
         view: {
             scrollX: state.scrollX,

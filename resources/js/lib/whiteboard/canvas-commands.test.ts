@@ -88,6 +88,16 @@ describe('canvas commands', () => {
             ctrlKey: true,
             shiftKey: true,
         });
+        expect(commandEvent('clearCanvas', false)).toMatchObject({
+            key: 'Delete',
+            ctrlKey: true,
+            shiftKey: false,
+        });
+        expect(commandEvent('clearCanvas', true)).toMatchObject({
+            key: 'Delete',
+            metaKey: true,
+            ctrlKey: false,
+        });
     });
 
     it('dispatches the key on the library container, bubbling and cancelable', () => {

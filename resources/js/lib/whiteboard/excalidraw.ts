@@ -40,3 +40,10 @@ export function closeTextEditor(): void {
             new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }),
         );
 }
+
+/**
+ * The library's default sidebar and its search tab (`DEFAULT_SIDEBAR` and
+ * `CANVAS_SEARCH_TAB` of 0.18.1), which "Find on canvas" opens. Check this
+ * when the library is upgraded.
+ */
+export const CanvasSearchSidebar = { name: 'default', tab: 'search' } as const;

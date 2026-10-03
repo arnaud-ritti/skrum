@@ -1,5 +1,11 @@
 import { Head, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
@@ -16,8 +22,10 @@ import {
     subscribeToTheme,
 } from '@/lib/whiteboard/appearance';
 import { strokeForTool } from '@/lib/whiteboard/canvas-colors';
+import { runCanvasCommand } from '@/lib/whiteboard/canvas-commands';
 import {
     CaptureUpdateAction,
+    CanvasSearchSidebar,
     Excalidraw,
     HiddenSaveToDiskAction,
     MainMenu,
@@ -41,6 +49,7 @@ import type {
 import { BoardChrome } from './board-chrome';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
+import type { BoardCanvasActions } from './board-menu';
 import {
     BoardActions,
     BoardPresence,
@@ -107,6 +116,30 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         facilitatorId: board.facilitatorMemberId,
     });
     const forgetCursor = useRef(cursors.forget);
+    const background = canvasSnapshot?.appState.viewBackgroundColor ?? null;
+    const canvasActions = useMemo<BoardCanvasActions | undefined>(() => {
+        if (!api || background === null) {
+            return undefined;
+        }
+
+        return {
+            saveAsImage: () =>
+                api.updateScene({
+                    appState: { openDialog: { name: 'imageExport' } },
+                }),
+            findOnCanvas: () => api.toggleSidebar(CanvasSearchSidebar),
+            canvasHelp: () =>
+                api.updateScene({ appState: { openDialog: { name: 'help' } } }),
+            clearCanvas: () => runCanvasCommand(root.current, 'clearCanvas'),
+            editing: !viewMode,
+            background,
+            setBackground: (color) =>
+                api.updateScene({
+                    appState: { viewBackgroundColor: color },
+                    captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+                }),
+        };
+    }, [api, background, viewMode]);
 
     forgetCursor.current = cursors.forget;
     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
@@ -225,6 +258,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                   })
                             : undefined
                     }
+                    canvasActions={canvasActions}
                     hideMyCursor={hideMyCursor}
                     onHideMyCursorChange={setHideMyCursor}
                 />

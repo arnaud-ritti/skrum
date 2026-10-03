@@ -4352,5 +4352,15 @@
     "Unlock": "Unlock",
     "Styles": "Styles",
     "1 element": "1 element",
-    ":count elements": ":count elements"
+    ":count elements": ":count elements",
+    "Save as image": "Save as image",
+    "Find on canvas": "Find on canvas",
+    "Canvas help": "Canvas help",
+    "Clear canvas": "Clear canvas",
+    "Canvas background": "Canvas background",
+    "Paper": "Paper",
+    "Light grey": "Light grey",
+    "Light blue": "Light blue",
+    "Light yellow": "Light yellow",
+    "Light beige": "Light beige"
 }

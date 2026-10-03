@@ -72,7 +72,8 @@ export type CanvasCommand =
     | 'distributeHorizontally'
     | 'distributeVertically'
     | 'delete'
-    | 'toggleLock';
+    | 'toggleLock'
+    | 'clearCanvas';
 
 type CommandKeysOf = {
     key: string;
@@ -84,7 +85,9 @@ type CommandKeysOf = {
 
 /**
  * Excalidraw 0.18.1 has no API for these actions; its own shortcuts reach
- * them (the `keyTest` of each action in `dist/dev/index.js`). The key is
+ * them (the `keyTest` of each action in `dist/dev/index.js`, and for
+ * `clearCanvas` the mod+Delete branch of `App.onKeyDown`, which opens the
+ * "clearCanvas" confirmation of `activeConfirmDialogAtom`). The key is
  * sent to the library's container, which listens for it while
  * `handleKeyboardGlobally` is off. Check this when the library is upgraded.
  */
@@ -99,6 +102,8 @@ export const CommandKeys: Readonly<Record<CanvasCommand, CommandKeysOf>> = {
     distributeVertically: { key: 'v', code: 'KeyV', alt: true },
     delete: { key: 'Delete' },
     toggleLock: { key: 'L', mod: true, shift: true },
+    /** Opens the library's own confirmation, not the clearing itself. */
+    clearCanvas: { key: 'Delete', mod: true },
 };
 
 /** The library's own test of the command key (`isDarwin`). Check this when the library is upgraded. */
