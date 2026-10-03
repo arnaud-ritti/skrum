@@ -171,6 +171,7 @@ use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\TeamSessionsController;
 use App\Http\Controllers\TeamSurveyJoinsController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyAnswersController;
 use App\Http\Controllers\TeamSurveys\TeamSurveyComparisonsController;
@@ -325,6 +326,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
             Route::post('teams', [TeamsController::class, 'store'])->name('teams.store');
             Route::get('teams/{team}', [TeamsController::class, 'show'])->name('teams.show');
+            Route::get('teams/{team}/sessions', [TeamSessionsController::class, 'index'])->name('teams.sessions.index');
             Route::patch('teams/{team}', [TeamsController::class, 'update'])->name('teams.update');
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
