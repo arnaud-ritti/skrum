@@ -127,6 +127,8 @@ use App\Http\Controllers\Retros\RetroHealthCheckSubmissionsController;
 use App\Http\Controllers\Retros\RetroHighlightsController;
 use App\Http\Controllers\Retros\RetroPhasesController;
 use App\Http\Controllers\Retros\RetroRotiController;
+use App\Http\Controllers\Retros\RetroRotiNudgesController;
+use App\Http\Controllers\Retros\RetroRotiRevealsController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
@@ -479,6 +481,8 @@ Route::prefix('retros/{retro}')
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
         Route::put('roti', [RetroRotiController::class, 'update'])->name('retros.roti.update');
         Route::delete('roti', [RetroRotiController::class, 'destroy'])->name('retros.roti.destroy');
+        Route::put('roti/reveal', [RetroRotiRevealsController::class, 'update'])->name('retros.roti.reveal.update');
+        Route::post('roti/nudges', [RetroRotiNudgesController::class, 'store'])->name('retros.roti.nudges.store');
         Route::post('health-check', [RetroHealthChecksController::class, 'store'])->name('retros.healthCheck.store');
         Route::delete('health-check', [RetroHealthChecksController::class, 'destroy'])->name('retros.healthCheck.destroy');
         Route::put('health-check/closure', [RetroHealthCheckClosuresController::class, 'update'])->name('retros.healthCheck.closure.update');

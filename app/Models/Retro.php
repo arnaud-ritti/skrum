@@ -89,6 +89,8 @@ class Retro extends Model implements DeliverySubject
 
     public const SummaryPendingTimeoutMinutes = 10;
 
+    public const NudgeIntervalSeconds = 30;
+
     /**
      * Checked here and not in a `saving` listener: a faked or muted event dispatcher
      * (Event::fake, saveQuietly) would skip the listener. A query builder update goes
@@ -169,12 +171,13 @@ class Retro extends Model implements DeliverySubject
 
     /**
      * The ROTI is collected in its own phase. A retro completed before that
-     * phase existed still takes ratings once completed.
+     * phase existed still takes ratings once completed. Revealing the ROTI
+     * in its phase closes the vote.
      */
     public function takesRotiVotes(): bool
     {
         if ($this->phase === RetroPhase::Roti) {
-            return true;
+            return $this->roti_revealed_at === null;
         }
 
         return $this->phase === RetroPhase::Completed && $this->roti_votable_when_completed;
