@@ -14,7 +14,7 @@ use Carbon\CarbonImmutable;
 
 class LinearTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const string IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key }';
+    private const string IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key } labels(first: 10) { nodes { name } }';
 
     public const TeamKeyPattern = IssueStatus::ContainerKeyPattern;
 
@@ -387,6 +387,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             estimate: TrackerIssue::formatEstimate($node['estimate'] ?? null),
             status: TrackerIssue::shorten(data_get($node, 'state.name'), TrackerIssue::AssigneeLength),
             issueStatus: $this->issueStatus($node),
+            labels: TrackerIssue::labels(array_column((array) data_get($node, 'labels.nodes', []), 'name')),
         );
     }
 

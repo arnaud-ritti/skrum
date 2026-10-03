@@ -88,7 +88,7 @@ it('maps the issues of a Jira sprint with the story point candidates', function 
 
     Http::assertSent(fn (Request $request) => $request['jql'] === 'sprint = 31 ORDER BY Rank ASC'
         && $request['maxResults'] === 100
-        && $request['fields'] === ['summary', 'description', 'assignee', 'status', 'updated', 'project', 'customfield_10016']);
+        && $request['fields'] === ['summary', 'description', 'assignee', 'status', 'updated', 'project', 'issuetype', 'labels', 'customfield_10016']);
 });
 
 it('surfaces Jira JQL errors', function () {

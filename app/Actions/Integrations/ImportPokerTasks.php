@@ -114,6 +114,8 @@ class ImportPokerTasks
                     'external_status_name' => $issue->status,
                     'external_status_category' => $issue->issueStatus === null ? null : DoneMapping::category($integration->provider, $issue->issueStatus->kind),
                     'external_updated_at' => $issue->issueStatus?->updatedAt,
+                    'external_type' => $issue->type,
+                    'external_labels' => $issue->labels === [] ? null : $issue->labels,
                 ])->save();
             }
 

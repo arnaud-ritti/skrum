@@ -19,7 +19,7 @@ use Carbon\CarbonImmutable;
  */
 abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const array BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project'];
+    private const array BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project', 'issuetype', 'labels'];
 
     public const ProjectKeyPattern = IssueStatus::ContainerKeyPattern;
 
@@ -300,6 +300,8 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
             estimate: $this->estimate($integration, $fields),
             status: TrackerIssue::shorten(data_get($fields, 'status.name'), TrackerIssue::AssigneeLength),
             issueStatus: $this->issueStatus($fields),
+            type: TrackerIssue::shorten(data_get($fields, 'issuetype.name'), TrackerIssue::TypeLength),
+            labels: TrackerIssue::labels($fields['labels'] ?? null),
         );
     }
 
