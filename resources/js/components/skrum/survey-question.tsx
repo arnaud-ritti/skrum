@@ -153,7 +153,7 @@ function ResultBar({
         <div
             data-slot="survey-result-bar"
             aria-hidden="true"
-            className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
+            className="h-2 w-full shrink-0 overflow-hidden rounded-full bg-muted"
         >
             <div
                 className={cn(
