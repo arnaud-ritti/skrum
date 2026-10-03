@@ -4966,5 +4966,7 @@
     "1 card": "1 card",
     "1 task": "1 task",
     ":count estimated": ":count estimated",
-    "created in :date": "created in :date"
+    "created in :date": "created in :date",
+    "joined": "joined",
+    "action items": "action items"
 }

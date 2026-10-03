@@ -5186,5 +5186,7 @@
     "1 card": "1 carte",
     "1 task": "1 tâche",
     ":count estimated": ":count estimées",
-    "created in :date": "créée en :date"
+    "created in :date": "créée en :date",
+    "joined": "connectés",
+    "action items": "actions"
 }

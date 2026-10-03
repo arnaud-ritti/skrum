@@ -136,6 +136,31 @@ describe('SessionCard', () => {
         expect(groups()).toBeNull();
     });
 
+    it('names the people "joined" while the session is open, and the actions "action items"', () => {
+        const { container, rerender } = render(
+            <SessionCard
+                {...base}
+                stats={{ participants: 8, joined: true, cards: 23 }}
+            />,
+        );
+        const participants = () =>
+            container.querySelector('[data-slot="session-card-participants"]');
+
+        expect(participants()?.textContent).toBe('8joined');
+        expect(participants()?.querySelector('.sr-only')).toBeNull();
+
+        rerender(<SessionCard {...base} />);
+
+        expect(participants()?.textContent).toBe('9participants');
+        expect(participants()?.querySelector('.sr-only')?.textContent).toBe(
+            'participants',
+        );
+        expect(
+            container.querySelector('[data-slot="session-card-actions"]')
+                ?.textContent,
+        ).toBe('6action items');
+    });
+
     it('renders the scheduled state and omits missing counters', () => {
         render(
             <SessionCard
