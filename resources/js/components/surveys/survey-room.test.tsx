@@ -279,7 +279,7 @@ describe('SurveyRoom', () => {
         ).toEqual(['/teams/t1', '/teams/t1']);
     });
 
-    it('gives an editor the way to the results', () => {
+    it('gives an editor the way to the results and the Share dialog', () => {
         renderRoom(
             surveySnapshot({
                 me: { isEditor: true },
@@ -295,11 +295,13 @@ describe('SurveyRoom', () => {
         expect(
             screen.getByRole('link', { name: 'Results' }).getAttribute('href'),
         ).toBe('/surveys/s1/results');
+        expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
     });
 
-    it('gives a respondent no way to the results from the header', () => {
+    it('gives a respondent no way to the results nor the Share dialog from the header', () => {
         renderRoom();
 
         expect(screen.queryByRole('link', { name: 'Results' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
     });
 });

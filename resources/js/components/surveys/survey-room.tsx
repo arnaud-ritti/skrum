@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { BarChart3, Pencil, VenetianMask } from 'lucide-react';
 import { useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { Dispatch, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { SessionShell } from '@/components/session/session-shell';
 import type { SessionConnection } from '@/components/session/session-shell';
@@ -15,10 +15,12 @@ import SessionLayout from '@/layouts/skrum/session-layout';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import { surveyApi } from '@/lib/surveys/api';
 import { answerOf } from '@/lib/surveys/question-adapter';
+import type { SurveyAction } from '@/lib/surveys/survey-reducer';
 import type { SurveySnapshot } from '@/lib/surveys/types';
 import { SurveyAnswerFlow } from './survey-answer-flow';
 import { SurveyAnswerList } from './survey-answer-list';
 import { SurveyClosed } from './survey-closed';
+import { SurveyShare } from './survey-share';
 import { SurveyThanks } from './survey-thanks';
 import type { SurveyAnswerSaver } from './use-survey-answers';
 
@@ -145,7 +147,13 @@ function SurveyDraft({ editHref }: { editHref: string | null }) {
     );
 }
 
-function EditorActions({ snapshot }: { snapshot: SurveySnapshot }) {
+function EditorActions({
+    snapshot,
+    dispatch,
+}: {
+    snapshot: SurveySnapshot;
+    dispatch: Dispatch<SurveyAction>;
+}) {
     const { t } = useTrans();
 
     if (!snapshot.me.isEditor) {
@@ -153,16 +161,21 @@ function EditorActions({ snapshot }: { snapshot: SurveySnapshot }) {
     }
 
     return (
-        <Button
-            asChild
-            variant="outline"
-            className="shrink-0 max-lg:size-9 max-lg:px-0"
-        >
-            <Link href={snapshot.links.results} aria-label={t('Results')}>
-                <BarChart3 aria-hidden />
-                <span className="truncate max-lg:sr-only">{t('Results')}</span>
-            </Link>
-        </Button>
+        <>
+            <Button
+                asChild
+                variant="outline"
+                className="shrink-0 max-lg:size-9 max-lg:px-0"
+            >
+                <Link href={snapshot.links.results} aria-label={t('Results')}>
+                    <BarChart3 aria-hidden />
+                    <span className="truncate max-lg:sr-only">
+                        {t('Results')}
+                    </span>
+                </Link>
+            </Button>
+            <SurveyShare snapshot={snapshot} dispatch={dispatch} />
+        </>
     );
 }
 
@@ -297,7 +310,7 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
             snapshot={snapshot}
             realtime={state.realtime}
             connection={state.connection}
-            actions={<EditorActions snapshot={snapshot} />}
+            actions={<EditorActions snapshot={snapshot} dispatch={dispatch} />}
         >
             {view()}
         </SurveyFrame>

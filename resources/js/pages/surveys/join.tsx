@@ -1,20 +1,47 @@
 import { Head } from '@inertiajs/react';
+import TeamSurveyJoinsController from '@/actions/App/Http/Controllers/TeamSurveyJoinsController';
+import { GuestJoinPage } from '@/components/session/guest-join-page';
+import { useTrans } from '@/hooks/use-trans';
+import type { JoinSession } from '@/types';
 
-type Props = { isInvalid: true } | { isInvalid: false; surveyTitle: string };
+type Props =
+    | { isInvalid: true }
+    | {
+          isInvalid: false;
+          guestToken: string;
+          session: JoinSession;
+          surveyTitle: string;
+          suggestedName: string;
+          randomName?: string;
+      };
 
 export default function JoinSurvey(props: Props) {
-    const title = props.isInvalid ? '' : props.surveyTitle;
+    const { t } = useTrans();
+
+    if (props.isInvalid) {
+        return (
+            <>
+                <Head title={t('Join a survey')} />
+                <GuestJoinPage
+                    kind="survey"
+                    invalidTitle={t('Join a survey')}
+                    session={null}
+                    storeUrl={null}
+                />
+            </>
+        );
+    }
 
     return (
         <>
-            <Head title={title} />
-            <main className="p-6">
-                {props.isInvalid ? null : (
-                    <h1 className="text-lg font-semibold text-foreground">
-                        {props.surveyTitle}
-                    </h1>
-                )}
-            </main>
+            <Head title={props.surveyTitle} />
+            <GuestJoinPage
+                kind="survey"
+                invalidTitle={t('Join a survey')}
+                session={props.session}
+                storeUrl={TeamSurveyJoinsController.store.url(props.guestToken)}
+                suggestedName={props.suggestedName}
+            />
         </>
     );
 }
