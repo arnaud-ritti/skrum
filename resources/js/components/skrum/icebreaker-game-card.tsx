@@ -493,7 +493,7 @@ export function IcebreakerGameCard({
                 )}
                 <span
                     id={titleId}
-                    className="truncate text-sm leading-snug font-semibold"
+                    className="line-clamp-2 text-sm leading-snug font-semibold break-words"
                 >
                     {title}
                 </span>
