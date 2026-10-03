@@ -4544,5 +4544,8 @@
     "Survey builder settings": "Einstellungen",
     "Option": "Option",
     "Avatar & presence colour": "Avatar & Präsenzfarbe",
-    "Used for your avatar and your live cursor.": "Wird für deinen Avatar und deinen Live-Cursor verwendet."
+    "Used for your avatar and your live cursor.": "Wird für deinen Avatar und deinen Live-Cursor verwendet.",
+    "Reduce animations": "Animationen reduzieren",
+    "Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.": "Ersetzt Kartendrehungen, Konfetti und Neigungen beim Ziehen durch einfache Überblendungen. Standardmäßig an, wenn dein System es verlangt.",
+    "Your system already asks for fewer animations.": "Dein System verlangt bereits weniger Animationen."
 }

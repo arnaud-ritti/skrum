@@ -29,6 +29,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { ShareChannels, shareResultsLabel } from '@/lib/integrations';
+import { prefersReducedMotion } from '@/lib/motion';
 import {
     formatSessionDuration,
     sessionEndStats,
@@ -47,7 +48,7 @@ import { RecapShareDialog } from './results/recap-share';
 import { RotiResult } from './results/roti';
 import { Summary } from './results/summary';
 import { TopTopics } from './results/top-topics';
-import { prefersReducedMotion, SessionConfetti } from './session-confetti';
+import { SessionConfetti } from './session-confetti';
 import { SurveyResultList } from './surveys/survey-result-list';
 
 export type CompletedView = 'results' | 'board';

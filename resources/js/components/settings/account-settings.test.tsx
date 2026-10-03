@@ -83,11 +83,23 @@ vi.mock('@/components/settings/security/passkeys-card', () => ({
     },
 }));
 vi.mock('@/components/settings/appearance/appearance-card', () => ({
-    AppearanceCard: ({ accessibility }: { accessibility: ReactNode }) => (
+    AppearanceCard: ({
+        reduceAnimations,
+        accessibility,
+    }: {
+        reduceAnimations: ReactNode;
+        accessibility: ReactNode;
+    }) => (
         <div>
             <p>appearance card</p>
+            {reduceAnimations}
             {accessibility}
         </div>
+    ),
+}));
+vi.mock('@/components/settings/appearance/reduce-motion-field', () => ({
+    ReduceMotionField: ({ enabled }: { enabled: boolean }) => (
+        <p>reduce motion {enabled ? 'on' : 'off'}</p>
     ),
 }));
 vi.mock('@/components/settings/appearance/shortcut-preference-card', () => ({
@@ -167,7 +179,7 @@ function unlocked(): AccountSettingsProps {
                 },
             },
         },
-        appearance: true,
+        appearance: { reduceMotion: true },
         notificationPreferences: {
             preferences: {
                 action_item_reminders_by_email: true,
@@ -282,7 +294,9 @@ describe('AccountSettings', () => {
         expect(cards('Security')).toBe(
             'password card with breach checktwo-factor cardpasskeys card',
         );
-        expect(cards('Appearance')).toBe('appearance cardshortcuts on');
+        expect(cards('Appearance')).toBe(
+            'appearance cardreduce motion onshortcuts on',
+        );
         expect(cards('Notifications')).toBe('notifications card');
         expect(cards('API tokens')).toBe(
             'create token formtoken listserver https://skrum.test/mcp',

@@ -5,6 +5,7 @@ import { CreateTokenForm } from '@/components/settings/api-tokens/create-token-f
 import { ServerUrl } from '@/components/settings/api-tokens/server-url';
 import { TokenList } from '@/components/settings/api-tokens/token-list';
 import { AppearanceCard } from '@/components/settings/appearance/appearance-card';
+import { ReduceMotionField } from '@/components/settings/appearance/reduce-motion-field';
 import { ShortcutPreferenceCard } from '@/components/settings/appearance/shortcut-preference-card';
 import { AvatarStyleCard } from '@/components/settings/avatar-style-card';
 import type { ProfileAvatarStyle } from '@/components/settings/avatar-style-card';
@@ -55,6 +56,10 @@ export type ProfileSettings = {
     presenceColor: number;
 };
 
+export type AppearanceSettings = {
+    reduceMotion: boolean;
+};
+
 /** What the security section says about the account: sent only behind a confirmed password. */
 export type ProtectedSecuritySettings = {
     twoFactorEnabled: boolean;
@@ -100,7 +105,8 @@ export type AccountSettingsProps = {
     profile: ProfileSettings;
     /** Absent, like the three sections under it, while the address of the account is not verified. */
     security: SecuritySettings | null;
-    appearance: boolean;
+    /** False, like the sections under it, while the address of the account is not verified. */
+    appearance: AppearanceSettings | false;
     notificationPreferences: NotificationSettings | null;
     /** Absent too when the MCP server is off. */
     apiTokens: ApiTokenSettings | null;
@@ -212,7 +218,7 @@ export function AccountSettings({
     const held: Record<SettingsSectionId, boolean> = {
         profile: true,
         security: security !== null,
-        appearance,
+        appearance: appearance !== false,
         notifications: notificationPreferences !== null,
         'api-tokens': apiTokens !== null,
     };
@@ -262,9 +268,14 @@ export function AccountSettings({
                     </SettingsSection>
                 )}
 
-                {appearance && (
+                {appearance !== false && (
                     <SettingsSection id="appearance">
                         <AppearanceCard
+                            reduceAnimations={
+                                <ReduceMotionField
+                                    enabled={appearance.reduceMotion}
+                                />
+                            }
                             accessibility={
                                 <ShortcutPreferenceCard
                                     enabled={
