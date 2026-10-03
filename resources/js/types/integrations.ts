@@ -265,7 +265,7 @@ export type ExternalLink = {
     source: TrackerProviderKey;
     key: string;
     url: string;
-    state: 'open' | 'done' | null;
+    state: 'open' | 'started' | 'done' | null;
     statusName: string | null;
     syncState: ExternalLinkSyncState;
     syncError: string | null;

@@ -5,12 +5,14 @@ use App\Actions\Integrations\LinkStatusSync;
 use App\Actions\Integrations\RefreshPokerTasks;
 use App\Enums\ActionItemEventOrigin;
 use App\Enums\ActionItemRecurrence;
+use App\Enums\ActionItemStatus;
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\RetroPhase;
 use App\Events\ActionItems\ActionItemCompleted;
+use App\Events\ActionItems\ActionItemProgressChanged;
 use App\Events\ActionItems\ActionItemReopened;
 use App\Events\Poker\PokerGameChanged;
 use App\Events\Poker\PokerTaskSaved;
@@ -19,7 +21,9 @@ use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\PokerTask;
+use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request as HttpRequest;
@@ -102,11 +106,11 @@ it('only records the read when both sides agree', function () {
     Event::fake([ActionItemCompleted::class, ActionItemReopened::class]);
     ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink();
 
-    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
 
     expect($item->fresh()->completed_at)->toBeNull()
         ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open)
-        ->and($link->fresh()->external_status_name)->toBe('In Review');
+        ->and($link->fresh()->external_status_name)->toBe('To Do');
     Event::assertNotDispatched(ActionItemCompleted::class);
     Event::assertNotDispatched(ActionItemReopened::class);
 });
@@ -444,3 +448,84 @@ it('persists "Not found" when a manual refresh misses an issue', function () {
     expect($result)->toBe(['refreshed' => 0, 'missing' => 1])
         ->and($task->fresh()->external_missing_at)->not->toBeNull();
 });
+
+it('starts an open item when its issue is in progress, as the system and without a push', function () {
+    Event::fake([ActionItemCompleted::class, ActionItemReopened::class, ActionItemProgressChanged::class]);
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
+
+    $item->refresh();
+    $link->refresh();
+    expect($item->currentStatus())->toBe(ActionItemStatus::Doing)
+        ->and($item->completed_at)->toBeNull()
+        ->and($link->external_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_status_name)->toBe('In Review')
+        ->and(LinkStatusSync::state($link, $item))->toBe(LinkStatusSync::Synced);
+    Event::assertDispatched(fn (ActionItemProgressChanged $event) => $event->origin === ActionItemEventOrigin::External);
+    Event::assertNotDispatched(ActionItemCompleted::class);
+    Event::assertNotDispatched(ActionItemReopened::class);
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('starts an item on a locked board as the system', function () {
+    ['integration' => $integration, 'item' => $item, 'retro' => $retro] = statusSyncLink();
+    $retro->forceFill(['phase' => RetroPhase::Discussing, 'is_locked' => true])->save();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate')]);
+
+    expect($item->fresh()->started_at)->not->toBeNull();
+});
+
+it('puts a started item back to do when its issue went back to do after the start', function () {
+    Event::fake([ActionItemProgressChanged::class]);
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:15:00'],
+        item: ['started_at' => '2026-10-07 10:15:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Open);
+    Event::assertDispatched(fn (ActionItemProgressChanged $event) => $event->origin === ActionItemEventOrigin::External);
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('keeps a newer unpushed start and pushes it', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00'],
+        item: ['started_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Doing)
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open);
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+});
+
+it('reopens a completed item into in progress when the source reopens it into an in-progress status', function () {
+    Event::fake([ActionItemReopened::class]);
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(item: ['completed_at' => '2026-10-06 09:00:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
+
+    $item->refresh();
+    expect($item->completed_at)->toBeNull()
+        ->and($item->currentStatus())->toBe(ActionItemStatus::Doing);
+    Event::assertDispatched(fn (ActionItemReopened $event) => $event->origin === ActionItemEventOrigin::External);
+});
+
+it('reads a started item as open for GitHub and as started for Jira and Linear', function (IntegrationProvider $provider, ExternalIssueState $expected) {
+    $team = Team::factory()->create();
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->started()->create();
+
+    expect(DoneMapping::itemState($item, $provider))->toBe($expected)
+        ->and(DoneMapping::itemState($item->forceFill(['started_at' => null]), $provider))->toBe(ExternalIssueState::Open)
+        ->and(DoneMapping::itemState($item->forceFill(['completed_at' => now()]), $provider))->toBe(ExternalIssueState::Done);
+})->with([
+    'jira' => [IntegrationProvider::Jira, ExternalIssueState::Started],
+    'jira data center' => [IntegrationProvider::JiraDataCenter, ExternalIssueState::Started],
+    'linear' => [IntegrationProvider::Linear, ExternalIssueState::Started],
+    'github' => [IntegrationProvider::GitHub, ExternalIssueState::Open],
+]);

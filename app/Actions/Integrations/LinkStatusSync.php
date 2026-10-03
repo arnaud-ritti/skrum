@@ -2,12 +2,12 @@
 
 namespace App\Actions\Integrations;
 
-use App\Enums\ExternalIssueState;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\StatusSync;
+use App\Support\Integrations\Trackers\DoneMapping;
 
 /**
  * Which connection syncs a link (spec 8 §5.1): the team's connection of
@@ -63,7 +63,7 @@ class LinkStatusSync
             return self::Failed;
         }
 
-        $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+        $itemState = DoneMapping::itemState($item, $integration->provider);
 
         return $link->external_state === $itemState ? self::Synced : self::Pending;
     }
