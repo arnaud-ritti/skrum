@@ -44,7 +44,7 @@ If a container keeps restarting, `docker compose -f compose.production.yaml logs
 
 ### Upgrading
 
-Back up the `pgsql-data` volume first, then pull the new image and recreate the containers:
+Back up the database first (the `pgsql-data` volume with the default Compose file), then pull the new image and recreate the containers:
 
 ```bash
 docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
@@ -69,11 +69,14 @@ Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `
 
 All configuration is read from the environment. `.env.example` documents every variable.
 
+PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too: [docs/database.md](docs/database.md) says which to choose, what each needs and what an upgrade does, and `compose.production.mariadb.yaml` and `compose.production.sqlite.yaml` replace `compose.production.yaml` for the first and the last.
+
 | Variable                                                           | Purpose                                                                                                                                  |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_URL`                                                          | Public URL of the instance.                                                                                                              |
 | `SERVER_NAME`                                                      | Address Caddy serves, see above.                                                                                                         |
-| `DB_PASSWORD`                                                      | PostgreSQL password. Required.                                                                                                           |
+| `DB_CONNECTION`                                                    | `pgsql` (default), `mariadb`, `mysql` or `sqlite`. See `docs/database.md`.                                                               |
+| `DB_PASSWORD`                                                      | Database password. Required, except with SQLite.                                                                                         |
 | `TRUSTED_PROXIES`                                                  | `*` or a comma-separated list of proxy IPs, when a reverse proxy sits in front.                                                          |
 | `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                            |
 | `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                       |
