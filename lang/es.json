@@ -4569,5 +4569,21 @@
     "Checking known data breaches…": "Comprobando las filtraciones de datos conocidas…",
     "Found in known data breaches: choose another one": "Aparece en filtraciones de datos conocidas: elige otra",
     "Set a password": "Definir una contraseña",
-    "Set the password": "Definir la contraseña"
+    "Set the password": "Definir la contraseña",
+    "Active sessions": "Sesiones activas",
+    "Devices signed in to your account.": "Dispositivos con sesión iniciada en tu cuenta.",
+    "Sign out other sessions": "Cerrar las demás sesiones",
+    "Device": "Dispositivo",
+    "IP address": "Dirección IP",
+    "Last active": "Última actividad",
+    "Sign out": "Cerrar sesión",
+    "Unknown": "Desconocida",
+    "Active now": "Activo ahora",
+    "This device": "Este dispositivo",
+    "Confirm your password to see your devices.": "Confirma tu contraseña para ver tus dispositivos.",
+    "Show my devices": "Mostrar mis dispositivos",
+    "Sign out this device?": "¿Cerrar la sesión de este dispositivo?",
+    ":device will need to sign in again.": ":device tendrá que volver a iniciar sesión.",
+    "Sign out every other device?": "¿Cerrar la sesión de todos los demás dispositivos?",
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Tendrán que volver a iniciar sesión. «Recuérdame» termina en todos los dispositivos."
 }

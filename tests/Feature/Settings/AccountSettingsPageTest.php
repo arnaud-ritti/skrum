@@ -65,7 +65,7 @@ it('shows every section on one page, and nothing the account settings protect, b
 
     expect(array_keys($response->viewData('page')['props']['security']))->toEqualCanonicalizing([
         'passwordRules', 'checksCompromisedPasswords', 'liveBreachCheck', 'canManageTwoFactor', 'canManagePasskeys',
-        'canManageEmailCode', 'requiresConfirmation', 'locked', 'protected',
+        'canManageEmailCode', 'requiresConfirmation', 'canListBrowserSessions', 'locked', 'protected',
     ])->and(array_keys($response->viewData('page')['props']['apiTokens']))->toEqualCanonicalizing([
         'expirationOptions', 'defaultExpiration', 'locked', 'protected',
     ]);

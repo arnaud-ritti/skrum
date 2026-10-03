@@ -13,6 +13,7 @@ const page = vi.hoisted(() => ({
 const seen = vi.hoisted(() => ({
     twoFactor: undefined as Record<string, unknown> | undefined,
     passkeys: undefined as unknown,
+    browserSessions: undefined as unknown,
     tokens: undefined as unknown,
     createToken: undefined as Record<string, unknown> | undefined,
     concealed: undefined as Record<string, unknown> | undefined,
@@ -93,6 +94,13 @@ vi.mock('@/components/settings/security/passkeys-card', () => ({
         return <p>passkeys card</p>;
     },
 }));
+vi.mock('@/components/settings/security/active-sessions-card', () => ({
+    ActiveSessionsCard: ({ sessions }: { sessions: unknown }) => {
+        seen.browserSessions = sessions;
+
+        return <p>active sessions card</p>;
+    },
+}));
 vi.mock('@/components/settings/appearance/appearance-card', () => ({
     AppearanceCard: ({
         reduceAnimations,
@@ -155,6 +163,15 @@ const passkey = {
 
 const token = { id: 't1', name: 'Claude Code' };
 
+const browserSession = {
+    key: 'a'.repeat(64),
+    device: 'Firefox on macOS',
+    deviceKind: 'desktop' as const,
+    ipAddress: '203.0.113.7',
+    isCurrent: true,
+    lastActiveAt: '2026-10-03T12:00:00Z',
+};
+
 function unlocked(): AccountSettingsProps {
     return {
         profile: {
@@ -177,6 +194,7 @@ function unlocked(): AccountSettingsProps {
             canManagePasskeys: true,
             canManageEmailCode: true,
             requiresConfirmation: true,
+            canListBrowserSessions: true,
             locked: false,
             protected: {
                 twoFactorEnabled: true,
@@ -193,6 +211,7 @@ function unlocked(): AccountSettingsProps {
                     resendIn: 0,
                 },
                 password: { isSet: true, allowed: true },
+                browserSessions: [browserSession],
             },
         },
         appearance: { reduceMotion: true },
@@ -266,6 +285,7 @@ beforeEach(() => {
     };
     seen.twoFactor = undefined;
     seen.passkeys = undefined;
+    seen.browserSessions = undefined;
     seen.tokens = undefined;
     seen.createToken = undefined;
     seen.concealed = undefined;
@@ -309,7 +329,7 @@ describe('AccountSettings', () => {
             'profile carddelete account cardavatar style card',
         );
         expect(cards('Security')).toBe(
-            'password card with breach checktwo-factor cardpasskeys card',
+            'password card with breach checktwo-factor cardpasskeys cardactive sessions card',
         );
         expect(cards('Appearance')).toBe(
             'appearance cardreduce motion onshortcuts on',
@@ -374,6 +394,7 @@ describe('AccountSettings', () => {
             emailCode: { address: 'mona@example.com' },
         });
         expect(seen.passkeys).toEqual([passkey]);
+        expect(seen.browserSessions).toEqual([browserSession]);
         expect(seen.tokens).toEqual([token]);
         expect(seen.createToken).toMatchObject({
             mcpUrl: 'https://skrum.test/mcp',
@@ -396,7 +417,7 @@ describe('AccountSettings', () => {
         renderWithProviders(<AccountSettings {...locked()} />);
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach checkconcealed two-factor cardpasskeys card',
+            'password card with breach checkconcealed two-factor cardpasskeys cardactive sessions card',
         );
         expect(sectionNamed('API tokens').textContent).toBe(
             'create token formtoken listserver ',
@@ -407,6 +428,7 @@ describe('AccountSettings', () => {
             emailCodeAvailable: true,
         });
         expect(seen.passkeys).toBeNull();
+        expect(seen.browserSessions).toBeNull();
         expect(seen.tokens).toBeNull();
         expect(seen.serverUrl).toBeNull();
         expect(seen.createToken).toMatchObject({
@@ -529,7 +551,7 @@ describe('AccountSettings', () => {
         );
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach check',
+            'password card with breach checkactive sessions card',
         );
     });
 
@@ -573,7 +595,7 @@ describe('AccountSettings', () => {
         );
 
         expect(sectionNamed('Security').textContent).toBe(
-            'password card with breach check',
+            'password card with breach checkactive sessions card',
         );
     });
 
@@ -600,6 +622,42 @@ describe('AccountSettings', () => {
         );
 
         expect(seen.twoFactor).toMatchObject({ appAvailable: false });
+    });
+
+    it('mounts no Active sessions card when the sessions are not kept in the database, locked or not', () => {
+        const props = unlocked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                security={{
+                    ...props.security!,
+                    canListBrowserSessions: false,
+                    protected: {
+                        ...props.security!.protected!,
+                        browserSessions: null,
+                    },
+                }}
+            />,
+        );
+
+        expect(sectionNamed('Security').textContent).not.toContain(
+            'active sessions card',
+        );
+
+        const closed = locked();
+
+        renderWithProviders(
+            <AccountSettings
+                {...closed}
+                security={{
+                    ...closed.security!,
+                    canListBrowserSessions: false,
+                }}
+            />,
+        );
+
+        expect(seen.browserSessions).toBeUndefined();
     });
 
     it('gives an account whose address is not verified its profile only', () => {

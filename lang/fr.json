@@ -4569,5 +4569,21 @@
     "Checking known data breaches…": "Vérification dans les fuites de données connues…",
     "Found in known data breaches: choose another one": "Présent dans des fuites de données connues : choisis-en un autre",
     "Set a password": "Définir un mot de passe",
-    "Set the password": "Définir le mot de passe"
+    "Set the password": "Définir le mot de passe",
+    "Active sessions": "Sessions actives",
+    "Devices signed in to your account.": "Appareils connectés à ton compte.",
+    "Sign out other sessions": "Déconnecter les autres sessions",
+    "Device": "Appareil",
+    "IP address": "Adresse IP",
+    "Last active": "Dernière activité",
+    "Sign out": "Déconnecter",
+    "Unknown": "Inconnue",
+    "Active now": "Actif maintenant",
+    "This device": "Cet appareil",
+    "Confirm your password to see your devices.": "Confirme ton mot de passe pour voir tes appareils.",
+    "Show my devices": "Afficher mes appareils",
+    "Sign out this device?": "Déconnecter cet appareil ?",
+    ":device will need to sign in again.": ":device devra se reconnecter.",
+    "Sign out every other device?": "Déconnecter tous les autres appareils ?",
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Ils devront se reconnecter. « Rester connecté » prend fin sur tous les appareils."
 }

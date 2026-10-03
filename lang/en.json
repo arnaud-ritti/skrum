@@ -4349,5 +4349,21 @@
     "Checking known data breaches…": "Checking known data breaches…",
     "Found in known data breaches: choose another one": "Found in known data breaches: choose another one",
     "Set a password": "Set a password",
-    "Set the password": "Set the password"
+    "Set the password": "Set the password",
+    "Active sessions": "Active sessions",
+    "Devices signed in to your account.": "Devices signed in to your account.",
+    "Sign out other sessions": "Sign out other sessions",
+    "Device": "Device",
+    "IP address": "IP address",
+    "Last active": "Last active",
+    "Sign out": "Sign out",
+    "Unknown": "Unknown",
+    "Active now": "Active now",
+    "This device": "This device",
+    "Confirm your password to see your devices.": "Confirm your password to see your devices.",
+    "Show my devices": "Show my devices",
+    "Sign out this device?": "Sign out this device?",
+    ":device will need to sign in again.": ":device will need to sign in again.",
+    "Sign out every other device?": "Sign out every other device?",
+    "They will need to sign in again. \"Remember me\" ends on every device.": "They will need to sign in again. \"Remember me\" ends on every device."
 }

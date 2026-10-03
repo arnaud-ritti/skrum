@@ -3,6 +3,7 @@
 use App\Models\BrowserSession;
 use App\Models\User;
 use App\Support\Settings\BrowserSessions;
+use App\Support\Settings\SecuritySettings;
 use Inertia\Testing\AssertableInertia;
 
 const FirefoxOnMac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15.0; rv:131.0) Gecko/20100101 Firefox/131.0';
@@ -85,6 +86,18 @@ it('sends no session list at all with another driver, so the card is hidden', fu
     $this->actingAs(User::factory()->create())->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('security.protected.browserSessions', null));
+});
+
+it('tells the locked section whether the card exists, before any confirmation', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('settings.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('security.protected', null)
+            ->where('security.canListBrowserSessions', true));
+
+    config(['session.driver' => 'file']);
+
+    expect(resolve(SecuritySettings::class)->offered()['canListBrowserSessions'])->toBeFalse();
 });
 
 it('signs out through the routes, behind a fresh confirmation', function () {

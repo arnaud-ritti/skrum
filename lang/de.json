@@ -4569,5 +4569,21 @@
     "Checking known data breaches…": "Bekannte Datenlecks werden geprüft…",
     "Found in known data breaches: choose another one": "In bekannten Datenlecks gefunden: Wähle ein anderes",
     "Set a password": "Ein Passwort festlegen",
-    "Set the password": "Passwort festlegen"
+    "Set the password": "Passwort festlegen",
+    "Active sessions": "Aktive Sitzungen",
+    "Devices signed in to your account.": "Geräte, die bei deinem Konto angemeldet sind.",
+    "Sign out other sessions": "Andere Sitzungen abmelden",
+    "Device": "Gerät",
+    "IP address": "IP-Adresse",
+    "Last active": "Zuletzt aktiv",
+    "Sign out": "Abmelden",
+    "Unknown": "Unbekannt",
+    "Active now": "Gerade aktiv",
+    "This device": "Dieses Gerät",
+    "Confirm your password to see your devices.": "Bestätige dein Passwort, um deine Geräte zu sehen.",
+    "Show my devices": "Meine Geräte anzeigen",
+    "Sign out this device?": "Dieses Gerät abmelden?",
+    ":device will need to sign in again.": ":device muss sich erneut anmelden.",
+    "Sign out every other device?": "Alle anderen Geräte abmelden?",
+    "They will need to sign in again. \"Remember me\" ends on every device.": "Dort ist eine erneute Anmeldung nötig. „Angemeldet bleiben“ endet auf allen Geräten."
 }

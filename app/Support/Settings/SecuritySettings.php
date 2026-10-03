@@ -40,7 +40,8 @@ class SecuritySettings
      *     canManageTwoFactor: bool,
      *     canManagePasskeys: bool,
      *     canManageEmailCode: bool,
-     *     requiresConfirmation: bool
+     *     requiresConfirmation: bool,
+     *     canListBrowserSessions: bool
      * }
      */
     public function offered(): array
@@ -55,6 +56,7 @@ class SecuritySettings
             'canManagePasskeys' => Features::canManagePasskeys(),
             'canManageEmailCode' => $this->availability->emailEnabled(),
             'requiresConfirmation' => $canManageTwoFactor && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
+            'canListBrowserSessions' => $this->sessions->available(),
         ];
     }
 

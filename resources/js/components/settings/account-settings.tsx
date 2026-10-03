@@ -16,6 +16,8 @@ import { PasswordGateProvider } from '@/components/settings/password-gate';
 import { PresenceColourPicker } from '@/components/settings/presence-colour-picker';
 import { ProfileCard } from '@/components/settings/profile-card';
 import { ProfilePhoto } from '@/components/settings/profile-photo';
+import { ActiveSessionsCard } from '@/components/settings/security/active-sessions-card';
+import type { BrowserSessionRow } from '@/components/settings/security/active-sessions-card';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
 import { SecurityStack } from '@/components/settings/security/security-stack';
@@ -78,6 +80,8 @@ export type ProtectedSecuritySettings = {
         /** False when the sign-in policy refuses a password to this account: no password card. */
         allowed: boolean;
     };
+    /** Null when the sessions are not kept in the database: no Active sessions card. */
+    browserSessions: BrowserSessionRow[] | null;
 };
 
 export type SecuritySettings = {
@@ -91,6 +95,8 @@ export type SecuritySettings = {
     /** The instance can send the e-mail code. */
     canManageEmailCode: boolean;
     requiresConfirmation: boolean;
+    /** The sessions are kept in the database: the Active sessions card exists. */
+    canListBrowserSessions: boolean;
     locked: boolean;
     protected: ProtectedSecuritySettings | null;
 };
@@ -141,9 +147,20 @@ function SecuritySection({
         account !== null &&
         (account.emailSecondFactor.available ||
             account.emailSecondFactor.enabled);
+    const listsBrowserSessions =
+        security.canListBrowserSessions &&
+        (account === null || account.browserSessions !== null);
 
     return (
-        <SecurityStack>
+        <SecurityStack
+            activeSessions={
+                listsBrowserSessions && (
+                    <ActiveSessionsCard
+                        sessions={account?.browserSessions ?? null}
+                    />
+                )
+            }
+        >
             {account?.password.allowed !== false && (
                 <PasswordCard
                     passwordRules={security.passwordRules}
