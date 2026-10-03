@@ -5,9 +5,9 @@ Branch `plan-29-administration-errors` (worktree `.claude/worktrees/rm29`), cut 
 `docs/superpowers/plans/2026-10-21-plan-29-administration-errors.md`. Final run on 2026-10-03 on the code of `a66fbeb6`
 (Task 35); the commit after it adds this report only. Not pushed; `main` and `roadmap` untouched.
 
-The controller runs the plan's tasks in numeric order on this one branch (lanes flattened), so this report is written
-**after Tasks 1 to 35 and before Task 37** ("Secret changed" on the SSO cards, numbered last but planned for lane C). The
-back-end half of criterion 31 therefore waits for Task 37 (§2). The plan asked for the report in
+The controller runs the plan's tasks in numeric order on this one branch (lanes flattened), so this report was first
+written after Tasks 1 to 35 and before Task 37 ("Secret changed" on the SSO cards, numbered last but planned for lane C).
+Task 37 has run since (`5dc0ed20`); criterion 31 (§2) now names its tests. The plan asked for the report in
 `.superpowers/sdd/plan-29/report.md`; that folder is excluded from git (`.git/info/exclude`), so the report sits beside
 the earlier plans' reports in `docs/superpowers/research/`, as plan 27 did.
 
@@ -71,7 +71,7 @@ once in `npm run test`.
 | 28 | S9, S8 | see §3 |
 | 29 | S1 | see §3 |
 | 30 | AGPL-3.0 declared; Licence card | `LicenceDeclarationTest`; `LicenceTest` "names the AGPL-3.0 and counts active accounts only on the licence card"; `licence-card.test.tsx` |
-| 31 | Masked secret field with its eye; locked fallback switch; "Secret changed" | `secret-field.test.tsx`, `email-fallback-row.test.tsx`, `provider-card.test.tsx` ("Secret changed 3 days ago" from `secretChangedAt`). The back end (`SecretChangeTimes`, the `secretChangedAt` prop) is **Task 37, not built yet**: until it runs the prop is absent and the line does not show; the `admin-sso-stored-secret` capture lacks it for that reason |
+| 31 | Masked secret field with its eye; locked fallback switch; "Secret changed" | `secret-field.test.tsx`, `email-fallback-row.test.tsx`, `provider-card.test.tsx` ("Secret changed 3 days ago" from `secretChangedAt`). Back end (Task 37): `SecretChangeTimesTest` "gives the time of the latest event that changed the secret of the section", "gives nothing when no event changed the secret", "shows when a stored secret changed, and nothing for an environment or cleared secret", and "reads the audit log once for every stored secret of the sign-in page". The `admin-sso-stored-secret` capture was taken before Task 37 and was not retaken (no capture task after it): it lacks the "Secret modifié …" line |
 
 ## 3. Security rules S1 to S9 (spec §5.1)
 
@@ -130,4 +130,4 @@ as a textarea (P29-22), the 503 overline, title and local time (P29-23). None re
 | 10 | `CommandStarting` before scheduled closures | answered, §5 |
 | 11 | Plans 26 and 29 together (passkey without confirmation satisfies S2) | ruled 2026-10-03, accepted; the owner may overturn it |
 
-Still to run: **Task 37** ("Secret changed" back end), then the roadmap's four-engine matrix.
+Still to run: the roadmap's four-engine matrix.
