@@ -74,6 +74,12 @@ class Team extends Model
         return $this->hasMany(Whiteboard::class);
     }
 
+    /** @return HasMany<TeamSurvey, $this> */
+    public function teamSurveys(): HasMany
+    {
+        return $this->hasMany(TeamSurvey::class);
+    }
+
     /** @return HasMany<SavedPokerDeck, $this> */
     public function pokerDecks(): HasMany
     {

@@ -4372,5 +4372,6 @@
     "Two-factor off": "Desactivada",
     "Regenerate the recovery codes?": "¿Regenerar los códigos de recuperación?",
     "Your current codes stop working at once. Store the new ones in a safe place.": "Tus códigos actuales dejan de funcionar al instante. Guarda los nuevos en un lugar seguro.",
-    "The database is busy. Try again.": "La base de datos está ocupada. Inténtalo de nuevo."
+    "The database is busy. Try again.": "La base de datos está ocupada. Inténtalo de nuevo.",
+    "Open": "Abierta"
 }

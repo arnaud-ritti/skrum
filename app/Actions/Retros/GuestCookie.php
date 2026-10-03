@@ -15,6 +15,8 @@ class GuestCookie
 
     public const WhiteboardScope = 'whiteboard';
 
+    public const SurveyScope = 'survey';
+
     private const LifetimeMinutes = 60 * 24 * 30;
 
     /** @return non-empty-string */

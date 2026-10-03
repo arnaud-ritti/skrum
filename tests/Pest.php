@@ -9,6 +9,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Integrations\DeliverToChannel;
 use App\Jobs\Integrations\PushActionItemState;
@@ -35,6 +36,11 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Models\TeamSurvey;
+use App\Models\TeamSurveyAnswer;
+use App\Models\TeamSurveyOption;
+use App\Models\TeamSurveyQuestion;
+use App\Models\TeamSurveyRespondent;
 use App\Models\User;
 use App\Models\Vote;
 use App\Models\Whiteboard;
@@ -1577,6 +1583,85 @@ function whiteboardGuest(Whiteboard $board, string $secret = 'secret'): Whiteboa
 function whiteboardGuestCookie(WhiteboardMember $member, string $secret = 'secret'): array
 {
     return [GuestCookie::name(GuestCookie::WhiteboardScope, $member->whiteboard_id) => "{$member->id}|{$secret}"];
+}
+
+/**
+ * @return array{0: User, 1: TeamSurveyRespondent}
+ */
+function surveyMember(TeamSurvey $survey): array
+{
+    $user = teamMember($survey->team);
+
+    return [$user, TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: TeamSurveyRespondent}
+ */
+function surveyFacilitator(TeamSurvey $survey): array
+{
+    [$user, $respondent] = surveyMember($survey);
+
+    $survey->update(['facilitator_respondent_id' => $respondent->id, 'created_by_user_id' => $user->id]);
+
+    return [$user, $respondent];
+}
+
+function surveyGuest(TeamSurvey $survey, string $secret = 'secret'): TeamSurveyRespondent
+{
+    return TeamSurveyRespondent::factory()->guest($secret)->create(['team_survey_id' => $survey->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function surveyGuestCookie(TeamSurveyRespondent $respondent, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::SurveyScope, $respondent->team_survey_id) => "{$respondent->id}|{$secret}"];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @param  array<int, string>  $options  labels, for a choice question
+ */
+function surveyQuestion(
+    TeamSurvey $survey,
+    TeamSurveyQuestionKind $kind = TeamSurveyQuestionKind::Scale,
+    array $attributes = [],
+    array $options = [],
+): TeamSurveyQuestion {
+    $question = TeamSurveyQuestion::factory()->kind($kind)->create([
+        'team_survey_id' => $survey->id,
+        'position' => (int) TeamSurveyQuestion::query()->where('team_survey_id', $survey->id)->max('position') + 1,
+        ...$attributes,
+    ]);
+
+    foreach ($options as $position => $label) {
+        TeamSurveyOption::factory()->create(['team_survey_question_id' => $question->id, 'label' => $label, 'position' => $position]);
+    }
+
+    return $question;
+}
+
+/**
+ * @param  int|string|array<int, int>  $answer  a value (scale, NPS), a text, or option indexes (choices)
+ */
+function answerSurveyQuestion(TeamSurveyQuestion $question, TeamSurveyRespondent $respondent, int|string|array $answer, ?string $comment = null): TeamSurveyAnswer
+{
+    $row = TeamSurveyAnswer::factory()->create([
+        'team_survey_question_id' => $question->id,
+        'team_survey_respondent_id' => $respondent->id,
+        'value' => is_int($answer) ? $answer : null,
+        'text' => is_string($answer) ? $answer : null,
+        'comment' => $comment,
+    ]);
+
+    if (is_array($answer)) {
+        $options = $question->options()->get()->values();
+        $row->options()->attach(array_map(fn (int $index): string => $options[$index]->id, $answer));
+    }
+
+    return $row;
 }
 
 /**

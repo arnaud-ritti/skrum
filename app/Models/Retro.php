@@ -167,6 +167,12 @@ class Retro extends Model implements DeliverySubject
         return $this->hasMany(SurveyComment::class);
     }
 
+    /** @return HasMany<TeamSurvey, $this> */
+    public function teamSurveys(): HasMany
+    {
+        return $this->hasMany(TeamSurvey::class);
+    }
+
     /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {

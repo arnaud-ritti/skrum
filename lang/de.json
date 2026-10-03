@@ -4372,5 +4372,6 @@
     "Two-factor off": "Aus",
     "Regenerate the recovery codes?": "Wiederherstellungscodes neu generieren?",
     "Your current codes stop working at once. Store the new ones in a safe place.": "Deine aktuellen Codes funktionieren sofort nicht mehr. Bewahre die neuen an einem sicheren Ort auf.",
-    "The database is busy. Try again.": "Die Datenbank ist ausgelastet. Bitte erneut versuchen."
+    "The database is busy. Try again.": "Die Datenbank ist ausgelastet. Bitte erneut versuchen.",
+    "Open": "Offen"
 }
