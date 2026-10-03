@@ -89,7 +89,10 @@ it('lists a draft poll to its editors only', function () {
         ->and(titlesIn(sessionsOf($team, workspaceManager($team->workspace), SessionState::Upcoming)))->toBe(['poll draft']);
 });
 
-it('walks 45 sessions of five kinds in pages of 20 without a duplicate or a gap', function () {
+it('walks 45 sessions of five kinds in pages of 20 without a duplicate or a gap', function (string $timezone) {
+    config(['app.timezone' => $timezone]);
+    date_default_timezone_set($timezone);
+
     $team = Team::factory()->create();
     $viewer = teamMember($team);
     $start = now()->subHours(2);
@@ -134,7 +137,7 @@ it('walks 45 sessions of five kinds in pages of 20 without a duplicate or a gap'
 
         expect($ordered)->toBeTrue();
     }
-});
+})->with(['UTC', 'Europe/Paris', 'America/New_York']);
 
 it('describes each row with the data of its kind', function () {
     $team = Team::factory()->create();

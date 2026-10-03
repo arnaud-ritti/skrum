@@ -129,6 +129,9 @@ class ListTeamSessions
     }
 
     /**
+     * The cursor is in UTC while `updated_at` is stored, without an offset, in
+     * the application timezone: the bound instant is moved there first.
+     *
      * @template TModel of Model
      *
      * @param  Builder<TModel>  $query
@@ -140,9 +143,11 @@ class ListTeamSessions
             return $query;
         }
 
+        $storedAt = $before->updatedAt->setTimezone(config('app.timezone'));
+
         return $query->where(fn (Builder $older) => $older
-            ->where('updated_at', '<', $before->updatedAt)
-            ->orWhere(fn (Builder $same) => $same->where('updated_at', $before->updatedAt)->where('id', '<', $before->id)));
+            ->where('updated_at', '<', $storedAt)
+            ->orWhere(fn (Builder $same) => $same->where('updated_at', $storedAt)->where('id', '<', $before->id)));
     }
 
     /** @return Builder<Retro> */
