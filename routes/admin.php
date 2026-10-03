@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SsoProvider;
 use App\Http\Controllers\Admin\AdminCandidatesController;
 use App\Http\Controllers\Admin\AdminsController;
 use App\Http\Controllers\Admin\AuditEventsController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\LicencesController;
 use App\Http\Controllers\Admin\McpKeysController;
 use App\Http\Controllers\Admin\SignInSettingsController;
+use App\Http\Controllers\Admin\SsoConnectionTestsController;
+use App\Http\Controllers\Admin\SsoProvidersController;
 use App\Http\Controllers\Admin\UserDeactivationsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Middleware\KeepFlashedSessionData;
@@ -40,6 +43,12 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
 
         Route::get('admin/sign-in', [SignInSettingsController::class, 'edit'])->name('admin.signIn.edit');
         Route::put('admin/sign-in', [SignInSettingsController::class, 'update'])->name('admin.signIn.update');
+        Route::put('admin/sign-in/providers/{provider}', [SsoProvidersController::class, 'update'])
+            ->whereIn('provider', array_column(SsoProvider::cases(), 'value'))
+            ->name('admin.ssoProviders.update');
+        Route::post('admin/sign-in/tests', [SsoConnectionTestsController::class, 'store'])
+            ->middleware('throttle:10,1,ssoTests')
+            ->name('admin.ssoTests.store');
 
         Route::post('admin/branding/assets/{asset}', [BrandingAssetsController::class, 'store'])
             ->where('asset', BrandAssets::RoutePattern)

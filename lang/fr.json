@@ -4598,5 +4598,10 @@
     "Sender name": "Nom de l'expéditeur",
     "This value is not accepted.": "Cette valeur n'est pas acceptée.",
     "Turn off \"Require SSO\" first.": "Désactive d'abord « Exiger le SSO ».",
-    "Confirm your password again to change these settings.": "Confirme à nouveau ton mot de passe pour modifier ces réglages."
+    "Confirm your password again to change these settings.": "Confirme à nouveau ton mot de passe pour modifier ces réglages.",
+    ":provider settings saved. Every instance admin gets an e-mail.": "Réglages :provider enregistrés. Chaque admin de l’instance reçoit un e-mail.",
+    "Configure this provider before testing it.": "Configure ce fournisseur avant de le tester.",
+    "Nothing to save.": "Rien à enregistrer.",
+    "Saved, but the alert to the admins could not be sent.": "Enregistré, mais l’alerte aux admins n’a pas pu être envoyée.",
+    "This provider cannot be tested.": "Ce fournisseur ne peut pas être testé."
 }
