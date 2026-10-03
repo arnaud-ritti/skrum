@@ -4553,5 +4553,11 @@
     "More tools": "Más herramientas",
     "Laser pointer": "Puntero láser",
     "Keep the tool": "Mantener la herramienta",
-    "Pen mode": "Modo lápiz"
+    "Pen mode": "Modo lápiz",
+    "Zoom": "Zoom",
+    "Reset zoom to 100 %": "Volver al zoom 100 %",
+    "Fit to screen": "Ajustar a la pantalla",
+    "Minimap": "Minimapa",
+    "Shows the whole board; the frame is the part you see.": "Muestra todo el tablero; el marco es la parte que ves.",
+    "Move the view": "Mover la vista"
 }

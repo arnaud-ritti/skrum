@@ -4553,5 +4553,11 @@
     "More tools": "Weitere Werkzeuge",
     "Laser pointer": "Laserpointer",
     "Keep the tool": "Werkzeug beibehalten",
-    "Pen mode": "Stiftmodus"
+    "Pen mode": "Stiftmodus",
+    "Zoom": "Zoom",
+    "Reset zoom to 100 %": "Zoom auf 100 % zurücksetzen",
+    "Fit to screen": "An Bildschirm anpassen",
+    "Minimap": "Minikarte",
+    "Shows the whole board; the frame is the part you see.": "Zeigt das ganze Board; der Rahmen ist der Teil, den du siehst.",
+    "Move the view": "Ansicht verschieben"
 }

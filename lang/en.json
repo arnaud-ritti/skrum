@@ -4333,5 +4333,11 @@
     "More tools": "More tools",
     "Laser pointer": "Laser pointer",
     "Keep the tool": "Keep the tool",
-    "Pen mode": "Pen mode"
+    "Pen mode": "Pen mode",
+    "Zoom": "Zoom",
+    "Reset zoom to 100 %": "Reset zoom to 100 %",
+    "Fit to screen": "Fit to screen",
+    "Minimap": "Minimap",
+    "Shows the whole board; the frame is the part you see.": "Shows the whole board; the frame is the part you see.",
+    "Move the view": "Move the view"
 }
