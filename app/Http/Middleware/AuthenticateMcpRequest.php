@@ -25,6 +25,10 @@ class AuthenticateMcpRequest
             return $this->unauthorized();
         }
 
+        if ($user->isDeactivated()) {
+            return $this->unauthorized();
+        }
+
         $token = $user->currentAccessToken();
 
         if (! $token instanceof PersonalAccessToken) {

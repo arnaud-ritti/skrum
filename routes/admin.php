@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\SignInSettingsController;
+use App\Http\Controllers\Admin\UserDeactivationsController;
+use App\Http\Controllers\Admin\UsersController;
 use App\Http\Middleware\KeepFlashedSessionData;
 use App\Support\Branding\BrandAssets;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -51,5 +53,13 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
             ->middleware(['throttle:60,1,adminCandidates', KeepFlashedSessionData::class])
             ->name('admin.adminCandidates.index');
+
+        Route::get('admin/users', [UsersController::class, 'index'])->name('admin.users.index');
+        Route::post('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'store'])
+            ->whereUuid('user')
+            ->name('admin.userDeactivations.store');
+        Route::delete('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'destroy'])
+            ->whereUuid('user')
+            ->name('admin.userDeactivations.destroy');
     });
 });

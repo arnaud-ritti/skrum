@@ -19,7 +19,12 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 
-export type AdminSection = 'general' | 'branding' | 'signIn' | 'admins';
+export type AdminSection =
+    | 'general'
+    | 'branding'
+    | 'signIn'
+    | 'users'
+    | 'admins';
 
 type AdminNavEntry = {
     section: AdminSection;

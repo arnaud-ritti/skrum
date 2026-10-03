@@ -2,6 +2,7 @@
 
 use App\Http\ErrorPageResponder;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
@@ -47,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestForgery(except: ['reminder-unsubscribe/*', 'recap-unsubscribe/*']);
 
         $middleware->web(append: [
+            EnsureAccountIsActive::class,
             HandleAppearance::class,
             SetLocale::class,
             HandleInertiaRequests::class,
