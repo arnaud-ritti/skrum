@@ -5128,5 +5128,6 @@
     "No finished session yet": "Noch keine beendete Sitzung",
     "A session you create waits here until it starts.": "Eine Sitzung, die du erstellst, wartet hier, bis sie beginnt.",
     "The sessions in progress show up here.": "Laufende Sitzungen erscheinen hier.",
-    "The sessions that ended show up here, newest first.": "Beendete Sitzungen erscheinen hier, die neuesten zuerst."
+    "The sessions that ended show up here, newest first.": "Beendete Sitzungen erscheinen hier, die neuesten zuerst.",
+    "Acceptance criteria": "Akzeptanzkriterien"
 }

@@ -1,7 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
 import PokerRoundsController from '@/actions/App/Http/Controllers/Poker/PokerRoundsController';
 import PokerTasksController from '@/actions/App/Http/Controllers/Poker/PokerTasksController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -17,6 +16,7 @@ import { useGame } from './game-context';
 import { MarkdownClasses } from './markdown-classes';
 import { Rejected, TaskFormDialog } from './room-dialogs';
 import { TaskSourceDetails, TaskSourceLink } from './task-source';
+import { TicketChips, TicketCriteria } from './ticket-details';
 
 type LoadedRounds =
     | { state: 'loading' }
@@ -94,8 +94,6 @@ function TaskRounds({
 
 type Props = {
     task: PokerTask;
-    /** Under the title: type and label chips, description and acceptance criteria of the ticket (PK-1). Nothing today. */
-    details?: ReactNode;
     /**
      * The rounds are listed open (the owner's fourth round, D-67); false on a
      * phone, where the mockup keeps them folded.
@@ -105,12 +103,7 @@ type Props = {
 };
 
 /** The task being estimated: its place in the game, its text, its source and its rounds. */
-export function StoryCard({
-    task,
-    details,
-    roundsOpen = true,
-    className,
-}: Props) {
+export function StoryCard({ task, roundsOpen = true, className }: Props) {
     const { snapshot, apply, run } = useGame();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
@@ -155,6 +148,7 @@ export function StoryCard({
                         {task.external && (
                             <TaskSourceLink external={task.external} />
                         )}
+                        <TicketChips external={task.external} />
                         {position !== null && (
                             <span className="text-xs whitespace-nowrap text-muted-foreground">
                                 {t(':position / :total in this game', {
@@ -202,7 +196,6 @@ export function StoryCard({
                     >
                         {task.title}
                     </h2>
-                    {details}
                     {task.external && (
                         <TaskSourceDetails
                             task={task}
@@ -211,6 +204,7 @@ export function StoryCard({
                     )}
                     {task.descriptionHtml !== '' && (
                         <div
+                            data-slot="story-description"
                             className={cn(
                                 MarkdownClasses,
                                 'text-muted-foreground',
@@ -220,6 +214,7 @@ export function StoryCard({
                             }}
                         />
                     )}
+                    <TicketCriteria html={task.acceptanceCriteriaHtml} />
                 </div>
                 {hasRounds && (
                     <div

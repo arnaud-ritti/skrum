@@ -89,6 +89,115 @@ describe('StoryCard, a task typed in the game', () => {
     });
 });
 
+describe('StoryCard, ticket details and acceptance criteria', () => {
+    const detailed = pokerTask('t4', 'CSV export', {
+        position: 1,
+        descriptionHtml: '<p>As a facilitator I export actions.</p>',
+        acceptanceCriteriaHtml: '<ul><li>Filter by period</li></ul>',
+        external: {
+            source: 'jira',
+            key: 'ATLAS-1287',
+            url: 'https://acme.atlassian.net/browse/ATLAS-1287',
+            type: 'Story',
+            labels: ['Actions', 'Export'],
+            isManaged: true,
+        },
+    });
+
+    function render(task: typeof detailed) {
+        return renderInRoom(
+            <StoryCard task={task} />,
+            pokerSnapshot({ tasks: [task] }),
+        );
+    }
+
+    it('shows the type and the labels right after the key, in order', () => {
+        render(detailed);
+
+        const topLine = Array.from(
+            document.querySelectorAll(
+                '[data-slot="ticket"], [data-slot="ticket-type"], [data-slot="ticket-label"]',
+            ),
+        ).map((chip) => chip.textContent);
+
+        expect(topLine[0]).toContain('ATLAS-1287');
+        expect(topLine.slice(1)).toEqual(['Story', 'Actions', 'Export']);
+        const lastLabel = Array.from(
+            document.querySelectorAll('[data-slot="ticket-label"]'),
+        ).at(-1);
+
+        expect(
+            lastLabel?.compareDocumentPosition(
+                screen.getByText('1 / 1 in this game'),
+            ),
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it('shows the criteria after the description, from the server HTML', () => {
+        render(detailed);
+
+        const description = screen.getByText(
+            'As a facilitator I export actions.',
+        );
+        const criteria = document.querySelector(
+            '[data-slot="ticket-criteria"]',
+        );
+
+        expect(
+            description.closest('[data-slot="story-description"]'),
+        ).not.toBeNull();
+        expect(criteria?.textContent).toContain('Acceptance criteria');
+        expect(criteria?.querySelector('li')?.textContent).toBe(
+            'Filter by period',
+        );
+        expect(description.compareDocumentPosition(criteria!)).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+    });
+
+    it('shows the criteria of a typed task, and no chips', () => {
+        render(
+            pokerTask('t5', 'Typed task', {
+                acceptanceCriteriaHtml: '<ul><li>Works offline</li></ul>',
+            }),
+        );
+
+        expect(
+            document.querySelector('[data-slot="ticket-criteria"]'),
+        ).not.toBeNull();
+        expect(document.querySelector('[data-slot="ticket-type"]')).toBeNull();
+        expect(document.querySelector('[data-slot="ticket-label"]')).toBeNull();
+    });
+
+    it('shows nothing more for an imported task without details or criteria', () => {
+        render(
+            pokerTask('t6', 'Bare ticket', {
+                external: { ...detailed.external!, type: null, labels: [] },
+            }),
+        );
+
+        expect(document.querySelector('[data-slot="ticket-type"]')).toBeNull();
+        expect(document.querySelector('[data-slot="ticket-label"]')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="ticket-criteria"]'),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('heading', { name: 'Acceptance criteria' }),
+        ).toBeNull();
+    });
+
+    it('shows the criteria alone when the whole description is the section', () => {
+        render({ ...detailed, descriptionHtml: '' });
+
+        expect(
+            document.querySelector('[data-slot="story-description"]'),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="ticket-criteria"]'),
+        ).not.toBeNull();
+    });
+});
+
 describe('StoryCard, deleting the task', () => {
     it('asks in an alert dialog, then removes the task', async () => {
         mocks.request.mockResolvedValue(null);
