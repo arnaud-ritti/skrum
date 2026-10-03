@@ -4664,5 +4664,17 @@
     "Save first to test these values.": "Enregistre d'abord pour tester ces valeurs.",
     "Every change is recorded in the audit log and mailed to every instance admin.": "Chaque modification est inscrite au journal d'audit et envoyée par e-mail à chaque admin de l'instance.",
     "Secret changed :relative": "Secret modifié :relative",
-    "Confirm": "Confirmer"
+    "Confirm": "Confirmer",
+    "Delivery": "Envoi",
+    "TLS on connect (smtps)": "TLS dès la connexion (smtps)",
+    "STARTTLS when offered (smtp)": "STARTTLS si proposé (smtp)",
+    "Send through SMTP": "Envoyer par SMTP",
+    "Don't send: write mails to the log": "Ne pas envoyer : écrire les e-mails dans le journal",
+    "Mails are written to the log.": "Les e-mails sont écrits dans le journal.",
+    "Send a test e-mail": "Envoyer un e-mail de test",
+    "Wait a few minutes before the next test.": "Attends quelques minutes avant le prochain test.",
+    "Last test delivered :relative": "Dernier test délivré :relative",
+    "Last test failed :relative: :sentence": "Dernier test en échec :relative : :sentence",
+    "the mail server could not be reached or refused the message.": "le serveur de mail est injoignable ou a refusé le message.",
+    "an unexpected error stopped the e-mail.": "une erreur inattendue a bloqué l'e-mail."
 }

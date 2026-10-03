@@ -4444,5 +4444,17 @@
     "Save first to test these values.": "Save first to test these values.",
     "Every change is recorded in the audit log and mailed to every instance admin.": "Every change is recorded in the audit log and mailed to every instance admin.",
     "Secret changed :relative": "Secret changed :relative",
-    "Confirm": "Confirm"
+    "Confirm": "Confirm",
+    "Delivery": "Delivery",
+    "TLS on connect (smtps)": "TLS on connect (smtps)",
+    "STARTTLS when offered (smtp)": "STARTTLS when offered (smtp)",
+    "Send through SMTP": "Send through SMTP",
+    "Don't send: write mails to the log": "Don't send: write mails to the log",
+    "Mails are written to the log.": "Mails are written to the log.",
+    "Send a test e-mail": "Send a test e-mail",
+    "Wait a few minutes before the next test.": "Wait a few minutes before the next test.",
+    "Last test delivered :relative": "Last test delivered :relative",
+    "Last test failed :relative: :sentence": "Last test failed :relative: :sentence",
+    "the mail server could not be reached or refused the message.": "the mail server could not be reached or refused the message.",
+    "an unexpected error stopped the e-mail.": "an unexpected error stopped the e-mail."
 }

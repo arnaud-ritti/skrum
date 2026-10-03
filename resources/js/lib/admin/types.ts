@@ -81,3 +81,29 @@ export type SsoLastTest = {
     ms: number | null;
     issuer: string | null;
 };
+
+/** Why the last test e-mail failed: a code, never the server's own answer. */
+export type MailTestError = 'transport' | 'unknown';
+
+export type MailLastTest = {
+    at: string;
+    ok: boolean;
+    to: string;
+    error?: MailTestError | null;
+};
+
+export type MailSettings = {
+    /** The mailer in force sends mails (it does not write them to the log). */
+    delivering: boolean;
+    fields: ConfigurationFields;
+};
+
+export type MailSettingsPageProps = {
+    mail: MailSettings;
+    lastTest: MailLastTest | null;
+    defaultRecipient: string;
+    /** End of the fresh password confirmation that configuration writes need (rule S2). */
+    confirmedUntil: string | null;
+    confirmUrl: string;
+    updateUrl: string;
+};

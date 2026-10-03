@@ -31,6 +31,7 @@ export function SecretField({
     clearing,
     onClearingChange,
     readOnly = false,
+    disabled = false,
     error,
     className,
     multiline = false,
@@ -60,6 +61,7 @@ export function SecretField({
         value,
         placeholder,
         readOnly: readOnly || clearing,
+        disabled,
         autoComplete: 'new-password',
         spellCheck: false,
         'aria-invalid': error !== undefined ? true : undefined,
@@ -103,7 +105,7 @@ export function SecretField({
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        disabled={isEmpty}
+                        disabled={isEmpty || disabled}
                         aria-pressed={visible}
                         aria-controls={inputId}
                         aria-label={
@@ -127,7 +129,7 @@ export function SecretField({
                 clearable={clearable}
                 clearing={clearing}
                 onClearingChange={onClearingChange}
-                readOnly={readOnly}
+                readOnly={readOnly || disabled}
                 hintId={hintId}
                 error={error}
                 errorId={errorId}

@@ -19,6 +19,8 @@ export type ConfigurationFieldBaseProps = {
     onClearingChange: (clearing: boolean) => void;
     /** Without a fresh confirmation (rule S2), or while another card is edited. */
     readOnly?: boolean;
+    /** Not used by the settings as they stand (SMTP fields while mails go to the log). */
+    disabled?: boolean;
     error?: string;
     className?: string;
 };
@@ -121,6 +123,25 @@ export function useFieldIds(name: string) {
     };
 }
 
+/** The source line of a non-secret field: saved here, from the environment, or nothing. */
+export function useSourceHint(
+    description: ConfigurationFieldDescription,
+): string | null {
+    const { t } = useTrans();
+    const hints: Record<
+        ConfigurationFieldDescription['source'],
+        string | null
+    > = {
+        stored: t('Saved here'),
+        environment: t('From the environment (:env)', {
+            env: description.envName,
+        }),
+        none: null,
+    };
+
+    return hints[description.source];
+}
+
 export function describedBy(
     ...ids: (string | false | undefined)[]
 ): string | undefined {
@@ -139,19 +160,12 @@ export function ConfigurationField({
     clearing,
     onClearingChange,
     readOnly = false,
+    disabled = false,
     error,
     className,
 }: ConfigurationFieldBaseProps) {
-    const { t } = useTrans();
     const { inputId, hintId, errorId } = useFieldIds(name);
-    const hints: Record<ConfigurationFieldDescription['source'], ReactNode> = {
-        stored: t('Saved here'),
-        environment: t('From the environment (:env)', {
-            env: description.envName,
-        }),
-        none: null,
-    };
-    const hint = hints[description.source];
+    const hint = useSourceHint(description);
     const clearable = description.source === 'stored';
 
     return (
@@ -167,6 +181,7 @@ export function ConfigurationField({
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 readOnly={readOnly || clearing}
+                disabled={disabled}
                 autoComplete="off"
                 spellCheck={false}
                 className="font-mono"
@@ -181,7 +196,7 @@ export function ConfigurationField({
                 clearable={clearable}
                 clearing={clearing}
                 onClearingChange={onClearingChange}
-                readOnly={readOnly}
+                readOnly={readOnly || disabled}
                 hintId={hintId}
                 error={error}
                 errorId={errorId}
