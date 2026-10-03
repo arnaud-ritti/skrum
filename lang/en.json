@@ -4391,5 +4391,8 @@
     "The mail settings of :name deliver.": "The mail settings of :name deliver.",
     "You get this email because an admin of this instance sent a test e-mail to this address.": "You get this email because an admin of this instance sent a test e-mail to this address.",
     ":provider settings saved.": ":provider settings saved.",
-    "Integration settings saved.": "Integration settings saved."
+    "Integration settings saved.": "Integration settings saved.",
+    "Supervision": "Supervision",
+    "up to date": "up to date",
+    "update available: v:version": "update available: v:version"
 }

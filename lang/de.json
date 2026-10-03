@@ -4611,5 +4611,8 @@
     "The mail settings of :name deliver.": "Die E-Mail-Einstellungen von :name funktionieren.",
     "You get this email because an admin of this instance sent a test e-mail to this address.": "Du bekommst diese E-Mail, weil ein Admin dieser Instanz eine Test-E-Mail an diese Adresse gesendet hat.",
     ":provider settings saved.": ":provider-Einstellungen gespeichert.",
-    "Integration settings saved.": "Integrationseinstellungen gespeichert."
+    "Integration settings saved.": "Integrationseinstellungen gespeichert.",
+    "Supervision": "Überwachung",
+    "up to date": "aktuell",
+    "update available: v:version": "Update verfügbar: v:version"
 }

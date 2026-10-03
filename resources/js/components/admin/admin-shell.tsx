@@ -1,35 +1,45 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { KeyRound, Palette, Server, ShieldCheck } from 'lucide-react';
+import {
+    BadgeCheck,
+    Bot,
+    KeyRound,
+    Mail,
+    Palette,
+    Plug,
+    ScrollText,
+    Server,
+    ShieldCheck,
+    TriangleAlert,
+    Users,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import AdminsController from '@/actions/App/Http/Controllers/Admin/AdminsController';
+import AuditEventsController from '@/actions/App/Http/Controllers/Admin/AuditEventsController';
 import BrandingController from '@/actions/App/Http/Controllers/Admin/BrandingController';
+import GeneralSettingsController from '@/actions/App/Http/Controllers/Admin/GeneralSettingsController';
+import IntegrationSettingsController from '@/actions/App/Http/Controllers/Admin/IntegrationSettingsController';
+import LicencesController from '@/actions/App/Http/Controllers/Admin/LicencesController';
+import MailSettingsController from '@/actions/App/Http/Controllers/Admin/MailSettingsController';
+import McpKeysController from '@/actions/App/Http/Controllers/Admin/McpKeysController';
 import SignInSettingsController from '@/actions/App/Http/Controllers/Admin/SignInSettingsController';
+import UsersController from '@/actions/App/Http/Controllers/Admin/UsersController';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
-
-export type AdminSection =
-    | 'general'
-    | 'branding'
-    | 'signIn'
-    | 'mail'
-    | 'integrations'
-    | 'mcpKeys'
-    | 'licence'
-    | 'users'
-    | 'admins'
-    | 'auditLog';
+import type { AdminSection, InstanceVersionStatus } from '@/lib/admin/types';
 
 type AdminNavEntry = {
     section: AdminSection;
@@ -38,6 +48,12 @@ type AdminNavEntry = {
     href: NavHref;
     /** A state of the section, said beside its name. */
     badge?: string;
+};
+
+type AdminNavGroup = {
+    key: 'instance' | 'supervision';
+    label: string;
+    entries: AdminNavEntry[];
 };
 
 function subscribeToNothing(): () => void {
@@ -57,6 +73,43 @@ function hrefOf(href: NavHref): string {
     return typeof href === 'string' ? href : href.url;
 }
 
+/** The version of the instance and, for an admin, whether it is up to date. */
+function InstanceVersionLine({
+    version,
+    status,
+}: {
+    version: string;
+    status: InstanceVersionStatus | null;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <span data-slot="admin-version" className="block font-mono">
+            v{version}
+            {status?.state === 'current' && (
+                <span
+                    data-slot="admin-version-state"
+                    className="text-skrum-success-text"
+                >
+                    {` · ${t('up to date')}`}
+                </span>
+            )}
+            {status?.state === 'outdated' && status.latest !== null && (
+                <span
+                    data-slot="admin-version-state"
+                    className="text-skrum-warning-text"
+                >
+                    {` · ${t('update available: v:version', { version: status.latest })}`}
+                    <TriangleAlert
+                        aria-hidden="true"
+                        className="ml-1 inline-block size-3 align-middle"
+                    />
+                </span>
+            )}
+        </span>
+    );
+}
+
 export function AdminShell({
     active,
     actions,
@@ -70,29 +123,86 @@ export function AdminShell({
     const { t } = useTrans();
     const host = useInstanceHost();
     const selectId = useId();
-    const { ssoInForce } = usePage().props;
-    /** The navigation takes its entries from this list: a new section is one more row. */
-    const entries: AdminNavEntry[] = [
+    const groupId = useId();
+    const { ssoInForce, instanceVersion, instanceVersionStatus } =
+        usePage().props;
+    /** The navigation takes its entries from these groups: a new section is one more row. */
+    const groups: AdminNavGroup[] = [
         {
-            section: 'branding',
-            label: t('Branding'),
-            icon: Palette,
-            href: BrandingController.edit(),
+            key: 'instance',
+            label: t('Instance'),
+            entries: [
+                {
+                    section: 'general',
+                    label: t('General'),
+                    icon: Server,
+                    href: GeneralSettingsController.edit(),
+                },
+                {
+                    section: 'branding',
+                    label: t('Branding'),
+                    icon: Palette,
+                    href: BrandingController.edit(),
+                },
+                {
+                    section: 'signIn',
+                    label: t('SSO authentication'),
+                    icon: KeyRound,
+                    href: SignInSettingsController.edit(),
+                    badge: ssoInForce === true ? t('active') : undefined,
+                },
+                {
+                    section: 'mail',
+                    label: t('SMTP'),
+                    icon: Mail,
+                    href: MailSettingsController.show(),
+                },
+                {
+                    section: 'integrations',
+                    label: t('Integrations'),
+                    icon: Plug,
+                    href: IntegrationSettingsController.edit(),
+                },
+                {
+                    section: 'mcpKeys',
+                    label: t('MCP keys'),
+                    icon: Bot,
+                    href: McpKeysController.index(),
+                },
+                {
+                    section: 'licence',
+                    label: t('Licence'),
+                    icon: BadgeCheck,
+                    href: LicencesController.show(),
+                },
+            ],
         },
         {
-            section: 'signIn',
-            label: t('SSO authentication'),
-            icon: KeyRound,
-            href: SignInSettingsController.edit(),
-            badge: ssoInForce === true ? t('active') : undefined,
-        },
-        {
-            section: 'admins',
-            label: t('Admins'),
-            icon: ShieldCheck,
-            href: AdminsController.index(),
+            key: 'supervision',
+            label: t('Supervision'),
+            entries: [
+                {
+                    section: 'users',
+                    label: t('Users'),
+                    icon: Users,
+                    href: UsersController.index(),
+                },
+                {
+                    section: 'admins',
+                    label: t('Admins'),
+                    icon: ShieldCheck,
+                    href: AdminsController.index(),
+                },
+                {
+                    section: 'auditLog',
+                    label: t('Audit log'),
+                    icon: ScrollText,
+                    href: AuditEventsController.index(),
+                },
+            ],
         },
     ];
+    const entries = groups.flatMap((group) => group.entries);
     const current = entries.find((entry) => entry.section === active);
 
     function visit(section: string): void {
@@ -140,13 +250,18 @@ export function AdminShell({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {entries.map((entry) => (
-                                <SelectItem
-                                    key={entry.section}
-                                    value={entry.section}
-                                >
-                                    {entry.label}
-                                </SelectItem>
+                            {groups.map((group) => (
+                                <SelectGroup key={group.key}>
+                                    <SelectLabel>{group.label}</SelectLabel>
+                                    {group.entries.map((entry) => (
+                                        <SelectItem
+                                            key={entry.section}
+                                            value={entry.section}
+                                        >
+                                            {entry.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             ))}
                         </SelectContent>
                     </Select>
@@ -154,49 +269,74 @@ export function AdminShell({
                 <aside className="hidden min-w-0 flex-col gap-4 lg:flex lg:w-52 lg:shrink-0">
                     <nav
                         aria-label={t('Administration')}
-                        className="flex min-w-0 flex-col gap-1"
+                        className="flex min-w-0 flex-col gap-4"
                     >
-                        <p className="px-3 pb-1 text-overline text-muted-foreground uppercase">
-                            {t('Instance')}
-                        </p>
-                        {entries.map((entry) => (
-                            <Link
-                                key={entry.section}
-                                href={entry.href}
-                                aria-current={
-                                    entry.section === active
-                                        ? 'page'
-                                        : undefined
-                                }
-                                className="flex h-9 min-w-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-skrum-primary-soft aria-[current=page]:text-skrum-primary-text"
+                        {groups.map((group) => (
+                            <div
+                                key={group.key}
+                                role="group"
+                                aria-labelledby={`${groupId}-${group.key}`}
+                                className="flex min-w-0 flex-col gap-1"
                             >
-                                <entry.icon
-                                    aria-hidden="true"
-                                    className="size-4 shrink-0"
-                                />
-                                <span className="min-w-0 flex-1 truncate">
-                                    {entry.label}
-                                </span>
-                                {entry.badge !== undefined && (
-                                    <Badge
-                                        variant="success"
-                                        shape="pill"
-                                        data-slot="admin-nav-badge"
+                                <p
+                                    id={`${groupId}-${group.key}`}
+                                    className="px-3 pb-1 text-overline text-muted-foreground uppercase"
+                                >
+                                    {group.label}
+                                </p>
+                                {group.entries.map((entry) => (
+                                    <Link
+                                        key={entry.section}
+                                        href={entry.href}
+                                        aria-current={
+                                            entry.section === active
+                                                ? 'page'
+                                                : undefined
+                                        }
+                                        className="flex h-9 min-w-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-skrum-primary-soft aria-[current=page]:text-skrum-primary-text"
                                     >
-                                        {entry.badge}
-                                    </Badge>
-                                )}
-                            </Link>
+                                        <entry.icon
+                                            aria-hidden="true"
+                                            className="size-4 shrink-0"
+                                        />
+                                        <span className="min-w-0 flex-1 truncate">
+                                            {entry.label}
+                                        </span>
+                                        {entry.badge !== undefined && (
+                                            <Badge
+                                                variant="success"
+                                                shape="pill"
+                                                data-slot="admin-nav-badge"
+                                            >
+                                                {entry.badge}
+                                            </Badge>
+                                        )}
+                                    </Link>
+                                ))}
+                            </div>
                         ))}
                     </nav>
-                    {host !== '' && (
-                        <p
-                            data-slot="admin-host"
-                            title={host}
-                            className="truncate rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground"
+                    {(host !== '' || typeof instanceVersion === 'string') && (
+                        <div
+                            data-slot="admin-instance"
+                            className="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground"
                         >
-                            {host}
-                        </p>
+                            {host !== '' && (
+                                <span
+                                    data-slot="admin-host"
+                                    title={host}
+                                    className="truncate"
+                                >
+                                    {host}
+                                </span>
+                            )}
+                            {typeof instanceVersion === 'string' && (
+                                <InstanceVersionLine
+                                    version={instanceVersion}
+                                    status={instanceVersionStatus}
+                                />
+                            )}
+                        </div>
                     )}
                 </aside>
                 <div className="flex min-w-0 flex-1 flex-col gap-6">
