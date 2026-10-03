@@ -406,6 +406,18 @@ describe('GuestJoin', () => {
         expect(screen.getByText('Quiz')).toBeTruthy();
     });
 
+    it('presents a survey with its own kind and label', () => {
+        setup({ session: { kind: 'survey', title: 'Team pulse' } });
+
+        expect(
+            document
+                .querySelector('[data-slot="guest-join-session"]')
+                ?.getAttribute('data-kind'),
+        ).toBe('survey');
+        expect(screen.getByText('Survey')).toBeTruthy();
+        expect(screen.queryByText(/cards/i)).toBeNull();
+    });
+
     it('keeps a 60-character suggested name and a long title inside the card', () => {
         const longName = 'N'.repeat(60);
         const onSubmit = setup({

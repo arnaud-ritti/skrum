@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     ArrowRight,
+    ChartColumn,
     Check,
     CircleAlert,
     Dices,
@@ -27,7 +28,12 @@ import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type GuestJoinSessionKind = 'retro' | 'poker' | 'whiteboard' | 'game';
+export type GuestJoinSessionKind =
+    | 'retro'
+    | 'poker'
+    | 'whiteboard'
+    | 'game'
+    | 'survey';
 
 export type GuestJoinProps = {
     session: {
@@ -103,6 +109,10 @@ const kinds: Record<GuestJoinSessionKind, { icon: LucideIcon; tone: string }> =
         game: {
             icon: Gamepad2,
             tone: 'bg-skrum-col-sky text-skrum-col-sky-text',
+        },
+        survey: {
+            icon: ChartColumn,
+            tone: 'bg-skrum-col-iris text-skrum-col-iris-text',
         },
     };
 
@@ -201,6 +211,7 @@ export function GuestJoin({
         poker: t('Planning poker'),
         whiteboard: t('Whiteboard'),
         game: t('Game'),
+        survey: t('Survey'),
     };
     const details: { key: string; node: ReactNode }[] = [];
 

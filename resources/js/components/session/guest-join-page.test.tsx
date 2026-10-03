@@ -64,6 +64,34 @@ describe('GuestJoinPage', () => {
         );
     });
 
+    it('joins a survey under the survey kind', () => {
+        renderWithProviders(
+            <GuestJoinPage
+                kind="survey"
+                invalidTitle="Join a survey"
+                session={{ title: 'Team pulse' }}
+                storeUrl="/surveys/join/abc"
+                suggestedName="Guest Gia"
+            />,
+        );
+
+        expect(
+            document
+                .querySelector('[data-slot="guest-join-session"]')
+                ?.getAttribute('data-kind'),
+        ).toBe('survey');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/surveys/join/abc',
+            { name: 'Guest Gia' },
+            expect.anything(),
+        );
+    });
+
     it('asks the server for another random nickname and puts it in the field', () => {
         reload.mockImplementation(
             (options: {
