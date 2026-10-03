@@ -5162,5 +5162,9 @@
     "Sprint deleted.": "Sprint eliminado.",
     "Sprint numbers stop at :max.": "Los números de sprint terminan en :max.",
     "Sprint saved.": "Sprint guardado.",
-    "This sprint overlaps Sprint :number (:start – :end).": "Este sprint se solapa con el sprint :number (:start – :end)."
+    "This sprint overlaps Sprint :number (:start – :end).": "Este sprint se solapa con el sprint :number (:start – :end).",
+    "Add a facilitator first.": "Añade primero un facilitador.",
+    "Choose a facilitator from the team.": "Elige un facilitador del equipo.",
+    "Facilitators saved.": "Facilitadores guardados.",
+    "Only owners and facilitators of the team can be suggested.": "Solo se puede sugerir a propietarios y facilitadores del equipo."
 }

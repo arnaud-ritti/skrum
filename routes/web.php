@@ -165,6 +165,7 @@ use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamEstimatesController;
+use App\Http\Controllers\TeamFacilitatorsController;
 use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
@@ -358,6 +359,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy')->whereUuid('sprint');
             Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
             Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
+            Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');

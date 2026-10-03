@@ -39,6 +39,7 @@ class TeamMembersController extends Controller
     {
         Gate::authorize('manageMembers', $team);
 
+        $team->defaultFacilitators()->detach($member);
         $team->members()->detach($member);
 
         return back();

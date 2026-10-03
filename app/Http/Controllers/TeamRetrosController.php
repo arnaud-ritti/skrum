@@ -9,6 +9,7 @@ use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use App\Support\Retros\PhaseDurations;
@@ -40,6 +41,7 @@ class TeamRetrosController extends Controller
             'columns.*.title' => ['required', 'string', 'max:100'],
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
+            'facilitator_user_id' => ['nullable', 'uuid', $this->facilitatorCandidate($team)],
             ...PhaseDurations::rules(),
         ]);
 
@@ -56,6 +58,7 @@ class TeamRetrosController extends Controller
             columns: $this->columns($validated['columns'] ?? null),
             maxVotesPerCard: isset($validated['max_votes_per_card']) ? (int) $validated['max_votes_per_card'] : null,
             phaseDurations: PhaseDurations::fromValidated($validated['phase_durations'] ?? null),
+            facilitatorUserId: $validated['facilitator_user_id'] ?? null,
         ));
 
         return to_route('retros.show', $retro);
@@ -76,6 +79,22 @@ class TeamRetrosController extends Controller
             'description' => $column['description'] ?? null,
             'color' => ColumnColor::from($column['color']),
         ], array_values($columns));
+    }
+
+    /**
+     * A person who may take part in the team's sessions (not an observer, not outside the team).
+     */
+    private function facilitatorCandidate(Team $team): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($team): void {
+            $user = is_string($value) ? User::query()->find($value) : null;
+
+            if ($user !== null && $user->can('createRetro', $team)) {
+                return;
+            }
+
+            $fail(__('Choose a facilitator from the team.'));
+        };
     }
 
     private function availableTemplate(Workspace $workspace): Closure

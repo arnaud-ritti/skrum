@@ -262,6 +262,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<Team, $this> */
+    public function defaultFacilitatorOf(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_facilitators')->withTimestamps();
+    }
+
     /** @return HasMany<GamePoint, $this> */
     public function gamePoints(): HasMany
     {

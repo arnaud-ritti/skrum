@@ -66,6 +66,16 @@ class Team extends Model
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<User, $this> */
+    public function defaultFacilitators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_facilitators')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position')
+            ->orderBy('users.id');
+    }
+
     public function roleOf(User $user): ?TeamRole
     {
         return TeamMembership::query()

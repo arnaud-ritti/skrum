@@ -95,6 +95,7 @@ class WorkspaceMembersController extends Controller
                 throw ValidationException::withMessages(['member' => __('A workspace needs at least one owner.')]);
             }
 
+            $member->defaultFacilitatorOf()->detach($workspace->teams()->pluck('id'));
             $member->teams()->detach($workspace->teams()->pluck('id'));
             $workspace->members()->detach($member);
 

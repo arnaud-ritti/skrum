@@ -24,5 +24,6 @@ class NewRetro
         public ?array $columns = null,
         public ?int $maxVotesPerCard = null,
         public ?array $phaseDurations = null,
+        public ?string $facilitatorUserId = null,
     ) {}
 }

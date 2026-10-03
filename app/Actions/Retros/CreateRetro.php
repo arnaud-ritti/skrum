@@ -3,6 +3,7 @@
 namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\AttachHealthCheck;
+use App\Actions\Teams\SuggestedFacilitator;
 use App\Enums\ColumnColor;
 use App\Enums\GameKind;
 use App\Models\Retro;
@@ -21,11 +22,15 @@ class CreateRetro
     public function __construct(
         private AttachHealthCheck $attachHealthCheck,
         private Llm $llm,
+        private SuggestedFacilitator $suggestedFacilitator,
     ) {}
 
     public function handle(Team $team, User $creator, NewRetro $data): Retro
     {
         return DB::transaction(function () use ($team, $creator, $data): Retro {
+            $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
+            $facilitatorUser = $data->facilitatorUserId === null ? $creator : User::query()->findOrFail($data->facilitatorUserId);
+            $this->suggestedFacilitator->follow($lockedTeam, $facilitatorUser);
             $workspaceTemplate = $this->workspaceTemplate($team, $data->template);
 
             $retro = $team->retros()->make([
@@ -50,7 +55,7 @@ class CreateRetro
                 $retro->columns()->create([...$column, 'position' => $position]);
             }
 
-            $facilitator = $retro->participants()->create(['user_id' => $creator->id]);
+            $facilitator = $retro->participants()->create(['user_id' => $facilitatorUser->id]);
 
             $retro->update(['facilitator_participant_id' => $facilitator->id]);
 

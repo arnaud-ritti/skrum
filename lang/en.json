@@ -4942,5 +4942,9 @@
     "Sprint deleted.": "Sprint deleted.",
     "Sprint numbers stop at :max.": "Sprint numbers stop at :max.",
     "Sprint saved.": "Sprint saved.",
-    "This sprint overlaps Sprint :number (:start – :end).": "This sprint overlaps Sprint :number (:start – :end)."
+    "This sprint overlaps Sprint :number (:start – :end).": "This sprint overlaps Sprint :number (:start – :end).",
+    "Add a facilitator first.": "Add a facilitator first.",
+    "Choose a facilitator from the team.": "Choose a facilitator from the team.",
+    "Facilitators saved.": "Facilitators saved.",
+    "Only owners and facilitators of the team can be suggested.": "Only owners and facilitators of the team can be suggested."
 }

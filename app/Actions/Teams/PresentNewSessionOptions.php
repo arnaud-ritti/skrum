@@ -10,6 +10,7 @@ use App\Actions\TeamSurveys\PresentTeamSurveySummary;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
+use App\Enums\TeamRole;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TemplateCategory;
 use App\Models\GameRoom;
@@ -37,6 +38,7 @@ class PresentNewSessionOptions
         private SurveyTemplateCatalogue $surveyTemplateCatalogue,
         private PresentTeamSurveySummary $presentTeamSurveySummary,
         private ListPokerSources $listPokerSources,
+        private SuggestedFacilitator $suggestedFacilitator,
     ) {}
 
     /**
@@ -85,6 +87,12 @@ class PresentNewSessionOptions
             'canCreateSurvey' => $viewer->can('createSurvey', $team),
             'surveyTemplates' => $this->surveyTemplateCatalogue->options($team),
             'currentSprintNumber' => SprintCalendar::forTeam($team, now())->numberOn(now()),
+            'retroFacilitators' => Alphabetical::sort(
+                $team->members()->wherePivot('role', '!=', TeamRole::Observer->value)->orderBy('users.id')->get(),
+                fn (User $member): string => $member->name,
+            )->map(fn (User $member): array => [...$member->only(['id', 'name']), 'avatarUrl' => $member->avatarUrl()])->values()->all(),
+            'suggestedFacilitatorId' => $this->suggestedFacilitator->for($team)?->id,
+            'facilitatorRotation' => $team->facilitator_rotation_enabled,
         ];
     }
 

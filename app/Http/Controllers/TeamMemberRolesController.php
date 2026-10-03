@@ -27,6 +27,10 @@ class TeamMemberRolesController extends Controller
             $locked = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
 
             $locked->members()->updateExistingPivot($member->id, ['role' => $validated['role']]);
+
+            if (! TeamRole::from($validated['role'])->managesRituals() && $locked->defaultFacilitators()->detach($member->id) > 0) {
+                $locked->update(['rotation_position' => 0]);
+            }
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role changed.')]);
