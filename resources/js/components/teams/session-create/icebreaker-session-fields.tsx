@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { GameCatalogue } from '@/lib/games/catalogue';
 import type { GameKind, GameRoomAccess } from '@/lib/games/types';
 import type { GameOption } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
@@ -78,6 +79,12 @@ function usePitches(): Record<GameKind, string> {
         hangman: t('Guess the word, letter by letter.'),
         gif: t('Sum up the sprint with a single GIF.'),
         decoded: t('One writes it in emojis, the others guess.'),
+        two_truths: t('Everyone prepares three statements, one lie: find it.'),
+        mood: t('Your mood as a weather, anonymously.'),
+        guess_who: t(
+            'Everyone answers, one answer is drawn: guess who wrote it.',
+        ),
+        quick_question: t('One question, everyone answers aloud in turn.'),
     };
 }
 
@@ -165,6 +172,7 @@ export function IcebreakerSessionFields({
                         {gameOptions.map((option) => (
                             <IcebreakerGameCard
                                 key={option.value}
+                                {...GameCatalogue[option.value]}
                                 game={option.value}
                                 title={option.label}
                                 pitch={pitches[option.value]}

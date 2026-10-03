@@ -36,7 +36,7 @@ it('reveals the GIFs for the host and opens voting without ending the round', fu
         ->assertOk()
         ->assertJsonPath('id', $round->id)
         ->assertJsonPath('revealedAt', '2026-10-06T10:00:00+00:00')
-        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'playerId' => $member->id]])
+        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null, 'playerId' => $member->id]])
         ->assertJsonPath('voters', []);
 
     expect($round->fresh()->isActive())->toBeTrue()
@@ -45,6 +45,7 @@ it('reveals the GIFs for the host and opens voting without ending the round', fu
     Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['answers'][0] === [
         'id' => $answer->id,
         'gif' => gameGifPayload('party'),
+        'caption' => null,
         'playerId' => $member->id,
     ]);
     Event::assertNotDispatched(GameRoundEnded::class);
@@ -184,7 +185,7 @@ it('closes the round for the host with the votes and the points', function () {
         ->assertJsonPath('ended.answers.0.playerId', $author->id);
 
     expect($response->json('ended.points'))->toEqualCanonicalizing([
-        ['playerId' => $author->id, 'points' => 2, 'isWin' => false],
+        ['playerId' => $author->id, 'points' => 2, 'isWin' => true],
         ['playerId' => $host->id, 'points' => 0, 'isWin' => false],
     ])
         ->and($round->fresh()->outcome)->toBe(GameRoundOutcome::Revealed);

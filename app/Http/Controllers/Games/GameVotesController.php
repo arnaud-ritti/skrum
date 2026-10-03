@@ -35,7 +35,11 @@ class GameVotesController extends Controller
 
         GameRateLimit::hit("game-play:{$player->id}", 3, 1);
 
-        $retractGifVote->handle($room, $round, $player);
+        $validated = $request->validate([
+            'answer_id' => ['sometimes', 'uuid'],
+        ]);
+
+        $retractGifVote->handle($room, $round, $player, $validated['answer_id'] ?? null);
 
         return response()->noContent();
     }

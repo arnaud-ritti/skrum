@@ -1,18 +1,15 @@
-import type { ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRound } from '@/lib/games/types';
 import { GifAnswerStage } from './gif-answer-stage';
-import { GifQuestionBanner } from './gif-question-banner';
+import { QuestionBanner } from './question-banner';
 import { GifVotingStage } from './gif-voting-stage';
 
 type Props = {
     round: GameRound;
-    /** Place left under the chosen GIF for its caption (GM-3). */
-    caption?: ReactNode;
 };
 
 /** A round of Sprint in one GIF: the question, then the picks or the gallery to vote on. */
-export function SprintGifBoard({ round, caption }: Props) {
+export function SprintGifBoard({ round }: Props) {
     const { t } = useTrans();
     const isPicking = round.revealedAt === null;
 
@@ -21,7 +18,7 @@ export function SprintGifBoard({ round, caption }: Props) {
             data-slot="sprint-gif-board"
             className="flex w-full flex-col items-center gap-4"
         >
-            <GifQuestionBanner
+            <QuestionBanner
                 round={round}
                 hint={
                     isPicking
@@ -30,7 +27,7 @@ export function SprintGifBoard({ round, caption }: Props) {
                 }
             />
             {isPicking ? (
-                <GifAnswerStage round={round} caption={caption} />
+                <GifAnswerStage round={round} />
             ) : (
                 <GifVotingStage round={round} />
             )}

@@ -43,6 +43,7 @@ function Toolbar({ compact }: { compact: boolean }) {
     const [color, setColor] = useState<DrawingColor>('apricot');
     const [size, setSize] = useState<DrawingSize>(10);
     const [strokes, setStrokes] = useState(2);
+    const [undone, setUndone] = useState(0);
 
     return (
         <div className="flex min-w-0 justify-center rounded-xl bg-skrum-canvas p-4">
@@ -51,12 +52,23 @@ function Toolbar({ compact }: { compact: boolean }) {
                 color={color}
                 size={size}
                 canUndo={strokes > 0}
+                canRedo={undone > 0}
                 compact={compact}
                 onTool={setTool}
                 onColor={setColor}
                 onSize={setSize}
-                onUndo={() => setStrokes((current) => current - 1)}
-                onClear={() => setStrokes(0)}
+                onUndo={() => {
+                    setStrokes((current) => current - 1);
+                    setUndone((current) => current + 1);
+                }}
+                onRedo={() => {
+                    setStrokes((current) => current + 1);
+                    setUndone((current) => current - 1);
+                }}
+                onClear={() => {
+                    setStrokes(0);
+                    setUndone(0);
+                }}
             />
         </div>
     );

@@ -1,5 +1,6 @@
 import type {
     DrawingOp,
+    GameGifRevealed,
     GameGuessEntry,
     GameLetterPicked,
     GameRound,
@@ -7,6 +8,16 @@ import type {
     GameRoundEnded,
     GameRoundRevealed,
     GameSnapshot,
+    GameStatementsChanged,
+    GameTextRevealed,
+    GameTruthSet,
+    GameTruthSets,
+    GameTurnChanged,
+    GameFinder,
+    GameVotesCounted,
+    GameWordChanged,
+    GameWordFound,
+    GameWordGuess,
 } from './types';
 import { withAwardedPoints } from './leaderboard';
 import { pendingAnswers, withPendingAnswer, withVoter } from './gif';
@@ -18,7 +29,13 @@ export type RoomAction =
     | { type: 'round.patched'; roundId: string; patch: Partial<GameRound> }
     | { type: 'letter.picked'; picked: GameLetterPicked }
     | { type: 'timer.set'; timerEndsAt: string | null }
-    | { type: 'guess.added'; roundId: string; guess: GameGuessEntry }
+    | {
+          type: 'guess.added';
+          roundId: string;
+          guess: GameGuessEntry;
+          /** Hangman's whole-word guess: the round's misses after it. */
+          misses?: number;
+      }
     | {
           type: 'drawing.added';
           roundId: string;
@@ -41,12 +58,21 @@ export type RoomAction =
           roundId: string;
           playerId: string;
           voted: boolean;
-      };
+      }
+    | { type: 'turn.changed'; turn: GameTurnChanged }
+    | { type: 'statements.changed'; change: GameStatementsChanged }
+    | { type: 'statements.mine'; mine: GameTruthSet | null }
+    | { type: 'votes.counted'; counted: GameVotesCounted }
+    | { type: 'word.found'; found: GameWordFound }
+    | { type: 'word.changed'; change: GameWordChanged };
 
 const RecentPicks = 5;
 
 /** Mirrors WordGuessRules::GuessesShown on the server. */
 const GuessesShown = 50;
+
+/** Mirrors HangmanRules::WordGuessesShown on the server. */
+const WordGuessesShown = 10;
 
 const CommittedOpIds = 20;
 
@@ -112,7 +138,7 @@ function requestResync(state: GameRoomState): GameRoomState {
  * A fresh snapshot knows nothing of what only the client holds for the round
  * in play. Dropping `committedOpIds` would let the live preview of a stroke
  * committed moments ago show again once that stroke is undone or the drawing
- * is cleared; dropping `recentPicks` would empty "Last letters" each time the
+ * is cleared; dropping `recentPicks` would empty "Last moves" each time the
  * room is fetched again in the middle of a hangman round.
  */
 function withClientRoundState(
@@ -123,9 +149,14 @@ function withClientRoundState(
         return fresh;
     }
 
-    const { committedOpIds, recentPicks } = previous.round;
+    const { committedOpIds, recentPicks, finders, hintSlots } = previous.round;
 
-    if (committedOpIds === undefined && recentPicks === undefined) {
+    if (
+        committedOpIds === undefined &&
+        recentPicks === undefined &&
+        finders === undefined &&
+        hintSlots === undefined
+    ) {
         return fresh;
     }
 
@@ -134,11 +165,169 @@ function withClientRoundState(
         round: {
             ...fresh.round,
             ...(committedOpIds !== undefined ? { committedOpIds } : {}),
+            ...(hintSlots !== undefined ? { hintSlots } : {}),
             ...(recentPicks !== undefined &&
             fresh.round.recentPicks === undefined
                 ? { recentPicks }
                 : {}),
+            ...(fresh.round.wordGuesses !== undefined
+                ? {
+                      wordGuesses: withWordGuessSeqs(
+                          fresh.round.wordGuesses,
+                          previous.round.wordGuesses ?? [],
+                      ),
+                  }
+                : {}),
+            ...(fresh.round.finders !== undefined && finders !== undefined
+                ? { finders: withFinderPlaces(fresh.round.finders, finders) }
+                : {}),
         },
+    };
+}
+
+/** The fetched finders keep the place in the guesses they had when seen live. */
+function withFinderPlaces(
+    fresh: GameFinder[],
+    previous: GameFinder[],
+): GameFinder[] {
+    return fresh.map((finder) => {
+        const known = previous.find(
+            (seen) => seen.playerId === finder.playerId,
+        );
+
+        return known?.afterGuessId === undefined
+            ? finder
+            : { ...finder, afterGuessId: known.afterGuessId };
+    });
+}
+
+/** A finder seen live: once per player, after the last guess of the log. */
+function withFinder(round: GameRound, found: GameWordFound): GameRound {
+    const finders = round.finders ?? [];
+
+    if (finders.some((finder) => finder.playerId === found.playerId)) {
+        return round;
+    }
+
+    return {
+        ...round,
+        finders: [
+            ...finders,
+            {
+                playerId: found.playerId,
+                seconds: found.seconds,
+                points: found.points,
+                afterGuessId: round.guesses?.at(-1)?.id ?? null,
+            },
+        ],
+    };
+}
+
+/** The fetched words keep the arrival the live ones had, so "Last moves" keeps its order. */
+function withWordGuessSeqs(
+    fresh: GameWordGuess[],
+    previous: GameWordGuess[],
+): GameWordGuess[] {
+    const unmatched = [...previous];
+
+    return fresh.map((guess) => {
+        const index = unmatched.findIndex(
+            (known) =>
+                known.playerId === guess.playerId && known.text === guess.text,
+        );
+
+        if (index === -1) {
+            return guess;
+        }
+
+        const [known] = unmatched.splice(index, 1);
+
+        return known.seq === undefined ? guess : { ...guess, seq: known.seq };
+    });
+}
+
+/** The arrival number of the next letter or word of a hangman round. */
+function nextMoveSeq(round: GameRound): number {
+    const seqs = [
+        ...(round.recentPicks ?? []),
+        ...(round.wordGuesses ?? []),
+    ].map((move) => move.seq ?? 0);
+
+    return Math.max(0, ...seqs) + 1;
+}
+
+function withReady(
+    ready: string[],
+    playerId: string,
+    isReady: boolean,
+): string[] {
+    const others = ready.filter((known) => known !== playerId);
+
+    return isReady ? [...others, playerId] : others;
+}
+
+function withTruthSets(
+    state: GameRoomState,
+    update: (truthSets: GameTruthSets) => GameTruthSets,
+): GameRoomState {
+    const truthSets = state.snapshot.truthSets;
+
+    if (!truthSets) {
+        return state;
+    }
+
+    return {
+        ...state,
+        snapshot: { ...state.snapshot, truthSets: update(truthSets) },
+    };
+}
+
+/** A Two truths round plays its teller's set: it is no longer ready. */
+function withTellerSetPlayed(
+    state: GameRoomState,
+    round: GameRound,
+): GameRoomState {
+    if (round.game !== 'two_truths' || round.leaderPlayerId === null) {
+        return state;
+    }
+
+    const tellerId = round.leaderPlayerId;
+    const isMine = tellerId === state.snapshot.me.playerId;
+
+    return withTruthSets(state, (truthSets) => ({
+        ready: withReady(truthSets.ready, tellerId, false),
+        mine:
+            isMine && truthSets.mine
+                ? { ...truthSets.mine, played: true }
+                : truthSets.mine,
+    }));
+}
+
+function revealedRound(
+    round: GameRound,
+    revealed: GameRoundRevealed,
+): GameRound {
+    if (round.game === 'guess_who') {
+        const [drawn] = revealed.answers as GameTextRevealed[];
+
+        return {
+            ...round,
+            revealedAt: revealed.revealedAt,
+            drawn: drawn ?? null,
+            candidates: revealed.candidates ?? [],
+            votedCount: 0,
+            myChoice: null,
+        };
+    }
+
+    return {
+        ...round,
+        revealedAt: revealed.revealedAt,
+        answers: revealed.answers as GameGifRevealed[],
+        voters: [],
+        myVote: null,
+        myVotes: [],
+        authorsHidden: revealed.authorsHidden ?? false,
     };
 }
 
@@ -160,18 +349,21 @@ export function roomReducer(
             };
         }
         case 'round.started':
-            return {
-                ...state,
-                snapshot: {
-                    ...state.snapshot,
-                    round: action.round,
-                    room: {
-                        ...state.snapshot.room,
-                        currentRoundId: action.round.id,
+            return withTellerSetPlayed(
+                {
+                    ...state,
+                    snapshot: {
+                        ...state.snapshot,
+                        round: action.round,
+                        room: {
+                            ...state.snapshot.room,
+                            currentRoundId: action.round.id,
+                        },
                     },
+                    lastEnded: null,
                 },
-                lastEnded: null,
-            };
+                action.round,
+            );
         case 'round.ended': {
             if (state.lastEnded?.roundId === action.ended.roundId) {
                 return state;
@@ -208,6 +400,8 @@ export function roomReducer(
                 ...round,
                 mask: action.picked.mask,
                 misses: action.picked.misses,
+                turnPlayerId: action.picked.turnPlayerId,
+                turnEndsAt: action.picked.turnEndsAt,
                 pickedLetters: [
                     ...(round.pickedLetters ?? []).filter(
                         (letter) => letter !== action.picked.letter,
@@ -220,6 +414,7 @@ export function roomReducer(
                         playerId: action.picked.playerId,
                         letter: action.picked.letter,
                         hit: action.picked.hit,
+                        seq: nextMoveSeq(round),
                     },
                 ].slice(-RecentPicks),
             }));
@@ -236,6 +431,21 @@ export function roomReducer(
             };
         case 'guess.added':
             return withRound(state, action.roundId, (round) => {
+                if (round.game === 'hangman') {
+                    return {
+                        ...round,
+                        misses: action.misses ?? round.misses,
+                        wordGuesses: [
+                            ...(round.wordGuesses ?? []),
+                            {
+                                playerId: action.guess.playerId,
+                                text: action.guess.text,
+                                seq: nextMoveSeq(round),
+                            },
+                        ].slice(-WordGuessesShown),
+                    };
+                }
+
                 const guesses = round.guesses ?? [];
 
                 if (guesses.some((guess) => guess.id === action.guess.id)) {
@@ -321,13 +531,9 @@ export function roomReducer(
                       },
             );
         case 'round.revealed':
-            return withRound(state, action.revealed.roundId, (round) => ({
-                ...round,
-                revealedAt: action.revealed.revealedAt,
-                answers: action.revealed.answers,
-                voters: [],
-                myVote: null,
-            }));
+            return withRound(state, action.revealed.roundId, (round) =>
+                revealedRound(round, action.revealed),
+            );
         case 'vote.changed':
             return withRound(state, action.roundId, (round) => ({
                 ...round,
@@ -336,6 +542,48 @@ export function roomReducer(
                     action.playerId,
                     action.voted,
                 ),
+            }));
+        case 'turn.changed':
+            return withRound(state, action.turn.roundId, (round) => ({
+                ...round,
+                turnPlayerId: action.turn.turnPlayerId,
+                turnEndsAt: action.turn.turnEndsAt,
+            }));
+        case 'statements.changed':
+            return withTruthSets(state, (truthSets) => ({
+                ...truthSets,
+                ready: withReady(
+                    truthSets.ready,
+                    action.change.playerId,
+                    action.change.ready,
+                ),
+            }));
+        case 'statements.mine':
+            return withTruthSets(state, (truthSets) => ({
+                ready: withReady(
+                    truthSets.ready,
+                    state.snapshot.me.playerId,
+                    action.mine !== null && !action.mine.played,
+                ),
+                mine: action.mine,
+            }));
+        case 'votes.counted':
+            return withRound(state, action.counted.roundId, (round) => ({
+                ...round,
+                votedCount: action.counted.voted,
+            }));
+        case 'word.found':
+            return withRound(state, action.found.roundId, (round) =>
+                withFinder(round, action.found),
+            );
+        case 'word.changed':
+            return withRound(state, action.change.roundId, (round) => ({
+                ...round,
+                mask: action.change.mask,
+                maxHints: action.change.maxHints,
+                hintSlots: round.hintSlots ?? round.maxHints,
+                drawing: [],
+                committedOpIds: [],
             }));
     }
 }

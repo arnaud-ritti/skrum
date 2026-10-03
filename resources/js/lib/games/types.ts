@@ -1,6 +1,14 @@
 import type { IntegrationDelivery, ShareAvailability } from '@/types';
 
-export type GameKind = 'draw' | 'gif' | 'hangman' | 'decoded';
+export type GameKind =
+    | 'draw'
+    | 'gif'
+    | 'hangman'
+    | 'decoded'
+    | 'two_truths'
+    | 'mood'
+    | 'guess_who'
+    | 'quick_question';
 
 export type GameRoundOutcome =
     | 'guessed'
@@ -9,7 +17,88 @@ export type GameRoundOutcome =
     | 'timed_out'
     | 'passed'
     | 'revealed'
-    | 'abandoned';
+    | 'abandoned'
+    | 'finished';
+
+export type WordTheme = 'work' | 'objects' | 'food' | 'nature';
+
+export type GameWeather =
+    | 'sunny'
+    | 'partly_cloudy'
+    | 'cloudy'
+    | 'rainy'
+    | 'stormy';
+
+export type GameRoomSettingsInfo = {
+    wordThemes: WordTheme[];
+    turnSeconds: number | null;
+    autoHints: boolean;
+    takesTurns: boolean;
+    roundsPerGame: number | null;
+    gifVotes: number;
+    gifAuthorsHidden: boolean;
+};
+
+/** Guess who?: the drawn answer, without author until the close. */
+export type GameTextRevealed = { id: string; text: string };
+
+/** Guess who? once closed: the drawn answer and its author. */
+export type GameDrawnAnswer = GameTextRevealed & { playerId: string };
+
+/** Guess who? once closed: who named each candidate. */
+export type GameNomination = { playerId: string; voterIds: string[] };
+
+export type GameTurnChanged = {
+    roundId: string;
+    turnPlayerId: string | null;
+    turnEndsAt: string | null;
+};
+
+/** Two truths: a prepared set became ready or stopped being ready (room-level, no round). */
+export type GameStatementsChanged = { playerId: string; ready: boolean };
+
+/** Guess who?: how many have voted, never who. */
+export type GameVotesCounted = { roundId: string; voted: number };
+
+export type GameTruthSet = {
+    statements: string[];
+    lieIndex: number;
+    played: boolean;
+};
+
+/** The snapshot's `truthSets`: who has a ready set, and the viewer's own set. */
+export type GameTruthSets = {
+    ready: string[];
+    mine: GameTruthSet | null;
+};
+
+export type GameWeatherCount = { weather: GameWeather; count: number };
+
+export type GameStatementVotes = { index: number; playerIds: string[] };
+
+export type GameWordGuess = {
+    playerId: string;
+    text: string;
+    /** Client only: the arrival of a word seen live; none for those of the snapshot. */
+    seq?: number;
+};
+
+/** Draw & Guess (spec §6.15): who found the word, when and for how many points. */
+export type GameFinder = {
+    playerId: string;
+    seconds: number;
+    points: number;
+    /** Client only: the last guess seen when the finder arrived live; null before any guess. */
+    afterGuessId?: string | null;
+};
+
+export type GameWordFound = { roundId: string } & GameFinder;
+
+export type GameWordChanged = {
+    roundId: string;
+    mask: GameMask;
+    maxHints: number;
+};
 
 export type GameRoomAccess = 'team' | 'link';
 
@@ -42,12 +131,19 @@ type GameRoomInfo = {
     isIcebreaker: boolean;
     currentRoundId: string | null;
     teamName: string | null;
+    settings: GameRoomSettingsInfo;
 };
 
 /** One entry per character: separators and revealed letters, null for hidden letters. */
 export type GameMask = (string | null)[];
 
-type GameLetterPick = { playerId: string; letter: string; hit: boolean };
+type GameLetterPick = {
+    playerId: string;
+    letter: string;
+    hit: boolean;
+    /** Client only: the arrival of the move among the round's letters and words. */
+    seq?: number;
+};
 
 export type DrawingColor =
     | 'black'
@@ -100,11 +196,17 @@ export type GameGifRevealed = {
     gif: GameGif;
     playerId: string | null;
     votes?: number | null;
+    caption?: string | null;
+    rank?: number | null;
 };
 
 export type GameGifSlot = GameGifPending | GameGifRevealed;
 
-export type GameMyGifAnswer = { id: string; gif: GameGif };
+export type GameMyGifAnswer = {
+    id: string;
+    gif: GameGif;
+    caption: string | null;
+};
 
 export type GameGifSearchResult = {
     id: string;
@@ -119,16 +221,27 @@ export type GameRound = {
     leaderPlayerId: string | null;
     startedAt: string;
     revealedAt: string | null;
+    number: number | null;
+    roundsTotal: number | null;
+    turnOrder: string[];
+    turnPlayerId: string | null;
+    turnEndsAt: string | null;
+    turnSeconds: number | null;
+    hintSeconds: number | null;
     mask?: GameMask;
     misses?: number;
     maxMisses?: number;
     pickedLetters?: string[];
     /** Client only: the latest picks seen live, oldest first. */
     recentPicks?: GameLetterPick[];
-    /** The secret word: only ever present for the round's leader. */
+    /** The secret word: only ever present for the round's leader, and in Draw & Guess for who found it. */
     word?: string;
     maxHints?: number;
+    /** Client only: the auto hints scheduled for the first word, kept after "New word". */
+    hintSlots?: number;
     guesses?: GameGuessEntry[];
+    /** Hangman: the latest wrong whole-word guesses, oldest first. */
+    wordGuesses?: GameWordGuess[];
     drawing?: DrawingOp[];
     clue?: string[];
     /** Client only: ids of the latest committed strokes, to drop their live previews. */
@@ -136,12 +249,31 @@ export type GameRound = {
     question?: string | null;
     gifProvider?: 'giphy' | 'tenor' | null;
     answers?: GameGifSlot[];
-    myAnswer?: GameMyGifAnswer | null;
+    myAnswer?: GameMyGifAnswer | GameTextRevealed | null;
     voters?: string[];
     myVote?: string | null;
+    statements?: string[];
+    /** Two truths: only for the teller while the round is in play. */
+    lieIndex?: number;
+    myChoice?: number | string | null;
+    threshold?: number;
+    myVotes?: string[];
+    votesAllowed?: number;
+    /** Sprint in one GIF: the authors of the revealed GIFs come at the close. */
+    authorsHidden?: boolean;
+    drawn?: GameTextRevealed | null;
+    candidates?: string[];
+    votedCount?: number;
+    /** Draw & Guess: who found the word, in the order they found it. */
+    finders?: GameFinder[];
+    /** Draw & Guess: null when the round was started without its guessers (the first find ends it). */
+    guessersTotal?: number | null;
+    pointsPerFinder?: number;
+    /** Draw & Guess: only for the drawer. */
+    wordChangesLeft?: number;
 };
 
-type GameHistoryRound = {
+export type GameHistoryRound = {
     id: string;
     game: GameKind;
     outcome: GameRoundOutcome;
@@ -152,6 +284,10 @@ type GameHistoryRound = {
     winnerPlayerId: string | null;
     winnerName: string | null;
     endedAt: string;
+    number?: number | null;
+    roundsTotal?: number | null;
+    /** Decoded only: the clue, public once the round ended. */
+    clue?: string[] | null;
 };
 
 export type GameRoundDetail = GameHistoryRound & {
@@ -162,6 +298,17 @@ export type GameRoundDetail = GameHistoryRound & {
     drawing?: DrawingOp[];
     clue?: string[];
     answers?: GameGifRevealed[];
+    number?: number | null;
+    roundsTotal?: number | null;
+    statements?: string[];
+    lieIndex?: number;
+    votes?: GameStatementVotes[];
+    answered?: number;
+    weather?: GameWeatherCount[] | null;
+    threshold?: number;
+    drawn?: GameDrawnAnswer | null;
+    nominations?: GameNomination[];
+    finders?: GameFinder[];
 };
 
 export type GamePointsAward = {
@@ -179,12 +326,25 @@ export type GameRoundEnded = {
     points: GamePointsAward[];
     question?: string | null;
     answers?: GameGifRevealed[];
+    number?: number | null;
+    roundsTotal?: number | null;
+    statements?: string[];
+    lieIndex?: number;
+    votes?: GameStatementVotes[];
+    answered?: number;
+    weather?: GameWeatherCount[] | null;
+    threshold?: number;
+    drawn?: GameDrawnAnswer | null;
+    nominations?: GameNomination[];
+    finders?: GameFinder[];
 };
 
 export type GameRoundRevealed = {
     roundId: string;
     revealedAt: string;
-    answers: GameGifRevealed[];
+    answers: GameGifRevealed[] | GameTextRevealed[];
+    candidates?: string[];
+    authorsHidden?: boolean;
 };
 
 export type GameLetterPicked = {
@@ -194,6 +354,8 @@ export type GameLetterPicked = {
     hit: boolean;
     mask: GameMask;
     misses: number;
+    turnPlayerId: string | null;
+    turnEndsAt: string | null;
 };
 
 export type GameStartResponse = {
@@ -210,6 +372,8 @@ export type GameGuessMade = {
     guessId: string;
     playerId: string;
     text: string;
+    /** Hangman's whole-word guess: the round's misses after it. */
+    misses?: number;
 };
 
 export type GameDrawingOpAdded = {
@@ -226,6 +390,24 @@ export type GameDrawingCount = { roundId: string; count: number };
 export type GameGuessResponse = {
     result: 'wrong' | 'near' | 'correct';
     guessId: string;
+    ended: GameRoundEnded | null;
+    /** Draw & Guess with guessers: the viewer just found the word. */
+    found?: GameFinder;
+    word?: string;
+};
+
+/** POST word-changes: the drawer's new word. */
+export type GameWordChangeResponse = GameWordChanged & {
+    word: string;
+    wordChangesLeft: number;
+};
+
+export type GameWordGuessResponse = {
+    result: 'correct' | 'wrong';
+    guessId: string;
+    misses: number;
+    turnPlayerId: string | null;
+    turnEndsAt: string | null;
     ended: GameRoundEnded | null;
 };
 
@@ -252,6 +434,7 @@ export type GameSnapshot = {
     players: GamePlayer[];
     games: GameOption[];
     round: GameRound | null;
+    truthSets: GameTruthSets | null;
     history: GameHistoryRound[];
     links: { team: string | null; retro: string | null };
     emojiData: EmojiDataLocation;

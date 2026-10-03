@@ -21,5 +21,7 @@ export function outcomeLabel(outcome: GameRoundOutcome, t: Translate): string {
             return t('Revealed');
         case 'abandoned':
             return t('Abandoned');
+        case 'finished':
+            return t('Everyone has spoken');
     }
 }

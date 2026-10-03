@@ -1,5 +1,7 @@
 # Skrum — Games — Design
 
+> **Superseded in part by plan 27** (`docs/superpowers/specs/2026-10-21-plan-27-games-design.md`, the "games extended" spec): its rules replace §2 (data model: room settings, turns, round numbers, captions, choices, text answers and statement sets), §4.2 (Sprint in one GIF: captions, vote budget, hidden authors, podium), §4.3 (Hangman: turns and the whole-word guess), §4.5 (word themes), §4.6 (scores of the new games and of several finders), §5 (timers: a server-side turn with its deadline, auto hints) and Decision 2 (turns are no longer timed by the host alone). Read that spec first for those sections.
+
 Date: 2026-09-29
 Status: Approved decisions, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (all its rules apply unless this spec changes them explicitly). Builds on `docs/superpowers/specs/2026-09-29-board-engagement-design.md` (whispers with verified senders, GIF proxy, `SingleEmoji`, board lock) and on spec 2 "Retro flow extras" (Icebreaker phase, see §1 Dependencies).

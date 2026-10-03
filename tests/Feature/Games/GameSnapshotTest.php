@@ -19,11 +19,6 @@ beforeEach(function () {
     bindGameRules(new FakeGameRules);
 });
 
-function gameSnapshotFor(GameRoom $room, GamePlayer $viewer): array
-{
-    return resolve(BuildGameSnapshot::class)->handle($room->fresh(), $viewer->fresh());
-}
-
 it('builds the room for its host', function () {
     $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday fun', 'locale' => 'fr']);
     [$user, $host] = gameRoomHost($room);
@@ -38,6 +33,15 @@ it('builds the room for its host', function () {
         'locale' => 'fr',
         'access' => 'link',
         'reactionsEnabled' => true,
+        'settings' => [
+            'wordThemes' => [],
+            'turnSeconds' => null,
+            'autoHints' => false,
+            'takesTurns' => false,
+            'roundsPerGame' => null,
+            'gifVotes' => 1,
+            'gifAuthorsHidden' => false,
+        ],
         'timerEndsAt' => null,
         'isHost' => true,
         'canManage' => true,
@@ -106,16 +110,14 @@ it('lets workspace admins delete and take hosting', function () {
         ->and($snapshot['room']['isHost'])->toBeFalse();
 });
 
-it('lists the games with their availability', function () {
+it('lists the games with registered rules, with their availability, in the order of the kinds', function () {
     bindGameRules(new FakeGameRules(kind: GameKind::Hangman), new FakeGameRules(kind: GameKind::SprintGif, available: false));
     $room = GameRoom::factory()->create();
     [, $host] = gameRoomHost($room);
 
     expect(gameSnapshotFor($room, $host)['games'])->toBe([
-        ['value' => 'draw', 'label' => __('Draw & Guess'), 'available' => false],
         ['value' => 'gif', 'label' => __('Sprint in one GIF'), 'available' => false],
         ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true],
-        ['value' => 'decoded', 'label' => __('Decoded'), 'available' => false],
     ]);
 });
 
@@ -133,6 +135,13 @@ it('presents the active round for the viewer through the rules', function () {
         'leaderPlayerId' => null,
         'startedAt' => '2026-10-06T10:00:00+00:00',
         'revealedAt' => null,
+        'number' => null,
+        'roundsTotal' => null,
+        'turnOrder' => [],
+        'turnPlayerId' => null,
+        'turnEndsAt' => null,
+        'turnSeconds' => null,
+        'hintSeconds' => null,
         'fake' => true,
         'viewerPlayerId' => $member->id,
     ])
@@ -157,11 +166,14 @@ it('lists ended rounds newest first with names and without the active one', func
             'outcome' => 'solved',
             'word' => 'lamp',
             'question' => null,
+            'clue' => null,
             'leaderPlayerId' => null,
             'leaderName' => null,
             'winnerPlayerId' => $winner->id,
             'winnerName' => $winnerUser->name,
             'endedAt' => '2026-10-06T10:00:00+00:00',
+            'number' => null,
+            'roundsTotal' => null,
         ])
         ->and(gamePayloadExposesWord($history, 'hidden'))->toBeFalse();
 });

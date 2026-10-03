@@ -66,7 +66,7 @@ it('creates the room lazily from the board snapshot, once', function () {
         ->and($memberSnapshot['icebreaker']['room']['hostPlayerId'])->not->toBeNull()
         ->and($facilitatorSnapshot['icebreaker']['room']['isHost'])->toBeTrue()
         ->and($memberSnapshot['retro']['icebreakerGame'])->toBe('draw')
-        ->and(collect($memberSnapshot['icebreakerGames'])->pluck('value')->all())->toBe(['draw', 'gif', 'hangman', 'decoded']);
+        ->and(collect($memberSnapshot['icebreakerGames'])->pluck('value')->all())->toBe(['draw', 'gif', 'hangman', 'decoded', 'two_truths', 'mood', 'guess_who', 'quick_question']);
 });
 
 it('sends no icebreaker outside the phase and never deletes the room', function () {
@@ -109,8 +109,10 @@ it('makes the current facilitator the host', function () {
     $this->actingAs($facilitator)
         ->postJson(route('games.rounds.store', $room))
         ->assertForbidden();
+    $memberPlayer = $room->players()->where('participant_id', $memberParticipant->id)->sole();
+
     $this->actingAs($member)
-        ->postJson(route('games.rounds.store', $room))
+        ->postJson(route('games.rounds.store', $room), ['turn_order' => [$memberPlayer->id]])
         ->assertCreated();
 });
 
@@ -118,7 +120,9 @@ it('broadcasts icebreaker rounds on the retro channel', function () {
     Event::fake([GameRoundStarted::class]);
     [$retro, $facilitator, $room] = hangmanIcebreaker();
 
-    $this->actingAs($facilitator)->postJson(route('games.rounds.store', $room))->assertCreated();
+    $hostPlayer = $room->players()->sole();
+
+    $this->actingAs($facilitator)->postJson(route('games.rounds.store', $room), ['turn_order' => [$hostPlayer->id]])->assertCreated();
 
     Event::assertDispatched(fn (GameRoundStarted $event) => $event->broadcastOn()->name === "presence-retro.{$retro->id}");
 });

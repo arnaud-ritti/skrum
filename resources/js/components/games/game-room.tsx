@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionReactions } from '@/components/session/session-reactions';
 import { SessionShell } from '@/components/session/session-shell';
@@ -18,34 +17,17 @@ import { useRoomPanels } from './room-panels';
 
 type GameRoomProps = {
     snapshot: GameSnapshot;
-    /** Places left for later features; nothing fills them today. */
-    settingsCard?: ReactNode;
-    turnOrder?: ReactNode;
-    roundInfo?: ReactNode;
-    gifCaption?: ReactNode;
-    gifPodium?: ReactNode;
 };
 
 const reactionBarClass =
     'rounded-full border border-border bg-popover shadow-raised';
 
-export function GameRoom({
-    snapshot: initial,
-    settingsCard,
-    turnOrder,
-    roundInfo,
-    gifCaption,
-    gifPodium,
-}: GameRoomProps) {
+export function GameRoom({ snapshot: initial }: GameRoomProps) {
     const room = useGameRoom(initial, { subscribe: true });
     const isMobile = useIsMobile();
     const panels = useRoomPanels({
         snapshot: room.state.snapshot,
         lastEnded: room.state.lastEnded,
-        settingsCard,
-        turnOrder,
-        gifCaption,
-        gifPodium,
     });
 
     if (room.full) {
@@ -121,12 +103,7 @@ export function GameRoom({
             >
                 <GameLayout
                     {...panels}
-                    stage={
-                        <GameStage
-                            roundInfo={roundInfo}
-                            gifCaption={gifCaption}
-                        />
-                    }
+                    stage={<GameStage />}
                     summary={<PlayerChips />}
                     summaryFor="players"
                     dock={

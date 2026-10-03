@@ -101,6 +101,15 @@ class GameGuard
         throw ValidationException::withMessages(['round' => __('This action does not apply to this game.')]);
     }
 
+    public static function turn(GameRound $round, GamePlayer $player): void
+    {
+        if (! $round->takesTurns() || $round->turn_player_id === $player->id) {
+            return;
+        }
+
+        throw new AuthorizationException(__("It's not your turn."));
+    }
+
     public static function leaderOrHost(GameRoom $room, GameRound $round, GamePlayer $player): void
     {
         if ($round->leader_player_id === $player->id || $room->isHost($player)) {

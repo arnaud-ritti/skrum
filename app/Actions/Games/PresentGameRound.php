@@ -26,6 +26,13 @@ class PresentGameRound
             'leaderPlayerId' => $round->leader_player_id,
             'startedAt' => $round->started_at->toIso8601String(),
             'revealedAt' => $round->revealed_at?->toIso8601String(),
+            'number' => $round->number,
+            'roundsTotal' => $round->rounds_total,
+            'turnOrder' => $round->turnOrder(),
+            'turnPlayerId' => $round->turn_player_id,
+            'turnEndsAt' => $round->turn_ends_at?->toIso8601String(),
+            'turnSeconds' => $round->turn_seconds,
+            'hintSeconds' => $round->hint_seconds,
             ...($this->gameRulesRegistry->find($round->game)?->presentActive($round, $room, $viewer) ?? []),
         ];
     }

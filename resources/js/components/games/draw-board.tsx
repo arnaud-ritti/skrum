@@ -1,9 +1,16 @@
-import { Pencil } from 'lucide-react';
+import { Pencil, Shuffle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import GameDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameDrawingOpsController';
 import GameDrawingsController from '@/actions/App/Http/Controllers/Games/GameDrawingsController';
 import GameLastDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameLastDrawingOpsController';
+import GameWordChangesController from '@/actions/App/Http/Controllers/Games/GameWordChangesController';
+import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSecretWord } from '@/hooks/use-secret-word';
 import { useShortcut } from '@/hooks/use-shortcut';
@@ -14,6 +21,7 @@ import {
     DrawingWidth,
     MaxStrokePoints,
 } from '@/lib/games/drawing';
+import { popRedo, pushUndone, type RedoStack } from '@/lib/games/redo';
 import type { StrokeMessage } from '@/lib/games/stroke-whisper';
 import type {
     DrawingColor,
@@ -22,6 +30,7 @@ import type {
     GameDrawingCount,
     GameDrawingOpResponse,
     GameRound,
+    GameWordChangeResponse,
 } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
@@ -33,6 +42,7 @@ import {
 import { DrawingToolbar } from './drawing-toolbar';
 import { useHasRightColumn, useStageFooter } from './game-layout';
 import { GuessChat, GuessDock } from './guess-chat';
+import { AutoHintCountdown } from './auto-hint-countdown';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
 import { useRoom } from './room-context';
@@ -41,6 +51,110 @@ import { useRoom } from './room-context';
 const StalePreviewMs = 3000;
 
 type RemoteStroke = PreviewStroke & { updatedAt: number };
+
+/**
+ * Mirrors DrawAndGuessRules::WordChangesAllowed: the public start of a round
+ * does not tell the drawer, only their snapshot does.
+ */
+const WordChangesAllowed = 1;
+
+/**
+ * "New word (1)" on the drawer's word card (spec §6.15): once per round,
+ * while nobody has found the word; the server's 409 comes as a toast.
+ */
+function NewWordButton({
+    round,
+    onChanged,
+}: {
+    round: GameRound;
+    onChanged: () => void;
+}) {
+    const ctx = useRoom();
+    const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
+    const left = round.wordChangesLeft ?? WordChangesAllowed;
+    const someoneFound = (round.finders ?? []).length > 0;
+
+    const change = async () => {
+        setBusy(true);
+
+        let response: GameWordChangeResponse | undefined;
+
+        try {
+            response = await ctx.run(
+                retroRequest<GameWordChangeResponse>(
+                    GameWordChangesController.store({
+                        room: ctx.snapshot.room.id,
+                        round: round.id,
+                    }),
+                ),
+            );
+        } finally {
+            setBusy(false);
+        }
+
+        if (!response) {
+            return;
+        }
+
+        ctx.apply({
+            type: 'word.changed',
+            change: {
+                roundId: response.roundId,
+                mask: response.mask,
+                maxHints: response.maxHints,
+            },
+        });
+        ctx.apply({
+            type: 'round.patched',
+            roundId: response.roundId,
+            patch: {
+                word: response.word,
+                wordChangesLeft: response.wordChangesLeft,
+            },
+        });
+        onChanged();
+    };
+
+    const button = (
+        <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="min-w-0"
+            disabled={busy || left === 0 || someoneFound}
+            onClick={() => void change()}
+        >
+            <Shuffle aria-hidden />
+            <span className="truncate">
+                {t('New word (:count)', { count: left })}
+            </span>
+        </Button>
+    );
+
+    if (!someoneFound) {
+        return button;
+    }
+
+    const reason = t('Someone has already found the word.');
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span
+                    data-slot="new-word-closed"
+                    role="group"
+                    tabIndex={0}
+                    aria-label={reason}
+                    className="inline-flex min-w-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    {button}
+                </span>
+            </TooltipTrigger>
+            <TooltipContent>{reason}</TooltipContent>
+        </Tooltip>
+    );
+}
 
 export function DrawBoard({ round }: { round: GameRound }) {
     const ctx = useRoom();
@@ -52,15 +166,25 @@ export function DrawBoard({ round }: { round: GameRound }) {
         snapshot.players.find((player) => player.id === round.leaderPlayerId) ??
         null;
     const word = useSecretWord(round);
+    const isFinder = (round.finders ?? []).some(
+        (finder) => finder.playerId === snapshot.me.playerId,
+    );
     const [tool, setTool] = useState<CanvasTool>('pen');
     const [color, setColor] = useState<DrawingColor>('black');
     const [size, setSize] = useState<DrawingSize>(10);
     const [remote, setRemote] = useState<RemoteStroke[]>([]);
     const [pending, setPending] = useState<PreviewStroke[]>([]);
+    const [redo, setRedo] = useState<{ roundId: string; stack: RedoStack }>({
+        roundId: round.id,
+        stack: [],
+    });
     const queue = useRef<Promise<void>>(Promise.resolve());
+    const latestOps = useRef<DrawingOp[]>([]);
     const committed = round.committedOpIds ?? [];
     const ops = round.drawing ?? [];
     const mask = round.mask ?? [];
+    /** What Undo took in this round, for Redo; a new round starts without. */
+    const redoStack = redo.roundId === round.id ? redo.stack : [];
     const isMobile = useIsMobile();
     const hasRightColumn = useHasRightColumn();
     const footer = useStageFooter();
@@ -165,28 +289,62 @@ export function DrawBoard({ round }: { round: GameRound }) {
         });
     };
 
+    const forgetUndone = () => setRedo({ roundId: round.id, stack: [] });
+
+    const draw = (op: DrawingOp, clientOpId: string) => {
+        forgetUndone();
+        commit(op, clientOpId);
+    };
+
+    /**
+     * The undone operation is read when the undo's turn in the queue comes,
+     * so undos sent in a row each keep their own; a refused undo keeps none.
+     */
     const undo = () => {
         enqueue(async () => {
+            const roundId = round.id;
+            const last = latestOps.current.at(-1);
             const undone = await ctx.run(
                 retroRequest<GameDrawingCount>(
                     GameLastDrawingOpsController.destroy({
                         room: roomId,
-                        round: round.id,
+                        round: roundId,
                     }),
                 ),
             );
 
-            if (undone) {
-                ctx.apply({
-                    type: 'drawing.undone',
-                    roundId: round.id,
-                    count: undone.count,
-                });
+            if (!undone) {
+                return;
             }
+
+            setRedo((current) => ({
+                roundId,
+                stack: pushUndone(
+                    current.roundId === roundId ? current.stack : [],
+                    last,
+                ),
+            }));
+            ctx.apply({
+                type: 'drawing.undone',
+                roundId,
+                count: undone.count,
+            });
         });
     };
 
+    const redoLast = () => {
+        const { op, rest } = popRedo(redoStack);
+
+        if (op === null) {
+            return;
+        }
+
+        setRedo({ roundId: round.id, stack: rest });
+        commit(op, crypto.randomUUID());
+    };
+
     const clear = () => {
+        forgetUndone();
         enqueue(async () => {
             const cleared = await ctx.run(
                 retroRequest<GameDrawingCount>(
@@ -207,6 +365,9 @@ export function DrawBoard({ round }: { round: GameRound }) {
         ? pending
         : remote.filter((stroke) => !committed.includes(stroke.id));
     const canUndo = ops.length > 0;
+    const canRedo = redoStack.length > 0;
+
+    latestOps.current = ops;
 
     /**
      * The keys of the drawer, on the stage only: `useShortcut` leaves a field
@@ -216,6 +377,8 @@ export function DrawBoard({ round }: { round: GameRound }) {
     useShortcut('p', () => setTool('pen'), { enabled: isDrawer });
     useShortcut('e', () => setTool('eraser'), { enabled: isDrawer });
     useShortcut('mod+z', undo, { enabled: isDrawer && canUndo });
+    useShortcut('mod+shift+z', redoLast, { enabled: isDrawer && canRedo });
+    useShortcut('mod+y', redoLast, { enabled: isDrawer && canRedo });
 
     /** Where the drawer's pencil is: the end of the stroke still being drawn. */
     const livePoint = isDrawer
@@ -227,14 +390,35 @@ export function DrawBoard({ round }: { round: GameRound }) {
             data-slot="draw-board"
             className="flex min-h-0 w-full flex-1 flex-col items-center gap-4"
         >
-            {isDrawer ? (
+            {isDrawer && (
                 <LeaderWord
                     word={word}
                     label={t('Your word to draw')}
-                    action={<HintButton round={round} />}
+                    action={
+                        <div className="flex min-w-0 flex-wrap items-center gap-1">
+                            <HintButton round={round} />
+                            <NewWordButton
+                                round={round}
+                                onChanged={forgetUndone}
+                            />
+                        </div>
+                    }
+                    footnote={<AutoHintCountdown round={round} />}
                 />
-            ) : (
-                <MaskedWord mask={mask} maxHints={round.maxHints ?? 0} />
+            )}
+            {!isDrawer && isFinder && round.word !== undefined && (
+                <LeaderWord
+                    word={round.word}
+                    label={t('You found it!')}
+                    secret={false}
+                />
+            )}
+            {!isDrawer && !(isFinder && round.word !== undefined) && (
+                <MaskedWord
+                    mask={mask}
+                    maxHints={round.maxHints ?? 0}
+                    footnote={<AutoHintCountdown round={round} />}
+                />
             )}
             <div
                 className={cn(
@@ -254,7 +438,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
                                       color,
                                       size,
                                       roundId: round.id,
-                                      onCommit: commit,
+                                      onCommit: draw,
                                       onLive: sendStroke,
                                   }
                                 : null
@@ -286,11 +470,13 @@ export function DrawBoard({ round }: { round: GameRound }) {
                     color={color}
                     size={size}
                     canUndo={canUndo}
+                    canRedo={canRedo}
                     compact={isMobile}
                     onTool={setTool}
                     onColor={setColor}
                     onSize={setSize}
                     onUndo={undo}
+                    onRedo={redoLast}
                     onClear={clear}
                 />
             )}

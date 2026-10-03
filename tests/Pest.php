@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Games\BuildGameSnapshot;
 use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\GuestCookie;
@@ -1100,6 +1101,14 @@ function gameRoomGuest(GameRoom $room, string $secret = 'secret'): GamePlayer
 function gameGuestCookie(GamePlayer $player, string $secret = 'secret'): array
 {
     return [GuestCookie::name(GuestCookie::GameScope, $player->game_room_id) => "{$player->id}|{$secret}"];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function gameSnapshotFor(GameRoom $room, GamePlayer $viewer): array
+{
+    return resolve(BuildGameSnapshot::class)->handle($room->fresh(), $viewer->fresh());
 }
 
 /**

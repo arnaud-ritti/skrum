@@ -6,6 +6,7 @@ use App\Enums\GameRoundOutcome;
 use App\Models\GameGifAnswer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Support\Games\CompetitionRanking;
 use Illuminate\Support\Collection;
 use LogicException;
 
@@ -24,6 +25,15 @@ class PresentGifAnswers
     }
 
     /**
+     * Whether the authors of revealed answers come at the close: never on an
+     * anonymous retro, where they never come.
+     */
+    public static function authorsComeAtClose(GameRoom $room, GameRound $round): bool
+    {
+        return $round->authors_hidden && ! self::hidesAuthors($room);
+    }
+
+    /**
      * @param  Collection<int, GameGifAnswer>  $answers
      * @return array<int, array{playerId: string, answered: bool}>
      */
@@ -38,20 +48,22 @@ class PresentGifAnswers
 
     /**
      * Listed by id: answer ids are random, so the order tells nothing about
-     * who answered first.
+     * who answered first. A round with hidden authors drops them until the
+     * close.
      *
      * @param  Collection<int, GameGifAnswer>  $answers
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string}>
      */
-    public function revealed(Collection $answers, GameRoom $room): array
+    public function revealed(Collection $answers, GameRoom $room, bool $authorsHidden = false): array
     {
-        $hidesAuthors = self::hidesAuthors($room);
+        $hidesAuthors = self::hidesAuthors($room) || $authorsHidden;
 
         return $answers
             ->sortBy('id')
             ->map(fn (GameGifAnswer $answer): array => [
                 'id' => $answer->id,
                 'gif' => $this->presentGameGif->handle($answer->gif_id),
+                'caption' => $answer->caption,
                 'playerId' => $hidesAuthors ? null : $answer->player_id,
             ])
             ->values()
@@ -59,10 +71,11 @@ class PresentGifAnswers
     }
 
     /**
-     * The answers of an ended round with their final vote count. Votes of a
-     * round that did not close normally (passed, abandoned) were discarded.
+     * The answers of an ended round with their final vote count and their
+     * rank (ties share one). Votes of a round that did not close normally
+     * (passed, abandoned) were discarded, so those answers have no rank.
      *
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string, votes: ?int}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string, votes: ?int, rank: ?int}>
      */
     public function closed(GameRound $round, GameRoom $room): array
     {
@@ -74,7 +87,7 @@ class PresentGifAnswers
      * so a list of rounds can load every count in one query.
      *
      * @param  Collection<int, GameGifAnswer>  $answers
-     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, playerId: ?string, votes: ?int}>
+     * @return array<int, array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string, playerId: ?string, votes: ?int, rank: ?int}>
      */
     public function closedFrom(Collection $answers, GameRound $round, GameRoom $room): array
     {
@@ -89,20 +102,23 @@ class PresentGifAnswers
             return [$answer->id => (int) $answer->getAttribute('votes_count')];
         });
 
+        $ranks = CompetitionRanking::of($votes->all());
+
         return array_map(
-            fn (array $answer): array => [...$answer, 'votes' => $votes[$answer['id']]],
+            fn (array $answer): array => [...$answer, 'votes' => $votes[$answer['id']], 'rank' => $ranks[$answer['id']]],
             $this->revealed($answers, $room),
         );
     }
 
     /**
-     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}}
+     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string}
      */
     public function mine(GameGifAnswer $answer): array
     {
         return [
             'id' => $answer->id,
             'gif' => $this->presentGameGif->handle($answer->gif_id),
+            'caption' => $answer->caption,
         ];
     }
 }

@@ -11,9 +11,13 @@ import type { PickedGif } from '@/components/gifs/gif-search-dialog';
 
 type Draft = { roundId: string; gif: PickedGif };
 
+type CaptionDraft = { roundId: string; text: string };
+
 type GifDraftValue = {
     draft: Draft | null;
     setDraft: (draft: Draft | null) => void;
+    captionDraft: CaptionDraft | null;
+    setCaptionDraft: (draft: CaptionDraft | null) => void;
     pickerRef: RefObject<HTMLDivElement | null>;
 };
 
@@ -21,12 +25,17 @@ const GifDraftContext = createContext<GifDraftValue | null>(null);
 
 /**
  * The GIF a player picked on the stage and has not sent: the picker and
- * "Your pick" stand in two columns and share it. It never leaves the browser.
+ * "Your pick" stand in two columns and share it, with the caption being
+ * typed. Neither leaves the browser before "Send my GIF".
  */
 export function GifDraftProvider({ children }: { children: ReactNode }) {
     const [draft, setDraft] = useState<Draft | null>(null);
+    const [captionDraft, setCaptionDraft] = useState<CaptionDraft | null>(null);
     const pickerRef = useRef<HTMLDivElement | null>(null);
-    const value = useMemo(() => ({ draft, setDraft, pickerRef }), [draft]);
+    const value = useMemo(
+        () => ({ draft, setDraft, captionDraft, setCaptionDraft, pickerRef }),
+        [draft, captionDraft],
+    );
 
     return <GifDraftContext value={value}>{children}</GifDraftContext>;
 }
@@ -36,6 +45,10 @@ type GifDraft = {
     draft: PickedGif | null;
     pick: (gif: PickedGif) => void;
     clear: () => void;
+    /** The caption being typed, or null while it is the one sent. */
+    caption: string | null;
+    setCaption: (text: string) => void;
+    clearCaption: () => void;
     /** Wraps the picker on the stage. */
     pickerRef: RefObject<HTMLDivElement | null>;
     /** Sends the keyboard back to the search of the picker. */
@@ -49,12 +62,15 @@ export function useGifDraft(roundId: string): GifDraft {
         throw new Error('useGifDraft() must be used inside <RoomProvider>.');
     }
 
-    const { draft, setDraft, pickerRef } = value;
+    const { draft, setDraft, captionDraft, setCaptionDraft, pickerRef } = value;
 
     return {
         draft: draft?.roundId === roundId ? draft.gif : null,
         pick: (gif) => setDraft({ roundId, gif }),
         clear: () => setDraft(null),
+        caption: captionDraft?.roundId === roundId ? captionDraft.text : null,
+        setCaption: (text) => setCaptionDraft({ roundId, text }),
+        clearCaption: () => setCaptionDraft(null),
         pickerRef,
         focusPicker: () => {
             const search = pickerRef.current?.querySelector<HTMLInputElement>(

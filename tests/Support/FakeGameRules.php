@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Actions\Games\AdvanceGameTurn;
 use App\Enums\GameKind;
 use App\Enums\GameRoundOutcome;
 use App\Models\GamePlayer;
@@ -27,6 +28,9 @@ class FakeGameRules implements GameRules
         public array $points = [],
         public ?GameRoundOutcome $expiryOutcome = GameRoundOutcome::TimedOut,
         public bool $expiryThrows = false,
+        public bool $takesTurns = false,
+        public bool $timesTurns = false,
+        public ?GameRoundOutcome $turnOutcome = GameRoundOutcome::TimedOut,
     ) {}
 
     public function kind(): GameKind
@@ -78,6 +82,27 @@ class FakeGameRules implements GameRules
     public function outcomeOnNextRound(GameRound $round): ?GameRoundOutcome
     {
         return $this->nextRoundOutcome;
+    }
+
+    public function takesTurns(GameRoom $room): bool
+    {
+        return $this->takesTurns;
+    }
+
+    public function timesTurns(): bool
+    {
+        return $this->timesTurns;
+    }
+
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome
+    {
+        if ($this->turnOutcome !== null) {
+            return $this->turnOutcome;
+        }
+
+        resolve(AdvanceGameTurn::class)->handle($room, $round);
+
+        return null;
     }
 
     public function points(GameRound $round, GameRoom $room): array

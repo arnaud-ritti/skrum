@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react';
-import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { withAwardedPoints } from '@/lib/games/leaderboard';
 import { outcomeLabel } from '@/lib/games/outcomes';
-import type {
-    GameGifRevealed,
-    GamePointsAward,
-    GameRoundDetail,
-} from '@/lib/games/types';
-import { retroRequest } from '@/lib/retro/api';
+import type { GamePointsAward } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
+import { GuessWhoResult } from './guess-who-board';
+import { MoodWeatherResult } from './mood-weather-board';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
+import { TwoTruthsResult } from './two-truths-board';
+import { TwoTruthsSetForm } from './two-truths-set-form';
+import { useEndedGifAnswers } from './use-ended-gif-answers';
+import { useEndedRoundDetail } from './use-ended-round-detail';
 
 function RoundPoints({ points }: { points: GamePointsAward[] }) {
     const { snapshot } = useRoom();
@@ -52,6 +52,51 @@ function RoundPoints({ points }: { points: GamePointsAward[] }) {
     );
 }
 
+const PodiumSize = 3;
+
+/** The room's best scores when a game of a set number of rounds is over (spec §6.4). */
+function FinalScores() {
+    const { snapshot } = useRoom();
+    const { t } = useTrans();
+    const names = new Map(
+        snapshot.players.map((player) => [player.id, player.name]),
+    );
+    const podium = withAwardedPoints(
+        snapshot.leaderboard,
+        [],
+        snapshot.players,
+    ).slice(0, PodiumSize);
+
+    if (podium.length === 0) {
+        return null;
+    }
+
+    return (
+        <ol
+            aria-label={t('Final scores')}
+            data-slot="final-scores"
+            className="flex w-full max-w-sm flex-col gap-1"
+        >
+            {podium.map((row, index) => (
+                <li
+                    key={row.playerId}
+                    className="flex min-w-0 items-center gap-3 rounded-md bg-muted px-3 py-2 text-sm"
+                >
+                    <span className="w-4 shrink-0 font-semibold tabular-nums">
+                        {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-left">
+                        {names.get(row.playerId) ?? t('Someone')}
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums">
+                        {t(':count points', { count: row.points })}
+                    </span>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
 /** Between two rounds: what the last one gave, and the controls of the next. */
 export function RoundEndCard() {
     const { snapshot, lastEnded } = useRoom();
@@ -67,95 +112,115 @@ export function RoundEndCard() {
     const winner =
         snapshot.players.find((player) => player.id === winnerId) ?? null;
     const question = lastEnded?.question ?? lastRound?.question ?? null;
-    const roomId = snapshot.room.id;
-    const gifRoundId =
-        lastRound?.game === 'gif' && !lastEnded?.answers ? lastRound.id : null;
-    const [fetched, setFetched] = useState<{
-        roundId: string;
-        answers: GameGifRevealed[];
-    } | null>(null);
-
-    useEffect(() => {
-        if (gifRoundId === null) {
-            return;
-        }
-
-        let isCurrent = true;
-
-        retroRequest<GameRoundDetail>(
-            GameRoundsController.show({ room: roomId, round: gifRoundId }),
-        )
-            .then((detail) => {
-                if (isCurrent && detail.answers) {
-                    setFetched({
-                        roundId: gifRoundId,
-                        answers: detail.answers,
-                    });
-                }
-            })
-            .catch(() => undefined);
-
-        return () => {
-            isCurrent = false;
-        };
-    }, [roomId, gifRoundId]);
-
-    const fetchedAnswers =
-        fetched !== null && fetched.roundId === gifRoundId
-            ? fetched.answers
-            : null;
-    const gifAnswers = lastEnded?.answers ?? fetchedAnswers;
+    const number = lastEnded?.number ?? lastRound?.number ?? null;
+    const roundsTotal =
+        lastEnded?.roundsTotal ?? lastRound?.roundsTotal ?? null;
+    const isGameOver = number !== null && number === roundsTotal;
+    const gifAnswers = useEndedGifAnswers();
+    const fetchedTruths = useEndedRoundDetail(
+        'two_truths',
+        Boolean(lastEnded?.statements),
+    );
+    const truths = lastEnded?.statements ? lastEnded : fetchedTruths;
+    const fetchedMood = useEndedRoundDetail(
+        'mood',
+        lastEnded?.answered !== undefined,
+    );
+    const mood = lastEnded?.answered !== undefined ? lastEnded : fetchedMood;
+    const fetchedGuessWho = useEndedRoundDetail(
+        'guess_who',
+        lastEnded?.nominations !== undefined,
+    );
+    const guessWho =
+        lastEnded?.nominations !== undefined ? lastEnded : fetchedGuessWho;
+    /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
+    const setForm = snapshot.room.game === 'two_truths' && (
+        <TwoTruthsSetForm className="max-w-2xl" />
+    );
 
     if (outcome === null) {
         return (
-            <Card
-                data-slot="round-start-card"
-                className="w-full max-w-2xl items-center gap-4 px-6 py-10 text-center"
-            >
-                <h3 className="font-display text-xl font-title">
-                    {t('Ready to play?')}
-                </h3>
-                <StartRoundControls label={t('Start')} />
-            </Card>
+            <>
+                <Card
+                    data-slot="round-start-card"
+                    className="w-full max-w-2xl items-center gap-4 px-6 py-10 text-center"
+                >
+                    <h3 className="font-display text-xl font-title">
+                        {t('Ready to play?')}
+                    </h3>
+                    <StartRoundControls label={t('Start')} />
+                </Card>
+                {setForm}
+            </>
         );
     }
 
     return (
-        <Card
-            data-slot="round-end-card"
-            className={cn(
-                'w-full max-w-2xl items-center gap-3 p-6 text-center',
-                gifAnswers && 'max-w-4xl',
-            )}
-        >
-            <Badge variant="secondary" shape="pill">
-                {outcomeLabel(outcome, t)}
-            </Badge>
-            {word && (
-                <p className="max-w-full font-display text-3xl font-bold tracking-wide break-words">
-                    {word}
-                </p>
-            )}
-            {question && (
-                <p className="max-w-full text-lg font-medium break-words">
-                    {question}
-                </p>
-            )}
-            {gifAnswers && (
-                <GifRoundResults
-                    answers={gifAnswers}
-                    points={lastEnded?.answers ? lastEnded.points : []}
-                />
-            )}
-            {winner && (
-                <p className="text-muted-foreground">
-                    {t(':name found it!', { name: winner.name })}
-                </p>
-            )}
-            {lastEnded && !lastEnded.answers && (
-                <RoundPoints points={lastEnded.points} />
-            )}
-            <StartRoundControls label={t('Next round')} />
-        </Card>
+        <>
+            <Card
+                data-slot="round-end-card"
+                className={cn(
+                    'w-full max-w-2xl items-center gap-3 p-6 text-center',
+                    gifAnswers && 'max-w-4xl',
+                )}
+            >
+                {isGameOver && (
+                    <h3 className="font-display text-2xl font-title">
+                        {t('Game over')}
+                    </h3>
+                )}
+                <Badge variant="secondary" shape="pill">
+                    {outcomeLabel(outcome, t)}
+                </Badge>
+                {word && (
+                    <p className="max-w-full font-display text-3xl font-bold tracking-wide break-words">
+                        {word}
+                    </p>
+                )}
+                {question && (
+                    <p className="max-w-full text-lg font-medium break-words">
+                        {question}
+                    </p>
+                )}
+                {gifAnswers && (
+                    <GifRoundResults
+                        answers={gifAnswers}
+                        points={lastEnded?.answers ? lastEnded.points : []}
+                    />
+                )}
+                {truths?.statements && (
+                    <TwoTruthsResult
+                        statements={truths.statements}
+                        lieIndex={truths.lieIndex ?? null}
+                        votes={truths.votes ?? []}
+                        points={lastEnded?.statements ? lastEnded.points : []}
+                    />
+                )}
+                {mood?.answered !== undefined && (
+                    <MoodWeatherResult
+                        answered={mood.answered}
+                        weather={mood.weather ?? null}
+                        threshold={mood.threshold}
+                    />
+                )}
+                {guessWho?.drawn && (
+                    <GuessWhoResult
+                        drawn={guessWho.drawn}
+                        nominations={guessWho.nominations ?? []}
+                    />
+                )}
+                {winner && (
+                    <p className="text-muted-foreground">
+                        {t(':name found it!', { name: winner.name })}
+                    </p>
+                )}
+                {lastEnded && !lastEnded.answers && (
+                    <RoundPoints points={lastEnded.points} />
+                )}
+                {isGameOver && <FinalScores />}
+                <StartRoundControls label={t('Next round')} />
+            </Card>
+            {setForm}
+        </>
     );
 }

@@ -1,4 +1,4 @@
-import { LockKeyhole, MessagesSquare, Send } from 'lucide-react';
+import { LockKeyhole, MessagesSquare, PartyPopper, Send } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import GameGuessesController from '@/actions/App/Http/Controllers/Games/GameGuessesController';
@@ -16,12 +16,14 @@ import { Input } from '@/components/ui/input';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 import type {
+    GameFinder,
     GameGuessEntry,
     GameGuessResponse,
     GameRound,
 } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
+import { DrawFoundBy } from './draw-found-by';
 import { dockedPanelClass } from './game-layout';
 import { useRoom } from './room-context';
 
@@ -47,6 +49,70 @@ function guessCount(count: number, t: ReturnType<typeof useTrans>['t']) {
         : t(':count guesses', { count });
 }
 
+type LogEntry =
+    | { kind: 'guess'; guess: GameGuessEntry }
+    | { kind: 'finder'; finder: GameFinder };
+
+/**
+ * The guesses with a line for each Draw & Guess finder (spec §6.15) where it
+ * arrived: after the guess it followed live, first when it came before any
+ * guess still shown, last when only the snapshot told it.
+ */
+function logEntries(
+    guesses: GameGuessEntry[],
+    finders: GameFinder[],
+): LogEntry[] {
+    const shownIds = new Set(guesses.map((guess) => guess.id));
+    const placed = (finder: GameFinder) =>
+        finder.afterGuessId !== undefined &&
+        finder.afterGuessId !== null &&
+        shownIds.has(finder.afterGuessId);
+    const finderEntry = (finder: GameFinder): LogEntry => ({
+        kind: 'finder',
+        finder,
+    });
+
+    return [
+        ...finders
+            .filter(
+                (finder) =>
+                    finder.afterGuessId !== undefined && !placed(finder),
+            )
+            .map(finderEntry),
+        ...guesses.flatMap((guess): LogEntry[] => [
+            { kind: 'guess', guess },
+            ...finders
+                .filter((finder) => finder.afterGuessId === guess.id)
+                .map(finderEntry),
+        ]),
+        ...finders
+            .filter((finder) => finder.afterGuessId === undefined)
+            .map(finderEntry),
+    ];
+}
+
+function FinderLine({ finder }: { finder: GameFinder }) {
+    const { t } = useTrans();
+    const players = usePlayers();
+
+    return (
+        <li
+            data-slot="finder-line"
+            className="flex min-w-0 items-center gap-2 rounded-md bg-skrum-success-soft px-2 py-1.5 text-body-sm font-medium text-skrum-success-text"
+        >
+            <PartyPopper aria-hidden className="size-3.5 shrink-0" />
+            <span className="min-w-0 break-words">
+                {t(':name found it!', {
+                    name: players.get(finder.playerId)?.name ?? t('Someone'),
+                })}
+            </span>
+            <span className="ml-auto shrink-0 text-xs tabular-nums">
+                {t('+:points', { points: finder.points })}
+            </span>
+        </li>
+    );
+}
+
 type GuessLogProps = {
     round: GameRound;
     /** The id of the heading that names the log; without it the log names itself. */
@@ -59,11 +125,13 @@ function GuessLog({ round, labelledBy, className }: GuessLogProps) {
     const { t } = useTrans();
     const log = useRef<HTMLDivElement>(null);
     const guesses = round.guesses ?? [];
+    const finders = round.finders ?? [];
+    const entries = logEntries(guesses, finders);
     const players = usePlayers();
 
     useEffect(() => {
         log.current?.scrollTo?.({ top: log.current.scrollHeight });
-    }, [guesses.length]);
+    }, [entries.length]);
 
     return (
         <div
@@ -74,13 +142,23 @@ function GuessLog({ round, labelledBy, className }: GuessLogProps) {
             aria-label={labelledBy === undefined ? t('Guesses') : undefined}
             className={cn('min-h-0 flex-1 overflow-y-auto', className)}
         >
-            {guesses.length === 0 ? (
+            {entries.length === 0 ? (
                 <p className="text-body-sm text-muted-foreground">
                     {t('No guesses yet.')}
                 </p>
             ) : (
                 <ol className="flex min-h-full flex-col justify-end gap-2.5 px-2">
-                    {guesses.map((guess) => {
+                    {entries.map((entry) => {
+                        if (entry.kind === 'finder') {
+                            return (
+                                <FinderLine
+                                    key={`found-${entry.finder.playerId}`}
+                                    finder={entry.finder}
+                                />
+                            );
+                        }
+
+                        const { guess } = entry;
                         const player = players.get(guess.playerId);
                         const name = player?.name ?? t('Someone');
 
@@ -162,9 +240,30 @@ function GuessField({ round }: { round: GameRound }) {
 
         setText('');
 
+        if (response.found) {
+            ctx.dispatch({
+                type: 'word.found',
+                found: { roundId: round.id, ...response.found },
+            });
+        }
+
+        if (response.word !== undefined) {
+            ctx.dispatch({
+                type: 'round.patched',
+                roundId: round.id,
+                patch: { word: response.word },
+            });
+        }
+
         if (response.ended) {
             ctx.dispatch({ type: 'round.ended', ended: response.ended });
             void ctx.refetch();
+            toast.success(t('You found it!'));
+
+            return;
+        }
+
+        if (response.found) {
             toast.success(t('You found it!'));
 
             return;
@@ -206,6 +305,38 @@ function GuessField({ round }: { round: GameRound }) {
     );
 }
 
+/** A Draw & Guess finder no longer guesses: the word they found takes the field's place. */
+function hasFound(round: GameRound, myPlayerId: string): boolean {
+    return (round.finders ?? []).some(
+        (finder) => finder.playerId === myPlayerId,
+    );
+}
+
+function FoundWord({
+    word,
+    className,
+}: {
+    word: string | undefined;
+    className?: string;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <p
+            data-slot="found-word"
+            className={cn(
+                'flex items-center gap-2 rounded-lg bg-skrum-success-soft p-3 text-body-sm font-medium text-skrum-success-text',
+                className,
+            )}
+        >
+            <PartyPopper aria-hidden className="size-3.5 shrink-0" />
+            <span className="min-w-0 break-words">
+                {t('You found it: :word', { word: word ?? '…' })}
+            </span>
+        </p>
+    );
+}
+
 /** The guesses of a Draw & Guess or Decoded round, and the field of who may guess. */
 export function GuessChat({
     round,
@@ -214,7 +345,9 @@ export function GuessChat({
     className,
 }: Props) {
     const { t } = useTrans();
+    const { snapshot } = useRoom();
     const guesses = round.guesses ?? [];
+    const isFinder = hasFound(round, snapshot.me.playerId);
 
     return (
         <section
@@ -233,7 +366,14 @@ export function GuessChat({
                 )}
             </div>
             <GuessLog round={round} labelledBy="game-guesses" />
-            {isLeader ? (
+            <DrawFoundBy round={round} isLeader={isLeader} />
+            {isFinder && (
+                <FoundWord
+                    word={round.word}
+                    className={cn(fieldFirst && 'order-first')}
+                />
+            )}
+            {!isFinder && isLeader && (
                 <p
                     className={cn(
                         'flex items-center gap-2 rounded-lg border border-dashed border-input p-3 text-body-sm text-muted-foreground',
@@ -245,7 +385,8 @@ export function GuessChat({
                         {t('You know the word, so you cannot guess.')}
                     </span>
                 </p>
-            ) : (
+            )}
+            {!isFinder && !isLeader && (
                 <div
                     className={cn(
                         'flex flex-col gap-1',
@@ -303,9 +444,11 @@ export function GuessDock({
     isLeader,
 }: Pick<Props, 'round' | 'isLeader'>) {
     const { t } = useTrans();
+    const { snapshot } = useRoom();
     const [isOpen, setIsOpen] = useState(false);
     const restoreFocus = useRestoreFocus(isOpen);
     const guesses = round.guesses ?? [];
+    const isFinder = hasFound(round, snapshot.me.playerId);
 
     return (
         <div
@@ -340,7 +483,8 @@ export function GuessDock({
                     )}
                 </Button>
             </div>
-            {!isLeader && <GuessField round={round} />}
+            {isFinder && <FoundWord word={round.word} />}
+            {!isFinder && !isLeader && <GuessField round={round} />}
             <Drawer open={isOpen} onOpenChange={setIsOpen}>
                 <DrawerContent onCloseAutoFocus={restoreFocus}>
                     <DrawerHeader className="text-left">
@@ -357,6 +501,11 @@ export function GuessDock({
                         </p>
                     )}
                     <GuessLog round={round} />
+                    <DrawFoundBy
+                        round={round}
+                        isLeader={isLeader}
+                        className="mt-3"
+                    />
                 </DrawerContent>
             </Drawer>
         </div>

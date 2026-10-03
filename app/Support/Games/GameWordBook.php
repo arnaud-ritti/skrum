@@ -2,10 +2,11 @@
 
 namespace App\Support\Games;
 
+use App\Enums\GameWordTheme;
 use App\Support\Locales;
 
 /**
- * Word and GIF-question lists per locale, read from resources/games. The
+ * Word, GIF-question and prompt lists per locale, read from resources/games. The
  * files are immutable, so one copy per process is safe under Octane.
  */
 class GameWordBook
@@ -14,16 +15,18 @@ class GameWordBook
     private static array $files = [];
 
     /**
-     * @param  array<string, array<int, array{word: string, drawable: bool}>>|null  $words
+     * @param  array<string, array<int, array{word: string, drawable: bool, theme?: string}>>|null  $words
      * @param  array<string, array<int, string>>|null  $questions
+     * @param  array<string, array<int, string>>|null  $prompts
      */
     public function __construct(
         private ?array $words = null,
         private ?array $questions = null,
+        private ?array $prompts = null,
     ) {}
 
     /**
-     * @return array<int, array{word: string, drawable: bool}>
+     * @return array<int, array{word: string, drawable: bool, theme?: string}>
      */
     public function entries(string $locale): array
     {
@@ -31,18 +34,22 @@ class GameWordBook
             return $this->words[$locale] ?? $this->words['en'] ?? [];
         }
 
-        /** @var array<int, array{word: string, drawable: bool}> */
+        /** @var array<int, array{word: string, drawable: bool, theme?: string}> */
         return $this->file('words', $locale);
     }
 
     /**
+     * @param  array<int, GameWordTheme>  $themes  none means every theme
      * @return array<int, string>
      */
-    public function words(string $locale, bool $drawableOnly): array
+    public function words(string $locale, bool $drawableOnly, array $themes = []): array
     {
+        $wantedThemes = array_map(fn (GameWordTheme $theme): string => $theme->value, $themes);
+
         $entries = array_filter(
             $this->entries($locale),
-            fn (array $entry): bool => ! $drawableOnly || $entry['drawable'],
+            fn (array $entry): bool => (! $drawableOnly || $entry['drawable'])
+                && ($wantedThemes === [] || in_array($entry['theme'] ?? null, $wantedThemes, true)),
         );
 
         return array_values(array_map(fn (array $entry): string => $entry['word'], $entries));
@@ -59,6 +66,21 @@ class GameWordBook
 
         /** @var array<int, string> */
         return $this->file('gif-questions', $locale);
+    }
+
+    /**
+     * The prompts of Guess who? and Quick question.
+     *
+     * @return array<int, string>
+     */
+    public function prompts(string $locale): array
+    {
+        if ($this->prompts !== null) {
+            return $this->prompts[$locale] ?? $this->prompts['en'] ?? [];
+        }
+
+        /** @var array<int, string> */
+        return $this->file('prompts', $locale);
     }
 
     /**

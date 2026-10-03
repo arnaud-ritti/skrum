@@ -78,7 +78,7 @@ it('keeps vote counts and who voted for what secret until the close', function (
         $view = $this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertOk()->json('round');
 
         expect(gamePayloadJson($view))->not->toContain('"votes"')
-            ->and(array_map(array_keys(...), $view['answers']))->each->toBe(['id', 'gif', 'playerId'])
+            ->and(array_map(array_keys(...), $view['answers']))->each->toBe(['id', 'gif', 'caption', 'playerId'])
             ->and($view['voters'])->toHaveCount(2)
             ->and(gamePayloadJson($view))->not->toContain('"points"');
     }

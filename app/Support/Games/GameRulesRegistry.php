@@ -37,14 +37,19 @@ class GameRulesRegistry
     }
 
     /**
+     * Only the games whose rules are registered, so a game the front end
+     * does not know yet is never offered.
+     *
      * @return array<int, array{value: string, label: string, available: bool}>
      */
     public function options(GameRoom $room): array
     {
-        return array_map(fn (GameKind $kind): array => [
+        $registeredKinds = array_filter(GameKind::cases(), fn (GameKind $kind): bool => $this->find($kind) !== null);
+
+        return array_values(array_map(fn (GameKind $kind): array => [
             'value' => $kind->value,
             'label' => $kind->label(),
             'available' => $this->isAvailable($kind, $room),
-        ], GameKind::cases());
+        ], $registeredKinds));
     }
 }

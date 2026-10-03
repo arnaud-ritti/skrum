@@ -1,4 +1,13 @@
-import { Brush, Film, Smile, WholeWord } from 'lucide-react';
+import {
+    Brush,
+    CloudSun,
+    Film,
+    MessageCircleQuestion,
+    Smile,
+    UserRoundSearch,
+    VenetianMask,
+    WholeWord,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
@@ -35,7 +44,28 @@ const GameIcons: Record<GameKind, LucideIcon> = {
     decoded: Smile,
     draw: Brush,
     gif: Film,
+    two_truths: VenetianMask,
+    mood: CloudSun,
+    guess_who: UserRoundSearch,
+    quick_question: MessageCircleQuestion,
 };
+
+/** Two truths always plays a set of three statements, one of them the lie. */
+const StatementsPerSet = 3;
+
+type Translate = ReturnType<typeof useTrans>['t'];
+
+function roundTitle(round: GamesPlayedRound, t: Translate): string {
+    if (round.game === 'mood') {
+        return t('Mood weather');
+    }
+
+    if (round.game === 'two_truths') {
+        return t(':count statements', { count: StatementsPerSet });
+    }
+
+    return round.word ?? round.question ?? '—';
+}
 
 function Podium({ leaderboard }: { leaderboard: GamesPlayedLeaderRow[] }) {
     const { t } = useTrans();
@@ -141,7 +171,7 @@ function Round({
                     aria-hidden
                 />
                 <span className="min-w-0 flex-1 truncate font-medium">
-                    {round.word ?? round.question ?? '—'}
+                    {roundTitle(round, t)}
                 </span>
                 <Badge variant="secondary">
                     {outcomeLabel(round.outcome, t)}

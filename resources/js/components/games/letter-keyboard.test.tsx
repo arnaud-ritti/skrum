@@ -116,4 +116,32 @@ describe('LetterKeyboard', () => {
 
         expect(onPick).not.toHaveBeenCalled();
     });
+
+    it('locks every key with the reason above the rows when it is not the viewer turn', () => {
+        const onPick = vi.fn();
+
+        render(
+            <LetterKeyboard
+                layout="qwerty"
+                picked={[]}
+                hits={[]}
+                disabled={false}
+                disabledReason="Inès's turn"
+                onPick={onPick}
+            />,
+        );
+
+        const group = screen.getByRole('group', { name: 'Letters' });
+        const keys = within(group).getAllByRole('button');
+
+        expect(screen.getByText("Inès's turn")).toBeTruthy();
+        expect(
+            keys.every((key) => key.getAttribute('aria-disabled') === 'true'),
+        ).toBe(true);
+        expect(keys[0].className).toContain('is-disabled');
+
+        fireEvent.click(keys[0]);
+
+        expect(onPick).not.toHaveBeenCalled();
+    });
 });

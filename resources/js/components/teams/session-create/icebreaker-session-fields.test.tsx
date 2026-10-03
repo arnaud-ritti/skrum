@@ -126,6 +126,21 @@ describe('the icebreaker form', () => {
         ).toBe('Team members only');
     });
 
+    it('shows the duration and players of each game from the catalogue', () => {
+        open();
+
+        const [draw, gif, hangman, decoded] = games();
+
+        expect(within(draw).getByText('10 min')).toBeTruthy();
+        expect(within(draw).getByText('2-12')).toBeTruthy();
+        expect(within(gif).getByText('5 min')).toBeTruthy();
+        expect(within(gif).getByText('1-30')).toBeTruthy();
+        expect(within(hangman).getByText('5–10 min')).toBeTruthy();
+        expect(within(hangman).getByText('1-30')).toBeTruthy();
+        expect(within(decoded).getByText('5 min')).toBeTruthy();
+        expect(within(decoded).getByText('2-30')).toBeTruthy();
+    });
+
     it('posts the name, the game and the access to the rooms of the team', () => {
         const dialog = open();
 

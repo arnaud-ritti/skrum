@@ -16,7 +16,7 @@ class RevealGifRound
     public function __construct(private PresentGifAnswers $presentGifAnswers) {}
 
     /**
-     * @return array{roundId: string, revealedAt: string, answers: array<int, array<string, mixed>>}
+     * @return array{roundId: string, revealedAt: string, answers: array<int, array<string, mixed>>, authorsHidden: bool}
      */
     public function handle(GameRoom $lockedRoom, GameRound $lockedRound): array
     {
@@ -25,7 +25,8 @@ class RevealGifRound
         $payload = [
             'roundId' => $lockedRound->id,
             'revealedAt' => $lockedRound->revealed_at?->toIso8601String() ?? '',
-            'answers' => $this->presentGifAnswers->revealed($lockedRound->gifAnswers()->get(), $lockedRoom),
+            'answers' => $this->presentGifAnswers->revealed($lockedRound->gifAnswers()->get(), $lockedRoom, $lockedRound->authors_hidden),
+            'authorsHidden' => PresentGifAnswers::authorsComeAtClose($lockedRoom, $lockedRound),
         ];
 
         (new GameRoundRevealed($lockedRoom, $payload))->sendToOthers();

@@ -10,6 +10,7 @@ function setup(props: Partial<DrawingToolbarProps> = {}) {
         onColor: vi.fn(),
         onSize: vi.fn(),
         onUndo: vi.fn(),
+        onRedo: vi.fn(),
         onClear: vi.fn(),
     };
 
@@ -19,6 +20,7 @@ function setup(props: Partial<DrawingToolbarProps> = {}) {
             color="black"
             size={10}
             canUndo
+            canRedo={false}
             {...handlers}
             {...props}
         />,
@@ -95,7 +97,28 @@ describe('DrawingToolbar', () => {
             (bar.getByRole('button', { name: 'Clear' }) as HTMLButtonElement)
                 .disabled,
         ).toBe(false);
-        expect(bar.queryByRole('button', { name: 'Redo' })).toBeNull();
+        expect(
+            (bar.getByRole('button', { name: 'Redo' }) as HTMLButtonElement)
+                .disabled,
+        ).toBe(true);
+    });
+
+    it('redoes what was undone, after the undo key', () => {
+        const { toolbar, onRedo } = setup({ canRedo: true });
+        const bar = within(toolbar);
+        const keys = bar
+            .getAllByRole('button')
+            .map((key) => key.getAttribute('aria-label'));
+        const redo = bar.getByRole('button', { name: 'Redo' });
+
+        expect(keys.indexOf('Redo')).toBe(keys.indexOf('Undo') + 1);
+        expect(redo.getAttribute('aria-keyshortcuts')).toBe(
+            'Meta+Shift+Z Control+Y',
+        );
+
+        fireEvent.click(redo);
+
+        expect(onRedo).toHaveBeenCalledOnce();
     });
 
     it('shows the keys of the pencil and of the eraser and names the keys of undo', () => {

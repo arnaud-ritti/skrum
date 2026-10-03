@@ -148,6 +148,8 @@ it('ends a round once, awarding the points of its rules', function () {
         'word' => 'sprint',
         'winnerPlayerId' => $member->id,
         'leaderPlayerId' => null,
+        'number' => null,
+        'roundsTotal' => null,
         'fakeExtra' => true,
         'points' => [
             ['playerId' => $member->id, 'points' => 7, 'isWin' => true],

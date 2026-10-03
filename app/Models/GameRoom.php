@@ -6,6 +6,7 @@ use App\Concerns\HasSearchColumns;
 use App\Contracts\DeliverySubject;
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
+use App\Enums\GameWordTheme;
 use App\Events\Games\GameRoomChanged;
 use Carbon\CarbonInterface;
 use Database\Factories\GameRoomFactory;
@@ -33,6 +34,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $timer_ends_at
  * @property string|null $current_round_id
  * @property Carbon|null $scores_reset_at
+ * @property array<int, string>|null $word_themes
+ * @property int|null $turn_seconds
+ * @property bool $auto_hints
+ * @property bool $takes_turns
+ * @property int|null $rounds_per_game
+ * @property int $gif_votes
+ * @property bool $gif_authors_hidden
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
@@ -42,6 +50,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'team_id', 'retro_id', 'name', 'created_by_user_id', 'host_player_id', 'game', 'locale',
     'access', 'reactions_enabled', 'guest_token', 'timer_ends_at', 'current_round_id', 'scores_reset_at',
+    'word_themes', 'turn_seconds', 'auto_hints', 'takes_turns', 'rounds_per_game', 'gif_votes', 'gif_authors_hidden',
 ])]
 #[Hidden(['guest_token'])]
 class GameRoom extends Model implements DeliverySubject
@@ -57,6 +66,20 @@ class GameRoom extends Model implements DeliverySubject
     public const MaxOnlinePlayers = 12;
 
     public const KeptRounds = 20;
+
+    public const TurnSeconds = [15, 30, 45, 60, 80, 90, 120, 180];
+
+    public const MaxRoundsPerGame = 20;
+
+    public const MaxGifVotes = 3;
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'auto_hints' => false,
+        'takes_turns' => false,
+        'gif_votes' => 1,
+        'gif_authors_hidden' => false,
+    ];
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
@@ -104,6 +127,25 @@ class GameRoom extends Model implements DeliverySubject
     public function points(): HasMany
     {
         return $this->hasMany(GamePoint::class);
+    }
+
+    /** @return HasMany<GameStatementSet, $this> */
+    public function statementSets(): HasMany
+    {
+        return $this->hasMany(GameStatementSet::class);
+    }
+
+    /**
+     * Unknown values (a theme removed later) are ignored; none means every word.
+     *
+     * @return array<int, GameWordTheme>
+     */
+    public function wordThemes(): array
+    {
+        return array_values(array_filter(array_map(
+            fn (mixed $value): ?GameWordTheme => GameWordTheme::tryFrom((string) $value),
+            $this->word_themes ?? [],
+        )));
     }
 
     public function isIcebreaker(): bool
@@ -207,6 +249,13 @@ class GameRoom extends Model implements DeliverySubject
             'reactions_enabled' => 'boolean',
             'timer_ends_at' => 'datetime',
             'scores_reset_at' => 'datetime',
+            'word_themes' => 'array',
+            'turn_seconds' => 'integer',
+            'auto_hints' => 'boolean',
+            'takes_turns' => 'boolean',
+            'rounds_per_game' => 'integer',
+            'gif_votes' => 'integer',
+            'gif_authors_hidden' => 'boolean',
         ];
     }
 }

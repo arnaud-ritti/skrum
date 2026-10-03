@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { TimeUpBadge } from '@/components/session/session-timer';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
@@ -7,22 +6,21 @@ import { cn } from '@/lib/utils';
 import { DecodedBoard } from './decoded-board';
 import { DrawBoard } from './draw-board';
 import { GifStepLine, useGifStep } from './gif-steps';
+import { GuessWhoBoard } from './guess-who-board';
 import { HangmanBoard } from './hangman-board';
 import { HistoryDrawer } from './history-drawer';
+import { MoodWeatherBoard } from './mood-weather-board';
 import { PassRoundButton } from './pass-round-button';
+import { QuickQuestionBoard } from './quick-question-board';
 import { useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
+import { RoundInfo } from './round-info';
 import { SprintGifBoard } from './sprint-gif-board';
+import { TurnTimer } from './turn-timer';
+import { TwoTruthsBoard } from './two-truths-board';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
-function RoundBoard({
-    round,
-    gifCaption,
-}: {
-    round: GameRound;
-    /** Place left under the chosen GIF of Sprint in one GIF (GM-3). */
-    gifCaption?: ReactNode;
-}) {
+function RoundBoard({ round }: { round: GameRound }) {
     const { t } = useTrans();
 
     switch (round.game) {
@@ -33,7 +31,15 @@ function RoundBoard({
         case 'decoded':
             return <DecodedBoard key={round.id} round={round} />;
         case 'gif':
-            return <SprintGifBoard round={round} caption={gifCaption} />;
+            return <SprintGifBoard round={round} />;
+        case 'two_truths':
+            return <TwoTruthsBoard key={round.id} round={round} />;
+        case 'mood':
+            return <MoodWeatherBoard key={round.id} round={round} />;
+        case 'guess_who':
+            return <GuessWhoBoard key={round.id} round={round} />;
+        case 'quick_question':
+            return <QuickQuestionBoard key={round.id} round={round} />;
         default:
             return (
                 <p className="text-muted-foreground">
@@ -84,15 +90,8 @@ function RoundStatus({ round }: { round: GameRound }) {
     );
 }
 
-export type GameStageProps = {
-    /** Place left above the title for "Round n of m" (GM-2). */
-    roundInfo?: ReactNode;
-    /** Place left under the chosen GIF for its caption (GM-3). */
-    gifCaption?: ReactNode;
-};
-
 /** The centre of a room: the game's name, then the round in play or the end card. */
-export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
+export function GameStage() {
     const { snapshot, lastEnded, serverOffset } = useRoom();
     const { t } = useTrans();
     const gifStep = useGifStep();
@@ -125,7 +124,7 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
         >
             <div className="flex w-full shrink-0 flex-wrap items-end justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-1">
-                    {roundInfo}
+                    {round && <RoundInfo round={round} />}
                     {round && <RoundStatus round={round} />}
                     {gifStep === 3 && <GifStepLine step={3} />}
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -144,7 +143,8 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
                         )}
                     </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+                    {round && <TurnTimer round={round} />}
                     {round && <PassRoundButton round={round} />}
                     <HistoryDrawer />
                 </div>
@@ -156,11 +156,7 @@ export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
             >
                 {announcedOutcome}
             </p>
-            {round ? (
-                <RoundBoard round={round} gifCaption={gifCaption} />
-            ) : (
-                <RoundEndCard />
-            )}
+            {round ? <RoundBoard round={round} /> : <RoundEndCard />}
         </section>
     );
 }

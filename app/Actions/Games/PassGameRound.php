@@ -25,7 +25,11 @@ class PassGameRound
             GameGuard::leaderOrHost($lockedRoom, $lockedRound, $player);
             GameGuard::activeRound($lockedRoom, $lockedRound);
 
-            return $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Passed)
+            $outcome = $lockedRound->keepsFinding() && $lockedRound->hasFinders()
+                ? GameRoundOutcome::Guessed
+                : GameRoundOutcome::Passed;
+
+            return $this->endGameRound->handle($lockedRoom, $lockedRound, $outcome)
                 ?? throw new ConflictHttpException(__('This round is over.'));
         });
     }

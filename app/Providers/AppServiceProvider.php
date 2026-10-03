@@ -25,9 +25,13 @@ use App\Support\Avatars\AvatarStyleCatalogue;
 use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Games\GuessWhoRules;
 use App\Support\Games\HangmanRules;
+use App\Support\Games\MoodWeatherRules;
+use App\Support\Games\QuickQuestionRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
+use App\Support\Games\TwoTruthsRules;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
@@ -66,6 +70,10 @@ class AppServiceProvider extends ServiceProvider
             $app->make(DrawAndGuessRules::class),
             $app->make(DecodedRules::class),
             $app->make(SprintGifRules::class),
+            $app->make(TwoTruthsRules::class),
+            $app->make(MoodWeatherRules::class),
+            $app->make(GuessWhoRules::class),
+            $app->make(QuickQuestionRules::class),
         ]));
         $this->app->singleton(WriteWhiteboardElements::class);
         $this->app->scoped(McpGrantContext::class);

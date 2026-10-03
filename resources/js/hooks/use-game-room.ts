@@ -26,6 +26,11 @@ import type {
     GameRoundEnded,
     GameRoundRevealed,
     GameSnapshot,
+    GameStatementsChanged,
+    GameTurnChanged,
+    GameVotesCounted,
+    GameWordChanged,
+    GameWordFound,
 } from '@/lib/games/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
@@ -215,6 +220,7 @@ export function useGameRoom(
                             playerId: made.playerId,
                             text: made.text,
                         },
+                        misses: made.misses,
                     });
                     break;
                 }
@@ -280,6 +286,36 @@ export function useGameRoom(
                         roundId: payload.roundId as string,
                         playerId: payload.playerId as string,
                         voted: payload.voted as boolean,
+                    });
+                    break;
+                case 'game.turn.changed':
+                    apply({
+                        type: 'turn.changed',
+                        turn: payload as unknown as GameTurnChanged,
+                    });
+                    break;
+                case 'game.statements.changed':
+                    apply({
+                        type: 'statements.changed',
+                        change: payload as unknown as GameStatementsChanged,
+                    });
+                    break;
+                case 'game.votes.counted':
+                    apply({
+                        type: 'votes.counted',
+                        counted: payload as unknown as GameVotesCounted,
+                    });
+                    break;
+                case 'game.word.found':
+                    apply({
+                        type: 'word.found',
+                        found: payload as unknown as GameWordFound,
+                    });
+                    break;
+                case 'game.word.changed':
+                    apply({
+                        type: 'word.changed',
+                        change: payload as unknown as GameWordChanged,
                     });
                     break;
             }

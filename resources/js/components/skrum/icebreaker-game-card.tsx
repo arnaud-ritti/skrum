@@ -2,9 +2,15 @@ import {
     Brush,
     Check,
     Clock,
+    CloudRain,
+    CloudSun,
     Film,
+    MessageCircleQuestion,
     Smile,
+    Sun,
+    UserRoundSearch,
     Users,
+    VenetianMask,
     WholeWord,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -41,8 +47,14 @@ export type IcebreakerGameCardProps = {
     available?: boolean;
     /** Shown when the game is unavailable; a generic reason otherwise. */
     unavailableReason?: string;
-    /** No source on the server today: each line is hidden when absent. */
+    /** `GameCatalogue` (spec §9.1): each line is hidden when absent. */
     durationMin?: number;
+    /** "5–10 min" with `durationMin`. */
+    durationMax?: number;
+    /** "2 min / person": the duration is per speaker. */
+    durationPerPerson?: boolean;
+    /** "3 min · anonymous", beside the duration. */
+    anonymous?: boolean;
     players?: { min: number; max: number };
     participants?: number;
     selected?: boolean;
@@ -58,7 +70,14 @@ export type IcebreakerGameCardProps = {
 
 const colorClasses: Record<
     IcebreakerColor,
-    { art: string; border: string; text: string; letter: string; lie: string }
+    {
+        art: string;
+        border: string;
+        text: string;
+        letter: string;
+        lie: string;
+        onLie: string;
+    }
 > = {
     sun: {
         art: 'bg-skrum-col-sun',
@@ -66,6 +85,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-sun-text',
         letter: 'border-b-skrum-col-sun-text',
         lie: 'bg-skrum-col-sun-text',
+        onLie: 'text-skrum-col-sun',
     },
     apricot: {
         art: 'bg-skrum-col-apricot',
@@ -73,6 +93,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-apricot-text',
         letter: 'border-b-skrum-col-apricot-text',
         lie: 'bg-skrum-col-apricot-text',
+        onLie: 'text-skrum-col-apricot',
     },
     coral: {
         art: 'bg-skrum-col-coral',
@@ -80,6 +101,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-coral-text',
         letter: 'border-b-skrum-col-coral-text',
         lie: 'bg-skrum-col-coral-text',
+        onLie: 'text-skrum-col-coral',
     },
     plum: {
         art: 'bg-skrum-col-plum',
@@ -87,6 +109,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-plum-text',
         letter: 'border-b-skrum-col-plum-text',
         lie: 'bg-skrum-col-plum-text',
+        onLie: 'text-skrum-col-plum',
     },
     iris: {
         art: 'bg-skrum-col-iris',
@@ -94,6 +117,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-iris-text',
         letter: 'border-b-skrum-col-iris-text',
         lie: 'bg-skrum-col-iris-text',
+        onLie: 'text-skrum-col-iris',
     },
     sky: {
         art: 'bg-skrum-col-sky',
@@ -101,6 +125,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-sky-text',
         letter: 'border-b-skrum-col-sky-text',
         lie: 'bg-skrum-col-sky-text',
+        onLie: 'text-skrum-col-sky',
     },
     lagoon: {
         art: 'bg-skrum-col-lagoon',
@@ -108,6 +133,7 @@ const colorClasses: Record<
         text: 'text-skrum-col-lagoon-text',
         letter: 'border-b-skrum-col-lagoon-text',
         lie: 'bg-skrum-col-lagoon-text',
+        onLie: 'text-skrum-col-lagoon',
     },
     moss: {
         art: 'bg-skrum-col-moss',
@@ -115,14 +141,20 @@ const colorClasses: Record<
         text: 'text-skrum-col-moss-text',
         letter: 'border-b-skrum-col-moss-text',
         lie: 'bg-skrum-col-moss-text',
+        onLie: 'text-skrum-col-moss',
     },
 };
 
+/** ScreenIcebreaker's colours; Draw & Guess and Sprint in one GIF take the two left (P27-03). */
 const defaultColors: Record<IcebreakerGame, IcebreakerColor> = {
-    hangman: 'sun',
-    draw: 'sky',
-    gif: 'plum',
-    decoded: 'moss',
+    hangman: 'coral',
+    draw: 'iris',
+    gif: 'apricot',
+    decoded: 'sun',
+    two_truths: 'plum',
+    mood: 'sky',
+    guess_who: 'moss',
+    quick_question: 'lagoon',
 };
 
 const cornerIcons: Record<IcebreakerGame, LucideIcon> = {
@@ -130,6 +162,10 @@ const cornerIcons: Record<IcebreakerGame, LucideIcon> = {
     draw: Brush,
     gif: Film,
     decoded: Smile,
+    two_truths: VenetianMask,
+    mood: CloudSun,
+    guess_who: UserRoundSearch,
+    quick_question: MessageCircleQuestion,
 };
 
 function HangmanArt({ color }: { color: IcebreakerColor }) {
@@ -209,6 +245,87 @@ function DecodedArt() {
     );
 }
 
+function TwoTruthsArt({ color }: { color: IcebreakerColor }) {
+    const { t } = useTrans();
+    const classes = colorClasses[color];
+    const cards = [t('T'), t('L'), t('T')];
+
+    return (
+        <div className="flex gap-1.5">
+            {cards.map((letter, index) => (
+                <span
+                    key={index}
+                    className={cn(
+                        'grid h-9 w-7.5 place-items-center rounded-md border text-sm font-bold',
+                        index === 1
+                            ? cn('rotate-6', classes.lie, classes.onLie)
+                            : cn('bg-card', classes.border, classes.text),
+                    )}
+                >
+                    {letter}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+function MoodArt({ color }: { color: IcebreakerColor }) {
+    return (
+        <div className={cn('flex items-end gap-2', colorClasses[color].text)}>
+            <Sun className="size-7" />
+            <CloudSun className="size-9" />
+            <CloudRain className="size-7" />
+        </div>
+    );
+}
+
+function GuessWhoArt({ color }: { color: IcebreakerColor }) {
+    const classes = colorClasses[color];
+
+    return (
+        <div className="relative flex items-center">
+            {[0, 1].map((avatar) => (
+                <span
+                    key={avatar}
+                    className={cn(
+                        'size-10 rounded-full border-2 bg-card',
+                        classes.border,
+                        avatar === 1 && '-ml-3',
+                    )}
+                />
+            ))}
+            <span
+                className={cn(
+                    'absolute inset-0 grid place-items-center font-display text-2xl font-bold',
+                    classes.text,
+                )}
+            >
+                ?
+            </span>
+        </div>
+    );
+}
+
+function QuickQuestionArt({ color }: { color: IcebreakerColor }) {
+    const classes = colorClasses[color];
+
+    return (
+        <span
+            className={cn(
+                'flex h-10 items-center gap-1.5 rounded-xl rounded-bl-none border bg-card px-4',
+                classes.border,
+            )}
+        >
+            {[0, 1, 2].map((dot) => (
+                <span
+                    key={dot}
+                    className={cn('size-2 rounded-full', classes.lie)}
+                />
+            ))}
+        </span>
+    );
+}
+
 function Art({
     game,
     color,
@@ -226,6 +343,22 @@ function Art({
 
     if (game === 'gif') {
         return <GifArt color={color} />;
+    }
+
+    if (game === 'two_truths') {
+        return <TwoTruthsArt color={color} />;
+    }
+
+    if (game === 'mood') {
+        return <MoodArt color={color} />;
+    }
+
+    if (game === 'guess_who') {
+        return <GuessWhoArt color={color} />;
+    }
+
+    if (game === 'quick_question') {
+        return <QuickQuestionArt color={color} />;
     }
 
     return <DecodedArt />;
@@ -251,6 +384,27 @@ export function unavailabilityReason(
     return null;
 }
 
+function durationLine(
+    t: (key: string, replacements?: Record<string, string | number>) => string,
+    durationMin: number,
+    durationMax: number | undefined,
+    durationPerPerson: boolean,
+    anonymous: boolean,
+): string {
+    const duration =
+        durationMax !== undefined
+            ? t(':min–:max min', { min: durationMin, max: durationMax })
+            : durationPerPerson
+              ? t(':count min / person', { count: durationMin })
+              : t(':count min', { count: durationMin });
+
+    if (!anonymous) {
+        return duration;
+    }
+
+    return `${duration} · ${t('anonymous')}`;
+}
+
 export function IcebreakerGameCard({
     game,
     title,
@@ -259,6 +413,9 @@ export function IcebreakerGameCard({
     available,
     unavailableReason,
     durationMin,
+    durationMax,
+    durationPerPerson = false,
+    anonymous = false,
     players,
     participants,
     selected = false,
@@ -366,7 +523,7 @@ export function IcebreakerGameCard({
                 )}
                 <span
                     id={titleId}
-                    className="truncate text-sm leading-snug font-semibold"
+                    className="line-clamp-2 text-sm leading-snug font-semibold break-words"
                 >
                     {title}
                 </span>
@@ -381,12 +538,18 @@ export function IcebreakerGameCard({
                 {hasMeta && (
                     <span
                         id={`${id}-meta`}
-                        className="mt-1 flex gap-3 text-xs font-semibold text-muted-foreground"
+                        className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-semibold text-muted-foreground"
                     >
                         {durationMin !== undefined && (
                             <span className="inline-flex items-center gap-1 whitespace-nowrap">
                                 <Clock className="size-3.5" aria-hidden />
-                                {t(':count min', { count: durationMin })}
+                                {durationLine(
+                                    t,
+                                    durationMin,
+                                    durationMax,
+                                    durationPerPerson,
+                                    anonymous,
+                                )}
                             </span>
                         )}
                         {players !== undefined && (

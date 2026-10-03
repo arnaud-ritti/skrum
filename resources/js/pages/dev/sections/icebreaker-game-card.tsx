@@ -7,6 +7,7 @@ import {
 } from '@/components/skrum/icebreaker-game-card';
 import type { IcebreakerGame } from '@/components/skrum/icebreaker-game-card';
 import { useTrans } from '@/hooks/use-trans';
+import { GameCatalogue } from '@/lib/games/catalogue';
 
 export const group: BenchGroup = 'skrum';
 
@@ -29,40 +30,70 @@ export default function IcebreakerGameCardSection() {
         game: 'hangman' as const,
         title: t('Hangman'),
         pitch: t("Guess the team's word, letter by letter."),
-        color: 'sun' as const,
-        durationMin: 5,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.hangman,
         participants: 8,
     };
     const draw = {
         game: 'draw' as const,
         title: t('Draw & Guess'),
         pitch: t('One draws, the others guess within 60 seconds.'),
-        color: 'sky' as const,
-        durationMin: 10,
-        players: { min: 3, max: 12 },
+        ...GameCatalogue.draw,
         participants: 8,
     };
     const gif = {
         game: 'gif' as const,
         title: t('Sprint in one GIF'),
         pitch: t('Sum up the sprint with a single GIF.'),
-        color: 'lagoon' as const,
-        durationMin: 10,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.gif,
         participants: 8,
     };
     const decoded = {
         game: 'decoded' as const,
         title: t('Decoded'),
         pitch: t('A film, a place or a project hidden in 3 emojis.'),
-        color: 'apricot' as const,
-        durationMin: 5,
-        players: { min: 2, max: 30 },
+        ...GameCatalogue.decoded,
         participants: 8,
     };
 
-    const games = [hangman, draw, gif, decoded];
+    const twoTruths = {
+        game: 'two_truths' as const,
+        title: t('Two truths and a lie'),
+        pitch: t('Everyone prepares three statements, one lie: find it.'),
+        ...GameCatalogue.two_truths,
+        participants: 8,
+    };
+    const mood = {
+        game: 'mood' as const,
+        title: t('Mood weather'),
+        pitch: t('Your mood as a weather, anonymously.'),
+        ...GameCatalogue.mood,
+        participants: 8,
+    };
+    const guessWho = {
+        game: 'guess_who' as const,
+        title: t('Guess who?'),
+        pitch: t('Everyone answers, one answer is drawn: guess who wrote it.'),
+        ...GameCatalogue.guess_who,
+        participants: 8,
+    };
+    const quickQuestion = {
+        game: 'quick_question' as const,
+        title: t('Quick question'),
+        pitch: t('One question, everyone answers aloud in turn.'),
+        ...GameCatalogue.quick_question,
+        participants: 8,
+    };
+
+    const games = [
+        hangman,
+        draw,
+        gif,
+        decoded,
+        twoTruths,
+        mood,
+        guessWho,
+        quickQuestion,
+    ];
 
     return (
         <div className="flex flex-col gap-8">
@@ -135,19 +166,17 @@ export default function IcebreakerGameCardSection() {
             </State>
             <State label={t('In play')}>
                 <IcebreakerGameGrid className="max-w-80 grid-cols-2 gap-3 sm:grid-cols-2">
-                    <IcebreakerGameCard
-                        game="hangman"
-                        title={t('Hangman')}
-                        compact
-                        selected
-                        inPlay
-                    />
-                    <IcebreakerGameCard
-                        game="draw"
-                        title={t('Draw & Guess')}
-                        compact
-                        inPlay
-                    />
+                    {games.map((game) => (
+                        <IcebreakerGameCard
+                            key={game.game}
+                            {...GameCatalogue[game.game]}
+                            game={game.game}
+                            title={game.title}
+                            compact
+                            selected={game.game === 'hangman'}
+                            inPlay
+                        />
+                    ))}
                 </IcebreakerGameGrid>
             </State>
             <State label={t('Choose an icebreaker')}>
@@ -156,12 +185,6 @@ export default function IcebreakerGameCardSection() {
                         <IcebreakerGameCard
                             key={game.game}
                             {...game}
-                            participants={game.game === 'gif' ? 1 : 8}
-                            players={
-                                game.game === 'gif'
-                                    ? { min: 3, max: 15 }
-                                    : game.players
-                            }
                             selected={chosen === game.game}
                             onSelect={setChosen}
                         />

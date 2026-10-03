@@ -63,6 +63,24 @@ interface GameRules
     public function outcomeOnNextRound(GameRound $round): ?GameRoundOutcome;
 
     /**
+     * Whether this room plays the game in turns: a round then starts with
+     * the order the host sends.
+     */
+    public function takesTurns(GameRoom $room): bool;
+
+    /**
+     * Whether the room's time per turn applies: to each turn of a game in
+     * turns, else to the round as a whole.
+     */
+    public function timesTurns(): bool;
+
+    /**
+     * The current turn is over (time, its player, or the host): the outcome
+     * that ends the round, or null when the rules moved to the next turn.
+     */
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome;
+
+    /**
      * One entry per player who acted in the ended round, keyed by player id.
      *
      * @return array<string, array{points: int, isWin: bool}>

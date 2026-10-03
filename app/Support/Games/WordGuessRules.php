@@ -110,6 +110,21 @@ abstract class WordGuessRules implements GameRules
         return null;
     }
 
+    public function takesTurns(GameRoom $room): bool
+    {
+        return false;
+    }
+
+    public function timesTurns(): bool
+    {
+        return true;
+    }
+
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome
+    {
+        return GameRoundOutcome::TimedOut;
+    }
+
     /**
      * The leader always took part; every guesser gets a row, and only a
      * guessed round pays: the winner by hints used, the leader a flat bonus.

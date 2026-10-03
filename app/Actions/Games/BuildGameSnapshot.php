@@ -6,6 +6,7 @@ use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Support\EmojibaseLocale;
+use App\Support\Games\GameRoomSettings;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Sessions\JoinCodes;
 
@@ -17,6 +18,8 @@ use App\Support\Sessions\JoinCodes;
  *         game: string,
  *         locale: string,
  *         access: string,
+ *         reactionsEnabled: bool,
+ *         settings: array{wordThemes: array<int, string>, turnSeconds: ?int, autoHints: bool, takesTurns: bool, roundsPerGame: ?int, gifVotes: int, gifAuthorsHidden: bool},
  *         timerEndsAt: ?string,
  *         isHost: bool,
  *         canManage: bool,
@@ -33,6 +36,7 @@ use App\Support\Sessions\JoinCodes;
  *     players: array<int, array{id: string, presenceId: string, name: string, avatarUrl: string, isGuest: bool, presence: int}>,
  *     games: array<int, array{value: string, label: string, available: bool}>,
  *     round: ?array<string, mixed>,
+ *     truthSets: array{ready: array<int, string>, mine: array{statements: array<int, string>, lieIndex: int, played: bool}|null}|null,
  *     history: array<int, array<string, mixed>>,
  *     links: array{team: ?string, retro: ?string},
  *     emojiData: array{baseUrl: string, locale: string},
@@ -53,6 +57,7 @@ class BuildGameSnapshot
         private RoomLeaderboard $roomLeaderboard,
         private GameRoomShares $gameRoomShares,
         private JoinCodes $joinCodes,
+        private PresentStatementSets $presentStatementSets,
     ) {}
 
     /**
@@ -79,6 +84,7 @@ class BuildGameSnapshot
                 'locale' => $room->locale,
                 'access' => $room->access->value,
                 'reactionsEnabled' => $room->reactions_enabled,
+                'settings' => GameRoomSettings::present($room),
                 'timerEndsAt' => $room->effectiveTimerEndsAt()?->toIso8601String(),
                 'isHost' => $isHost,
                 'canManage' => $isManager,
@@ -99,6 +105,7 @@ class BuildGameSnapshot
             'players' => $room->players->map(fn (GamePlayer $player): array => $this->presentGamePlayer->handle($player))->values()->all(),
             'games' => $this->gameRulesRegistry->options($room),
             'round' => $round === null ? null : $this->presentGameRound->handle($round, $room, $viewer),
+            'truthSets' => $this->presentStatementSets->handle($room, $viewer),
             'history' => $this->presentGameRoundHistory->forRoom($room),
             'links' => [
                 'team' => $isStandalone && ! $isGuest ? route('teams.show', [$room->team->workspace, $room->team]) : null,

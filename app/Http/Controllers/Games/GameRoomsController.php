@@ -11,6 +11,7 @@ use App\Events\Games\GameRoomDeleted;
 use App\Http\Controllers\Controller;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Support\Games\GameRoomSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
@@ -41,17 +42,21 @@ class GameRoomsController extends Controller
 
         $validated = $request->validate($room->isIcebreaker()
             ? [
-                'locale' => ['required', 'string', $locales],
+                'locale' => [Rule::requiredIf(! $request->hasAny(GameRoomSettings::Keys)), 'string', $locales],
                 'name' => ['prohibited'],
                 'access' => ['prohibited'],
                 'reactions_enabled' => ['prohibited'],
+                ...GameRoomSettings::rules(),
             ]
             : [
                 'name' => ['sometimes', 'required', 'string', 'max:60'],
                 'access' => ['sometimes', 'required', Rule::enum(GameRoomAccess::class)],
                 'locale' => ['sometimes', 'required', 'string', $locales],
                 'reactions_enabled' => ['sometimes', 'boolean'],
+                ...GameRoomSettings::rules(),
             ]);
+
+        $validated = GameRoomSettings::normalise($validated);
 
         DB::transaction(function () use ($room, $player, $validated, $announceTeamGameRoom): void {
             $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();

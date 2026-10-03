@@ -2,7 +2,8 @@
 
 namespace App\Support\Games;
 
-use App\Actions\Games\PickGifQuestion;
+use App\Actions\Games\GameGuard;
+use App\Actions\Games\PickRoundQuestion;
 use App\Actions\Games\PresentGifAnswers;
 use App\Actions\Games\RevealGifRound;
 use App\Enums\GameKind;
@@ -13,20 +14,22 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Support\Gifs\GifCatalog;
 use Carbon\CarbonInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Two stages inside one active round: answering until the reveal, then a
  * voting window until the close. Votes stay secret until the round ends.
  */
-class SprintGifRules implements GameRules
+class SprintGifRules implements AsksQuestions, ClosesVoting, GameRules, RevealsInStages
 {
     public const PointsPerVote = 2;
 
     public function __construct(
         private GifCatalog $gifCatalog,
-        private PickGifQuestion $pickGifQuestion,
+        private PickRoundQuestion $pickRoundQuestion,
         private PresentGifAnswers $presentGifAnswers,
         private RevealGifRound $revealGifRound,
+        private GameWordBook $gameWordBook,
     ) {}
 
     public function kind(): GameKind
@@ -50,7 +53,47 @@ class SprintGifRules implements GameRules
     public function prepare(GameRoom $room, GameRound $round, array $input): void
     {
         $round->word = null;
-        $round->question = $this->pickGifQuestion->handle($room);
+        $round->question = $this->pickRoundQuestion->handle($room, $this->questions($room));
+        $round->votes_allowed = $room->gif_votes;
+        $round->authors_hidden = $room->gif_authors_hidden;
+    }
+
+    public function reveal(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $actor): ?GameRoundOutcome
+    {
+        GameGuard::host($lockedRoom, $actor);
+
+        if ($lockedRound->revealed_at !== null) {
+            throw new ConflictHttpException(__('The GIFs are already revealed.'));
+        }
+
+        $this->revealGifRound->handle($lockedRoom, $lockedRound);
+
+        return null;
+    }
+
+    public function close(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $actor): GameRoundOutcome
+    {
+        GameGuard::host($lockedRoom, $actor);
+
+        if ($lockedRound->revealed_at === null) {
+            throw new ConflictHttpException(__('Voting has not started.'));
+        }
+
+        return GameRoundOutcome::Revealed;
+    }
+
+    public function questions(GameRoom $room): array
+    {
+        return $this->gameWordBook->questions($room->locale);
+    }
+
+    /**
+     * Only until the first answer: afterwards the answers were chosen for
+     * the question as it stands.
+     */
+    public function questionLocked(GameRound $round): bool
+    {
+        return $round->revealed_at !== null || $round->gifAnswers()->exists();
     }
 
     public function presentActive(GameRound $round, GameRoom $room, ?GamePlayer $viewer): array
@@ -70,16 +113,22 @@ class SprintGifRules implements GameRules
                 'answers' => $this->presentGifAnswers->pending($answers),
                 'voters' => [],
                 'myVote' => null,
+                'myVotes' => [],
+                'votesAllowed' => $round->votes_allowed,
             ];
         }
 
         $votes = $round->gifVotes()->get(['voter_player_id', 'answer_id']);
+        $myVotes = $viewer === null ? [] : $votes->where('voter_player_id', $viewer->id)->pluck('answer_id')->sort()->values()->all();
 
         return [
             ...$state,
-            'answers' => $this->presentGifAnswers->revealed($answers, $room),
-            'voters' => $votes->pluck('voter_player_id')->sort()->values()->all(),
-            'myVote' => $viewer === null ? null : $votes->firstWhere('voter_player_id', $viewer->id)?->answer_id,
+            'answers' => $this->presentGifAnswers->revealed($answers, $room, $round->authors_hidden),
+            'voters' => $votes->pluck('voter_player_id')->unique()->sort()->values()->all(),
+            'myVote' => $myVotes[0] ?? null,
+            'myVotes' => $myVotes,
+            'votesAllowed' => $round->votes_allowed,
+            'authorsHidden' => PresentGifAnswers::authorsComeAtClose($room, $round),
         ];
     }
 
@@ -123,10 +172,29 @@ class SprintGifRules implements GameRules
         return $round->revealed_at === null ? null : GameRoundOutcome::Revealed;
     }
 
+    public function takesTurns(GameRoom $room): bool
+    {
+        return false;
+    }
+
     /**
-     * Every author earns 2 points per favourite vote received; everyone who
-     * answered or voted gets a row. On anonymous retros a vote would tie a GIF
-     * to its author through the points, so every row is 0 there.
+     * The stages follow the room timer: no deadline is ever set per turn.
+     */
+    public function timesTurns(): bool
+    {
+        return false;
+    }
+
+    public function expireTurn(GameRoom $room, GameRound $round): ?GameRoundOutcome
+    {
+        return null;
+    }
+
+    /**
+     * Every author earns 2 points per favourite vote received, and the authors
+     * of the most-voted GIF (one vote at least) win; everyone who answered or
+     * voted gets a row. On anonymous retros a vote would tie a GIF to its
+     * author through the points, so every row is 0 there and no one wins.
      */
     public function points(GameRound $round, GameRoom $room): array
     {
@@ -136,13 +204,14 @@ class SprintGifRules implements GameRules
 
         $awardsPoints = ! PresentGifAnswers::hidesAuthors($room);
         $rows = [];
+        $votesByAuthor = $round->gifAnswers()->withCount('votes')->get()
+            ->mapWithKeys(fn (GameGifAnswer $answer): array => [$answer->player_id => (int) $answer->getAttribute('votes_count')]);
+        $topVotes = (int) $votesByAuthor->max();
 
-        foreach ($round->gifAnswers()->withCount('votes')->get() as $answer) {
-            $votes = (int) $answer->getAttribute('votes_count');
-
-            $rows[$answer->player_id] = [
+        foreach ($votesByAuthor as $authorId => $votes) {
+            $rows[$authorId] = [
                 'points' => $awardsPoints ? $votes * self::PointsPerVote : 0,
-                'isWin' => false,
+                'isWin' => $awardsPoints && $topVotes > 0 && $votes === $topVotes,
             ];
         }
 

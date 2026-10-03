@@ -1,4 +1,11 @@
-import { Eraser, PaintBucket, Pencil, Trash2, Undo2 } from 'lucide-react';
+import {
+    Eraser,
+    PaintBucket,
+    Pencil,
+    Redo2,
+    Trash2,
+    Undo2,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -25,12 +32,15 @@ export type DrawingToolbarProps = {
     color: DrawingColor;
     size: DrawingSize;
     canUndo: boolean;
+    /** The drawer undid something since their last stroke (spec §6.15). */
+    canRedo: boolean;
     /** On a phone: larger keys, and the colours in a popover. */
     compact?: boolean;
     onTool: (tool: CanvasTool) => void;
     onColor: (color: DrawingColor) => void;
     onSize: (size: DrawingSize) => void;
     onUndo: () => void;
+    onRedo: () => void;
     onClear: () => void;
     className?: string;
 };
@@ -64,12 +74,21 @@ const focusClass =
 const activeClass =
     'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset';
 
-function modifierKey(): string {
+function isApple(): boolean {
     if (typeof navigator === 'undefined') {
-        return 'Ctrl';
+        return false;
     }
 
-    return /mac|iphone|ipad/i.test(navigator.userAgent) ? '⌘' : 'Ctrl';
+    return /mac|iphone|ipad/i.test(navigator.userAgent);
+}
+
+function modifierKey(): string {
+    return isApple() ? '⌘' : 'Ctrl';
+}
+
+/** ⌘⇧Z on a Mac, Ctrl+Y elsewhere: the redo key each system teaches. */
+function redoShortcut(): string[] {
+    return isApple() ? ['⌘', '⇧', 'Z'] : ['Ctrl', 'Y'];
 }
 
 function Separator() {
@@ -139,11 +158,13 @@ export function DrawingToolbar({
     color,
     size,
     canUndo,
+    canRedo,
     compact = false,
     onTool,
     onColor,
     onSize,
     onUndo,
+    onRedo,
     onClear,
     className,
 }: DrawingToolbarProps) {
@@ -379,6 +400,16 @@ export function DrawingToolbar({
                 onClick={onUndo}
             >
                 <Undo2 aria-hidden />
+            </ToolKey>
+            <ToolKey
+                label={t('Redo')}
+                disabled={!canRedo}
+                compact={compact}
+                shortcut={redoShortcut()}
+                keyShortcuts="Meta+Shift+Z Control+Y"
+                onClick={onRedo}
+            >
+                <Redo2 aria-hidden />
             </ToolKey>
             <Button
                 type="button"

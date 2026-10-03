@@ -8,6 +8,7 @@ import { ClueEditor } from './clue-editor';
 import { ClueRow } from './clue-row';
 import { useHasRightColumn } from './game-layout';
 import { GuessChat } from './guess-chat';
+import { AutoHintCountdown } from './auto-hint-countdown';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
 import { useRoom } from './room-context';
@@ -60,7 +61,11 @@ export function DecodedBoard({ round }: { round: GameRound }) {
                         : t(':count letters', { count: letters })}
                 </Badge>
             </CluePuzzle>
-            <MaskedWord mask={mask} maxHints={round.maxHints ?? 0} />
+            <MaskedWord
+                mask={mask}
+                maxHints={round.maxHints ?? 0}
+                footnote={<AutoHintCountdown round={round} />}
+            />
             {!hasRightColumn && (
                 <GuessChat
                     fieldFirst

@@ -11,6 +11,7 @@ use App\Models\GameRound;
 use App\Support\Gifs\Gif;
 use App\Support\Gifs\GifCatalog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -22,32 +23,38 @@ class SetGifAnswer
     ) {}
 
     /**
-     * The GIF is looked up before the locks are taken (a provider call can
-     * take seconds); the round is checked again once locked.
+     * A new GIF is looked up before the locks are taken (a provider call can
+     * take seconds); the round is checked again once locked. A blank caption
+     * is stored as none; without one ($keepsCaption) the stored one stays.
      *
-     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}}
+     * @return array{id: string, gif: array{id: string, previewUrl: string, url: string}, caption: ?string}
      */
-    public function handle(GameRoom $room, GameRound $round, GamePlayer $player, string $gifId): array
+    public function handle(GameRoom $room, GameRound $round, GamePlayer $player, string $gifId, ?string $caption = null, bool $keepsCaption = false): array
     {
         self::guard($room, $round);
 
-        $gif = $this->gifCatalog->attempt(
-            fn (): ?Gif => $this->gifCatalog->resolve($gifId),
-            __('GIF search is unavailable.'),
-        );
+        $isSameGif = GameGifAnswer::query()
+            ->where('game_round_id', $round->id)
+            ->where('player_id', $player->id)
+            ->where('gif_id', $gifId)
+            ->exists();
 
-        if ($gif === null) {
-            throw ValidationException::withMessages(['gif_id' => __('This GIF could not be found.')]);
+        if (! $isSameGif) {
+            $this->ensureGifExists($gifId);
         }
 
-        return DB::transaction(function () use ($room, $round, $player, $gifId): array {
+        $changes = $keepsCaption
+            ? ['gif_id' => $gifId]
+            : ['gif_id' => $gifId, 'caption' => Str::of((string) $caption)->trim()->toString() ?: null];
+
+        return DB::transaction(function () use ($room, $round, $player, $changes): array {
             [$lockedRoom, $lockedRound] = LockGameRound::handle($room, $round);
 
             self::guard($lockedRoom, $lockedRound);
 
             $answer = GameGifAnswer::query()->updateOrCreate(
                 ['game_round_id' => $lockedRound->id, 'player_id' => $player->id],
-                ['gif_id' => $gifId],
+                $changes,
             );
 
             if ($answer->wasRecentlyCreated) {
@@ -56,6 +63,18 @@ class SetGifAnswer
 
             return $this->presentGifAnswers->mine($answer);
         });
+    }
+
+    private function ensureGifExists(string $gifId): void
+    {
+        $gif = $this->gifCatalog->attempt(
+            fn (): ?Gif => $this->gifCatalog->resolve($gifId),
+            __('GIF search is unavailable.'),
+        );
+
+        if ($gif === null) {
+            throw ValidationException::withMessages(['gif_id' => __('This GIF could not be found.')]);
+        }
     }
 
     /**

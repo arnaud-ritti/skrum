@@ -50,6 +50,11 @@ export function useHasRightColumn(): boolean {
 const LeftColumnFromRem = 80;
 const PhoneUnderRem = 48;
 
+/** True under the width of a phone, where a column's extras fold into the stage. */
+export function useIsPhone(): boolean {
+    return !useMinWidth(PhoneUnderRem);
+}
+
 /** False where the left column is a sheet: the stage of a retro shows the game cards to a player only beside the stage. */
 export function useHasLeftColumn(): boolean {
     return useMinWidth(LeftColumnFromRem);
@@ -101,7 +106,7 @@ export function GameLayout({
     const isWideForLeft = useMinWidth(LeftColumnFromRem);
     const [panelId, setPanelId] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
-    const isPhone = !useMinWidth(PhoneUnderRem);
+    const isPhone = useIsPhone();
     const [footer, setFooter] = useState<HTMLElement | null>(null);
 
     const hasLeftColumn = left !== undefined && isWideForLeft;

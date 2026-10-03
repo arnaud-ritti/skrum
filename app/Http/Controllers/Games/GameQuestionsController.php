@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Games;
 
-use App\Actions\Games\ChangeGifQuestion;
+use App\Actions\Games\ChangeRoundQuestion;
 use App\Actions\Games\GameGuard;
 use App\Http\Controllers\Controller;
 use App\Models\GamePlayer;
@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 class GameQuestionsController extends Controller
 {
-    public function update(Request $request, GameRoom $room, GameRound $round, ChangeGifQuestion $changeGifQuestion): JsonResponse
+    public function update(Request $request, GameRoom $room, GameRound $round, ChangeRoundQuestion $changeRoundQuestion): JsonResponse
     {
         $player = GamePlayer::current($request);
 
@@ -25,7 +25,7 @@ class GameQuestionsController extends Controller
         ]);
 
         return response()->json([
-            'question' => $changeGifQuestion->handle($room, $round, $player, $validated['text'] ?? null),
+            'question' => $changeRoundQuestion->handle($room, $round, $player, $validated['text'] ?? null),
         ]);
     }
 }

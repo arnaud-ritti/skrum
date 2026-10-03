@@ -15,7 +15,8 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * One favourite per player, replaceable until the close. Only "voted" is
+ * Up to the round's budget of votes, one per GIF; with one vote, a new vote
+ * replaces it. The budget is counted under the round lock. Only "voted" is
  * broadcast: whom a player voted for stays secret until the round ends.
  */
 class CastGifVote
@@ -42,12 +43,35 @@ class CastGifVote
                 throw new AuthorizationException(__('You cannot vote for your own GIF.'));
             }
 
-            $vote = GameGifVote::query()->updateOrCreate(
-                ['game_round_id' => $lockedRound->id, 'voter_player_id' => $voter->id],
-                ['answer_id' => $answer->id],
-            );
+            $myVotes = GameGifVote::query()
+                ->where('game_round_id', $lockedRound->id)
+                ->where('voter_player_id', $voter->id)
+                ->get();
 
-            if ($vote->wasRecentlyCreated) {
+            if ($myVotes->contains('answer_id', $answer->id)) {
+                return;
+            }
+
+            if ($lockedRound->votes_allowed > 1 && $myVotes->count() >= $lockedRound->votes_allowed) {
+                throw new ConflictHttpException(__('You have used all your votes.'));
+            }
+
+            if ($lockedRound->votes_allowed <= 1) {
+                GameGifVote::query()->updateOrCreate(
+                    ['game_round_id' => $lockedRound->id, 'voter_player_id' => $voter->id],
+                    ['answer_id' => $answer->id],
+                );
+            }
+
+            if ($lockedRound->votes_allowed > 1) {
+                GameGifVote::query()->create([
+                    'game_round_id' => $lockedRound->id,
+                    'voter_player_id' => $voter->id,
+                    'answer_id' => $answer->id,
+                ]);
+            }
+
+            if ($myVotes->isEmpty()) {
                 (new GameVoteChanged($lockedRoom, $lockedRound->id, $voter->id, true))->sendToOthers();
             }
         });

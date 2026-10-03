@@ -98,7 +98,7 @@ it('shows who answered but not what before the reveal', function () {
     expect($hostView['answers'])->toBe([['playerId' => $member->id, 'answered' => true]])
         ->and($hostView['myAnswer'])->toBeNull()
         ->and(gamePayloadJson($hostView))->not->toContain('party')
-        ->and($memberView['myAnswer'])->toBe(['id' => $answer->id, 'gif' => gameGifPayload('party')]);
+        ->and($memberView['myAnswer'])->toBe(['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null]);
 });
 
 it('shows the GIFs with their authors, the voters and my vote after the reveal, without counts', function () {
@@ -114,6 +114,7 @@ it('shows the GIFs with their authors, the voters and my vote after the reveal, 
     $expected = collect([$mine, $theirs])->sortBy('id')->map(fn (GameGifAnswer $answer): array => [
         'id' => $answer->id,
         'gif' => gameGifPayload($answer->gif_id),
+        'caption' => null,
         'playerId' => $answer->player_id,
     ])->values()->all();
 
@@ -149,22 +150,24 @@ it('gives authors 2 points per favourite vote at close and 0 to the others who t
     $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
 
     expect($payload['points'])->toEqualCanonicalizing([
-        ['playerId' => $author->id, 'points' => 4, 'isWin' => false],
+        ['playerId' => $author->id, 'points' => 4, 'isWin' => true],
         ['playerId' => $host->id, 'points' => 0, 'isWin' => false],
         ['playerId' => $voter->id, 'points' => 0, 'isWin' => false],
     ])
-        ->and(array_keys($payload))->toBe(['roundId', 'outcome', 'word', 'winnerPlayerId', 'leaderPlayerId', 'question', 'answers', 'points'])
+        ->and(array_keys($payload))->toBe(['roundId', 'outcome', 'word', 'winnerPlayerId', 'leaderPlayerId', 'number', 'roundsTotal', 'question', 'answers', 'points'])
         ->and($payload['word'])->toBeNull()
         ->and($payload['question'])->toBe('How did the sprint feel?')
         ->and(collect($payload['answers'])->firstWhere('id', $popular->id))->toBe([
             'id' => $popular->id,
             'gif' => gameGifPayload('party'),
+            'caption' => null,
             'playerId' => $author->id,
             'votes' => 2,
+            'rank' => 1,
         ])
         ->and(collect($payload['answers'])->firstWhere('id', $unloved->id)['votes'])->toBe(0)
         ->and(GamePoint::query()->where('player_id', $watcher->id)->exists())->toBeFalse()
-        ->and(GamePoint::query()->where('is_win', true)->exists())->toBeFalse()
+        ->and(GamePoint::query()->where('is_win', true)->sole()->player_id)->toBe($author->id)
         ->and(GamePoint::query()->where('player_id', $author->id)->sole()->game)->toBe(GameKind::SprintGif);
 });
 
@@ -243,7 +246,7 @@ it('shows the closed answers in the round detail', function () {
         ->assertOk()
         ->assertJsonPath('question', 'How did the sprint feel?')
         ->assertJsonPath('outcome', 'revealed')
-        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'playerId' => $member->id, 'votes' => 1]]);
+        ->assertJsonPath('answers', [['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null, 'playerId' => $member->id, 'votes' => 1, 'rank' => 1]]);
 });
 
 it('reveals instead of closing when the timer runs out before the reveal', function () {

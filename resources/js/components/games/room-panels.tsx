@@ -1,15 +1,26 @@
-import { MessagesSquare, Shapes, Trophy, Users } from 'lucide-react';
-import type { ReactNode } from 'react';
+import {
+    ListOrdered,
+    MessagesSquare,
+    Shapes,
+    SlidersHorizontal,
+    Trophy,
+    Users,
+} from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
+import { decodedPuzzles } from '@/lib/games/decoded';
 import type { GameRoundEnded, GameSnapshot } from '@/lib/games/types';
+import { DecodedPuzzles } from './decoded-puzzles';
 import {
     useHasLeftColumn,
     useHasRightColumn,
+    useIsPhone,
     type GameLayoutPanel,
     type GameLayoutProps,
 } from './game-layout';
 import { GamePicker } from './game-picker';
+import { GameSettingsCard } from './game-settings-card';
 import { hasPlayersOnLeft, RoomPlayersSide, RoomSidebar } from './room-sidebar';
+import { TurnOrder } from './turn-order';
 
 type RoomPanelsOptions = {
     snapshot: GameSnapshot;
@@ -20,11 +31,6 @@ type RoomPanelsOptions = {
      * the facilitator's alone.
      */
     watchChoice?: boolean;
-    /** Places left for later features; nothing fills them today. */
-    settingsCard?: ReactNode;
-    turnOrder?: ReactNode;
-    gifCaption?: ReactNode;
-    gifPodium?: ReactNode;
 };
 
 type RoomPanels = Required<Pick<GameLayoutProps, 'variant'>> &
@@ -40,25 +46,19 @@ export function useRoomPanels({
     snapshot,
     lastEnded,
     watchChoice = false,
-    settingsCard,
-    turnOrder,
-    gifCaption,
-    gifPodium,
 }: RoomPanelsOptions): RoomPanels {
     const { t } = useTrans();
     const hasLeftColumn = useHasLeftColumn();
     const hasRightColumn = useHasRightColumn();
+    const isPhone = useIsPhone();
     const { room, round } = snapshot;
     const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
     const playersOnLeft = hasPlayersOnLeft(room.game);
     const isDraw = room.game === 'draw';
+    const settingsCard = <GameSettingsCard />;
+    const turnOrder = <TurnOrder />;
     const side = (
-        <RoomSidebar
-            highlightPlayerId={winnerPlayerId}
-            turnOrder={turnOrder}
-            gifPodium={gifPodium}
-            gifCaption={gifCaption}
-        />
+        <RoomSidebar highlightPlayerId={winnerPlayerId} turnOrder={turnOrder} />
     );
     const choice: GameLayoutPanel | undefined = room.isHost
         ? {
@@ -95,7 +95,7 @@ export function useRoomPanels({
             variant: 'players',
             left: {
                 id: 'players',
-                label: isDraw ? t('Players') : t('Participants'),
+                label: room.game === 'gif' ? t('Participants') : t('Players'),
                 icon: Users,
                 content: (
                     <RoomPlayersSide
@@ -110,19 +110,76 @@ export function useRoomPanels({
         };
     }
 
+    /**
+     * Decoded's puzzles hold the left column, above the settings card, as in
+     * its mockup, during a round and between two rounds of the game; the
+     * host's game cards wait behind the chooser, and so do the read-only
+     * cards of a retro's players. On a phone the round line of the stage
+     * stands for them.
+     */
+    if (!isPhone && decodedPuzzles(snapshot.history, round, room) !== null) {
+        const watchedCards: GameLayoutPanel | undefined =
+            watchChoice && hasLeftColumn
+                ? {
+                      id: 'choice',
+                      label: t('Games'),
+                      icon: Shapes,
+                      content: <GamePicker readOnly />,
+                  }
+                : undefined;
+
+        return {
+            variant: 'choice',
+            left: {
+                id: 'puzzles',
+                label: t('Puzzles'),
+                icon: ListOrdered,
+                content: (
+                    <>
+                        <DecodedPuzzles />
+                        <span className="flex-1" />
+                        {settingsCard}
+                    </>
+                ),
+            },
+            right: {
+                id: 'players',
+                label: t('Players and scores'),
+                icon: Users,
+                content: side,
+            },
+            chooser: choice
+                ? {
+                      ...choice,
+                      content: <GamePicker inRetro={watchChoice} />,
+                  }
+                : watchedCards,
+        };
+    }
+
     const watched: GameLayoutPanel | undefined =
         watchChoice && hasLeftColumn
             ? {
                   id: 'choice',
                   label: t('Games'),
                   icon: Shapes,
-                  content: <GamePicker readOnly />,
+                  content: <GamePicker readOnly settings={settingsCard} />,
+              }
+            : undefined;
+    /** A manager who is not the host sets the game without choosing it. */
+    const managed: GameLayoutPanel | undefined =
+        !room.isHost && room.canManage
+            ? {
+                  id: 'settings',
+                  label: t('Game settings'),
+                  icon: SlidersHorizontal,
+                  content: settingsCard,
               }
             : undefined;
 
     return {
         variant: 'choice',
-        left: choice ?? watched,
+        left: choice ?? watched ?? managed,
         right: {
             id: 'players',
             label: t('Players and scores'),

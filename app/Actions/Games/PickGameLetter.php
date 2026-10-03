@@ -15,7 +15,10 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class PickGameLetter
 {
-    public function __construct(private EndGameRound $endGameRound) {}
+    public function __construct(
+        private EndGameRound $endGameRound,
+        private AdvanceGameTurn $advanceGameTurn,
+    ) {}
 
     /**
      * @return array{
@@ -25,6 +28,8 @@ class PickGameLetter
      *     hit: bool,
      *     mask: array<int, ?string>,
      *     misses: int,
+     *     turnPlayerId: ?string,
+     *     turnEndsAt: ?string,
      *     ended: ?array<string, mixed>
      * }
      */
@@ -36,6 +41,7 @@ class PickGameLetter
             GameGuard::mutable($lockedRoom);
             GameGuard::activeRound($lockedRoom, $lockedRound);
             GameGuard::roundGame($lockedRound, GameKind::Hangman);
+            GameGuard::turn($lockedRound, $player);
 
             if (in_array($letter, $lockedRound->picked_letters, true)) {
                 throw new ConflictHttpException(__('This letter was already picked.'));
@@ -55,6 +61,13 @@ class PickGameLetter
                 'misses' => $lockedRound->misses + ($hit ? 0 : 1),
             ])->save();
 
+            $solved = GameWord::isFullyRevealed($word, $revealed);
+            $lost = $lockedRound->misses >= HangmanRules::MaxMisses;
+
+            if (! $solved && ! $lost && $lockedRound->takesTurns()) {
+                $this->advanceGameTurn->handle($lockedRoom, $lockedRound);
+            }
+
             $payload = [
                 'roundId' => $lockedRound->id,
                 'playerId' => $player->id,
@@ -62,13 +75,15 @@ class PickGameLetter
                 'hit' => $hit,
                 'mask' => GameWord::mask($word, $revealed),
                 'misses' => $lockedRound->misses,
+                'turnPlayerId' => $lockedRound->turn_player_id,
+                'turnEndsAt' => $lockedRound->turn_ends_at?->toIso8601String(),
             ];
 
             (new GameLetterPicked($lockedRoom, $payload))->sendToOthers();
 
             $ended = match (true) {
-                GameWord::isFullyRevealed($word, $revealed) => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Solved, $player),
-                $lockedRound->misses >= HangmanRules::MaxMisses => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Lost),
+                $solved => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Solved, $player),
+                $lost => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Lost),
                 default => null,
             };
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
-import { RoomTimer } from './room-header';
+import { RoomTimer, RoomTitle } from './room-header';
 
 const api = vi.hoisted(() => ({ retroRequest: vi.fn() }));
 
@@ -82,5 +82,49 @@ describe('RoomTimer', () => {
         expect(await screen.findByRole('timer')).toBeTruthy();
         expect(screen.queryByRole('button', { name: '+2 min' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Timer' })).toBeNull();
+    });
+});
+
+describe('RoomTitle', () => {
+    function renderTitle(
+        round: { number: number | null; roundsTotal: number | null } | null,
+    ) {
+        const ctx = {
+            snapshot: {
+                room: {
+                    id: 'r1',
+                    name: 'Fridays',
+                    game: 'draw',
+                    isIcebreaker: false,
+                    teamName: null,
+                },
+                games: [
+                    { value: 'draw', label: 'Draw & Guess', available: true },
+                ],
+                links: { team: null },
+                round:
+                    round === null
+                        ? null
+                        : { id: 'round', game: 'draw', ...round },
+            },
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomTitle />
+            </RoomProvider>,
+        );
+    }
+
+    it('counts the rounds of a game of a set length beside the game', () => {
+        renderTitle({ number: 3, roundsTotal: 6 });
+
+        expect(screen.getByText('Round 3 / 6')).toBeTruthy();
+    });
+
+    it('counts nothing in an endless game', () => {
+        renderTitle({ number: 3, roundsTotal: null });
+
+        expect(document.querySelector('[data-slot="room-round"]')).toBeNull();
     });
 });

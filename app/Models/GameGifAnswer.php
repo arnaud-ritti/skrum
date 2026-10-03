@@ -16,10 +16,11 @@ use Illuminate\Support\Str;
  * @property string $game_round_id
  * @property string $player_id
  * @property string $gif_id
+ * @property string|null $caption
  * @property-read GameRound $round
  * @property-read GamePlayer $player
  */
-#[Fillable(['game_round_id', 'player_id', 'gif_id'])]
+#[Fillable(['game_round_id', 'player_id', 'gif_id', 'caption'])]
 class GameGifAnswer extends Model
 {
     /** @use HasFactory<GameGifAnswerFactory> */

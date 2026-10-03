@@ -124,6 +124,57 @@ describe('IcebreakerGameCard', () => {
         ).not.toBeNull();
     });
 
+    it('reads a duration range, a duration per person or a single duration', () => {
+        const { rerender } = render(
+            <IcebreakerGameCard {...base} durationMax={10} />,
+        );
+
+        expect(screen.getByText('5–10 min')).toBeTruthy();
+
+        rerender(<IcebreakerGameCard {...base} durationPerPerson />);
+
+        expect(screen.getByText('5 min / person')).toBeTruthy();
+
+        rerender(<IcebreakerGameCard {...base} />);
+
+        expect(screen.getByText('5 min')).toBeTruthy();
+    });
+
+    it('adds the anonymous note to the duration', () => {
+        render(<IcebreakerGameCard {...base} durationMin={3} anonymous />);
+
+        expect(screen.getByText('3 min · anonymous')).toBeTruthy();
+    });
+
+    it('shows the duration and players on a compact card', () => {
+        render(<IcebreakerGameCard {...base} compact />);
+
+        expect(screen.getByText('5 min')).toBeTruthy();
+        expect(screen.getByText('3-12')).toBeTruthy();
+        expect(screen.getByText('3 to 12 players')).toBeTruthy();
+    });
+
+    it('lets the players drop under a long duration on a narrow card', () => {
+        render(
+            <IcebreakerGameCard {...base} durationMin={3} anonymous compact />,
+        );
+
+        const meta = document.querySelector('[id$="-meta"]');
+
+        expect(meta?.className).toContain('flex-wrap');
+    });
+
+    it('has no meta line without a duration or players', () => {
+        render(
+            <IcebreakerGameCard game="mood" title="Mood weather" anonymous />,
+        );
+
+        expect(screen.queryByText(/anonymous/)).toBeNull();
+        expect(
+            screen.getByRole('radio').getAttribute('aria-describedby'),
+        ).toBeNull();
+    });
+
     it('says "In play" on the selected card of a room, in place of the check', () => {
         const { rerender } = render(<IcebreakerGameCard {...base} inPlay />);
 
@@ -218,6 +269,66 @@ describe('IcebreakerGameCard', () => {
         expect(
             document.querySelector('[role="img"][aria-label]'),
         ).not.toBeNull();
+    });
+});
+
+describe('IcebreakerGameCard, the eight games', () => {
+    const games = [
+        ['hangman', 'Hangman', 'lucide-whole-word', 'coral'],
+        ['draw', 'Draw & Guess', 'lucide-brush', 'iris'],
+        ['gif', 'Sprint in one GIF', 'lucide-film', 'apricot'],
+        ['decoded', 'Decoded', 'lucide-smile', 'sun'],
+        ['two_truths', 'Two truths and a lie', 'lucide-venetian-mask', 'plum'],
+        ['mood', 'Mood weather', 'lucide-cloud-sun', 'sky'],
+        ['guess_who', 'Guess who?', 'lucide-user-round-search', 'moss'],
+        [
+            'quick_question',
+            'Quick question',
+            'lucide-message-circle-question',
+            'lagoon',
+        ],
+    ] as const;
+
+    it.each(games)(
+        'renders %s with its name, its icon and its colour',
+        (game, title, icon, color) => {
+            const { container } = render(
+                <IcebreakerGameCard game={game} title={title} compact />,
+            );
+            const radio = screen.getByRole('radio', { name: title });
+
+            expect(radio.getAttribute('data-game')).toBe(game);
+            expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
+            expect(
+                container.querySelector(`.bg-skrum-col-${color}`),
+            ).not.toBeNull();
+        },
+    );
+
+    it.each(games)(
+        'draws the art of %s with its corner icon',
+        (game, title, icon) => {
+            const { container } = render(
+                <IcebreakerGameCard game={game} title={title} />,
+            );
+
+            expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
+            expect(
+                container.querySelector('[aria-hidden] > :first-child'),
+            ).not.toBeNull();
+        },
+    );
+
+    it('marks the lie among the three cards of Two truths', () => {
+        const { container } = render(
+            <IcebreakerGameCard
+                game="two_truths"
+                title="Two truths and a lie"
+            />,
+        );
+
+        expect(container.querySelectorAll('.rotate-6')).toHaveLength(1);
+        expect(screen.getByText('L', { selector: '.rotate-6' })).toBeTruthy();
     });
 });
 
