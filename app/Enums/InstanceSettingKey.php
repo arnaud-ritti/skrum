@@ -71,7 +71,7 @@ enum InstanceSettingKey: string
         return [
             self::BrandColor, self::BrandRadius, self::DisplayName, self::PoweredBy, self::LogoLight,
             self::LogoDark, self::Favicon, self::LogoMail, self::AvatarStyle, self::AvatarMemberChoice,
-            self::GifProvider, self::GifEnabled, self::GifRating, self::GifKey,
+            self::ProfilePhotos, self::GifProvider, self::GifEnabled, self::GifRating, self::GifKey,
         ];
     }
 }
