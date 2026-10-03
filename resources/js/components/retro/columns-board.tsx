@@ -38,6 +38,7 @@ import {
     toColumnProps,
     writingProgress,
 } from '@/lib/retro/adapters';
+import { ActivityRefreshMs } from '@/lib/retro/activity';
 import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import { SurveyPhases } from '@/lib/retro/survey-api';
@@ -428,6 +429,21 @@ export function ColumnsBoard({
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
     const { announce, end } = useActivity();
+
+    // Others forget a move after a few seconds: a card held longer, often
+    // from the keyboard, is announced again until it is dropped.
+    useEffect(() => {
+        if (activeCardId === null) {
+            return;
+        }
+
+        const interval = window.setInterval(
+            () => announce('moving', activeCardId),
+            ActivityRefreshMs,
+        );
+
+        return () => window.clearInterval(interval);
+    }, [announce, activeCardId]);
 
     useGroupShortcut();
 

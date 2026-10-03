@@ -586,6 +586,8 @@ export function BoardCard({
     /** The editor is open, and nobody closed it on purpose. */
     const editorOpen = useRef(false);
     const typed = useRef('');
+    /** The column this card's editor announced writing in, if it did. */
+    const announcedIn = useRef<string | null>(null);
     const { announce, end } = useActivity();
     const writesIn = phase === 'writing' ? card.columnId : null;
     const latest = useRef({
@@ -651,18 +653,38 @@ export function BoardCard({
         setEditing(true);
     };
 
+    const endWriting = () => {
+        const column = announcedIn.current;
+
+        if (column === null) {
+            return;
+        }
+
+        announcedIn.current = null;
+        end('writing', column);
+    };
+
+    // Only the card whose editor announced ends it: another card leaving
+    // the column must not end the viewer's typing elsewhere.
     useEffect(() => {
         if (writesIn === null) {
             return;
         }
 
-        return () => end('writing', writesIn);
+        return () => {
+            const column = announcedIn.current;
+
+            if (column === null) {
+                return;
+            }
+
+            announcedIn.current = null;
+            end('writing', column);
+        };
     }, [end, writesIn]);
 
     const closeEditor = () => {
-        if (writesIn !== null) {
-            end('writing', writesIn);
-        }
+        endWriting();
 
         editorOpen.current = false;
         setEditing(false);
@@ -886,12 +908,13 @@ export function BoardCard({
                     typed.current = value;
 
                     if (writesIn !== null && value.trim() !== '') {
+                        announcedIn.current = writesIn;
                         announce('writing', writesIn);
                     }
                 }}
                 onBlur={(event) => {
                     if (writesIn !== null && isEditing && leaves(event)) {
-                        end('writing', writesIn);
+                        endWriting();
                     }
                 }}
                 {...(isEditing && {

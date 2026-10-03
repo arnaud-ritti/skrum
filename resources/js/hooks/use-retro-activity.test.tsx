@@ -221,6 +221,20 @@ describe('useRetroActivity', () => {
         expect(hook.result.current.writingCount).toBe(0);
     });
 
+    it('stops leaving the viewer out of the count once a pause outlasts the server', async () => {
+        const { hook, broadcastCount } = setup({ isAnonymous: true });
+
+        await act(async () => {
+            hook.result.current.announce('writing', 'col');
+        });
+        act(() => {
+            vi.advanceTimersByTime(9000);
+        });
+        broadcastCount(1);
+
+        expect(hook.result.current.writingCount).toBe(1);
+    });
+
     it('takes no count on a named retro', () => {
         const { hook, broadcastCount } = setup();
 

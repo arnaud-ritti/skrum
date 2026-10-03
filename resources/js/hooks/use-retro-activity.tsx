@@ -50,7 +50,8 @@ export function useRetroActivity(): RetroActivity {
     const countsWriters = isAnonymous && phase === 'writing';
     const [entries, setEntries] = useState<ActivityEntry[]>([]);
     const [last, setLast] = useState<WritingCount | null>(null);
-    const [isWriting, setIsWriting] = useState(false);
+    /** When the viewer's last writing heartbeat left; null while not writing. */
+    const [heartbeatSentAt, setHeartbeatSentAt] = useState<number | null>(null);
     const [now, setNow] = useState(() => Date.now());
     const [trackedPhase, setTrackedPhase] = useState(phase);
     const sender = useRef<Sender | null>(null);
@@ -71,7 +72,7 @@ export function useRetroActivity(): RetroActivity {
         setTrackedPhase(phase);
         setEntries([]);
         setLast(null);
-        setIsWriting(false);
+        setHeartbeatSentAt(null);
     }
 
     useEffect(() => {
@@ -92,7 +93,7 @@ export function useRetroActivity(): RetroActivity {
 
         writing.current = false;
         heartbeatAt.current = 0;
-        setIsWriting(false);
+        setHeartbeatSentAt(null);
 
         void retroRequest<{ count: number }>(
             RetroWritersController.destroy(latest.current.retroId),
@@ -118,7 +119,7 @@ export function useRetroActivity(): RetroActivity {
 
         writing.current = true;
         heartbeatAt.current = sentNow;
-        setIsWriting(true);
+        setHeartbeatSentAt(sentNow);
 
         // A refused heartbeat (429, network) is left to the next one.
         void retroRequest<{ count: number }>(
@@ -308,9 +309,18 @@ export function useRetroActivity(): RetroActivity {
         [stopWriting],
     );
 
+    // The server forgets a writer 8 s after the last heartbeat: a count taken
+    // after a longer pause no longer holds the viewer.
+    const isCountedWriting =
+        heartbeatSentAt !== null &&
+        last !== null &&
+        last.receivedAt - heartbeatSentAt < WritingCountTtlMs;
+
     return {
         entries,
-        writingCount: countsWriters ? othersWriting(last, isWriting, now) : 0,
+        writingCount: countsWriters
+            ? othersWriting(last, isCountedWriting, now)
+            : 0,
         announce,
         end,
     };

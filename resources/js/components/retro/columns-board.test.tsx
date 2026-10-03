@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
@@ -10,7 +16,7 @@ import {
     ActivityContext,
     type RetroActivity,
 } from '@/hooks/use-retro-activity';
-import type { ActivityEntry } from '@/lib/retro/activity';
+import { ActivityRefreshMs, type ActivityEntry } from '@/lib/retro/activity';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -1545,6 +1551,78 @@ describe('ColumnsBoard activity (RT-1)', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
         expect(activity.end).toHaveBeenCalledWith('writing', 'start');
+    });
+
+    it('ends nothing when a card nobody edits here leaves the column', () => {
+        const { activity, ctx, rerender } = withActivity([], {
+            cards: [card({ isMine: false })],
+        });
+
+        rerender(
+            <BoardProvider
+                value={{ ...ctx, board: { ...ctx.board, cards: [] } }}
+            >
+                <ActivityContext value={activity}>
+                    <GroupNameSuggestionsProvider>
+                        <ColumnsBoard hideMyCursor />
+                    </GroupNameSuggestionsProvider>
+                </ActivityContext>
+            </BoardProvider>,
+        );
+
+        expect(activity.end).not.toHaveBeenCalled();
+    });
+
+    it('ends the writing of a card edited here when it leaves the column', () => {
+        const { activity, container, ctx, rerender } = withActivity([], {
+            cards: [card()],
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit card' }));
+        fireEvent.input(
+            container.querySelector('#card-c1 textarea') as HTMLElement,
+            { target: { value: 'Ship smaller pull requests' } },
+        );
+        rerender(
+            <BoardProvider
+                value={{ ...ctx, board: { ...ctx.board, cards: [] } }}
+            >
+                <ActivityContext value={activity}>
+                    <GroupNameSuggestionsProvider>
+                        <ColumnsBoard hideMyCursor />
+                    </GroupNameSuggestionsProvider>
+                </ActivityContext>
+            </BoardProvider>,
+        );
+
+        expect(activity.end).toHaveBeenCalledWith('writing', 'start');
+    });
+
+    it('keeps announcing a card held longer than the others remember it', () => {
+        vi.useFakeTimers();
+
+        try {
+            const { activity, container } = withActivity([], {
+                cards: [card({ isMine: false })],
+                retro: { phase: 'grouping' },
+            });
+            const handle = container.querySelector(
+                '[data-test="retro-card-handle-c1"]',
+            ) as HTMLElement;
+
+            fireEvent.keyDown(handle, { code: 'Space', key: ' ' });
+            act(() => {
+                vi.advanceTimersByTime(ActivityRefreshMs * 3);
+            });
+
+            expect(
+                vi
+                    .mocked(activity.announce)
+                    .mock.calls.filter(([kind]) => kind === 'moving').length,
+            ).toBeGreaterThanOrEqual(3);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('announces the move of a card picked up from the keyboard, and its end', async () => {
