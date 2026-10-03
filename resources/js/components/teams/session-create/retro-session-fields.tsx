@@ -623,7 +623,7 @@ export function RetroSessionFields({
                         id="new-retro-phase-timers"
                         size="sm"
                         aria-label={t('Timer per phase')}
-                        className="max-w-44"
+                        className="max-w-56"
                     >
                         <SelectValue />
                     </SelectTrigger>

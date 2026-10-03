@@ -436,7 +436,7 @@ export function PokerSessionFields({
                                   aria-label={t('Write estimates to :source', {
                                       source: TrackerLabels[writeSource.source],
                                   })}
-                                  className="max-w-44"
+                                  className="max-w-56"
                               >
                                   <SelectValue />
                               </SelectTrigger>
