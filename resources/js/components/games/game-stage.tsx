@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { DecodedBoard } from './decoded-board';
 import { DrawBoard } from './draw-board';
 import { GifStepLine, useGifStep } from './gif-steps';
+import { GuessWhoBoard } from './guess-who-board';
 import { HangmanBoard } from './hangman-board';
 import { HistoryDrawer } from './history-drawer';
 import { MoodWeatherBoard } from './mood-weather-board';
@@ -35,7 +36,7 @@ function RoundBoard({ round }: { round: GameRound }) {
         case 'mood':
             return <MoodWeatherBoard key={round.id} round={round} />;
         case 'guess_who':
-            return null;
+            return <GuessWhoBoard key={round.id} round={round} />;
         case 'quick_question':
             return null;
         default:

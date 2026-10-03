@@ -1,7 +1,7 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRound } from '@/lib/games/types';
 import { GifAnswerStage } from './gif-answer-stage';
-import { GifQuestionBanner } from './gif-question-banner';
+import { QuestionBanner } from './question-banner';
 import { GifVotingStage } from './gif-voting-stage';
 
 type Props = {
@@ -18,7 +18,7 @@ export function SprintGifBoard({ round }: Props) {
             data-slot="sprint-gif-board"
             className="flex w-full flex-col items-center gap-4"
         >
-            <GifQuestionBanner
+            <QuestionBanner
                 round={round}
                 hint={
                     isPicking

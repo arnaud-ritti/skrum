@@ -254,4 +254,54 @@ describe('RoundEndCard', () => {
             ),
         ).toBeTruthy();
     });
+    it('shows the drawn answer of a Guess who? round and who named whom as it ends', () => {
+        renderCard(
+            {
+                ...ended(1, null),
+                outcome: 'revealed',
+                word: null,
+                question: 'What was your first job?',
+                drawn: { id: 'answer', text: 'Paperboy', playerId: 'bob' },
+                nominations: [
+                    { playerId: 'bob', voterIds: ['ada'] },
+                    { playerId: 'cy', voterIds: ['dee'] },
+                ],
+                points: [
+                    { playerId: 'ada', points: 5, isWin: true },
+                    { playerId: 'bob', points: 2, isWin: false },
+                ],
+            },
+            false,
+            'guess_who',
+        );
+
+        expect(screen.getByText('Paperboy')).toBeTruthy();
+        expect(screen.getByText('Written by Bob')).toBeTruthy();
+        expect(screen.getByText('+5 Ada')).toBeTruthy();
+    });
+
+    it('fetches the drawn answer of a Guess who? round seen only in the history', async () => {
+        const closed: GameRoundDetail = {
+            id: 'round',
+            game: 'guess_who',
+            outcome: 'revealed',
+            word: null,
+            question: 'What was your first job?',
+            leaderPlayerId: null,
+            leaderName: null,
+            winnerPlayerId: null,
+            winnerName: null,
+            endedAt: '2026-10-03T10:00:00Z',
+        };
+
+        vi.mocked(retroRequest).mockResolvedValueOnce({
+            ...closed,
+            drawn: { id: 'answer', text: 'Paperboy', playerId: 'bob' },
+            nominations: [{ playerId: 'bob', voterIds: [] }],
+        });
+
+        renderCard(null, false, 'guess_who', [closed]);
+
+        expect(await screen.findByText('Written by Bob')).toBeTruthy();
+    });
 });

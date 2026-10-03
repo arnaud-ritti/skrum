@@ -80,7 +80,7 @@ function Room({ initial }: { initial: GameKind }) {
     );
 }
 
-function card(name: string, container: HTMLElement = document.body) {
+function card(name: string | RegExp, container: HTMLElement = document.body) {
     return within(container).getByRole('radio', { name });
 }
 
@@ -157,5 +157,33 @@ describe('GamePicker', () => {
 
         expect(screen.getByRole('dialog')).toBeTruthy();
         expect(document.activeElement).toBe(gif);
+    });
+    it('says why Guess who? cannot be played in an anonymous retro', () => {
+        const ctx = {
+            snapshot: {
+                room: { id: 'room', game: 'mood', isHost: true },
+                games: [
+                    { value: 'mood', label: 'Mood weather', available: true },
+                    {
+                        value: 'guess_who',
+                        label: 'Guess who?',
+                        available: false,
+                    },
+                ],
+            },
+            run: <T,>(mutation: Promise<T>) => mutation,
+            refetch: async () => undefined,
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GamePicker />
+            </RoomProvider>,
+        );
+
+        const guessWho = card(/Guess who\?/);
+
+        expect(guessWho.getAttribute('aria-disabled')).toBe('true');
+        expect(guessWho.textContent).toContain('Not in an anonymous retro');
     });
 });

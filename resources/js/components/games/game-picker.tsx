@@ -112,6 +112,11 @@ export function GamePicker({
                         title={option.label}
                         compact
                         available={option.available}
+                        unavailableReason={
+                            option.value === 'guess_who'
+                                ? t('Not in an anonymous retro')
+                                : undefined
+                        }
                         selected={option.value === room.game}
                         inPlay
                         readOnly={readOnly}

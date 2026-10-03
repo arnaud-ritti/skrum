@@ -11,6 +11,7 @@ import { ClueRow } from './clue-row';
 import { DrawingCanvas } from './drawing-canvas';
 import { MoodWeatherResult } from './mood-weather-board';
 import { GifRoundResults } from './gif-round-results';
+import { GuessWhoResult } from './guess-who-board';
 import { useRoom } from './room-context';
 import { TwoTruthsResult } from './two-truths-board';
 import { WordMask } from './word-mask';
@@ -152,7 +153,17 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                 />
             );
         case 'guess_who':
-            return null;
+            return (
+                <div className="space-y-3">
+                    <p className="font-medium break-words">{detail.question}</p>
+                    {detail.drawn && (
+                        <GuessWhoResult
+                            drawn={detail.drawn}
+                            nominations={detail.nominations ?? []}
+                        />
+                    )}
+                </div>
+            );
         case 'quick_question':
             return null;
         default:

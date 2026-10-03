@@ -4651,5 +4651,18 @@
     "telling": "erzählt",
     "Not enough answers to show the weather (:count needed).": "Nicht genug Antworten, um das Wetter zu zeigen (:count nötig).",
     "Show the weather": "Wetter zeigen",
-    "What's the weather of your mood?": "Wie ist das Wetter deiner Stimmung?"
+    "What's the weather of your mood?": "Wie ist das Wetter deiner Stimmung?",
+    ":count voted": "Stimmen: :count",
+    "Answer the question: one answer will be drawn.": "Beantworte die Frage: Eine Antwort wird ausgelost.",
+    "Answered: :names": "Haben geantwortet: :names",
+    "Author": "Autor",
+    "Draw an answer": "Antwort auslosen",
+    "Guess who wrote the drawn answer.": "Rate, wer die ausgeloste Antwort geschrieben hat.",
+    "It's your answer — the others are guessing.": "Das ist deine Antwort – die anderen raten.",
+    "Named by :names": "Genannt von :names",
+    "Not in an anonymous retro": "Nicht in einer anonymen Retro",
+    "Show the author": "Autor zeigen",
+    "Who wrote this?": "Wer hat das geschrieben?",
+    "Written by :name": "Geschrieben von :name",
+    "Your vote": "Deine Stimme"
 }

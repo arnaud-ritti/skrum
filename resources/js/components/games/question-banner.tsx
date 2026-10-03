@@ -1,4 +1,4 @@
-import { Clapperboard, Pencil, Shuffle } from 'lucide-react';
+import { Clapperboard, Pencil, Shuffle, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import GameQuestionsController from '@/actions/App/Http/Controllers/Games/GameQuestionsController';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,18 @@ type Props = {
     round: GameRound;
     /** What to do at this step, under the question. */
     hint: string;
+    icon?: LucideIcon;
 };
 
-/** The host can shuffle or rewrite the question until the first answer (spec §4.2). */
-export function GifQuestionBanner({ round, hint }: Props) {
+/**
+ * The question of a game that asks one (Sprint in one GIF, Guess who?): the
+ * host can shuffle or rewrite it until the first answer (spec §4.2, §9.9).
+ */
+export function QuestionBanner({
+    round,
+    hint,
+    icon: Icon = Clapperboard,
+}: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
@@ -62,14 +70,14 @@ export function GifQuestionBanner({ round, hint }: Props) {
 
     return (
         <div
-            data-slot="gif-question"
+            data-slot="question-banner"
             className="flex w-full max-w-160 flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-card px-4 py-3 shadow-card"
         >
             <span
                 aria-hidden
                 className="grid size-10 shrink-0 place-items-center rounded-md border border-skrum-col-iris-border bg-skrum-col-iris text-skrum-col-iris-text"
             >
-                <Clapperboard className="size-5" />
+                <Icon className="size-5" />
             </span>
             <div className="flex min-w-0 flex-1 basis-56 flex-col gap-1">
                 {editing ? (

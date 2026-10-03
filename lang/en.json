@@ -4431,5 +4431,18 @@
     "telling": "telling",
     "Not enough answers to show the weather (:count needed).": "Not enough answers to show the weather (:count needed).",
     "Show the weather": "Show the weather",
-    "What's the weather of your mood?": "What's the weather of your mood?"
+    "What's the weather of your mood?": "What's the weather of your mood?",
+    ":count voted": ":count voted",
+    "Answer the question: one answer will be drawn.": "Answer the question: one answer will be drawn.",
+    "Answered: :names": "Answered: :names",
+    "Author": "Author",
+    "Draw an answer": "Draw an answer",
+    "Guess who wrote the drawn answer.": "Guess who wrote the drawn answer.",
+    "It's your answer — the others are guessing.": "It's your answer — the others are guessing.",
+    "Named by :names": "Named by :names",
+    "Not in an anonymous retro": "Not in an anonymous retro",
+    "Show the author": "Show the author",
+    "Who wrote this?": "Who wrote this?",
+    "Written by :name": "Written by :name",
+    "Your vote": "Your vote"
 }

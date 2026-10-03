@@ -6,6 +6,7 @@ import { outcomeLabel } from '@/lib/games/outcomes';
 import type { GamePointsAward } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
+import { GuessWhoResult } from './guess-who-board';
 import { MoodWeatherResult } from './mood-weather-board';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
@@ -126,6 +127,12 @@ export function RoundEndCard() {
         lastEnded?.answered !== undefined,
     );
     const mood = lastEnded?.answered !== undefined ? lastEnded : fetchedMood;
+    const fetchedGuessWho = useEndedRoundDetail(
+        'guess_who',
+        lastEnded?.nominations !== undefined,
+    );
+    const guessWho =
+        lastEnded?.nominations !== undefined ? lastEnded : fetchedGuessWho;
     /** Two truths: the sets are written between the rounds, under the card (spec §9.7). */
     const setForm = snapshot.room.game === 'two_truths' && (
         <TwoTruthsSetForm className="max-w-2xl" />
@@ -193,6 +200,12 @@ export function RoundEndCard() {
                     <MoodWeatherResult
                         answered={mood.answered}
                         weather={mood.weather ?? null}
+                    />
+                )}
+                {guessWho?.drawn && (
+                    <GuessWhoResult
+                        drawn={guessWho.drawn}
+                        nominations={guessWho.nominations ?? []}
                     />
                 )}
                 {winner && (
