@@ -45,6 +45,7 @@ trait HasGuestIdentity
             $this->avatarSeed(),
             fn (): ?string => $this->avatarOwner()?->avatar_style,
             fn (): string => $this->displayName(),
+            fn (): ?string => $this->avatarOwner()?->avatar_photo_path,
         );
     }
 

@@ -4547,5 +4547,8 @@
     "Used for your avatar and your live cursor.": "Wird für deinen Avatar und deinen Live-Cursor verwendet.",
     "Reduce animations": "Animationen reduzieren",
     "Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.": "Ersetzt Kartendrehungen, Konfetti und Neigungen beim Ziehen durch einfache Überblendungen. Standardmäßig an, wenn dein System es verlangt.",
-    "Your system already asks for fewer animations.": "Dein System verlangt bereits weniger Animationen."
+    "Your system already asks for fewer animations.": "Dein System verlangt bereits weniger Animationen.",
+    "This image could not be read. Choose a JPEG or PNG file.": "Dieses Bild konnte nicht gelesen werden. Wähle eine JPEG- oder PNG-Datei.",
+    "Photo updated.": "Foto aktualisiert.",
+    "Photo removed.": "Foto entfernt."
 }

@@ -4327,5 +4327,8 @@
     "Used for your avatar and your live cursor.": "Used for your avatar and your live cursor.",
     "Reduce animations": "Reduce animations",
     "Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.": "Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.",
-    "Your system already asks for fewer animations.": "Your system already asks for fewer animations."
+    "Your system already asks for fewer animations.": "Your system already asks for fewer animations.",
+    "This image could not be read. Choose a JPEG or PNG file.": "This image could not be read. Choose a JPEG or PNG file.",
+    "Photo updated.": "Photo updated.",
+    "Photo removed.": "Photo removed."
 }

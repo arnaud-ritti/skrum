@@ -150,6 +150,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             $this->avatarSeed(),
             fn (): ?string => $this->avatar_style,
             fn (): string => $this->name,
+            fn (): ?string => $this->avatar_photo_path,
         );
     }
 

@@ -12,6 +12,7 @@ class AvatarUrl
     public function __construct(
         private InstanceSettings $settings,
         private AvatarStyleCatalogue $catalogue,
+        private AvatarPhotos $photos,
     ) {}
 
     /**
@@ -62,12 +63,22 @@ class AvatarUrl
 
     /**
      * The closures are only called when their answer is needed, so a guest identity does not load its user for nothing.
+     * A photo is shown while the switch "Profile photos" is on, whether or not members may choose their style.
      *
      * @param  Closure(): ?string  $memberStyle
      * @param  Closure(): string  $name
+     * @param  (Closure(): ?string)|null  $photoPath
      */
-    public function for(string $seed, Closure $memberStyle, Closure $name): string
+    public function for(string $seed, Closure $memberStyle, Closure $name, ?Closure $photoPath = null): string
     {
+        if ($photoPath !== null && $this->settings->profilePhotos()) {
+            $path = $photoPath();
+
+            if (is_string($path)) {
+                return $this->photos->url($path);
+            }
+        }
+
         $style = $this->settings->avatarMemberChoice()
             ? $this->styleFor($memberStyle())
             : $this->instanceStyle();

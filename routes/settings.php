@@ -7,6 +7,7 @@ use App\Http\Controllers\Settings\EmailSecondFactorsController;
 use App\Http\Controllers\Settings\MotionPreferencesController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ProfilePhotosController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\ShortcutPreferencesController;
 use App\Http\Middleware\EnsureMcpIsEnabled;
@@ -18,6 +19,8 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::redirect('settings/profile', '/settings#profile')->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('settings/profile/photo', [ProfilePhotosController::class, 'store'])->middleware('throttle:10,1')->name('profilePhotos.store');
+    Route::delete('settings/profile/photo', [ProfilePhotosController::class, 'destroy'])->name('profilePhotos.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {

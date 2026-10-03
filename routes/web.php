@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AboutPagesController;
+use App\Http\Controllers\AvatarPhotosController;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
@@ -198,6 +199,7 @@ use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveSurveyRespondent;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use App\Support\Avatars\AvatarPhotos;
 use App\Support\Branding\BrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -225,6 +227,9 @@ Route::get('avatars/{style}/{seed}.svg', [StyledAvatarsController::class, 'show'
     ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
     ->withoutMiddleware('web')
     ->name('styledAvatars.show');
+Route::get('avatar-photos/{file}', [AvatarPhotosController::class, 'show'])->where('file', AvatarPhotos::FilePattern)
+    ->withoutMiddleware('web')
+    ->name('avatarPhotos.show');
 // Outside the web group: a public, immutable response must not carry a session cookie.
 Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', BrandAssets::RoutePattern)
     ->withoutMiddleware('web')

@@ -76,6 +76,7 @@ class AccountSettingsController extends Controller
     private function profile(TwoFactorAuthenticationRequest $request, User $user): array
     {
         $allowsMemberStyles = $this->settings->avatarMemberChoice();
+        $photosAllowed = $this->settings->profilePhotos();
 
         return [
             'mustVerifyEmail' => Features::enabled(Features::emailVerification()),
@@ -85,6 +86,8 @@ class AccountSettingsController extends Controller
             'instanceAvatarStyle' => $this->avatarUrl->instanceStyle(),
             'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($user) : [],
             'presenceColor' => $user->presenceColor(),
+            'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null,
+            'photosAllowed' => $photosAllowed,
         ];
     }
 
