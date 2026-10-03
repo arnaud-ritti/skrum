@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Every agent reads **Owner decisions**, **Global Constraints**, **Pre-build deviations** and its own task before anything else, then `docs/database.md` ("Rules for database code" and "Running the tests on an engine") for any task that touches PHP. A screen task also follows the "Screen task procedure" of `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, with the working rules below (no walkthrough, captures in Task 25 only).
 
-**Status: ready to run — draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 1 B, 2 B, 4 C and 7 B differ from the first draft and are written in; 3, 5, 6, 8 and 9 confirm it) **and with the owner's answers to the pre-build deviations** (2026-10-03: P23-04 as recommended, with a "You are observing" line; P23-07 ≠ recommendation, a global presence channel gives "Online" in the members table, Task 28; P23-01 and P23-05 obsolete, settled by decisions 1 B and 4 C; every other row approved as listed). No row waits for the owner.
+**Status: built — 2026-10-04, on branch `plan-23-team-workspace-data` (Tasks 1 to 28; the comparison with the mockups of Task 26 is under **Mockup comparison** below, with three rows found after the build that wait for the owner). Draft of 2026-10-03, revised the same day with the owner's answers to spec §15** (decisions 1 B, 2 B, 4 C and 7 B differ from the first draft and are written in; 3, 5, 6, 8 and 9 confirm it) **and with the owner's answers to the pre-build deviations** (2026-10-03: P23-04 as recommended, with a "You are observing" line; P23-07 ≠ recommendation, a global presence channel gives "Online" in the members table, Task 28; P23-01 and P23-05 obsolete, settled by decisions 1 B and 4 C; every other row approved as listed). No row waits for the owner.
 
 **Goal:** Teams get roles (owner, facilitator, member, observer), explicit sprints with "Start the next sprint" and a derived next retro, default facilitators that suggest who facilitates a retro, a default retro template, descriptions, an activity log and whiteboard thumbnails; a facilitator or owner can take control of any open session of the team; a workspace can be renamed; templates get a visibility; the members table shows who is online; the team page, the workspace page and the four team-settings tabs show all of it as the mockups draw it, without taking a right away from anyone.
 
@@ -135,6 +135,25 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE
 | P23-14 | Team settings header | "Équipe produit · 11 membres · créée en mars 2025" | the same when a description exists; without it, ":count members · created in :month" | — (D-88 cleared) | approved |
 | P23-15 | Templates editor | Visibility "Équipe" without a team | "Team" followed by a team select when the person may create for several teams | S: §6.6 | approved |
 | P23-16 | Retro board menu | no "Take control" for a retro | the entry "Take control" (as on poker and whiteboards) for a team facilitator, owner or manager while the retro is open | O: decision 2 B | approved |
+
+## Mockup comparison (Task 26, 2026-10-04)
+
+The captures of Task 25 (`tests/visual/__screenshots__/*-light-1440-fr.png`) read beside each mockup's `preview.html` rendered at 1440 in light (the French frame). Every difference below is fixed, covered by a row above or by an earlier plan's row, or is a new row **to approve by the owner**.
+
+Fixed in Task 26:
+
+- **Members & rituals**: the members table shared a two-column grid inside the 50rem content of the settings shell (the sub-navigation of 10-D4 takes the left), so the names and emails were cut to one letter and the row menu was pushed out. The Members card now spans the width; Sprints, and Default facilitators with Retro templates, share the row below; Default columns stays full width.
+- **Retro, observer**: the observer still saw the vote budget ("5 votes left") and the flying-reactions bar (whispers, which the observer middleware cannot refuse). Both are hidden for an observer (`isObserving`); the progress of the room stays.
+
+Covered by an existing row: the sprint and next retro wrap to their own line when the header's buttons take the width (P23-06; same element, the meta line wraps); the creation tiles of ScreenTeam (D-09); "Remove" in the members card (D-75); "Invite" and the invitation places (P23-13); a finished whiteboard has no outcome in Recent sessions (P23-09); "Changes saved" (P23-10); "Browse" beside "Create" (P23-11); the Sprints card, the Data & export cards and the workspace dialog (P23-01, P23-02, P23-03); the facilitator select (P23-05); the observer line (P23-04); "Take control" in the retro menu (P23-16).
+
+| # | Screen | Mockup element | Built | Reason | Owner |
+|---|---|---|---|---|---|
+| P23-17 | Members & rituals | Members on the left, Default facilitators and Retro templates on the right, the tabs as a segmented control in the header | Members full width, then Sprints beside Default facilitators and Retro templates; the tabs stay the sub-navigation column | O: 10-D4 (the sub-navigation) leaves 50rem of content; A: a four-column table in half of it cannot show a name | to approve |
+| P23-18 | Team page, Open action items | ScreenDashboard: compact one-line rows (title, assignee, priority, due date, ticket, source retro) under Recent sessions | the `ActionItem` card of the action items page (title, priority, due date, comments, owner, status) in the side column, five at most | S: §9.1 puts the block first in the side column (ScreenTeam's layout); the compact row has no component of its own | to approve |
+| P23-19 | Workspace page, team tile | "1 tableau blanc modifié aujourd'hui" on one line | the line is cut with an ellipsis when it does not fit the tile ("2 tableaux blancs modifiés aujou…" at 1440 with four tiles) | N: four tiles of 16rem; the full sentence stays readable to assistive technology | to approve |
+
+Noted, not a difference: the sidebar user card reads "Propriétaire · Propriétaire" for a team owner who is also the workspace owner (§9.8, "<team role> · <workspace role>"); the template editor capture shows "Give this template a name." because the name field, focused on open, is validated on blur when the Team radio is clicked (the editor's existing rule).
 
 ## Review Focus
 
@@ -6478,15 +6497,15 @@ The owner's working rule: no browser walkthrough is written or run. This task ta
 
 ### Task 26: Deviations and documents
 
-- [ ] For each capture of Task 25, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** above with the owner's word. A difference that fits no reason stops the task.
-- [ ] Documents, in one commit:
+- [x] For each capture of Task 25, open it beside the mockup's `preview.html` (light, 1440, French) and write the remaining differences. Each is fixed, or is a row of **Pre-build deviations** above with the owner's word. A difference that fits no reason stops the task.
+- [x] Documents, in one commit:
   - the spec and this plan stay at `docs/superpowers/specs/2026-10-21-plan-23-team-workspace-data-design.md` and `docs/superpowers/plans/2026-10-21-plan-23-team-workspace-data.md` (the owner's answers to spec §15 are already folded in); their status lines say "built", with the deviation rows the owner approved;
   - `docs/superpowers/research/front-rewrite/feature-roadmap.md`: rows TM-1 to TM-7 and WS-1 to WS-3 marked done (TM-1 noting "explicit sprints with Start the next sprint; next retro from the sprints and the retro day; scheduling stays backlog"; TM-6 noting "Take control" for facilitators and owners); the dependency line `SE-1 → SE-2 → TM-1` rewritten (TM-1 no longer needs SE-2); "Not requested, staying backlog" of the section completed with spec §3;
   - `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, table "Deviations from the mockup": D-18 reduced to "Invite" (IN-4); D-19 keeps the grouping (plan 24) and notes the sprint data exists; D-24 reduced to template defaults and poker template settings (backlog); D-27 removed; D-77 and D-100 lose their TM-1 part; D-88 removed; D-91's whiteboard line and sprint removed; D-94's visibility badge removed; and `docs/superpowers/research/front-rewrite/deviations.md` D-129: the role line built;
   - `docs/superpowers/specs/2026-10-01-front-rewrite-design.md`: the team settings sub-navigation (10-D4) and the team page sections amended with a pointer to the new spec;
   - `docs/database.md`: nothing unless a task found a new rule;
   - `README.md`: one paragraph in the upgrade notes — every existing team member becomes "Member"; workspace admins keep managing every team and can now take control of any open retro; give owners and facilitators their roles in Team settings › Members & rituals; a team has no sprint until someone presses "Start the next sprint" (or adds sprints) there; a workspace admin can rename the workspace, its address stays; the members table of the team settings shows who is online when Reverb runs (without it, the last session date only).
-- [ ] Commit `docs: plan 23 — spec and plan in place, roadmap and deviation rows updated` (trailer lines).
+- [x] Commit `docs: plan 23 — spec and plan in place, roadmap and deviation rows updated` (trailer lines).
 
 ### Task 27: PostgreSQL suites and report
 
