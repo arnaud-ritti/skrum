@@ -131,6 +131,7 @@ export function JiraDataCenterIntegration({
                             scope={scope}
                             label={t('Replace token')}
                             variant="outline"
+                            initialAccess={connection.access}
                         />
                     )}
                     {!usesToken && allowsOAuth && (

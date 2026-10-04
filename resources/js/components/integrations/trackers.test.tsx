@@ -481,6 +481,51 @@ describe('JiraTokenDialog', () => {
         expect(toast.success).not.toHaveBeenCalled();
         expect(request.mock.calls[0][1]).toMatchObject({ access: 'read' });
     });
+
+    it('shows a refused acknowledgement by its checkbox, not under the token', async () => {
+        request.mockRejectedValue(
+            new RetroRequestError(422, 'Invalid.', {
+                acknowledged: ['Tick "I understand" to save the token.'],
+            }),
+        );
+        const dialog = await open();
+        const token = within(dialog).getByLabelText('Personal access token');
+        const understood = within(dialog).getByRole('checkbox', {
+            name: 'I understand',
+        });
+
+        await userEvent.type(token, 'pasted-jira-token-abcdefghijklmnop');
+        await userEvent.click(understood);
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save token' }),
+        );
+
+        expect((await within(dialog).findByRole('alert')).textContent).toBe(
+            'Tick "I understand" to save the token.',
+        );
+        expect(token.hasAttribute('aria-invalid')).toBe(false);
+        expect(document.activeElement).toBe(understood);
+    });
+
+    it('starts a replacement from the access the connection has', async () => {
+        renderWithProviders(
+            <JiraTokenDialog
+                scope={scope}
+                label="Replace token"
+                initialAccess="write"
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Replace token' }),
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Read and write' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
 });
 
 describe('StoryPointsField', () => {

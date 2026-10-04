@@ -3,6 +3,7 @@ import { TriangleAlert } from 'lucide-react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import JiraDataCenterTokensController from '@/actions/App/Http/Controllers/Integrations/JiraDataCenterTokensController';
+import InputError from '@/components/input-error';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { TextField } from '@/components/skrum/text-field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,31 +19,41 @@ type Props = {
     scope: IntegrationScope;
     label: string;
     variant?: 'default' | 'outline' | 'link';
+    /** The access a replacement starts from: the one of the connection. */
+    initialAccess?: IntegrationAccess;
 };
 
 /**
  * Spec 8 §4.1: a pasted personal access token acts as its owner, so saving
  * requires ticking "I understand". The token is never shown again.
  */
-export function JiraTokenDialog({ scope, label, variant = 'default' }: Props) {
+export function JiraTokenDialog({
+    scope,
+    label,
+    variant = 'default',
+    initialAccess = 'read',
+}: Props) {
     const { t } = useTrans();
     const tokenId = useId();
     const acknowledgedId = useId();
     const [open, setOpen] = useState(false);
-    const [access, setAccess] = useState<IntegrationAccess>('read');
+    const [access, setAccess] = useState<IntegrationAccess>(initialAccess);
     const [acknowledged, setAcknowledged] = useState(false);
-    const [error, setError] = useState<string | undefined>();
+    const [tokenError, setTokenError] = useState<string | undefined>();
+    const [refusal, setRefusal] = useState<string | undefined>();
 
     const changeOpen = (next: boolean) => {
-        setAccess('read');
+        setAccess(initialAccess);
         setAcknowledged(false);
-        setError(undefined);
+        setTokenError(undefined);
+        setRefusal(undefined);
         setOpen(next);
     };
 
     /** A rejection keeps the dialog open: the form dialog closes on success only. */
     const submit = async (data: FormData) => {
-        setError(undefined);
+        setTokenError(undefined);
+        setRefusal(undefined);
 
         try {
             await retroRequest(JiraDataCenterTokensController.store(scope), {
@@ -52,12 +63,18 @@ export function JiraTokenDialog({ scope, label, variant = 'default' }: Props) {
             });
         } catch (caught) {
             if (caught instanceof RetroRequestError && caught.status === 422) {
-                setError(
-                    caught.errors.token?.[0] ??
-                        caught.errors.acknowledged?.[0] ??
+                const tokenRefusal = caught.errors.token?.[0];
+
+                setTokenError(tokenRefusal);
+                setRefusal(
+                    caught.errors.acknowledged?.[0] ??
                         caught.errors.access?.[0],
                 );
-                document.getElementById(tokenId)?.focus();
+                document
+                    .getElementById(
+                        tokenRefusal === undefined ? acknowledgedId : tokenId,
+                    )
+                    ?.focus();
             } else {
                 toast.error(
                     integrationErrorMessage(caught, t('Something went wrong.')),
@@ -103,7 +120,7 @@ export function JiraTokenDialog({ scope, label, variant = 'default' }: Props) {
                     minLength={20}
                     maxLength={255}
                     autoComplete="off"
-                    error={error}
+                    error={tokenError}
                 />
                 <div className="flex min-w-0 flex-col gap-1.5">
                     <span aria-hidden="true" className="text-sm font-medium">
@@ -143,6 +160,7 @@ export function JiraTokenDialog({ scope, label, variant = 'default' }: Props) {
                     />
                     {t('I understand')}
                 </label>
+                <InputError role="alert" message={refusal} />
             </FormDialog>
         </>
     );
