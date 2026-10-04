@@ -59,7 +59,10 @@ function announcement(): string {
 
 /** Firefox and Safari blur a focused node that the DOM moves; jsdom does not. */
 function blurOnMove(): void {
-    const insertBefore = Node.prototype.insertBefore;
+    const insertBefore = Object.getOwnPropertyDescriptor(
+        Node.prototype,
+        'insertBefore',
+    )?.value as (this: Node, node: Node, child: Node | null) => Node;
     const blurIfMoved = (node: Node): void => {
         const active = document.activeElement;
 
