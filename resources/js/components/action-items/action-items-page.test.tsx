@@ -318,6 +318,44 @@ describe('ActionItemsPage', () => {
         ).toBeTruthy();
     });
 
+    it('does not open the item of a deep link later when a phone turns wide', () => {
+        const linkedPage = pageProps({
+            filters: {
+                ...noFilters,
+                assignee: null,
+                team: 'team-1',
+                item: 'item-2',
+            },
+        });
+
+        screenWidth.wide = false;
+        const { rerender } = renderWithProviders(<Harness {...linkedPage} />);
+
+        screenWidth.wide = true;
+        rerender(<Harness {...linkedPage} />);
+
+        expect(
+            screen.queryByRole('dialog', { name: 'Write the runbook' }),
+        ).toBeNull();
+    });
+
+    it('shows the list as busy while a filter visit runs below the table', () => {
+        screenWidth.wide = false;
+        renderPage();
+
+        act(() => requestActionItemsSearch('runbook'));
+        act(() => {
+            inertia.get.mock.calls.at(-1)?.[2]?.onStart?.();
+        });
+
+        expect(
+            document
+                .querySelector('[data-slot="action-items-loading"]')
+                ?.getAttribute('aria-busy'),
+        ).toBe('true');
+        expect(document.getElementById('action-item-item-1')).toBeNull();
+    });
+
     it('pins a linked item that the filters leave out, and opens it', async () => {
         const linked = actionItemFixture({
             id: 'item-9',
@@ -702,6 +740,25 @@ describe('ActionItemsPage', () => {
             ).toBeNull();
         });
 
+        it('leaves selection mode when the table takes over', () => {
+            screenWidth.wide = false;
+            const { rerender } = renderPage();
+
+            fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+
+            screenWidth.wide = true;
+            rerender(<Harness {...pageProps()} />);
+            screenWidth.wide = false;
+            rerender(<Harness {...pageProps()} />);
+
+            expect(screen.getByRole('button', { name: 'Select' })).toBeTruthy();
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Quarantine the flaky tests',
+                }),
+            ).toBeNull();
+        });
+
         it('enters selection mode with the item of a long press selected', () => {
             vi.useFakeTimers();
             screenWidth.wide = false;
@@ -820,11 +877,6 @@ describe('ActionItemsPage', () => {
                     .textContent,
             ).toContain('All 137 matching selected');
 
-            retroRequest.mockResolvedValue({
-                actionItems: [],
-                changedCount: 137,
-                refused: [],
-            });
             fireEvent.click(
                 within(
                     screen.getByRole('toolbar', { name: 'Bulk actions' }),
