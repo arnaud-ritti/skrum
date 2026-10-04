@@ -5290,5 +5290,12 @@
     "The link stops working.": "Der Link funktioniert dann nicht mehr.",
     "Invitation declined": "Einladung abgelehnt",
     ":name has been notified. You can close this page.": ":name wurde benachrichtigt. Du kannst diese Seite schließen.",
-    "You can close this page.": "Du kannst diese Seite schließen."
+    "You can close this page.": "Du kannst diese Seite schließen.",
+    ":email declined your invitation to join :team": ":email hat deine Einladung zu :team abgelehnt",
+    "View the team": "Team ansehen",
+    "This link no longer works.": "Dieser Link funktioniert nicht mehr.",
+    "Ask a team owner for a new one.": "Bitte einen Inhaber des Teams um einen neuen.",
+    "Ask :name for a new one.": "Bitte :name um einen neuen.",
+    "Verify your address to join :team": "Bestätige deine Adresse, um :team beizutreten",
+    "Open the link we sent you, then come back to this page.": "Öffne den Link, den wir dir geschickt haben, und komm dann auf diese Seite zurück."
 }

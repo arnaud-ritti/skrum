@@ -5070,5 +5070,12 @@
     "The link stops working.": "The link stops working.",
     "Invitation declined": "Invitation declined",
     ":name has been notified. You can close this page.": ":name has been notified. You can close this page.",
-    "You can close this page.": "You can close this page."
+    "You can close this page.": "You can close this page.",
+    ":email declined your invitation to join :team": ":email declined your invitation to join :team",
+    "View the team": "View the team",
+    "This link no longer works.": "This link no longer works.",
+    "Ask a team owner for a new one.": "Ask a team owner for a new one.",
+    "Ask :name for a new one.": "Ask :name for a new one.",
+    "Verify your address to join :team": "Verify your address to join :team",
+    "Open the link we sent you, then come back to this page.": "Open the link we sent you, then come back to this page."
 }

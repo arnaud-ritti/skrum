@@ -22,7 +22,7 @@ import type { TeamMarkData, TeamRoleValue } from '@/lib/invitations/types';
 import { login, logout } from '@/routes';
 import type { SsoProviderOption } from '@/types';
 
-type InvitationPerson = {
+export type InvitationPerson = {
     name: string;
     avatarUrl: string;
 };
@@ -221,20 +221,7 @@ export function InvitationCard({
         );
     }
 
-    const roleLabels: Record<InvitationRole | TeamRoleValue, string> = {
-        owner: t('Owner'),
-        admin: t('Admin'),
-        member: t('Member'),
-        facilitator: t('Facilitator'),
-        observer: t('Observer'),
-    };
     const joinedRole = team !== null && teamRole !== null ? teamRole : role;
-    const emphasised: Record<string, string> = {
-        '{{inviter}}': inviter?.name ?? '',
-        '{{team}}': team?.name ?? '',
-        '{{workspace}}': workspaceName,
-    };
-    const sentence = invitationSentence(t, inviter !== null, team !== null);
     const state = stateOf(isLoggedIn, emailMatches);
     const fullDecline =
         declineUrl === undefined ? null : (
@@ -263,90 +250,15 @@ export function InvitationCard({
             data-state={state}
             className="w-full min-w-0 gap-4 p-5 shadow-raised sm:p-8"
         >
-            <div
-                data-slot="invitation-who"
-                className="flex min-w-0 flex-col items-center gap-3 text-center"
-            >
-                <span className="relative inline-flex">
-                    {inviter === null ? (
-                        <span
-                            aria-hidden
-                            className="flex size-14 items-center justify-center rounded-xl bg-skrum-primary-soft font-display text-xl font-bold text-skrum-primary-text"
-                        >
-                            {Array.from(workspaceName)[0]?.toUpperCase()}
-                        </span>
-                    ) : (
-                        <PersonAvatar
-                            name={inviter.name}
-                            src={inviter.avatarUrl}
-                            size="xl"
-                            decorative
-                        />
-                    )}
-                    {team !== null && (
-                        <span
-                            data-slot="invitation-team"
-                            className="absolute -right-3.5 -bottom-1"
-                        >
-                            <TeamMark
-                                team={team}
-                                className="size-7 rounded-lg text-xs ring-2 ring-card"
-                            />
-                        </span>
-                    )}
-                </span>
-                <p
-                    data-slot="invitation-sentence"
-                    className="max-w-full text-lg/6.5 text-balance break-words"
-                >
-                    {sentence.split(Marker).map((part, index) =>
-                        part in emphasised ? (
-                            <b key={index} className="font-title">
-                                {emphasised[part]}
-                            </b>
-                        ) : (
-                            <Fragment key={index}>{part}</Fragment>
-                        ),
-                    )}
-                </p>
-                {joinedRole !== undefined && membersCount !== undefined && (
-                    <div
-                        data-slot="invitation-members"
-                        className="flex max-w-full flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
-                    >
-                        <AvatarStack
-                            people={members.map((member) => ({
-                                name: member.name,
-                                src: member.avatarUrl,
-                            }))}
-                            total={membersCount}
-                            max={ShownMembers}
-                            size="sm"
-                            className="*:ring-card"
-                        />
-                        <span className="min-w-0">
-                            {membersCount === 1
-                                ? t('1 member · you join as :role', {
-                                      role: roleLabels[joinedRole],
-                                  })
-                                : t(':count members · you join as :role', {
-                                      count: membersCount,
-                                      role: roleLabels[joinedRole],
-                                  })}
-                        </span>
-                    </div>
-                )}
-                {message !== null && message !== '' && (
-                    <figure
-                        data-slot="invitation-message"
-                        className="m-0 max-w-full min-w-0 rounded-lg bg-muted px-4 py-2"
-                    >
-                        <blockquote className="text-body-sm wrap-anywhere whitespace-pre-line italic">
-                            {t('“:message”', { message })}
-                        </blockquote>
-                    </figure>
-                )}
-            </div>
+            <InvitationSummary
+                inviter={inviter}
+                team={team}
+                workspaceName={workspaceName}
+                joinedRole={joinedRole}
+                membersCount={membersCount}
+                members={members}
+                message={message}
+            />
 
             <Separator />
 
@@ -601,6 +513,130 @@ export function InvitationCard({
 
             {state !== 'accept' && fullDecline}
         </Card>
+    );
+}
+
+/**
+ * Who invites, to what, and with whom: the top of the invitation card and of
+ * the invite link card.
+ */
+export function InvitationSummary({
+    inviter,
+    team,
+    workspaceName,
+    joinedRole,
+    membersCount,
+    members = [],
+    message = null,
+}: {
+    inviter: (Pick<InvitationPerson, 'name'> & { avatarUrl?: string }) | null;
+    team: TeamMarkData | null;
+    workspaceName: string;
+    joinedRole?: InvitationRole | TeamRoleValue;
+    membersCount?: number;
+    members?: InvitationPerson[];
+    message?: string | null;
+}) {
+    const { t } = useTrans();
+    const roleLabels: Record<InvitationRole | TeamRoleValue, string> = {
+        owner: t('Owner'),
+        admin: t('Admin'),
+        member: t('Member'),
+        facilitator: t('Facilitator'),
+        observer: t('Observer'),
+    };
+    const emphasised: Record<string, string> = {
+        '{{inviter}}': inviter?.name ?? '',
+        '{{team}}': team?.name ?? '',
+        '{{workspace}}': workspaceName,
+    };
+    const sentence = invitationSentence(t, inviter !== null, team !== null);
+
+    return (
+        <div
+            data-slot="invitation-who"
+            className="flex min-w-0 flex-col items-center gap-3 text-center"
+        >
+            <span className="relative inline-flex">
+                {inviter === null ? (
+                    <span
+                        aria-hidden
+                        className="flex size-14 items-center justify-center rounded-xl bg-skrum-primary-soft font-display text-xl font-bold text-skrum-primary-text"
+                    >
+                        {Array.from(workspaceName)[0]?.toUpperCase()}
+                    </span>
+                ) : (
+                    <PersonAvatar
+                        name={inviter.name}
+                        src={inviter.avatarUrl}
+                        size="xl"
+                        decorative
+                    />
+                )}
+                {team !== null && (
+                    <span
+                        data-slot="invitation-team"
+                        className="absolute -right-3.5 -bottom-1"
+                    >
+                        <TeamMark
+                            team={team}
+                            className="size-7 rounded-lg text-xs ring-2 ring-card"
+                        />
+                    </span>
+                )}
+            </span>
+            <p
+                data-slot="invitation-sentence"
+                className="max-w-full text-lg/6.5 text-balance break-words"
+            >
+                {sentence.split(Marker).map((part, index) =>
+                    part in emphasised ? (
+                        <b key={index} className="font-title">
+                            {emphasised[part]}
+                        </b>
+                    ) : (
+                        <Fragment key={index}>{part}</Fragment>
+                    ),
+                )}
+            </p>
+            {joinedRole !== undefined && membersCount !== undefined && (
+                <div
+                    data-slot="invitation-members"
+                    className="flex max-w-full flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
+                >
+                    <AvatarStack
+                        people={members.map((member) => ({
+                            name: member.name,
+                            src: member.avatarUrl,
+                        }))}
+                        total={membersCount}
+                        max={ShownMembers}
+                        size="sm"
+                        className="*:ring-card"
+                    />
+                    <span className="min-w-0">
+                        {membersCount === 1
+                            ? t('1 member · you join as :role', {
+                                  role: roleLabels[joinedRole],
+                              })
+                            : t(':count members · you join as :role', {
+                                  count: membersCount,
+                                  role: roleLabels[joinedRole],
+                              })}
+                    </span>
+                </div>
+            )}
+            {message !== null && message !== '' && (
+                <figure
+                    data-slot="invitation-message"
+                    className="m-0 max-w-full min-w-0 rounded-lg bg-muted px-4 py-2"
+                >
+                    <blockquote className="text-body-sm wrap-anywhere whitespace-pre-line italic">
+                        {t('“:message”', { message })}
+                    </blockquote>
+                </figure>
+            )}
+        </div>
     );
 }
 

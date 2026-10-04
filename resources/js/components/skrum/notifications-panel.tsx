@@ -41,6 +41,7 @@ export type NotificationKind =
     | 'recap_ready'
     | 'access_request'
     | 'access_answered'
+    | 'invitation_declined'
     | BacklogNotificationKind;
 
 const KnownKinds: ReadonlySet<string> = new Set<NotificationKind>([
@@ -50,6 +51,7 @@ const KnownKinds: ReadonlySet<string> = new Set<NotificationKind>([
     'recap_ready',
     'access_request',
     'access_answered',
+    'invitation_declined',
     'session_starting',
     'mention',
 ]);
@@ -167,12 +169,25 @@ export type AccessAnsweredNotification = NotificationBase & {
     href: string;
 };
 
+/**
+ * An invitation the inviter sent was declined: `email` is the invited
+ * address, `team` the team (or the workspace) it was for.
+ */
+export type InvitationDeclinedNotification = NotificationBase & {
+    kind: 'invitation_declined';
+    actor?: null;
+    email: string;
+    team: string;
+    href: string;
+};
+
 export type AppNotification =
     | ActionItemNotification
     | InvitationNotification
     | RecapNotification
     | AccessRequestNotification
     | AccessAnsweredNotification
+    | InvitationDeclinedNotification
     | BacklogNotification;
 
 function isActionItemNotification(
@@ -652,6 +667,17 @@ function NotificationItem({
                 values={{ team: notification.team }}
             />
         );
+    }
+
+    if (notification.kind === 'invitation_declined') {
+        leading = <PersonAvatar decorative name={notification.email} />;
+        text = (
+            <Rich
+                template={t(':email declined your invitation to join :team')}
+                values={{ email: notification.email, team: notification.team }}
+            />
+        );
+        linkLabel = t('View the team');
     }
 
     if (notification.kind === 'recap_ready') {
