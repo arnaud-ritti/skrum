@@ -22,6 +22,8 @@ export type ActionItemFilters = {
     assignee: string | null;
     team: string | null;
     item: string | null;
+    /** The topbar search: text or ticket key (P24-07). */
+    q?: string | null;
 };
 
 const StatusOrder: StatusToken[] = ['todo', 'doing', 'completed'];
@@ -82,6 +84,10 @@ export function filterQuery(
 
     if (filters.team) {
         query.team = filters.team;
+    }
+
+    if (filters.q) {
+        query.q = filters.q;
     }
 
     return query;
@@ -205,6 +211,7 @@ export function activeFilterCount(filters: ActionItemFilters): number {
         filters.priority.length > 0,
         filters.due !== null,
         filters.source !== null,
+        Boolean(filters.q),
     ].filter(Boolean).length;
 }
 
@@ -336,6 +343,7 @@ export function useActionItemFilters({
             filters.priority.length === 0 &&
             filters.due === null &&
             filters.source === null &&
+            !filters.q &&
             grouping === DefaultGrouping,
         activeCount: activeFilterCount(filters),
     };

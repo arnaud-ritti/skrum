@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsPage } from '@/components/action-items/action-items-page';
 import type { ActionItemsPageProps } from '@/components/action-items/action-items-page';
+import { requestActionItemsSearch } from '@/lib/action-items/search';
 import { actionItemFixture } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
@@ -526,6 +527,42 @@ describe('ActionItemsPage', () => {
         expect(screen.getByText('Nothing matches these filters.')).toBeTruthy();
     });
 
+    it('visits the page with the search of the topbar', () => {
+        renderPage();
+
+        act(() => requestActionItemsSearch('runbook'));
+
+        const url = new URL(
+            inertia.get.mock.calls.at(-1)?.[0],
+            'http://skrum.test',
+        );
+
+        expect(url.searchParams.get('q')).toBe('runbook');
+        expect(url.searchParams.get('team')).toBe('team-1');
+    });
+
+    it('says that nothing matches a search without results', () => {
+        renderPage({
+            items: {
+                data: [],
+                currentPage: 1,
+                lastPage: 1,
+                total: 0,
+                prevPageUrl: null,
+                nextPageUrl: null,
+            },
+            filters: {
+                ...noFilters,
+                q: 'runbook',
+                assignee: null,
+                team: 'team-1',
+                item: null,
+            },
+        });
+
+        expect(screen.getByText('Nothing matches these filters.')).toBeTruthy();
+    });
+
     it('pages with Previous and Next and says which page it is', () => {
         renderPage({
             items: {
@@ -714,6 +751,29 @@ describe('ActionItemsPage', () => {
                         filters: {
                             ...noFilters,
                             priority: ['high'],
+                            assignee: null,
+                            team: 'team-1',
+                            item: null,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('clears the selection when a search is applied', () => {
+            const { rerender } = renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            rerender(
+                <Harness
+                    {...pageProps({
+                        filters: {
+                            ...noFilters,
+                            q: 'runbook',
                             assignee: null,
                             team: 'team-1',
                             item: null,

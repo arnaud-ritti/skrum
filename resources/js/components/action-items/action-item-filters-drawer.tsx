@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ComponentProps } from 'react';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
+import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
 import {
     DefaultStatuses,
@@ -161,6 +162,12 @@ export function ActionItemFiltersDrawer({
                     <DrawerHeader className="pr-10 text-left">
                         <DrawerTitle>{t('Filters')}</DrawerTitle>
                     </DrawerHeader>
+                    <ActionItemSearchField
+                        value={filters.q ?? null}
+                        onSearch={(term) => onChange({ q: term })}
+                        shortcut={false}
+                        className="mb-3"
+                    />
                     <ActionItemFilterBar {...bar} layout="stacked" />
                 </DrawerContent>
             </Drawer>

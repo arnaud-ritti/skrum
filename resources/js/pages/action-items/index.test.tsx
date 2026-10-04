@@ -14,13 +14,18 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
         actions,
+        search,
         children,
     }: {
         actions?: ReactNode;
+        search?: ReactNode;
         children: ReactNode;
     }) => (
         <div>
-            <header>{actions}</header>
+            <header>
+                {search}
+                {actions}
+            </header>
             {children}
         </div>
     ),
@@ -34,6 +39,7 @@ const team = { id: 'team-1', name: 'Platform' };
 
 function pageProps(
     creatableTeams: ActionItemsPageProps['creatableTeams'],
+    q: string | null = null,
 ): ActionItemsPageProps {
     return {
         workspace: { id: 'workspace-1', slug: 'acme', name: 'Acme' },
@@ -45,6 +51,7 @@ function pageProps(
             assignee: null,
             team: null,
             item: null,
+            q,
         },
         filterTeams: [],
         creatableTeams,
@@ -84,5 +91,19 @@ describe('ActionItemsIndex topbar', () => {
         expect(
             screen.queryByRole('button', { name: 'New action item' }),
         ).toBeNull();
+    });
+
+    it('puts the search of the page in the topbar, holding its term', () => {
+        renderWithProviders(<ActionItemsIndex {...pageProps([], 'runbook')} />);
+
+        const search = screen.getByRole('searchbox', {
+            name: 'Search action items',
+        });
+
+        expect(screen.getByRole('banner').contains(search)).toBe(true);
+        expect((search as HTMLInputElement).value).toBe('runbook');
+        expect(
+            screen.getByRole('link', { name: 'Export' }).getAttribute('href'),
+        ).toBe('/w/acme/action-items/export?due=overdue&q=runbook');
     });
 });

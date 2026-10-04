@@ -5313,5 +5313,7 @@
     "1 action item · :start → :end": "1 acción · :start → :end",
     ":count action items · :start → :end": ":count acciones · :start → :end",
     "1 carried over": "1 aplazada",
-    ":count carried over": ":count aplazadas"
+    ":count carried over": ":count aplazadas",
+    "Search an action item, a ticket…": "Buscar una acción, un ticket…",
+    "Search action items": "Buscar acciones"
 }

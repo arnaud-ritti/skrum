@@ -4,11 +4,13 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import { NewActionItemButton } from '@/components/action-items/action-item-create-dialog';
+import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
 import { ActionItemsPage } from '@/components/action-items/action-items-page';
 import type { ActionItemsPageProps } from '@/components/action-items/action-items-page';
 import { ExportActionItemsButton } from '@/components/action-items/export-action-items-button';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
+import { requestActionItemsSearch } from '@/lib/action-items/search';
 
 export default function ActionItemsIndex(props: ActionItemsPageProps) {
     const { t } = useTrans();
@@ -40,6 +42,13 @@ export default function ActionItemsIndex(props: ActionItemsPageProps) {
                     href: WorkspaceActionItemsController.index(workspace.slug),
                 },
             ]}
+            search={
+                <ActionItemSearchField
+                    value={filters.q ?? null}
+                    onSearch={requestActionItemsSearch}
+                    className="hidden md:flex"
+                />
+            }
             actions={
                 creatableTeams.length > 0 ? (
                     <NewActionItemButton

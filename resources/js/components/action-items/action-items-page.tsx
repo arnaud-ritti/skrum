@@ -50,6 +50,7 @@ import { workspaceActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { groupItems } from '@/lib/action-items/grouping';
 import type { ActionItemSprint } from '@/lib/action-items/grouping';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
+import { useActionItemsSearchRequests } from '@/lib/action-items/search';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
 import type { ExportSource, WorkspaceSummary } from '@/types';
@@ -166,6 +167,8 @@ export function ActionItemsPage({
         currentTeamId: currentTeam?.id ?? null,
         teamIds: filterTeams.map((team) => team.id),
     });
+
+    useActionItemsSearchRequests((term) => filtering.apply({ q: term }));
 
     const realtime = useActionItemsRealtime({
         items: items.data,
@@ -381,7 +384,8 @@ export function ActionItemsPage({
         filters.due === null &&
         filters.priority.length === 0 &&
         filters.source === null &&
-        filters.assignee === null;
+        filters.assignee === null &&
+        !filters.q;
 
     const empty = (
         <EmptyState

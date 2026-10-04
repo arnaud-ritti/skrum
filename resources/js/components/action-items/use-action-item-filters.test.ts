@@ -233,9 +233,36 @@ describe('activeFilterCount', () => {
             }),
         ).toBe(3);
     });
+
+    it('writes the search into the query and counts it as a filter', () => {
+        const base: ActionItemFilters = {
+            status: ['todo', 'doing'],
+            priority: [],
+            due: null,
+            source: null,
+            assignee: null,
+            team: null,
+            item: null,
+        };
+
+        expect(filterQuery({ ...base, q: 'runbook' })).toEqual({
+            q: 'runbook',
+        });
+        expect(filterQuery({ ...base, q: null })).toEqual({});
+        expect(activeFilterCount({ ...base, q: 'runbook' })).toBe(1);
+    });
 });
 
 describe('useActionItemFilters', () => {
+    it('is not the landing state while a search is set', () => {
+        const { result } = mount(
+            { ...defaults, team: 'team-1', q: 'runbook' },
+            'team-1',
+        );
+
+        expect(result.current.isDefault).toBe(false);
+    });
+
     it('lands on the current team on a first visit', () => {
         mount();
 

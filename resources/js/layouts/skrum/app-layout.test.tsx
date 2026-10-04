@@ -1,5 +1,5 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import AppLayout from '@/layouts/skrum/app-layout';
 import { renderWithProviders } from '@/test/render';
 
@@ -25,6 +25,28 @@ vi.mock('@/components/nav-user', () => ({ NavUser: () => null }));
 vi.mock('@/components/action-items/notifications-menu', () => ({
     NotificationsMenu: () => <button type="button">Notifications</button>,
 }));
+
+vi.mock('@/hooks/use-global-search', () => ({
+    useGlobalSearch: () => ({
+        results: [],
+        term: '',
+        loading: false,
+        failed: false,
+    }),
+}));
+
+vi.mock('@/hooks/use-recent-sessions', () => ({
+    useRecentSessions: () => ({ sessions: [], loading: false, failed: false }),
+}));
+
+beforeAll(() => {
+    globalThis.ResizeObserver ??= class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    Element.prototype.scrollIntoView = () => {};
+});
 
 describe('AppLayout', () => {
     it('renders the actions at the end of the topbar, before the bell', () => {
@@ -92,5 +114,59 @@ describe('AppLayout', () => {
         expect(
             Array.from(banner.querySelectorAll('button')).at(-1)?.textContent,
         ).toBe('Notifications');
+    });
+
+    it('puts the page search in the topbar beside the palette compact button', () => {
+        renderWithProviders(
+            <AppLayout search={<input aria-label="Page search" />}>
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        const banner = screen.getByRole('banner');
+
+        expect(
+            banner.querySelector('input[aria-label="Page search"]'),
+        ).not.toBeNull();
+        expect(
+            banner.querySelector('[data-test="command-menu-button"]'),
+        ).toBeNull();
+        expect(
+            banner.querySelector('[data-test="command-menu-button-compact"]'),
+        ).not.toBeNull();
+
+        fireEvent.keyDown(document.body, {
+            key: 'k',
+            metaKey: true,
+            ctrlKey: true,
+        });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        fireEvent.keyDown(document.body, { key: '/' });
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
+    });
+
+    it('keeps the wide palette button and its Ctrl+K without a page search', () => {
+        renderWithProviders(
+            <AppLayout>
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        expect(
+            screen
+                .getByRole('banner')
+                .querySelector('[data-test="command-menu-button"]'),
+        ).not.toBeNull();
+
+        fireEvent.keyDown(document.body, {
+            key: 'k',
+            metaKey: true,
+            ctrlKey: true,
+        });
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
     });
 });

@@ -5094,5 +5094,7 @@
     "1 action item · :start → :end": "1 action item · :start → :end",
     ":count action items · :start → :end": ":count action items · :start → :end",
     "1 carried over": "1 carried over",
-    ":count carried over": ":count carried over"
+    ":count carried over": ":count carried over",
+    "Search an action item, a ticket…": "Search an action item, a ticket…",
+    "Search action items": "Search action items"
 }

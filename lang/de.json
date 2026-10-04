@@ -5313,5 +5313,7 @@
     "1 action item · :start → :end": "1 Aktion · :start → :end",
     ":count action items · :start → :end": ":count Aktionen · :start → :end",
     "1 carried over": "1 übertragen",
-    ":count carried over": ":count übertragen"
+    ":count carried over": ":count übertragen",
+    "Search an action item, a ticket…": "Aktion oder Ticket suchen…",
+    "Search action items": "Aktionen suchen"
 }

@@ -403,6 +403,37 @@ describe('ActionItemFiltersDrawer', () => {
         ).toContain('h-11');
     });
 
+    it('holds the search at the top of the drawer, without its shortcut', async () => {
+        const props = bar({ filters: { ...defaults, q: 'runbook' } });
+
+        renderWithProviders(
+            <ActionItemFiltersDrawer
+                {...props}
+                counts={counts}
+                activeCount={1}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Filters · 1' }));
+
+        const drawer = await screen.findByRole('dialog', { name: 'Filters' });
+        const search = within(drawer).getByRole('searchbox', {
+            name: 'Search action items',
+        });
+
+        expect((search as HTMLInputElement).value).toBe('runbook');
+        expect(search.getAttribute('aria-keyshortcuts')).toBeNull();
+        expect(
+            search.compareDocumentPosition(
+                within(drawer).getByRole('combobox', { name: 'Team' }),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+
+        fireEvent.keyDown(search, { key: 'Escape' });
+
+        expect(props.onChange).toHaveBeenLastCalledWith({ q: null });
+    });
+
     it('names the button "Filters" when no facet is on', () => {
         renderWithProviders(
             <ActionItemFiltersDrawer

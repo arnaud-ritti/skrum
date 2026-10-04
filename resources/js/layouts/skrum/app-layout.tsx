@@ -17,6 +17,7 @@ export default function AppLayout({
     active,
     status,
     actions,
+    search,
     children,
 }: {
     breadcrumbs?: BreadcrumbItem[];
@@ -25,6 +26,11 @@ export default function AppLayout({
     status?: ReactNode;
     /** Page actions, at the end of the topbar, before the bell. */
     actions?: ReactNode;
+    /**
+     * The page's own search, in the topbar's search place; the palette stays
+     * on "/" and its compact button.
+     */
+    search?: ReactNode;
     children: ReactNode;
 }) {
     const sidebar = useSidebarModel(active);
@@ -39,7 +45,20 @@ export default function AppLayout({
                 <AppTopbar
                     breadcrumbs={breadcrumbs}
                     status={status}
-                    search={<CommandMenu links={sidebar.links} />}
+                    search={
+                        search === undefined ? (
+                            <CommandMenu links={sidebar.links} />
+                        ) : (
+                            <>
+                                {search}
+                                <CommandMenu
+                                    links={sidebar.links}
+                                    wideTrigger={false}
+                                    toggleShortcut={false}
+                                />
+                            </>
+                        )
+                    }
                     actions={
                         <>
                             {actions}
