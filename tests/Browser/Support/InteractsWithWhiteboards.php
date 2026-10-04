@@ -202,16 +202,18 @@ trait InteractsWithWhiteboards
     }
 
     /**
-     * Presses the sticky note tool (N), then a colour of its sub-bar, which adds a note in the middle of the view.
+     * Presses the sticky note tool of the desktop tool bar or of the phone's, then a colour of its sub-bar,
+     * which adds a note in the middle of the view.
      */
     protected function addWhiteboardSticky(mixed $page, string $colour = 'Sun'): mixed
     {
-        $tool = '[data-slot="canvas-tools"] [data-slot="whiteboard-toolbar"] button[aria-keyshortcuts="N"]';
+        $bars = ':is([data-slot="canvas-tools"], [data-slot="phone-toolbar"])';
+        $tool = "{$bars} [data-slot=\"whiteboard-toolbar\"] button[data-toolbar-item=\"sticky\"]";
         $swatch = strtolower($colour);
 
         $page->click($tool)
             ->assertAttribute($tool, 'aria-pressed', 'true')
-            ->click("[data-slot=\"canvas-tools\"] [data-slot=\"whiteboard-sub-bar\"] [role=\"radio\"][data-color=\"{$swatch}\"]");
+            ->click("{$bars} [data-slot=\"whiteboard-sub-bar\"] [role=\"radio\"][data-color=\"{$swatch}\"]");
 
         return $page;
     }

@@ -580,6 +580,7 @@ it('[P17b-10] gives another member who picks the workspace template a board with
     $mia = renamedWhiteboardUser(teamMember($team), 'Mia Member');
 
     $page = $this->signIn($mia, p17bTeamPath($team));
+    $page->script('() => performance.setResourceTimingBufferSize(5000)');
     $board = p17bCreateBoard($page, 'Kick-off', 'From template');
 
     $this->awaitRealtime($page);
@@ -852,7 +853,7 @@ it('[P17b-16] lists Duplicate this board and Save as template in a member\'s boa
     $this->openWhiteboardMenu($guestPage)
         ->assertPresent('[role="menu"] [role="menuitemcheckbox"]:has-text("Hide my cursor")')
         ->assertCount('[role="menu"] [role="menuitemcheckbox"]', 1)
-        ->assertCount('[role="menu"] [role="menuitem"]', 0)
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Save as image|Find on canvas|Canvas help|Clear canvas|Canvas background')
         ->assertDontSeeIn('[role="menu"]', 'Duplicate this board')
         ->assertDontSeeIn('[role="menu"]', 'Save as template');
 
@@ -913,8 +914,8 @@ it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to
     $this->awaitWhiteboardElements($page, 4);
     p17bRecordDownloads($page);
 
-    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-        ->click('[data-testid="dropdown-menu"] [data-testid="image-export-button"]')
+    $this->openWhiteboardMenu($page)
+        ->click('[role="menu"] [role="menuitem"]:has-text("Save as image")')
         ->assertPresent('.ImageExportModal')
         ->assertPresent('.ImageExportModal__preview__canvas canvas')
         ->assertCount('.ImageExportModal__settings__buttons button', 3)
@@ -937,8 +938,7 @@ it('[P17b-20] downloads the board data as a file named after the board title, wh
     $this->awaitWhiteboardElements($page, 4);
     p17bRecordDownloads($page);
 
-    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-        ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
+    $page->click('header button[aria-label="Export"]')
         ->assertPresent('.ExportDialog--json')
         ->assertSeeIn('.ExportDialog--json', 'Download everything on the board as a data file.')
         ->assertCount('.ExportDialog--json button', 1)
@@ -968,7 +968,7 @@ it('[P17b-20] downloads the board data as a file named after the board title, wh
         ->and(collect($exported['names'])->filter(fn (string $name): bool => str_ends_with($name, '.excalidraw'))->all())->toBeEmpty();
 });
 
-it('[P17b-22] shows no library name and no outbound link in the canvas menu and in the two export dialogs', function () {
+it('[P17b-22] shows no library name and no outbound link in the board menu and in the two export dialogs', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
     p17bStored($board, $franMember, ['id' => 'p17bOnly', 'x' => 300, 'y' => 200], 1);
     $links = fn (string $scope): string => "Array.from(document.querySelectorAll('{$scope} a[href]')).filter((link) => link.getClientRects().length > 0).length";
@@ -977,18 +977,17 @@ it('[P17b-22] shows no library name and no outbound link in the canvas menu and 
 
     $this->awaitWhiteboardElements($page, 1);
 
-    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-        ->assertPresent('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
-        ->assertNotPresent('[data-testid="dropdown-menu"] a[href]')
-        ->assertDontSeeIn('[data-testid="dropdown-menu"]', 'Excalidraw')
-        ->click('[data-testid="dropdown-menu"] [data-testid="image-export-button"]')
+    $this->openWhiteboardMenu($page)
+        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Save as image")')
+        ->assertNotPresent('[role="menu"] a[href]')
+        ->assertDontSeeIn('[role="menu"]', 'Excalidraw')
+        ->click('[role="menu"] [role="menuitem"]:has-text("Save as image")')
         ->assertPresent('.ImageExportModal')
         ->assertScript($links('.ImageExportModal'), 0)
         ->assertDontSeeIn('.ImageExportModal', 'Excalidraw')
         ->keys('.ImageExportModal button[aria-label="Export to PNG"]', 'Escape')
         ->assertNotPresent('.ImageExportModal')
-        ->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-        ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
+        ->click('header button[aria-label="Export"]')
         ->assertPresent('.ExportDialog--json')
         ->assertScript($links('.excalidraw-modal-container'), 0)
         ->assertDontSeeIn('.excalidraw-modal-container', 'Excalidraw')
