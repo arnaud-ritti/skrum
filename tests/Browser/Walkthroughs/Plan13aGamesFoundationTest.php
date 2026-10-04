@@ -155,7 +155,7 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
         ->and(array_column($names['animals'], 'name'))->toContain($animal);
 
     $guest->fill('#name', 'Visitor')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIs(p13aRoomPath($room));
     $this->awaitRealtime($guest);
 
@@ -229,7 +229,7 @@ it('[P13a-04a] shows hits, misses, the figure and the last picks live to both pl
         $page->assertScript(p13aMaskScript(), 'q_____')
             ->assertAriaAttribute(p13aLetter('q'), 'pressed', 'true')
             ->assertDisabled(p13aLetter('q'))
-            ->assertSeeIn('[aria-label="Last letters"]', 'Ada Host picked Q')
+            ->assertSeeIn('[aria-label="Last moves"]', 'Ada Host picked Q')
             ->assertCount('svg[role="img"][aria-label="0 of 6 misses"] > *', 4);
     }
 
@@ -239,7 +239,7 @@ it('[P13a-04a] shows hits, misses, the figure and the last picks live to both pl
     foreach ([$host, $guest] as $page) {
         $page->assertSee('1 of 6 misses')
             ->assertCount('svg[role="img"][aria-label="1 of 6 misses"] > *', 5)
-            ->assertSeeIn('[aria-label="Last letters"]', 'Visitor picked X')
+            ->assertSeeIn('[aria-label="Last moves"]', 'Visitor picked X')
             ->assertDisabled(p13aLetter('x'))
             ->assertScript(p13aMaskScript(), 'q_____');
     }
@@ -250,7 +250,7 @@ it('[P13a-04a] shows hits, misses, the figure and the last picks live to both pl
     foreach ([$host, $guest] as $page) {
         $page->assertScript(p13aMaskScript(), 'qu____')
             ->assertPresent('[role="img"][aria-label="4 letters left to find"]')
-            ->assertSeeIn('[aria-label="Last letters"]', 'Visitor picked U')
+            ->assertSeeIn('[aria-label="Last moves"]', 'Visitor picked U')
             ->assertSee('1 of 6 misses');
     }
 

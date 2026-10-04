@@ -23,7 +23,10 @@ export function HangmanFigure({ misses, maxMisses }: Props) {
     );
 
     return (
-        <div data-slot="hangman-figure" className="relative w-42 sm:w-50">
+        <div
+            data-slot="hangman-figure"
+            className="relative w-42 sm:w-50 [@media(max-height:43.75rem)]:w-28"
+        >
             <svg
                 viewBox="0 0 200 170"
                 aria-hidden

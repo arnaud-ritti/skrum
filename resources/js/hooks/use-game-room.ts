@@ -101,6 +101,21 @@ export function useGameRoom(
         dispatch(action);
     }, []);
 
+    /**
+     * The viewer's own changes show at once. A patch of the round (a vote, a
+     * choice, an answer) made while a refetch is in flight is replayed after
+     * its snapshot too, which may have been built before the change reached
+     * the server. Patches set fields, so a replay is harmless; actions that
+     * append (a letter, a guess) are not replayed.
+     */
+    const dispatchLocal = useCallback((action: RoomAction) => {
+        dispatch(action);
+
+        if (action.type === 'round.patched') {
+            bufferedActions.current?.push(action);
+        }
+    }, []);
+
     const flushBufferedActions = useCallback(() => {
         const actions = bufferedActions.current ?? [];
 
@@ -404,7 +419,7 @@ export function useGameRoom(
 
     return {
         state,
-        dispatch,
+        dispatch: dispatchLocal,
         apply,
         refetch,
         run,

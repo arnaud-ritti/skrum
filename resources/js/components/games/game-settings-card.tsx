@@ -96,7 +96,7 @@ function SettingRow({
             <label
                 htmlFor={id}
                 data-slot="setting-label"
-                className="min-w-0 truncate"
+                className="min-w-0 break-words"
             >
                 {label}
             </label>

@@ -26,6 +26,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
+import { roundTitle } from '@/lib/games/round-title';
 import type { GameKind, GameRoundDetail } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import type {
@@ -49,23 +50,6 @@ const GameIcons: Record<GameKind, LucideIcon> = {
     guess_who: UserRoundSearch,
     quick_question: MessageCircleQuestion,
 };
-
-/** Two truths always plays a set of three statements, one of them the lie. */
-const StatementsPerSet = 3;
-
-type Translate = ReturnType<typeof useTrans>['t'];
-
-function roundTitle(round: GamesPlayedRound, t: Translate): string {
-    if (round.game === 'mood') {
-        return t('Mood weather');
-    }
-
-    if (round.game === 'two_truths') {
-        return t(':count statements', { count: StatementsPerSet });
-    }
-
-    return round.word ?? round.question ?? '—';
-}
 
 function Podium({ leaderboard }: { leaderboard: GamesPlayedLeaderRow[] }) {
     const { t } = useTrans();
@@ -345,7 +329,11 @@ export function GamesPlayed({ games }: { games: GamesPlayedPayload }) {
     return (
         <ResultsCard title={t('Games we played')}>
             <p className="text-sm text-muted-foreground">
-                {t(':count rounds played', { count: games.roundsPlayed })}
+                {games.roundsPlayed === 1
+                    ? t(':count round played', { count: games.roundsPlayed })
+                    : t(':count rounds played', {
+                          count: games.roundsPlayed,
+                      })}
             </p>
             <Podium leaderboard={games.leaderboard} />
             <ol className="min-w-0 space-y-2">
