@@ -114,7 +114,7 @@ describe('ColorField', () => {
         ).toContain('#2b63b0');
     });
 
-    it('names the Skrüm default when the field is empty', () => {
+    it('names the default when the field is empty', () => {
         const { container } = renderWithProviders(
             <ColorField
                 value=""
@@ -126,6 +126,29 @@ describe('ColorField', () => {
 
         expect(
             container.querySelector('[data-slot=color-entered]')?.textContent,
-        ).toContain('Skrüm default#bb4d2a');
+        ).toContain('Default#bb4d2a');
+    });
+
+    it('announces the result of the colour, not each typed key', () => {
+        const { container } = renderWithProviders(
+            <ColorField
+                value="#2b6"
+                onChange={vi.fn()}
+                defaultColor="#bb4d2a"
+                palette={samplePalette}
+            />,
+        );
+        const status = screen.getByRole('status');
+
+        expect(
+            status.contains(
+                container.querySelector('[data-slot=color-applied-dark]'),
+            ),
+        ).toBe(true);
+        expect(
+            status.contains(
+                container.querySelector('[data-slot=color-entered]'),
+            ),
+        ).toBe(false);
     });
 });

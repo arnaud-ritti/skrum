@@ -123,6 +123,7 @@ export function AvatarStyleGrid({
                                 }
                                 aria-checked={isSelected}
                                 aria-labelledby={nameId}
+                                aria-describedby={`${nameId}-license`}
                                 title={option.license}
                                 tabIndex={index === focusableIndex ? 0 : -1}
                                 onClick={() => select(index)}
@@ -148,6 +149,12 @@ export function AvatarStyleGrid({
                                     className="max-w-full truncate"
                                 >
                                     {option.name}
+                                </span>
+                                <span
+                                    id={`${nameId}-license`}
+                                    className="sr-only"
+                                >
+                                    {option.license}
                                 </span>
                             </button>
                         );
