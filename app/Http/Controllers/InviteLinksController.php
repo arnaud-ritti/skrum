@@ -42,7 +42,11 @@ class InviteLinksController extends Controller
             redirect()->setIntendedUrl($request->fullUrl());
         }
 
-        $request->session()->put(InviteLinkSession::Key, $token);
+        $isSignedUp = $user?->hasVerifiedEmail() ?? false;
+
+        $isSignedUp
+            ? $request->session()->forget(InviteLinkSession::Key)
+            : $request->session()->put(InviteLinkSession::Key, $token);
 
         $canRegister = Features::enabled(Features::registration())
             && $signInPolicy->allowsLocalCredentials()

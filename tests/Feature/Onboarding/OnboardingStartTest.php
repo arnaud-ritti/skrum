@@ -135,3 +135,13 @@ it('opens the onboarding page only for an onboarding that is not completed', fun
     $this->actingAs($completed->user)->get(route('onboarding.show'))->assertRedirect(route('dashboard'));
     $this->actingAs(User::factory()->create())->get(route('onboarding.show'))->assertRedirect(route('dashboard'));
 });
+
+it('lets a member of another workspace who opens a link and does not join go back to their own team', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    TeamInviteLink::factory()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
+
+    $this->actingAs($member)->get(route('inviteLinks.show', 'join-token-0123456789abcdefghijklmnopqrst'))->assertOk();
+
+    $this->actingAs($member)->get(route('dashboard'))->assertRedirect(route('teams.show', [$team->workspace, $team]));
+});
