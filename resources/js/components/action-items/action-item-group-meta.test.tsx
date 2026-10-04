@@ -69,7 +69,7 @@ describe('ActionItemGroupMeta', () => {
             />,
         );
 
-        expect(screen.getByText('Finished')).toBeTruthy();
+        expect(screen.getByText('Finished sprint')).toBeTruthy();
         expect(screen.getByText('2 carried over')).toBeTruthy();
         expect(screen.getByText('1 overdue')).toBeTruthy();
     });

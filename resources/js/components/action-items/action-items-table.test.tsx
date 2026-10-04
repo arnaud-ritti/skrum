@@ -472,7 +472,7 @@ describe('ActionItemsTable', () => {
         const header = document.querySelector('[data-slot="action-group"]');
 
         expect(header?.textContent).toContain('Sprint 41');
-        expect(screen.getByText('Finished')).toBeTruthy();
+        expect(screen.getByText('Finished sprint')).toBeTruthy();
         expect(screen.getByText('1 carried over')).toBeTruthy();
         expect(screen.getByText('1 overdue')).toBeTruthy();
 

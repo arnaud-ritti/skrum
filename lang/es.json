@@ -2909,6 +2909,7 @@
     "Create a room and share the link: guests join without an account.": "Crea una sala y comparte el enlace: los invitados entran sin cuenta.",
     "Waiting for players": "Esperando jugadores",
     "Finished": "Terminada",
+    "Finished sprint": "Terminado",
     "needs 1 more player": "falta 1 jugador",
     "needs :count more players": "faltan :count jugadores",
     ":count player": ":count jugador",

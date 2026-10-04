@@ -82,7 +82,7 @@ export function ActionItemGroupMeta({
     return (
         <>
             <Badge variant={isCurrent ? 'info' : 'muted'} shape="pill">
-                {isCurrent ? t('In progress') : t('Finished')}
+                {isCurrent ? t('In progress') : t('Finished sprint')}
             </Badge>
             <span
                 className="font-medium text-muted-foreground"

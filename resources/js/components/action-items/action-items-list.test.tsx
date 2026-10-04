@@ -238,7 +238,7 @@ describe('ActionItemsList', () => {
         const heading = screen.getByRole('heading', { level: 2 });
 
         expect(heading.textContent).toContain('Sprint 41');
-        expect(within(heading).getByText('Finished')).toBeTruthy();
+        expect(within(heading).getByText('Finished sprint')).toBeTruthy();
         expect(within(heading).getByText('1 carried over')).toBeTruthy();
         expect(within(heading).getByText('1 overdue')).toBeTruthy();
         expect(document.getElementById('action-item-a')).not.toBeNull();
