@@ -137,7 +137,7 @@ it('[P13d-04] reveals the "é" of an accented Hangman word to both players when 
     ['room' => $room, 'ada' => $ada] = p13dRoom(['access' => GameRoomAccess::Link]);
     $round = activeGameRound($room, ['word' => 'fiancée']);
     $letter = fn (string $letter): string => "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
-    $mask = 'Array.from(document.querySelectorAll(\'[role="img"][aria-label$="letters left to find"] span\')).map((cell) => cell.textContent || "_").join("")';
+    $mask = 'Array.from(document.querySelectorAll(\'[role="img"][data-slot="word-mask"] span\')).map((cell) => cell.textContent || "_").join("")';
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
     $c = $this->awaitRealtime($this->joinAsGuest(route('games.join.show', $room->guest_token, false), 'Casey'));
@@ -199,7 +199,7 @@ it('[P13d-06a] creates a retro with the Icebreaker phase and Hangman, which open
         ->assertSee('Ready to play?')
         ->click('Start')
         ->assertPresent('[role="group"][aria-label="Letters"]')
-        ->assertPresent('[role="img"][aria-label$="letters left to find"]');
+        ->assertPresent('[role="img"][data-slot="word-mask"]');
 
     $retro = Retro::query()->where('title', 'Sprint 13 retro')->sole();
     $room = GameRoom::query()->where('retro_id', $retro->id)->sole();
@@ -490,7 +490,7 @@ it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both brow
 
     foreach ([$a, $c] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
-            ->assertPresent('[role="img"][aria-label="1 letters left to find"]');
+            ->assertPresent('[role="img"][aria-label="1 letter left to find"]');
     }
 
     $c->click('[role="group"][aria-label="Letters"] button:has-text("t")');
