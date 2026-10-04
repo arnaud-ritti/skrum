@@ -22,6 +22,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 /**
  * @return array{
@@ -150,7 +153,7 @@ it('[P15-01] shows the request with a masked signature and the response of a del
 
     $page = $this->awaitRealtime($this->signIn($admin, "/retros/{$retro->id}"));
 
-    $page->assertVisible("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+    $page->click("#action-item-{$item->id} [aria-label=\"Mark as in progress\"]")
         ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
         ->assertPresent("#action-item-{$item->id} [aria-label=\"Reopen\"]");
 
@@ -163,18 +166,19 @@ it('[P15-01] shows the request with a masked signature and the response of a del
     expect($delivery->payload->request_headers['X-Skrum-Signature'])->toBe($masked)
         ->and((string) DB::table('integration_delivery_payloads')->value('request_body'))->not->toContain('Fix the deploy');
 
-    $page->navigate(p15IntegrationsPath($team))
-        ->assertSee('Show deliveries')
+    $page->navigate(p15IntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completed | Sent | 1 | 200')
-        ->click('View')
+        ->click('table[aria-label="Deliveries"] button:has-text("View")')
         ->assertSee('Delivery details')
         ->assertAriaAttribute('#delivery-tab-request', 'selected', 'true')
         ->assertSeeIn('table[aria-label="Headers"]', 'X-Skrum-Event')
         ->assertSeeIn('table[aria-label="Headers"]', 'X-Skrum-Timestamp')
         ->assertSeeIn('table[aria-label="Headers"]', $delivery->id)
         ->assertSeeIn('table[aria-label="Headers"]', $masked)
-        ->assertDontSeeIn('[role="dialog"]', $signature)
+        ->assertDontSeeIn($this->dialogOverPanel(), $signature)
         ->assertSeeIn('#delivery-tabpanel pre', '"event": "action_item.completed"')
         ->assertSeeIn('#delivery-tabpanel pre', 'Fix the deploy')
         ->click('#delivery-tab-response')
@@ -192,7 +196,7 @@ it('[P15-02] shows a delivery that failed after its seven tries, with the last a
 
     $page = $this->awaitRealtime($this->signIn($admin, "/retros/{$retro->id}"));
 
-    $page->assertVisible("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+    $page->click("#action-item-{$item->id} [aria-label=\"Mark as in progress\"]")
         ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
         ->assertPresent("#action-item-{$item->id} [aria-label=\"Reopen\"]");
 
@@ -209,12 +213,12 @@ it('[P15-02] shows a delivery that failed after its seven tries, with the last a
 
     $after = $this->signIn($admin, p15IntegrationsPath($team));
 
-    $after->assertSee('Show deliveries')
+    $this->openIntegration($after, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completed | Failed | 7 | 503')
         ->assertSeeIn('table[aria-label="Deliveries"] tbody tr', 'Webhook did not respond. Try again later.')
         ->assertPresent('table[aria-label="Deliveries"] button:has-text("Redeliver")')
-        ->click('View')
+        ->click('table[aria-label="Deliveries"] button:has-text("View")')
         ->assertSee('Delivery details')
         ->click('#delivery-tab-response')
         ->assertSee('Status: 503')
@@ -230,14 +234,14 @@ it('[P15-03] redelivers a failed delivery with the same id, the redelivery heade
 
     $page = $this->signIn($admin, p15IntegrationsPath($team));
 
-    $page->assertSee('Show deliveries')
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completed | Failed | 7 | 503')
-        ->click('Redeliver')
+        ->click('table[aria-label="Deliveries"] button:has-text("Redeliver")')
         ->assertSee('Send this delivery again to hooks.example.com?')
-        ->click('[role="dialog"] button:has-text("Redeliver")')
+        ->click("{$this->dialogOverPanel()} button:has-text(\"Redeliver\")")
         ->assertSee('Delivery queued again.')
-        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent($this->dialogOverPanel())
         ->assertScript(p15LogScript(), 'action_item.completedRedelivery | Queued | 0 | — / action_item.completed | Failed | 7 | 503');
 
     Http::assertNothingSent();
@@ -274,7 +278,8 @@ it('[P15-04] offers no Redeliver while the webhook is disabled and offers it aga
 
     $page = $this->signIn($admin, p15IntegrationsPath($team));
 
-    $page->assertSee('Disabled after 10 failed deliveries in a row.')
+    $this->openIntegration($page, 'webhook')
+        ->assertSee('Disabled after 10 failed deliveries in a row.')
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completed | Failed | 7 | 503')
         ->assertPresent('table[aria-label="Deliveries"] button:has-text("View")')
@@ -293,16 +298,16 @@ it('[P15-05] explains why a delivery cannot be redelivered', function (string $c
 
     $page = $this->signIn($admin, p15IntegrationsPath($team));
 
-    $page->assertSee('Show deliveries')
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completed | Failed | 7 | 503')
-        ->click('Redeliver')
+        ->click('table[aria-label="Deliveries"] button:has-text("Redeliver")')
         ->assertSee('Send this delivery again to hooks.example.com?');
 
     p15MakeUnredeliverable($case, $integration, $delivery);
 
-    $page->click('[role="dialog"] button:has-text("Redeliver")')
-        ->assertSeeIn('[role="dialog"] [role="alert"]', $message);
+    $page->click("{$this->dialogOverPanel()} button:has-text(\"Redeliver\")")
+        ->assertSeeIn("{$this->dialogOverPanel()} [role=\"alert\"]", $message);
 
     expect(IntegrationDelivery::query()->count())->toBe(1);
     Http::assertNothingSent();

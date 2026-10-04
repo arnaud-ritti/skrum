@@ -19,6 +19,9 @@ use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 beforeEach(function () {
     disableIntegrations();
@@ -43,11 +46,6 @@ function p14aIntegrationsPath(Team $team): string
 function p14aCard(string $provider): string
 {
     return "[data-test=\"integration-card-{$provider}\"]";
-}
-
-function p14aBadge(string $provider): string
-{
-    return "document.querySelector('[data-test=\"integration-card-{$provider}\"] [data-slot=\"badge\"]').textContent";
 }
 
 function p14aConnectChats(Team $team): void
@@ -106,32 +104,37 @@ it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never 
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
-    $teams = p14aCard('msteams');
-    $url = '[role="dialog"] input[type="url"]';
+    $teams = $this->integrationPanel('msteams');
+    $url = $this->dialogOverPanel('input[type="url"]');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
     $page->assertCount('[data-test^="integration-card-"]', 2)
-        ->assertSeeIn("{$teams} [data-slot=\"card-title\"]", 'Microsoft Teams')
-        ->assertScript(p14aBadge('msteams'), 'Not connected')
+        ->assertSeeIn(p14aCard('msteams').' h3', 'Microsoft Teams');
+
+    $this->assertIntegrationStatus($page, 'msteams', 'Not connected');
+
+    $this->openIntegration($page, 'msteams')
         ->click("{$teams} button:has-text(\"Connect\")")
         ->assertSee('Connect Microsoft Teams')
         ->fill($url, 'https://example.com/workflows/abc')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Use the workflow URL from Microsoft Teams.')
         ->fill($url, TeamIntegrationFactory::MicrosoftTeamsUrl)
-        ->fill('[role="dialog"] input[maxlength="80"]', 'Retro channel')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->fill($this->dialogOverPanel('input[maxlength="80"]'), 'Retro channel')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Microsoft Teams connected.')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertScript(p14aBadge('msteams'), 'Connected')
-        ->assertSeeIn($teams, 'prod-12.westeurope.logic.azure.com')
-        ->assertSeeIn($teams, 'Retro channel')
+        ->assertNotPresent($this->dialogOverPanel())
+        ->assertSeeIn("{$teams} [data-slot=\"provider-details\"]", 'prod-12.westeurope.logic.azure.com')
+        ->assertSeeIn("{$teams} [data-slot=\"provider-details\"]", 'Retro channel')
         ->assertSeeIn($teams, 'Ada Admin')
         ->assertPresent("{$teams} button:has-text(\"Replace URL\")");
 
-    $page->navigate(p14aIntegrationsPath($team))
-        ->assertScript(p14aBadge('msteams'), 'Connected')
+    $this->assertIntegrationStatus($page, 'msteams', 'Connected');
+
+    $page->navigate(p14aIntegrationsPath($team));
+
+    $this->assertIntegrationStatus($page, 'msteams', 'Connected')
         ->assertSourceMissing('teams-signature');
 
     $integration = TeamIntegration::query()->sole();
@@ -147,28 +150,32 @@ it('[P14a-01b] connects a Mattermost incoming webhook of the configured server o
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
-    $mattermost = p14aCard('mattermost');
-    $url = '[role="dialog"] input[type="url"]';
+    $mattermost = $this->integrationPanel('mattermost');
+    $url = $this->dialogOverPanel('input[type="url"]');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
-    $page->assertScript(p14aBadge('mattermost'), 'Not connected')
+    $this->assertIntegrationStatus($page, 'mattermost', 'Not connected');
+
+    $this->openIntegration($page, 'mattermost')
         ->assertSeeIn($mattermost, 'through an incoming webhook of https://chat.example.com.')
         ->click("{$mattermost} button:has-text(\"Connect\")")
         ->assertSee('Connect Mattermost')
         ->fill($url, 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Use an incoming webhook of https://chat.example.com.')
         ->fill($url, TeamIntegrationFactory::MattermostUrl)
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Mattermost connected.')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertScript(p14aBadge('mattermost'), 'Connected')
-        ->assertSeeIn($mattermost, 'chat.example.com')
+        ->assertNotPresent($this->dialogOverPanel())
+        ->assertSeeIn("{$mattermost} [data-slot=\"provider-details\"]", 'chat.example.com')
         ->assertSeeIn($mattermost, 'Ada Admin');
 
-    $page->navigate(p14aIntegrationsPath($team))
-        ->assertScript(p14aBadge('mattermost'), 'Connected')
+    $this->assertIntegrationStatus($page, 'mattermost', 'Connected');
+
+    $page->navigate(p14aIntegrationsPath($team));
+
+    $this->assertIntegrationStatus($page, 'mattermost', 'Connected')
         ->assertSourceMissing('abcdefghijklmnopqrstuvwxyz');
 
     $integration = TeamIntegration::query()->sole();
@@ -185,19 +192,25 @@ it('[P14a-02] sends a test message to Microsoft Teams and to Mattermost', functi
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
     p14aConnectChats($team);
-    $teams = p14aCard('msteams');
-    $mattermost = p14aCard('mattermost');
+    $teams = $this->integrationPanel('msteams');
+    $mattermost = $this->integrationPanel('mattermost');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
-    $page->assertScript(p14aBadge('msteams'), 'Connected')
-        ->assertScript(p14aBadge('mattermost'), 'Connected')
-        ->assertSeeIn($teams, '#retros')
-        ->assertSeeIn($mattermost, 'town-square')
+    $this->assertIntegrationStatus($page, 'msteams', 'Connected')
+        ->assertSeeIn(p14aCard('msteams'), '#retros')
+        ->assertSeeIn(p14aCard('mattermost'), 'town-square');
+    $this->assertIntegrationStatus($page, 'mattermost', 'Connected');
+
+    $this->openIntegration($page, 'msteams')
         ->assertSeeIn($teams, 'Never')
         ->click("{$teams} button:has-text(\"Send a test message\")")
         ->assertSee('Test message sent.')
-        ->assertDontSeeIn($teams, 'Never')
+        ->assertDontSeeIn($teams, 'Never');
+
+    $this->closeIntegration($page, 'msteams');
+
+    $this->openIntegration($page, 'mattermost')
         ->assertSeeIn($mattermost, 'Never')
         ->click("{$mattermost} button:has-text(\"Send a test message\")")
         ->assertDontSeeIn($mattermost, 'Never');
@@ -369,7 +382,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
     [$retro, $fran] = p14aRetro();
     $admin = p14aAdmin($retro->team);
     $lines = '[role="dialog"] ul[aria-live="polite"]';
-    $teams = p14aCard('msteams');
+    $teams = $this->integrationPanel('msteams');
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
@@ -388,19 +401,22 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
 
     $settings = $this->signIn($admin, p14aIntegrationsPath($retro->team));
 
-    $settings->assertScript(p14aBadge('msteams'), 'Reconnect required')
+    $this->assertIntegrationStatus($settings, 'msteams', 'Reconnect required');
+    $this->assertIntegrationStatus($settings, 'mattermost', 'Connected');
+
+    $this->openIntegration($settings, 'msteams')
         ->assertSeeIn($teams, 'The Teams workflow URL no longer works. Paste a new one.')
         ->assertNotPresent("{$teams} button:has-text(\"Send a test message\")")
-        ->assertScript(p14aBadge('mattermost'), 'Connected')
         ->click("{$teams} button:has-text(\"Replace URL\")")
         ->assertSee('Replace the URL')
-        ->fill('[role="dialog"] input[type="url"]', 'https://prod-30.northeurope.logic.azure.com:443/workflows/def456/triggers/manual/paths/invoke?api-version=2016-06-01&sig=new-signature')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->fill($this->dialogOverPanel('input[type="url"]'), 'https://prod-30.northeurope.logic.azure.com:443/workflows/def456/triggers/manual/paths/invoke?api-version=2016-06-01&sig=new-signature')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Connection saved.')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertScript(p14aBadge('msteams'), 'Connected')
-        ->assertSeeIn($teams, 'prod-30.northeurope.logic.azure.com')
+        ->assertNotPresent($this->dialogOverPanel())
+        ->assertSeeIn("{$teams} [data-slot=\"provider-details\"]", 'prod-30.northeurope.logic.azure.com')
         ->assertPresent("{$teams} button:has-text(\"Send a test message\")");
+
+    $this->assertIntegrationStatus($settings, 'msteams', 'Connected');
 
     expect($retro->team->integration(IntegrationProvider::MicrosoftTeams)?->status)->toBe(IntegrationStatus::Active);
 });

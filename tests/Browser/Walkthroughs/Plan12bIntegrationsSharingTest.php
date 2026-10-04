@@ -23,6 +23,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 beforeEach(function () {
     disableIntegrations();
@@ -413,7 +416,7 @@ it('[P12b-06a] turns the delivery line to failed and the Slack card to "Reconnec
     $admin = integrationAdmin($retro->team);
     $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
     $lines = '[role="dialog"] ul[aria-live="polite"]';
-    $slackCard = '[data-test="integration-card-slack"]';
+    $slackPanel = '[data-test="integration-panel-slack"]';
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
@@ -436,8 +439,10 @@ it('[P12b-06a] turns the delivery line to failed and the Slack card to "Reconnec
 
     $settings = $this->signIn($admin, route('teams.integrations.index', [$retro->team->workspace, $retro->team], false));
 
-    $settings->assertScript("document.querySelector('[data-test=\"integration-card-slack\"] [data-slot=\"badge\"]').textContent", 'Reconnect required')
-        ->assertSeeIn($slackCard, 'channel_is_archived')
-        ->assertNotPresent("{$slackCard} button:has-text(\"Send a test message\")")
-        ->assertScript("document.querySelector('[data-test=\"integration-card-telegram\"] [data-slot=\"badge\"]').textContent", 'Connected');
+    $this->assertIntegrationStatus($settings, 'slack', 'Reconnect required');
+    $this->assertIntegrationStatus($settings, 'telegram', 'Connected');
+
+    $this->openIntegration($settings, 'slack')
+        ->assertSeeIn($slackPanel, 'channel_is_archived')
+        ->assertNotPresent("{$slackPanel} button:has-text(\"Send a test message\")");
 });

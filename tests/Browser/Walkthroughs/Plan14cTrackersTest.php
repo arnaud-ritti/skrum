@@ -23,6 +23,9 @@ use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 function p14cEnable(IntegrationProvider $provider): void
 {
@@ -172,15 +175,23 @@ it('[P14c-01] offers OAuth first on the Jira Data Center card and shows an OAuth
 
     $page = $this->signIn($admin, $path);
 
-    $page->assertSee('Jira Data Center')
-        ->assertSee('Not connected')
+    $page->assertSee('Jira Data Center');
+
+    $this->assertIntegrationStatus($page, 'jira_dc', 'Not connected');
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertAttributeContains('a:has-text("Connect (read only)")', 'href', '/connect?access=read')
         ->assertAttributeContains('a:has-text("Connect (read and write)")', 'href', '/connect?access=write')
         ->assertVisible('button:has-text("Older Jira server")');
 
     TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Read)->create(['team_id' => $team->id]);
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->assertIntegrationStatus($page, 'jira_dc', 'Connected')
+        ->assertSeeIn($this->integrationRow('jira_dc'), 'Acme Jira');
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertSee('Acme Jira')
         ->assertSee('9.12.2')
         ->assertSee('Read only')
@@ -211,19 +222,21 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
 
     $page = $this->signIn($admin, $path);
 
-    $page->assertSee('Not connected')
+    $this->assertIntegrationStatus($page, 'jira_dc', 'Not connected');
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertVisible('button:has-text("Older Jira server")')
         ->click('button:has-text("Older Jira server")')
         ->assertSee('Create a token in Jira under Profile → Personal Access Tokens, then paste it here.')
         ->assertSee('This token acts as its owner in Jira.')
         ->assertButtonDisabled('Save token')
-        ->fill('[role="dialog"] input[type="password"]', $token)
-        ->click('[role="dialog"] button:has-text("Read and write")')
-        ->click('[role="dialog"] label:has-text("I understand") button[role="checkbox"]')
+        ->fill($this->dialogOverPanel('input[type="password"]'), $token)
+        ->click($this->dialogOverPanel('button:has-text("Read and write")'))
+        ->click($this->dialogOverPanel('label:has-text("I understand") button[role="checkbox"]'))
         ->assertButtonEnabled('Save token')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Token saved.')
-        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent($this->dialogOverPanel())
         ->assertSee('Acting as Jane Doe in Jira')
         ->assertSee('This token acts as Jane Doe in Jira.')
         ->assertSee('Token saved on')
@@ -233,10 +246,13 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
         ->assertSee('Personal access token')
         ->assertSee('Replace token')
         ->assertSee('Remove token')
-        ->assertDontSee('Not connected')
         ->assertScript('document.documentElement.innerHTML.includes("'.$token.'")', false);
 
-    $page->navigate($path)
+    $this->assertIntegrationStatus($page, 'jira_dc', 'Connected');
+
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertSee('Acting as Jane Doe in Jira')
         ->assertScript('document.documentElement.innerHTML.includes("'.$token.'")', false);
 
@@ -272,21 +288,22 @@ it('[P14c-05b] refuses a token Jira rejects and a server older than Jira 8.14', 
 
     $page = $this->signIn($admin, p14cIntegrationsPath($team));
 
-    $page->assertVisible('button:has-text("Older Jira server")')
+    $this->openIntegration($page, 'jira_dc')
         ->click('button:has-text("Older Jira server")')
-        ->fill('[role="dialog"] input[type="password"]', 'pasted-jira-token-abcdefghijklmnop')
-        ->click('[role="dialog"] label:has-text("I understand") button[role="checkbox"]')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->fill($this->dialogOverPanel('input[type="password"]'), 'pasted-jira-token-abcdefghijklmnop')
+        ->click($this->dialogOverPanel('label:has-text("I understand") button[role="checkbox"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee("Jira didn't accept this token.");
 
     $myselfStatus = 200;
     $versionNumbers = [8, 13, 5];
 
-    $page->click('[role="dialog"] button[type="submit"]')
+    $page->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Personal access tokens need Jira 8.14 or later.')
-        ->click('[role="dialog"] button:has-text("Cancel")')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertSee('Not connected');
+        ->click($this->dialogOverPanel('button:has-text("Cancel")'))
+        ->assertNotPresent($this->dialogOverPanel());
+
+    $this->assertIntegrationStatus($page, 'jira_dc', 'Not connected');
 
     expect(TeamIntegration::query()->count())->toBe(0);
 });
@@ -306,10 +323,10 @@ it('[P14c-06] asks for a new token once Jira answers that the token was revoked'
 
     $page = $this->signIn($admin, p14cIntegrationsPath($team));
 
-    $page->assertSee('Acting as Jane Doe in Jira')
-        ->assertSee('Test the connection')
+    $this->openIntegration($page, 'jira_dc')
+        ->assertSee('Acting as Jane Doe in Jira')
         ->click('Test the connection')
-        ->assertSee('Reconnect required')
+        ->assertSeeIn($this->integrationPanel('jira_dc'), 'Reconnect required')
         ->assertSee('The Jira personal access token was revoked or has expired. Paste a new one.')
         ->assertSee('Replace token')
         ->assertDontSee('Test the connection');
@@ -482,19 +499,23 @@ it('[P14c-07] links the GitHub card to the App installation and shows the connec
 
     $page = $this->signIn($admin, $path);
 
-    $page->assertSee('GitHub')
-        ->assertSee('Not connected')
+    $this->assertIntegrationStatus($page, 'github', 'Not connected');
+
+    $this->openIntegration($page, 'github')
         ->assertAttributeContains('a:has-text("Install the GitHub App")', 'href', '/integrations/github/connect');
 
     TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->assertIntegrationStatus($page, 'github', 'Connected');
+
+    $this->openIntegration($page, 'github')
         ->assertSee('GitHub account')
         ->assertAttribute('a:has-text("acme")', 'href', 'https://github.com/organizations/acme/settings/installations/4242')
         ->assertSee('Read and write')
         ->assertAttributeContains('a:has-text("Manage the installation")', 'href', '/integrations/github/connect')
-        ->assertSee('Test the connection')
-        ->assertDontSee('Not connected');
+        ->assertSee('Test the connection');
 });
 
 it('[P14c-08] imports the open issues of a GitHub milestone into a poker game', function () {
@@ -795,10 +816,10 @@ it('[P14c-13] asks to reconnect once GitHub answers that the App was uninstalled
 
     $page = $this->signIn($admin, p14cIntegrationsPath($team));
 
-    $page->assertSee('GitHub account')
-        ->assertSee('Test the connection')
+    $this->openIntegration($page, 'github')
+        ->assertSee('GitHub account')
         ->click('Test the connection')
-        ->assertSee('Reconnect required')
+        ->assertSeeIn($this->integrationPanel('github'), 'Reconnect required')
         ->assertSee('The GitHub App was uninstalled from acme.')
         ->assertVisible('a:has-text("Manage the installation")')
         ->assertDontSee('Test the connection');

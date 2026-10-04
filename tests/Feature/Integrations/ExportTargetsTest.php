@@ -105,6 +105,26 @@ it('refuses outsiders, read-only connections and chat channels', function () {
     $this->actingAs(teamMember($jira->team))->getJson(targetsUrl($jira, ['project_id' => '../x']))->assertUnprocessable();
 });
 
+it('refuses a search longer than 100 characters', function () {
+    $jira = TeamIntegration::factory()->jira()->create();
+
+    $this->actingAs(teamMember($jira->team))
+        ->getJson(targetsUrl($jira, ['q' => str_repeat('a', 101)]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('q');
+});
+
+it('answers 404 for a connection of another team', function () {
+    $jira = TeamIntegration::factory()->jira()->create();
+    $otherTeam = Team::factory()->create(['workspace_id' => $jira->team->workspace_id]);
+    $member = teamMember($jira->team);
+    $otherTeam->members()->attach($member, ['role' => 'member']);
+
+    $this->actingAs($member)
+        ->getJson(route('teams.integrations.targets.index', [$otherTeam->workspace, $otherTeam, $jira]))
+        ->assertNotFound();
+});
+
 it('offers export sources to members on the board', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->withGuestAccess()->create();
     $jira = TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
