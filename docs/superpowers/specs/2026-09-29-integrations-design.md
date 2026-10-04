@@ -25,7 +25,7 @@ Connect a team's retros, poker games and action items to the tools it already us
 
 ### Out of scope (deferred)
 
-- Automatic event notifications to Slack, Telegram and email (retro started or completed, action item assigned, "important events" to Telegram). Due-soon and overdue reminders to the assignee exist by email and in-app (spec 3 §3.4); Slack/Telegram reminders and assignment notifications stay deferred. Spec 8 adds automatic events for generic webhooks only (spec 8 §4.7). This spec subscribes none of spec 3's plain events; spec 8 subscribes `ActionItemCreated`, `ActionItemCompleted` and `ActionItemReopened`, and `ActionItemAssigned` stays unsubscribed.
+- Automatic event notifications to Slack, Telegram and email (retro started or completed, action item assigned, "important events" to Telegram). Due-soon and overdue reminders to the assignee exist by email and in-app (spec 3 §3.4); Slack/Telegram reminders and assignment notifications stay deferred. Spec 8 adds automatic events for generic webhooks only (spec 8 §4.7). This spec subscribes none of spec 3's plain events; spec 8 subscribes `ActionItemCreated`, `ActionItemCompleted` and `ActionItemReopened`; no assignment event exists.
 - Two-way sync: status changes in Jira/Linear never flow back; imported tasks are refreshed only on demand (§6.4). No inbound webhooks from Slack, Jira or Linear. → Spec 8 `2026-09-30-integrations-extended-design.md` (two-way status sync, webhooks with polling fallback).
 - Jira Server / Data Center, GitHub Issues, Microsoft Teams, Mattermost, generic outgoing webhooks. → Spec 8.
 - Slack slash commands or interactive buttons; Slack user sign-in (SSO is the core spec's business).

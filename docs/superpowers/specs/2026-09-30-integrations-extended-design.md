@@ -24,7 +24,7 @@ Spec 6 ships one-way, one-shot integrations with Slack, Telegram, email, Jira Cl
 
 - Field sync beyond status: content, due date, priority and assignee of an exported action item stay one-shot (spec 6 decision 6 for fields). Comments are never synced.
 - Creating skrum action items from tracker issues; importing issues outside poker.
-- Automatic event notifications to Slack, Telegram, email, Teams and Mattermost: spec 6 kept them out of scope and so does this spec; only generic webhooks get events (§4.7). Events beyond the catalogue of §4.7 (retro started, item assigned/overdue, card events). `ActionItemAssigned` stays unsubscribed.
+- Automatic event notifications to Slack, Telegram, email, Teams and Mattermost: spec 6 kept them out of scope and so does this spec; only generic webhooks get events (§4.7). Events beyond the catalogue of §4.7 (retro started, item assigned/overdue, card events). No assignment event exists.
 - Redelivering a past webhook delivery (payloads are not stored, §4.7); added later by the webhook redelivery spec (`2026-10-01-webhook-redelivery-design.md`).
 - GitHub Projects (v2) fields, GitLab, Azure DevOps, Asana, Trello, ClickUp, Google Chat, Discord, Rocket.Chat.
 - Several connections per provider per team (spec 6 unique key stays): one Teams webhook, one Mattermost webhook, one generic webhook, one GitHub installation, one Jira DC server per team.
