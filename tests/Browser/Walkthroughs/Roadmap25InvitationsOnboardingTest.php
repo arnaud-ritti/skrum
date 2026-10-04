@@ -62,30 +62,11 @@ function r25TeamPath(Team $team): string
 }
 
 /**
- * @param  array<string, string>  $options
- */
-function r25SignIn(User $user, string $to, array $options = []): mixed
-{
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($to);
-}
-
-/**
- * The bell listens on the user's private channel once its subscription is authorised:
- * a broadcast sent before that would never reach the page.
+ * The bell listens on the user's private channel: a broadcast sent before Reverb confirms the subscription would never reach the page.
  */
 function r25AwaitBellSubscription(mixed $page): mixed
 {
-    $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/broadcasting/auth') && entry.responseEnd > 0)", true);
-    $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 500))');
-
-    return $page;
+    return $page->assertPresent('[data-notifications-channel="subscribed"]');
 }
 
 /**
@@ -163,19 +144,19 @@ it('[R25-12] walks a newcomer through the four steps: workspace, team prefilled 
 
     $chips = '[data-slot="team-invite-form"] [data-slot="email-chips-field"] input';
 
-    $page = r25SignIn($sofia, '/onboarding');
+    $page = $this->signIn($sofia, '/onboarding');
 
     $page->assertPresent('[data-slot="workspace-step"]')
-        ->fill('[data-slot="workspace-step"] input[autocomplete="organization"]', 'Nordlys')
-        ->click('[data-slot="workspace-step"] button[type="submit"]')
+        ->fill('[data-slot="workspace-step"] >> internal:label="Workspace name"s', 'Nordlys')
+        ->click('[data-slot="workspace-step"] button:has-text("Continue")')
         ->assertPresent('[data-slot="team-step"]')
         ->assertSeeIn('[data-slot="team-step"]', 'Step 2 of 4')
-        ->assertValue('[data-slot="team-step"] input[maxlength="100"]', 'Atlas')
+        ->assertValue('[data-slot="team-step"] >> internal:label="Team name"s', 'Atlas')
         ->assertSeeIn('[data-slot="team-address-slug"]', 'atlas')
         ->assertSeeIn('[data-slot="team-preview-name"]', 'Atlas')
         ->click('[data-slot="team-step"] [role="radio"][data-color="lagoon"]')
         ->assertAttribute('[data-slot="team-step"] [role="radio"][data-color="lagoon"]', 'aria-checked', 'true')
-        ->click('[data-slot="team-step"] button[type="submit"]')
+        ->click('[data-slot="team-step"] button:has-text("Continue")')
         ->assertPresent('[data-slot="invite-step"]')
         ->assertSeeIn('[data-slot="invite-step"]', 'Step 3 of 4')
         ->assertSeeIn('[data-slot="invite-link-block"]', 'Expires in 7 days')
@@ -212,24 +193,24 @@ it('[R25-16] keeps what was saved across "Back" and a reload, and shows a team l
     ['user' => $sofia, 'onboarding' => $onboarding] = r25Newcomer(OnboardingStep::Team);
     Team::factory()->for($onboarding->workspace)->create(['name' => 'Atlas Mobile', 'slug' => 'atlas']);
 
-    $page = r25SignIn($sofia, '/onboarding');
+    $page = $this->signIn($sofia, '/onboarding');
 
     $page->assertPresent('[data-slot="team-step"]')
         ->click('Back')
         ->assertPresent('[data-slot="workspace-step"]')
-        ->assertValue('[data-slot="workspace-step"] input[autocomplete="organization"]', 'Nordlys')
-        ->click('[data-slot="workspace-step"] button[type="submit"]')
+        ->assertValue('[data-slot="workspace-step"] >> internal:label="Workspace name"s', 'Nordlys')
+        ->click('[data-slot="workspace-step"] button:has-text("Continue")')
         ->assertPresent('[data-slot="team-step"]')
         ->refresh()
         ->assertPresent('[data-slot="team-step"]')
         ->assertSeeIn('[data-slot="phase-step"][data-state="done"]', 'Workspace')
         ->click('[data-slot="team-address-field"] button')
         ->fill('[data-slot="team-address-field"] input', 'atlas')
-        ->click('[data-slot="team-step"] button[type="submit"]')
+        ->click('[data-slot="team-step"] button:has-text("Continue")')
         ->assertSeeIn('[data-slot="team-address-field"] [data-slot="field-error"]', 'This link is already taken in Nordlys.')
         ->assertNotPresent('[data-sonner-toast]')
         ->fill('[data-slot="team-address-field"] input', 'atlas-web')
-        ->click('[data-slot="team-step"] button[type="submit"]')
+        ->click('[data-slot="team-step"] button:has-text("Continue")')
         ->assertPresent('[data-slot="invite-step"]')
         ->refresh()
         ->assertPresent('[data-slot="invite-step"]');
@@ -242,7 +223,7 @@ it('[R25-24] "Skip for now" at step 2 ends the onboarding without a team and nev
     ['user' => $sofia, 'onboarding' => $onboarding] = r25Newcomer(OnboardingStep::Team);
     $workspace = $onboarding->workspace;
 
-    $page = r25SignIn($sofia, '/onboarding');
+    $page = $this->signIn($sofia, '/onboarding');
 
     $page->assertCount('[data-slot="team-step"] [data-slot="step-actions"] button', 3)
         ->click('Skip for now')
@@ -262,7 +243,7 @@ it('[R25-26] opens a new SSO account of the default workspace at step 2, step 1 
     $nadia = newSsoAccount('nadia@nordlys.example');
     $nadia->forceFill(['password' => Hash::make('password'), 'locale' => 'en'])->save();
 
-    $page = r25SignIn($nadia, '/dashboard');
+    $page = $this->signIn($nadia, '/dashboard');
 
     $page->assertPathIs('/onboarding')
         ->assertSeeIn('[data-slot="team-step"]', 'Step 2 of 4')
@@ -270,8 +251,8 @@ it('[R25-26] opens a new SSO account of the default workspace at step 2, step 1 
         ->assertDontSeeIn('[data-slot="team-step"] [data-slot="step-actions"]', 'Back')
         ->assertCount('[data-slot="team-step"] [data-slot="step-actions"] button', 2)
         ->assertSeeIn('[data-slot="team-step"]', 'You can add more teams to Nordlys Commons later.')
-        ->fill('[data-slot="team-step"] input[maxlength="100"]', 'Orion')
-        ->click('[data-slot="team-step"] button[type="submit"]')
+        ->fill('[data-slot="team-step"] >> internal:label="Team name"s', 'Orion')
+        ->click('[data-slot="team-step"] button:has-text("Continue")')
         ->assertPresent('[data-slot="invite-step"]');
 
     $team = $nadia->onboarding()->sole()->team;
@@ -286,11 +267,11 @@ it('[R25-18] shows "Invite" to a facilitator, who sends invitations and creates,
 
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
-    $page = r25SignIn($theo, r25TeamPath($team));
+    $page = $this->signIn($theo, r25TeamPath($team));
 
     $page->click('Invite')
         ->assertSeeIn('[role="dialog"]', 'Invite to Atlas')
-        ->click('[role="dialog"] [data-slot="invite-link-block"] button')
+        ->click('[role="dialog"] [data-slot="invite-link-block"] button:has-text("Create a link")')
         ->assertSeeIn('[role="dialog"] [data-slot="invite-link-block"]', 'Expires in 7 days');
 
     $link = $team->inviteLinks()->sole();
@@ -314,7 +295,7 @@ it('[R25-18] shows "Invite" to a facilitator, who sends invitations and creates,
     expect($team->invitations()->where('invited_by_id', $theo->id)->count())->toBe(2)
         ->and($link->fresh()->revoked_at)->not->toBeNull();
 
-    $memberPage = r25SignIn($malik, r25TeamPath($team));
+    $memberPage = $this->signIn($malik, r25TeamPath($team));
 
     $memberPage->assertSee('Atlas')
         ->assertNotPresent('[data-slot="team-page"] button:has-text("Invite")');
@@ -372,7 +353,7 @@ it('[R25-07] a signed-out invitee reads the team invitation and declines it, and
         'invited_by_id' => $camille->id,
     ]);
 
-    $inviterPage = r25AwaitBellSubscription(r25SignIn($camille, r25TeamPath($team)));
+    $inviterPage = r25AwaitBellSubscription($this->signIn($camille, r25TeamPath($team)));
     $inviterPage->assertPresent('[aria-label="Notifications"]');
 
     $inviteePage = visit('/invitations/r25-team-invitation');
@@ -406,7 +387,7 @@ it('[R25-06] a signed-in invitee accepts a team invitation, lands on the team pa
         'invited_by_id' => $camille->id,
     ]);
 
-    $page = r25SignIn($nadia, '/invitations/r25-accept-invitation');
+    $page = $this->signIn($nadia, '/invitations/r25-accept-invitation');
 
     $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'accept')
         ->assertSee('Join Atlas as Nadia Benali?')
@@ -419,6 +400,93 @@ it('[R25-06] a signed-in invitee accepts a team invitation, lands on the team pa
 
     expect($team->roleOf($nadia))->toBe(TeamRole::Observer)
         ->and($nadia->roleIn($team->workspace))->toBe(WorkspaceRole::Member);
+});
+
+it('[R25-25] lets a signed-out invitee create the account on the invitation card, join the team with its role and be offered the session in progress', function () {
+    config(['skrum.passwords.breach_check' => false]);
+    ['team' => $team, 'owner' => $camille] = r25Atlas();
+    Retro::factory()->for($team)->started()->create(['title' => 'Sprint 24']);
+
+    WorkspaceInvitation::factory()->forTeam($team, TeamRole::Facilitator)->withToken('r25-account-invitation')->create([
+        'email' => 'nadia@elsewhere.example',
+        'invited_by_id' => $camille->id,
+    ]);
+
+    $page = visit('/invitations/r25-account-invitation');
+
+    $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
+        ->assertValue('#email', 'nadia@elsewhere.example')
+        ->fill('#name', 'Nadia Benali')
+        ->fill('#password', R25Password)
+        ->click('@create-invitation-account-button')
+        ->assertPathIs(r25TeamPath($team))
+        ->assertSeeIn('[data-slot="live-session-banner"]', 'A session is in progress: Sprint 24');
+
+    $nadia = User::query()->where('email', 'nadia@elsewhere.example')->sole();
+
+    expect($nadia->name)->toBe('Nadia Benali')
+        ->and($nadia->hasVerifiedEmail())->toBeTrue()
+        ->and($team->roleOf($nadia))->toBe(TeamRole::Facilitator)
+        ->and($nadia->roleIn($team->workspace))->toBe(WorkspaceRole::Member)
+        ->and($nadia->onboarding)->toBeNull();
+});
+
+it('[R25-10] lets a signed-out visitor of a team link register with no team field and no onboarding, then come back to the link page to join', function () {
+    config(['skrum.signup_mode' => 'open', 'skrum.passwords.breach_check' => false]);
+    ['team' => $team, 'owner' => $camille] = r25Atlas();
+    TeamInviteLink::factory()->for($team)->withToken(R25LinkToken)->create(['created_by_id' => $camille->id]);
+
+    $page = visit('/invite/'.R25LinkToken);
+
+    $page->assertAttribute('[data-slot="invite-link-card"]', 'data-state', 'logged-out')
+        ->click('Create an account')
+        ->assertPathIs('/register')
+        ->assertPresent('[data-slot="register-form"]')
+        ->assertNotPresent('#team_name')
+        ->fill('#name', 'Nadia Benali')
+        ->fill('#email', 'nadia@elsewhere.example')
+        ->fill('#password', R25Password)
+        ->fill('#password_confirmation', R25Password)
+        ->click('@register-user-button')
+        ->assertPathIs('/invite/'.R25LinkToken)
+        ->assertSee('Verify your address to join Atlas');
+
+    $nadia = User::query()->where('email', 'nadia@elsewhere.example')->sole();
+
+    expect($nadia->onboarding)->toBeNull()
+        ->and($team->members()->whereKey($nadia->id)->exists())->toBeFalse();
+
+    $nadia->markEmailAsVerified();
+
+    $page->refresh()
+        ->click('@join-by-link-button')
+        ->assertPathIs(r25TeamPath($team));
+
+    expect($team->roleOf($nadia))->toBe(TeamRole::Member)
+        ->and($nadia->fresh()->onboarding)->toBeNull();
+});
+
+it('[R25-14] moves from step 3 to step 4 on "Skip" without sending, and "Go to the dashboard instead" completes the onboarding on the team page', function () {
+    ['user' => $sofia, 'onboarding' => $onboarding] = r25Newcomer(OnboardingStep::Invite);
+    $team = $onboarding->team;
+
+    $page = $this->signIn($sofia, '/onboarding');
+
+    $page->assertPresent('[data-slot="invite-step"]')
+        ->click('[data-slot="invite-step"] button:has-text("Skip")')
+        ->assertPresent('[data-slot="ritual-step"]')
+        ->assertSeeIn('[data-slot="ritual-step"]', 'Step 4 of 4');
+
+    expect($team->invitations()->count())->toBe(0)
+        ->and($onboarding->fresh()->step)->toBe(OnboardingStep::Ritual);
+
+    $page->click('Go to the dashboard instead')
+        ->assertPathIs(r25TeamPath($team))
+        ->assertNotPresent('[role="dialog"]');
+
+    expect($onboarding->fresh()->isCompleted())->toBeTrue();
+
+    $page->navigate('/onboarding')->assertPathIsNot('/onboarding');
 });
 
 it('[R25-22] sends a signed-out visitor of a team address through sign-in to the team page', function () {
@@ -438,39 +506,40 @@ it('[R25-22] sends a signed-out visitor of a team address through sign-in to the
 it('[R25-21a] fits onboarding step 2 in a phone: compact stepper, no preview, actions docked at the bottom', function () {
     ['user' => $sofia] = r25Newcomer(OnboardingStep::Team);
 
-    $page = r25SignIn($sofia, '/onboarding');
+    $page = $this->signIn($sofia, '/onboarding');
 
     $page->resize(390, 844)
         ->assertPresent('[data-slot="team-step"]')
         ->assertVisible('[data-slot="phase-stepper"]')
         ->assertMissing('[data-slot="team-preview"]')
         ->assertScript("getComputedStyle(document.querySelector('[data-slot=\"team-step\"] [data-slot=\"step-actions\"]')).position", 'sticky')
-        ->assertVisible('[data-slot="team-step"] button[type="submit"]');
+        ->assertVisible('[data-slot="team-step"] button:has-text("Continue")');
 
     expect($this->overflowingElements($page))->toBe([]);
 });
 
-it('[R25-21b] renders onboarding step 3 in the dark theme', function () {
+it('[R25-dark] renders onboarding step 3 on the dark background token', function () {
     ['user' => $sofia] = r25Newcomer(OnboardingStep::Invite);
 
-    $page = r25SignIn($sofia, '/onboarding', ['colorScheme' => 'dark']);
+    $page = $this->signIn($sofia, '/onboarding', ['colorScheme' => 'dark']);
 
     $page->assertPresent('[data-slot="invite-step"]')
         ->assertScript("document.documentElement.classList.contains('dark')", true)
-        ->assertScript("getComputedStyle(document.body).backgroundColor !== 'rgb(255, 255, 255)'", true);
+        ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)');
 
     expect($this->overflowingElements($page))->toBe([]);
 });
 
-it('[R25-21c] speaks English on onboarding step 1 to an English browser and account', function () {
+it('[R25-fr] speaks to a French account informally on onboarding step 1', function () {
     ['user' => $sofia] = r25Newcomer(OnboardingStep::Workspace);
+    $sofia->update(['locale' => 'fr']);
 
-    $page = r25SignIn($sofia, '/onboarding', ['locale' => 'en-US']);
+    $page = $this->signIn($sofia, '/onboarding', ['locale' => 'fr-FR']);
 
-    $page->assertScript('document.documentElement.lang', 'en')
-        ->assertSee('Name your workspace')
-        ->assertSee('Default language')
-        ->assertSee('First ritual')
-        ->assertSee('Log out')
-        ->assertDontSee('Nomme ton espace');
+    $page->assertScript('document.documentElement.lang', 'fr')
+        ->assertSee('Nomme ton espace de travail')
+        ->assertSee('Langue par défaut')
+        ->assertSee('Premier rituel')
+        ->assertSee('Se déconnecter')
+        ->assertDontSee('Name your workspace');
 });

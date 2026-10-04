@@ -26,4 +26,6 @@ it('limits joining by an invite link to ten a minute for one account', function 
     }
 
     $this->actingAs($user)->post(route('inviteLinks.membership.store', 'unknown-link-11'))->assertTooManyRequests();
+
+    $this->actingAs(User::factory()->create())->post(route('inviteLinks.membership.store', 'unknown-link-12'))->assertNotFound();
 });

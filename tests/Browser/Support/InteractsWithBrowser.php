@@ -9,9 +9,12 @@ use RuntimeException;
 
 trait InteractsWithBrowser
 {
-    protected function signIn(User $user, string $to = '/dashboard'): mixed
+    /**
+     * @param  array<string, mixed>  $options  the options of visit(), such as colorScheme or locale
+     */
+    protected function signIn(User $user, string $to = '/dashboard', array $options = []): mixed
     {
-        $page = visit('/login');
+        $page = visit('/login', $options);
 
         $page->fill('#email', $user->email)
             ->fill('#password', 'password')
