@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
-import { formatDaysAgo } from '@/components/workspaces/team-tile';
+import { formatDaysAgo } from '@/lib/relative-date';
 import { useTrans } from '@/hooks/use-trans';
 import type { SsoLastTest, SsoTestResult } from '@/lib/admin/types';
 
