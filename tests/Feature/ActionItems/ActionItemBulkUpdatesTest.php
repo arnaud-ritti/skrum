@@ -10,6 +10,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
@@ -43,6 +44,28 @@ it('changes every item the member may change, and announces each', function () {
 
     expect(ActionItem::query()->whereKey($items->pluck('id'))->where('priority', 'high')->count())->toBe(3);
     Event::assertDispatchedTimes(TeamActionItemSaved::class, 3);
+});
+
+it('goes on past an item that fails unexpectedly, and reports it', function () {
+    Exceptions::fake();
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    [$failing, $fine] = ActionItem::factory()->withoutRetro($team, $user)->count(2)->create()->all();
+    ActionItem::saving(function (ActionItem $item) use ($failing): void {
+        if ($item->id === $failing->id) {
+            throw new RuntimeException('Lock timeout');
+        }
+    });
+
+    postBulkUpdate($team, $user, [$failing->id, $fine->id], ['priority' => 'high'])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1)
+        ->assertJsonPath('refused.0.id', $failing->id)
+        ->assertJsonPath('refused.0.title', $failing->content)
+        ->assertJsonPath('refused.0.message', 'This action item could not be changed. Try again.');
+
+    expect($fine->fresh()->priority->value)->toBe('high');
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 it('completes in bulk, with one next occurrence and one completion per item', function () {

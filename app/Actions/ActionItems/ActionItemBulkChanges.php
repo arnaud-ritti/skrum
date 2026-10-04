@@ -16,7 +16,9 @@ use Throwable;
 /**
  * Spec 24 §5 rules 1 and 2: a bulk change is the single-item change applied to each item in
  * turn, each in its own transaction under its own lock, so that a refused item leaves the
- * others changed. The transactions broadcast, so they are not retried.
+ * others changed. The transactions broadcast, so they are not retried. An unexpected
+ * failure of one item (a lock timeout, a deadlock) is reported and refused like the others,
+ * so that the answer still lists what changed.
  */
 class ActionItemBulkChanges
 {
@@ -124,6 +126,10 @@ class ActionItemBulkChanges
                     'title' => $exception instanceof ModelNotFoundException ? null : (string) $titles[$id],
                     'message' => $this->reason($exception),
                 ];
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $refused[] = ['id' => $id, 'title' => (string) $titles[$id], 'message' => __('This action item could not be changed. Try again.')];
             }
         }
 
