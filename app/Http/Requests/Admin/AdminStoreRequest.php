@@ -15,7 +15,7 @@ class AdminStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'uuid', Rule::exists(User::class, 'id')],
+            'user_id' => ['required', 'uuid', Rule::exists(User::class, 'id')->whereNull('deactivated_at')],
         ];
     }
 }

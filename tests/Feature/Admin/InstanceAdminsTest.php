@@ -55,6 +55,29 @@ it('does not offer to revoke the last admin', function () {
             ->where('admins.0.canRevoke', false));
 });
 
+it('offers the revoke button to every admin while two active admins remain', function () {
+    actingAsInstanceAdmin($this, ['name' => 'Zoe']);
+    User::factory()->instanceAdmin()->deactivated()->create(['name' => 'Adam']);
+
+    $this->get(route('admin.admins.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('admins.0.name', 'Adam')
+            ->where('admins.0.canRevoke', true)
+            ->where('admins.1.name', 'Zoe')
+            ->where('admins.1.canRevoke', false));
+});
+
+it('refuses to grant the admin flag to a deactivated user', function () {
+    actingAsInstanceAdmin($this);
+    $deactivated = User::factory()->deactivated()->create();
+
+    $this->postJson(route('admin.admins.store'), ['user_id' => $deactivated->id])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('user_id');
+
+    expect($deactivated->fresh()->is_instance_admin)->toBeFalse();
+});
+
 it('grants the admin flag to a user', function () {
     actingAsInstanceAdmin($this);
     $member = User::factory()->create();
@@ -214,6 +237,17 @@ it('searches candidates by name or e-mail and leaves the admins out', function (
                 ['id' => $byEmail->id, 'name' => 'Someone Else', 'email' => $byEmail->email, 'avatarUrl' => $byEmail->avatarUrl()],
             ],
         ]);
+});
+
+it('leaves deactivated users out of the candidates', function () {
+    actingAsInstanceAdmin($this);
+    $active = User::factory()->create(['name' => 'Marta Active']);
+    User::factory()->deactivated()->create(['name' => 'Marta Gone']);
+
+    $this->getJson(route('admin.adminCandidates.index', ['query' => 'marta']))
+        ->assertOk()
+        ->assertJsonCount(1, 'candidates')
+        ->assertJsonPath('candidates.0.id', $active->id);
 });
 
 it('returns at most ten candidates', function () {

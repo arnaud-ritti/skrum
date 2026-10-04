@@ -31,6 +31,7 @@ class AdminCandidatesController extends Controller
 
         $candidates = User::query()
             ->where('is_instance_admin', false)
+            ->whereNull('deactivated_at')
             ->where(fn (Builder $query) => $query
                 ->whereContains('name', $term)
                 ->orWhereLike('email_key', SearchText::pattern($term), caseSensitive: true))
