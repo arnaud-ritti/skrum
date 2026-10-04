@@ -35,7 +35,7 @@ class PokerGuestTokensController extends Controller
                 ->whereNotNull('guest_secret_hash')
                 ->update(['guest_secret_hash' => null]);
 
-            (new PokerGameChanged($locked->id))->sendToOthers();
+            new PokerGameChanged($locked->id)->sendToOthers();
 
             return $locked->guest_token;
         });

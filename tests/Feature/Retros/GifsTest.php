@@ -287,7 +287,7 @@ it('stores gifs under the requested id', function () {
 });
 
 it('keeps the provider key out of stack traces', function (string $provider) {
-    $key = (new ReflectionMethod($provider, '__construct'))->getParameters()[0];
+    $key = new ReflectionMethod($provider, '__construct')->getParameters()[0];
 
     expect($key->getName())->toBe('key')
         ->and($key->getAttributes(SensitiveParameter::class))->toHaveCount(1);

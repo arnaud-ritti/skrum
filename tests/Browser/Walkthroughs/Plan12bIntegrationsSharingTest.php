@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 beforeEach(function () {
     disableIntegrations();

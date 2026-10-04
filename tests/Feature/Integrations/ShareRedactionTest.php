@@ -46,7 +46,7 @@ function sharedRecapTexts(Retro $retro, User $sharer): array
     return [
         'slack' => json_encode($slack->message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         'telegram' => $telegram->html,
-        'email' => (string) (new RetroResultsNotification($retro->id))->toMail($sharer)->render(),
+        'email' => (string) new RetroResultsNotification($retro->id)->toMail($sharer)->render(),
     ];
 }
 

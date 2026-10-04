@@ -26,7 +26,7 @@ class RemoveGifAnswer
                 ->delete();
 
             if ($removed > 0) {
-                (new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, false))->sendToOthers();
+                new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, false)->sendToOthers();
             }
         });
     }

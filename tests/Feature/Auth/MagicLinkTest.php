@@ -53,7 +53,7 @@ it('dispatches the same job for every address and never reads the users table', 
     $userQueries = SqlProbe::statementsOn('users', fn () => $this->post(route('magicLinks.store'), ['email' => $email]));
 
     Queue::assertPushed(SendMagicLink::class, 1);
-    expect($userQueries)->toBe([]);
+    expect($userQueries)->toBeEmpty();
 })->with(['known@example.test', 'nobody@example.test']);
 
 it('mails a verified account only', function () {

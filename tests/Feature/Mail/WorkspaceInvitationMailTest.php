@@ -40,7 +40,7 @@ it('wears the colour the inviter chose', function () {
     $inviter->forceFill(['presence_color' => $chosen])->save();
     $invitation = WorkspaceInvitation::factory()->create(['invited_by_id' => $inviter->id]);
 
-    $mail = (new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+    $mail = new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id)->toMail(new User);
 
     expect($mail->inviterPresence)->toBe($chosen);
 });
@@ -69,7 +69,7 @@ it('previews the invitation', function () {
 it('quotes the message of a workspace invitation in both parts, line breaks kept', function () {
     $invitation = WorkspaceInvitation::factory()->withMessage("See you Thursday.\n<b>Bring</b> coffee.")->create();
 
-    $mail = (new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+    $mail = new WorkspaceInvitationNotification('Nordlys', 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id)->toMail(new User);
 
     expect($mail->subject)->toBe('Fran invited you to join Nordlys')
         ->and((string) $mail->render())->toContain("“See you Thursday.\n&lt;b&gt;Bring&lt;/b&gt; coffee.”")
@@ -82,7 +82,7 @@ it('draws the team mark in the team colour with its initial and its member count
     teamMember($team);
     $invitation = WorkspaceInvitation::factory()->forTeam($team)->create();
 
-    $mail = (new WorkspaceInvitationNotification($team->workspace->name, 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id))->toMail(new User);
+    $mail = new WorkspaceInvitationNotification($team->workspace->name, 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id)->toMail(new User);
     $html = (string) $mail->render();
 
     expect($mail->teamColor)->toBe('moss')

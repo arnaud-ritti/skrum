@@ -25,7 +25,7 @@ beforeEach(function () {
 
 function runGameExpiryJob(GameRound $round, string $timerEndsAt): void
 {
-    (new CloseExpiredGameRound($round->id, $timerEndsAt))->handle(resolve(ExpireGameRound::class));
+    new CloseExpiredGameRound($round->id, $timerEndsAt)->handle(resolve(ExpireGameRound::class));
 }
 
 it('sets and clears the room timer as host', function () {

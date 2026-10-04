@@ -78,7 +78,7 @@ class ImportPokerTasks
             $result = $this->storeIssues($locked, $integration, $externalIds, $issues);
 
             if ($result['imported'] > 0) {
-                (new PokerGameChanged($locked->id))->sendToOthers();
+                new PokerGameChanged($locked->id)->sendToOthers();
             }
 
             return $result;

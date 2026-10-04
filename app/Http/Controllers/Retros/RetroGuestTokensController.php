@@ -33,7 +33,7 @@ class RetroGuestTokensController extends Controller
                 ->whereNotNull('guest_secret_hash')
                 ->update(['guest_secret_hash' => null]);
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
 
             return $locked->guest_token;
         });

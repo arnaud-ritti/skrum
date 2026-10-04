@@ -65,7 +65,7 @@ it('can run a second time, and then writes no account that already has its key',
     $column = collect(Schema::getColumns('users'))->firstWhere('name', 'email_key');
     $indexes = collect(Schema::getIndexes('users'))->filter(fn (array $index): bool => $index['columns'] === ['email_key']);
 
-    expect($updates)->toBe([])
+    expect($updates)->toBeEmpty()
         ->and(DB::table('users')->where('id', $account)->value('email_key'))->toBe('grace@example.test')
         ->and($column['nullable'])->toBeFalse()
         ->and($indexes)->toHaveCount(1)

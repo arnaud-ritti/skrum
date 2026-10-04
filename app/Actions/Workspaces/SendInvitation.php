@@ -23,7 +23,7 @@ class SendInvitation
             ->value('locale');
 
         Notification::route('mail', $issued->invitation->email)->notify(
-            (new WorkspaceInvitationNotification($workspace->name, $inviter->name, $issued->url(), $issued->invitation->expires_at, $issued->invitation->id))
+            new WorkspaceInvitationNotification($workspace->name, $inviter->name, $issued->url(), $issued->invitation->expires_at, $issued->invitation->id)
                 ->locale($recipientLocale ?? $workspace->locale ?? app()->getLocale()),
         );
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use App\Concerns\HasSearchColumns;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
@@ -145,9 +146,10 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      * Compares the stored key, so rows from before addresses were normalised are found too,
      * and two of them sharing an address are both returned.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<static> $query
      */
-    public function scopeWhereAddress(Builder $query, string $email): void
+    #[Scope]
+    protected function whereAddress(Builder $query, string $email): void
     {
         $query->where($query->qualifyColumn('email_key'), LoginAddress::normalise($email));
     }
@@ -184,7 +186,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      */
     public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
     {
-        SendPasswordResetLink::dispatch($this->getKey(), $token);
+        dispatch(new SendPasswordResetLink($this->getKey(), $token));
     }
 
     public function preferredLocale(): ?string

@@ -163,7 +163,7 @@ class TwoTruthsRules implements GameRules, RevealsInStages, TakesChoices
 
     public function choiceChanged(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $player, bool $chose): void
     {
-        (new GameVoteChanged($lockedRoom, $lockedRound->id, $player->id, $chose))->sendToOthers();
+        new GameVoteChanged($lockedRoom, $lockedRound->id, $player->id, $chose)->sendToOthers();
     }
 
     /**

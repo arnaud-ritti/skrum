@@ -58,13 +58,13 @@ class GuessWholeWord
 
             $lockedRound->forceFill(['misses' => $lockedRound->misses + 1])->save();
 
-            (new GameGuessMade($lockedRoom, [
+            new GameGuessMade($lockedRoom, [
                 'roundId' => $lockedRound->id,
                 'guessId' => $guess->id,
                 'playerId' => $player->id,
                 'text' => $guess->text,
                 'misses' => $lockedRound->misses,
-            ]))->sendToOthers();
+            ])->sendToOthers();
 
             if ($lockedRound->misses >= HangmanRules::MaxMisses) {
                 return $this->response('wrong', $guess->id, $lockedRound, $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Lost));

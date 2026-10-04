@@ -51,7 +51,7 @@ class AuthenticateMcpRequest
 
         $request->headers->remove('X-Socket-ID');
 
-        (new McpGrant($user, $token->id, $token->scopes(), $token->team_id))->bind();
+        new McpGrant($user, $token->id, $token->scopes(), $token->team_id)->bind();
 
         return $next($request);
     }

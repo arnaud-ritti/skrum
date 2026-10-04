@@ -323,7 +323,7 @@ it('deletes the stored gif key when a whitespace-only key is set', function () {
 });
 
 it('hides the plaintext value of a write from stack traces', function (string $method) {
-    $parameter = collect((new ReflectionMethod(InstanceSettings::class, $method))->getParameters())->last();
+    $parameter = collect(new ReflectionMethod(InstanceSettings::class, $method)->getParameters())->last();
 
     expect($parameter->getAttributes(SensitiveParameter::class))->toHaveCount(1);
 })->with(['set', 'setMany']);
@@ -493,10 +493,8 @@ it('stores the sign-up mode only when it is one of the three modes', function ()
     $settings = resolve(InstanceSettings::class);
 
     $settings->set(InstanceSettingKey::SignupMode->value, 'open');
-    expect(resolve(InstanceSettings::class)->signupMode())->toBe('open');
-
-    expect(fn () => $settings->set(InstanceSettingKey::SignupMode->value, 'everyone'))
-        ->toThrow(InvalidArgumentException::class);
+    expect(resolve(InstanceSettings::class)->signupMode())->toBe('open')
+        ->and(fn() => $settings->set(InstanceSettingKey::SignupMode->value, 'everyone'))->toThrow(InvalidArgumentException::class);
 });
 
 it('stores allowed domains folded, trimmed, unique and sorted', function () {
@@ -531,14 +529,13 @@ it('stores a configuration section as an object and forgets it when emptied', fu
     expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::SsoOidc))->toBe(['client_id' => 'skrum-prod']);
 
     $settings->set(InstanceSettingKey::SsoOidc->value, []);
-    expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::SsoOidc))->toBe([]);
-
-    expect(fn () => $settings->set(InstanceSettingKey::Smtp->value, 'smtp.atlas.test'))->toThrow(InvalidArgumentException::class);
+    expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::SsoOidc))->toBeEmpty()
+        ->and(fn() => $settings->set(InstanceSettingKey::Smtp->value, 'smtp.atlas.test'))->toThrow(InvalidArgumentException::class);
 });
 
 it('lists the fourteen configuration sections, none of them branding', function () {
     $values = fn (array $keys): array => array_map(fn (InstanceSettingKey $key): string => $key->value, $keys);
 
     expect(InstanceSettingKey::configurationSections())->toHaveCount(14)
-        ->and(array_intersect($values(InstanceSettingKey::configurationSections()), $values(InstanceSettingKey::branding())))->toBe([]);
+        ->and(array_intersect($values(InstanceSettingKey::configurationSections()), $values(InstanceSettingKey::branding())))->toBeEmpty();
 });

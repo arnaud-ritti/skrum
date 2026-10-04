@@ -240,7 +240,7 @@ class Team extends Model
     /** @return HasMany<TeamSprint, $this> */
     public function sprints(): HasMany
     {
-        return $this->hasMany(TeamSprint::class)->orderBy('starts_on')->orderBy('id');
+        return $this->hasMany(TeamSprint::class)->oldest('starts_on')->orderBy('id');
     }
 
     /** @return HasMany<TeamActivity, $this> */

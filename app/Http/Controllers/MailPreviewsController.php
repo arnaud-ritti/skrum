@@ -54,14 +54,14 @@ class MailPreviewsController extends Controller
     private function samples(): array
     {
         return [
-            'invitation' => fn (): Mailable => (new WorkspaceInvitationNotification('Atlas', 'Camille Roux', url('/invitations/sample'), now()->addDays(7)))
+            'invitation' => fn (): Mailable => new WorkspaceInvitationNotification('Atlas', 'Camille Roux', url('/invitations/sample'), now()->addDays(7))
                 ->toMail((new AnonymousNotifiable)->route('mail', 'ada@example.com')),
             'action-reminder' => fn (): ?Mailable => ($user = User::query()->whereHas('teams')->first()) === null
                 ? null
-                : (new ActionItemReminderDigestNotification(
+                : new ActionItemReminderDigestNotification(
                     ActionItem::query()->whereIn('team_id', $user->teams()->select('teams.id'))->limit(3)->pluck('id')
                         ->map(fn (string $id): array => ['actionItemId' => $id, 'kind' => ActionItemReminderKind::Overdue->value])->all(),
-                ))->toMail($user),
+                )->toMail($user),
             'retro-recap' => fn (): ?Mailable => ($retro = Retro::query()->where('phase', RetroPhase::Completed)->latest()->first()) === null
                 ? null
                 : resolve(RetroRecapMail::class)->build(

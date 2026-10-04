@@ -101,7 +101,7 @@ function mockupInvitationMail(): Mailable
     Team::factory()->count(2)->create(['workspace_id' => $workspace->id]);
     $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
-    return (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
+    return new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id)
         ->toMail((new AnonymousNotifiable)->route('mail', 'new@example.test'));
 }
 
@@ -114,10 +114,10 @@ function mockupReminderMail(): Mailable
     $plain = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Book a session with the design team', 'due_on' => '2026-09-30']);
     ActionItemExternalLink::factory()->create(['action_item_id' => $linked->id, 'external_key' => 'ATLAS-1302']);
 
-    return (new ActionItemReminderDigestNotification(array_map(
+    return new ActionItemReminderDigestNotification(array_map(
         fn (ActionItem $item): array => ['actionItemId' => $item->id, 'kind' => ActionItemReminderKind::Overdue->value],
         [$linked, $plain],
-    )))->toMail($user);
+    ))->toMail($user);
 }
 
 /**
@@ -150,7 +150,7 @@ function mockupRecapMail(array $rotiScores = [2, 3, 3, 4, 4, 4, 4, 5, 5], bool $
         RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participants[$index]->id, 'score' => $score]);
     }
 
-    return (new RetroResultsNotification($retro->id))->toMail($facilitator);
+    return new RetroResultsNotification($retro->id)->toMail($facilitator);
 }
 
 /**
@@ -182,7 +182,7 @@ it('shows the Skrüm PNG logo, in both themes, with the display name as alt', fu
 
 it('shows the mail logo of the instance, then its PNG or JPEG logo, then the name as text', function () {
     $assets = resolve(BrandAssets::class);
-    $render = fn (): string => (string) (new MagicLinkMail('https://skrum.test/magic-link/token', 'ada@example.test', 15))->render();
+    $render = fn (): string => (string) new MagicLinkMail('https://skrum.test/magic-link/token', 'ada@example.test', 15)->render();
 
     resolve(InstanceSettings::class)->set('display_name', 'Atlas Corp Retro');
 
@@ -279,7 +279,7 @@ it('counts one team and one member in the singular', function () {
     Team::factory()->create(['workspace_id' => $workspace->id]);
     $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
-    $html = (string) (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
+    $html = (string) new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id)
         ->toMail(new AnonymousNotifiable)
         ->render();
 
@@ -327,7 +327,7 @@ it('writes the due-soon rows in the same style without a delay', function () {
     $user = teamMember($team);
     $item = ActionItem::factory()->withoutRetro($team, $user)->create(['due_on' => '2026-10-02']);
 
-    $html = (string) (new ActionItemReminderDigestNotification([['actionItemId' => $item->id, 'kind' => ActionItemReminderKind::DueSoon->value]]))
+    $html = (string) new ActionItemReminderDigestNotification([['actionItemId' => $item->id, 'kind' => ActionItemReminderKind::DueSoon->value]])
         ->toMail($user)
         ->render();
 
@@ -440,7 +440,7 @@ it('writes the code mail as the mockup', function () {
 });
 
 it('says when the code was requested even without a known browser', function () {
-    $html = (string) (new TwoFactorCodeMail('042917', 10, null, '1 Oct, 2:02 pm (UTC)'))->render();
+    $html = (string) new TwoFactorCodeMail('042917', 10, null, '1 Oct, 2:02 pm (UTC)')->render();
 
     expect($html)->toContain('>Requested on 1 Oct, 2:02 pm (UTC)</p>');
 });
@@ -521,7 +521,7 @@ it('escapes user text in the blocks of the mockup', function () {
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Admin)->create(['name' => "<script>alert(1)</script>\nBcc: evil@example.test"]);
     $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, new InvitationTerms('new@example.test', WorkspaceRole::Member));
 
-    $mail = (new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id))
+    $mail = new WorkspaceInvitationNotification($workspace->name, $inviter->name, 'https://skrum.test/invitations/token', $issued->invitation->expires_at, $issued->invitation->id)
         ->toMail(new AnonymousNotifiable);
     $html = (string) $mail->render();
 

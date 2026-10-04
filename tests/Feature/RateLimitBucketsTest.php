@@ -8,14 +8,14 @@ use Illuminate\Support\Str;
 
 it('gives every numeric throttle of the application its own counter prefix', function () {
     $unprefixed = collect(Route::getRoutes()->getRoutes())
-        ->filter(fn (RoutingRoute $route) => ! Str::startsWith($route->getActionName(), ['Laravel\\', 'Illuminate\\']))
+        ->reject(fn (RoutingRoute $route): bool => Str::startsWith($route->getActionName(), ['Laravel\\', 'Illuminate\\']))
         ->flatMap(fn (RoutingRoute $route) => collect($route->gatherMiddleware())
             ->filter(fn (mixed $middleware) => is_string($middleware) && preg_match('/^throttle:\d+,\d+$/', $middleware) === 1)
             ->map(fn (string $middleware) => "{$route->uri()} {$middleware}"))
         ->values()
         ->all();
 
-    expect($unprefixed)->toBe([]);
+    expect($unprefixed)->toBeEmpty();
 });
 
 it('gives each throttle prefix a single limit', function () {
@@ -27,7 +27,7 @@ it('gives each throttle prefix a single limit', function () {
         ->filter(fn ($middlewares) => $middlewares->count() > 1)
         ->all();
 
-    expect($limitsByPrefix)->toBe([]);
+    expect($limitsByPrefix)->toBeEmpty();
 });
 
 it('keeps the guest join budget apart from the emoji data traffic of the same address', function () {

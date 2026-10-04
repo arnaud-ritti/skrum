@@ -17,10 +17,10 @@ use Symfony\Component\Finder\SplFileInfo;
 it('lists the second factors of a user', function () {
     $factors = resolve(SecondFactors::class);
 
-    expect($factors->methodsFor(User::factory()->create()))->toBe([])
+    expect($factors->methodsFor(User::factory()->create()))->toBeEmpty()
         ->and($factors->requiredFor(User::factory()->create()))->toBeFalse()
         ->and($factors->methodsFor(User::factory()->withTwoFactor()->create()))->toBe([SecondFactorMethod::Totp])
-        ->and($factors->methodsFor(User::factory()->withTwoFactor()->create(['two_factor_confirmed_at' => null])))->toBe([]);
+        ->and($factors->methodsFor(User::factory()->withTwoFactor()->create(['two_factor_confirmed_at' => null])))->toBeEmpty();
 });
 
 it('binds the pipeline step of Fortify to the shared decision', function () {

@@ -17,7 +17,7 @@ function problemsOfConnection(string $name, array $overrides, ?string $from = nu
 }
 
 it('finds nothing wrong with the database the suite runs on', function () {
-    expect(DatabaseRequirements::problems(DB::connection()))->toBe([]);
+    expect(DatabaseRequirements::problems(DB::connection()))->toBeEmpty();
 
     $this->artisan('skrum:check-database')
         ->expectsOutputToContain('The database is ready.')
@@ -58,7 +58,7 @@ it('accepts a sqlite file opened with the settings of the application', function
 
     array_map(unlink(...), glob("{$path}*"));
 
-    expect($problems)->toBe('');
+    expect($problems)->toBeEmpty();
 });
 
 it('accepts an isolation level written in lower case', function () {

@@ -52,7 +52,7 @@ it('shows the team, its colour and the message in the mail, as plain text', func
         'new@example.com', WorkspaceRole::Member, $team, TeamRole::Member, '<b>Hi</b> [click](https://evil.test)',
     ));
 
-    $mail = (new WorkspaceInvitationNotification($team->workspace->name, $inviter->name, $issued->url(), $issued->invitation->expires_at, $issued->invitation->id))
+    $mail = new WorkspaceInvitationNotification($team->workspace->name, $inviter->name, $issued->url(), $issued->invitation->expires_at, $issued->invitation->id)
         ->toMail((new AnonymousNotifiable)->route('mail', 'new@example.com'));
     $html = (string) $mail->render();
 

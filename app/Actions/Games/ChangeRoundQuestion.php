@@ -46,7 +46,7 @@ class ChangeRoundQuestion
 
             $lockedRound->forceFill(['question' => $question])->save();
 
-            (new GameQuestionChanged($lockedRoom, $lockedRound->id, $question))->sendToOthers();
+            new GameQuestionChanged($lockedRoom, $lockedRound->id, $question)->sendToOthers();
 
             return $question;
         });

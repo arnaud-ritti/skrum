@@ -40,7 +40,7 @@ it('returns the unique presence ids of the game channel', function () {
         'users' => [['id' => 'a'], ['id' => 'a'], ['id' => 'b']],
     ]))], $history);
 
-    expect((new ReverbPokerPresenceRoster($client))->playerIds($game))->toBe(['a', 'b']);
+    expect(new ReverbPokerPresenceRoster($client)->playerIds($game))->toBe(['a', 'b']);
 
     $request = $history[0]['request'];
 
@@ -55,7 +55,7 @@ it('returns null and logs the game id when Reverb is unreachable', function () {
 
     $client = rosterClient([new ConnectException('down', new Request('GET', 'x'))]);
 
-    expect((new ReverbPokerPresenceRoster($client))->playerIds($game))->toBeNull();
+    expect(new ReverbPokerPresenceRoster($client)->playerIds($game))->toBeNull();
 });
 
 it('returns null on an API error', function () {
@@ -64,7 +64,7 @@ it('returns null on an API error', function () {
 
     $client = rosterClient([new Response(500, [], 'boom')]);
 
-    expect((new ReverbPokerPresenceRoster($client))->playerIds($game))->toBeNull();
+    expect(new ReverbPokerPresenceRoster($client)->playerIds($game))->toBeNull();
 });
 
 it('returns null when the default broadcaster is not reverb', function () {
@@ -74,5 +74,5 @@ it('returns null when the default broadcaster is not reverb', function () {
 
     $client = rosterClient([new Response(200, [], '{"users":[{"id":"a"}]}')]);
 
-    expect((new ReverbPokerPresenceRoster($client))->playerIds($game))->toBeNull();
+    expect(new ReverbPokerPresenceRoster($client)->playerIds($game))->toBeNull();
 });

@@ -43,7 +43,7 @@ class SetGameClue
 
             $lockedRound->forceFill(['clue' => $emoji])->save();
 
-            (new GameClueChanged($lockedRoom, $lockedRound->id, $emoji))->sendToOthers();
+            new GameClueChanged($lockedRoom, $lockedRound->id, $emoji)->sendToOthers();
 
             return ['roundId' => $lockedRound->id, 'clue' => $emoji];
         });

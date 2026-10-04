@@ -65,7 +65,7 @@ class GameRoomsController extends Controller
 
             $locked->update($validated);
 
-            (new GameRoomChanged($locked))->sendToOthers();
+            new GameRoomChanged($locked)->sendToOthers();
 
             $announceTeamGameRoom->changed($locked);
         });

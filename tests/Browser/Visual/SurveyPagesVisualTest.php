@@ -58,7 +58,7 @@ function p19SurveyTeam(): array
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
-    return compact('workspace', 'team', 'admin', 'members');
+    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members];
 }
 
 /**
@@ -209,7 +209,7 @@ function p19SurveyPages(): array
         }
     }
 
-    return compact('workspace', 'team', 'admin', 'members', 'previous', 'closed', 'open', 'draft', 'healthDraft');
+    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members, 'previous' => $previous, 'closed' => $closed, 'open' => $open, 'draft' => $draft, 'healthDraft' => $healthDraft];
 }
 
 /**

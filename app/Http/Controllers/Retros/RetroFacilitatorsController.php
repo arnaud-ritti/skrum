@@ -42,7 +42,7 @@ class RetroFacilitatorsController extends Controller
 
             $locked->update(['facilitator_participant_id' => $newFacilitator->id]);
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

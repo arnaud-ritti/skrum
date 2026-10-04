@@ -50,7 +50,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         $shownDueSoon = $dueSoon->take(self::Limit - $shownOverdue->count());
         $first = $overdue->concat($dueSoon)->first();
 
-        return (new ActionItemReminderMail(
+        return new ActionItemReminderMail(
             $shownOverdue->map($this->present(...))->all(),
             $shownDueSoon->map($this->present(...))->all(),
             $overdue->count() + $dueSoon->count() - $shownOverdue->count() - $shownDueSoon->count(),
@@ -61,7 +61,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
             ]),
             URL::signedRoute('reminderUnsubscribes.show', ['user' => $notifiable->id]),
             route('notificationPreferences.edit'),
-        ))
+        )
             ->subject($this->subject($overdue->count(), $dueSoon->count()))
             ->forNotifiable($notifiable);
     }

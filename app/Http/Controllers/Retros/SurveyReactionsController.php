@@ -57,7 +57,7 @@ class SurveyReactionsController extends Controller
                 $fresh->reactions()->where('participant_id', $participant->id)->where('emoji', $validated['emoji'])->delete();
             }
 
-            (new SurveyDiscussionChanged($locked->id, $fresh->id, $fresh->commentCount()))->sendToOthers();
+            new SurveyDiscussionChanged($locked->id, $fresh->id, $fresh->commentCount())->sendToOthers();
 
             return [$fresh, $locked];
         }, Transactions::Attempts);

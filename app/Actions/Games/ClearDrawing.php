@@ -26,7 +26,7 @@ class ClearDrawing
 
             $lockedRound->forceFill(['drawing' => [], 'drawing_points' => 0])->save();
 
-            (new GameDrawingCleared($lockedRoom, $lockedRound->id))->sendToOthers();
+            new GameDrawingCleared($lockedRoom, $lockedRound->id)->sendToOthers();
 
             return ['roundId' => $lockedRound->id, 'count' => 0];
         });

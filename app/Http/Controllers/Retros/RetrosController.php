@@ -38,7 +38,7 @@ class RetrosController extends Controller
 
             $locked->delete();
 
-            (new RetroDeleted($retroId))->sendToOthers();
+            new RetroDeleted($retroId)->sendToOthers();
         });
 
         return response()->noContent();

@@ -16,7 +16,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 function cvaMember(Team $team, string $name, string $locale = 'en'): User
 {

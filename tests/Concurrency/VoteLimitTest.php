@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Sleep;
 use App\Enums\RetroPhase;
 use App\Events\Retros\VoteCast;
 use App\Models\Card;
@@ -59,7 +60,7 @@ it('retries a vote that lost a deadlock, and records and broadcasts it once', fu
         'rival' => static fn (): bool => DB::transaction(static function () use ($retroId, $participantId): bool {
             Participant::query()->whereKey($participantId)->lockForUpdate()->firstOrFail()->touch();
 
-            usleep(400_000);
+            Sleep::usleep(400_000);
 
             Retro::query()->whereKey($retroId)->lockForUpdate()->firstOrFail();
 
@@ -81,12 +82,12 @@ it('answers 503 with a retry delay when another connection holds the SQLite writ
         'holder' => static fn (): bool => DB::transaction(static function () use ($retroId): bool {
             Retro::query()->whereKey($retroId)->firstOrFail()->touch();
 
-            usleep(6_500_000);
+            Sleep::usleep(6_500_000);
 
             return true;
         }),
         'vote' => static function () use ($userId, $uri): array {
-            usleep(500_000);
+            Sleep::usleep(500_000);
 
             return Race::response($userId, 'POST', $uri);
         },

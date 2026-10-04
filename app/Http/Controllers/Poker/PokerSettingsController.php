@@ -66,7 +66,7 @@ class PokerSettingsController extends Controller
                 $this->anonymizeOpenRounds($locked);
             }
 
-            (new PokerGameChanged($locked->id))->sendToOthers();
+            new PokerGameChanged($locked->id)->sendToOthers();
         });
 
         if ($turnsAutoRevealOn) {

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 const CaccAdminPages = [
     '/admin',

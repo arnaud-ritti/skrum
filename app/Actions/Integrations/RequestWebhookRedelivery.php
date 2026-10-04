@@ -79,7 +79,7 @@ class RequestWebhookRedelivery
         });
 
         try {
-            resolve(Dispatcher::class)->dispatch((new RedeliverWebhook($redelivery->id, app()->getLocale()))->afterCommit());
+            resolve(Dispatcher::class)->dispatch(new RedeliverWebhook($redelivery->id, app()->getLocale())->afterCommit());
         } catch (Throwable $exception) {
             report($exception);
 

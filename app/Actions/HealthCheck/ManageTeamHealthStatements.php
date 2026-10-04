@@ -171,7 +171,7 @@ class ManageTeamHealthStatements
             TeamSurveyChanged::for($survey)->sendToOthers();
 
             if ($survey->retro_id !== null) {
-                (new RetroSettingsChanged($survey->retro_id))->sendToOthers();
+                new RetroSettingsChanged($survey->retro_id)->sendToOthers();
             }
         }
     }

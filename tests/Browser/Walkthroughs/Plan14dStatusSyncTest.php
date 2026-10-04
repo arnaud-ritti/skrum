@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 const P14dWebhookToken = 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcd';
 

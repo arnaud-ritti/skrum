@@ -29,7 +29,7 @@ class RetroRotiNudgesController extends Controller
 
         abort_if(RateLimiter::hit($key, Retro::NudgeIntervalSeconds) > 1, 429, __('You can nudge again in a moment.'));
 
-        (new RotiNudged($retro->id))->sendToOthers();
+        new RotiNudged($retro->id)->sendToOthers();
 
         return response()->noContent();
     }

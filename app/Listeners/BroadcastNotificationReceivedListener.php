@@ -27,6 +27,6 @@ class BroadcastNotificationReceivedListener
 
         $user = $event->notifiable;
 
-        rescue(fn () => NotificationReceived::dispatch($user->id, $this->bellNotifications->unreadCount($user)), report: true);
+        rescue(fn () => event(new NotificationReceived($user->id, $this->bellNotifications->unreadCount($user))), report: true);
     }
 }

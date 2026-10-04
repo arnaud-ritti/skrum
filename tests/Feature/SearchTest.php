@@ -75,7 +75,7 @@ it('never returns a team the user cannot view in the same workspace', function (
     GameRoom::factory()->for($otherTeam)->create(['name' => 'Kraken open room', 'access' => 'link']);
     ActionItem::factory()->withoutRetro($otherTeam, teamMember($otherTeam))->create(['content' => 'Kraken secret action']);
 
-    expect(searchTitles($user, 'kraken'))->toBe([]);
+    expect(searchTitles($user, 'kraken'))->toBeEmpty();
 });
 
 it('lets a workspace admin see every team of that workspace and nothing of another', function () {
@@ -98,13 +98,13 @@ it('drops the results of a team the user left', function () {
 
     $team->members()->detach($user);
 
-    expect(searchTitles($user, 'kraken'))->toBe([]);
+    expect(searchTitles($user, 'kraken'))->toBeEmpty();
 });
 
 it('returns nothing without a current workspace', function () {
     $user = User::factory()->create();
 
-    expect(searchTitles($user, 'kraken'))->toBe([]);
+    expect(searchTitles($user, 'kraken'))->toBeEmpty();
 });
 
 it('does not find the card of someone else while the retro still hides cards', function () {
@@ -112,7 +112,7 @@ it('does not find the card of someone else while the retro still hides cards', f
     $retro = Retro::factory()->for($team)->create(['title' => 'Sprint 12']);
     Card::factory()->create(['retro_id' => $retro->id, 'content' => 'kraken on a card']);
 
-    expect(searchTitles($user, 'kraken'))->toBe([]);
+    expect(searchTitles($user, 'kraken'))->toBeEmpty();
 });
 
 it('treats pattern characters as text', function (string $term, array $expected) {

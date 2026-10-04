@@ -49,7 +49,7 @@ class RemoveTrackerWebhooks implements ShouldBeUnique, ShouldQueue
     /** @return array<int, object> */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("tracker-webhooks:{$this->integrationId}"))->releaseAfter(30)->expireAfter(120)];
+        return [new WithoutOverlapping("tracker-webhooks:{$this->integrationId}")->releaseAfter(30)->expireAfter(120)];
     }
 
     public function retryUntil(): DateTimeInterface

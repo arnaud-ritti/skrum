@@ -135,7 +135,7 @@ pest()->extend(TestCase::class)
 
 expect()->extend('toBeOne', fn () => $this->toBe(1));
 
-expect()->extend('toBeIgnoringKeyOrder', function (array $expected) {
+expect()->extend('toBeIgnoringKeyOrder', function (array $expected): object {
     expect(withKeysSorted($this->value))->toBe(withKeysSorted($expected));
 
     return $this;
@@ -637,7 +637,7 @@ function mcpContractToolNames(): array
  */
 function mcpToolClass(string $name): string
 {
-    $tools = (new ReflectionClass(SkrumServer::class))->getProperty('tools')->getDefaultValue();
+    $tools = new ReflectionClass(SkrumServer::class)->getProperty('tools')->getDefaultValue();
 
     foreach ($tools as $class) {
         if (resolve($class)->name() === $name) {
@@ -1593,7 +1593,7 @@ function statusSyncIssue(string $externalId, string $key, string $kind, ?string 
 
 function runStatusPush(ActionItemExternalLink $link): PushActionItemState
 {
-    $job = (new PushActionItemState($link->id))->withFakeQueueInteractions();
+    $job = new PushActionItemState($link->id)->withFakeQueueInteractions();
 
     app()->call($job->handle(...));
 
@@ -1906,7 +1906,7 @@ function healthHistory(): array
 
     $never = Retro::factory()->for($team)->create(['title' => 'Never had one']);
 
-    return compact('team', 'custom', 'sprint40', 'sprint41', 'inHealthPhase', 'completedUnanswered', 'turnedOff', 'openUnanswered', 'never', 'alice', 'aliceIn41', 'guest', 'former', 'bobIn42');
+    return ['team' => $team, 'custom' => $custom, 'sprint40' => $sprint40, 'sprint41' => $sprint41, 'inHealthPhase' => $inHealthPhase, 'completedUnanswered' => $completedUnanswered, 'turnedOff' => $turnedOff, 'openUnanswered' => $openUnanswered, 'never' => $never, 'alice' => $alice, 'aliceIn41' => $aliceIn41, 'guest' => $guest, 'former' => $former, 'bobIn42' => $bobIn42];
 }
 
 function importedSurvey(string $retroId): ?object

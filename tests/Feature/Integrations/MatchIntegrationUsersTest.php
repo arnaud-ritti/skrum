@@ -197,13 +197,13 @@ it('waits when the provider rate limits and clears the flag when done', function
         ->push([])]);
     MatchIntegrationUsers::start($integration);
 
-    $limited = (new MatchIntegrationUsers($integration->id))->withFakeQueueInteractions();
+    $limited = new MatchIntegrationUsers($integration->id)->withFakeQueueInteractions();
     $limited->handle(resolve(MatchIntegrationUserAccounts::class));
 
     $limited->assertReleased(42);
     expect(MatchIntegrationUsers::isRunning($integration))->toBeTrue();
 
-    (new MatchIntegrationUsers($integration->id))->withFakeQueueInteractions()->handle(resolve(MatchIntegrationUserAccounts::class));
+    new MatchIntegrationUsers($integration->id)->withFakeQueueInteractions()->handle(resolve(MatchIntegrationUserAccounts::class));
 
     expect(MatchIntegrationUsers::isRunning($integration))->toBeFalse();
 });

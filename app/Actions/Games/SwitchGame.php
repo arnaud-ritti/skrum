@@ -46,7 +46,7 @@ class SwitchGame
 
             $locked->update(['game' => $game]);
 
-            (new GameRoomChanged($locked))->sendToOthers();
+            new GameRoomChanged($locked)->sendToOthers();
 
             $this->announceTeamGameRoom->changed($locked);
         });

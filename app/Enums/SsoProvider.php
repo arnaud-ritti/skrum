@@ -70,13 +70,7 @@ enum SsoProvider: string
 
     public function isEnabled(): bool
     {
-        foreach ($this->requiredConfigKeys() as $key) {
-            if (blank(config($key))) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($this->requiredConfigKeys(), fn(string $key): bool => filled(config($key)));
     }
 
     public function verifiedEmail(AbstractUser $user): ?string

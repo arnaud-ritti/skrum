@@ -58,7 +58,7 @@ class ChangeDrawWord
             $mask = GameWord::mask($word, []);
             $maxHints = WordGuessRules::maxHints($word);
 
-            (new GameWordChanged($lockedRoom, ['roundId' => $lockedRound->id, 'mask' => $mask, 'maxHints' => $maxHints]))->sendToOthers();
+            new GameWordChanged($lockedRoom, ['roundId' => $lockedRound->id, 'mask' => $mask, 'maxHints' => $maxHints])->sendToOthers();
 
             return [
                 'roundId' => $lockedRound->id,

@@ -105,8 +105,8 @@ it('lists a recap for each recipient of the recap mail and for nobody else', fun
 
     expect(DB::table('notifications')->where('data->kind', 'recap_ready')->pluck('notifiable_id')->sort()->values()->all())
         ->toBe(collect([$facilitator->id, $recipient->id])->sort()->values()->all())
-        ->and(bellOf($unsubscribed))->toBe([])
-        ->and(bellOf($outsider))->toBe([]);
+        ->and(bellOf($unsubscribed))->toBeEmpty()
+        ->and(bellOf($outsider))->toBeEmpty();
 
     $recap = bellOf($recipient)[0];
 
@@ -214,8 +214,8 @@ it('stores the invitation token encrypted, never a link, and gives the link to i
         ->and($data['invitationId'])->toBe($invitation->id)
         ->and(Crypt::decryptString($data['token']))->toBe($token)
         ->and(bellOf($invited)[0]['href'])->toBe(route('invitations.show', $token))
-        ->and(bellOf(User::factory()->create()))->toBe([])
-        ->and(bellOf($invitation->invitedBy))->toBe([]);
+        ->and(bellOf(User::factory()->create()))->toBeEmpty()
+        ->and(bellOf($invitation->invitedBy))->toBeEmpty();
 });
 
 it('builds the invitation link on the host of the reader, whatever host the inviter came from', function () {
@@ -272,7 +272,7 @@ it('forgets the notification of an invitation that is accepted, revoked or sent 
         ->and(DB::table('notifications')->where('notifiable_id', '!=', $known->id)->count())->toBe($kept);
 })->with([
     'accepted' => [function (User $admin, Workspace $workspace, User $known): int {
-        app(AcceptWorkspaceInvitation::class)->handle($workspace->invitations()->sole(), $known);
+        resolve(AcceptWorkspaceInvitation::class)->handle($workspace->invitations()->sole(), $known);
 
         return 0;
     }],

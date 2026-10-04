@@ -55,7 +55,7 @@ function runEstimateSync(PokerTask $task): void
 
 function runEstimateSyncThroughMiddleware(SyncTaskEstimate $job): void
 {
-    (new Pipeline(app()))
+    new Pipeline(app())
         ->send($job)
         ->through($job->middleware())
         ->then(fn (SyncTaskEstimate $job) => app()->call($job->handle(...)));
@@ -85,7 +85,7 @@ it('waits for the running write of the same task, then writes the latest estimat
     $table = trackerTable();
     $task = pendingSyncTask($table, '5');
     fakeJiraTrackerApi();
-    $waiting = (new SyncTaskEstimate($task->id))->withFakeQueueInteractions();
+    $waiting = new SyncTaskEstimate($task->id)->withFakeQueueInteractions();
     [$middleware] = $waiting->middleware();
     $running = Cache::lock($middleware->getLockKey($waiting), 60);
     $running->get();
@@ -98,7 +98,7 @@ it('waits for the running write of the same task, then writes the latest estimat
     PokerTask::query()->whereKey($task->id)->update(['estimate' => '8', 'estimate_numeric' => 8]);
     $running->release();
 
-    runEstimateSyncThroughMiddleware((new SyncTaskEstimate($task->id))->withFakeQueueInteractions());
+    runEstimateSyncThroughMiddleware(new SyncTaskEstimate($task->id)->withFakeQueueInteractions());
 
     expect($task->fresh()?->needs_sync)->toBeFalse();
     Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
@@ -295,7 +295,7 @@ it('waits for the rate limit before retrying', function () {
     $task = pendingSyncTask($table, '5');
     Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*/editmeta' => Http::response([], 429, ['Retry-After' => '42'])]);
 
-    $job = (new SyncTaskEstimate($task->id))->withFakeQueueInteractions();
+    $job = new SyncTaskEstimate($task->id)->withFakeQueueInteractions();
     app()->call($job->handle(...));
 
     $job->assertReleased(42);
@@ -434,7 +434,7 @@ it('ignores the final failure of an older job once the task is synced', function
     $table = trackerTable();
     $task = importedPokerTask($table['game'], ['estimate' => '5', 'needs_sync' => false, 'synced_at' => now()]);
 
-    (new SyncTaskEstimate($task->id))->failed(new ProviderUnavailable(IntegrationProvider::Jira));
+    new SyncTaskEstimate($task->id)->failed(new ProviderUnavailable(IntegrationProvider::Jira));
 
     expect($task->fresh()?->needs_sync)->toBeFalse()
         ->and($task->fresh()?->sync_error)->toBeNull();

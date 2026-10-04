@@ -109,7 +109,7 @@ class ColumnsController extends Controller
 
             $columns = $this->presentColumns->handle($locked);
 
-            (new ColumnsChanged($locked->id, $columns))->sendToOthers();
+            new ColumnsChanged($locked->id, $columns)->sendToOthers();
 
             return $columns;
         });

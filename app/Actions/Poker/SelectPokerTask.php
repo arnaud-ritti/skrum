@@ -22,6 +22,6 @@ class SelectPokerTask
             $this->startPokerRound->handle($locked, $task);
         }
 
-        (new PokerRoundChanged($locked->id))->sendToOthers();
+        new PokerRoundChanged($locked->id)->sendToOthers();
     }
 }

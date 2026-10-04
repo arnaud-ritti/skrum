@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\InstanceSettingKey;
 use App\Models\User;
 use App\Support\Mail\MailBrand;
@@ -9,7 +10,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Support\Carbon;
 
 /**
  * Not queued on purpose (rule S4): the alert leaves before the request ends, through the
@@ -73,7 +73,7 @@ class InstanceConfigurationChangedMail extends Mailable
 
     private function summary(): string
     {
-        $at = $this->localised(Carbon::parse($this->at)->utc());
+        $at = $this->localised(Date::parse($this->at)->utc());
         $replace = [
             'name' => $this->author->name,
             'email' => $this->author->email,

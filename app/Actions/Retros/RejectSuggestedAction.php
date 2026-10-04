@@ -23,6 +23,6 @@ class RejectSuggestedAction
             'handled_at' => now(),
         ]);
 
-        (new InsightsChanged($locked->id))->sendToOthers();
+        new InsightsChanged($locked->id)->sendToOthers();
     }
 }

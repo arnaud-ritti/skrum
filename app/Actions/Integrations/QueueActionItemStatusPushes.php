@@ -52,7 +52,7 @@ class QueueActionItemStatusPushes
             }
 
             if (! $integration->canWrite()) {
-                $link->forceFill(['sync_error' => (new ReadOnlyConnection($integration->provider))->userMessage()])->save();
+                $link->forceFill(['sync_error' => new ReadOnlyConnection($integration->provider)->userMessage()])->save();
                 $changed = true;
 
                 continue;

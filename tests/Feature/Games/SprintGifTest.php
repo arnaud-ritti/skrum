@@ -272,7 +272,7 @@ it('ignores the old timer once the answers are revealed', function () {
 
     $this->travel(65)->seconds();
     resolve(ExpireGameRound::class)->handle($room->fresh());
-    (new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00'))->handle(resolve(ExpireGameRound::class));
+    new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00')->handle(resolve(ExpireGameRound::class));
 
     expect($round->fresh()->isActive())->toBeTrue()
         ->and($round->fresh()->revealed_at?->toIso8601String())->toBe('2026-10-06T10:01:05+00:00');

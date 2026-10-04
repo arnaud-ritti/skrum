@@ -33,7 +33,7 @@ class SetPokerSpectator
             $this->withdrawOpenVotes($locked, $player);
         }
 
-        (new PokerGameChanged($locked->id))->sendToOthers();
+        new PokerGameChanged($locked->id)->sendToOthers();
     }
 
     /**
@@ -54,14 +54,14 @@ class SetPokerSpectator
             $round->votes()->where('poker_player_id', $player->id)->delete();
             $round->increment('version');
 
-            (new PokerVoteChanged(
+            new PokerVoteChanged(
                 $locked->id,
                 $round->id,
                 $player->id,
                 false,
                 $round->votes()->count(),
                 $round->version,
-            ))->sendToOthers();
+            )->sendToOthers();
         }
     }
 }

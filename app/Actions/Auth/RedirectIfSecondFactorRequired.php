@@ -35,10 +35,10 @@ class RedirectIfSecondFactorRequired extends RedirectIfTwoFactorAuthenticatable
     {
         resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'), SignInEntry::Password);
 
-        TwoFactorAuthenticationChallenged::dispatch($user);
+        event(new TwoFactorAuthenticationChallenged($user));
 
         return $request->wantsJson()
             ? response()->json(['two_factor' => true])
-            : redirect()->route('two-factor.login');
+            : to_route('two-factor.login');
     }
 }

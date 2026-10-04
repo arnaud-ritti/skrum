@@ -88,9 +88,9 @@ class WriteWhiteboardElements
 
             $locked->update(['seq' => $seq]);
 
-            RefreshWhiteboardPreview::dispatch($locked->id)->afterCommit()->delay(now()->addSeconds(30));
+            dispatch(new RefreshWhiteboardPreview($locked->id))->afterCommit()->delay(now()->addSeconds(30));
 
-            (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
+            new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted))->sendToOthers();
 
             return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
         });

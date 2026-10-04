@@ -133,7 +133,7 @@ it('[R27-02] numbers the rounds of a game, says "Game over" after the last one, 
         $page->assertSeeIn('[data-slot="round-info"]', 'Round 1 of 2');
     }
 
-    expect(GameRound::query()->orderBy('started_at')->orderBy('id')->pluck('number')->all())->toBe([1, 2, 1]);
+    expect(GameRound::query()->oldest('started_at')->orderBy('id')->pluck('number')->all())->toBe([1, 2, 1]);
 });
 
 it('[R27-03] plays hangman in turns: only the player of the turn picks a letter, and every letter passes the turn live', function () {

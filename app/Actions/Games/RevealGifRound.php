@@ -29,7 +29,7 @@ class RevealGifRound
             'authorsHidden' => PresentGifAnswers::authorsComeAtClose($lockedRoom, $lockedRound),
         ];
 
-        (new GameRoundRevealed($lockedRoom, $payload))->sendToOthers();
+        new GameRoundRevealed($lockedRoom, $payload)->sendToOthers();
 
         return $payload;
     }

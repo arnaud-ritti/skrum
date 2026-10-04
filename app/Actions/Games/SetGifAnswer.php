@@ -58,7 +58,7 @@ class SetGifAnswer
             );
 
             if ($answer->wasRecentlyCreated) {
-                (new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, true))->sendToOthers();
+                new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, true)->sendToOthers();
             }
 
             return $this->presentGifAnswers->mine($answer);

@@ -36,7 +36,7 @@ class WriteStatementSet
             $set->forceFill(['statements' => array_values($statements), 'lie_index' => $lieIndex, 'played_at' => null])->save();
 
             if (! $wasReady) {
-                (new GameStatementsChanged($locked, $player->id, true))->sendToOthers();
+                new GameStatementsChanged($locked, $player->id, true)->sendToOthers();
             }
 
             return ['statements' => $set->statementsList(), 'lieIndex' => $set->lie_index, 'played' => false];

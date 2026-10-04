@@ -77,12 +77,12 @@ it('lets the job of the old end do nothing and the job of the new end reveal', f
         ->json('timerEndsAt');
 
     $this->travelTo(CarbonImmutable::parse('2026-10-05 10:01:00'));
-    (new RevealPokerRoundOnTimer($round->id, $oldEnd))->handle(resolve(AutoRevealPokerRound::class));
+    new RevealPokerRoundOnTimer($round->id, $oldEnd)->handle(resolve(AutoRevealPokerRound::class));
 
     expect($round->fresh()->revealed_at)->toBeNull();
 
     $this->travelTo(CarbonImmutable::parse('2026-10-05 10:03:00'));
-    (new RevealPokerRoundOnTimer($round->id, $newEnd))->handle(resolve(AutoRevealPokerRound::class));
+    new RevealPokerRoundOnTimer($round->id, $newEnd)->handle(resolve(AutoRevealPokerRound::class));
 
     expect($round->fresh()->revealed_at)->not->toBeNull();
 });

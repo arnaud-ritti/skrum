@@ -29,7 +29,7 @@ it('finds an item by its text in any case, and respects accents', function () {
 
     expect(searchedContents($team, $user, ['q' => 'runbook']))->toBe(['Write the on-call RUNBOOK'])
         ->and(searchedContents($team, $user, ['q' => 'ÉTÉ']))->toBe(['Été planning'])
-        ->and(searchedContents($team, $user, ['q' => 'ete']))->toBe([]);
+        ->and(searchedContents($team, $user, ['q' => 'ete']))->toBeEmpty();
 });
 
 it('finds an item by its ticket key in any case', function () {

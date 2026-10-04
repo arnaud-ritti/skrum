@@ -31,10 +31,8 @@ class EnsureAccountIsActive
 
         $message = __('This account is deactivated. Ask an admin of the instance.');
 
-        if ($request->expectsJson() || $request->routeIs('broadcasting.auth')) {
-            abort(403, $message);
-        }
+        abort_if($request->expectsJson() || $request->routeIs('broadcasting.auth'), 403, $message);
 
-        return redirect()->route('login')->withErrors(['email' => $message]);
+        return to_route('login')->withErrors(['email' => $message]);
     }
 }

@@ -42,7 +42,7 @@ class GameTimerExtensionsController extends Controller
 
             $locked->update(['timer_ends_at' => $endsAt]);
 
-            (new GameTimerChanged($locked, $endsAt->toIso8601String()))->sendToOthers();
+            new GameTimerChanged($locked, $endsAt->toIso8601String())->sendToOthers();
 
             $round = $locked->activeRound();
 

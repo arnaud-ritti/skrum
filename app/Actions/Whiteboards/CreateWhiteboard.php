@@ -41,7 +41,7 @@ class CreateWhiteboard
             $this->recordTeamActivity->handle($team->id, TeamActivityKind::WhiteboardCreated, $creator, null, $board->id, $board->title);
 
             if ($scene['elements'] !== []) {
-                RefreshWhiteboardPreview::dispatch($board->id)->afterCommit();
+                dispatch(new RefreshWhiteboardPreview($board->id))->afterCommit();
             }
 
             return $board;

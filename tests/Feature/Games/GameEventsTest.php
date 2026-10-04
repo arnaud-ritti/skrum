@@ -34,7 +34,7 @@ it('broadcasts icebreaker rooms on the retro channel', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Icebreaker)->create();
     $room = GameRoom::factory()->icebreaker($retro)->create();
 
-    expect((new GameRoomChanged($room))->broadcastOn()->name)->toBe("presence-retro.{$retro->id}");
+    expect(new GameRoomChanged($room)->broadcastOn()->name)->toBe("presence-retro.{$retro->id}");
 });
 
 it('names every event and its payload keys', function (Closure $make, string $name, array $keys) {

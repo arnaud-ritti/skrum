@@ -25,7 +25,7 @@ class AnnounceTeamGameRoom
             return;
         }
 
-        (new TeamGameRoomChanged($room->team_id, $this->presentGameRoomSummary->handle($summarized)))->sendToOthers();
+        new TeamGameRoomChanged($room->team_id, $this->presentGameRoomSummary->handle($summarized))->sendToOthers();
     }
 
     public function deleted(GameRoom $room): void
@@ -34,6 +34,6 @@ class AnnounceTeamGameRoom
             return;
         }
 
-        (new TeamGameRoomDeleted($room->team_id, $room->id))->sendToOthers();
+        new TeamGameRoomDeleted($room->team_id, $room->id)->sendToOthers();
     }
 }

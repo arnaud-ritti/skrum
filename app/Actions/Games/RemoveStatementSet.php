@@ -43,7 +43,7 @@ class RemoveStatementSet
 
             $set->delete();
 
-            (new GameStatementsChanged($locked, $player->id, false))->sendToOthers();
+            new GameStatementsChanged($locked, $player->id, false)->sendToOthers();
         });
     }
 }

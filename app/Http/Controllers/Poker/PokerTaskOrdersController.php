@@ -47,7 +47,7 @@ class PokerTaskOrdersController extends Controller
 
             $locked->touch();
 
-            (new PokerTasksReordered($locked->id, $validated['task_ids']))->sendToOthers();
+            new PokerTasksReordered($locked->id, $validated['task_ids'])->sendToOthers();
         });
 
         return response()->noContent();

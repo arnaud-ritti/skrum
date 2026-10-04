@@ -100,13 +100,6 @@ class InboundReachability
         if ($addresses === []) {
             return null;
         }
-
-        foreach ($addresses as $address) {
-            if (PublicAddress::isPublic($address)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($addresses, fn(string $address): bool => PublicAddress::isPublic($address));
     }
 }

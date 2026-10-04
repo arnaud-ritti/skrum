@@ -46,7 +46,7 @@ it('records nothing once its closure has returned', function () {
     $locks = SqlProbe::locks(fn () => null);
     DB::transaction(fn () => User::query()->whereKey($user->id)->lockForUpdate()->first());
 
-    expect($locks)->toBe([]);
+    expect($locks)->toBeEmpty();
 });
 
 it('provokes a failure the database itself raises', function () {

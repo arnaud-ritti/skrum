@@ -36,7 +36,7 @@ function turnTable(array $roomAttributes = [], ?FakeGameRules $rules = null): ar
 
 function runTurnExpiryJob(string $roundId, string $turnEndsAt): void
 {
-    (new CloseExpiredGameTurn($roundId, $turnEndsAt))->handle(resolve(ExpireGameRound::class));
+    new CloseExpiredGameTurn($roundId, $turnEndsAt)->handle(resolve(ExpireGameRound::class));
 }
 
 it('needs a turn order to start a game played in turns, from the players of the room', function () {

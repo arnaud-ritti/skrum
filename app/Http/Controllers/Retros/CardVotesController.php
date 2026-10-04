@@ -67,7 +67,7 @@ class CardVotesController extends Controller
             $total = $locked->hide_vote_counts ? null : $card->votes()->count();
             $cardTotal = $total === null ? null : ['cardId' => $card->id, 'total' => $total];
 
-            (new VoteCast($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
+            new VoteCast($locked->id, $votesCast, $locked->votes_version, $cardTotal)->sendToOthers();
 
             return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total, 'finishedIds' => $finishedIds];
         }, Transactions::Attempts);
@@ -106,7 +106,7 @@ class CardVotesController extends Controller
             $total = $locked->hide_vote_counts ? null : $card->votes()->count();
             $cardTotal = $total === null ? null : ['cardId' => $card->id, 'total' => $total];
 
-            (new VoteRetracted($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
+            new VoteRetracted($locked->id, $votesCast, $locked->votes_version, $cardTotal)->sendToOthers();
 
             return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total, 'finishedIds' => $finishedIds];
         }, Transactions::Attempts);
@@ -162,7 +162,7 @@ class CardVotesController extends Controller
 
         $finishedIds = $locked->votingFinishedIds();
 
-        (new VotingFinishedChanged($locked->id, $finishedIds))->sendToOthers();
+        new VotingFinishedChanged($locked->id, $finishedIds)->sendToOthers();
 
         return $finishedIds;
     }

@@ -279,7 +279,7 @@ it('keeps the front end on the rules of the design system', function (string $ru
     $sources = frontEndSources(dirname(__DIR__, 2));
 
     expect($sources)->not->toBeEmpty()
-        ->and(frontEndOffences($sources, frontEndDetectors()[$rule], $rule))->toBe([]);
+        ->and(frontEndOffences($sources, frontEndDetectors()[$rule], $rule))->toBeEmpty();
 })->with(array_keys(frontEndDetectors()));
 
 it('keeps the default palette and literal sizes out of the Blade views', function () {
@@ -297,14 +297,14 @@ it('keeps the default palette and literal sizes out of the Blade views', functio
         }
     }
 
-    expect($offences)->toBe([]);
+    expect($offences)->toBeEmpty();
 });
 
 it('keeps the skrum components presentational', function () {
     $sources = frontEndSources(dirname(__DIR__, 2), 'resources/js/components/skrum');
 
     expect($sources)->not->toBeEmpty()
-        ->and(frontEndOffences($sources, presentationalImportOffences(...), 'presentational'))->toBe([]);
+        ->and(frontEndOffences($sources, presentationalImportOffences(...), 'presentational'))->toBeEmpty();
 });
 
 it('declares no icon package other than lucide-react', function () {
@@ -316,7 +316,7 @@ it('declares no icon package other than lucide-react', function () {
         fn (string $package): bool => iconPackageOffences("import x from '{$package}'") !== [],
     ));
 
-    expect($iconPackages)->toBe([])
+    expect($iconPackages)->toBeEmpty()
         ->and($packages)->toContain('lucide-react');
 });
 
@@ -333,7 +333,7 @@ it('keeps only exemptions that still exempt something', function () {
         }
     }
 
-    expect($stale)->toBe([]);
+    expect($stale)->toBeEmpty();
 });
 
 it('gives every exemption a reason', function () {
@@ -366,7 +366,7 @@ dataset('frontEndRuleBreaks', [
 ]);
 
 it('reports a broken rule', function (string $rule, string $code) {
-    expect(frontEndDetectors()[$rule]($code))->not->toBe([]);
+    expect(frontEndDetectors()[$rule]($code))->not->toBeEmpty();
 })->with('frontEndRuleBreaks');
 
 dataset('frontEndRuleLookalikes', [
@@ -391,7 +391,7 @@ dataset('frontEndRuleLookalikes', [
 ]);
 
 it('accepts what only looks like a broken rule', function (string $rule, string $code) {
-    expect(frontEndDetectors()[$rule]($code))->toBe([]);
+    expect(frontEndDetectors()[$rule]($code))->toBeEmpty();
 })->with('frontEndRuleLookalikes');
 
 dataset('presentationalBreaks', [
@@ -408,7 +408,7 @@ dataset('presentationalBreaks', [
 ]);
 
 it('reports a skrum component that does more than render', function (string $code) {
-    expect(presentationalImportOffences($code))->not->toBe([]);
+    expect(presentationalImportOffences($code))->not->toBeEmpty();
 })->with('presentationalBreaks');
 
 it('accepts the imports a skrum component needs', function () {
@@ -427,5 +427,5 @@ it('accepts the imports a skrum component needs', function () {
     const refetch = () => props.onRefetch();
     TSX;
 
-    expect(presentationalImportOffences($code))->toBe([]);
+    expect(presentationalImportOffences($code))->toBeEmpty();
 });

@@ -367,7 +367,7 @@ it('defines the keys held as data in every locale', function (string $locale) {
 })->with(['en', 'fr', 'es', 'de']);
 
 it('finds keys in every file said to hold them as data', function () {
-    expect(array_keys(array_filter(translationKeysHeldAsData(), fn (array $keys): bool => $keys === [])))->toBe([]);
+    expect(array_keys(array_filter(translationKeysHeldAsData(), fn (array $keys): bool => $keys === [])))->toBeEmpty();
 });
 
 it('knows where the keys of every other dynamic call come from', function () {
@@ -376,8 +376,8 @@ it('knows where the keys of every other dynamic call come from', function () {
         dynamicTranslationCalls(translationSources())['unresolved'],
     )));
 
-    expect(array_values(array_diff($files, array_keys(DynamicTranslationSources))))->toBe([])
-        ->and(array_values(array_diff(array_keys(DynamicTranslationSources), $files)))->toBe([]);
+    expect(array_values(array_diff($files, array_keys(DynamicTranslationSources))))->toBeEmpty()
+        ->and(array_values(array_diff(array_keys(DynamicTranslationSources), $files)))->toBeEmpty();
 });
 
 it('reads the keys of a label map, of a label list and of layout props', function () {

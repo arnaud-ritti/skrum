@@ -72,7 +72,7 @@ class CastGifVote
             }
 
             if ($myVotes->isEmpty()) {
-                (new GameVoteChanged($lockedRoom, $lockedRound->id, $voter->id, true))->sendToOthers();
+                new GameVoteChanged($lockedRoom, $lockedRound->id, $voter->id, true)->sendToOthers();
             }
         });
     }

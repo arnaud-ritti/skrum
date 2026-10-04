@@ -174,7 +174,7 @@ it('sends each viewer only their own score in the snapshot', function () {
 
     $outsider = Participant::factory()->create(['retro_id' => $retro->id]);
 
-    expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $outsider)['healthCheck']['statements'])->pluck('myScore')->filter()->all())->toBe([]);
+    expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $outsider)['healthCheck']['statements'])->pluck('myScore')->filter()->all())->toBeEmpty();
 });
 
 it('leaves the health check out of the snapshot of a retro that has none', function () {

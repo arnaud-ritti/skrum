@@ -25,7 +25,7 @@ it('keeps the behaviour of today on a retro with none of the new values', functi
         ->and($retro->max_votes_per_card)->toBeNull()
         ->and($retro->roti_revealed_at)->toBeNull()
         ->and($retro->maxVotesPerCard())->toBeNull()
-        ->and($retro->votingFinishedIds())->toBe([]);
+        ->and($retro->votingFinishedIds())->toBeEmpty();
 });
 
 it('never puts who is writing in the board snapshot', function () {

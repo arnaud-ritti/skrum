@@ -40,7 +40,7 @@ class PokerGamesController extends Controller
 
             $locked->delete();
 
-            (new PokerGameDeleted($gameId))->sendToOthers();
+            new PokerGameDeleted($gameId)->sendToOthers();
         });
 
         return response()->noContent();

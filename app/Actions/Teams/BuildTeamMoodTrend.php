@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teams;
 
+use Illuminate\Contracts\Database\Query\Builder;
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Enums\RetroPhase;
 use App\Models\Retro;
@@ -51,7 +52,7 @@ class BuildTeamMoodTrend
             ->where('team_id', $team->id)
             ->where('phase', RetroPhase::Completed)
             ->whereNotNull('completed_at')
-            ->where(fn ($query) => $query->whereIn('id', $attached->keys())->orHas('rotiVotes'))
+            ->where(fn (Builder $query) => $query->whereIn('id', $attached->keys())->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
             ->get(['id', 'title', 'completed_at', 'created_at']);

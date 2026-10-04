@@ -11,10 +11,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 function reminderMailFor(User $user, ActionItem ...$items): ActionItemReminderMail
 {
-    return (new ActionItemReminderDigestNotification(array_map(
+    return new ActionItemReminderDigestNotification(array_map(
         fn (ActionItem $item): array => ['actionItemId' => $item->id, 'kind' => ActionItemReminderKind::Overdue->value],
         $items,
-    )))->toMail($user);
+    ))->toMail($user);
 }
 
 it('returns the branded mailable with one-click unsubscribe headers', function () {
@@ -25,8 +25,8 @@ it('returns the branded mailable with one-click unsubscribe headers', function (
     $mail = reminderMailFor($user, $item);
     $unsubscribeUrl = URL::signedRoute('reminderUnsubscribes.show', ['user' => $user->id]);
 
-    expect($mail->hasTo($user->email))->toBeTrue();
-    expect($mail->headers()->text)->toBe([
+    expect($mail->hasTo($user->email))->toBeTrue()
+        ->and($mail->headers()->text)->toBe([
         'List-Unsubscribe' => "<{$unsubscribeUrl}>",
         'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
     ]);

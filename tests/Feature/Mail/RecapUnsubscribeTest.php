@@ -30,7 +30,7 @@ it('carries the one-click unsubscribe headers and the link in both parts', funct
     [$facilitator] = retroFacilitator($retro);
     $url = URL::signedRoute('recapUnsubscribes.show', ['user' => $facilitator->id]);
 
-    $mail = (new RetroResultsNotification($retro->id))->toMail($facilitator);
+    $mail = new RetroResultsNotification($retro->id)->toMail($facilitator);
 
     expect($mail->headers()->text)->toBe([
         'List-Unsubscribe' => "<{$url}>",

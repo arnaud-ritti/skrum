@@ -50,7 +50,7 @@ it('keeps the stored secret when the new one is blank, and clears a field on req
     $merged = resolve(InstanceConfiguration::class)->merge(InstanceSettingKey::SsoOidc, ['client_secret' => '', 'client_id' => 'stored-client'], ['client_id']);
 
     expect(array_keys($merged['object']))->toBe(['client_secret'])
-        ->and($merged['changed'])->toBe([])
+        ->and($merged['changed'])->toBeEmpty()
         ->and($merged['cleared'])->toBe(['client_id']);
 });
 

@@ -29,7 +29,7 @@ class MoveTopicFocus
 
         $locked->update(['highlighted_card_id' => $cardId]);
 
-        (new CardHighlighted($locked->id, $cardId))->sendToOthers();
+        new CardHighlighted($locked->id, $cardId)->sendToOthers();
 
         if (! $this->movesOn($locked, $previous, $cardId)) {
             return ['timer' => TimerChanged::of($locked)->broadcastWith(), 'discussed' => null];
@@ -78,7 +78,7 @@ class MoveTopicFocus
 
         $discussedAt = (string) $topic->discussed_at?->toIso8601String();
 
-        (new TopicDiscussed($locked->id, $topic->id, $discussedAt))->sendToOthers();
+        new TopicDiscussed($locked->id, $topic->id, $discussedAt)->sendToOthers();
 
         return ['cardId' => $topic->id, 'discussedAt' => $discussedAt];
     }

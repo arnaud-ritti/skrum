@@ -31,7 +31,7 @@ class GameScoresController extends Controller
 
             $locked->forceFill(['scores_reset_at' => now()])->save();
 
-            (new GameRoomChanged($locked))->sendToOthers();
+            new GameRoomChanged($locked)->sendToOthers();
         });
 
         return response()->noContent();

@@ -35,7 +35,7 @@ class GameGuestTokensController extends Controller
             $locked->update(['guest_token' => Str::random(40)]);
             $locked->players()->whereNotNull('guest_secret_hash')->update(['guest_secret_hash' => null]);
 
-            (new GameRoomChanged($locked))->sendToOthers();
+            new GameRoomChanged($locked)->sendToOthers();
 
             return $locked;
         });

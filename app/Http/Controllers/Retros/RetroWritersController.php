@@ -44,7 +44,7 @@ class RetroWritersController extends Controller
 
         $count = $retro->participants()->where('writing_until', '>', now())->count();
 
-        (new WritingCountChanged($retro->id, $count))->sendToOthers();
+        new WritingCountChanged($retro->id, $count)->sendToOthers();
 
         return $count;
     }

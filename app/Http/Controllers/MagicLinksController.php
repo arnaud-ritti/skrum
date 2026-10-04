@@ -29,7 +29,7 @@ class MagicLinksController extends Controller
         $address = LoginAddress::normalise($request->validated('email'));
 
         if ($availability->emailEnabled() && $this->claimsSendingSlot($address)) {
-            SendMagicLink::dispatch($address);
+            dispatch(new SendMagicLink($address));
         }
 
         return back()->with('status', 'magic-link-sent');

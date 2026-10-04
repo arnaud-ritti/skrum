@@ -95,7 +95,7 @@ it('writes the recap, the health score and the link in the mail', function () {
     answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 4]);
     closeHealthCheck($retro);
 
-    $mail = (new RetroResultsNotification($retro->id))->toMail($facilitator);
+    $mail = new RetroResultsNotification($retro->id)->toMail($facilitator);
     $html = (string) $mail->render();
 
     expect($mail->subject)->toBe("Sprint 42 · {$retro->team->name} — no action")
@@ -110,7 +110,7 @@ it('escapes Markdown in the mail', function () {
     $card = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'content' => '[click me](https://evil.test) <script>alert(1)</script> a -> b & c']);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
 
-    $html = (string) (new RetroResultsNotification($retro->id))->toMail($facilitator)->render();
+    $html = (string) new RetroResultsNotification($retro->id)->toMail($facilitator)->render();
 
     expect($html)->not->toContain('href="https://evil.test"')
         ->not->toContain('<script>alert(1)</script>')

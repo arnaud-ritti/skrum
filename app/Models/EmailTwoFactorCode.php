@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use App\Enums\EmailCodePurpose;
 use Database\Factories\EmailTwoFactorCodeFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,7 @@ use SensitiveParameter;
  * @property Carbon|null $consumed_at
  * @property-read User $user
  */
+#[WithoutTimestamps]
 class EmailTwoFactorCode extends Model
 {
     /** @use HasFactory<EmailTwoFactorCodeFactory> */
@@ -35,8 +37,6 @@ class EmailTwoFactorCode extends Model
     public const int LifetimeMinutes = 10;
 
     public const int MaxAttempts = 5;
-
-    public $timestamps = false;
 
     /**
      * A code has a million values: a plain hash could be reversed from a

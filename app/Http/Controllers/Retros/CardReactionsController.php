@@ -60,7 +60,7 @@ class CardReactionsController extends Controller
 
             $reactions = $fresh->reactions()->with('participant.user')->get();
 
-            (new CardReactionsChanged($locked->id, $fresh->id, $this->summarizeReactions->forOthers($reactions, $locked)))->sendToOthers();
+            new CardReactionsChanged($locked->id, $fresh->id, $this->summarizeReactions->forOthers($reactions, $locked))->sendToOthers();
 
             return [$reactions, $locked];
         }, Transactions::Attempts);

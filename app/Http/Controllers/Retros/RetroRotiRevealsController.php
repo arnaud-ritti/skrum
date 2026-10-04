@@ -35,7 +35,7 @@ class RetroRotiRevealsController extends Controller
 
             $locked->update(['roti_revealed_at' => now()]);
 
-            (new RotiRevealed($locked->id))->sendToOthers();
+            new RotiRevealed($locked->id)->sendToOthers();
 
             return $summarizeRoti->handle($locked);
         });

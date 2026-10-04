@@ -168,7 +168,7 @@ function p08bHealthSnapshot(array $snapshot): array
         'participants' => $healthCheck['participants'],
         'hasSubmitted' => $healthCheck['hasSubmitted'],
         'results' => $healthCheck['results'],
-        'json' => (string) json_encode($healthCheck, JSON_THROW_ON_ERROR),
+        'json' => json_encode($healthCheck, JSON_THROW_ON_ERROR),
     ];
 }
 

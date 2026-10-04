@@ -53,7 +53,7 @@ function webhookIntegration(IntegrationProvider $provider = IntegrationProvider:
 
 function runWebhookRegistration(TeamIntegration $integration, bool $force = false): void
 {
-    app()->call([(new RegisterTrackerWebhooks($integration->id, $force))->withFakeQueueInteractions(), 'handle']);
+    app()->call([new RegisterTrackerWebhooks($integration->id, $force)->withFakeQueueInteractions(), 'handle']);
 }
 
 it('registers a Jira Cloud webhook for the projects of tracked issues', function () {
@@ -113,7 +113,7 @@ it('refreshes Jira webhooks that expire within a week', function () {
 it('marks the webhook failing when its registration keeps failing', function () {
     $integration = webhookIntegration();
 
-    (new RegisterTrackerWebhooks($integration->id))->failed(new ProviderRejected(IntegrationProvider::Jira, 'nope', 403));
+    new RegisterTrackerWebhooks($integration->id)->failed(new ProviderRejected(IntegrationProvider::Jira, 'nope', 403));
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Failing);
 });
@@ -242,7 +242,7 @@ it('registers the webhook when a polling connection can switch to webhooks', fun
 it('retries a rate-limited registration without counting a failure', function () {
     $integration = webhookIntegration();
     Http::fake([jiraApiUrl('rest/api/3/webhook') => Http::response(null, 429, ['Retry-After' => '40'])]);
-    $job = (new RegisterTrackerWebhooks($integration->id))->withFakeQueueInteractions();
+    $job = new RegisterTrackerWebhooks($integration->id)->withFakeQueueInteractions();
 
     app()->call($job->handle(...));
 

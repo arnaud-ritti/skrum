@@ -68,7 +68,7 @@ class StartGameRound
             $this->scheduleTurnExpiry->handle($round);
             $this->scheduleAutoHints->dispatch($round);
 
-            (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
+            new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null))->sendToOthers();
 
             $this->announceTeamGameRoom->changed($locked);
 

@@ -212,11 +212,11 @@ class InstanceConfiguration
     private function forgetResolvedClients(): void
     {
         if (app()->resolved('mail.manager')) {
-            app(MailManager::class)->forgetMailers();
+            resolve(MailManager::class)->forgetMailers();
         }
 
         if (app()->resolved(SocialiteFactory::class)) {
-            app(SocialiteFactory::class)->forgetDrivers();
+            resolve(SocialiteFactory::class)->forgetDrivers();
         }
     }
 

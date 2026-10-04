@@ -33,9 +33,7 @@ class AcceptWorkspaceInvitation
         DB::transaction(function () use ($invitation, $user): void {
             $locked = WorkspaceInvitation::query()->lockForUpdate()->find($invitation->id);
 
-            if ($locked === null || ! $locked->isPending()) {
-                throw new InvitationUnavailable('The invitation is no longer pending.');
-            }
+            throw_if($locked === null || ! $locked->isPending(), InvitationUnavailable::class, 'The invitation is no longer pending.');
 
             $workspace = $locked->workspace;
 

@@ -70,7 +70,7 @@ class RefreshPokerTasks
         throw_if(! $attempted && $problem !== null, $problem);
 
         if ($refreshed > 0) {
-            (new PokerGameChanged($game->id))->sendToOthers();
+            new PokerGameChanged($game->id)->sendToOthers();
         }
 
         return ['refreshed' => $refreshed, 'missing' => $missing];

@@ -140,14 +140,7 @@ class SanitizeWhiteboardElement
         if (! is_int($nonce) || $nonce < 0) {
             return false;
         }
-
-        foreach (['x', 'y', 'width', 'height'] as $key) {
-            if (! is_int($element[$key] ?? null) && ! is_float($element[$key] ?? null)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(['x', 'y', 'width', 'height'], fn(string $key): bool => is_int($element[$key] ?? null) || is_float($element[$key] ?? null));
     }
 
     private function hasFiniteNumbers(mixed $value): bool
@@ -159,14 +152,7 @@ class SanitizeWhiteboardElement
         if (! is_array($value)) {
             return true;
         }
-
-        foreach ($value as $item) {
-            if (! $this->hasFiniteNumbers($item)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($value, fn($item): bool => $this->hasFiniteNumbers($item));
     }
 
     /**
@@ -217,14 +203,7 @@ class SanitizeWhiteboardElement
         if ($type === 'text' && ! array_key_exists('text', $element)) {
             return false;
         }
-
-        foreach ($element as $key => $value) {
-            if (! $this->hasValidValue($key, $value)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($element, fn($value, string $key): bool => $this->hasValidValue($key, $value));
     }
 
     private function hasValidValue(string $key, mixed $value): bool

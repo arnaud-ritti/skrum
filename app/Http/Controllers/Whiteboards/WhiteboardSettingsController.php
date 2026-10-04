@@ -35,7 +35,7 @@ class WhiteboardSettingsController extends Controller
 
             $locked->update($validated);
 
-            (new WhiteboardChanged($locked->id))->sendToOthers();
+            new WhiteboardChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

@@ -85,8 +85,8 @@ it('shows every section on one page, and nothing the account settings protect, b
         ->not->toContain($user->email);
 })->with([
     'an account with a password' => [fn () => accountWithSecrets()],
-    'an account that only signs in through SSO' => [fn () => ssoOnlyAccount()],
-    'an account while SSO is required' => [function () {
+    'an account that only signs in through SSO' => [ssoOnlyAccount(...)],
+    'an account while SSO is required' => [function (): User {
         config(['services.google.client_id' => 'google-id', 'services.google.client_secret' => 'google-secret']);
         resolve(InstanceSettings::class)->set('sso_required', true);
 
@@ -120,8 +120,8 @@ it('sends what the security and API token sections protect once the password is 
         ->not->toContain($user->tokens()->first()->token);
 })->with([
     'an account with a password' => [fn () => accountWithSecrets()],
-    'an account that only signs in through SSO' => [fn () => ssoOnlyAccount()],
-    'an account while SSO is required' => [function () {
+    'an account that only signs in through SSO' => [ssoOnlyAccount(...)],
+    'an account while SSO is required' => [function (): User {
         config(['services.google.client_id' => 'google-id', 'services.google.client_secret' => 'google-secret']);
         resolve(InstanceSettings::class)->set('sso_required', true);
 
@@ -214,7 +214,7 @@ it('keeps the page locked after a wrong password in the dialog', function (Closu
             ->where('apiTokens.protected', null)));
 })->with([
     'an account with a password' => [fn () => accountWithSecrets()],
-    'an account that only signs in through SSO' => [fn () => ssoOnlyAccount()],
+    'an account that only signs in through SSO' => [ssoOnlyAccount(...)],
 ]);
 
 it('tells the page whether the confirmation of the session is still accepted', function () {

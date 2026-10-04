@@ -36,7 +36,7 @@ class WhiteboardTimersController extends Controller
 
             $locked->update(['timer_ends_at' => $endsAt]);
 
-            (new WhiteboardTimerChanged($locked->id, $endsAt?->toIso8601String()))->sendToOthers();
+            new WhiteboardTimerChanged($locked->id, $endsAt?->toIso8601String())->sendToOthers();
         });
 
         return response()->json(['timerEndsAt' => $endsAt?->toIso8601String()]);

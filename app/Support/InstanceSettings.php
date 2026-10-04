@@ -286,7 +286,7 @@ class InstanceSettings
     {
         $domains = $this->stored(InstanceSettingKey::AllowedEmailDomains);
 
-        return is_array($domains) ? array_values(array_filter($domains, 'is_string')) : null;
+        return is_array($domains) ? array_values(array_filter($domains, is_string(...))) : null;
     }
 
     public function maintenanceMessage(): ?string
@@ -331,7 +331,7 @@ class InstanceSettings
     {
         $disabled = $this->stored(InstanceSettingKey::DisabledIntegrations);
 
-        return is_array($disabled) ? array_values(array_filter($disabled, 'is_string')) : [];
+        return is_array($disabled) ? array_values(array_filter($disabled, is_string(...))) : [];
     }
 
     /** @return ?array<string, mixed> */

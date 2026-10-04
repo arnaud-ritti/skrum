@@ -2,6 +2,7 @@
 
 namespace Tests\Concurrency\Support;
 
+use Illuminate\Support\Sleep;
 use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Http\Kernel;
@@ -67,9 +68,7 @@ class Race
     {
         $portable = Closure::bind($contender, null, self::class);
 
-        if ($portable === null) {
-            throw new LogicException('A contender must be a static closure that captures scalars only.');
-        }
+        throw_if($portable === null, LogicException::class, 'A contender must be a static closure that captures scalars only.');
 
         return $portable;
     }
@@ -98,7 +97,7 @@ class Race
 
             $paused = true;
 
-            usleep(self::PauseMicroseconds);
+            Sleep::usleep(self::PauseMicroseconds);
         });
 
         DB::connection()->getPdo();
@@ -106,7 +105,7 @@ class Race
         $wait = (int) (($startAt - microtime(true)) * 1_000_000);
 
         if ($wait > 0) {
-            usleep($wait);
+            Sleep::usleep($wait);
         }
 
         $startedAt = microtime(true);
@@ -141,7 +140,7 @@ class Race
             }
 
             touch($signal);
-            usleep($holdMicroseconds);
+            Sleep::usleep($holdMicroseconds);
         });
     }
 
@@ -153,7 +152,7 @@ class Race
         $deadline = microtime(true) + 10;
 
         while (! file_exists($signal) && microtime(true) < $deadline) {
-            usleep(5_000);
+            Sleep::usleep(5_000);
         }
     }
 

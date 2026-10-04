@@ -57,6 +57,6 @@ it('starts the same matching items twice at once without a failure', function ()
     $statuses = array_column($outcomes, 'value');
 
     expect($statuses)->toContain(200)
-        ->and(array_diff($statuses, [200, 422]))->toBe([])
+        ->and(array_diff($statuses, [200, 422]))->toBeEmpty()
         ->and(ActionItem::query()->whereKey($ids)->whereNull('started_at')->count())->toBe(0);
 });

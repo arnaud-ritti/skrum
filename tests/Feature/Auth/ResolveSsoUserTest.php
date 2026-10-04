@@ -49,9 +49,8 @@ it('refuses to link when two accounts share the address in different cases', fun
     User::factory()->storedWithAddress('Bob@example.test')->create();
 
     expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
-        ->toThrow(SsoLoginRefused::class);
-
-    expect(SocialAccount::count())->toBe(0)
+        ->toThrow(SsoLoginRefused::class)
+        ->and(SocialAccount::count())->toBe(0)
         ->and(User::count())->toBe(2);
 });
 

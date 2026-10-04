@@ -48,7 +48,7 @@ class CardGroupsController extends Controller
 
             $changed = $this->groupCard->group($card, $lead);
 
-            (new CardGrouped($locked->id, $this->present($changed, $locked, null)))->sendToOthers();
+            new CardGrouped($locked->id, $this->present($changed, $locked, null))->sendToOthers();
 
             return [$changed, $locked];
         });
@@ -73,7 +73,7 @@ class CardGroupsController extends Controller
 
             $changed = $this->groupCard->ungroup($card);
 
-            (new CardUngrouped($locked->id, $this->present($changed, $locked, null)))->sendToOthers();
+            new CardUngrouped($locked->id, $this->present($changed, $locked, null))->sendToOthers();
 
             return [$changed, $locked];
         });
