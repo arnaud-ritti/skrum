@@ -1394,6 +1394,45 @@ describe('tracker cards', () => {
         expect(screen.queryByText('Story points field')).toBeNull();
     });
 
+    it('lets a refused site be picked again', async () => {
+        Element.prototype.hasPointerCapture = () => false;
+        Element.prototype.setPointerCapture = () => {};
+        Element.prototype.releasePointerCapture = () => {};
+        Element.prototype.scrollIntoView = () => {};
+        request.mockRejectedValue(new RetroRequestError(500, 'Jira is down.'));
+        const setup = connection('jira', {
+            status: 'setup_required',
+            statusLabel: 'Setup required',
+            settings: {
+                sites: [
+                    {
+                        cloudId: 'c1',
+                        name: 'Acme',
+                        url: 'https://acme.atlassian.net',
+                    },
+                ],
+            },
+        } as Partial<TeamIntegration>);
+
+        renderProvider(
+            <JiraIntegration card={card('jira', setup)} scope={scope} />,
+        );
+
+        const site = screen.getByRole('combobox', { name: 'Jira site' });
+
+        await userEvent.click(site);
+        await userEvent.click(
+            await screen.findByRole('option', {
+                name: 'Acme (https://acme.atlassian.net)',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith('Jira is down.'),
+        );
+        expect(site.textContent).toContain('Choose a site');
+    });
+
     it('shows the site, the access and the upgrade of a read-only Jira', () => {
         const read = connection('jira', {
             access: 'read',
