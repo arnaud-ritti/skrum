@@ -218,26 +218,29 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
     $carolPage->navigate("/retros/{$retro->id}");
     $this->awaitRealtime($carolPage);
 
-    $carolPage->assertEnabled("{$hersCard} [aria-label=\"Mark as done\"]")
-        ->assertDisabled("{$hisCard} [aria-label=\"Mark as done\"]")
+    $carolPage->assertEnabled("{$hersCard} [aria-label=\"Mark as in progress\"]")
+        ->assertDisabled("{$hisCard} [aria-label=\"Mark as in progress\"]")
         ->assertNotPresent("{$hersCard} [aria-label=\"Priority\"]")
         ->assertCount($edit, 0)
         ->assertCount($delete, 0)
+        ->click("{$hersCard} [aria-label=\"Mark as in progress\"]")
+        ->assertEnabled("{$hersCard} [aria-label=\"Mark as done\"]")
         ->click("{$hersCard} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$hersCard} [aria-label=\"Reopen\"]");
 
     $alicePage->assertPresent("{$hersCard} [aria-label=\"Reopen\"]")
-        ->assertEnabled("{$hisCard} [aria-label=\"Mark as done\"]")
+        ->assertEnabled("{$hisCard} [aria-label=\"Mark as in progress\"]")
         ->assertCount($edit, 2)
         ->assertCount($delete, 2);
 
     $bobPage->assertPresent("{$hersCard} [aria-label=\"Reopen\"]")
         ->assertDisabled("{$hersCard} [aria-label=\"Reopen\"]")
-        ->assertEnabled("{$hisCard} [aria-label=\"Mark as done\"]")
+        ->assertEnabled("{$hisCard} [aria-label=\"Mark as in progress\"]")
         ->assertCount($edit, 0)
         ->assertCount($delete, 0);
 
     expect($hers->fresh()->completed_at)->not->toBeNull()
+        ->and($hers->fresh()->started_at)->not->toBeNull()
         ->and($his->fresh()->completed_at)->toBeNull();
 });
 
@@ -308,7 +311,7 @@ it('[P09a-03a] disables the action item controls for everyone when the facilitat
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     $bobPage->assertEnabled($input)
-        ->assertEnabled("{$card} [aria-label=\"Mark as done\"]")
+        ->assertEnabled("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertCount('[aria-label="Delete action item"]', 1);
 
     $alicePage->click('[aria-label="Facilitator menu"]')
@@ -326,7 +329,7 @@ it('[P09a-03a] disables the action item controls for everyone when the facilitat
 
     $bobPage->assertSee('Board closed for editing')
         ->assertDisabled($input)
-        ->assertDisabled("{$card} [aria-label=\"Mark as done\"]")
+        ->assertDisabled("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertCount('button[aria-label="Edit action item"]', 0)
         ->assertCount('[aria-label="Delete action item"]', 0);
 
@@ -340,16 +343,17 @@ it('[P09a-03b] shows a toast and resyncs when an edit reaches a board that was c
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $page->assertEnabled("{$card} [aria-label=\"Mark as done\"]");
+    $page->assertEnabled("{$card} [aria-label=\"Mark as in progress\"]");
 
     $retro->forceFill(['is_locked' => true])->save();
 
-    $page->click("{$card} [aria-label=\"Mark as done\"]")
+    $page->click("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertSee('The board is closed for editing.')
         ->assertSee('Board closed for editing')
-        ->assertDisabled("{$card} [aria-label=\"Mark as done\"]");
+        ->assertDisabled("{$card} [aria-label=\"Mark as in progress\"]");
 
-    expect($item->fresh()->completed_at)->toBeNull();
+    expect($item->fresh()->started_at)->toBeNull()
+        ->and($item->fresh()->completed_at)->toBeNull();
 });
 
 it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and theme in the Results view', function () {
