@@ -422,8 +422,11 @@ export function MembersTable({
                 </p>
             }
         >
-            {invitationActions.resentUrl !== undefined && (
-                <InvitationLink url={invitationActions.resentUrl} />
+            {invitationActions.resent !== null && (
+                <InvitationLink
+                    url={invitationActions.resent.url}
+                    email={invitationActions.resent.email}
+                />
             )}
             {wide ? (
                 <Table data-test="team-members">

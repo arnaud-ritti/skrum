@@ -5220,5 +5220,6 @@
     "Link expired": "Link expired",
     "1 joined": "1 joined",
     "Turn off the link?": "Turn off the link?",
-    "People with the link can no longer join.": "People with the link can no longer join."
+    "People with the link can no longer join.": "People with the link can no longer join.",
+    "Email is not configured on this instance. Share this link with :email:": "Email is not configured on this instance. Share this link with :email:"
 }

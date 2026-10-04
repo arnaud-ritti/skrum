@@ -5439,5 +5439,6 @@
     "Link expired": "Link abgelaufen",
     "1 joined": "1 beigetreten",
     "Turn off the link?": "Link deaktivieren?",
-    "People with the link can no longer join.": "Wer den Link hat, kann nicht mehr beitreten."
+    "People with the link can no longer join.": "Wer den Link hat, kann nicht mehr beitreten.",
+    "Email is not configured on this instance. Share this link with :email:": "E-Mail ist auf dieser Instanz nicht konfiguriert. Teile diesen Link mit :email:"
 }

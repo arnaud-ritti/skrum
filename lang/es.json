@@ -5439,5 +5439,6 @@
     "Link expired": "Enlace caducado",
     "1 joined": "1 se ha unido",
     "Turn off the link?": "¿Desactivar el enlace?",
-    "People with the link can no longer join.": "Quienes tengan el enlace ya no podrán unirse."
+    "People with the link can no longer join.": "Quienes tengan el enlace ya no podrán unirse.",
+    "Email is not configured on this instance. Share this link with :email:": "El correo electrónico no está configurado en esta instancia. Comparte este enlace con :email:"
 }
