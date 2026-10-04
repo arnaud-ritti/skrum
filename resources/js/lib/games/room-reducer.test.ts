@@ -275,7 +275,7 @@ describe('roomReducer, hangman', () => {
         expect(guessed.snapshot.round?.recentPicks?.[0].seq).toBe(1);
         expect(guessed.snapshot.round?.wordGuesses).toEqual([
             { playerId: 'a', text: 'early' },
-            { playerId: 'b', text: 'retro', seq: 2 },
+            { id: 'g', playerId: 'b', text: 'retro', seq: 2 },
         ]);
     });
 
@@ -491,5 +491,81 @@ describe('roomReducer, Draw & Guess finders', () => {
         });
 
         expect(refetched.snapshot.round?.hintSlots).toBe(3);
+    });
+});
+
+describe('roomReducer, a late or repeated move', () => {
+    const picked = {
+        roundId: 'round-1',
+        playerId: 'a',
+        letter: 'e',
+        hit: true,
+        mask: ['e'],
+        misses: 0,
+        turnPlayerId: 'b',
+        turnEndsAt: null,
+    };
+
+    it('shows a letter picked twice only once in the last moves', () => {
+        const once = roomReducer(stateOf({ id: 'round-1', game: 'hangman' }), {
+            type: 'letter.picked',
+            picked,
+        });
+        const twice = roomReducer(once, { type: 'letter.picked', picked });
+
+        expect(twice.snapshot.round?.recentPicks).toHaveLength(1);
+        expect(twice.snapshot.round?.pickedLetters).toEqual(['e']);
+    });
+
+    it('shows a wrong word the snapshot already holds only once', () => {
+        const next = roomReducer(
+            stateOf({
+                id: 'round-1',
+                game: 'hangman',
+                wordGuesses: [{ id: 'g', playerId: 'b', text: 'retro' }],
+            }),
+            {
+                type: 'guess.added',
+                roundId: 'round-1',
+                guess: { id: 'g', playerId: 'b', text: 'retro' },
+                misses: 1,
+            },
+        );
+
+        expect(next.snapshot.round?.wordGuesses).toEqual([
+            { id: 'g', playerId: 'b', text: 'retro' },
+        ]);
+    });
+
+    it('does not add the points again when the fetched room already holds the end', () => {
+        const leaderboard = [
+            { playerId: 'a', points: 5, wins: 1, roundsPlayed: 1 },
+        ];
+        const ended = {
+            roundId: 'round-1',
+            outcome: 'solved',
+            word: 'retro',
+            winnerPlayerId: 'a',
+            leaderPlayerId: 'a',
+            points: [{ playerId: 'a', points: 5, isWin: true }],
+        };
+        const fetched = roomReducer(
+            stateOf({ id: 'round-1', game: 'hangman' }),
+            {
+                type: 'replace',
+                snapshot: {
+                    ...snapshot(null),
+                    room: { id: 'room', currentRoundId: 'round-1' },
+                    leaderboard,
+                } as unknown as GameSnapshot,
+            },
+        );
+        const next = roomReducer(fetched, {
+            type: 'round.ended',
+            ended,
+        } as never);
+
+        expect(next.snapshot.leaderboard).toEqual(leaderboard);
+        expect(next.lastEnded).toEqual(ended);
     });
 });

@@ -77,6 +77,7 @@ export type GameWeatherCount = { weather: GameWeather; count: number };
 export type GameStatementVotes = { index: number; playerIds: string[] };
 
 export type GameWordGuess = {
+    id: string;
     playerId: string;
     text: string;
     /** Client only: the arrival of a word seen live; none for those of the snapshot. */

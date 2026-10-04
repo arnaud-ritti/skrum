@@ -130,7 +130,7 @@ class HangmanRules implements GameRules
     }
 
     /**
-     * @return array<int, array{playerId: string, text: string}>
+     * @return array<int, array{id: string, playerId: string, text: string}>
      */
     private function wordGuesses(GameRound $round): array
     {
@@ -139,9 +139,9 @@ class HangmanRules implements GameRules
             ->latest()
             ->orderByDesc('id')
             ->limit(self::WordGuessesShown)
-            ->get(['player_id', 'text'])
+            ->get(['id', 'player_id', 'text'])
             ->reverse()
-            ->map(fn (GameGuess $guess): array => ['playerId' => $guess->player_id, 'text' => $guess->text])
+            ->map(fn (GameGuess $guess): array => ['id' => $guess->id, 'playerId' => $guess->player_id, 'text' => $guess->text])
             ->values()
             ->all();
     }
