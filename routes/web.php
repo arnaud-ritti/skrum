@@ -424,6 +424,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.update');
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:10,1,jiraFieldDetections')
                     ->name('teams.integrations.detection.store');
                 Route::get('teams/{team}/integrations/{integration}/user-mappings', [IntegrationUserMappingsController::class, 'index'])
                     ->whereUuid('integration')
@@ -444,6 +445,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.accounts.index');
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationPriorities')
                     ->name('teams.integrations.priorities.index');
                 Route::get('teams/{team}/integrations/{integration}/statuses', [IntegrationStatusesController::class, 'index'])
                     ->whereUuid('integration')
@@ -478,7 +480,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.deliveries.index');
                 Route::get('teams/{team}/integrations/{integration}/deliveries/{delivery}', [WebhookDeliveriesController::class, 'show'])
                     ->whereUuid(['integration', 'delivery'])
-                    ->middleware('throttle:60,1,webhookDeliveries')
+                    ->middleware('throttle:60,1,webhookDeliveryDetails')
                     ->name('teams.integrations.deliveries.show');
                 Route::post('teams/{team}/integrations/{integration}/deliveries/{delivery}/redelivery', [WebhookRedeliveriesController::class, 'store'])
                     ->whereUuid(['integration', 'delivery'])
@@ -529,7 +531,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('action-items/bulk-deletions', [WorkspaceActionItemBulkDeletionsController::class, 'store'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemBulkDeletions.store');
             Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update')->whereUuid('actionItem');
             Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy')->whereUuid('actionItem');
-            Route::get('action-items/export', [WorkspaceActionItemCsvExportsController::class, 'show'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemCsvExports.show');
+            Route::get('action-items/export', [WorkspaceActionItemCsvExportsController::class, 'show'])->middleware('throttle:20,1,actionItemCsvExports')->name('workspaces.actionItemCsvExports.show');
             Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index')->whereUuid('actionItem');
             Route::post('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'store'])->name('workspaces.actionItemComments.store')->whereUuid('actionItem');
             Route::patch('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'update'])->name('workspaces.actionItemComments.update')->whereUuid('actionItemComment')->withoutScopedBindings();
