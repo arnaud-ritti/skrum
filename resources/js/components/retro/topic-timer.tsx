@@ -21,7 +21,7 @@ export function TopicTimer() {
     return (
         <div
             data-slot="retro-topic-timer"
-            className="order-first flex min-w-0 basis-full justify-center *:data-[slot=timer]:flex-wrap *:data-[slot=timer]:justify-center @xl/topic-nav:order-none @xl/topic-nav:flex-1 @xl/topic-nav:basis-0"
+            className="order-first flex min-w-0 basis-full justify-center *:data-[slot=timer]:flex-wrap *:data-[slot=timer]:justify-center @3xl/topic-nav:order-none @3xl/topic-nav:flex-1 @3xl/topic-nav:basis-0"
         >
             <BoardTimer
                 size="lg"
