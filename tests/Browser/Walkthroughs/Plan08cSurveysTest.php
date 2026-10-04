@@ -70,6 +70,39 @@ function p08cOption(string $question, string $label): string
     return p08cCard($question)." li:has-text(\"{$label}\")";
 }
 
+function p08cChoice(string $question, string $label): string
+{
+    return p08cCard($question)." label:has-text(\"{$label}\")";
+}
+
+function p08cRadio(string $question, string $label): string
+{
+    return p08cChoice($question, $label).' input[type="radio"]';
+}
+
+function p08cCheckbox(string $question, string $label): string
+{
+    return p08cChoice($question, $label).' button[role="checkbox"]';
+}
+
+function p08cAnswerField(string $question): string
+{
+    return p08cCard($question).' textarea';
+}
+
+function p08cOpenQuickPoll(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->click('[role="dialog"] button:has-text("Add survey")')
+        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
+        ->click('[role="menuitem"]:has-text("Quick poll")')
+        ->assertVisible('#survey-question');
+
+    return $page;
+}
+
 function p08cShowsResults(string $question): string
 {
     $card = p08cCard($question);
@@ -116,11 +149,9 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     $carolPage->assertNotPresent('section[aria-label="Surveys"]')
-        ->assertDontSee('Add survey');
+        ->assertNotPresent('[aria-label="Facilitator menu"]');
 
-    $alicePage->assertSee('Add survey')
-        ->click('Add survey')
-        ->assertVisible('#survey-question')
+    p08cOpenQuickPoll($alicePage)
         ->fill('#survey-question', 'How was the sprint?')
         ->fill('#survey-description', 'One answer each.')
         ->fill('[aria-label="Option 1"]', 'Great')
@@ -134,12 +165,11 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
 
     $carolPage->assertPresent($single)
         ->assertSeeIn($single, 'One answer each.')
-        ->assertCount("{$single} button[aria-pressed]", 3)
+        ->assertCount("{$single} input[type=\"radio\"]", 3)
         ->assertSeeIn($single, '0 responses')
         ->assertSeeIn($single, 'Answer to join the discussion');
 
-    $alicePage->click('Add survey')
-        ->assertVisible('#survey-kind')
+    p08cOpenQuickPoll($alicePage)
         ->click('#survey-kind')
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Multiple choice")')
@@ -152,12 +182,11 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
         ->assertPresent($multiple);
 
     $carolPage->assertPresent($multiple)
-        ->assertSeeIn($multiple, 'Several answers allowed')
+        ->assertSeeIn($multiple, 'Multiple choice')
         ->assertCount("{$multiple} button[role=\"checkbox\"]", 2)
         ->assertDisabled("{$multiple} button:has-text(\"Submit\")");
 
-    $alicePage->click('Add survey')
-        ->assertVisible('#survey-kind')
+    p08cOpenQuickPoll($alicePage)
         ->click('#survey-kind')
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Free text")')
@@ -169,7 +198,7 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
         ->assertPresent($text);
 
     $carolPage->assertPresent($text)
-        ->assertPresent("{$text} [aria-label=\"Your answer\"]")
+        ->assertPresent(p08cAnswerField('What should we try next?'))
         ->assertNotPresent("{$text} ul[aria-label=\"Answers\"]")
         ->assertCount('section[aria-label="Surveys"] article', 3)
         ->assertNotPresent('[aria-label="Survey actions"]');
@@ -202,10 +231,10 @@ it('[P08c-02a] shows the results of a single choice survey only to those who ans
             ->assertScript($showsResults, false);
     }
 
-    $bobPage->click("{$great} button")
-        ->assertAriaAttribute("{$great} button", 'pressed', 'true')
-        ->assertSeeIn($great, '100% · 1')
-        ->assertSeeIn($fine, '0% · 0')
+    $bobPage->click(p08cChoice('How was the sprint?', 'Great'))
+        ->assertPresent(p08cRadio('How was the sprint?', 'Great').':checked')
+        ->assertSeeIn($great, '1 · 100%')
+        ->assertSeeIn($fine, '0 · 0%')
         ->assertSeeIn($card, '1 response')
         ->assertSeeIn($card, 'Withdraw my answer');
 
@@ -213,23 +242,23 @@ it('[P08c-02a] shows the results of a single choice survey only to those who ans
         ->assertScript($showsResults, false)
         ->assertDontSeeIn($card, 'Withdraw my answer');
 
-    $carolPage->click("{$rough} button")
-        ->assertAriaAttribute("{$rough} button", 'pressed', 'true')
-        ->assertSeeIn($great, '50% · 1')
-        ->assertSeeIn($rough, '50% · 1')
+    $carolPage->click(p08cChoice('How was the sprint?', 'Rough'))
+        ->assertPresent(p08cRadio('How was the sprint?', 'Rough').':checked')
+        ->assertSeeIn($great, '1 · 50%')
+        ->assertSeeIn($rough, '1 · 50%')
         ->assertSeeIn($card, '2 responses');
 
-    $bobPage->assertSeeIn($great, '50% · 1')
-        ->assertSeeIn($rough, '50% · 1')
+    $bobPage->assertSeeIn($great, '1 · 50%')
+        ->assertSeeIn($rough, '1 · 50%')
         ->assertSeeIn($card, '2 responses');
 
-    $bobPage->click("{$fine} button")
-        ->assertAriaAttribute("{$fine} button", 'pressed', 'true')
-        ->assertSeeIn($fine, '50% · 1')
-        ->assertSeeIn($great, '0% · 0');
+    $bobPage->click(p08cChoice('How was the sprint?', 'Fine'))
+        ->assertPresent(p08cRadio('How was the sprint?', 'Fine').':checked')
+        ->assertSeeIn($fine, '1 · 50%')
+        ->assertSeeIn($great, '0 · 0%');
 
-    $carolPage->assertSeeIn($fine, '50% · 1')
-        ->assertSeeIn($great, '0% · 0')
+    $carolPage->assertSeeIn($fine, '1 · 50%')
+        ->assertSeeIn($great, '0 · 0%')
         ->assertSeeIn($card, '2 responses');
 
     expect($survey->responses()->count())->toBe(2);
@@ -248,30 +277,30 @@ it('[P08c-02b] takes several answers on a multiple choice survey and shows its r
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $bobPage->assertSeeIn($card, 'Several answers allowed')
+    $bobPage->assertSeeIn($card, 'Multiple choice')
         ->assertDisabled($submit)
-        ->click("{$pairing} button[role=\"checkbox\"]")
-        ->click("{$demos} button[role=\"checkbox\"]")
+        ->click(p08cCheckbox('Which practices helped?', 'Pairing'))
+        ->click(p08cCheckbox('Which practices helped?', 'Demos'))
         ->click($submit)
-        ->assertSeeIn($pairing, '100% · 1')
-        ->assertSeeIn($demos, '100% · 1')
-        ->assertSeeIn($review, '0% · 0')
+        ->assertSeeIn($pairing, '1 · 100%')
+        ->assertSeeIn($demos, '1 · 100%')
+        ->assertSeeIn($review, '0 · 0%')
         ->assertSeeIn($card, '1 response')
-        ->assertAriaAttribute("{$pairing} button[role=\"checkbox\"]", 'checked', 'true')
+        ->assertAriaAttribute(p08cCheckbox('Which practices helped?', 'Pairing'), 'checked', 'true')
         ->assertDisabled("{$card} button:has-text(\"Update answer\")");
 
     $carolPage->assertSeeIn($card, '1 response')
         ->assertScript($showsResults, false);
 
-    $carolPage->click("{$pairing} button[role=\"checkbox\"]")
+    $carolPage->click(p08cCheckbox('Which practices helped?', 'Pairing'))
         ->click($submit)
-        ->assertSeeIn($pairing, '100% · 2')
-        ->assertSeeIn($demos, '50% · 1')
-        ->assertSeeIn($review, '0% · 0')
+        ->assertSeeIn($pairing, '2 · 100%')
+        ->assertSeeIn($demos, '1 · 50%')
+        ->assertSeeIn($review, '0 · 0%')
         ->assertSeeIn($card, '2 responses');
 
-    $bobPage->assertSeeIn($pairing, '100% · 2')
-        ->assertSeeIn($demos, '50% · 1')
+    $bobPage->assertSeeIn($pairing, '2 · 100%')
+        ->assertSeeIn($demos, '1 · 50%')
         ->assertSeeIn($card, '2 responses');
 
     expect($survey->responses()->count())->toBe(3)
@@ -282,7 +311,7 @@ it('[P08c-02c] lists the free text answers, sorted by text and without names, on
     [$retro, , $bob, $aliceParticipant] = p08cBoard();
     $survey = p08cSurvey($retro, $aliceParticipant, 'What should we try next?', SurveyKind::Text);
     $card = p08cCard('What should we try next?');
-    $input = "{$card} [aria-label=\"Your answer\"]";
+    $input = p08cAnswerField('What should we try next?');
     $list = "{$card} ul[aria-label=\"Answers\"]";
     $answers = p08cTextAnswers('What should we try next?');
 
@@ -346,11 +375,11 @@ it('[P08c-03] shows the results to someone who has not answered once the facilit
         ->click('Close survey')
         ->assertNotPresent('[role="menu"]')
         ->assertSeeIn($card, 'Closed')
-        ->assertSeeIn($great, '100% · 1');
+        ->assertSeeIn($great, '1 · 100%');
 
     $carolPage->assertSeeIn($card, 'Closed')
-        ->assertSeeIn($great, '100% · 1')
-        ->assertDisabled("{$great} button")
+        ->assertSeeIn($great, '1 · 100%')
+        ->assertDisabled(p08cRadio('How was the sprint?', 'Great'))
         ->assertPresent("{$card} button[aria-label^=\"Comments\"]");
 
     expect($survey->fresh()->is_closed)->toBeTrue();
@@ -363,7 +392,7 @@ it('[P08c-03] shows the results to someone who has not answered once the facilit
 
     $carolPage->assertDontSeeIn($card, 'Closed')
         ->assertScript($showsResults, false)
-        ->assertEnabled("{$great} button");
+        ->assertEnabled(p08cRadio('How was the sprint?', 'Great'));
 
     expect($survey->fresh()->is_closed)->toBeFalse()
         ->and($survey->responses()->count())->toBe(1);
@@ -407,16 +436,16 @@ it('[P08c-04a] shows who answered, and who wrote a free text answer, only once t
             ->and(array_column($sent['options'], 'voters'))->toBe([null, null, null]);
     }
 
-    $alicePage->click("{$great} button")
-        ->assertSeeIn($great, '100% · 2')
+    $alicePage->click(p08cChoice('How was the sprint?', 'Great'))
+        ->assertSeeIn($great, '2 · 100%')
         ->assertPresent("{$great} img[alt=\"Bob Stone\"]")
         ->assertPresent("{$great} img[alt=\"Alice Martin\"]");
 
     $carolPage->assertSeeIn($single, '2 responses')
         ->assertNotPresent("{$single} img");
 
-    $carolPage->click("{$rough} button")
-        ->assertSeeIn($rough, '33% · 1')
+    $carolPage->click(p08cChoice('How was the sprint?', 'Rough'))
+        ->assertSeeIn($rough, '1 · 33%')
         ->assertPresent("{$great} img[alt=\"Bob Stone\"]")
         ->assertPresent("{$great} img[alt=\"Alice Martin\"]")
         ->assertPresent("{$rough} img[alt=\"Carol Guest\"]")
@@ -442,7 +471,7 @@ it('[P08c-04a] shows who answered, and who wrote a free text answer, only once t
     $carolPage->assertNotPresent($answers)
         ->assertDontSeeIn($text, 'Shorter standups');
 
-    $carolPage->fill("{$text} [aria-label=\"Your answer\"]", 'Automate the changelog')
+    $carolPage->fill(p08cAnswerField('What should we try next?'), 'Automate the changelog')
         ->click("{$text} button:has-text(\"Submit\")")
         ->assertSeeIn("{$answers} li:has-text(\"Shorter standups\")", 'Bob Stone')
         ->assertSeeIn("{$answers} li:has-text(\"Automate the changelog\")", 'Carol Guest');
@@ -466,11 +495,11 @@ it('[P08c-04b] never offers or shows who answered on an anonymous retro', functi
         ->keys('[role="menu"]', 'Escape')
         ->assertNotPresent('[role="menu"]');
 
-    $page->click("{$great} button")
-        ->assertSeeIn($great, '100% · 2')
+    $page->click(p08cChoice('How was the sprint?', 'Great'))
+        ->assertSeeIn($great, '2 · 100%')
         ->assertNotPresent("{$card} img");
 
-    $page->click('Add survey')
+    p08cOpenQuickPoll($page)
         ->assertVisible('#survey-show-voters')
         ->assertDisabled('#survey-show-voters')
         ->assertAriaAttribute('#survey-show-voters', 'checked', 'false')
@@ -518,8 +547,8 @@ it('[P08c-05] hides the reactions and comments of a survey from someone who has 
         ->and($sent['reactions'])->toBe([])
         ->and(json_encode($carolSnapshot, JSON_THROW_ON_ERROR))->not->toContain('Pairing saved us');
 
-    $carolPage->click("{$fine} button")
-        ->assertSeeIn($fine, '50% · 1')
+    $carolPage->click(p08cChoice('How was the sprint?', 'Fine'))
+        ->assertSeeIn($fine, '1 · 50%')
         ->assertAriaAttribute("{$card} [aria-label=\"🎉, 1 reaction\"]", 'pressed', 'false')
         ->click($comments)
         ->assertSeeIn($card, 'Pairing saved us')
@@ -567,14 +596,14 @@ it('[P08c-06] hides the results and the discussion again when an answer is withd
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $carolPage->click("{$rough} button")
-        ->assertSeeIn($rough, '33% · 1')
+    $carolPage->click(p08cChoice('How was the sprint?', 'Rough'))
+        ->assertSeeIn($rough, '1 · 33%')
         ->assertSeeIn($card, '3 responses')
         ->assertPresent("{$card} [aria-label=\"👍, 1 reaction\"]")
         ->click($comments)
         ->assertSeeIn($card, 'Pairing saved us');
 
-    $bobPage->assertSeeIn($rough, '33% · 1')
+    $bobPage->assertSeeIn($rough, '1 · 33%')
         ->assertSeeIn($card, '3 responses');
 
     $carolPage->click("{$card} button:has-text(\"Withdraw my answer\")")
@@ -588,7 +617,7 @@ it('[P08c-06] hides the results and the discussion again when an answer is withd
         ->assertDontSeeIn($card, 'Withdraw my answer');
 
     $bobPage->assertSeeIn($card, '2 responses')
-        ->assertSeeIn($rough, '0% · 0');
+        ->assertSeeIn($rough, '0 · 0%');
 
     expect($survey->responses()->count())->toBe(2)
         ->and($survey->reactions()->count())->toBe(1)
@@ -624,11 +653,11 @@ it('[P08c-07] closes every survey when the retro is completed and keeps them clo
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertSeeIn('[aria-current="step"]', 'Completed')
             ->assertCount("{$results} article", 3)
-            ->assertSeeIn($great, '100% · 1')
+            ->assertSeeIn($great, '1 · 100%')
             ->assertSeeIn($single, '1 response')
             ->assertSeeIn($text, 'No answers yet.')
             ->assertNotPresent('[aria-label="Survey actions"]')
-            ->assertNotPresent('[aria-label="Your answer"]');
+            ->assertNotPresent('section[aria-label="Surveys"] textarea');
     }
 
     expect($retro->surveys()->where('is_closed', false)->count())->toBe(0);
@@ -646,11 +675,11 @@ it('[P08c-07] closes every survey when the retro is completed and keeps them clo
             ->assertSeeIn($single, 'Closed')
             ->assertSeeIn($multiple, 'Closed')
             ->assertSeeIn($text, 'Closed')
-            ->assertSeeIn($great, '100% · 1')
-            ->assertDisabled("{$great} button")
-            ->assertDisabled("{$pairing} button[role=\"checkbox\"]")
+            ->assertSeeIn($great, '1 · 100%')
+            ->assertDisabled(p08cRadio('How was the sprint?', 'Great'))
+            ->assertDisabled(p08cCheckbox('Which practices helped?', 'Pairing'))
             ->assertNotPresent("{$multiple} button:has-text(\"Submit\")")
-            ->assertNotPresent("{$text} [aria-label=\"Your answer\"]");
+            ->assertDisabled(p08cAnswerField('What should we try next?'));
     }
 
     $alicePage->click("{$single} [aria-label=\"Survey actions\"]")
