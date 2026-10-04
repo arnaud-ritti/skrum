@@ -57,6 +57,7 @@ export function EmailCodeChallenge({
         <Form
             {...EmailCodeChallengesController.store.form()}
             resetOnSuccess
+            onSuccess={() => setCode('')}
             data-slot="email-code-challenge"
             className="flex min-w-0 flex-col gap-4"
         >

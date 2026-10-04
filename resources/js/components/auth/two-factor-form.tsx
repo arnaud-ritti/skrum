@@ -104,6 +104,7 @@ export function TwoFactorForm({ mode, onModeChange }: TwoFactorFormProps) {
             {...store.form()}
             resetOnError={recovery}
             resetOnSuccess={!recovery}
+            onSuccess={() => setCode('')}
             data-slot="two-factor-form"
             className="flex min-w-0 flex-col gap-4"
         >

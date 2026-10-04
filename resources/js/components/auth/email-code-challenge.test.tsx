@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmailCodeChallenge } from '@/components/auth/email-code-challenge';
 import { createFormState } from '@/test/inertia-form';
@@ -104,6 +104,23 @@ describe('EmailCodeChallenge', () => {
         expect(screen.getByRole('alert').textContent).toBe(
             'No code could be sent. Try again later.',
         );
+    });
+
+    it('empties the code after an accepted code', () => {
+        renderWithProviders(
+            <EmailCodeChallenge
+                sentTo="a…@example.test"
+                resendIn={10}
+                available
+            />,
+        );
+
+        fireEvent.change(codeInput(), { target: { value: '123456' } });
+        act(() => {
+            (form.props.onSuccess as () => void)();
+        });
+
+        expect(codeInput().value).toBe('');
     });
 
     it('sends six digits to the e-mail route, never to the authenticator route', () => {
