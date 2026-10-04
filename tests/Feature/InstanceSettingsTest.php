@@ -494,7 +494,7 @@ it('stores the sign-up mode only when it is one of the three modes', function ()
 
     $settings->set(InstanceSettingKey::SignupMode->value, 'open');
     expect(resolve(InstanceSettings::class)->signupMode())->toBe('open')
-        ->and(fn() => $settings->set(InstanceSettingKey::SignupMode->value, 'everyone'))->toThrow(InvalidArgumentException::class);
+        ->and(fn () => $settings->set(InstanceSettingKey::SignupMode->value, 'everyone'))->toThrow(InvalidArgumentException::class);
 });
 
 it('stores allowed domains folded, trimmed, unique and sorted', function () {
@@ -530,7 +530,7 @@ it('stores a configuration section as an object and forgets it when emptied', fu
 
     $settings->set(InstanceSettingKey::SsoOidc->value, []);
     expect(resolve(InstanceSettings::class)->configuration(InstanceSettingKey::SsoOidc))->toBeEmpty()
-        ->and(fn() => $settings->set(InstanceSettingKey::Smtp->value, 'smtp.atlas.test'))->toThrow(InvalidArgumentException::class);
+        ->and(fn () => $settings->set(InstanceSettingKey::Smtp->value, 'smtp.atlas.test'))->toThrow(InvalidArgumentException::class);
 });
 
 it('lists the fourteen configuration sections, none of them branding', function () {

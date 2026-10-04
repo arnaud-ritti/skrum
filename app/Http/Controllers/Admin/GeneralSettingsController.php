@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Support\Facades\Date;
 use App\Actions\Admin\RecordAuditEvent;
 use App\Enums\AuditAction;
 use App\Enums\InstanceSettingKey;
@@ -15,6 +14,7 @@ use App\Models\User;
 use App\Support\InstanceSettings;
 use App\Support\InstanceVersion;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,7 +68,7 @@ class GeneralSettingsController extends Controller
         });
 
         if ($updateCheckTurnedOn) {
-            dispatch(new CheckForUpdate());
+            dispatch(new CheckForUpdate);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('General settings saved.')]);

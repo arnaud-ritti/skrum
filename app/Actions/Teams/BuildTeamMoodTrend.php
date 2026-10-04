@@ -2,7 +2,6 @@
 
 namespace App\Actions\Teams;
 
-use Illuminate\Contracts\Database\Query\Builder;
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Enums\RetroPhase;
 use App\Models\Retro;
@@ -12,6 +11,7 @@ use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
 use App\Support\Teams\SprintCalendar;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 
 class BuildTeamMoodTrend

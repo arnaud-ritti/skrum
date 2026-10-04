@@ -17,7 +17,7 @@ class HeartbeatCommand extends Command
     {
         Cache::forever(InstanceStatus::SchedulerHeartbeat, now()->toIso8601String());
 
-        dispatch(new RecordQueueHeartbeat());
+        dispatch(new RecordQueueHeartbeat);
 
         $this->comment('Heartbeat recorded.');
 

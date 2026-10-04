@@ -2,7 +2,6 @@
 
 namespace Tests\Concurrency\Support;
 
-use Illuminate\Support\Sleep;
 use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Http\Kernel;
@@ -11,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Sleep;
 use LogicException;
 use Throwable;
 

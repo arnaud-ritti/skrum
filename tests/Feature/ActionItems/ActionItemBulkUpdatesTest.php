@@ -115,12 +115,12 @@ it('changes what it can and refuses the rest, each with its reason', function ()
         $deletedId => 'This action item no longer exists.',
     ])
         ->and(collect($response->json('refused'))->pluck('title', 'id')->all())->toBe([
-        $someoneElses->id => $someoneElses->content,
-        $recurring->id => $recurring->content,
-        $onLockedBoard->id => $onLockedBoard->content,
-        $invisible->id => null,
-        $deletedId => null,
-    ])
+            $someoneElses->id => $someoneElses->content,
+            $recurring->id => $recurring->content,
+            $onLockedBoard->id => $onLockedBoard->content,
+            $invisible->id => null,
+            $deletedId => null,
+        ])
         ->and($someoneElses->fresh()->priority->value)->toBe('medium')
         ->and($recurring->fresh()->due_on)->not->toBeNull()
         ->and($recurring->fresh()->priority->value)->toBe('medium');

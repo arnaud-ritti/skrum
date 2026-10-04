@@ -197,7 +197,7 @@ class PokerTaskSync
 
     private static function listsNumberField(TeamIntegration $integration, string $fieldId): bool
     {
-        return array_any((array) $integration->setting('numberFields', []), fn($field): bool => is_array($field) && ($field['id'] ?? null) === $fieldId);
+        return array_any((array) $integration->setting('numberFields', []), fn ($field): bool => is_array($field) && ($field['id'] ?? null) === $fieldId);
     }
 
     public function state(PokerTask $task): ?string

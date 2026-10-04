@@ -145,7 +145,7 @@ class ExportToGitHub
      */
     private function isAssigned(array $issue, string $login): bool
     {
-        return array_any((array) ($issue['assignees'] ?? []), fn($assigned): bool => Str::lower((string) data_get($assigned, 'login')) === Str::lower($login));
+        return array_any((array) ($issue['assignees'] ?? []), fn ($assigned): bool => Str::lower((string) data_get($assigned, 'login')) === Str::lower($login));
     }
 
     /**

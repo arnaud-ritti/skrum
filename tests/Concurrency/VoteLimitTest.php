@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Sleep;
 use App\Enums\RetroPhase;
 use App\Events\Retros\VoteCast;
 use App\Models\Card;
@@ -11,6 +10,7 @@ use App\Support\Database\Transactions;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Sleep;
 use Tests\Concurrency\Support\Race;
 
 function votingRetro(int $votesPerParticipant = 3): array

@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Sleep;
 use App\Models\User;
+use Illuminate\Support\Sleep;
 use Tests\Concurrency\Support\Race;
 
 it('runs its contenders at the same time, each in its own process', function () {

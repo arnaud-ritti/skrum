@@ -50,7 +50,7 @@ it('runs the check from the queued job', function () {
     resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, true);
     Http::fake(['releases.example/*' => Http::response(['tag_name' => '2.0.0'])]);
 
-    dispatch_sync(new CheckForUpdate());
+    dispatch_sync(new CheckForUpdate);
 
     expect(resolve(InstanceSettings::class)->latestVersion())->toBe('2.0.0');
 });

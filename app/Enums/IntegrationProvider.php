@@ -155,7 +155,7 @@ enum IntegrationProvider: string
      */
     private static function hasConfig(array $keys): bool
     {
-        return array_all($keys, fn(string $key): bool => filled(config($key)));
+        return array_all($keys, fn (string $key): bool => filled(config($key)));
     }
 
     /**

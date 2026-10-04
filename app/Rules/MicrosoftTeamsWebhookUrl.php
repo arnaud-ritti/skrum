@@ -42,7 +42,8 @@ class MicrosoftTeamsWebhookUrl implements ValidationRule
         if (in_array($host, (array) config('services.msteams.allowed_hosts', []), true)) {
             return true;
         }
-        return array_any(self::HostSuffixes, fn(string $suffix): bool => str_ends_with($host, $suffix));
+
+        return array_any(self::HostSuffixes, fn (string $suffix): bool => str_ends_with($host, $suffix));
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void

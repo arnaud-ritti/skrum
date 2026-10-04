@@ -27,9 +27,9 @@ it('returns the branded mailable with one-click unsubscribe headers', function (
 
     expect($mail->hasTo($user->email))->toBeTrue()
         ->and($mail->headers()->text)->toBe([
-        'List-Unsubscribe' => "<{$unsubscribeUrl}>",
-        'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
-    ]);
+            'List-Unsubscribe' => "<{$unsubscribeUrl}>",
+            'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+        ]);
     $mail->assertSeeInHtml($unsubscribeUrl, false);
 });
 
