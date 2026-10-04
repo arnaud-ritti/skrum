@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class PokerTimerExtensionsController extends Controller
 {
-    public const ExtensionSeconds = 120;
+    public const int ExtensionSeconds = 120;
 
     public function store(Request $request, PokerGame $game, PokerRound $round): JsonResponse
     {

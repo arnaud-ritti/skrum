@@ -10,9 +10,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AssignRequestId
 {
-    public const Header = 'X-Request-Id';
+    public const string Header = 'X-Request-Id';
 
-    public const ContextKey = 'request_id';
+    public const string ContextKey = 'request_id';
 
     public function handle(Request $request, Closure $next): Response
     {

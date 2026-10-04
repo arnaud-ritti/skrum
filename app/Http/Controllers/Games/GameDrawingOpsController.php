@@ -13,9 +13,9 @@ use Illuminate\Http\Request;
 
 class GameDrawingOpsController extends Controller
 {
-    public const RateLimitPerSecond = 20;
+    public const int RateLimitPerSecond = 20;
 
-    public const SecondsPerDrawingToken = 0.05;
+    public const float SecondsPerDrawingToken = 0.05;
 
     public function store(Request $request, GameRoom $room, GameRound $round, AddDrawingOp $addDrawingOp): JsonResponse
     {

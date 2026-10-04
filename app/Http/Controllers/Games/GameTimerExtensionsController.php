@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class GameTimerExtensionsController extends Controller
 {
-    public const ExtensionSeconds = 120;
+    public const int ExtensionSeconds = 120;
 
     public function store(Request $request, GameRoom $room, ScheduleRoundExpiry $scheduleRoundExpiry): JsonResponse
     {

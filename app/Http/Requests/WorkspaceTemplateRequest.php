@@ -17,7 +17,7 @@ use Illuminate\Validation\Validator;
 
 class WorkspaceTemplateRequest extends FormRequest
 {
-    public const MaxColumns = 10;
+    public const int MaxColumns = 10;
 
     public function authorize(): bool
     {

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class WhiteboardTimersController extends Controller
 {
-    public const MaxSeconds = 3600;
+    public const int MaxSeconds = 3600;
 
     public function update(Request $request, Whiteboard $board): JsonResponse
     {

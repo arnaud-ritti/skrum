@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class RetroTimerExtensionsController extends Controller
 {
-    public const ExtensionSeconds = 120;
+    public const int ExtensionSeconds = 120;
 
     public function store(Request $request, Retro $retro, ScheduleIcebreakerExpiry $scheduleIcebreakerExpiry): JsonResponse
     {

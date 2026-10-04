@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class GifsController extends Controller
 {
-    private const MaxBytes = 5 * 1024 * 1024;
+    private const int MaxBytes = 5 * 1024 * 1024;
 
     private const array AllowedTypes = ['image/gif', 'image/webp'];
 
