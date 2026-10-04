@@ -291,6 +291,9 @@ it('refuses guests and members who cannot edit the item', function () {
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
     $this->actingAs($other)->postJson(...jiraExportRequest($retro, $item))->assertForbidden();
+
+    resolve('auth')->forgetGuards();
+
     $this->withCookies(retroGuestCookie($guest))->withCredentials()->postJson(...jiraExportRequest($retro, $item))->assertForbidden();
 
     Http::assertNothingSent();
