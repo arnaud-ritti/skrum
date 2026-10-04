@@ -130,3 +130,15 @@ it('rate limits suggestions per participant', function () {
 
     $this->actingAs($user)->postJson(route('retros.group-name-suggestions.store', $retro))->assertTooManyRequests();
 });
+
+it('does not count a refused request against the rate limit', function () {
+    fakeLlmReply([['index' => 1, 'name' => 'Ok']]);
+    [$retro, , , , $single] = groupedRetro();
+    [$user] = retroMember($retro);
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($user)->postJson(route('retros.group-name-suggestions.store', $retro), ['cardIds' => [$single->id]])->assertUnprocessable();
+    }
+
+    $this->actingAs($user)->postJson(route('retros.group-name-suggestions.store', $retro))->assertOk();
+});
