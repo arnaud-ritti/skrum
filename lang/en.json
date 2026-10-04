@@ -5216,5 +5216,6 @@
     "Otherwise the instance style applies to everyone, guests included.": "Otherwise the instance style applies to everyone, guests included.",
     "Preview · :style": "Preview · :style",
     "A board holds at most :count columns.": "A board holds at most :count columns.",
-    "A board needs at least one column.": "A board needs at least one column."
+    "A board needs at least one column.": "A board needs at least one column.",
+    "Your access to this survey has ended.": "Your access to this survey has ended."
 }

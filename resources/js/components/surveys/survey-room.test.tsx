@@ -10,7 +10,7 @@ import {
 } from '@/test/survey-snapshot';
 
 const room = vi.hoisted(() => ({
-    gone: false,
+    gone: null as 'deleted' | 'ended' | null,
     connection: { reconnecting: false, expired: false },
     dispatch: vi.fn(),
 }));
@@ -39,7 +39,7 @@ vi.mock('@/lib/surveys/api', () => ({ surveyApi: api }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 
 beforeEach(() => {
-    room.gone = false;
+    room.gone = null;
     room.connection = { reconnecting: false, expired: false };
     room.dispatch.mockReset();
     Object.values(api).forEach((mock) => mock.mockReset());
@@ -355,7 +355,7 @@ describe('SurveyRoom', () => {
     });
 
     it('says a deleted survey is gone, outside any realtime root', () => {
-        room.gone = true;
+        room.gone = 'deleted';
 
         const { container } = renderRoom();
 
@@ -366,6 +366,17 @@ describe('SurveyRoom', () => {
                 .getAllByRole('link', { name: 'Back to the team' })
                 .map((link) => link.getAttribute('href')),
         ).toEqual(['/teams/t1', '/teams/t1']);
+    });
+
+    it('tells a viewer who lost access that it ended, not that the survey was deleted', () => {
+        room.gone = 'ended';
+
+        renderRoom();
+
+        expect(
+            screen.getByText('Your access to this survey has ended.'),
+        ).toBeTruthy();
+        expect(screen.queryByText('This survey was deleted.')).toBeNull();
     });
 
     it('gives an editor the way to the results and the Share dialog', () => {

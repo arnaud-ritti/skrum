@@ -5435,5 +5435,6 @@
     "Otherwise the instance style applies to everyone, guests included.": "Sonst gilt der Stil der Instanz für alle, Gäste eingeschlossen.",
     "Preview · :style": "Vorschau · :style",
     "A board holds at most :count columns.": "Ein Board hat höchstens :count Spalten.",
-    "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte."
+    "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte.",
+    "Your access to this survey has ended.": "Dein Zugriff auf diese Umfrage ist beendet."
 }
