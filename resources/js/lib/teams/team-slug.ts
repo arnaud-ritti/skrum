@@ -11,6 +11,11 @@ export const TeamSlugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const Fallback = 'team';
 
+/** The team link's base as drawn: the instance's address without its scheme. */
+export function shownAddressBase(base: string): string {
+    return base.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+}
+
 export function slugFromName(name: string): string {
     const words = name
         .normalize('NFKD')

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
+import { shownAddressBase } from '@/lib/teams/team-slug';
 import type { TeamSummary } from '@/types';
 
 /** `TeamsController::update`: the limits of the two fields. */
@@ -27,9 +28,11 @@ type TeamDetails = { name: string; description: string; slug?: string };
 
 /** The instance's address and `/t/`, the part of the team address before its slug. */
 function addressBase(address: string, slug: string): string {
-    return address.endsWith(slug)
+    const base = address.endsWith(slug)
         ? address.slice(0, address.length - slug.length)
         : address;
+
+    return shownAddressBase(base);
 }
 
 /** The General tab: the Team card, then the danger zone for who may delete. */

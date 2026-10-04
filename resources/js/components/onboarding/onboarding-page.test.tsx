@@ -1,10 +1,8 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-    OnboardingPage,
-    shownAddressBase,
-} from '@/components/onboarding/onboarding-page';
+import { OnboardingPage } from '@/components/onboarding/onboarding-page';
 import type { OnboardingProps } from '@/components/onboarding/onboarding-page';
+import { shownAddressBase } from '@/lib/teams/team-slug';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({

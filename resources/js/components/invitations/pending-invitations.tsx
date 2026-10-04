@@ -189,7 +189,7 @@ function InvitationIdentity({
     );
 }
 
-function InvitationButtons({
+function ResendButton({
     invitation,
     actions,
 }: {
@@ -200,31 +200,57 @@ function InvitationButtons({
     const resending = actions.resendingId === invitation.id;
 
     return (
+        <Button
+            variant="link"
+            size="sm"
+            disabled={resending}
+            aria-label={t('Resend the invitation of :email', {
+                email: invitation.email,
+            })}
+            onClick={() => actions.resend(invitation)}
+        >
+            {resending && <Spinner aria-label={t('Loading')} />}
+            <span>{t('Resend')}</span>
+        </Button>
+    );
+}
+
+function RevokeButton({
+    invitation,
+    actions,
+}: {
+    invitation: PendingInvitation;
+    actions: PendingInvitationActions;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={actions.resendingId === invitation.id}
+            aria-label={t('Revoke the invitation of :email', {
+                email: invitation.email,
+            })}
+            onClick={() => actions.askToRevoke(invitation)}
+            className="text-muted-foreground hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
+        >
+            <X aria-hidden />
+        </Button>
+    );
+}
+
+function InvitationButtons({
+    invitation,
+    actions,
+}: {
+    invitation: PendingInvitation;
+    actions: PendingInvitationActions;
+}) {
+    return (
         <span className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
-            <Button
-                variant="link"
-                size="sm"
-                disabled={resending}
-                aria-label={t('Resend the invitation of :email', {
-                    email: invitation.email,
-                })}
-                onClick={() => actions.resend(invitation)}
-            >
-                {resending && <Spinner aria-label={t('Loading')} />}
-                <span>{t('Resend')}</span>
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={resending}
-                aria-label={t('Revoke the invitation of :email', {
-                    email: invitation.email,
-                })}
-                onClick={() => actions.askToRevoke(invitation)}
-                className="text-muted-foreground hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
-            >
-                <X aria-hidden />
-            </Button>
+            <ResendButton invitation={invitation} actions={actions} />
+            <RevokeButton invitation={invitation} actions={actions} />
         </span>
     );
 }
@@ -297,14 +323,16 @@ export function PendingInvitationRows({
                 />
             </TableCell>
             <TableCell className="px-5 py-1.5">
-                <span className="flex flex-wrap items-center gap-2">
+                <span className="flex flex-col items-start gap-1">
                     <StatusBadge status={invitation.status} />
                     <RoleText invitation={invitation} />
                 </span>
             </TableCell>
-            <TableCell className="px-5 py-1.5" />
+            <TableCell className="px-5 py-1.5">
+                <ResendButton invitation={invitation} actions={actions} />
+            </TableCell>
             <TableCell className="px-5 py-1.5 text-right">
-                <InvitationButtons invitation={invitation} actions={actions} />
+                <RevokeButton invitation={invitation} actions={actions} />
             </TableCell>
         </TableRow>
     ));

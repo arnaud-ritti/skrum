@@ -148,7 +148,7 @@ describe('GeneralSettings', () => {
             );
         }
 
-        it('shows the team address under the name, the slug not following the name', () => {
+        it('shows the team address under the name without the scheme, as step 2 does, the slug not following the name', () => {
             withSlug();
 
             fireEvent.change(screen.getByLabelText('Name'), {
@@ -159,7 +159,8 @@ describe('GeneralSettings', () => {
                 '[data-slot="team-address-field"]',
             );
 
-            expect(field?.textContent).toContain('https://skrum.test/t/');
+            expect(field?.textContent).toContain('skrum.test/t/');
+            expect(field?.textContent).not.toContain('https://');
             expect(
                 field?.querySelector('[data-slot="team-address-slug"]')
                     ?.textContent,

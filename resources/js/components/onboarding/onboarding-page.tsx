@@ -14,6 +14,7 @@ import { WorkspaceStep } from '@/components/onboarding/workspace-step';
 import type { LocaleOption } from '@/components/onboarding/workspace-step';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
+import { shownAddressBase } from '@/lib/teams/team-slug';
 import OnboardingLayout from '@/layouts/skrum/onboarding-layout';
 import type { TeamRoleValue } from '@/lib/invitations/types';
 import type { ColumnColor } from '@/lib/retro/types';
@@ -53,10 +54,6 @@ export type OnboardingProps = {
 };
 
 /** The address as ScreenOnboarding draws it: no scheme. */
-export function shownAddressBase(base: string): string {
-    return base.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
-}
-
 function teamDraftFrom(props: OnboardingProps): TeamDraft {
     return {
         name: props.team?.name ?? props.teamName ?? '',
