@@ -113,7 +113,13 @@ export function IcebreakerSessionFields({
     const submit = (event: FormEvent): void => {
         event.preventDefault();
 
-        if (processing || game === null || name.trim() === '') {
+        if (processing || game === null) {
+            return;
+        }
+
+        if (name.trim() === '') {
+            setErrors({ name: t('The name is required.') });
+
             return;
         }
 
@@ -168,7 +174,15 @@ export function IcebreakerSessionFields({
                     <span className="truncate text-sm font-semibold">
                         {t('Game')}
                     </span>
-                    <IcebreakerGameGrid className="gap-3">
+                    <IcebreakerGameGrid
+                        className="gap-3"
+                        aria-invalid={errors.game !== undefined || undefined}
+                        aria-describedby={
+                            errors.game === undefined
+                                ? undefined
+                                : 'new-icebreaker-game-error'
+                        }
+                    >
                         {gameOptions.map((option) => (
                             <IcebreakerGameCard
                                 key={option.value}
@@ -187,7 +201,10 @@ export function IcebreakerSessionFields({
                             />
                         ))}
                     </IcebreakerGameGrid>
-                    <FieldError message={errors.game} />
+                    <FieldError
+                        id="new-icebreaker-game-error"
+                        message={errors.game}
+                    />
                 </div>
             </div>
 
