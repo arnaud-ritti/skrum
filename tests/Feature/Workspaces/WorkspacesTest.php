@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
@@ -8,6 +9,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Teams\TeamMark;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -120,6 +122,19 @@ it('shows the member and admin counts of a workspace and the counts of each team
             ->where('teams.0.membersCount', 1)
             ->where('teams.1.membersCount', 0)
             ->where('teams.1.members', []));
+});
+
+it('gives each team tile the colour of its mark, the picked one first', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    Team::factory()->for($workspace)->create(['name' => 'Alpha', 'color' => ColumnColor::Plum]);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('teams.0.color', ColumnColor::Plum->value)
+            ->where('teams.1.color', TeamMark::derived($beta->id)->value));
 });
 
 it('lists the first five members of each team by name next to its total', function () {

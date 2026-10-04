@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
 use App\Support\Teams\SprintCalendar;
+use App\Support\Teams\TeamMark;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -106,6 +107,7 @@ class WorkspacesController extends Controller
                 : null,
             'teams' => $teams->map(fn (Team $team): array => [
                 ...$team->only(['id', 'name', 'description']),
+                'color' => TeamMark::colorFor($team)->value,
                 'membersCount' => $team->members_count,
                 'members' => Alphabetical::sort($team->members, fn (User $member): string => $member->name)->map(fn (User $member): array => [
                     'name' => $member->name,
