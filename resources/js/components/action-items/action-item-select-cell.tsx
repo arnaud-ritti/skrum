@@ -28,11 +28,15 @@ export function ActionItemSelectCell({
                 <TooltipTrigger asChild>
                     <span
                         tabIndex={0}
+                        role="checkbox"
+                        aria-checked={false}
+                        aria-disabled
+                        aria-label={name}
                         data-slot="action-row-select-locked"
                         className="inline-flex rounded-xs outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                         <Checkbox
-                            aria-label={name}
+                            aria-hidden
                             checked={false}
                             disabled
                             className={className}
