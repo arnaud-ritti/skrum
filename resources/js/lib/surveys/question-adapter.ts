@@ -86,8 +86,8 @@ export function toQuestionProps(
         required: question.isRequired,
         anonymous: true,
         scaleLabels:
-            question.scaleLabels?.[0] && question.scaleLabels[1]
-                ? [question.scaleLabels[0], question.scaleLabels[1]]
+            question.scaleLabels?.[0] || question.scaleLabels?.[1]
+                ? [question.scaleLabels[0] ?? '', question.scaleLabels[1] ?? '']
                 : undefined,
         maxLength: 500,
         options: question.options.map((option) => ({
