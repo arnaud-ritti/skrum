@@ -10,6 +10,7 @@ import {
     TasksToggle,
     WatchSwitch,
 } from '@/components/poker/room-topbar';
+import { GameProvider } from '@/components/poker/game-context';
 import { pokerRound, pokerSnapshot, renderInRoom } from '@/test/poker-room';
 import { renderWithProviders } from '@/test/render';
 
@@ -53,6 +54,56 @@ describe('RoomTitle', () => {
 
         expect(mocks.request.mock.calls[0][1]).toEqual({ title: 'Sprint 44' });
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('puts the saved title back when the rename is refused', async () => {
+        const { ctx } = renderInRoom(<RoomTitle showDeck />, pokerSnapshot(), {
+            run: async () => undefined,
+        });
+        const field = screen.getByRole('textbox', {
+            name: 'Game title',
+        }) as HTMLInputElement;
+
+        fireEvent.change(field, { target: { value: 'Sprint 44' } });
+
+        await act(async () => {
+            fireEvent.blur(field);
+        });
+
+        expect(field.value).toBe('Sprint 43 refinement');
+        expect(ctx.refetch).not.toHaveBeenCalled();
+    });
+
+    it('keeps the title being typed when someone else renames the game', () => {
+        const snapshot = pokerSnapshot();
+        const { ctx, rerender } = renderInRoom(
+            <RoomTitle showDeck />,
+            snapshot,
+        );
+        const field = () =>
+            screen.getByRole('textbox', {
+                name: 'Game title',
+            }) as HTMLInputElement;
+
+        act(() => field().focus());
+        fireEvent.change(field(), { target: { value: 'Sprint 44 draft' } });
+
+        rerender(
+            <GameProvider
+                value={{
+                    ...ctx,
+                    snapshot: {
+                        ...snapshot,
+                        game: { ...snapshot.game, title: 'Renamed' },
+                    },
+                }}
+            >
+                <RoomTitle showDeck />
+            </GameProvider>,
+        );
+
+        expect(field().value).toBe('Sprint 44 draft');
+        expect(document.activeElement).toBe(field());
     });
 
     it('shows the name as text to the others, without a back link for a guest', () => {
@@ -233,7 +284,7 @@ describe('RoomTimer', () => {
     });
 
     it('shows no timer once the round is revealed or the game ended', () => {
-        const { container } = renderInRoom(
+        const revealedRound = renderInRoom(
             <RoomTimer />,
             pokerSnapshot({
                 current: {
@@ -246,7 +297,22 @@ describe('RoomTimer', () => {
             }),
         );
 
-        expect(container.firstChild).toBeNull();
+        expect(revealedRound.container.firstChild).toBeNull();
+
+        revealedRound.unmount();
+
+        const endedGame = renderInRoom(
+            <RoomTimer />,
+            pokerSnapshot({
+                game: { endedAt: '2026-10-02T10:00:00Z' },
+                current: {
+                    taskId: 't1',
+                    round: pokerRound({ timerEndsAt: inOneMinute() }),
+                },
+            }),
+        );
+
+        expect(endedGame.container.firstChild).toBeNull();
     });
 });
 
@@ -470,6 +536,18 @@ describe('FacilitatorMenu', () => {
         fireEvent.click(screen.getByRole('menuitem', { name: 'Share…' }));
 
         expect(onChoose).toHaveBeenCalledWith('share');
+    });
+
+    it('lists no "Share…" on an ended game, even with a channel connected', async () => {
+        renderInRoom(
+            <FacilitatorMenu shareInMenu={false} onChoose={vi.fn()} />,
+            pokerSnapshot({
+                game: { endedAt: '2026-10-02T10:00:00Z' },
+                share: slackOnly,
+            }),
+        );
+
+        expect(await menuItems()).not.toContain('Share…');
     });
 
     it('reopens an ended game from the menu, which then offers nothing else but delete', async () => {
