@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { BenchOverlayStage } from '@/components/dev/bench';
+import { VoteDrawer } from '@/components/skrum/vote-drawer';
 import { Button } from '@/components/ui/button';
 import {
     Drawer,
@@ -80,66 +82,24 @@ export default function DrawerSection() {
                 >
                     {t('Choose a card')}
                 </Button>
-                <Drawer open={voteOpen} onOpenChange={setVoteOpen}>
-                    <DrawerContent closeLabel={t('Close')}>
-                        <DrawerHeader>
-                            <DrawerTitle>{t('Your estimate')}</DrawerTitle>
-                            <DrawerDescription>
-                                {t('Pick one card, you can change it later')}
-                            </DrawerDescription>
-                        </DrawerHeader>
-                        <div
-                            role="radiogroup"
-                            aria-label={t('Estimate')}
-                            className="grid grid-cols-5 justify-items-center gap-2"
-                        >
-                            {deck.map((card) => {
-                                const special = card === '?' || card === '☕';
-                                const isPicked = picked === card;
-                                const isUnavailable =
-                                    unavailable.includes(card);
-
-                                return (
-                                    <button
-                                        key={card}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={isPicked}
-                                        aria-label={t(':card points', { card })}
-                                        disabled={isUnavailable}
-                                        onClick={() => setPicked(card)}
-                                        className={`flex h-14 w-11 items-center justify-center rounded-xl border text-base font-semibold transition-transform duration-(--duration-base) ease-(--ease-spring) focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-hidden disabled:opacity-40 ${
-                                            isPicked
-                                                ? '-translate-y-2.5 bg-skrum-primary-soft text-skrum-primary-text ring-2 ring-primary'
-                                                : special
-                                                  ? 'bg-muted'
-                                                  : 'bg-card'
-                                        }`}
-                                    >
-                                        {card}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <DrawerFooter>
-                            <Button
-                                className="h-11 w-full"
-                                onClick={() => setVoteOpen(false)}
-                            >
-                                {t('Vote')}
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => {
-                                    setPicked(null);
-                                    setVoteOpen(false);
-                                }}
-                            >
-                                {t('Retract my vote')}
-                            </Button>
-                        </DrawerFooter>
-                    </DrawerContent>
-                </Drawer>
+                <BenchOverlayStage>
+                    <VoteDrawer
+                        open={voteOpen}
+                        onOpenChange={setVoteOpen}
+                        deck={deck}
+                        value={picked}
+                        disabledValues={unavailable}
+                        description={t('Story 12: payment retries')}
+                        onVote={(card) => {
+                            setPicked(card);
+                            setVoteOpen(false);
+                        }}
+                        onRetract={() => {
+                            setPicked(null);
+                            setVoteOpen(false);
+                        }}
+                    />
+                </BenchOverlayStage>
             </Labelled>
         </div>
     );
