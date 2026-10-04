@@ -12,7 +12,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
         props: {
             translations: {},
             locale: 'fr',
-            locales: ['en', 'fr', 'es', 'de'],
+            locales: ['en', 'fr', 'es', 'de', 'it'],
         },
     }),
     router: { put: mocks.put },
@@ -54,7 +54,12 @@ describe('LanguageSwitcher', () => {
         );
         expect(
             screen.getAllByRole('option').map((option) => option.textContent),
-        ).toEqual(['English', 'Français', 'Español', 'Deutsch']);
+        ).toEqual(['English', 'Français', 'Español', 'Deutsch', 'it']);
+        expect(
+            screen
+                .getByRole('option', { name: 'Deutsch' })
+                .querySelector('[lang="de"]'),
+        ).not.toBeNull();
 
         await userEvent.click(screen.getByRole('option', { name: 'Deutsch' }));
 
