@@ -5310,5 +5310,8 @@
     "Dismiss": "Masquer",
     "Team · optional": "Équipe · facultatif",
     "No team": "Aucune équipe",
-    "Role in the team": "Rôle dans l'équipe"
+    "Role in the team": "Rôle dans l'équipe",
+    "Steps": "Étapes",
+    "Step :label": "Étape :label",
+    "Step :current/:total": "Étape :current/:total"
 }

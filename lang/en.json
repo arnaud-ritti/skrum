@@ -5090,5 +5090,8 @@
     "Dismiss": "Dismiss",
     "Team · optional": "Team · optional",
     "No team": "No team",
-    "Role in the team": "Role in the team"
+    "Role in the team": "Role in the team",
+    "Steps": "Steps",
+    "Step :label": "Step :label",
+    "Step :current/:total": "Step :current/:total"
 }

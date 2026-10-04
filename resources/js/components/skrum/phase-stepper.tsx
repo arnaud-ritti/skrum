@@ -44,6 +44,12 @@ export type PhaseStepperProps = {
      */
     compact?: boolean;
     mobile?: boolean;
+    /**
+     * `steps`: a read-only rail of named steps (the onboarding header): every
+     * label is shown beside its marker wherever the rail is drawn, and the
+     * list, the count and the announcement speak of steps, not phases.
+     */
+    variant?: 'phases' | 'steps';
     leaderName?: string;
     disabled?: boolean;
     reopenTo?: string;
@@ -187,6 +193,7 @@ export function PhaseStepper({
     interactive = false,
     compact = false,
     mobile = false,
+    variant = 'phases',
     leaderName,
     disabled = false,
     reopenTo,
@@ -205,8 +212,9 @@ export function PhaseStepper({
     const isEnded = current === CompletedPhase;
     // Once ended no step is the current one: every label at once does not
     // fit a header, so the rail keeps its ticked markers.
+    const isSteps = variant === 'steps';
     const otherLabels: LabelVisibility =
-        mode === 'auto' && !isEnded ? 'full' : 'never';
+        mode === 'auto' && !isEnded ? (isSteps ? 'always' : 'full') : 'never';
     const actionLabels: LabelVisibility = compact ? 'never' : 'full';
 
     const total = phases.length;
@@ -246,9 +254,12 @@ export function PhaseStepper({
     const isReachable = (index: number): boolean =>
         canChange && !disabled && Math.abs(index - currentIndex) === 1;
 
+    const currentLabel = currentStep?.label ?? '';
     const announcement = isEnded
         ? ended
-        : t('Phase :label', { label: currentStep?.label ?? '' });
+        : isSteps
+          ? t('Step :label', { label: currentLabel })
+          : t('Phase :label', { label: currentLabel });
 
     const rovingId = focusedId ?? currentStep?.id ?? phases[0]?.id;
 
@@ -358,10 +369,15 @@ export function PhaseStepper({
                         data-slot="phase-count"
                         className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @xl/phases:hidden"
                     >
-                        {t('Phase :current/:total', {
-                            current: progressValue,
-                            total,
-                        })}
+                        {isSteps
+                            ? t('Step :current/:total', {
+                                  current: progressValue,
+                                  total,
+                              })
+                            : t('Phase :current/:total', {
+                                  current: progressValue,
+                                  total,
+                              })}
                     </span>
                 )}
                 {isEnded && (
@@ -386,7 +402,7 @@ export function PhaseStepper({
                     )}
                 >
                     <ol
-                        aria-label={t('Phases')}
+                        aria-label={isSteps ? t('Steps') : t('Phases')}
                         data-slot="phase-rail"
                         className={cn(
                             'flex min-w-0 items-center',
@@ -562,7 +578,7 @@ export function PhaseStepper({
                         value={progressValue}
                         max={Math.max(total, 1)}
                         valueLabel=""
-                        aria-label={t('Retro phases')}
+                        aria-label={isSteps ? t('Steps') : t('Retro phases')}
                         className="h-1.5"
                     />
                 </div>
