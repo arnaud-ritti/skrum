@@ -2,6 +2,7 @@
 
 use App\Actions\ActionItems\ExternalSyncActor;
 use App\Actions\ActionItems\SetActionItemStatus;
+use App\Actions\Integrations\ApplyIssueChanges;
 use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ActionItemStatus;
 use App\Enums\ExternalIssueState;
@@ -428,4 +429,23 @@ it('pushes a stopped item back to the open status', function () {
         && str_contains($request->url(), '/issue/10001/transitions')
         && $request['transition'] === ['id' => '11']);
     expect($link->fresh()->last_pushed_state)->toBe(ExternalIssueState::Open);
+});
+
+it('keeps a stopped item to do when the Jira workflow has no way back to to do', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(['local_state_changed_at' => '2026-10-07 10:25:00']);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $started, [jiraTransition('42', '4', 'In Review', 'indeterminate')]);
+
+    runStatusPush($link);
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_ends_with($request->url(), '/transitions'));
+    expect($link->fresh()->sync_error)->toBe('No transition to an open status is available for PROJ-1.')
+        ->and($link->fresh()->last_pushed_state)->toBeNull();
+
+    Queue::fake();
+    resolve(ApplyIssueChanges::class)->handle($integration, ['10001'], [
+        '10001' => statusSyncIssue('10001', 'PROJ-1', 'indeterminate', '2026-10-07T10:20:00+00:00', ['status' => 'In Progress', 'statusId' => '3']),
+    ], true, false);
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Open);
 });

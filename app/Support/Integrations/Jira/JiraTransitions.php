@@ -13,7 +13,9 @@ use App\Support\Integrations\Trackers\DoneMapping;
  * configured target, else a done-category target preferring "Done",
  * "Closed", "Resolved" (restricted to the project's done statuses), for a
  * start the configured start status, else the first `indeterminate` target,
- * or for a reopen the first `new`, then `indeterminate` target.
+ * for a reopen out of Done the first `new`, then `indeterminate` target, and
+ * for a stop out of an in-progress status only a `new` target: another
+ * in-progress status would leave the issue started and undo the stop.
  */
 class JiraTransitions
 {
@@ -22,6 +24,8 @@ class JiraTransitions
     private const array PreferredResolutions = ['Done', 'Fixed'];
 
     private const array ReopenCategories = ['new', 'indeterminate'];
+
+    private const array StopCategories = ['new'];
 
     private const array StartCategories = ['indeterminate'];
 
@@ -35,7 +39,7 @@ class JiraTransitions
      * @param  array<array-key, mixed>  $transitions  as `GET issue/{id}/transitions?expand=transitions.fields` lists them
      * @return array<array-key, mixed>|null
      */
-    public static function choose(TeamIntegration $integration, ?string $project, array $transitions, ExternalIssueState $target): ?array
+    public static function choose(TeamIntegration $integration, ?string $project, array $transitions, ExternalIssueState $target, ExternalIssueState $current): ?array
     {
         $available = array_values(array_filter($transitions, fn (mixed $transition): bool => is_array($transition)
             && (is_string($transition['id'] ?? null) || is_int($transition['id'] ?? null))
@@ -52,7 +56,10 @@ class JiraTransitions
         return match ($target) {
             ExternalIssueState::Done => self::doneTransition($integration, $project, $available),
             ExternalIssueState::Started => self::firstOfCategories($available, self::StartCategories),
-            ExternalIssueState::Open => self::firstOfCategories($available, self::ReopenCategories),
+            ExternalIssueState::Open => self::firstOfCategories(
+                $available,
+                $current === ExternalIssueState::Started ? self::StopCategories : self::ReopenCategories,
+            ),
         };
     }
 

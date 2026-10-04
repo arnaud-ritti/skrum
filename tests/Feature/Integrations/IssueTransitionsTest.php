@@ -74,6 +74,16 @@ it('reopens to the configured status, else the first new then in-progress one', 
     'configured' => [['reopenStatusId' => '3'], [jiraTransition('41', '3', 'In Progress', 'indeterminate'), jiraTransition('51', '10000', 'To Do', 'new')], '41'],
 ]);
 
+it('stops an in-progress Jira issue only through a to-do transition', function () {
+    $integration = jiraSyncIntegration();
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $started, [jiraTransition('42', '4', 'In Review', 'indeterminate'), jiraTransition('31', '10002', 'Done', 'done')]);
+
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Open))
+        ->toThrow(StatusPushRejected::class)
+        ->and(jiraTransitionRequest())->toBeNull();
+});
+
 it('fills a required resolution', function (array $allowed, string $expected) {
     $integration = jiraSyncIntegration();
     fakeJiraTransitions($this->jiraOpen, $this->jiraDone, [jiraTransition('31', '10002', 'Done', 'done', [
