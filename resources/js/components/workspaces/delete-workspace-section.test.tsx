@@ -47,7 +47,7 @@ describe('DeleteWorkspaceSection', () => {
         ).toBeTruthy();
         expect(
             screen.getByText(
-                'This permanently deletes the workspace, its teams and their retrospectives.',
+                'This permanently deletes the workspace and everything in it: its teams and their sessions, boards and action items, the templates and the invitations.',
             ),
         ).toBeTruthy();
         expect(screen.queryByRole('dialog')).toBeNull();
@@ -97,6 +97,31 @@ describe('DeleteWorkspaceSection', () => {
         });
 
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('shows the refusal of the server and keeps the dialog open with the typed name', async () => {
+        section();
+
+        const dialog = await openDialog();
+        const field = dialog.querySelector(
+            'input[name="confirmation"]',
+        ) as HTMLInputElement;
+
+        await userEvent.type(field, 'Nordlys');
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Delete workspace' }),
+        );
+        await act(async () => {
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onError({
+                workspace: 'This workspace still has a paid plan.',
+            });
+        });
+
+        expect(
+            screen.getByRole('dialog', { name: 'Delete this workspace?' })
+                .textContent,
+        ).toContain('This workspace still has a paid plan.');
+        expect(field.value).toBe('Nordlys');
     });
 
     it('forgets the typed name when the dialog is closed', async () => {

@@ -1,25 +1,16 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LayoutTemplate, PenTool, Trash2, TriangleAlert } from 'lucide-react';
+import { LayoutTemplate, PenTool, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { SectionActionsMenu } from '@/components/teams/section-actions-menu';
 import { TeamSection } from '@/components/teams/team-section';
 import { WhiteboardTemplatesDialog } from '@/components/teams/whiteboard-templates-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogIcon,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import type { WhiteboardSummary, WhiteboardTemplateSummary } from '@/types';
@@ -41,29 +32,33 @@ export function TeamWhiteboardsSection({
     const { t } = useTrans();
     const { locale } = usePage().props;
     const [deleting, setDeleting] = useState<WhiteboardSummary | null>(null);
-    const [processing, setProcessing] = useState(false);
     const [managing, setManaging] = useState(false);
     const menuRef = useRef<HTMLButtonElement>(null);
     const headingRef = useRef<HTMLHeadingElement>(null);
-    const boardLeft = useRef(false);
+    const deletedId = useRef<string | null>(null);
     const dialogOpen = deleting !== null;
     const formatDate = new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
     });
 
     // The button that opened the dialog leaves with its board: the focus goes
-    // to the heading of the section instead of falling back to the page.
+    // to the heading of the section once the reloaded list no longer holds it.
     useEffect(() => {
-        if (!dialogOpen && boardLeft.current) {
-            boardLeft.current = false;
-            headingRef.current?.focus();
+        if (deletedId.current === null) {
+            return;
         }
-    }, [dialogOpen]);
 
-    const leaveDeletedBoard = (): void => {
+        if (boards.some((board) => board.id === deletedId.current)) {
+            return;
+        }
+
+        deletedId.current = null;
+        headingRef.current?.focus();
+    }, [boards]);
+
+    const leaveDeletedBoard = (board: WhiteboardSummary): void => {
+        deletedId.current = board.id;
         router.reload({ only: ['whiteboards'] });
-        boardLeft.current = true;
-        setDeleting(null);
     };
 
     const confirmDelete = async (): Promise<void> => {
@@ -71,11 +66,8 @@ export function TeamWhiteboardsSection({
             return;
         }
 
-        setProcessing(true);
-
         try {
             await retroRequest(WhiteboardsController.destroy(deleting.id));
-            leaveDeletedBoard();
         } catch (error) {
             toast.error(
                 error instanceof RetroRequestError && error.status > 0
@@ -84,11 +76,15 @@ export function TeamWhiteboardsSection({
             );
 
             if (error instanceof RetroRequestError && error.status === 404) {
-                leaveDeletedBoard();
+                leaveDeletedBoard(deleting);
+
+                return;
             }
-        } finally {
-            setProcessing(false);
+
+            throw error;
         }
+
+        leaveDeletedBoard(deleting);
     };
 
     return (
@@ -202,47 +198,19 @@ export function TeamWhiteboardsSection({
                 templates={templates}
             />
 
-            <Dialog
+            <ConfirmDialog
                 open={dialogOpen}
                 onOpenChange={(open) => {
-                    if (!open && !processing) {
+                    if (!open) {
                         setDeleting(null);
                     }
                 }}
-            >
-                <DialogContent size="sm" showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogIcon className="bg-skrum-destructive-soft text-skrum-destructive-text">
-                            <TriangleAlert />
-                        </DialogIcon>
-                        <DialogTitle>{t('Delete this board?')}</DialogTitle>
-                        <DialogDescription>
-                            {t('Everything on it is removed for everyone.')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            disabled={processing}
-                            onClick={() => setDeleting(null)}
-                        >
-                            {t('Cancel')}
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            disabled={processing}
-                            onClick={confirmDelete}
-                        >
-                            {processing ? (
-                                <Spinner aria-label={t('Loading')} />
-                            ) : (
-                                <Trash2 aria-hidden />
-                            )}
-                            {t('Delete this board')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                tone="destructive"
+                title={t('Delete this board?')}
+                description={t('Everything on it is removed for everyone.')}
+                confirmLabel={t('Delete this board')}
+                onConfirm={confirmDelete}
+            />
         </TeamSection>
     );
 }

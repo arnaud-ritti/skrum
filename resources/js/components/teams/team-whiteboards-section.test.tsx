@@ -135,7 +135,7 @@ describe('the whiteboards of a team', () => {
             screen.getByRole('button', { name: 'Delete Sprint board' }),
         );
 
-        const dialog = screen.getByRole('dialog');
+        const dialog = screen.getByRole('alertdialog');
 
         expect(within(dialog).getByText('Delete this board?')).toBeTruthy();
         expect(mocks.request).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe('the whiteboards of a team', () => {
         expect(mocks.request).toHaveBeenCalledTimes(1);
         expect(mocks.request.mock.calls[0][0].url).toBe('/whiteboards/board-1');
         expect(mocks.reload).toHaveBeenCalledWith({ only: ['whiteboards'] });
-        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
     it('keeps the date whole, on a second line when the facilitator leaves it no room', () => {
@@ -168,13 +168,20 @@ describe('the whiteboards of a team', () => {
         const user = userEvent.setup();
         mocks.request.mockResolvedValue(null);
 
-        section();
+        const { rerender } = section();
 
         await user.click(
             screen.getByRole('button', { name: 'Delete Sprint board' }),
         );
         await user.click(
             screen.getByRole('button', { name: 'Delete this board' }),
+        );
+        rerender(
+            <TeamWhiteboardsSection
+                workspaceSlug="nordlys"
+                boards={[theirs]}
+                templates={[]}
+            />,
         );
         await act(async () => {});
 
@@ -202,7 +209,7 @@ describe('the whiteboards of a team', () => {
             'This board no longer exists.',
         );
         expect(mocks.reload).toHaveBeenCalledWith({ only: ['whiteboards'] });
-        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
     it('keeps the dialog and says why when the server refuses', async () => {
@@ -224,7 +231,7 @@ describe('the whiteboards of a team', () => {
             'This board cannot be deleted.',
         );
         expect(mocks.reload).not.toHaveBeenCalled();
-        expect(screen.getByRole('dialog')).toBeTruthy();
+        expect(screen.getByRole('alertdialog')).toBeTruthy();
     });
 
     it('opens the templates manager from the "…" menu and gives focus back to it', async () => {

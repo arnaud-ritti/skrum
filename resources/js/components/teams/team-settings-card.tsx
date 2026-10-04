@@ -35,7 +35,7 @@ export function TeamSettingsCard({ workspaceSlug, team }: Props) {
                 tone="destructive"
                 title={t('Delete team')}
                 description={t(
-                    'This permanently deletes the team and its retrospectives.',
+                    'This permanently deletes the team and everything in it: retrospectives, poker games, surveys, whiteboards, action items and invite links.',
                 )}
             >
                 <Button variant="destructive" onClick={() => setDeleting(true)}>
@@ -50,7 +50,7 @@ export function TeamSettingsCard({ workspaceSlug, team }: Props) {
                 tone="destructive"
                 title={t('Delete this team?')}
                 description={t(
-                    'This permanently deletes the team and its retrospectives.',
+                    'This permanently deletes the team and everything in it: retrospectives, poker games, surveys, whiteboards, action items and invite links.',
                 )}
                 confirmLabel={t('Delete team')}
                 onConfirm={destroy}

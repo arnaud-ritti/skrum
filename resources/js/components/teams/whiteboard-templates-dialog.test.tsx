@@ -8,7 +8,10 @@ const mocks = vi.hoisted(() => ({
     patch: vi.fn(),
     delete: vi.fn(),
     reload: vi.fn(),
+    toastError: vi.fn(),
 }));
+
+vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
     const original = await importOriginal<typeof import('@inertiajs/react')>();
@@ -65,6 +68,7 @@ function row(name: string): HTMLElement {
 }
 
 beforeEach(() => {
+    mocks.toastError.mockReset();
     mocks.patch.mockReset();
     mocks.delete.mockReset();
     mocks.reload.mockReset();
@@ -243,9 +247,78 @@ describe('the whiteboard templates manager', () => {
         });
 
         expect(handled).toBe(false);
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            "This template no longer exists or you can't change it.",
+        );
         expect(mocks.reload).toHaveBeenCalledWith({
             only: ['whiteboardTemplates', 'whiteboardGallery'],
         });
         expect(screen.queryByRole('alertdialog')).toBeNull();
+    });
+
+    it('says why an edit was refused instead of closing as if it was saved', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Kick-off' }));
+        fireEvent.submit(
+            (
+                document.querySelector(
+                    '#whiteboard-template-a-name',
+                ) as HTMLInputElement
+            ).form as HTMLFormElement,
+        );
+
+        act(() => {
+            (mocks.patch.mock.calls[0][2] as VisitOptions).onHttpException?.();
+        });
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            "This template no longer exists or you can't change it.",
+        );
+    });
+
+    it('gives the focus back to the Edit button of the row once its form closes', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Second' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Edit Second' }),
+        );
+    });
+
+    it('gives the focus to the list once a deleted row is gone', () => {
+        const view = renderWithProviders(
+            <WhiteboardTemplatesDialog
+                open
+                onOpenChange={() => {}}
+                workspaceSlug="acme"
+                templates={templates}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Second' }));
+        fireEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Delete',
+            }),
+        );
+        act(() => {
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onFinish?.();
+        });
+        view.rerender(
+            <WhiteboardTemplatesDialog
+                open
+                onOpenChange={() => {}}
+                workspaceSlug="acme"
+                templates={templates.filter((template) => template.id !== 'b')}
+            />,
+        );
+
+        expect(document.activeElement?.getAttribute('aria-label')).toBe(
+            'Whiteboard templates',
+        );
+        expect(document.activeElement?.contains(row('Kick-off'))).toBe(true);
     });
 });

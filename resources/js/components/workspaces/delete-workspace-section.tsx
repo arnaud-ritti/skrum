@@ -39,7 +39,7 @@ export function DeleteWorkspaceSection({
             tone="destructive"
             title={t('Delete workspace')}
             description={t(
-                'This permanently deletes the workspace, its teams and their retrospectives.',
+                'This permanently deletes the workspace and everything in it: its teams and their sessions, boards and action items, the templates and the invitations.',
             )}
         >
             <Button
@@ -59,7 +59,7 @@ export function DeleteWorkspaceSection({
                 tone="destructive"
                 title={t('Delete this workspace?')}
                 description={t(
-                    'This permanently deletes the workspace, its teams and their retrospectives.',
+                    'This permanently deletes the workspace and everything in it: its teams and their sessions, boards and action items, the templates and the invitations.',
                 )}
                 submitLabel={t('Delete workspace')}
                 submitDisabled={!matchesWorkspaceName(typed, workspace.name)}

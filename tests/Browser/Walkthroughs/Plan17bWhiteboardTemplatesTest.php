@@ -813,10 +813,10 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->click('button[aria-label="Delete Source board"]')
-        ->assertSeeIn('[role="dialog"]', 'Delete this board?')
-        ->click('[role="dialog"] button:text-is("Delete this board")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
+        ->click('[role="alertdialog"] button:text-is("Delete this board")')
         ->assertNotPresent("a[href=\"/whiteboards/{$source->id}\"]")
-        ->assertNotPresent('[role="dialog"]');
+        ->assertNotPresent('[role="alertdialog"]');
 
     expect(WhiteboardTemplate::query()->count())->toBe(0)
         ->and(Whiteboard::query()->whereKey($source->id)->exists())->toBeFalse()
@@ -1179,11 +1179,11 @@ it('[P17b-28] removes a board from the list without a page load when its facilit
     $teamPage->script('() => { window.p17bSamePage = true; return true; }');
 
     $teamPage->click('button[aria-label="Delete Sprint board"]')
-        ->assertSeeIn('[role="dialog"]', 'Delete this board?')
-        ->assertSeeIn('[role="dialog"]', 'Everything on it is removed for everyone.')
-        ->click('[role="dialog"] button:text-is("Delete this board")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
+        ->assertSeeIn('[role="alertdialog"]', 'Everything on it is removed for everyone.')
+        ->click('[role="alertdialog"] button:text-is("Delete this board")')
         ->assertNotPresent("a[href=\"/whiteboards/{$board->id}\"]")
-        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertPresent("a[href=\"/whiteboards/{$kept->id}\"]")
         ->assertScript('window.p17bSamePage === true', true);
 

@@ -459,7 +459,7 @@ it('[P18e-09-06] lets the owner delete the workspace once its name is typed', fu
 
     $page = $this->signIn($arnaud, p18eMembersPath($workspace));
 
-    $page->assertSeeIn('[data-slot="settings-card"][data-tone="destructive"]', 'This permanently deletes the workspace, its teams and their retrospectives.')
+    $page->assertSeeIn('[data-slot="settings-card"][data-tone="destructive"]', 'This permanently deletes the workspace and everything in it: its teams and their sessions, boards and action items, the templates and the invitations.')
         ->click('@delete-workspace-button')
         ->assertSeeIn('[role="dialog"]', 'Delete this workspace?')
         ->assertDisabled('@delete-workspace-confirm')

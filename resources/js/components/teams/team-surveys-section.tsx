@@ -95,17 +95,17 @@ export function TeamSurveysSection({
         try {
             await retroRequest(TeamSurveysController.destroy(deleting.id));
         } catch (error) {
-            if (error instanceof RetroRequestError && error.status === 404) {
-                leaveDeletedSurvey(deleting);
-
-                return;
-            }
-
             toast.error(
                 error instanceof RetroRequestError && error.status > 0
                     ? error.message
                     : t('Something went wrong. Please try again.'),
             );
+
+            if (error instanceof RetroRequestError && error.status === 404) {
+                leaveDeletedSurvey(deleting);
+
+                return;
+            }
 
             throw error;
         }
