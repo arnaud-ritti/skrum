@@ -4,6 +4,7 @@ use App\Actions\Integrations\HandleTelegramUpdate;
 use App\Actions\Integrations\PollTelegramUpdates;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -132,10 +133,21 @@ it('accepts a code only once and only while it is the newest', function () {
 
     expect(TeamIntegration::query()->sole()->setting('chatId'))->toBe('-100123')
         ->and(telegramReplies())->toBe([
-            'This code is invalid or has expired. Create a new one in skrum.',
+            'This code is invalid or has expired. Create a new one in '.config('app.name').'.',
             'Connected to the Rocket team on '.config('app.name').'.',
-            'This code is invalid or has expired. Create a new one in skrum.',
+            'This code is invalid or has expired. Create a new one in '.config('app.name').'.',
         ]);
+});
+
+it('refuses a code whose author may no longer manage the integrations of the team', function () {
+    fakeTelegramBot();
+    [$team, $admin, $code] = telegramCodeFor();
+    $team->workspace->members()->updateExistingPivot($admin->id, ['role' => WorkspaceRole::Member->value]);
+
+    resolve(HandleTelegramUpdate::class)->handle(telegramUpdate(1, "/connect {$code}"));
+
+    expect(TeamIntegration::query()->count())->toBe(0)
+        ->and(telegramReplies())->toBe(['This code is invalid or has expired. Create a new one in '.config('app.name').'.']);
 });
 
 it('expires codes after fifteen minutes', function () {

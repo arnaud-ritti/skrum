@@ -1094,7 +1094,7 @@
     "Slack did not return a valid channel webhook. Try again.": "Slack no devolvió un webhook de canal válido. Inténtalo de nuevo.",
     "This Atlassian account has no Jira site.": "Esta cuenta de Atlassian no tiene ningún sitio de Jira.",
     "Connected to the :team team on :app.": "Conectado al equipo :team en :app.",
-    "This code is invalid or has expired. Create a new one in skrum.": "Este código no es válido o ha caducado. Crea uno nuevo en skrum.",
+    "This code is invalid or has expired. Create a new one in :app.": "Este código no es válido o ha caducado. Crea uno nuevo en :app.",
     "This bot posts retrospective and planning poker links from :app. To connect this chat, create a code on your team's integrations page and send /connect with it.": "Este bot publica enlaces de retrospectivas y planning poker de :app. Para conectar este chat, crea un código en la página de integraciones de tu equipo y envía /connect con él.",
     "The bot was removed from the Telegram chat.": "El bot fue eliminado del chat de Telegram.",
     "Private chat": "Chat privado",
