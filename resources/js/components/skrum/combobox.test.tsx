@@ -144,6 +144,17 @@ describe('Combobox', () => {
         );
     });
 
+    it('points the trigger at the list it opens', async () => {
+        const user = userEvent.setup();
+        const { trigger } = setup();
+
+        await user.click(trigger);
+
+        const list = await screen.findByRole('listbox');
+
+        expect(trigger.getAttribute('aria-controls')).toBe(list.id);
+    });
+
     it('names its popover dialog after the field label', async () => {
         const user = userEvent.setup();
         const { trigger } = setup();

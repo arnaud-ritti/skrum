@@ -148,6 +148,30 @@ it('[R24-05] narrows the list by priority, due date and source, writes them to t
         ->assertNoJavaScriptErrors();
 });
 
+it('[R24-05b] ticks priorities from the keyboard: Enter opens the list, the arrows move and Enter ticks', function () {
+    [$team, $alice, $fromRetro, $later, $overdue] = r24lFacetedTeam();
+
+    $page = $this->signIn($alice, r24lPath($team))->resize(1440, 900);
+
+    $page->assertCount('tr[data-slot="action-row"]', 3)
+        ->keys(r24lFacet('Priority'), 'Enter')
+        ->assertPresent('[role="listbox"][aria-label="Priority"]')
+        ->assertScript('document.querySelector(\'[data-slot="action-item-filters"] [role="combobox"][aria-label="Priority"]\').getAttribute("aria-controls") === document.querySelector(\'[role="listbox"][aria-label="Priority"]\').id', true)
+        ->withKeyDown('Enter', fn ($page) => $page)
+        ->assertQueryStringHas('priority', 'high')
+        ->withKeyDown('ArrowDown', fn ($page) => $page)
+        ->withKeyDown('ArrowDown', fn ($page) => $page)
+        ->withKeyDown('Enter', fn ($page) => $page)
+        ->assertQueryStringHas('priority', 'high,low')
+        ->assertPresent(r24lRow($fromRetro))
+        ->assertPresent(r24lRow($later))
+        ->assertNotPresent(r24lRow($overdue))
+        ->withKeyDown('Escape', fn ($page) => $page)
+        ->assertNotPresent('[role="listbox"]')
+        ->assertSeeIn(r24lFacet('Priority'), '2 of 3')
+        ->assertNoJavaScriptErrors();
+});
+
 it('[R24-06] searches the text and the ticket keys from the topbar field, with the delay, Enter, Escape and the shortcut', function () {
     [$team, $alice, $fromRetro, $later, $overdue] = r24lFacetedTeam();
     ActionItemExternalLink::factory()->create(['action_item_id' => $later->id, 'external_key' => 'PROJ-12']);

@@ -11,6 +11,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
+    useCommandListId,
 } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import {
@@ -87,7 +88,7 @@ function ActorPicker({
 }): ReactElement {
     const { t } = useTrans();
     const fieldId = useId();
-    const listId = `${fieldId}-list`;
+    const [listId, listRef] = useCommandListId();
     const [open, setOpen] = useState(false);
     const selected = actors.find((actor) => actor.id === filters.actor);
     const shown =
@@ -129,7 +130,7 @@ function ActorPicker({
                 >
                     <Command>
                         <CommandInput placeholder={t('Search by name')} />
-                        <CommandList id={listId}>
+                        <CommandList ref={listRef}>
                             <CommandEmpty>
                                 {t('Nobody on this page has this name.')}
                             </CommandEmpty>

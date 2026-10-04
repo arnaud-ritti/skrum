@@ -8,6 +8,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
+    useCommandListId,
 } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import {
@@ -268,7 +269,7 @@ export function Combobox({
     const { t } = useTrans();
     const generatedId = useId();
     const fieldId = id ?? generatedId;
-    const listId = `${fieldId}-list`;
+    const [listId, listRef] = useCommandListId();
     const [internalOpen, setInternalOpen] = useState(defaultOpen ?? false);
     const open = controlledOpen ?? internalOpen;
     const [query, setQuery] = useState('');
@@ -339,7 +340,7 @@ export function Combobox({
                             onValueChange={setQuery}
                             placeholder={searchPlaceholder ?? t('Search…')}
                         />
-                        <CommandList id={listId}>
+                        <CommandList ref={listRef}>
                             <CommandEmpty>
                                 <span className="block truncate px-2">
                                     {emptyText ?? t('No results found.')}

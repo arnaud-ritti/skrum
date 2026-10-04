@@ -7,7 +7,7 @@ import {
     X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { createContext, useContext, useId, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
     ActionItemFilterChanges,
@@ -16,7 +16,12 @@ import type {
     SourceFilter,
 } from '@/components/action-items/use-action-item-filters';
 import { ActionPriorityMark } from '@/components/skrum/action-item';
-import { Command, CommandItem, CommandList } from '@/components/ui/command';
+import {
+    Command,
+    CommandItem,
+    CommandList,
+    useCommandListId,
+} from '@/components/ui/command';
 import {
     Popover,
     PopoverContent,
@@ -213,7 +218,8 @@ export function MultiFacet<T extends string>({
     const inDrawer = useContext(StackedFacets);
     const isStacked = stacked ?? inDrawer;
     const [open, setOpen] = useState(false);
-    const listId = useId();
+    const [listId, listRef] = useCommandListId();
+    const commandRef = useRef<HTMLDivElement>(null);
     const ticked = options.filter((option) => value.includes(option.value));
     const active = ticked.length > 0 && ticked.length < options.length;
 
@@ -279,11 +285,15 @@ export function MultiFacet<T extends string>({
                     <PopoverContent
                         align="start"
                         className="w-56 overflow-hidden rounded-lg p-0 shadow-popover"
+                        onOpenAutoFocus={(event) => {
+                            event.preventDefault();
+                            commandRef.current?.focus();
+                        }}
                     >
-                        <Command>
+                        <Command ref={commandRef} className="outline-none">
                             <CommandList
-                                id={listId}
-                                aria-label={label}
+                                ref={listRef}
+                                label={label}
                                 aria-multiselectable
                             >
                                 {options.map((option) => {

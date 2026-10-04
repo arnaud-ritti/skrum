@@ -110,6 +110,23 @@ function CommandInput({
   )
 }
 
+/**
+ * cmdk gives its list an id of its own and drops the one passed in: a trigger
+ * reads that id here, through the ref, to point `aria-controls` at the list.
+ */
+function useCommandListId(): [
+  string | undefined,
+  (list: HTMLDivElement | null) => void,
+] {
+  const [listId, setListId] = React.useState<string>()
+  const listRef = React.useCallback(
+    (list: HTMLDivElement | null) => setListId(list?.id),
+    []
+  )
+
+  return [listId, listRef]
+}
+
 function CommandList({
   className,
   ...props
@@ -562,5 +579,6 @@ export {
   CommandLoading,
   CommandSeparator,
   CommandShortcut,
+  useCommandListId,
   useCommandPaletteShortcut,
 }
