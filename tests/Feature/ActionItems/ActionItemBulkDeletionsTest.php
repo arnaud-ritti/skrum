@@ -56,3 +56,14 @@ it('refuses an empty or oversized list', function (array $ids) {
     'empty' => [[]],
     'too many' => [array_map(fn () => (string) Str::uuid7(), range(1, 51))],
 ]);
+
+it('keeps guests and other workspaces out', function () {
+    $team = Team::factory()->create();
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->create();
+    $route = route('workspaces.actionItemBulkDeletions.store', $team->workspace);
+
+    $this->postJson($route, ['ids' => [$item->id]])->assertUnauthorized();
+    $this->actingAs(User::factory()->create())->postJson($route, ['ids' => [$item->id]])->assertForbidden();
+
+    expect($item->fresh())->not->toBeNull();
+});

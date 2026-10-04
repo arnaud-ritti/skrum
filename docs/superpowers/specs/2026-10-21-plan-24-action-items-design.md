@@ -174,7 +174,7 @@ Today a read of a linked issue moves the item to completed (issue done) or open 
 
 `POST workspaces/{workspace}/action-items/bulk-deletions` (`workspaces.actionItemBulkDeletions.store`), body `{ "ids": [...] }` or `{ "filters": {...}, "count": n }` with the same rules, the same loop over `DeleteActionItem`; answer 200 `{ "deleted": ["id", …], "refused": [{ "id", "title", "message" }] }`.
 
-Both routes are under the workspace's `auth` group, like the page; guests never reach them.
+Both routes are under the workspace's `auth` group, like the page; guests never reach them. Both routes and the CSV export (§6.6) share one throttle of 20 requests a minute per member (`throttle:20,1,actionItemBulk`; 429 beyond, fix round of 2026-10-04).
 
 "Sync to Jira" of the bulk bar (decision 3, option A) needs no new endpoint: the page calls the existing `workspaces.actionItemExports.store` for each selected item that has no link to the chosen tracker, one after the other, after the viewer has picked the target (project and issue type, team, or repository) once, with the loop and the target fields plan 21 built for RT-10 (`runBulkExport`, `itemsToExport`, `ExportTargetFields`), merged before this plan. It is offered for a selection of rows (not "all matching") when every selected item belongs to one team and that team has a tracker the viewer can export to (`exportSources`). Items already linked to that tracker are counted as skipped.
 

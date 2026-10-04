@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemRecurrence;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\TeamActionItemSaved;
 use App\Models\ActionItem;
@@ -143,4 +144,38 @@ it('keeps guests and other workspaces out', function () {
 
     $this->postJson(route('workspaces.actionItemBulkUpdates.store', $team->workspace), ['ids' => [$item->id], 'changes' => ['priority' => 'low']])->assertUnauthorized();
     postBulkUpdate($team, User::factory()->create(), [$item->id], ['priority' => 'low'])->assertForbidden();
+});
+
+it('refuses each item of a team the member only observes', function () {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->assignedTo($observer)->create();
+
+    postBulkUpdate($team, $observer, [$item->id], ['status' => 'completed'])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 0)
+        ->assertJsonPath('refused.0.id', $item->id)
+        ->assertJsonPath('refused.0.message', 'Only the assignee or a manager can complete this action item.');
+
+    expect($item->fresh()->completed_at)->toBeNull();
+});
+
+it('allows twenty bulk changes and exports a minute', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $workspace = $team->workspace;
+    $unknown = (string) Str::uuid7();
+
+    foreach (range(1, 8) as $attempt) {
+        postBulkUpdate($team, $user, [$unknown], ['priority' => 'low'])->assertOk();
+        $this->actingAs($user)->postJson(route('workspaces.actionItemBulkDeletions.store', $workspace), ['ids' => [$unknown]])->assertOk();
+    }
+
+    foreach (range(1, 4) as $attempt) {
+        $this->actingAs($user)->get(route('workspaces.actionItemCsvExports.show', $workspace))->assertOk();
+    }
+
+    postBulkUpdate($team, $user, [$unknown], ['priority' => 'low'])->assertTooManyRequests();
+    $this->actingAs($user)->postJson(route('workspaces.actionItemBulkDeletions.store', $workspace), ['ids' => [$unknown]])->assertTooManyRequests();
+    $this->actingAs($user)->get(route('workspaces.actionItemCsvExports.show', $workspace))->assertTooManyRequests();
 });

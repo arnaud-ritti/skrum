@@ -157,3 +157,16 @@ it('refuses a target it cannot read', function (string $route, Closure $body) {
     'deletion without count' => ['workspaces.actionItemBulkDeletions.store', fn (string $id) => ['filters' => []]],
     'deletion with ids and count' => ['workspaces.actionItemBulkDeletions.store', fn (string $id) => ['ids' => [$id], 'count' => 1]],
 ]);
+
+it('keeps other workspaces out of the filters target', function (string $route, array $body) {
+    $team = Team::factory()->create();
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->create();
+
+    postBulkMatching($team, User::factory()->create(), $route, $body)->assertForbidden();
+
+    expect($item->fresh())->not->toBeNull()
+        ->and($item->fresh()->priority)->toBe(ActionItemPriority::Medium);
+})->with([
+    'bulk updates' => ['workspaces.actionItemBulkUpdates.store', ['filters' => [], 'count' => 1, 'changes' => ['priority' => 'low']]],
+    'bulk deletions' => ['workspaces.actionItemBulkDeletions.store', ['filters' => [], 'count' => 1]],
+]);
