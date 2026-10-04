@@ -62,7 +62,9 @@ function assigneeLine(
 
     switch (preview.assignee.state) {
         case 'mapped':
-            return t('Assignee: :name (:provider)', { name, provider });
+            return name === ''
+                ? t('Assignee: mapped in :provider', { provider })
+                : t('Assignee: :name (:provider)', { name, provider });
         case 'willMatch':
             return isGitHub
                 ? t(
@@ -173,7 +175,11 @@ export function ItemExportDialog({
                 (candidate) => candidate.source === source.source,
             );
 
-            toast.success(t('Exported as :key.', { key: link?.key ?? '' }));
+            toast.success(
+                link?.key
+                    ? t('Exported as :key.', { key: link.key })
+                    : t('Exported to :provider.', { provider: source.label }),
+            );
 
             for (const warning of response.warnings) {
                 if (warning.message !== null) {
