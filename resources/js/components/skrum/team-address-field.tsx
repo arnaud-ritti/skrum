@@ -45,6 +45,7 @@ export function TeamAddressField({
             : undefined);
     const labelId = `${id}-label`;
     const errorId = `${id}-error`;
+    const describedBy = message === undefined ? undefined : errorId;
 
     useEffect(() => {
         if (editing) {
@@ -84,6 +85,7 @@ export function TeamAddressField({
             <div
                 role={editing ? undefined : 'group'}
                 aria-labelledby={editing ? undefined : labelId}
+                aria-describedby={editing ? undefined : describedBy}
                 className={cn(
                     'flex min-h-9 min-w-0 items-center rounded-md border border-input bg-muted py-1 pr-1 pl-3',
                     editing &&
@@ -107,9 +109,7 @@ export function TeamAddressField({
                         spellCheck={false}
                         disabled={disabled}
                         aria-invalid={message === undefined ? undefined : true}
-                        aria-describedby={
-                            message === undefined ? undefined : errorId
-                        }
+                        aria-describedby={describedBy}
                         onChange={(event) => onChange(event.target.value)}
                         className="h-7 min-w-0 flex-1 bg-transparent font-mono text-sm font-semibold outline-none"
                     />
@@ -126,6 +126,7 @@ export function TeamAddressField({
                             variant="ghost"
                             size="sm"
                             disabled={disabled}
+                            aria-describedby={describedBy}
                             onClick={edit}
                             className="ml-2 shrink-0"
                         >

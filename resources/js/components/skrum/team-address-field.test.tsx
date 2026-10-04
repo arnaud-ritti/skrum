@@ -110,4 +110,24 @@ describe('TeamAddressField', () => {
             screen.getByText('This link is already taken in Nordlys.'),
         ).toBeTruthy();
     });
+
+    it('ties the server error to the field before it is edited', () => {
+        render(
+            <Harness
+                initialSlug="atlas"
+                error="This link is already taken in Nordlys."
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('group', { name: 'Team link' })
+                .getAttribute('aria-describedby'),
+        ).toBe('team-slug-error');
+        expect(
+            screen
+                .getByRole('button', { name: 'Edit' })
+                .getAttribute('aria-describedby'),
+        ).toBe('team-slug-error');
+    });
 });
