@@ -36,10 +36,8 @@ export default function TwoFactorChallenge({
             {
                 preserveState: true,
                 onStart: () => setRequestingCode(true),
-                onFinish: () => {
-                    setRequestingCode(false);
-                    setMode('email');
-                },
+                onSuccess: () => setMode('email'),
+                onFinish: () => setRequestingCode(false),
             },
         );
     };
