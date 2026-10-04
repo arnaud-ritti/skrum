@@ -67,3 +67,15 @@ it('lets a workspace admin whose team role reads observer edit and delete any it
     expect($permissions->canEdit($item, $actor))->toBeTrue()
         ->and($permissions->canDelete($item, $actor))->toBeTrue();
 });
+
+it('refuses an observer the edit and the deletion of a comment they wrote before becoming observer', function () {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->create();
+    $comment = ActionItemComment::factory()->create(['action_item_id' => $item->id, 'author_user_id' => $observer->id]);
+    $permissions = resolve(ActionItemPermissions::class);
+    $actor = ActionItemActor::forUser($observer);
+
+    expect($permissions->canEditComment($comment, $actor))->toBeFalse()
+        ->and($permissions->canDeleteComment($comment, $actor))->toBeFalse();
+});
