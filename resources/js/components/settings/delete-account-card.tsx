@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { DeleteVisitError, deleteVisit } from '@/lib/delete-visit';
 
-const PasswordFieldId = 'password';
+/** Not `password`: the password card of the same page holds that id. */
+const PasswordFieldId = 'delete-account-password';
 
 export function DeleteAccountCard(): ReactElement {
     const { t } = useTrans();

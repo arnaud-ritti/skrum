@@ -22,12 +22,18 @@ function p18eSettingsWalker(): User
     return $user;
 }
 
-function p18eConfirmPassword(mixed $page, string $path): mixed
+function p18eConfirmPassword(mixed $page, string $section): mixed
 {
     return $page->assertPathIs('/user/confirm-password')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs($path);
+        ->assertPathIs('/settings')
+        ->assertScript('window.location.hash', "#{$section}");
+}
+
+function p18eSettingsCard(string $title): string
+{
+    return "section[data-slot=\"settings-card\"]:has(h2:text-is(\"{$title}\"))";
 }
 
 it('[P18e-10-01] saves the name and the email, refuses a taken email under its field, and re-sends the verification link of a changed email', function () {
@@ -36,7 +42,8 @@ it('[P18e-10-01] saves the name and the email, refuses a taken email under its f
 
     $page = $this->signIn($member, '/settings/profile');
 
-    $page->assertSeeIn('nav[aria-label="Settings"] a[aria-current="page"]', 'Profile')
+    $page->assertPathIs('/settings')
+        ->assertSeeIn('nav[aria-label="Settings"] a[aria-current="location"]', 'Profile')
         ->assertValue('#name', 'Mona Member')
         ->assertValue('#email', 'mona@example.com')
         ->assertSeeIn('[data-slot="profile-email-verified"]', 'Verified')
@@ -53,7 +60,7 @@ it('[P18e-10-01] saves the name and the email, refuses a taken email under its f
         ->click('@update-profile-button')
         ->assertSeeIn('[data-slot="profile-card"] [data-slot="field-error"]', 'The email has already been taken.')
         ->assertAttribute('#email', 'aria-invalid', 'true')
-        ->assertPathIs('/settings/profile');
+        ->assertPathIs('/settings');
 
     expect($member->refresh()->email)->toBe('mona@example.com');
 
@@ -69,7 +76,7 @@ it('[P18e-10-01] saves the name and the email, refuses a taken email under its f
 
     $page->click('Click here to re-send the verification email.')
         ->assertSee('A new verification link has been sent to your email address.')
-        ->assertPathIs('/settings/profile')
+        ->assertPathIs('/settings')
         ->assertNoJavaScriptErrors();
 });
 
@@ -81,11 +88,11 @@ it('[P18e-10-01b] refuses a wrong password in the deletion dialog, forgets the r
     $page->assertNotPresent('[role="dialog"]')
         ->click('@delete-user-button')
         ->assertSeeIn('[role="dialog"]', 'Are you sure you want to delete your account?')
-        ->fill('[role="dialog"] #password', 'not-my-password')
+        ->fill('[role="dialog"] #delete-account-password', 'not-my-password')
         ->click('@confirm-delete-user-button')
         ->assertSeeIn('[role="dialog"] [data-slot="field-error"]', 'The password is incorrect.')
-        ->assertScript('document.activeElement.id', 'password')
-        ->assertPathIs('/settings/profile');
+        ->assertScript('document.activeElement.id', 'delete-account-password')
+        ->assertPathIs('/settings');
 
     expect(User::query()->whereKey($member->id)->exists())->toBeTrue();
 
@@ -93,7 +100,7 @@ it('[P18e-10-01b] refuses a wrong password in the deletion dialog, forgets the r
         ->assertNotPresent('[role="dialog"]')
         ->click('@delete-user-button')
         ->assertNotPresent('[role="dialog"] [data-slot="field-error"]')
-        ->fill('[role="dialog"] #password', 'password')
+        ->fill('[role="dialog"] #delete-account-password', 'password')
         ->click('@confirm-delete-user-button')
         ->assertPathIs('/login')
         ->assertNoJavaScriptErrors();
@@ -108,10 +115,10 @@ it('[P18e-10-01c] keeps the account of the only owner of a shared workspace, and
     $page = $this->signIn($member, '/settings/profile');
 
     $page->click('@delete-user-button')
-        ->fill('[role="dialog"] #password', 'password')
+        ->fill('[role="dialog"] #delete-account-password', 'password')
         ->click('@confirm-delete-user-button')
         ->assertSeeIn('[role="dialog"] [data-slot="field-error"]', $refusal)
-        ->assertPathIs('/settings/profile')
+        ->assertPathIs('/settings')
         ->assertNoJavaScriptErrors();
 
     expect(User::query()->whereKey($member->id)->exists())->toBeTrue();
@@ -136,9 +143,9 @@ it('[P18e-10-01c] keeps the account of the only owner of a shared workspace, and
 it('[P18e-10-03] empties the password fields and focuses the refused one, then changes the password', function () {
     $member = p18eSettingsWalker();
 
-    $page = p18eConfirmPassword($this->signIn($member, '/settings/security'), '/settings/security');
+    $page = p18eConfirmPassword($this->signIn($member, '/settings/security'), 'security');
 
-    $page->assertSeeIn('nav[aria-label="Settings"] a[aria-current="page"]', 'Security')
+    $page->assertSeeIn('nav[aria-label="Settings"] a[aria-current="location"]', 'Security')
         ->fill('#current_password', 'not-my-password')
         ->fill('#password', 'a-new-password-2026')
         ->fill('#password_confirmation', 'a-new-password-2026')
@@ -188,8 +195,10 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
         'two_factor_confirmed_at' => '2026-03-12 12:00:00',
     ])->save();
 
-    p18eConfirmPassword($page, '/settings/security')
-        ->assertSeeIn('[data-slot="settings-card-header"] [data-slot="badge"]', 'On')
+    $twoFactor = p18eSettingsCard('Two-factor authentication');
+
+    p18eConfirmPassword($page, 'security')
+        ->assertSeeIn("{$twoFactor} [data-slot=\"settings-card-header\"] [data-slot=\"badge\"]", 'On')
         ->assertSee('Added on March 12, 2026')
         ->assertSee('3 of 8 recovery codes left')
         ->assertSeeIn('[data-slot="two-factor-row"] [data-slot="recovery-codes-alert"][role="status"]', 'Only 3 recovery codes left')
@@ -197,7 +206,10 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
         ->click('View recovery codes')
         ->assertSeeIn('ol[aria-label="Recovery codes"] li:nth-child(3)', 'code-three')
         ->assertNotPresent('ol[aria-label="Recovery codes"] li:nth-child(4)')
-        ->click('Regenerate codes')
+        ->click("{$twoFactor} button:has-text(\"Regenerate codes\")")
+        ->assertSeeIn('[role="alertdialog"]', 'Regenerate the recovery codes?')
+        ->click('[role="alertdialog"] button:has-text("Regenerate codes")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertPresent('ol[aria-label="Recovery codes"] li:nth-child(8)')
         ->assertSee('8 of 8 recovery codes left')
         ->assertNotPresent('[data-slot="recovery-codes-alert"]')
@@ -207,17 +219,17 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
 
     $page->click('Hide recovery codes')
         ->assertNotPresent('ol[aria-label="Recovery codes"]')
-        ->click('Turn off 2FA')
+        ->click("{$twoFactor} button:has-text(\"Turn off 2FA\")")
         ->assertSeeIn('[role="alertdialog"]', 'Turn off two-factor authentication?')
         ->click('[role="alertdialog"] button:has-text("Cancel")')
         ->assertNotPresent('[role="alertdialog"]');
 
     expect($member->refresh()->two_factor_confirmed_at)->not->toBeNull();
 
-    $page->click('Turn off 2FA')
+    $page->click("{$twoFactor} button:has-text(\"Turn off 2FA\")")
         ->click('[role="alertdialog"] button:has-text("Turn off 2FA")')
         ->assertNotPresent('[role="alertdialog"]')
-        ->assertSeeIn('[data-slot="settings-card-header"] [data-slot="badge"]', 'Off')
+        ->assertSeeIn("{$twoFactor} [data-slot=\"settings-card-header\"] [data-slot=\"badge\"]", 'Off')
         ->assertSee('Enable 2FA')
         ->assertDontSee('recovery codes left')
         ->assertNoJavaScriptErrors();
@@ -237,12 +249,14 @@ it('[P18e-10-03c] warns in red when no recovery code is left, and regenerating f
         'two_factor_confirmed_at' => '2026-03-12 12:00:00',
     ])->save();
 
-    p18eConfirmPassword($page, '/settings/security')
+    p18eConfirmPassword($page, 'security')
         ->assertSee('0 of 8 recovery codes left')
         ->assertSeeIn('[data-slot="two-factor-row"] [data-slot="recovery-codes-alert"][role="alert"]', 'No recovery codes left')
         ->assertNotPresent('ol[aria-label="Recovery codes"]')
         ->assertDontSee('View recovery codes')
-        ->click('Regenerate codes')
+        ->click('[data-slot="two-factor-row"] button:has-text("Regenerate codes")')
+        ->click('[role="alertdialog"] button:has-text("Regenerate codes")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertPresent('ol[aria-label="Recovery codes"] li:nth-child(8)')
         ->assertSee('8 of 8 recovery codes left')
         ->assertNotPresent('[data-slot="recovery-codes-alert"]')
@@ -255,7 +269,7 @@ it('[P18e-10-03c] warns in red when no recovery code is left, and regenerating f
 it('[P18e-10-05] lists a passkey after the empty state and removes it after a confirmation', function () {
     $member = p18eSettingsWalker();
 
-    $page = p18eConfirmPassword($this->signIn($member, '/settings/security'), '/settings/security');
+    $page = p18eConfirmPassword($this->signIn($member, '/settings/security'), 'security');
 
     $page->assertSeeIn('[data-slot="passkeys-empty"]', 'No passkeys yet')
         ->assertNotPresent('[data-slot="passkey-row"]');
@@ -267,6 +281,7 @@ it('[P18e-10-05] lists a passkey after the empty state and removes it after a co
     ]);
 
     $page->navigate('/settings/security')
+        ->assertPathIs('/settings')
         ->assertNotPresent('[data-slot="passkeys-empty"]')
         ->assertCount('ul[aria-label="Passkeys"] [data-slot="passkey-row"]', 1)
         ->assertSeeIn('[data-slot="passkey-row"]', 'MacBook Pro')
@@ -293,16 +308,15 @@ it('[P18e-10-02] sets up the second factor inside its card, to "Finish", then sh
 
     $page = $this->signIn($member, '/settings/security');
 
-    $page->fill('#password', 'password')
-        ->click('@confirm-password-button')
-        ->assertPathIs('/settings/security')
-        ->assertSee('Password, two-factor authentication and passkeys.')
+    $twoFactor = p18eSettingsCard('Two-factor authentication');
+
+    p18eConfirmPassword($page, 'security')
         ->assertPresent('#current_password')
         ->assertPresent('#password')
         ->assertPresent('#password_confirmation')
         ->assertPresent('@update-password-button')
-        ->assertSeeIn('[aria-labelledby]:has([data-slot="settings-card-header"]) [data-slot="badge"]', 'Off')
-        ->click('Enable 2FA')
+        ->assertSeeIn("{$twoFactor} [data-slot=\"settings-card-header\"] [data-slot=\"badge\"]", 'Off')
+        ->click("{$twoFactor} button:has-text(\"Enable 2FA\")")
         ->assertPresent('[data-slot="two-factor-qr"] svg')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Scan the QR code')
@@ -328,7 +342,7 @@ it('[P18e-10-02] sets up the second factor inside its card, to "Finish", then sh
         ->assertSee('I have saved my recovery codes')
         ->click('#recovery-codes-saved')
         ->click('[data-slot="settings-card-footer"] button:has-text("Finish")')
-        ->assertSeeIn('[data-slot="settings-card-header"] [data-slot="badge"]', 'On')
+        ->assertSeeIn("{$twoFactor} [data-slot=\"settings-card-header\"] [data-slot=\"badge\"]", 'On')
         ->assertSee('Added on ')
         ->assertSee('8 of 8 recovery codes left')
         ->assertNotPresent('ol[aria-label="Recovery codes"]')
@@ -344,22 +358,20 @@ it('[P18e-10-04] creates a token from the form of the page, shows it once, copie
 
     $page = $this->signIn($member, '/settings/api-tokens');
 
-    $page->fill('#password', 'password')
-        ->click('@confirm-password-button')
-        ->assertPathIs('/settings/api-tokens')
-        ->assertSeeIn('nav[aria-label="Settings"] a[aria-current="page"]', 'API tokens')
+    p18eConfirmPassword($page, 'api-tokens')
+        ->assertSeeIn('nav[aria-label="Settings"] a[aria-current="location"]', 'API tokens')
         ->assertNotPresent('[role="dialog"]')
         ->assertVisible('form[aria-label="New API token"] #token-name')
-        ->assertCount('[data-slot="token-list"] tbody tr', 1)
+        ->assertCount('[data-slot="token-list-table"] tbody tr', 1)
         ->fill('#token-name', 'Test client')
         ->click('form[aria-label="New API token"] button:has-text("Create token")')
         ->assertSeeIn('form[aria-label="New API token"] [data-slot="field-error"]', 'You already have a token with this name.')
         ->assertAttribute('#token-name', 'aria-invalid', 'true')
-        ->assertPathIs('/settings/api-tokens')
+        ->assertPathIs('/settings')
         ->assertNotPresent('[role="dialog"]')
         ->assertNotPresent('[data-slot="new-token-panel"]')
         ->assertValue('#token-name', 'Test client')
-        ->assertCount('[data-slot="token-list"] tbody tr', 1);
+        ->assertCount('[data-slot="token-list-table"] tbody tr', 1);
 
     expect(PersonalAccessToken::query()->count())->toBe(1);
 
@@ -373,7 +385,7 @@ it('[P18e-10-04] creates a token from the form of the page, shows it once, copie
         ->assertValue('#token-name', '')
         ->assertScript('document.activeElement.getAttribute("aria-label")', 'API token')
         ->assertSee("Copy your token now. You won't be able to see it again.")
-        ->assertSeeIn('tbody tr:has-text("Inline client") td:first-child [data-slot="badge"]', 'New');
+        ->assertSeeIn('[data-slot="token-list-table"] tbody tr:has-text("Inline client") td:first-child [data-slot="badge"]', 'New');
 
     $plainText = $page->value('input[aria-label="API token"]');
     $token = PersonalAccessToken::query()->where('name', 'Inline client')->sole();
@@ -386,14 +398,14 @@ it('[P18e-10-04] creates a token from the form of the page, shows it once, copie
     $page->click('[data-slot="new-token-panel"] button:has-text("Copy"):not(:has-text("configuration"))')
         ->assertSeeIn('[data-slot="new-token-panel"]', 'Copied')
         ->assertScript('window.copiedToken', $plainText)
-        ->click('Done')
+        ->click('[data-slot="new-token-panel"] button:has-text("Done")')
         ->assertNotPresent('[data-slot="new-token-panel"]')
         ->assertNotPresent('input[aria-label="API token"]')
         ->assertVisible('form[aria-label="New API token"] button:has-text("Create token")')
-        ->assertCount('[data-slot="token-list"] tbody tr', 2)
-        ->assertSeeIn('tbody tr:has-text("Inline client")', "skrum_…{$token->token_hint}")
-        ->assertCount('tbody tr:has-text("Inline client") td:nth-child(2) [data-slot="badge"]', 2)
-        ->assertNotPresent('tbody tr:has-text("Inline client") td:first-child [data-slot="badge"]')
+        ->assertCount('[data-slot="token-list-table"] tbody tr', 2)
+        ->assertSeeIn('[data-slot="token-list-table"] tbody tr:has-text("Inline client")', "skrum_…{$token->token_hint}")
+        ->assertCount('[data-slot="token-list-table"] tbody tr:has-text("Inline client") td:nth-child(2) [data-slot="badge"]', 2)
+        ->assertNotPresent('[data-slot="token-list-table"] tbody tr:has-text("Inline client") td:first-child [data-slot="badge"]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -402,7 +414,8 @@ it('[P18e-10-06] the "Dark" theme card darkens the page and survives a reload; t
 
     $page = $this->signIn($member, '/settings/appearance');
 
-    $page->assertPresent('[role="radiogroup"] [role="radio"][aria-checked="true"]:has-text("System")')
+    $page->assertPathIs('/settings')
+        ->assertPresent('[role="radiogroup"] [role="radio"][aria-checked="true"]:has-text("System")')
         ->assertScript('document.documentElement.classList.contains("dark")', false)
         ->click('[role="radio"]:has-text("Dark")')
         ->assertPresent('[role="radio"][aria-checked="true"]:has-text("Dark")')
@@ -437,7 +450,7 @@ it('[P18e-10-07] the two reminder switches are saved by "Save" only, and stay as
     expect($member->refresh()->action_item_reminders_in_app)->toBeTrue()
         ->and($member->action_item_reminders_by_email)->toBeTrue();
 
-    $page->click('Save')
+    $page->click('[data-slot="notifications-card"] button[type="submit"]')
         ->assertSee('Notification settings saved.');
 
     expect($member->refresh()->action_item_reminders_in_app)->toBeFalse()
@@ -449,36 +462,33 @@ it('[P18e-10-07] the two reminder switches are saved by "Save" only, and stay as
         ->assertNoJavaScriptErrors();
 });
 
-it('[P18e-10-08] marks the current page, and only it, in the settings sub-navigation', function () {
+it('[P18e-10-08] leads to each section of the one settings page and marks it, and only it, in the sub-navigation; the old addresses lead to their section', function () {
     $member = p18eSettingsWalker();
-    $current = 'nav[aria-label="Settings"] a[aria-current="page"]';
+    $current = 'nav[aria-label="Settings"] a[aria-current="location"]';
 
-    $page = $this->signIn($member, '/settings/profile');
+    $page = $this->signIn($member, '/settings');
 
-    $page->assertCount('nav[aria-label="Settings"]', 1)
+    $page->assertPathIs('/settings')
+        ->assertCount('nav[aria-label="Settings"]', 1)
         ->assertCount('nav[aria-label="Settings"] a', 5)
         ->assertCount($current, 1)
         ->assertSeeIn($current, 'Profile')
-        ->click('nav[aria-label="Settings"] a:has-text("Security")');
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript('[...document.querySelectorAll("[id]")].map((element) => element.id).filter((id, index, ids) => ids.indexOf(id) !== index)', []);
 
-    p18eConfirmPassword($page, '/settings/security')
-        ->assertCount($current, 1)
-        ->assertSeeIn($current, 'Security')
-        ->click('nav[aria-label="Settings"] a:has-text("Appearance")')
-        ->assertPathIs('/settings/appearance')
-        ->assertCount($current, 1)
-        ->assertSeeIn($current, 'Appearance')
-        ->click('nav[aria-label="Settings"] a:has-text("Notifications")')
-        ->assertPathIs('/settings/notifications')
-        ->assertCount($current, 1)
+    foreach (['Security' => 'security', 'Appearance' => 'appearance', 'Notifications' => 'notifications', 'API tokens' => 'api-tokens', 'Profile' => 'profile'] as $label => $anchor) {
+        $page->click("nav[aria-label=\"Settings\"] a:has-text(\"{$label}\")")
+            ->assertPathIs('/settings')
+            ->assertScript('window.location.hash', "#{$anchor}")
+            ->assertCount($current, 1)
+            ->assertSeeIn($current, $label)
+            ->assertAttribute($current, 'href', "#{$anchor}");
+    }
+
+    $page->navigate('/settings/notifications')
+        ->assertPathIs('/settings')
+        ->assertScript('window.location.hash', '#notifications')
         ->assertSeeIn($current, 'Notifications')
-        ->click('nav[aria-label="Settings"] a:has-text("API tokens")')
-        ->assertPathIs('/settings/api-tokens')
-        ->assertCount($current, 1)
-        ->assertSeeIn($current, 'API tokens')
-        ->click('nav[aria-label="Settings"] a:has-text("Profile")')
-        ->assertPathIs('/settings/profile')
-        ->assertSeeIn($current, 'Profile')
         ->assertNoJavaScriptErrors();
 });
 
@@ -488,12 +498,14 @@ it('[P18e-10-09] the team switcher of the sidebar still lists the teams of the w
     $other = Team::factory()->for($team->workspace)->create(['name' => 'Second Team']);
     $other->members()->attach($member);
 
-    $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
+    $page = $this->signIn($member, '/settings');
 
-    $page->assertPathIs(route('teams.show', [$team->workspace, $team], false))
+    $page->assertPathIs('/settings')
+        ->navigate(route('teams.show', [$team->workspace, $team], false))
+        ->assertPathIs(route('teams.show', [$team->workspace, $team], false))
         ->navigate('/settings/api-tokens');
 
-    p18eConfirmPassword($page, '/settings/api-tokens')
+    p18eConfirmPassword($page, 'api-tokens')
         ->assertPresent('form[aria-label="New API token"] #token-team')
         ->click('button[aria-haspopup="menu"]:has-text("Demo Team")')
         ->assertCount('[role="menu"] [role="menuitem"]:has-text("Demo Team")', 1)
@@ -502,12 +514,12 @@ it('[P18e-10-09] the team switcher of the sidebar still lists the teams of the w
         ->assertNoJavaScriptErrors();
 });
 
-it('[P18e-10-10] the team settings name the team in the breadcrumb, mark "Integrations", and "Team" goes back to the team page', function () {
+it('[P18e-10-10] the team settings name the team in the breadcrumb, mark "Integrations", and "General" leads to the general settings of the team', function () {
     enableIntegrations(IntegrationProvider::Slack);
 
     $team = Team::factory()->create(['name' => 'Demo Team']);
     $admin = integrationAdmin($team);
-    $teamPath = route('teams.show', [$team->workspace, $team], false);
+    $generalPath = route('teams.settings.show', [$team->workspace, $team], false);
 
     $page = $this->signIn($admin, route('teams.integrations.index', [$team->workspace, $team], false));
 
@@ -515,13 +527,14 @@ it('[P18e-10-10] the team settings name the team in the breadcrumb, mark "Integr
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Demo Team')
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Team settings')
         ->assertSeeIn('nav[aria-label="Breadcrumb"] [aria-current="page"]', 'Integrations')
-        ->assertCount('nav[aria-label="Team settings"] a', 2)
+        ->assertCount('nav[aria-label="Team settings"] a', 4)
         ->assertCount('nav[aria-label="Team settings"] a[aria-current="page"]', 1)
         ->assertSeeIn('nav[aria-label="Team settings"] a[aria-current="page"]', 'Integrations')
-        ->assertAttribute('nav[aria-label="Team settings"] a:not([aria-current])', 'href', "{$teamPath}#settings")
-        ->click('nav[aria-label="Team settings"] a:not([aria-current])')
-        ->assertPathIs($teamPath)
-        ->assertPresent('#settings [data-slot="team-settings"]')
-        ->assertNotPresent('[data-slot="team-settings-shell"]')
+        ->assertAttribute('nav[aria-label="Team settings"] a:has-text("General")', 'href', $generalPath)
+        ->click('nav[aria-label="Team settings"] a:has-text("General")')
+        ->assertPathIs($generalPath)
+        ->assertPresent('[data-slot="team-settings-shell"]')
+        ->assertSeeIn('nav[aria-label="Team settings"] a[aria-current="page"]', 'General')
+        ->assertSeeIn('nav[aria-label="Breadcrumb"] [aria-current="page"]', 'General')
         ->assertNoJavaScriptErrors();
 });

@@ -20,7 +20,18 @@ it('offers the workspaces by name and shows the one set', function () {
 
     $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
         ->where('defaultWorkspaceId', $zephyr->id)
-        ->where('workspaces', [['id' => $aurora->id, 'name' => 'Aurora'], ['id' => $zephyr->id, 'name' => 'Zephyr']]));
+        ->where('defaultWorkspaceOptions', [['id' => $aurora->id, 'name' => 'Aurora'], ['id' => $zephyr->id, 'name' => 'Zephyr']]));
+});
+
+it('leaves the workspaces of the sidebar to the admin\'s own, each with its slug', function () {
+    $own = Workspace::factory()->create(['name' => 'Nordlys']);
+    $own->members()->attach($this->admin, ['role' => 'owner']);
+    Workspace::factory()->create(['name' => 'Elsewhere']);
+
+    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
+        ->has('workspaces', 1)
+        ->where('workspaces.0.slug', $own->slug)
+        ->has('defaultWorkspaceOptions', 2));
 });
 
 it('stores the default workspace, audits the change and clears it', function () {

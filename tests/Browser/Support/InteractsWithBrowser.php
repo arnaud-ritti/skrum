@@ -3,7 +3,10 @@
 namespace Tests\Browser\Support;
 
 use App\Models\User;
+use Closure;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -149,5 +152,34 @@ trait InteractsWithBrowser
             ->assertNotPresent('[role="listbox"]');
 
         return $page;
+    }
+
+    /**
+     * The HTTP server of the browser plugin hands no uploaded file to Laravel: the
+     * multipart body is read here, so that a real upload reaches the controller.
+     */
+    protected function acceptUploads(): void
+    {
+        resolve(HttpKernel::class)->prependMiddleware(function (Request $request, Closure $next): mixed {
+            $contentType = (string) $request->headers->get('content-type');
+
+            if (preg_match('/^multipart\/form-data;.*boundary=("?)([^";]+)\1/i', $contentType, $boundary) !== 1) {
+                return $next($request);
+            }
+
+            foreach (explode('--'.$boundary[2], (string) $request->getContent()) as $part) {
+                if (preg_match('/name="([^"]+)"; filename="([^"]+)"/', $part, $names) !== 1) {
+                    continue;
+                }
+
+                $path = (string) tempnam(sys_get_temp_dir(), 'upload');
+
+                file_put_contents($path, substr(explode("\r\n\r\n", $part, 2)[1], 0, -2));
+
+                $request->files->set($names[1], new UploadedFile($path, $names[2], test: true));
+            }
+
+            return $next($request);
+        });
     }
 }

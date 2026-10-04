@@ -119,3 +119,44 @@ it('shares the admin link with instance admins only', function () {
         ->get(route('settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('adminUrl', null));
 });
+
+dataset('adminSectionRoutes', [
+    'sign-in page' => ['get', fn () => route('admin.signIn.edit')],
+    'sign-in update' => ['put', fn () => route('admin.signIn.update')],
+    'default workspace update' => ['put', fn () => route('admin.defaultWorkspace.update')],
+    'sign-in confirmation' => ['get', fn () => route('admin.signInConfirmation.create')],
+    'sso provider update' => ['put', fn () => route('admin.ssoProviders.update', 'oidc')],
+    'sso connection test' => ['post', fn () => route('admin.ssoTests.store')],
+    'mail page' => ['get', fn () => route('admin.mail.show')],
+    'mail update' => ['put', fn () => route('admin.mail.update')],
+    'mail confirmation' => ['get', fn () => route('admin.mailConfirmation.create')],
+    'mail test' => ['post', fn () => route('admin.mailTests.store')],
+    'integrations page' => ['get', fn () => route('admin.integrations.edit')],
+    'integrations update' => ['put', fn () => route('admin.integrations.update')],
+    'integrations confirmation' => ['get', fn () => route('admin.integrationConfirmation.create')],
+    'integration app update' => ['put', fn () => route('admin.integrationApps.update', 'slack')],
+    'mcp keys page' => ['get', fn () => route('admin.mcpKeys.index')],
+    'mcp key revocation' => ['delete', fn () => route('admin.mcpKeys.destroy', User::factory()->create()->createToken('Agent', ['mcp:read'])->accessToken)],
+    'users page' => ['get', fn () => route('admin.users.index')],
+    'deactivation' => ['post', fn () => route('admin.userDeactivations.store', User::factory()->create())],
+    'reactivation' => ['delete', fn () => route('admin.userDeactivations.destroy', User::factory()->deactivated()->create())],
+    'licence page' => ['get', fn () => route('admin.licence.show')],
+    'audit log' => ['get', fn () => route('admin.auditEvents.index')],
+]);
+
+it('sends a guest to the login page from every administration section', function (string $method, string $url) {
+    adminAccessCall($this, $method, $url, [])->assertRedirect(route('login'));
+})->with('adminSectionRoutes');
+
+it('answers 403 on every administration section to a signed-in user who is not an instance admin', function (string $method, string $url) {
+    $this->actingAs(User::factory()->create())
+        ->withSession(['auth.password_confirmed_at' => time()]);
+
+    adminAccessCall($this, $method, $url, [])->assertForbidden();
+})->with('adminSectionRoutes');
+
+it('asks an admin without a recent confirmation for the password before every administration section', function (string $method, string $url) {
+    $this->actingAs(User::factory()->instanceAdmin()->create());
+
+    adminAccessCall($this, $method, $url, [])->assertRedirect(route('password.confirm'));
+})->with('adminSectionRoutes');

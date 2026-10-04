@@ -41,7 +41,7 @@ class SignInSettingsController extends Controller
             'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
             'confirmUrl' => route('admin.signInConfirmation.create'),
             'defaultWorkspaceId' => $this->existingDefaultWorkspaceId($settings),
-            'workspaces' => Alphabetical::sort(Workspace::query()->orderBy('id')->get(['id', 'name']), fn (Workspace $workspace): string => $workspace->name)
+            'defaultWorkspaceOptions' => Alphabetical::sort(Workspace::query()->orderBy('id')->get(['id', 'name']), fn (Workspace $workspace): string => $workspace->name)
                 ->map(fn (Workspace $workspace): array => $workspace->only(['id', 'name']))
                 ->values()
                 ->all(),
