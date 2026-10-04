@@ -9,7 +9,9 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Auth\LoginAddress;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Avatars\AvatarPhotos;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -20,13 +22,22 @@ use Inertia\Inertia;
 class ProfileController extends Controller
 {
     /**
-     * Update the user's profile information.
+     * Update the user's profile information. A new login address asks for a
+     * recent password confirmation, as the `password.confirm` middleware of
+     * the other account settings does: whoever holds the session could
+     * otherwise move the account to their own address and reset its password.
      */
-    public function update(ProfileUpdateRequest $request, RevokeLoginSecrets $revoke): RedirectResponse
+    public function update(ProfileUpdateRequest $request, RevokeLoginSecrets $revoke, PasswordConfirmation $confirmation): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $validated = $request->validated();
         $emailChanged = LoginAddress::normalise($validated['email']) !== LoginAddress::normalise($user->email);
+
+        if ($emailChanged && ! $confirmation->isSatisfied($request)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Password confirmation required.'], 423)
+                : redirect()->guest(route('password.confirm'));
+        }
 
         $user->fill($emailChanged ? $validated : Arr::except($validated, 'email'));
 

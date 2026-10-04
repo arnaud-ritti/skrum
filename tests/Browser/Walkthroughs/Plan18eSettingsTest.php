@@ -58,6 +58,9 @@ it('[P18e-10-01] saves the name and the email, refuses a taken email under its f
 
     $page->fill('#email', 'taken@example.com')
         ->click('@update-profile-button')
+        ->assertSee('Confirm your password')
+        ->fill('#gate-password', 'password')
+        ->click('@confirm-password-button')
         ->assertSeeIn('[data-slot="profile-card"] [data-slot="field-error"]', 'The email has already been taken.')
         ->assertAttribute('#email', 'aria-invalid', 'true')
         ->assertPathIs('/settings');

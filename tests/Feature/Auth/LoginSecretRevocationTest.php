@@ -50,7 +50,7 @@ it('deletes links and codes when the password is reset', function () {
 it('deletes links and codes and turns the e-mail factor off when the address changes', function () {
     $user = userWithLoginSecrets();
 
-    $this->actingAs($user)->patch(route('profile.update'), ['name' => $user->name, 'email' => 'moved@example.test'])->assertSessionHasNoErrors();
+    $this->actingAs($user)->withSession(['auth.password_confirmed_at' => time()])->patch(route('profile.update'), ['name' => $user->name, 'email' => 'moved@example.test'])->assertSessionHasNoErrors();
 
     expect(loginSecretsOf($user))->toBe(0)
         ->and($user->fresh())->two_factor_email_enabled_at->toBeNull()->email_verified_at->toBeNull();

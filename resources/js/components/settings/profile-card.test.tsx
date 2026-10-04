@@ -1,5 +1,7 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import type { RefObject } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PasswordGateContext } from '@/components/settings/password-gate';
 import { renderWithProviders } from '@/test/render';
 import { ProfileCard } from './profile-card';
 
@@ -29,11 +31,42 @@ const verified = {
 
 const unverified = { ...verified, email_verified_at: null };
 
+const guard = vi.fn((action: () => void) => action());
+
+type SubmittedForm = {
+    getData: () => Record<string, unknown>;
+    submit: () => void;
+};
+
+function renderGuarded(): void {
+    renderWithProviders(
+        <PasswordGateContext.Provider value={{ guard }}>
+            <ProfileCard user={verified} mustVerifyEmail />
+        </PasswordGateContext.Provider>,
+    );
+}
+
+function submitting(email: string): {
+    submit: () => void;
+    before: () => unknown;
+} {
+    const submit = vi.fn();
+    const ref = form.props.ref as RefObject<SubmittedForm | null>;
+
+    ref.current = { getData: () => ({ name: 'Mona Member', email }), submit };
+
+    return {
+        submit,
+        before: () => (form.props.onBefore as () => unknown)(),
+    };
+}
+
 beforeEach(() => {
     page.props = { translations: {} };
     form.processing = false;
     form.errors = {};
     form.props = {};
+    guard.mockClear();
 });
 
 describe('ProfileCard', () => {
@@ -202,5 +235,40 @@ describe('ProfileCard', () => {
                 .querySelector('[data-slot="avatar-fallback"]')
                 ?.classList.contains('bg-skrum-presence-4'),
         ).toBe(true);
+    });
+
+    it('lets a save that keeps the address go without the password gate', () => {
+        renderGuarded();
+
+        const { before, submit } = submitting(' Mona.Member@Example.com ');
+
+        expect(before()).not.toBe(false);
+        expect(guard).not.toHaveBeenCalled();
+        expect(submit).not.toHaveBeenCalled();
+    });
+
+    it('holds a new address behind the password gate, then sends it once confirmed', async () => {
+        renderGuarded();
+
+        const { before, submit } = submitting('mona.new@example.com');
+
+        expect(before()).toBe(false);
+
+        await waitFor(() => expect(guard).toHaveBeenCalledTimes(1));
+        expect(submit).toHaveBeenCalledTimes(1);
+        expect(before()).not.toBe(false);
+    });
+
+    it('drops the new address when the password is not confirmed', async () => {
+        guard.mockImplementationOnce(() => undefined);
+        renderGuarded();
+
+        const { before, submit } = submitting('mona.new@example.com');
+
+        expect(before()).toBe(false);
+
+        await waitFor(() => expect(guard).toHaveBeenCalledTimes(1));
+        expect(submit).not.toHaveBeenCalled();
+        expect(before()).toBe(false);
     });
 });
