@@ -1566,6 +1566,7 @@
     "skrum is now configured for another Jira server. Reconnect.": "skrum ist jetzt für einen anderen Jira-Server eingerichtet. Verbinde dich erneut.",
     "Personal access tokens are turned off on this skrum instance. Connect with OAuth.": "Persönliche Zugriffstoken sind auf dieser skrum-Instanz deaktiviert. Verbinde dich mit OAuth.",
     "The Jira personal access token was revoked or has expired. Paste a new one.": "Das persönliche Jira-Zugriffstoken wurde widerrufen oder ist abgelaufen. Füge ein neues ein.",
+    "The Jira personal access token is missing. Paste a new one.": "Das persönliche Jira-Zugriffstoken fehlt. Füge ein neues ein.",
     "Jira didn't accept this token.": "Jira hat dieses Token nicht akzeptiert.",
     "Personal access tokens need Jira 8.14 or later.": "Persönliche Zugriffstoken benötigen Jira 8.14 oder neuer.",
     "This GitHub installation isn't available to your account.": "Diese GitHub-Installation ist für dein Konto nicht verfügbar.",

@@ -166,6 +166,14 @@ it('verifies the Atlassian JWT when one is sent', function (string $secret, int 
     'expired' => ['jira-secret', -300, 401],
 ]);
 
+it('refuses an Atlassian JWT without an expiry', function () {
+    ['integration' => $integration] = statusSyncLink();
+    jiraWebhookToken($integration);
+    $jwt = hs256Jwt(['iss' => 'jira'], 'jira-secret');
+
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['Authorization' => "Bearer {$jwt}"])->assertUnauthorized();
+});
+
 it('answers duplicates with 200 and no job', function () {
     ['integration' => $integration] = statusSyncLink();
     jiraWebhookToken($integration);

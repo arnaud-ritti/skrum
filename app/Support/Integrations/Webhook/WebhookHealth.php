@@ -84,15 +84,25 @@ class WebhookHealth
 
     public function reenable(TeamIntegration $integration): void
     {
-        $settings = $integration->settings;
-        unset($settings['disabledReason']);
+        DB::transaction(function () use ($integration): void {
+            $locked = TeamIntegration::query()->lockForUpdate()->find($integration->id);
 
-        $integration->forceFill([
-            'status' => IntegrationStatus::Active,
-            'last_error' => null,
-            'consecutive_failures' => 0,
-            'settings' => $settings,
-        ])->save();
+            if ($locked === null) {
+                return;
+            }
+
+            $settings = $locked->settings;
+            unset($settings['disabledReason']);
+
+            $locked->forceFill([
+                'status' => IntegrationStatus::Active,
+                'last_error' => null,
+                'consecutive_failures' => 0,
+                'settings' => $settings,
+            ])->save();
+        });
+
+        $integration->refresh();
     }
 
     private function shouldDisable(TeamIntegration $integration, int $failures): bool

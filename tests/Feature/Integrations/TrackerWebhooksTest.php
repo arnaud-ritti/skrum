@@ -149,6 +149,20 @@ it('registers Jira Data Center webhooks only for Jira administrators', function 
         : Http::assertNotSent(fn (Request $request) => $request->method() === 'POST');
 })->with(['administrator' => [true], 'not an administrator' => [false]]);
 
+it('leaves no manual webhook state when sync was turned off during the permission check', function () {
+    $integration = webhookIntegration(IntegrationProvider::JiraDataCenter);
+    Http::fake([jiraDataCenterUrl('rest/api/2/mypermissions*') => function () use ($integration) {
+        $fresh = $integration->fresh();
+        $fresh->forceFill(['settings' => [...$fresh->settings, 'statusSync' => false]])->save();
+
+        return Http::response(['permissions' => ['ADMINISTER' => ['havePermission' => false]]]);
+    }]);
+
+    runWebhookRegistration($integration);
+
+    expect($integration->fresh()->setting('webhookManual'))->toBeNull();
+});
+
 it('shows the manual webhook details to owners and admins only', function () {
     $integration = webhookIntegration(IntegrationProvider::JiraDataCenter, ['webhookManual' => true]);
     $team = $integration->team;

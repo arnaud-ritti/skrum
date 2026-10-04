@@ -6,7 +6,7 @@ use App\Support\Integrations\Base64Url;
 
 /**
  * The JWT Atlassian may send with dynamic webhooks of OAuth 2.0 apps,
- * signed HS256 with the app's client secret.
+ * signed HS256 with the app's client secret. A token without an expiry is refused: it could be replayed for good.
  */
 class JiraWebhookJwt
 {
@@ -39,6 +39,6 @@ class JiraWebhookJwt
 
         $expiresAt = $claims['exp'] ?? null;
 
-        return ! is_int($expiresAt) || $expiresAt + self::LeewaySeconds >= now()->getTimestamp();
+        return is_int($expiresAt) && $expiresAt + self::LeewaySeconds >= now()->getTimestamp();
     }
 }

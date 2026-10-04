@@ -96,7 +96,11 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 
     public function iterationIssues(TeamIntegration $integration, string $iterationId): TrackerIssueList
     {
-        return $this->searchJql($integration, 'sprint = '.(int) $iterationId.' ORDER BY Rank ASC');
+        if (preg_match(self::IdPattern, $iterationId) !== 1) {
+            return new TrackerIssueList([], false);
+        }
+
+        return $this->searchJql($integration, "sprint = {$iterationId} ORDER BY Rank ASC");
     }
 
     public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList

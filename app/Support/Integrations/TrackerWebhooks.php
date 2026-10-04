@@ -13,6 +13,7 @@ use App\Jobs\Integrations\RemoveTrackerWebhooks;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Trackers\IssueStatus;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -184,9 +185,12 @@ class TrackerWebhooks
 
         if ($ids === null) {
             $this->recordRejection($integration);
-            $integration->mergeSettings(['webhookManual' => true, 'webhookIds' => [], 'webhookProjects' => []]);
-            $integration->forceFill(['webhook_status' => null, 'webhook_expires_at' => null])->save();
-            $this->inboundModes->refresh($integration);
+
+            if ($this->storeRegistrationWhileSynced($integration, ['webhookManual' => true, 'webhookIds' => [], 'webhookProjects' => []])) {
+                $integration->forceFill(['webhook_status' => null, 'webhook_expires_at' => null])->save();
+                $this->inboundModes->refresh($integration);
+            }
+
             $this->removeOrRetryLater($integration, $previousIds);
 
             return;
@@ -230,7 +234,7 @@ class TrackerWebhooks
         $api = $this->jiraApis->for($integration);
         $requests = $integration->provider === IntegrationProvider::Jira
             ? [fn (): array => $api->delete($integration, $api->apiPath('webhook'), ['webhookIds' => array_map(intval(...), $ids)])]
-            : array_map(fn (string $id): \Closure => fn (): array => $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}"), $ids);
+            : array_map(fn (string $id): Closure => fn (): array => $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}"), $ids);
         $failure = null;
 
         foreach ($requests as $request) {

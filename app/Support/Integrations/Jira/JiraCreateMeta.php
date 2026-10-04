@@ -15,6 +15,8 @@ class JiraCreateMeta
 
     private const int FieldLimit = 200;
 
+    private const int MaxPages = 10;
+
     public function __construct(private JiraApis $jiraApis) {}
 
     public function fields(TeamIntegration $integration, string $projectId, string $issueTypeId): JiraCreateFields
@@ -39,17 +41,27 @@ class JiraCreateMeta
 
         $api = $this->jiraApis->for($integration);
 
-        $response = $api->get(
-            $integration,
-            $api->apiPath("issue/createmeta/{$project}/issuetypes/{$issueType}"),
-            ['maxResults' => self::FieldLimit],
-        );
-
         $fields = [];
+        $startAt = 0;
 
-        foreach ((array) ($response['fields'] ?? $response['values'] ?? []) as $field) {
-            if (is_array($field) && is_string($field['fieldId'] ?? null)) {
-                $fields[$field['fieldId']] = $field;
+        for ($page = 1; $page <= self::MaxPages; $page++) {
+            $response = $api->get(
+                $integration,
+                $api->apiPath("issue/createmeta/{$project}/issuetypes/{$issueType}"),
+                ['startAt' => $startAt, 'maxResults' => self::FieldLimit],
+            );
+            $pageFields = (array) ($response['fields'] ?? $response['values'] ?? []);
+
+            foreach ($pageFields as $field) {
+                if (is_array($field) && is_string($field['fieldId'] ?? null)) {
+                    $fields[$field['fieldId']] = $field;
+                }
+            }
+
+            $startAt += count($pageFields);
+
+            if ($pageFields === [] || ($response['isLast'] ?? false) === true || $startAt >= (int) ($response['total'] ?? 0)) {
+                break;
             }
         }
 

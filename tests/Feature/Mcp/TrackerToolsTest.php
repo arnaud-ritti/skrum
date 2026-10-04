@@ -159,6 +159,16 @@ it('imports by query when the iteration id is an empty string', function () {
     Http::assertSent(fn (Request $request) => str_contains((string) $request['jql'], 'project = PROJ'));
 });
 
+it('imports nothing from a sprint id that is not a number', function () {
+    [$team, $user] = trackerMcpTeam();
+    $game = PokerGame::factory()->create(['team_id' => $team->id]);
+
+    expect(mcpStructured(mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira', 'iteration_id' => '12abc'])->assertOk()))
+        ->toMatchArray(['imported' => 0]);
+
+    Http::assertNothingSent();
+});
+
 it('refuses to browse the tracker for an observer', function () {
     [$team] = trackerMcpTeam();
     $observer = teamMember($team, TeamRole::Observer);
