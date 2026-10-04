@@ -35,7 +35,8 @@ function sendMagicLink(email: string, options: SendOptions): void {
             onStart: options.onStart,
             onFinish: options.onFinish,
             onSuccess: options.onSuccess,
-            onError: (errors) => options.onError(errors.email),
+            onError: (errors) =>
+                options.onError(errors.email ?? Object.values(errors)[0]),
         },
     );
 }
@@ -83,7 +84,11 @@ export function MagicLinkButton({
 }) {
     const { t } = useTrans();
     const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState<string>();
+    const [refusal, setRefusal] = useState<{
+        email: string;
+        message?: string;
+    }>();
+    const error = refusal?.email === email ? refusal.message : undefined;
 
     const send = () => {
         if (email.trim() === '') {
@@ -96,10 +101,10 @@ export function MagicLinkButton({
             onStart: () => setProcessing(true),
             onFinish: () => setProcessing(false),
             onSuccess: () => {
-                setError(undefined);
+                setRefusal(undefined);
                 onSent();
             },
-            onError: setError,
+            onError: (message) => setRefusal({ email, message }),
         });
     };
 
