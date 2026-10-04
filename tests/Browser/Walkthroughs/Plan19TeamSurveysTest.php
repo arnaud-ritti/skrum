@@ -504,3 +504,26 @@ it('[P19w-16] writes the figures of the results as the reader\'s language does, 
         ->assertSeeIn('[data-slot="survey-key-figure"]', 'moyenne / 5')
         ->assertScript("document.querySelector('[data-slot=\"survey-results-grid\"]').innerText.includes('1 · 100\u{202F}%') || document.querySelector('[data-slot=\"survey-results-grid\"]').innerText.includes('1 · 100\u{00A0}%')", true);
 });
+
+it('[P19w-17] moves a question two places down from the keyboard, the grip keeping the focus between the steps', function () {
+    [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
+    $workload = p19wWorkload($survey);
+    p19wRitual($survey);
+    surveyQuestion($survey, TeamSurveyQuestionKind::Text, ['label' => 'Anything else?']);
+
+    $page = $this->signIn($fran, route('surveys.edit', $survey, false));
+
+    $page->assertCount('[data-slot="survey-builder"] [data-test="survey-question"]', 3)
+        ->keys('button[aria-label="Reorder question 1"]', ' ')
+        ->withKeyDown('ArrowDown', fn ($page) => $page)
+        ->assertScript('document.activeElement?.getAttribute("aria-label")', 'Reorder question 2')
+        ->withKeyDown('ArrowDown', fn ($page) => $page)
+        ->assertScript('document.activeElement?.getAttribute("aria-label")', 'Reorder question 3')
+        ->assertAriaAttribute('button[aria-label="Reorder question 3"]', 'pressed', 'true')
+        ->withKeyDown('Space', fn ($page) => $page)
+        ->assertSeeIn('[data-slot="questions-announcement"]', 'dropped at position 3 of 3')
+        ->assertPresent(p19wSaved());
+
+    expect($survey->questions()->pluck('label')->all())
+        ->toBe(['Which ritual should we keep?', 'Anything else?', $workload->label]);
+});
