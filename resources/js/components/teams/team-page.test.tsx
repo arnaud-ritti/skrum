@@ -79,7 +79,7 @@ const base: TeamPageProps = {
     canCreateRetro: true,
     healthStatements: [],
     canManageHealthStatements: false,
-    llm: { enabled: false, provider: null },
+    canSaveTemplate: false,
     icebreakerGames: [],
     gameOptions: [],
     canCreateGameRoom: true,

@@ -130,7 +130,6 @@ const formProps: RetroSessionFormProps = {
         'sailboat',
         'workspace:0199a000-0000-7000-8000-00000000a001',
     ],
-    llm: { enabled: true, provider: 'Anthropic' },
     icebreakerGames: [
         { value: 'draw', label: 'Draw & Guess', available: true },
         { value: 'hangman', label: 'Hangman', available: true },

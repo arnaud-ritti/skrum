@@ -39,7 +39,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 const options: NewSessionOptions = {
     templateCategories: [],
     topTemplates: [],
-    llm: { enabled: false, provider: null },
+    canSaveTemplate: false,
     canCreateRetro: true,
     icebreakerGames: [],
     gameOptions: [],

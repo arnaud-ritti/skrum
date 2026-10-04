@@ -1,5 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { TeamNewSessionDialog } from '@/components/teams/team-new-session-dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ const mocks = vi.hoisted(() => ({
         translations: {},
         locale: 'en',
         errors: {} as Record<string, string>,
-        currentWorkspace: { role: 'member' } as { role: string } | null,
         auth: { user: { id: 'me' } },
     },
 }));
@@ -34,7 +34,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 const options: NewSessionOptions = {
     templateCategories: [],
     topTemplates: [],
-    llm: { enabled: false, provider: null },
+    canSaveTemplate: false,
     canCreateRetro: true,
     icebreakerGames: [],
     gameOptions: [],
@@ -57,6 +57,13 @@ const options: NewSessionOptions = {
 };
 
 const workspace = { id: 'w', name: 'Nordlys', slug: 'nordlys' };
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 const team = { id: 'team-1', name: 'Atlas' };
 
 function WithIntent(props: { options: NewSessionOptions }) {
@@ -144,7 +151,7 @@ describe('TeamNewSessionDialog', () => {
         ).toBe('true');
     });
 
-    it('opens the retro form on the sprint, the suggested facilitator and the viewer as "Me"', () => {
+    it('opens the retro form on the sprint, the suggested facilitator and the viewer as "Me"', async () => {
         const dialog = openDialog({
             currentSprintNumber: 7,
             retroFacilitators: [
@@ -165,21 +172,25 @@ describe('TeamNewSessionDialog', () => {
         expect(
             within(dialog).getByText('Suggested by the rotation.'),
         ).toBeTruthy();
+
+        await userEvent.click(
+            within(dialog).getByRole('combobox', { name: 'Facilitator' }),
+        );
+
+        expect(
+            screen.getAllByRole('option').map((option) => option.textContent),
+        ).toEqual(['Me', 'Camille Roux (suggested)']);
     });
 
-    it('offers "Save as team template" to a workspace manager only', () => {
+    it('hides "Save as team template" when the server says the viewer may not share one', () => {
         openDialog();
 
         expect(screen.queryByLabelText('Save as team template')).toBeNull();
     });
 
-    it('lets a workspace admin save the columns as a team template', () => {
-        mocks.props.currentWorkspace = { role: 'admin' };
-
-        openDialog();
+    it('offers "Save as team template" when the server allows it', () => {
+        openDialog({ canSaveTemplate: true });
 
         expect(screen.getByLabelText('Save as team template')).toBeTruthy();
-
-        mocks.props.currentWorkspace = { role: 'member' };
     });
 });
