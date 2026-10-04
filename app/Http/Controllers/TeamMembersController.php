@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\TemplateAvailability;
-use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\MemberLastActivity;
 use App\Actions\Teams\PresentTeamInvitations;
 use App\Actions\Teams\PresentTeamSprints;
@@ -35,7 +34,6 @@ class TeamMembersController extends Controller
         Workspace $workspace,
         Team $team,
         MemberLastActivity $memberLastActivity,
-        AvailableTeamMembers $availableTeamMembers,
         TeamTemplateUsage $teamTemplateUsage,
         PresentTeamSprints $presentTeamSprints,
         SuggestedFacilitator $suggestedFacilitator,
@@ -77,7 +75,6 @@ class TeamMembersController extends Controller
                 ->values(),
             'canManageMembers' => $canManageMembers,
             'roleOptions' => TeamRole::options(),
-            'availableMembers' => $canManageMembers ? $availableTeamMembers->handle($team) : [],
             'sprints' => $presentTeamSprints->handle($team, now()),
             'rituals' => [
                 'sprintLengthWeeks' => $team->sprint_length_weeks,

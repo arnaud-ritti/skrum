@@ -60,7 +60,6 @@ const props: Props = {
         { value: 'member', label: 'Member' },
         { value: 'observer', label: 'Observer' },
     ],
-    availableMembers: [],
     sprints: {
         list: [],
         total: 0,

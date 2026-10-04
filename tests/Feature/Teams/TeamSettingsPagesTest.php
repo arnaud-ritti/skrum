@@ -34,7 +34,7 @@ it('opens Members & rituals to facilitators with the members read-only, and refu
         ->assertInertia(fn (Assert $page) => $page
             ->component('teams/members')
             ->where('canManageMembers', false)
-            ->where('availableMembers', [])
+            ->missing('availableMembers')
             ->has('roleOptions', 4)
             ->has('templates'));
 });
