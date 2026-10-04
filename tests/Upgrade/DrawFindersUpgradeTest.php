@@ -21,7 +21,7 @@ it('keeps a Draw & Guess round in play ending at its first find by running the m
         return $id;
     };
     $workspace = $row('workspaces', ['name' => 'Acme', 'slug' => 'acme', 'updated_at' => now()]);
-    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform', 'updated_at' => now()]);
+    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform', 'slug' => 'platform', 'updated_at' => now()]);
     $room = $row('game_rooms', ['team_id' => $team, 'name' => 'Friday', 'game' => 'draw', 'locale' => 'en', 'guest_token' => Str::random(40), 'updated_at' => now()]);
     $ada = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Ada', 'updated_at' => now()]);
     $round = $row('game_rounds', [

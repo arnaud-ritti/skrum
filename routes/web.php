@@ -172,6 +172,7 @@ use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
+use App\Http\Controllers\TeamAddressesController;
 use App\Http\Controllers\TeamDataController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamDefaultRetroTemplatesController;
@@ -337,6 +338,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::put('onboarding/step', [OnboardingStepsController::class, 'update'])->name('onboarding.step.update');
     Route::post('onboarding/completion', [OnboardingCompletionsController::class, 'store'])->name('onboarding.completion.store');
     Route::get('about', [AboutPagesController::class, 'show'])->name('about.show');
+    Route::get('t/{slug}', [TeamAddressesController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->middleware('throttle:60,1,teamAddresses')
+        ->name('teamAddresses.show');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');

@@ -5261,5 +5261,7 @@
     ":email already has a pending invitation in :workspace.": ":email a déjà une invitation en attente dans :workspace.",
     "Getting started": "Premiers pas",
     "Name your workspace first.": "Nomme d’abord ton espace de travail.",
-    "This step is not available.": "Cette étape n’est pas disponible."
+    "This step is not available.": "Cette étape n’est pas disponible.",
+    "This link is already taken in :workspace.": "Ce lien est déjà pris dans :workspace.",
+    "Use lower-case letters, digits and hyphens.": "Utilise des lettres minuscules, des chiffres et des traits d'union."
 }

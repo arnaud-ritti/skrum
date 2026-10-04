@@ -24,7 +24,8 @@ class PresentOnboarding
      * @return array{
      *     step: string,
      *     workspace: array{name: string, locale: ?string}|null,
-     *     team: array{id: string, name: string, color: string, description: ?string}|null,
+     *     team: array{id: string, name: string, slug: string, color: string, description: ?string}|null,
+     *     teamAddressBase: string,
      *     teamName: ?string,
      *     defaultColor: string,
      *     locales: array<int, array{value: string, label: string}>,
@@ -52,9 +53,11 @@ class PresentOnboarding
             'team' => $team === null ? null : [
                 'id' => $team->id,
                 'name' => $team->name,
+                'slug' => $team->slug,
                 'color' => TeamMark::colorFor($team)->value,
                 'description' => $team->description,
             ],
+            'teamAddressBase' => url('t').'/',
             'teamName' => $team === null ? $onboarding->team_name : null,
             'defaultColor' => TeamMark::derived($onboarding->workspace_id ?? $user->id)->value,
             'locales' => $this->locales(),

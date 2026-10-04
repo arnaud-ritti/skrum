@@ -23,7 +23,7 @@ it('keeps every room, round and vote playing as before by running the migrations
         return $id;
     };
     $workspace = $row('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
-    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
+    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform', 'slug' => 'platform']);
     $room = $row('game_rooms', ['team_id' => $team, 'name' => 'Friday', 'game' => 'gif', 'locale' => 'en', 'guest_token' => Str::random(40)]);
     $ada = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Ada']);
     $bob = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Bob']);

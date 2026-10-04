@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ColumnColor;
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
+use App\Support\Teams\TeamSlug;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string $slug
  * @property string|null $description
  * @property ColumnColor|null $color
  * @property string|null $default_poker_deck
@@ -38,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'name',
+    'slug',
     'description',
     'color',
     'default_poker_deck',
@@ -57,6 +60,17 @@ class Team extends Model
     use HasUuids;
 
     public const int DefaultSprintLengthWeeks = 2;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Team $team): void {
+            if (filled($team->getAttribute('slug'))) {
+                return;
+            }
+
+            $team->slug = TeamSlug::availableIn($team->workspace_id, TeamSlug::fromName($team->name));
+        });
+    }
 
     /** @return BelongsTo<Workspace, $this> */
     public function workspace(): BelongsTo

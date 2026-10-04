@@ -10,6 +10,7 @@ use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\PresentTeamRetro;
 use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\BuildTeamMoodTrend;
+use App\Actions\Teams\CreateTeam;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
@@ -27,12 +28,15 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Rules\TeamSlugRule;
 use App\Support\Alphabetical;
 use App\Support\Teams\SprintCalendar;
 use App\Support\Teams\TeamMark;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -46,7 +50,7 @@ class TeamsController extends Controller
         private PresentWhiteboardSummary $presentWhiteboardSummary,
     ) {}
 
-    public function store(Request $request, Workspace $workspace): RedirectResponse
+    public function store(Request $request, Workspace $workspace, CreateTeam $createTeam): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $workspace]);
 
@@ -54,7 +58,7 @@ class TeamsController extends Controller
             'name' => ['required', 'string', 'max:100'],
         ]);
 
-        $team = $workspace->teams()->create($validated);
+        $team = $createTeam->handle($workspace, $validated);
 
         return to_route('teams.show', [$workspace, $team]);
     }
@@ -88,7 +92,11 @@ class TeamsController extends Controller
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => [...$team->only(['id', 'name']), 'color' => TeamMark::colorFor($team)->value],
+            'team' => [
+                ...$team->only(['id', 'name', 'slug']),
+                'color' => TeamMark::colorFor($team)->value,
+                'address' => route('teamAddresses.show', $team->slug),
+            ],
             'canInvite' => $canInvite,
             'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
             'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $this->inviteLink($team) : null),
@@ -193,10 +201,17 @@ class TeamsController extends Controller
     {
         Gate::authorize('update', $team);
 
-        $team->update($request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'description' => ['sometimes', 'nullable', 'string', 'max:200'],
-        ]));
+            'slug' => ['sometimes', ...TeamSlugRule::rules($workspace, $team->id)],
+        ]);
+
+        try {
+            DB::transaction(fn (): bool => $team->update($validated));
+        } catch (UniqueConstraintViolationException) {
+            throw CreateTeam::slugTaken($workspace);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team saved.')]);
 
