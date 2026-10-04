@@ -4,6 +4,7 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ExternalSyncActor;
 use App\Actions\ActionItems\SetActionItemStatus;
 use App\Actions\Teams\AnswerTeamAccessRequest;
+use App\Actions\Teams\JoinTeamByLink;
 use App\Actions\Teams\RecordTeamActivity;
 use App\Enums\ActionItemStatus;
 use App\Enums\RetroPhase;
@@ -16,7 +17,9 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamAccessRequest;
 use App\Models\TeamActivity;
+use App\Models\TeamInviteLink;
 use App\Models\TeamSurvey;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -117,6 +120,17 @@ it('records a member joining through an approved access request, once', function
 
     expect(TeamActivity::query()->where('team_id', $team->id)->where('kind', TeamActivityKind::MemberJoined)->pluck('actor_user_id')->all())
         ->toBe([$request->user_id]);
+});
+
+it('records a member joining through an invite link, once', function () {
+    $link = TeamInviteLink::factory()->create();
+    $newcomer = User::factory()->create();
+
+    resolve(JoinTeamByLink::class)->handle($link, $newcomer);
+    resolve(JoinTeamByLink::class)->handle($link, $newcomer);
+
+    expect(TeamActivity::query()->where('team_id', $link->team_id)->where('kind', TeamActivityKind::MemberJoined)->pluck('actor_user_id')->all())
+        ->toBe([$newcomer->id]);
 });
 
 it('has the nine kinds of the spec and none about cards, votes, comments or answers', function () {

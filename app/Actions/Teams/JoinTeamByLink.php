@@ -3,6 +3,7 @@
 namespace App\Actions\Teams;
 
 use App\Actions\Onboarding\CloseOnboardingForJoiner;
+use App\Enums\TeamActivityKind;
 use App\Enums\WorkspaceRole;
 use App\Exceptions\InvitationUnavailable;
 use App\Models\Team;
@@ -13,7 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class JoinTeamByLink
 {
-    public function __construct(private CloseOnboardingForJoiner $closeOnboarding) {}
+    public function __construct(
+        private CloseOnboardingForJoiner $closeOnboarding,
+        private RecordTeamActivity $recordTeamActivity,
+    ) {}
 
     /**
      * Joins the link's team, and its workspace as a member when needed,
@@ -44,6 +48,7 @@ class JoinTeamByLink
             }
 
             $team->members()->attach($user, ['role' => $locked->team_role->value]);
+            $this->recordTeamActivity->handle($team->id, TeamActivityKind::MemberJoined, $user);
             $locked->increment('uses_count');
             $this->closeOnboarding->handle($user);
 
