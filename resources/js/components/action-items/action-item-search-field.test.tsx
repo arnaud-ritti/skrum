@@ -62,6 +62,17 @@ describe('ActionItemSearchField', () => {
         expect((field() as HTMLInputElement).value).toBe('');
     });
 
+    it('does not search again on Enter when the term was already sent', () => {
+        const onSearch = vi.fn();
+        renderWithProviders(
+            <ActionItemSearchField value="runbook" onSearch={onSearch} />,
+        );
+
+        fireEvent.keyDown(field(), { key: 'Enter' });
+
+        expect(onSearch).not.toHaveBeenCalled();
+    });
+
     it('focuses on mod+K, a field included, unless its shortcut is off', () => {
         const { unmount } = renderWithProviders(
             <>
