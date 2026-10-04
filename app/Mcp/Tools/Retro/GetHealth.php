@@ -91,17 +91,26 @@ class GetHealth extends SkrumTool
             'topStrength' => $summary['topStrength'],
             'growthArea' => $summary['growthArea'],
             'assessment' => $summary['assessment'],
-            'trend' => collect($this->buildHealthTrend->handle($retro))->map(fn (array $point): array => [
-                'boardId' => $point['retroId'],
-                'surveyId' => $point['surveyId'],
-                'title' => $point['title'],
-                'completedAt' => $point['completedAt'],
-                'score' => $point['score'],
-                'delta' => $point['delta'],
-                'sameStatements' => $point['sameStatements'],
-                'url' => $point['url'],
-            ])->values()->all(),
+            'trend' => self::presentTrend($this->buildHealthTrend->handle($retro)),
         ]);
+    }
+
+    /**
+     * @param  array<int, array{retroId: ?string, surveyId: string, title: string, completedAt: string, score: float, url: string, delta: ?float, sameStatements: bool}>  $points
+     * @return array<int, array{boardId: ?string, surveyId: string, title: string, completedAt: string, score: float, delta: ?float, sameStatements: bool, url: string}>
+     */
+    public static function presentTrend(array $points): array
+    {
+        return collect($points)->map(fn (array $point): array => [
+            'boardId' => $point['retroId'],
+            'surveyId' => $point['surveyId'],
+            'title' => $point['title'],
+            'completedAt' => $point['completedAt'],
+            'score' => $point['score'],
+            'delta' => $point['delta'],
+            'sameStatements' => $point['sameStatements'],
+            'url' => $point['url'],
+        ])->values()->all();
     }
 
     /**

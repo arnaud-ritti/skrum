@@ -272,8 +272,10 @@ export function SurveyBuilder({
             },
         });
 
+        const key = `settings.${Object.keys(patch).join()}`;
+
         autosave
-            .saveNow(`settings.${Object.keys(patch).join()}`, async () => {
+            .saveNow(key, async () => {
                 let next: SurveySnapshot;
 
                 try {
@@ -290,9 +292,18 @@ export function SurveyBuilder({
                     },
                 });
             })
-            .catch((error: unknown) => {
+            .catch(async (error: unknown) => {
                 toast.error(messageOf(error));
-                void refetch();
+
+                /*
+                 * Once the refetch has put the server's settings back on the
+                 * switch nothing is left unsaved: a failure kept under the key
+                 * would block Publish until that same switch saved again.
+                 * Without the server's answer the switch stays not saved.
+                 */
+                if (await refetch()) {
+                    await autosave.cancel(key);
+                }
             });
     };
 

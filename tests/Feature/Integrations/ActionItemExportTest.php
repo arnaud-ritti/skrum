@@ -97,6 +97,19 @@ it('exports a board item to Jira', function () {
         ->and($integration->fresh()->setting('exportIssueTypeId'))->toBe('11');
 });
 
+it('leaves the due date out of a Jira project whose create screen has no due date', function () {
+    fakeJiraIssueCreation(jiraCreateMeta(dueDate: false));
+    [$retro, $item, $author] = exportBoardItem(['due_on' => '2026-10-20']);
+    TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
+
+    $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))
+        ->assertCreated()
+        ->assertJsonPath('actionItem.externalLinks.0.key', 'PROJ-42');
+
+    expect(jiraCreatePayload())->not->toHaveKey('duedate')
+        ->and(jiraCreatePayload()['summary'])->toBe('Speed up CI');
+});
+
 it('exports to Linear with a Markdown body', function () {
     fakeLinearGraphql(['issueCreate' => ['issueCreate' => ['success' => true, 'issue' => [
         'id' => 'lin-issue-1', 'identifier' => 'ENG-7', 'url' => 'https://linear.app/acme/issue/ENG-7/speed-up-ci',

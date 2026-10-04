@@ -61,4 +61,21 @@ describe('addSticky', () => {
             strokeColor: POSTIT.moss.stroke,
         });
     });
+
+    it('adds a note outside a secure context, where the browser has no crypto.randomUUID', () => {
+        vi.stubGlobal('crypto', {
+            getRandomValues: crypto.getRandomValues.bind(crypto),
+        });
+
+        try {
+            const api = canvas();
+
+            const id = addSticky(api as never, 'sky');
+
+            expect(id).toMatch(/^[0-9a-f]{20}$/);
+            expect(api.updateScene.mock.calls[0][0].elements[1].id).toBe(id);
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
 });

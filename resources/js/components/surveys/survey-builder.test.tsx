@@ -864,6 +864,70 @@ describe('SurveyBuilder', () => {
         expect(leaving.defaultPrevented).toBe(true);
     });
 
+    it('brings the server settings back after a failed switch, then lets the survey be published', async () => {
+        vi.useFakeTimers();
+        api.update.mockRejectedValue(
+            new RetroRequestError(500, 'The server did not answer.'),
+        );
+        api.snapshot.mockResolvedValue(snapshot());
+        api.setStatus.mockResolvedValue(null);
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(toast.error).toHaveBeenCalledWith('The server did not answer.');
+        expect(
+            screen
+                .getByRole('switch', {
+                    name: 'Allow guests without an account',
+                })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(saveStatus()).not.toBe('Not saved');
+
+        const leaving = new Event('beforeunload', { cancelable: true });
+
+        window.dispatchEvent(leaving);
+
+        expect(leaving.defaultPrevented).toBe(false);
+
+        fireEvent.click(button('Publish'));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(api.setStatus).toHaveBeenCalledWith('s-1', 'open');
+    });
+
+    it('keeps a failed switch not saved while the server settings cannot be fetched', async () => {
+        vi.useFakeTimers();
+        api.update.mockRejectedValue(
+            new RetroRequestError(500, 'The server did not answer.'),
+        );
+        api.snapshot.mockRejectedValue(
+            new RetroRequestError(503, 'Service unavailable.'),
+        );
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(saveStatus()).toBe('Not saved');
+    });
+
     it('publishes only once a save already in flight has answered', async () => {
         vi.useFakeTimers();
 

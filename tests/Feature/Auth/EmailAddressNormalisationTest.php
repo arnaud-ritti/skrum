@@ -55,6 +55,7 @@ it('stores the normalised address on a profile update', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->patch(route('profile.update'), ['name' => $user->name, 'email' => 'New.Address@Example.test'])
         ->assertSessionHasNoErrors();
 

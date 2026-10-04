@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Prompts;
 
+use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Enums\McpFeature;
 use App\Enums\RetroPhase;
 use App\Exceptions\Mcp\PromptToolFailed;
@@ -33,7 +34,7 @@ class TeamHealth extends SkrumPrompt
         Describe the trends, the strongest and weakest health categories, how many agreements get closed, and what keeps repeating. Compare a category only across boards that asked it (match categories by their key) and mention when the statement set changed (sameStatements false). If there is no data, say "health check not run yet".
         TEXT;
 
-    public function __construct(private McpBoard $presentBoard) {}
+    public function __construct(private McpBoard $presentBoard, private BuildHealthTrend $buildHealthTrend) {}
 
     /**
      * @return array<int, Argument>
@@ -53,13 +54,12 @@ class TeamHealth extends SkrumPrompt
             $boards = $this->lastCompletedBoards($team);
 
             $rows = array_map($this->board(...), $boards);
-            $newest = $rows === [] ? null : $rows[array_key_last($rows)];
 
             $data = [
                 'team' => ['id' => $team->id, 'name' => $team->name],
                 'boards' => array_map(fn (array $row): array => $row['row'], $rows),
-                'healthTrend' => $newest['healthTrend'] ?? [],
-                'rotiTrend' => $newest['rotiTrend'] ?? [],
+                'healthTrend' => GetHealth::presentTrend($this->buildHealthTrend->forTeam($team->id)),
+                'rotiTrend' => $this->newestRotiTrend($rows),
                 'openAgreements' => $this->count($teamId, 'open'),
                 'overdueAgreements' => $this->count($teamId, 'overdue'),
             ];
@@ -104,8 +104,25 @@ class TeamHealth extends SkrumPrompt
     }
 
     /**
+     * The trend of the newest board that has a ROTI: a newer board without
+     * one returns no trend at all.
+     *
+     * @param  array<int, array{row: array<string, mixed>, rotiTrend: mixed}>  $rows
+     */
+    private function newestRotiTrend(array $rows): mixed
+    {
+        foreach (array_reverse($rows) as $row) {
+            if ($row['rotiTrend'] !== []) {
+                return $row['rotiTrend'];
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * @param  array<string, mixed>  $board
-     * @return array{row: array<string, mixed>, healthTrend: mixed, rotiTrend: mixed}
+     * @return array{row: array<string, mixed>, rotiTrend: mixed}
      */
     private function board(array $board): array
     {
@@ -114,7 +131,6 @@ class TeamHealth extends SkrumPrompt
         $agreements = $this->toolData(ListBoardActionItems::class, ['board_id' => $board['id']]);
         $items = $agreements['items'];
 
-        $healthTrend = $health['trend'] ?? [];
         $rotiTrend = $roti['trend'] ?? [];
         unset($health['trend'], $roti['trend']);
 
@@ -129,7 +145,6 @@ class TeamHealth extends SkrumPrompt
                 ],
                 ...$this->recurring($board['id']),
             ],
-            'healthTrend' => $healthTrend,
             'rotiTrend' => $rotiTrend,
         ];
     }

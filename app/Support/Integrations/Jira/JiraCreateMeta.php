@@ -19,18 +19,18 @@ class JiraCreateMeta
 
     public function fields(TeamIntegration $integration, string $projectId, string $issueTypeId): JiraCreateFields
     {
-        /** @var array{assignee: bool, priority: bool, priorities: array<int, array{id: string, name: string}>} $cached */
+        /** @var array{assignee: bool, priority: bool, priorities: array<int, array{id: string, name: string}>, dueDate: bool} $cached */
         $cached = Cache::remember(
-            "jira-createmeta:{$integration->id}:{$projectId}:{$issueTypeId}",
+            "jira-createmeta:v2:{$integration->id}:{$projectId}:{$issueTypeId}",
             self::TtlSeconds,
             fn (): array => $this->fetch($integration, $projectId, $issueTypeId),
         );
 
-        return new JiraCreateFields($cached['assignee'], $cached['priority'], $cached['priorities']);
+        return new JiraCreateFields($cached['assignee'], $cached['priority'], $cached['priorities'], $cached['dueDate']);
     }
 
     /**
-     * @return array{assignee: bool, priority: bool, priorities: array<int, array{id: string, name: string}>}
+     * @return array{assignee: bool, priority: bool, priorities: array<int, array{id: string, name: string}>, dueDate: bool}
      */
     private function fetch(TeamIntegration $integration, string $projectId, string $issueTypeId): array
     {
@@ -65,6 +65,7 @@ class JiraCreateMeta
             'assignee' => array_key_exists('assignee', $fields),
             'priority' => array_key_exists('priority', $fields),
             'priorities' => $priorities,
+            'dueDate' => array_key_exists('duedate', $fields),
         ];
     }
 }

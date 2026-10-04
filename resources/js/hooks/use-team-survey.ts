@@ -19,21 +19,24 @@ export function useTeamSurvey(initial: SurveySnapshot) {
 
     latest.current = snapshot;
 
-    const refetch = useCallback(async () => {
+    /** Resolves true once the server's snapshot replaced the local one. */
+    const refetch = useCallback(async (): Promise<boolean> => {
         try {
             dispatch({
                 type: 'snapshot.replace',
                 snapshot: await surveyApi.snapshot(initial.survey.id),
             });
+
+            return true;
         } catch (error) {
             if (!(error instanceof RetroRequestError)) {
-                return;
+                return false;
             }
 
             if (error.status === 404) {
                 setGone(true);
 
-                return;
+                return false;
             }
 
             if (SessionExpiredStatuses.includes(error.status)) {
@@ -41,6 +44,7 @@ export function useTeamSurvey(initial: SurveySnapshot) {
             }
 
             // Anything else: the next event or reconnect asks again.
+            return false;
         }
     }, [initial.survey.id]);
 

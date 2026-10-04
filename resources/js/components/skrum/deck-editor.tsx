@@ -250,6 +250,7 @@ export function DeckEditor({
 
         if (found) {
             setProblem(found);
+            setAnnouncement(problemMessage(found));
 
             return;
         }
@@ -287,14 +288,21 @@ export function DeckEditor({
         setDraft(refused.join(', '));
         setProblem(firstProblem);
 
-        if (next.length > values.length) {
-            setValues(
-                next,
-                t('Added :value', {
-                    value: next.slice(values.length).join(', '),
-                }),
-            );
+        const refusal = firstProblem ? problemMessage(firstProblem) : '';
+
+        if (next.length === values.length) {
+            if (refusal !== '') {
+                setAnnouncement(refusal);
+            }
+
+            return;
         }
+
+        const added = t('Added :value', {
+            value: next.slice(values.length).join(', '),
+        });
+
+        setValues(next, refusal === '' ? added : `${added}. ${refusal}`);
     }
 
     function removeAt(index: number) {
@@ -368,6 +376,7 @@ export function DeckEditor({
 
         if (found && trigger === 'key') {
             setProblem(found);
+            setAnnouncement(problemMessage(found));
 
             return;
         }
@@ -567,17 +576,14 @@ export function DeckEditor({
                         <ul
                             role="list"
                             aria-labelledby={valuesLabelId}
-                            aria-invalid={valuesMessage ? true : undefined}
-                            aria-describedby={
-                                valuesMessage ? valuesMessageId : valuesHelpId
-                            }
+                            data-invalid={valuesMessage ? true : undefined}
                             data-slot="deck-values-input"
                             onClick={(event) => {
                                 if (event.target === event.currentTarget) {
                                     addInputRef.current?.focus();
                                 }
                             }}
-                            className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-card p-1.5 has-[[data-slot=deck-add-input]:focus-visible]:border-ring has-[[data-slot=deck-add-input]:focus-visible]:ring-2 has-[[data-slot=deck-add-input]:focus-visible]:ring-ring aria-invalid:border-destructive"
+                            className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-card p-1.5 has-[[data-slot=deck-add-input]:focus-visible]:border-ring has-[[data-slot=deck-add-input]:focus-visible]:ring-2 has-[[data-slot=deck-add-input]:focus-visible]:ring-ring data-invalid:border-destructive"
                         >
                             {values.map((chip, index) => (
                                 <li
@@ -712,6 +718,14 @@ export function DeckEditor({
                                     onKeyDown={onAddKeyDown}
                                     onBlur={() => setArmedLast(false)}
                                     aria-label={t('Add a value')}
+                                    aria-invalid={
+                                        valuesMessage ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        valuesMessage
+                                            ? valuesMessageId
+                                            : valuesHelpId
+                                    }
                                     placeholder={t('Add a value')}
                                     className="h-7 min-w-0 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
                                 />

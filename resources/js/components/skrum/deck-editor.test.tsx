@@ -64,6 +64,23 @@ function addField(): HTMLInputElement {
     }) as HTMLInputElement;
 }
 
+function valuesMessage(): string {
+    return (
+        document.getElementById(
+            addField().getAttribute('aria-describedby') ?? '',
+        )?.textContent ?? ''
+    );
+}
+
+function announcement(): string {
+    return (
+        screen
+            .getAllByRole('status')
+            .find((region) => region.getAttribute('aria-live') === 'polite')
+            ?.textContent ?? ''
+    );
+}
+
 function type(text: string, key = 'Enter') {
     fireEvent.change(addField(), { target: { value: text } });
     fireEvent.keyDown(addField(), { key });
@@ -118,10 +135,9 @@ describe('DeckEditor', () => {
         type('2');
 
         expect(currentValues()).toBe('1|2|3');
-        expect(screen.getByText('Duplicate value: 2')).toBeTruthy();
-        expect(screen.getByRole('list').getAttribute('aria-invalid')).toBe(
-            'true',
-        );
+        expect(valuesMessage()).toBe('Duplicate value: 2');
+        expect(addField().getAttribute('aria-invalid')).toBe('true');
+        expect(announcement()).toBe('Duplicate value: 2');
     });
 
     it('follows the server limit: 8 characters pass, 9 are refused', () => {
@@ -131,9 +147,7 @@ describe('DeckEditor', () => {
         type('123456789');
 
         expect(currentValues()).toBe('1|2|3|12345678');
-        expect(
-            screen.getByText('Values are 8 characters at most.'),
-        ).toBeTruthy();
+        expect(valuesMessage()).toBe('Values are 8 characters at most.');
     });
 
     it('holds 20 values and refuses the 21st', () => {
@@ -144,7 +158,7 @@ describe('DeckEditor', () => {
         type('extra');
 
         expect(currentValues()).toBe(twenty.join('|'));
-        expect(screen.getByText('A deck has 20 values at most.')).toBeTruthy();
+        expect(valuesMessage()).toBe('A deck has 20 values at most.');
         expect(screen.getAllByRole('button', { name: /^Value / })).toHaveLength(
             20,
         );
@@ -234,9 +248,7 @@ describe('DeckEditor', () => {
         expect(
             screen.getAllByText('Add at least 2 values.').length,
         ).toBeGreaterThan(0);
-        expect(screen.getByRole('list').getAttribute('aria-invalid')).toBe(
-            'true',
-        );
+        expect(addField().getAttribute('aria-invalid')).toBe('true');
     });
 
     it('calls onSave when valid and onCancel on cancel', () => {
@@ -438,7 +450,8 @@ describe('DeckEditor', () => {
 
         expect(currentValues()).toBe('1|2|3|5|8|13');
         expect((field as HTMLInputElement).value).toBe('2');
-        expect(screen.getByText('Duplicate value: 2')).toBeTruthy();
+        expect(valuesMessage()).toBe('Duplicate value: 2');
+        expect(announcement()).toBe('Added 5, 8, 13. Duplicate value: 2');
     });
 
     it('refuses to rename a chip into a duplicate', () => {
@@ -451,7 +464,8 @@ describe('DeckEditor', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(currentValues()).toBe('1|2|3');
-        expect(screen.getByText('Duplicate value: 3')).toBeTruthy();
+        expect(valuesMessage()).toBe('Duplicate value: 3');
+        expect(announcement()).toBe('Duplicate value: 3');
     });
 
     it('removes a special card from the preview when its switch is off', () => {

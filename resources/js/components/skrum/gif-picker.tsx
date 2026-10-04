@@ -152,6 +152,51 @@ function colorFor(id: string): string {
     return placeholderColors[sum % placeholderColors.length];
 }
 
+/**
+ * The first frame of an animated preview, drawn once on a canvas: what a
+ * paused tile shows when the GIF proxy sent no still (it sends only
+ * `previewUrl`). Until the frame is drawn, or when it cannot be, the
+ * placeholder underneath shows the title.
+ */
+function FirstFrame({ src, label }: { src: string; label: string }) {
+    const canvas = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const image = new Image();
+        let cancelled = false;
+
+        image.onload = () => {
+            const target = canvas.current;
+            const context = target?.getContext('2d');
+
+            if (cancelled || !target || !context) {
+                return;
+            }
+
+            target.width = image.naturalWidth;
+            target.height = image.naturalHeight;
+            context.drawImage(image, 0, 0);
+        };
+        image.src = src;
+
+        return () => {
+            cancelled = true;
+            image.onload = null;
+        };
+    }, [src]);
+
+    return (
+        <canvas
+            ref={canvas}
+            role="img"
+            aria-label={label}
+            width={0}
+            height={0}
+            className="absolute inset-0 size-full object-cover"
+        />
+    );
+}
+
 function GifMedia({
     gif,
     label,
@@ -177,6 +222,26 @@ function GifMedia({
     }
 
     const image = playing ? gif.webp || gif.previewUrl || gif.still : gif.still;
+
+    if (!image && !playing && gif.previewUrl) {
+        return (
+            <>
+                <span
+                    data-slot="gif-placeholder"
+                    aria-hidden="true"
+                    className={cn(
+                        colorFor(gif.id),
+                        'absolute inset-0 grid place-items-center bg-(--col) p-2 text-center text-xs font-semibold text-(--col-text)',
+                    )}
+                >
+                    <span className="line-clamp-3 break-words">
+                        {gif.title || label}
+                    </span>
+                </span>
+                <FirstFrame src={gif.previewUrl} label={label} />
+            </>
+        );
+    }
 
     if (image) {
         return (

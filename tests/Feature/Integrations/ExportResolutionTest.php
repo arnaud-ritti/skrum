@@ -25,7 +25,7 @@ beforeEach(function () {
 
 function jiraFieldsWith(array $priorities, bool $hasPriority = true, bool $hasAssignee = true): JiraCreateFields
 {
-    return new JiraCreateFields($hasAssignee, $hasPriority, $priorities);
+    return new JiraCreateFields($hasAssignee, $hasPriority, $priorities, hasDueDate: true);
 }
 
 it('builds the issue from the item and its retro', function () {

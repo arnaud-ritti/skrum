@@ -1,7 +1,10 @@
 import { Form, Link } from '@inertiajs/react';
+import type { FormComponentRef } from '@inertiajs/core';
 import { Check } from 'lucide-react';
+import { useRef } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { TextField } from '@/components/skrum/text-field';
@@ -31,6 +34,11 @@ type ProfileCardProps = {
     photo?: ReactNode;
 };
 
+/** The spelling the server compares login addresses by (LoginAddress::normalise). */
+function loginAddress(email: unknown): string {
+    return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
 export function ProfileCard({
     user,
     mustVerifyEmail,
@@ -42,10 +50,41 @@ export function ProfileCard({
     const { t } = useTrans();
     const verified = user.email_verified_at !== null;
     const hasIdentity = presenceColours !== undefined || photo !== undefined;
+    const { guard } = usePasswordGate();
+    const form = useRef<FormComponentRef>(null);
+    const confirmedAddress = useRef<string | null>(null);
+
+    /**
+     * A new login address waits for the password gate, as the server asks
+     * for a confirmed password before it moves the account (rule S-1 still
+     * lets an account without a known password straight through).
+     */
+    const holdNewAddress = (): boolean => {
+        const address = loginAddress(form.current?.getData().email);
+
+        if (address === loginAddress(user.email)) {
+            return true;
+        }
+
+        if (address === confirmedAddress.current) {
+            return true;
+        }
+
+        queueMicrotask(() =>
+            guard(() => {
+                confirmedAddress.current = address;
+                form.current?.submit();
+            }),
+        );
+
+        return false;
+    };
 
     return (
         <Form
             {...ProfileController.update.form()}
+            ref={form}
+            onBefore={holdNewAddress}
             options={{ preserveScroll: true }}
             data-slot="profile-card"
             className="min-w-0"
