@@ -364,3 +364,104 @@ it('[P12a-07a] disconnects every provider, revokes the Slack and Linear access a
     Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/leaveChat') && $request['chat_id'] === '-100123');
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api.linear.app/oauth/revoke');
 });
+
+/**
+ * @return array{0: Team, 1: User}
+ */
+function p12aConnectedTeam(string $locale = 'en'): array
+{
+    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Jira, IntegrationProvider::Linear);
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $admin = p12aAdmin($team);
+    $admin->forceFill(['locale' => $locale])->save();
+    TeamIntegration::factory()->slack()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
+
+    return [$team, $admin];
+}
+
+it('[P12a-08a] lists the integrations at phone width without overflow and opens a provider in its sheet', function () {
+    [$team, $admin] = p12aConnectedTeam();
+
+    $page = $this->signIn($admin, p12aIntegrationsPath($team))->resize(390, 844);
+
+    $page->assertSee('Connect Atlas to the tools it already uses.')
+        ->assertCount('[data-test^="integration-card-"]', 3)
+        ->assertVisible(p12aCard('linear').' [data-slot="provider-row-configure"]')
+        ->assertVisible(p12aCard('linear').' [role="switch"]');
+
+    $this->assertIntegrationStatus($page, 'slack', 'Connected');
+    $this->assertIntegrationStatus($page, 'linear', 'Not connected');
+
+    expect($this->overflowingElements($page))->toBe([]);
+
+    $this->openIntegration($page, 'slack')
+        ->assertSeeIn(p12aPanel('slack').' [data-slot="provider-details"]', '#retros')
+        ->script('() => Promise.allSettled(document.getAnimations().map((animation) => animation.finished))');
+
+    expect($this->overflowingElements($page))->toBe([]);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('[P12a-08b] draws the integrations in the dark theme without overflow, and light again in the light theme', function () {
+    [$team, $admin] = p12aConnectedTeam();
+    $listLightness = '() => { const background = getComputedStyle(document.querySelector(\'[data-test="integration-list"]\')).backgroundColor; const oklch = background.match(/oklch\\(([\\d.]+)/); if (oklch) { return parseFloat(oklch[1]); } const [r, g, b] = background.match(/[\\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }';
+
+    $page = $this->signIn($admin, '/settings/appearance');
+
+    $page->click('[role="radio"]:has-text("Dark")')
+        ->assertScript('document.documentElement.classList.contains("dark")', true)
+        ->navigate(p12aIntegrationsPath($team))
+        ->resize(1440, 900)
+        ->assertScript('document.documentElement.classList.contains("dark")', true)
+        ->assertPresent('[data-test="integration-list"]');
+
+    $darkLightness = (float) $page->script($listLightness);
+    $darkOverflow = $this->overflowingElements($page);
+
+    $page->navigate('/settings/appearance')
+        ->click('[role="radio"]:has-text("Light")')
+        ->assertScript('document.documentElement.classList.contains("dark")', false)
+        ->navigate(p12aIntegrationsPath($team))
+        ->assertPresent('[data-test="integration-list"]');
+
+    $lightLightness = (float) $page->script($listLightness);
+
+    expect($darkLightness)->toBeLessThan(0.3)
+        ->and($lightLightness)->toBeGreaterThan(0.7)
+        ->and($darkOverflow)->toBe([]);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('[P12a-08c] speaks the language of the admin on the integrations, English and informal French', function () {
+    [$team, $admin] = p12aConnectedTeam();
+    $claire = integrationAdmin($team);
+    $claire->forceFill(['name' => 'Claire Dupont', 'locale' => 'fr'])->save();
+    $path = p12aIntegrationsPath($team);
+
+    $page = $this->signIn($admin, $path)->resize(1440, 900);
+
+    $page->assertScript('document.documentElement.lang', 'en')
+        ->assertSeeIn('[data-slot="team-integrations"] h2', 'Integrations')
+        ->assertSee('Connect Atlas to the tools it already uses.')
+        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Configure')
+        ->assertSeeIn(p12aCard('linear').' [data-slot="provider-row-configure"]', 'Connect');
+
+    $this->assertIntegrationStatus($page, 'jira', 'Connected');
+    $this->assertIntegrationStatus($page, 'linear', 'Not connected');
+
+    $page = $this->signIn($claire, $path)->resize(1440, 900);
+
+    $page->assertScript('document.documentElement.lang', 'fr')
+        ->assertSeeIn('[data-slot="team-integrations"] h2', 'Intégrations')
+        ->assertSee('Connecte Atlas aux outils qu\'elle utilise déjà.')
+        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Configurer')
+        ->assertSeeIn(p12aCard('linear').' [data-slot="provider-row-configure"]', 'Connecter');
+
+    $this->assertIntegrationStatus($page, 'jira', 'Connecté');
+    $this->assertIntegrationStatus($page, 'linear', 'Non connecté');
+
+    $page->assertNoJavaScriptErrors();
+});

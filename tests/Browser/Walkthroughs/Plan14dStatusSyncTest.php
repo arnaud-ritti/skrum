@@ -1405,3 +1405,34 @@ it('[P14d-13a] refuses a GitHub webhook whose signature is wrong and leaves the 
 
     expect($item->fresh()->completed_at)->toBeNull();
 });
+
+it('[P14d-14] completes the action item live on the boards of two participants when its issue is closed in Jira', function () {
+    p14dEnable(IntegrationProvider::Jira);
+    ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::Jira);
+    [$bob] = retroMember($retro);
+    $bob->forceFill(['name' => 'Bob Member', 'locale' => 'en'])->save();
+    Http::fake([
+        jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('done')], 'isLast' => true]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
+    ]);
+    $card = "#action-item-{$item->id}";
+
+    $adaPage = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $adaPage->assertSeeIn($card, 'PROJ-1');
+    $bobPage->assertSeeIn($card, 'PROJ-1')
+        ->assertScript(p14dCardSays($item, 'Done in Jira'), false);
+
+    p14dJiraEvent($integration, 'delivery-two-boards')->assertAccepted();
+
+    while (p14dDueJobs() > 0) {
+        $this->workQueue();
+    }
+
+    $adaPage->assertScript(p14dCardSays($item, 'Done in Jira'), true);
+    $bobPage->assertScript(p14dCardSays($item, 'Done in Jira'), true)
+        ->assertNoJavaScriptErrors();
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+});
