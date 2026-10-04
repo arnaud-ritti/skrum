@@ -156,4 +156,16 @@ describe('OnboardingLayout', () => {
         expect(banner.getByText('NB')).toBeTruthy();
         expect(banner.getByRole('button', { name: 'Log out' })).toBeTruthy();
     });
+
+    it('leaves the account and "Log out" out for a signed-out visitor', () => {
+        withBrand(skrum);
+        page.props.auth = { user: null };
+        renderWithProviders(
+            <OnboardingLayout>
+                <p>step</p>
+            </OnboardingLayout>,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Log out' })).toBeNull();
+    });
 });
