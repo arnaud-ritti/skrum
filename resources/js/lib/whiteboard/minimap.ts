@@ -19,18 +19,38 @@ type Size = { width: number; height: number };
 
 const MinSide = 1;
 
+/** A loop, not spread arguments: a long stroke has more points than a call takes. */
+function union(rects: readonly Rect[]): Rect {
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+
+    for (const rect of rects) {
+        left = Math.min(left, rect.x);
+        top = Math.min(top, rect.y);
+        right = Math.max(right, rect.x + rect.width);
+        bottom = Math.max(bottom, rect.y + rect.height);
+    }
+
+    return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
 function rectOf(element: MinimapElement): Rect {
     if (element.points && element.points.length > 0) {
-        const xs = element.points.map(([x]) => element.x + x);
-        const ys = element.points.map(([, y]) => element.y + y);
-        const x = Math.min(...xs);
-        const y = Math.min(...ys);
+        const bounds = union(
+            element.points.map(([x, y]) => ({
+                x: element.x + x,
+                y: element.y + y,
+                width: 0,
+                height: 0,
+            })),
+        );
 
         return {
-            x,
-            y,
-            width: Math.max(Math.max(...xs) - x, MinSide),
-            height: Math.max(Math.max(...ys) - y, MinSide),
+            ...bounds,
+            width: Math.max(bounds.width, MinSide),
+            height: Math.max(bounds.height, MinSide),
         };
     }
 
@@ -60,15 +80,6 @@ export function minimapItems(
         }));
 }
 
-function union(rects: readonly Rect[]): Rect {
-    const left = Math.min(...rects.map((rect) => rect.x));
-    const top = Math.min(...rects.map((rect) => rect.y));
-    const right = Math.max(...rects.map((rect) => rect.x + rect.width));
-    const bottom = Math.max(...rects.map((rect) => rect.y + rect.height));
-
-    return { x: left, y: top, width: right - left, height: bottom - top };
-}
-
 export function minimapFrame(
     items: readonly MinimapItem[],
     visible: Rect,
@@ -77,8 +88,8 @@ export function minimapFrame(
 ): MinimapFrame {
     const world = union([visible, ...items.map((item) => item.rect)]);
     const inner = {
-        width: size.width - padding * 2,
-        height: size.height - padding * 2,
+        width: Math.max(size.width - padding * 2, MinSide),
+        height: Math.max(size.height - padding * 2, MinSide),
     };
     const scale = Math.min(
         inner.width / world.width,
