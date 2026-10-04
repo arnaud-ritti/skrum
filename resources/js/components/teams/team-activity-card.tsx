@@ -1,8 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Fragment, useId, useState } from 'react';
+import { Fragment, useId } from 'react';
 import type { ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useNow } from '@/hooks/use-now';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { activitySentence } from '@/lib/teams/activity';
@@ -13,7 +14,7 @@ export function TeamActivityCard({ lines }: { lines: TeamActivityLine[] }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const headingId = useId();
-    const [now] = useState(() => Date.now());
+    const now = useNow(lines);
 
     return (
         <Card asChild>

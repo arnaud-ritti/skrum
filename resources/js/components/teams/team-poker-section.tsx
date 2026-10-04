@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import { History, Library, Spade } from 'lucide-react';
-import { useState } from 'react';
 import PokerGamesController from '@/actions/App/Http/Controllers/Poker/PokerGamesController';
 import PokerDecksController from '@/actions/App/Http/Controllers/PokerDecksController';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
@@ -20,6 +19,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useLastDefined } from '@/hooks/use-last-defined';
+import { useNow } from '@/hooks/use-now';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { formatPoints } from '@/lib/poker/format';
@@ -128,7 +128,7 @@ function GamesTable({
 }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const [now] = useState(() => Date.now());
+    const now = useNow(games);
 
     return (
         <div className={className}>

@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamRecentSessions } from '@/components/teams/team-recent-sessions';
 import { renderWithProviders } from '@/test/render';
 import type { RecentSessionRow } from '@/types';
@@ -47,7 +47,7 @@ const rows: RecentSessionRow[] = [
         title: 'Sprint 43 refinement',
         url: '/poker/game-1',
         state: 'live',
-        updatedAt: new Date().toISOString(),
+        updatedAt: '2026-09-30T09:00:00+00:00',
         participants: 8,
         meta: { tasks: 6 },
         outcome: null,
@@ -73,6 +73,15 @@ function section() {
         />,
     );
 }
+
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-30T12:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
 
 describe('the recent sessions of a team', () => {
     it('is not rendered without a session', () => {
@@ -111,8 +120,25 @@ describe('the recent sessions of a team', () => {
         expect(live.querySelector('[data-kind="poker"]')).not.toBeNull();
         expect(ended.textContent).toContain('Retro · Completed · 31 cards');
         expect(ended.textContent).toContain('Sep 18');
-        expect(ended.textContent).toContain('9');
+        expect(
+            ended.querySelector('[data-slot="recent-session-participants"]')
+                ?.textContent,
+        ).toBe('9');
         expect(draft.textContent).toContain('Survey · 5 questions');
+    });
+
+    it('gives the year of a session last active in another year', () => {
+        renderWithProviders(
+            <TeamRecentSessions
+                rows={[row({ updatedAt: '2025-09-18T10:00:00+00:00' })]}
+                allSessionsHref="/sessions"
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="recent-session-date"]')
+                ?.textContent,
+        ).toBe('Sep 18, 2025');
     });
 
     it('offers to join a live session, gives the outcome of an ended one and calls an unpublished survey a draft', () => {
