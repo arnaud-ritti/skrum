@@ -27,7 +27,8 @@ function p11bConfirmPassword(mixed $page): mixed
     return $page->assertPathIs('/user/confirm-password')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs('/settings/api-tokens');
+        ->assertPathIs('/settings')
+        ->assertScript('window.location.hash', '#api-tokens');
 }
 
 function p11bRow(string $name): string
@@ -53,21 +54,28 @@ function p11bPostMcp(?string $token): TestResponse
     return $response;
 }
 
-it('[P11b-01] opens the API tokens page from the settings after a password confirmation', function () {
+it('[P11b-01] opens the API tokens section from the settings and shows the tokens after a password confirmation', function () {
     [$user] = p11bOwner();
 
-    $page = $this->signIn($user, '/settings/profile');
+    $page = $this->signIn($user, '/settings');
 
     $page->assertVisible('nav[aria-label="Settings"]')
-        ->click('nav[aria-label="Settings"] a:has-text("API tokens")');
-
-    p11bConfirmPassword($page)
+        ->click('nav[aria-label="Settings"] a:has-text("API tokens")')
+        ->assertPathIs('/settings')
+        ->assertSeeIn('[data-slot="token-list-concealed"]', 'Confirm your password to see your tokens.')
+        ->assertNotPresent('#mcp-url')
+        ->click('Show my tokens')
+        ->assertSeeIn('[role="dialog"] h2', 'Confirm your password')
+        ->fill('#gate-password', 'password')
+        ->click('@confirm-password-button')
+        ->assertNotPresent('[role="dialog"]')
         ->assertSee('Connect an AI assistant that supports MCP to skrum with a personal token.')
         ->assertVisible('#mcp-url')
         ->assertSee('Copy')
         ->assertSee('Data you read through this connection is sent to the AI application you use.')
         ->assertSee('Tokens stay valid after a password change. Revoke them here.')
-        ->assertSee('No API tokens yet.');
+        ->assertSee('No API tokens yet.')
+        ->assertNotPresent('[data-slot="token-list-concealed"]');
 
     expect($page->value('#mcp-url'))->toEndWith('/mcp');
 });
@@ -129,7 +137,7 @@ it('[P11b-02] creates a token with scopes, a team and an expiry, shows it once a
         ->assertSeeIn(p11bRow('Walkthrough'), 'Active')
         ->assertScript(p11bCellShowsDate('Walkthrough', 4, $token->expires_at), true);
 
-    $page->navigate('/settings/api-tokens')
+    $page->navigate('/settings#api-tokens')
         ->assertSeeIn(p11bRow('Walkthrough'), 'Demo Team')
         ->assertNotPresent('input[aria-label="API token"]')
         ->assertScript("document.documentElement.innerHTML.includes('{$secret}')", false);
@@ -149,7 +157,7 @@ it('[P11b-03b] shows when a token was last used after a request made with it', f
 
     expect($token->last_used_at)->not->toBeNull();
 
-    $page->navigate('/settings/api-tokens')
+    $page->navigate('/settings#api-tokens')
         ->assertVisible(p11bRow('Test client'))
         ->assertScript(p11bCellShowsDate('Test client', 5, $token->last_used_at), true);
 });
@@ -211,7 +219,7 @@ it('[P11b-17] hides the API tokens entry and page and answers 404 on the MCP end
     $plainText = issueTestMcpToken($user);
     config(['skrum.mcp.enabled' => false]);
 
-    $page = $this->signIn($user, '/settings/profile');
+    $page = $this->signIn($user, '/settings');
 
     $page->assertVisible('nav[aria-label="Settings"]')
         ->assertSeeIn('nav[aria-label="Settings"]', 'Security')
@@ -242,7 +250,7 @@ it('[P11b-18a] translates the API tokens page, its form and its copy-once panel'
         ->assertSee($copyNow)
         ->assertDontSee('Copy your token now.');
 })->with([
-    'fr' => ['fr', 'URL du serveur', "Aucun jeton d'API pour le moment.", 'Créer un jeton', 'Expiration', 'Toutes mes équipes', 'Copiez votre jeton maintenant. Vous ne pourrez plus le voir ensuite.'],
+    'fr' => ['fr', 'URL du serveur', "Aucun jeton d'API pour le moment.", 'Créer un jeton', 'Expiration', 'Toutes mes équipes', 'Copie ton jeton maintenant. Tu ne pourras plus le voir ensuite.'],
     'es' => ['es', 'URL del servidor', 'Aún no hay tokens de API.', 'Crear token', 'Caducidad', 'Todos mis equipos', 'Copia tu token ahora. No podrás volver a verlo.'],
     'de' => ['de', 'Server-URL', 'Noch keine API-Tokens.', 'Token erstellen', 'Ablauf', 'Alle meine Teams', 'Kopiere dein Token jetzt. Du kannst es später nicht mehr sehen.'],
 ]);
