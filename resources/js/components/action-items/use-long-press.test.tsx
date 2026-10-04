@@ -92,6 +92,23 @@ describe('useLongPress', () => {
         expect(fireEvent.contextMenu(button)).toBe(false);
     });
 
+    it('lets the keyboard act after a long press that ended without a tap', () => {
+        const { onClick, button } = setup();
+
+        fireEvent.pointerDown(button, { clientX: 10, clientY: 10 });
+        vi.advanceTimersByTime(500);
+        fireEvent.pointerUp(button, { clientX: 10, clientY: 10 });
+
+        fireEvent.keyDown(button, { key: 'ContextMenu' });
+
+        expect(fireEvent.contextMenu(button)).toBe(true);
+
+        fireEvent.keyDown(button, { key: 'Enter' });
+        fireEvent.click(button);
+
+        expect(onClick).toHaveBeenCalledOnce();
+    });
+
     it('ignores a mouse', () => {
         const { onLongPress, button } = setup();
         const down = new MouseEvent('pointerdown', { bubbles: true });

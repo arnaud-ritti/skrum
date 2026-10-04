@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { MouseEvent, PointerEvent } from 'react';
+import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 
 type LongPressOptions = {
     delayMs?: number;
@@ -13,6 +13,7 @@ export type LongPressHandlers = {
     onPointerCancel: () => void;
     onContextMenu: (event: MouseEvent<HTMLElement>) => void;
     onClickCapture: (event: MouseEvent<HTMLElement>) => void;
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
 };
 
 /**
@@ -97,6 +98,10 @@ export function useLongPress(
             fired.current = false;
             event.preventDefault();
             event.stopPropagation();
+        },
+        // A press that ended without a tap leaves nothing for the keyboard.
+        onKeyDown: () => {
+            fired.current = false;
         },
     };
 }
