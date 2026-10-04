@@ -1566,6 +1566,7 @@
     ":count open actions": ":count open actions",
     "As link (hover and focus)": "As link (hover and focus)",
     "Open team": "Open team",
+    "Open the team": "Open",
     "Long label, narrow container": "Long label, narrow container",
     "A very long status label that must truncate": "A very long status label that must truncate",
     "Default (filled)": "Default (filled)",
