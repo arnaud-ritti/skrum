@@ -47,3 +47,10 @@ export function closeTextEditor(): void {
  * when the library is upgraded.
  */
 export const CanvasSearchSidebar = { name: 'default', tab: 'search' } as const;
+
+/**
+ * The field of that search tab (`CLASSES.SEARCH_MENU_INPUT_WRAPPER` of 0.18.1):
+ * the library focuses it only on its own Ctrl+F, so "Find on canvas" focuses
+ * it. Check this when the library is upgraded.
+ */
+export const CanvasSearchInput = '.layer-ui__search-inputWrapper input';
