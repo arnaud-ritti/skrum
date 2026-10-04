@@ -93,8 +93,19 @@ function GuessWhoAnswers({ round }: { round: GameRound }) {
     const fieldId = useId();
     const { room, me, players } = ctx.snapshot;
     const mine = myTextAnswer(round);
-    const [text, setText] = useState(mine?.text ?? '');
+    const sentText = mine?.text ?? '';
+    const [text, setText] = useState(sentText);
+    const [shownSentText, setShownSentText] = useState(sentText);
     const [busy, setBusy] = useState(false);
+
+    /** An answer sent elsewhere (another tab, a refetch) fills a field left untouched. */
+    if (sentText !== shownSentText) {
+        setShownSentText(sentText);
+
+        if (text === shownSentText) {
+            setText(sentText);
+        }
+    }
     const answeredIds = pendingAnswers(round).map((answer) => answer.playerId);
     const hasEnoughAnswers = answeredIds.length >= MinimumAnswers;
     const draft = text.trim();

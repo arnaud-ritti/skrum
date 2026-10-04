@@ -60,9 +60,13 @@ function renderWithRoom(
         refetch,
     } as unknown as RoomContextValue;
 
-    renderWithProviders(<RoomProvider value={ctx}>{ui}</RoomProvider>);
+    const view = renderWithProviders(
+        <RoomProvider value={ctx}>{ui}</RoomProvider>,
+    );
+    const rerender = (next: React.ReactElement) =>
+        view.rerender(<RoomProvider value={ctx}>{next}</RoomProvider>);
 
-    return { dispatch, refetch };
+    return { dispatch, refetch, rerender };
 }
 
 describe('GuessWhoBoard, the answers', () => {
@@ -165,6 +169,30 @@ describe('GuessWhoBoard, the answers', () => {
             playerId: 'ada',
             answered: false,
         });
+    });
+
+    it('shows my answer once it arrives from elsewhere, unless I am typing', () => {
+        const { rerender } = renderWithRoom(<GuessWhoBoard round={round()} />);
+        const field = screen.getByLabelText(
+            'Your answer',
+        ) as HTMLTextAreaElement;
+
+        rerender(
+            <GuessWhoBoard
+                round={round({ myAnswer: { id: 'a1', text: 'Baker' } })}
+            />,
+        );
+
+        expect(field.value).toBe('Baker');
+
+        fireEvent.change(field, { target: { value: 'Baker, then pilot' } });
+        rerender(
+            <GuessWhoBoard
+                round={round({ myAnswer: { id: 'a1', text: 'Pilot' } })}
+            />,
+        );
+
+        expect(field.value).toBe('Baker, then pilot');
     });
 
     it('lets the host shuffle the question before the first answer only', () => {
