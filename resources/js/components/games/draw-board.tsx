@@ -32,6 +32,7 @@ import type {
     GameRound,
     GameWordChangeResponse,
 } from '@/lib/games/types';
+import { randomHexId } from '@/lib/random-id';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import {
@@ -341,7 +342,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
         }
 
         setRedo({ roundId: round.id, stack: rest });
-        commit(op, crypto.randomUUID());
+        commit(op, randomHexId());
     };
 
     const clear = () => {

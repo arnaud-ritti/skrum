@@ -3,6 +3,7 @@ import {
     restoreElements,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
+import { randomHexId } from '@/lib/random-id';
 import { POSTIT, type PostItColor } from '@/lib/whiteboard/palette';
 import type { Point } from '@/lib/whiteboard/viewport';
 
@@ -12,10 +13,6 @@ function randomInteger(): number {
     return Math.floor(Math.random() * 2 ** 31);
 }
 
-function randomId(): string {
-    return crypto.randomUUID().replaceAll('-', '').slice(0, 20);
-}
-
 /**
  * A sticky note is a rectangle the server recognises by its marker (spec §6.1).
  * Its fill and its border are the literal light values of one of the eight
@@ -23,7 +20,7 @@ function randomId(): string {
  */
 function stickyAt(x: number, y: number, color: PostItColor) {
     return {
-        id: randomId(),
+        id: randomHexId(20),
         type: 'rectangle',
         x,
         y,

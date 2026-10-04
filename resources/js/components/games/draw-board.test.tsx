@@ -223,6 +223,33 @@ describe('DrawBoard, redo', () => {
         expect(button('Redo').disabled).toBe(true);
     });
 
+    it('redoes outside a secure context, where the browser has no crypto.randomUUID', async () => {
+        mocks.request.mockResolvedValue({ roundId: 'round', count: 0 });
+        vi.stubGlobal('crypto', {
+            getRandomValues: crypto.getRandomValues.bind(crypto),
+        });
+
+        try {
+            renderBoard('drawer', { drawing: [stroke] });
+
+            await act(async () => {
+                fireEvent.click(button('Undo'));
+            });
+
+            await act(async () => {
+                fireEvent.click(button('Redo'));
+            });
+
+            const body = mocks.request.mock.calls[1][1] as {
+                client_op_id: string;
+            };
+
+            expect(body.client_op_id).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('forgets what was undone once the drawer draws again', async () => {
         mocks.request.mockResolvedValue({ roundId: 'round', count: 0 });
 
