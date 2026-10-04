@@ -5,6 +5,7 @@ import {
     waitFor,
     within,
 } from '@testing-library/react';
+import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
@@ -20,6 +21,11 @@ import { ActivityRefreshMs, type ActivityEntry } from '@/lib/retro/activity';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
+
+vi.mock('sonner', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('sonner')>()),
+    toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
+}));
 
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
@@ -438,6 +444,31 @@ describe('ColumnsBoard columns', () => {
             screen.queryByRole('button', { name: 'Column menu' }),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
+    });
+
+    it('says to wait when a column change comes while another is still on its way', async () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+
+        board();
+
+        const [startMenu] = screen.getAllByRole('button', {
+            name: 'Column menu',
+        });
+
+        fireEvent.pointerDown(startMenu, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Move right' }),
+        );
+
+        fireEvent.pointerDown(startMenu, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Move right' }),
+        );
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledWith(
+            'Too many changes, wait a moment.',
+        );
     });
 
     it('adds a column and resets the form', async () => {
