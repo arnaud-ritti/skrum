@@ -86,7 +86,7 @@ function p18fSignIn(User $user, array $options, int $width): mixed
 /**
  * @param  array<string, string>  $options
  */
-function p18fConfirmedVisit(User $user, string $path, array $options, int $width, string $marker): mixed
+function p18fConfirmedVisit(User $user, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
 {
     $page = p18fSignIn($user, $options, $width);
 
@@ -95,7 +95,7 @@ function p18fConfirmedVisit(User $user, string $path, array $options, int $width
     return $page->assertPathIs('/user/confirm-password')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs($path)
+        ->assertPathIs($landingPath ?? $path)
         ->assertPresent($marker);
 }
 
@@ -238,10 +238,10 @@ it('renders the security settings with the e-mail code without overflow', functi
             $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
 
             if ($enabled) {
-                return p18fSignInWithEmailCodeOff($member, $path, $options, $width, '[data-slot="two-factor-row"]');
+                return p18fSignInWithEmailCodeOff($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings');
             }
 
-            return p18fConfirmedVisit($member, $path, $options, $width, '[data-slot="two-factor-row"]')
+            return p18fConfirmedVisit($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings')
                 ->click('[data-slot="two-factor-row"] button:has(svg.lucide-mail)')
                 ->assertPresent('[data-slot="email-code-enrolment"]');
         },
@@ -258,7 +258,7 @@ it('renders the security settings with the e-mail code without overflow', functi
  *
  * @param  array<string, string>  $options
  */
-function p18fSignInWithEmailCodeOff(User $member, string $path, array $options, int $width, string $marker): mixed
+function p18fSignInWithEmailCodeOff(User $member, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
 {
     $enabledAt = $member->two_factor_email_enabled_at;
 
@@ -273,7 +273,7 @@ function p18fSignInWithEmailCodeOff(User $member, string $path, array $options, 
     return $page->assertPathIs('/user/confirm-password')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
-        ->assertPathIs($path)
+        ->assertPathIs($landingPath ?? $path)
         ->assertPresent($marker);
 }
 
@@ -388,6 +388,8 @@ it('renders the sign-in settings of the instance without overflow', function (st
         $name,
         '/admin/sign-in',
         function (string $path, array $options, int $width) use ($admin, $ableToRequire, $required, $marker) {
+            $this->travel(1)->minutes();
+
             User::query()->whereKey($admin->id)->update(['two_factor_email_enabled_at' => null]);
             resolve(InstanceSettings::class)->set('sso_required', false);
 

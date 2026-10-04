@@ -75,8 +75,9 @@ trait CapturesVisuals
     JS_WRAP;
 
     /**
-     * An open menu or popover is placed again after the resize, a frame or more later under load:
-     * the capture waits for it, or the overflow check meets it at its old place.
+     * An open menu or popover is placed again after the resize, a frame or more later under load,
+     * and a chart is drawn again at its new width a render later: the capture waits for them, or
+     * the overflow check meets them at their old place and size.
      */
     private const string SettleScript = <<<'JS'
         () => document.fonts.ready
@@ -84,7 +85,7 @@ trait CapturesVisuals
                 .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
                 .map((animation) => animation.finished)))
             .then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))
-            .then(() => document.querySelector('[data-radix-popper-content-wrapper]') === null
+            .then(() => document.querySelector('[data-radix-popper-content-wrapper], .recharts-responsive-container, svg[data-slot$="-chart"]') === null
                 ? true
                 : new Promise((resolve) => setTimeout(() => resolve(true), 200)))
         JS;
@@ -103,12 +104,14 @@ trait CapturesVisuals
      * @param  null|callable(string, array<string, string>, int): mixed  $visit  receives the path, the visit options (colour scheme, locale, reduced motion) and the width of the capture, and returns the page
      * @param  bool  $appShell  false for a page outside the application shell (a mail): it has no theme class, its dark colours come from the colour scheme of the visit alone
      * @param  bool  $fullPage  false captures the viewport only: a full-page capture resizes the window, which closes an open select
+     * @param  null|string  $configuration  one configuration (`light-1440-fr`) for a capture whose fixtures and texts are written for it alone
      */
-    protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true, bool $fullPage = true): void
+    protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true, bool $fullPage = true, ?string $configuration = null): void
     {
         File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
 
         $only = getenv('VISUAL_ONLY') ?: null;
+        $captured = 0;
 
         foreach (['light', 'dark'] as $theme) {
             foreach (self::VisualLocales as $locale => $browserLocale) {
@@ -116,6 +119,12 @@ trait CapturesVisuals
                     if ($only !== null && $only !== "{$theme}-{$width}-{$locale}") {
                         continue;
                     }
+
+                    if ($configuration !== null && $configuration !== "{$theme}-{$width}-{$locale}") {
+                        continue;
+                    }
+
+                    $captured++;
 
                     $options = [
                         'colorScheme' => $theme,
@@ -144,6 +153,10 @@ trait CapturesVisuals
                     );
                 }
             }
+        }
+
+        if ($captured === 0) {
+            $this->markTestSkipped("{$name} is captured in {$configuration} only.");
         }
     }
 

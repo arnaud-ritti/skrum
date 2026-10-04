@@ -236,6 +236,7 @@ it('[P21-20-01] renders the writing board of the facilitator, the timer paused a
 
             return $page->assertSeeIn('[data-slot="retro-activity"]', 'Inès écrit une carte…');
         },
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -256,6 +257,7 @@ it('[P21-20-02] renders the writing count of an anonymous retro in the presence 
             return $page->assertSeeIn('[data-slot="presence-stack-typing"]', '3 personnes écrivent…')
                 ->assertNotPresent('[data-slot="retro-activity"]');
         },
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -279,6 +281,7 @@ it('[P21-20-03] renders the voting board of a participant at the cap of a card, 
         fn (string $path, array $options) => p21OpenBoard($users[1], $retro, $options)
             ->assertSeeIn('[data-slot="retro-finished-count"]', '5/8 ont terminé')
             ->assertSee('Modifier mes votes'),
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -322,6 +325,7 @@ it('[P21-20-04] renders the discussion of the facilitator, the topic timer, the 
             ->assertPresent('[data-slot="retro-topic-notes"] textarea')
             ->assertPresent('[data-slot="retro-topic-meta"][data-state="discussed"]')
             ->assertSee('Actions du sujet'),
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -336,6 +340,7 @@ it('[P21-20-05] renders the actions of the facilitator, linked to their topics, 
         fn (string $path, array $options) => p21OpenBoard($facilitator, $retro, $options)
             ->assertSeeIn('[data-slot="retro-bulk-export-button"]', 'Exporter vers Jira')
             ->assertPresent('[data-slot="retro-item-topic"]'),
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -395,6 +400,7 @@ it('[P21-20-06] renders the bulk export to Jira mid-run, one exported, one runni
                 ->assertPresent("{$dialog} [data-item-id][data-state=\"running\"]")
                 ->assertPresent("{$dialog} [data-item-id][data-state=\"pending\"]");
         },
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -415,6 +421,7 @@ it('[P21-20-07] renders the ROTI of the facilitator before the reveal, two votes
         fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
             ->assertSee('Relancer les 2 derniers')
             ->assertSee('Révéler le ROTI'),
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -431,6 +438,7 @@ it('[P21-20-08] renders the ROTI of a participant after the reveal, without over
         fn (string $path, array $options) => p21OpenBoard($users[1], $retro, $options)
             ->assertPresent('[data-slot="retro-roti-widget"]')
             ->assertDontSee('Révéler le ROTI'),
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -463,6 +471,7 @@ it('[P21-20-09] renders the retro form of the new session dialog with a cap of 2
                 ->assertAttribute('[role="dialog"] #new-retro-max-votes-per-card-auto', 'aria-checked', 'false')
                 ->assertSeeIn('[role="dialog"] [data-slot="stepper"][aria-label="Max par carte"] output', '2');
         },
+        configuration: 'light-1440-fr',
     );
 });
 
@@ -477,5 +486,6 @@ it('[P22-20-05] renders the phase timer offered to the facilitator of a writing 
             ->assertAttribute('[data-slot="timer-suggestion"]', 'aria-label', 'Lancer le timer de la phase Écriture, 7 minutes')
             ->click('button[aria-label="Minuteur"]')
             ->assertSeeIn('[role="menu"] [role="menuitem"]:first-child', 'Écriture · 7 min'),
+        configuration: 'light-1440-fr',
     );
 });

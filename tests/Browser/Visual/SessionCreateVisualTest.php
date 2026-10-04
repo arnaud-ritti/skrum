@@ -267,6 +267,7 @@ it('[P22-20-04] renders the poker form of the new session dialog importing twelv
             $french = str_starts_with($options['locale'], 'fr');
 
             $page = $open($path, $options)
+                ->resize($width, $width === 1440 ? 900 : 844)
                 ->assertPresent('[role="dialog"] [data-slot="poker-session-fields"]')
                 ->click('[role="dialog"] [data-slot="poker-tasks"] [role="tab"]:has-text("Jira")')
                 ->click($french ? '[data-slot="tracker-issue-picker"] [role="tab"]:has-text("Requête")' : '[data-slot="tracker-issue-picker"] [role="tab"]:has-text("Query")')
@@ -281,7 +282,6 @@ it('[P22-20-04] renders the poker form of the new session dialog importing twelv
                 ->assertPresent('[role="dialog"] #new-poker-revote')
                 ->assertPresent('[role="dialog"] #new-poker-write-back');
 
-            $page->resize($width, $width === 1440 ? 900 : 844);
             $page->script(<<<'JS'
                 () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => {
                     const body = document.querySelector('[data-slot="session-dialog-body"]');

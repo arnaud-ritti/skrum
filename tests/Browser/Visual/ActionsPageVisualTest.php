@@ -150,30 +150,45 @@ it('[P24-16-01] renders the selection, facets and In progress states of the benc
     $this->captureVisuals(
         'actions-index-bulk',
         '/dev/design-system/actions-index?overlay=none',
-        fn (string $path, array $options, int $width) => visit($path, $options)
-            ->resize($width, 900)
-            ->assertNotPresent('[data-slot="action-sheet"]')
-            ->assertNotPresent('[role="alertdialog"]')
-            ->assertCount('[data-state="selection"] tr[data-slot="action-row"]', 6)
-            ->assertCount('[data-state="selection"] tr[data-slot="action-row"][data-selected="true"]', 3)
-            ->assertAttribute('[data-state="selection"] [data-slot="action-select-all"]', 'data-state', 'indeterminate')
-            ->assertPresent('[data-state="selection"] [data-slot="action-items-bulk-bar"]')
-            ->assertNotPresent('[data-state="selection"] [data-slot="bulk-select-matching"]')
-            ->assertCount('[data-state="selection-page"] tr[data-slot="action-row"][data-selected="true"]', 6)
-            ->assertAttribute('[data-state="selection-page"] [data-slot="action-select-all"]', 'data-state', 'checked')
-            ->assertPresent('[data-state="selection-page"] [data-slot="bulk-select-matching"]')
-            ->assertCount('[data-state="all-matching"] tr[data-slot="action-row"][data-selected="true"]', 4)
-            ->assertNotPresent('[data-state="all-matching"] [data-slot="bulk-select-matching"]')
-            ->assertCount('[data-state="all-matching"] [data-slot="action-items-bulk-bar"] button:disabled', 1)
-            ->assertCount('[data-state="facets"] [data-slot="action-filter"]', 6)
-            ->assertCount('[data-state="facets"] [data-slot="action-filter"][data-active="true"]', 5)
-            ->assertAttribute('[data-state="facets"] [data-slot="action-filter-overdue"]', 'aria-pressed', 'false')
-            ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"]', 3)
-            ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"][data-status="doing"]', 1)
-            ->assertCount('[data-state="phone-selection"] [data-slot="action-item-selectable"]', 3)
-            ->assertCount('[data-state="phone-selection"] [data-slot="action-item"][data-selected="true"]', 2)
-            ->assertAttribute('[data-state="phone-selection"] [data-slot="action-items-bulk-bar"]', 'data-layout', 'docked')
-            ->assertPresent('[data-state="phone-selection"] [data-slot="action-items-select-mode"]'),
+        function (string $path, array $options, int $width) {
+            $page = visit($path, $options)
+                ->resize($width, 900)
+                ->assertNotPresent('[data-slot="action-sheet"]')
+                ->assertNotPresent('[role="alertdialog"]')
+                ->assertCount('[data-state="facets"] [data-slot="action-filter"]', 6)
+                ->assertCount('[data-state="facets"] [data-slot="action-filter"][data-active="true"]', 5)
+                ->assertAttribute('[data-state="facets"] [data-slot="action-filter-overdue"]', 'aria-pressed', 'false')
+                ->assertCount('[data-state="phone-selection"] [data-slot="action-item-selectable"]', 3)
+                ->assertCount('[data-state="phone-selection"] [data-slot="action-item"][data-selected="true"]', 2)
+                ->assertAttribute('[data-state="phone-selection"] [data-slot="action-items-bulk-bar"]', 'data-layout', 'docked')
+                ->assertPresent('[data-state="phone-selection"] [data-slot="action-items-select-mode"]');
+
+            if ($width < 1280) {
+                return $page
+                    ->assertNotPresent('[data-slot="action-items-table"]')
+                    ->assertCount('[data-state="selection"] [data-slot="action-item-selectable"]', 6)
+                    ->assertCount('[data-state="selection"] [data-slot="action-item"][data-selected="true"]', 3)
+                    ->assertPresent('[data-state="selection"] [data-slot="action-items-bulk-bar"]')
+                    ->assertCount('[data-state="selection-page"] [data-slot="action-item"][data-selected="true"]', 6)
+                    ->assertCount('[data-state="all-matching"] [data-slot="action-item"][data-selected="true"]', 4)
+                    ->assertCount('[data-state="all-matching"] [data-slot="action-items-bulk-bar"] button:disabled', 1);
+            }
+
+            return $page
+                ->assertCount('[data-state="selection"] tr[data-slot="action-row"]', 6)
+                ->assertCount('[data-state="selection"] tr[data-slot="action-row"][data-selected="true"]', 3)
+                ->assertAttribute('[data-state="selection"] [data-slot="action-select-all"]', 'data-state', 'indeterminate')
+                ->assertPresent('[data-state="selection"] [data-slot="action-items-bulk-bar"]')
+                ->assertNotPresent('[data-state="selection"] [data-slot="bulk-select-matching"]')
+                ->assertCount('[data-state="selection-page"] tr[data-slot="action-row"][data-selected="true"]', 6)
+                ->assertAttribute('[data-state="selection-page"] [data-slot="action-select-all"]', 'data-state', 'checked')
+                ->assertPresent('[data-state="selection-page"] [data-slot="bulk-select-matching"]')
+                ->assertCount('[data-state="all-matching"] tr[data-slot="action-row"][data-selected="true"]', 4)
+                ->assertNotPresent('[data-state="all-matching"] [data-slot="bulk-select-matching"]')
+                ->assertCount('[data-state="all-matching"] [data-slot="action-items-bulk-bar"] button:disabled', 1)
+                ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"]', 3)
+                ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"][data-status="doing"]', 1);
+        },
     );
 });
 
