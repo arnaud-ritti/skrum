@@ -1,4 +1,4 @@
-import { usePoll } from '@inertiajs/react';
+import { router, usePoll } from '@inertiajs/react';
 import { Check, Copy, ExternalLink, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ function connectionIdentity(
         connection.id,
         connection.status,
         connection.settings.chatId ?? '',
+        connection.settings.linkedAt ?? '',
         connection.connectedBy ?? '',
     ].join('|');
 }
@@ -82,9 +83,11 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
         }
     }, [connectedSinceCode, stop, t]);
 
+    /** A command sent just before the expiry may have connected the chat: one last look. */
     useEffect(() => {
         if (expired) {
             stop();
+            router.reload({ only: ['providers'] });
         }
     }, [expired, stop]);
 

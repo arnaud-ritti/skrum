@@ -446,6 +446,77 @@ describe('TelegramIntegration', () => {
         expect(poll.stop).toHaveBeenCalled();
     });
 
+    it('looks once more for the connection when the code expires', async () => {
+        request.mockResolvedValue({
+            code: 'ABCD2345',
+            command: '/connect@skrum_test_bot ABCD2345',
+            botUsername: 'skrum_test_bot',
+            expiresAt: new Date(Date.now() - 1_000).toISOString(),
+        });
+
+        renderProvider(
+            <TelegramIntegration
+                card={card('telegram', 'Telegram')}
+                scope={scope}
+                telegram={bot}
+            />,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
+        await waitFor(() =>
+            expect(router.reload).toHaveBeenCalledWith({
+                only: ['providers'],
+            }),
+        );
+    });
+
+    it('counts a new link of the chat already connected', async () => {
+        request.mockResolvedValue({
+            code: 'ABCD2345',
+            command: '/connect@skrum_test_bot ABCD2345',
+            botUsername: 'skrum_test_bot',
+            expiresAt: new Date(Date.now() + 600_000).toISOString(),
+        });
+        const linked = (linkedAt: string) =>
+            card(
+                'telegram',
+                'Telegram',
+                connection('telegram', {
+                    settings: {
+                        chatId: '-100123',
+                        chatTitle: 'Team chat',
+                        linkedAt,
+                    },
+                }),
+            );
+
+        const view = renderProvider(
+            <TelegramIntegration
+                card={linked('2026-10-01T09:00:00Z')}
+                scope={scope}
+                telegram={bot}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Connect another chat' }),
+        );
+        await waitFor(() => expect(poll.start).toHaveBeenCalled());
+
+        view.rerender(
+            <TelegramIntegration
+                card={linked('2026-10-05T09:00:00Z')}
+                scope={scope}
+                telegram={bot}
+            />,
+        );
+
+        await waitFor(() =>
+            expect(toast.success).toHaveBeenCalledWith('Telegram connected.'),
+        );
+    });
+
     it('cannot connect while Telegram does not answer, and says so', () => {
         renderProvider(
             <TelegramIntegration

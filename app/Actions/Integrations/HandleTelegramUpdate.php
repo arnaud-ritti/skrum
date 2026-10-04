@@ -107,6 +107,7 @@ class HandleTelegramUpdate
                 'chatId' => $chatId,
                 'chatTitle' => $this->chatTitle($chat),
                 'chatType' => is_string($chat['type'] ?? null) ? $chat['type'] : 'group',
+                'linkedAt' => now()->toIso8601String(),
             ],
             'scopes' => [],
         ]);

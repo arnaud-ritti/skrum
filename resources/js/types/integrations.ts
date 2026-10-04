@@ -26,6 +26,8 @@ type IntegrationSettings = {
     chatId?: string;
     chatTitle?: string;
     chatType?: string;
+    /** When a /connect last linked the chat, so a new link of the same chat counts. */
+    linkedAt?: string;
     cloudId?: string | null;
     siteName?: string | null;
     siteUrl?: string | null;
