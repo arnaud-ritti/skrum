@@ -5122,5 +5122,8 @@
     "What do you want to start with?": "What do you want to start with?",
     "Writing → vote → actions": "Writing → vote → actions",
     "Your admin chose this workspace.": "Your admin chose this workspace.",
-    "Default workspace saved.": "Default workspace saved."
+    "Default workspace saved.": "Default workspace saved.",
+    "New SSO accounts": "New SSO accounts",
+    "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.",
+    "Default workspace": "Default workspace"
 }

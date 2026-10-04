@@ -5342,5 +5342,8 @@
     "What do you want to start with?": "¿Con qué quieres empezar?",
     "Writing → vote → actions": "Escritura → voto → acciones",
     "Your admin chose this workspace.": "Tu administrador eligió este espacio de trabajo.",
-    "Default workspace saved.": "Espacio de trabajo predeterminado guardado."
+    "Default workspace saved.": "Espacio de trabajo predeterminado guardado.",
+    "New SSO accounts": "Nuevas cuentas SSO",
+    "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Las cuentas creadas con SSO sin invitación se unen a este espacio de trabajo como miembros y empiezan creando su equipo.",
+    "Default workspace": "Espacio de trabajo predeterminado"
 }
