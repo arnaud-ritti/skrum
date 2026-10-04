@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
     addDays,
-    localDay,
     newSprintDefaults,
     previewNextRetro,
+    zonedNow,
 } from './sprint-planning';
+
+const viewerZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const sprint41 = {
     id: 's41',
@@ -34,6 +36,7 @@ describe('previewNextRetro', () => {
                 thursday,
                 '14:00',
                 new Date(2026, 8, 30, 10, 0),
+                viewerZone,
             ),
         ).toEqual({ date: '2026-10-01', time: '14:00' });
     });
@@ -45,6 +48,7 @@ describe('previewNextRetro', () => {
                 thursday,
                 '14:00',
                 new Date(2026, 9, 1, 15, 0),
+                viewerZone,
             ),
         ).toEqual({ date: '2026-10-15', time: '14:00' });
     });
@@ -56,6 +60,7 @@ describe('previewNextRetro', () => {
                 thursday,
                 '14:00',
                 new Date(2026, 9, 1, 13, 59),
+                viewerZone,
             ),
         ).toEqual({ date: '2026-10-01', time: '14:00' });
     });
@@ -67,6 +72,7 @@ describe('previewNextRetro', () => {
                 thursday,
                 null,
                 new Date(2026, 9, 1, 23, 0),
+                viewerZone,
             ),
         ).toEqual({ date: '2026-10-01', time: null });
     });
@@ -78,6 +84,7 @@ describe('previewNextRetro', () => {
                 thursday,
                 '14:00',
                 new Date(2026, 9, 1, 15, 0),
+                viewerZone,
             ),
         ).toBeNull();
     });
@@ -89,6 +96,7 @@ describe('previewNextRetro', () => {
                 null,
                 null,
                 new Date(2026, 8, 30, 10, 0),
+                viewerZone,
             ),
         ).toBeNull();
     });
@@ -107,35 +115,53 @@ describe('previewNextRetro', () => {
                 thursday,
                 null,
                 new Date(2026, 9, 19, 9, 0),
+                viewerZone,
             ),
         ).toBeNull();
     });
 
     it('reads only the current sprint and the next one', () => {
-        const sprint44 = {
-            id: 's44',
-            number: 44,
-            startsOn: '2026-10-19',
-            endsOn: '2026-11-01',
-        };
+        const days = (id: string, startsOn: string, endsOn: string) => ({
+            id,
+            number: 0,
+            startsOn,
+            endsOn,
+        });
 
         expect(
             previewNextRetro(
-                [sprint44, sprint43, sprint42],
+                [
+                    days('s44', '2026-10-19', '2026-10-20'),
+                    days('s45', '2026-10-23', '2026-10-24'),
+                    days('s46', '2026-10-26', '2026-11-08'),
+                ],
+                thursday,
+                null,
+                new Date(2026, 9, 19, 9, 0),
+                viewerZone,
+            ),
+        ).toBeNull();
+    });
+
+    it('reads the day and the clock in the app time zone, not the viewer one', () => {
+        expect(
+            previewNextRetro(
+                [sprint43],
                 thursday,
                 '14:00',
-                new Date(2026, 9, 1, 15, 0),
+                new Date('2026-10-15T13:30:00Z'),
+                'UTC',
             ),
         ).toEqual({ date: '2026-10-15', time: '14:00' });
-
         expect(
             previewNextRetro(
-                [sprint44, sprint43, sprint42],
-                7,
-                null,
-                new Date(2026, 9, 18, 9, 0),
+                [sprint43],
+                thursday,
+                '14:00',
+                new Date('2026-10-15T13:30:00Z'),
+                'Europe/Paris',
             ),
-        ).toEqual({ date: '2026-10-18', time: null });
+        ).toBeNull();
     });
 });
 
@@ -160,8 +186,14 @@ describe('newSprintDefaults', () => {
 });
 
 describe('day helpers', () => {
-    it('reads the local day of a moment', () => {
-        expect(localDay(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+    it('reads the day and the clock of a moment in a time zone', () => {
+        expect(zonedNow(new Date('2026-09-30T22:30:00Z'), 'UTC')).toEqual({
+            day: '2026-09-30',
+            clock: '22:30',
+        });
+        expect(
+            zonedNow(new Date('2026-09-30T22:30:00Z'), 'Europe/Paris'),
+        ).toEqual({ day: '2026-10-01', clock: '00:30' });
     });
 
     it('adds days across a month end', () => {

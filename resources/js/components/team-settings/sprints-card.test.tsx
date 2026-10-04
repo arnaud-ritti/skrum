@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
     afterEach,
@@ -73,6 +73,7 @@ const current: TeamSprintsPanel = {
         endsOn: '2026-10-13',
         refusal: null,
     },
+    timeZone: 'UTC',
 };
 
 const empty: TeamSprintsPanel = {
@@ -86,6 +87,7 @@ const empty: TeamSprintsPanel = {
         endsOn: '2026-10-13',
         refusal: null,
     },
+    timeZone: 'UTC',
 };
 
 const thursdayAtTwo: TeamRituals = {
@@ -162,7 +164,7 @@ beforeAll(() => {
 
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    vi.setSystemTime(new Date('2026-09-30T10:00:00Z'));
     mocks.post.mockReset();
     mocks.patch.mockReset();
     mocks.put.mockReset();
@@ -347,7 +349,26 @@ describe('SprintsCard', () => {
         expect(field('sprint-ends-on').value).toBe('2026-10-13');
     });
 
-    it('shows an overlap under the first day', async () => {
+    it('releases the form with a toast when the save ends without an answer', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+        card();
+
+        await user.click(screen.getByRole('button', { name: 'Add a sprint' }));
+        await user.click(screen.getByRole('button', { name: 'Add' }));
+        await act(async () => lastOptions(mocks.post).onFinish?.());
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'Something went wrong. Please try again.',
+        );
+        expect(
+            screen
+                .getByRole('button', { name: 'Cancel' })
+                .hasAttribute('disabled'),
+        ).toBe(false);
+    });
+
+    it('keeps the overlap under the first day once the visit finishes', async () => {
         const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
         card();
@@ -428,6 +449,31 @@ describe('SprintsCard', () => {
 
         expect(mocks.delete.mock.calls[0][0]).toBe(
             '/w/nordlys/teams/t1/sprints/s41',
+        );
+    });
+
+    it('says why a deletion ended without an answer, the dialog still open', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+        card();
+
+        await user.click(
+            within(
+                document.querySelector<HTMLElement>('[data-sprint-id="s41"]')!,
+            ).getByRole('button', { name: 'Sprint actions' }),
+        );
+        await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await user.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Delete',
+            }),
+        );
+        await act(async () =>
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onFinish?.(),
+        );
+
+        expect(screen.getByRole('alertdialog').textContent).toContain(
+            'Something went wrong. Please try again.',
         );
     });
 
@@ -522,6 +568,27 @@ describe('SprintsCard', () => {
             ),
         ).not.toBeNull();
         expect(field('retro-time').getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('ties a refused default length to its toggle group', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+        card();
+
+        await user.click(screen.getByRole('button', { name: 'Save' }));
+        await act(async () =>
+            lastOptions(mocks.put).onError?.({
+                sprint_length_weeks: 'The sprint length is invalid.',
+            }),
+        );
+
+        const length = document.querySelector('#sprint-length')!;
+
+        expect(length.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(length.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('The sprint length is invalid.');
     });
 
     it('clears the time when the retro day is removed', async () => {

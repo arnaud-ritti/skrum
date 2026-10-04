@@ -109,7 +109,10 @@ type ToggleGroupOptionsProps<T extends string> = {
   disabled?: boolean
   disabledReason?: string
   className?: string
+  id?: string
   "aria-label": string
+  "aria-describedby"?: string
+  "aria-invalid"?: boolean
 } & (
   | { type: "single"; value: T; onValueChange: (value: T) => void }
   | { type: "multiple"; value: T[]; onValueChange: (value: T[]) => void }
@@ -174,7 +177,10 @@ function OptionsToggleGroup<T extends string>(
     fullWidth = false,
     disabledReason,
     className,
+    id,
     "aria-label": ariaLabel,
+    "aria-describedby": describedBy,
+    "aria-invalid": invalid,
   } = props
   const disabled = props.disabled === true || disabledReason !== undefined
   const reasonId = React.useId()
@@ -200,9 +206,14 @@ function OptionsToggleGroup<T extends string>(
   const sharedProps = {
     "data-slot": "toggle-group",
     "data-variant": variant,
+    id,
     "aria-label": ariaLabel,
     "aria-disabled": disabled ? true : undefined,
-    "aria-describedby": disabledReason ? reasonId : undefined,
+    "aria-invalid": invalid,
+    "aria-describedby":
+      [disabledReason ? reasonId : undefined, describedBy]
+        .filter(Boolean)
+        .join(" ") || undefined,
     disabled,
     className: rootClassName,
   }

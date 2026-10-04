@@ -108,6 +108,7 @@ export type TeamSprintsPanel = {
     current: Sprint | null;
     nextRetro: NextRetro | null;
     nextStart: NextSprintStart;
+    timeZone: string;
 };
 
 export type TeamRituals = {

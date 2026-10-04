@@ -61,7 +61,7 @@ it('sends Members & rituals the creation date of the team and whether its defaul
             ->where('defaultRetroTemplateUnavailable', false));
 });
 
-it('sends the sprints, the next start and the suggested facilitator to Members & rituals', function () {
+it('sends the sprints, the next start, the time zone and the suggested facilitator to Members & rituals', function () {
     $team = Team::factory()->create(['retro_weekday' => 4]);
     teamSprint($team, 41, '2026-09-07', '2026-09-20');
     teamSprint($team, 42, '2026-09-21', '2026-10-04');
@@ -75,6 +75,7 @@ it('sends the sprints, the next start and the suggested facilitator to Members &
             ->where('sprints.total', 2)
             ->where('sprints.nextRetro.date', '2026-10-01')
             ->where('sprints.nextStart', ['number' => 43, 'startsOn' => '2026-09-30', 'endsOn' => '2026-10-13', 'refusal' => null])
+            ->where('sprints.timeZone', 'UTC')
             ->where('facilitators.suggested', null));
 });
 
