@@ -698,7 +698,13 @@ describe('ActionItemsBulkBar', () => {
                 Promise.reject(
                     new RetroRequestError(
                         409,
-                        'Reconnect Jira in the team settings.',
+                        'Reconnecte Jira dans les réglages de l’équipe.',
+                        {},
+                        {
+                            message:
+                                'Reconnecte Jira dans les réglages de l’équipe.',
+                            reason: 'reconnect_required',
+                        },
                     ),
                 ),
             );
@@ -715,7 +721,7 @@ describe('ActionItemsBulkBar', () => {
 
             await waitFor(() =>
                 expect(toast.warning).toHaveBeenCalledWith(
-                    '0 exported, 0 already linked, 1 failed.',
+                    '0 exported, 0 already linked, 2 failed.',
                     expect.anything(),
                 ),
             );
@@ -738,9 +744,41 @@ describe('ActionItemsBulkBar', () => {
             expect(within(details).getByText('Fix the build')).toBeTruthy();
             expect(
                 within(details).getByText(
-                    'Reconnect Jira in the team settings.',
+                    'Reconnecte Jira dans les réglages de l’équipe.',
                 ),
             ).toBeTruthy();
+        });
+
+        it('says that an item without an answer in time may be exported already', async () => {
+            answer(() => Promise.reject(new RetroRequestError(0, 'timeout')));
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Fix the build', 'Write the runbook');
+            await userEvent.click(
+                within(await openSync()).getByRole('button', {
+                    name: 'Export 2 items',
+                }),
+            );
+
+            await waitFor(() => expect(toast.warning).toHaveBeenCalled());
+
+            const [, options] = toast.warning.mock.calls[0];
+
+            act(() => {
+                options.action.onClick();
+            });
+
+            expect(
+                within(
+                    await screen.findByRole('dialog', {
+                        name: 'Action items not exported',
+                    }),
+                ).getAllByText(
+                    'The server did not answer in time: the item may be exported already. Reload the page before you try again.',
+                ),
+            ).toHaveLength(2);
         });
 
         it('ends after the current item when stopped', async () => {
@@ -768,11 +806,27 @@ describe('ActionItemsBulkBar', () => {
             await act(async () => finishes[0](exportAnswer(rows[0], 'OPS-2')));
 
             await waitFor(() =>
-                expect(toast.success).toHaveBeenCalledWith(
-                    '1 exported, 0 already linked.',
+                expect(toast.warning).toHaveBeenCalledWith(
+                    '1 exported, 0 already linked, 1 failed.',
+                    expect.anything(),
                 ),
             );
             expect(finishes).toHaveLength(1);
+
+            const [, options] = toast.warning.mock.calls[0];
+
+            act(() => {
+                options.action.onClick();
+            });
+
+            const details = await screen.findByRole('dialog', {
+                name: 'Action items not exported',
+            });
+
+            expect(within(details).getByText('Write the runbook')).toBeTruthy();
+            expect(
+                within(details).getByText('Not sent: the export was stopped.'),
+            ).toBeTruthy();
         });
     });
 

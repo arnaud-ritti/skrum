@@ -60,20 +60,20 @@ it('keeps sanitized errors within 500 characters', function () {
 
 it('renders integration failures as translated JSON errors', function () {
     $cases = [
-        [new ReconnectRequired(IntegrationProvider::Slack, 'token_revoked'), 409, 'Reconnect Slack in the team settings.'],
-        [new NotConnected(IntegrationProvider::Jira), 409, 'Connect Jira in the team settings.'],
-        [new ReadOnlyConnection(IntegrationProvider::Linear), 409, 'This Linear connection is read-only.'],
-        [new RateLimited(IntegrationProvider::Jira, 12), 429, 'Too many requests to Jira, wait a moment.'],
-        [new ProviderUnavailable(IntegrationProvider::Telegram), 502, 'Telegram did not respond. Try again later.'],
-        [new ProviderRejected(IntegrationProvider::Jira, 'The JQL is invalid.'), 422, 'The JQL is invalid.'],
-        [new TelegramConflict, 409, 'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.'],
+        [new ReconnectRequired(IntegrationProvider::Slack, 'token_revoked'), 409, ['message' => 'Reconnect Slack in the team settings.', 'reason' => 'reconnect_required']],
+        [new NotConnected(IntegrationProvider::Jira), 409, ['message' => 'Connect Jira in the team settings.']],
+        [new ReadOnlyConnection(IntegrationProvider::Linear), 409, ['message' => 'This Linear connection is read-only.']],
+        [new RateLimited(IntegrationProvider::Jira, 12), 429, ['message' => 'Too many requests to Jira, wait a moment.']],
+        [new ProviderUnavailable(IntegrationProvider::Telegram), 502, ['message' => 'Telegram did not respond. Try again later.']],
+        [new ProviderRejected(IntegrationProvider::Jira, 'The JQL is invalid.'), 422, ['message' => 'The JQL is invalid.']],
+        [new TelegramConflict, 409, ['message' => 'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.']],
     ];
 
-    foreach ($cases as [$exception, $status, $message]) {
+    foreach ($cases as [$exception, $status, $body]) {
         $response = $exception->render(request());
 
         expect($response->getStatusCode())->toBe($status)
-            ->and($response->getData(true))->toBe(['message' => $message]);
+            ->and($response->getData(true))->toBe($body);
     }
 });
 
