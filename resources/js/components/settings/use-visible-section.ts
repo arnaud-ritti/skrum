@@ -110,7 +110,15 @@ export function useVisibleSection(
             setCurrent(visible);
         };
 
+        /** A scroller inside the sections, a textarea or a list, moves no section. */
         const onScroll = (event: Event): void => {
+            if (
+                event.target instanceof Element &&
+                !event.target.contains(document.getElementById(anchors[0]))
+            ) {
+                return;
+            }
+
             lastTarget = event.target;
 
             if (frame === 0) {

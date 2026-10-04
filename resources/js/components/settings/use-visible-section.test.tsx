@@ -19,7 +19,9 @@ function Page({ address }: { address?: string }) {
                 </button>
             ))}
             {ids.map((id) => (
-                <section key={id} id={id} tabIndex={-1} />
+                <section key={id} id={id} tabIndex={-1}>
+                    {id === 'profile' && <div data-testid="inner-scroller" />}
+                </section>
             ))}
         </div>
     );
@@ -104,6 +106,22 @@ describe('useVisibleSection', () => {
         expect(current()).toBe('api-tokens');
 
         scroller.scrollTop = 0;
+    });
+
+    it('ignores a scroller inside a section that reaches its own end', () => {
+        render(<Page />);
+
+        const inner = screen.getByTestId('inner-scroller');
+
+        vi.spyOn(inner, 'scrollHeight', 'get').mockReturnValue(400);
+        vi.spyOn(inner, 'clientHeight', 'get').mockReturnValue(100);
+        inner.scrollTop = 300;
+
+        act(() => {
+            fireEvent.scroll(inner);
+        });
+
+        expect(current()).toBe('profile');
     });
 
     it('opens on the section the address names and scrolls to it', () => {
