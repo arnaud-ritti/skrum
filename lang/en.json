@@ -5211,5 +5211,6 @@
     "Team admins: :names and 1 other": "Team admins: :names and 1 other",
     "Or, return to :link": "Or, return to :link",
     "the token owner": "the token owner",
-    "This team has no member yet.": "This team has no member yet."
+    "This team has no member yet.": "This team has no member yet.",
+    ":name (unavailable)": ":name (unavailable)"
 }

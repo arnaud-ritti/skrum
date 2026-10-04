@@ -5430,5 +5430,6 @@
     "Team admins: :names and 1 other": "Team-Admins: :names und 1 weiterer",
     "Or, return to :link": "Oder zurück zur :link",
     "the token owner": "Token-Inhaber:in",
-    "This team has no member yet.": "Dieses Team hat noch keine Mitglieder."
+    "This team has no member yet.": "Dieses Team hat noch keine Mitglieder.",
+    ":name (unavailable)": ":name (nicht verfügbar)"
 }

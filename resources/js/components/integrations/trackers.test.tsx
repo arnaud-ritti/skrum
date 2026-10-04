@@ -953,6 +953,25 @@ describe('PrioritiesPanel', () => {
             ).textContent,
         ).toContain('No priority');
     });
+
+    it('keeps a saved Jira priority the site no longer lists in sight', async () => {
+        request.mockResolvedValue([{ id: '2', name: 'High' }]);
+        const jira = connection('jira', {
+            settings: { priorityMap: { high: { id: '9', name: 'Blocker' } } },
+        } as Partial<TeamIntegration>);
+
+        renderWithProviders(
+            <PrioritiesPanel scope={scope} connection={jira} />,
+        );
+
+        expect(
+            (
+                await screen.findByRole('combobox', {
+                    name: 'Priority for High',
+                })
+            ).textContent,
+        ).toContain('Blocker (unavailable)');
+    });
 });
 
 describe('StatusMappingPanel', () => {

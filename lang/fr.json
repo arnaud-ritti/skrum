@@ -5430,5 +5430,6 @@
     "Team admins: :names and 1 other": "Admins de l'équipe : :names et 1 autre",
     "Or, return to :link": "Ou retourne à :link",
     "the token owner": "la personne titulaire du jeton",
-    "This team has no member yet.": "Cette équipe n'a encore aucun membre."
+    "This team has no member yet.": "Cette équipe n'a encore aucun membre.",
+    ":name (unavailable)": ":name (indisponible)"
 }
