@@ -153,6 +153,10 @@ function ContainerMapping({
             ? allDoneIds
             : allDoneIds.filter((id) => savedDoneIds.includes(id));
     const lastDoneChecked = checkedDoneIds.length === 1;
+    const savedDoneAreGone =
+        savedDoneIds !== null &&
+        allDoneIds.length > 0 &&
+        checkedDoneIds.length === 0;
 
     const load = async () => {
         setBusy(true);
@@ -173,6 +177,7 @@ function ContainerMapping({
         }
     };
 
+    /** The whole entry is sent from the props: they stay locked until the reload brings the saved mapping back. */
     const save = async (change: Record<string, string | string[] | null>) => {
         setBusy(true);
 
@@ -181,12 +186,14 @@ function ContainerMapping({
                 status_mapping: { container, ...current, ...change },
             });
             toast.success(t('Status mapping saved.'));
-            router.reload({ only: ['providers'] });
+            router.reload({
+                only: ['providers'],
+                onFinish: () => setBusy(false),
+            });
         } catch (failure) {
             toast.error(
                 integrationErrorMessage(failure, t('Something went wrong.')),
             );
-        } finally {
             setBusy(false);
         }
     };
@@ -302,6 +309,33 @@ function ContainerMapping({
                                         'At least one status must count as done.',
                                     )}
                                 </p>
+                            )}
+                            {savedDoneAreGone && (
+                                <div className="flex min-w-0 flex-col items-start gap-1.5">
+                                    <p className="text-body-sm text-skrum-destructive-text">
+                                        {t(
+                                            'No saved done status exists anymore, so nothing counts as done.',
+                                        )}
+                                    </p>
+                                    <LoadingButton
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="max-w-full"
+                                        loading={busy}
+                                        onClick={() =>
+                                            void save({
+                                                done_status_ids: null,
+                                            })
+                                        }
+                                    >
+                                        <span className="truncate">
+                                            {t(
+                                                'Use the done statuses of the workflow',
+                                            )}
+                                        </span>
+                                    </LoadingButton>
+                                </div>
                             )}
                         </fieldset>
                     )}

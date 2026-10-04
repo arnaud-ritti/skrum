@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
@@ -1065,6 +1065,78 @@ describe('StatusMappingPanel', () => {
                 reopen_status_id: null,
             },
         });
+    });
+
+    it('keeps the targets locked until the saved mapping is back', async () => {
+        request.mockResolvedValueOnce({ containers: ['PROJ'] });
+        request.mockResolvedValueOnce({
+            statuses: [
+                { id: '3', name: 'In Progress', category: 'in_progress' },
+                { id: '10002', name: 'Done', category: 'done' },
+            ],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={jira} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            await screen.findByRole('combobox', { name: 'Start to' }),
+        );
+        await userEvent.click(
+            screen.getByRole('option', { name: 'In Progress' }),
+        );
+
+        await waitFor(() => expect(router.reload).toHaveBeenCalled());
+
+        const complete = screen.getByRole('combobox', { name: 'Complete to' });
+
+        expect(isDisabled(complete)).toBe(true);
+
+        act(() => {
+            router.reload.mock.calls.at(-1)?.[0].onFinish();
+        });
+
+        expect(isDisabled(complete)).toBe(false);
+    });
+
+    it('says when no saved done status exists anymore and offers the automatic choice', async () => {
+        request.mockResolvedValueOnce({ containers: ['PROJ'] });
+        request.mockResolvedValueOnce({
+            statuses: [{ id: '10005', name: 'Closed', category: 'done' }],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={jira} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+
+        expect(
+            await screen.findByText(
+                'No saved done status exists anymore, so nothing counts as done.',
+            ),
+        ).toBeTruthy();
+
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'Use the done statuses of the workflow',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(request.mock.calls.at(-1)?.[1]).toMatchObject({
+                status_mapping: { container: 'PROJ', done_status_ids: null },
+            }),
+        );
     });
 
     it('offers a start target before the two others, and saves it', async () => {

@@ -5433,5 +5433,7 @@
     "This team has no member yet.": "Este equipo aún no tiene miembros.",
     ":name (unavailable)": ":name (no disponible)",
     "Posting stops and the Slack access is revoked.": "Se dejará de publicar y se revocará el acceso a Slack.",
-    "The bot leaves the chat and nothing is posted there anymore.": "El bot sale del chat y ya no se publica nada allí."
+    "The bot leaves the chat and nothing is posted there anymore.": "El bot sale del chat y ya no se publica nada allí.",
+    "No saved done status exists anymore, so nothing counts as done.": "Ya no existe ninguno de los estados terminados guardados, así que nada cuenta como terminado.",
+    "Use the done statuses of the workflow": "Usar los estados terminados del flujo de trabajo"
 }
