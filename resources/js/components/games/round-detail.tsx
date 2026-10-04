@@ -17,7 +17,7 @@ import { TwoTruthsResult } from './two-truths-board';
 import { WordMask } from './word-mask';
 
 export function RoundDetail({ roundId }: { roundId: string }) {
-    const { snapshot, handleError } = useRoom();
+    const { snapshot, handleError, sessionExpired } = useRoom();
     const { t } = useTrans();
     const [detail, setDetail] = useState<GameRoundDetail | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -47,6 +47,10 @@ export function RoundDetail({ roundId }: { roundId: string }) {
             isCurrent = false;
         };
     }, [roomId, roundId, handleError, t]);
+
+    if (sessionExpired) {
+        return null;
+    }
 
     if (error !== null) {
         return (
