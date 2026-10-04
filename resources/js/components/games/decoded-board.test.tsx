@@ -56,16 +56,22 @@ function renderBoard(me: string, round: Partial<GameRound> = {}) {
 }
 
 describe('DecodedBoard auto hints', () => {
-    it('shows a guesser when the next letter comes', () => {
+    it('shows a guesser when the next letter comes, without a hint button', () => {
         renderBoard('guesser');
 
         expect(screen.getByText('next letter in 0:12')).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: /Reveal a letter/ }),
+        ).toBeNull();
     });
 
     it('shows the leader when the next letter comes, beside the hint button', () => {
         renderBoard('leader');
 
         expect(screen.getByText('next letter in 0:12')).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Reveal a letter (3 left)' }),
+        ).toBeTruthy();
     });
 
     it('shows no countdown without auto hints', () => {
