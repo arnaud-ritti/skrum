@@ -8,6 +8,7 @@ use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
 use App\Events\Retros\ColumnsChanged;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -34,9 +35,15 @@ class ColumnsController extends Controller
         ]);
 
         return $this->respond($retro, $participant, function (Retro $locked) use ($validated): void {
+            $position = $locked->columns()->count();
+
+            if ($position >= WorkspaceTemplateRequest::MaxColumns) {
+                throw ValidationException::withMessages(['column' => __('A board holds at most :count columns.', ['count' => WorkspaceTemplateRequest::MaxColumns])]);
+            }
+
             $locked->columns()->create([
                 ...$validated,
-                'position' => $locked->columns()->count(),
+                'position' => $position,
             ]);
         }, 201);
     }
@@ -74,6 +81,10 @@ class ColumnsController extends Controller
             $lockedColumn = $locked->columns()->whereKey($column->id)->firstOrFail();
 
             $this->ensureEmpty($lockedColumn);
+
+            if ($locked->columns()->count() <= 1) {
+                throw ValidationException::withMessages(['column' => __('A board needs at least one column.')]);
+            }
 
             $lockedColumn->delete();
 

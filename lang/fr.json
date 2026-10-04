@@ -5421,5 +5421,7 @@
     "% of the respondents who ticked the option": "% des répondants ayant coché l’option",
     "Score distribution": "Répartition des notes",
     "Otherwise the instance style applies to everyone, guests included.": "Sinon, le style de l'instance s'applique à tous, invités compris.",
-    "Preview · :style": "Aperçu · :style"
+    "Preview · :style": "Aperçu · :style",
+    "A board holds at most :count columns.": "Un tableau contient au plus :count colonnes.",
+    "A board needs at least one column.": "Un tableau a besoin d'au moins une colonne."
 }
