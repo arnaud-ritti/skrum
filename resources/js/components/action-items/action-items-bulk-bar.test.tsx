@@ -212,6 +212,33 @@ describe('ActionItemsBulkBar', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
 
+    it('keeps the rows ticked while the request was running', async () => {
+        let answer: (value: unknown) => void = () => undefined;
+        retroRequest.mockReturnValue(
+            new Promise((resolve) => {
+                answer = resolve;
+            }),
+        );
+        renderWithProviders(<Harness />);
+
+        await select('Fix the build');
+        await choose('Status', 'In progress');
+        await select('Rotate the keys');
+
+        answer({ actionItems: [rows[0]], changedCount: 1, refused: [] });
+
+        await waitFor(() =>
+            expect(within(bar()).getByRole('status').textContent).toBe(
+                '1 selected',
+            ),
+        );
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'Select Rotate the keys' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
+
     it('lists only the members common to the teams of the selection', async () => {
         renderWithProviders(<Harness />);
 

@@ -32,7 +32,7 @@ import {
     useActionItemLabels,
 } from '@/components/skrum/action-item';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar, calendarLocale } from '@/components/ui/calendar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -314,20 +314,17 @@ export function ActionItemsBulkBar({
     };
 
     const settle = (target: BulkTarget, refusedIds: string[]): void => {
-        if (!('ids' in target) || refusedIds.length === 0) {
-            selection.clear();
-
-            if ('filters' in target) {
-                onReload();
-            }
+        if ('ids' in target) {
+            selection.setMany(
+                target.ids.filter((id) => !refusedIds.includes(id)),
+                false,
+            );
 
             return;
         }
 
-        selection.setMany(
-            target.ids.filter((id) => !refusedIds.includes(id)),
-            false,
-        );
+        selection.clear();
+        onReload();
     };
 
     const update = async (
@@ -761,9 +758,7 @@ export function ActionItemsBulkBar({
                                     >
                                         <Calendar
                                             mode="single"
-                                            locale={
-                                                locale === 'fr' ? 'fr' : 'en'
-                                            }
+                                            locale={calendarLocale(locale)}
                                             onSelect={(date) => {
                                                 if (date === undefined) {
                                                     return;
