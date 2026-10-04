@@ -85,7 +85,7 @@ class ActionItemPermissions
             return true;
         }
 
-        return $this->isManager($comment->actionItem, $actor);
+        return $this->canDelete($comment->actionItem, $actor);
     }
 
     public function authorizeCreateWithoutRetro(User $user, Team $team): void

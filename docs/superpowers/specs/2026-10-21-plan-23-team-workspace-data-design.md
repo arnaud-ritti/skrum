@@ -272,7 +272,7 @@ Managers (workspace owners and admins) can do everything on every team of their 
 | Be chosen as a retro's facilitator in the "New session" dialog | yes | yes | yes | yes | no |
 | Take control of an open retro or game room of the team (§6.10) | yes | yes | yes | no (game room: its creator, as today) | no |
 | Take control of a poker game or whiteboard of the team | yes | yes | yes | yes (as today) | no |
-| Create, comment on, complete action items | as today | as today | as today | as today | **no** |
+| Create, comment on, complete, edit, delete action items, delete others' comments on them | as today | as today | as today | as today | **no**, not even on an item they wrote before becoming observer |
 | Rename the team, its description, health statements | yes | yes | no | no | no |
 | Add and remove members, change roles | yes | yes | no | no | no |
 | Ritual settings (sprints, "Start the next sprint", retro day, facilitators, rotation, default template) | yes | yes | yes | no | no |
@@ -294,7 +294,7 @@ The workspace presence channel of §6.11 is open to every signed-in member of th
 - One middleware, `RefuseObserverWrites`, added after the participant middleware of each of the five session scopes (`retros/{retro}`, `poker/{game}`, `whiteboards/{board}`, `games/{room}`, `surveys/{teamSurvey}`): a request that is not a read (`GET`, `HEAD`, `OPTIONS`), by a signed-in observer of the session's team, is refused with 403 "Observers can follow this session but not take part.", unless that person is the session's facilitator (host for a game room, editor for a survey). It refuses an observer's "Take control" too.
 - Poker: an observer joins as a spectator; an existing player who becomes an observer is made a spectator when they next open the game (`SetPokerSpectator`, which withdraws their open votes).
 - Each session snapshot carries `viewerIsObserver`; the screens render read-only (§9.7).
-- Action items: `ActionItemPermissions` refuses an observer creation, comments and completion, on every surface (retro, action items page, MCP).
+- Action items: `ActionItemPermissions` refuses an observer creation, comments, completion, edit and deletion, and the deletion of someone else's comment, on every surface (retro, action items page, MCP), also on an item they wrote before becoming observer (decision 3 A). Their own earlier comments stay theirs to edit or delete.
 - MCP: every write tool refuses an observer of the team concerned with the same message.
 - Participation (session-end statistics, survey audience): observers count neither among those who joined nor among those expected.
 
