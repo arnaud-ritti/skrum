@@ -166,6 +166,21 @@ describe('AccessRequestBlock', () => {
         ).toBeTruthy();
     });
 
+    it('names a single admin it does not show in the singular', () => {
+        renderWithProviders(
+            <AccessRequestBlock
+                offer={offer({
+                    managers: [{ name: 'Camille Roux', avatarUrl: '' }],
+                    managersMore: 1,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByText('Team admins: Camille Roux and 1 other'),
+        ).toBeTruthy();
+    });
+
     it('opens in the sent state when a request is pending', () => {
         renderWithProviders(
             <AccessRequestBlock offer={offer({ pending: true })} />,
@@ -238,9 +253,9 @@ describe('AccessRequestBlock', () => {
 
         await requestAccess();
 
-        expect(
-            screen.getByText('Something went wrong. Please try again.'),
-        ).toBeTruthy();
+        expect(screen.getByRole('alert').textContent).toBe(
+            'Something went wrong. Please try again.',
+        );
         expect(
             screen.getByRole('button', { name: 'Request access' }),
         ).toBeTruthy();
@@ -254,7 +269,16 @@ describe('AccessRequestBlock', () => {
 
         await requestAccess();
 
-        expect(screen.getByText('You are already in this team.')).toBeTruthy();
+        expect(screen.getByRole('alert').textContent).toBe(
+            'You are already in this team.',
+        );
+        expect(
+            screen
+                .getByRole('textbox', {
+                    name: 'Message to the admins (optional)',
+                })
+                .hasAttribute('aria-invalid'),
+        ).toBe(false);
         expect(
             screen.getByRole('button', { name: 'Request access' }),
         ).toBeTruthy();

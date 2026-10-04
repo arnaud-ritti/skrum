@@ -63,12 +63,13 @@ function TeamManagers({
                 ))}
             </span>
             <span className="min-w-0 text-left text-pretty">
-                {more > 0
-                    ? t('Team admins: :names and :count others', {
-                          names,
-                          count: more,
-                      })
-                    : t('Team admins: :names', { names })}
+                {more === 0 && t('Team admins: :names', { names })}
+                {more === 1 && t('Team admins: :names and 1 other', { names })}
+                {more > 1 &&
+                    t('Team admins: :names and :count others', {
+                        names,
+                        count: more,
+                    })}
             </span>
         </p>
     );
@@ -108,7 +109,7 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
                   workspace: offer.workspace.name,
                   count: offer.memberCount,
               });
-    const error = request.errors.message ?? failure;
+    const error = request.errors.message;
 
     useEffect(() => {
         if (!sent || !focusSentButton.current) {
@@ -213,6 +214,7 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
                     <InputError id={errorId} message={error} />
                 </div>
             )}
+            <InputError role="alert" message={failure} />
             <div
                 data-slot="access-request-actions"
                 className="mt-1 flex flex-wrap items-center justify-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch"

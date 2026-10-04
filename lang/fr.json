@@ -5427,5 +5427,6 @@
     "A board needs at least one column.": "Un tableau a besoin d'au moins une colonne.",
     ":ms ms": ":ms ms",
     "issuer :issuer": "émetteur :issuer",
-    "No code could be sent. Try again later.": "Aucun code n'a pu être envoyé. Réessaie plus tard."
+    "No code could be sent. Try again later.": "Aucun code n'a pu être envoyé. Réessaie plus tard.",
+    "Team admins: :names and 1 other": "Admins de l'équipe : :names et 1 autre"
 }

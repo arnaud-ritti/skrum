@@ -5208,5 +5208,6 @@
     "A board needs at least one column.": "A board needs at least one column.",
     ":ms ms": ":ms ms",
     "issuer :issuer": "issuer :issuer",
-    "No code could be sent. Try again later.": "No code could be sent. Try again later."
+    "No code could be sent. Try again later.": "No code could be sent. Try again later.",
+    "Team admins: :names and 1 other": "Team admins: :names and 1 other"
 }
