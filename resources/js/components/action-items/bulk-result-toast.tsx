@@ -14,7 +14,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { BulkRefusal } from '@/lib/action-items/bulk';
 
-export type BulkResultKind = 'update' | 'delete';
+export type BulkResultKind = 'update' | 'delete' | 'export';
 
 /**
  * The toast after a bulk change (decision 1, P24-05): the count alone when
@@ -27,6 +27,7 @@ export function useBulkResultToast(): {
         kind: BulkResultKind,
         done: number,
         refused: BulkRefusal[],
+        skipped?: number,
     ) => void;
     details: ReactNode;
 } {
@@ -52,30 +53,50 @@ export function useBulkResultToast(): {
         kind: BulkResultKind,
         done: number,
         refused: BulkRefusal[],
+        skipped = 0,
     ): void => {
+        if (kind === 'export' && refused.length === 0) {
+            toast.success(
+                t(':exported exported, :skipped already linked.', {
+                    exported: done,
+                    skipped,
+                }),
+            );
+
+            return;
+        }
+
         if (refused.length === 0) {
             toast.success(fullSuccess(kind, done));
 
             return;
         }
 
-        toast.warning(
-            kind === 'update'
-                ? t(':changed updated, :refused not changed.', {
-                      changed: done,
-                      refused: refused.length,
-                  })
-                : t(':deleted deleted, :refused not deleted.', {
-                      deleted: done,
-                      refused: refused.length,
-                  }),
-            {
-                action: {
-                    label: t('Details'),
-                    onClick: () => setShown({ kind, refused }),
+        const sentences: Record<BulkResultKind, string> = {
+            update: t(':changed updated, :refused not changed.', {
+                changed: done,
+                refused: refused.length,
+            }),
+            delete: t(':deleted deleted, :refused not deleted.', {
+                deleted: done,
+                refused: refused.length,
+            }),
+            export: t(
+                ':exported exported, :skipped already linked, :failed failed.',
+                {
+                    exported: done,
+                    skipped,
+                    failed: refused.length,
                 },
+            ),
+        };
+
+        toast.warning(sentences[kind], {
+            action: {
+                label: t('Details'),
+                onClick: () => setShown({ kind, refused }),
             },
-        );
+        });
     };
 
     const details = (
@@ -90,9 +111,12 @@ export function useBulkResultToast(): {
             <DialogContent size="sm" closeLabel={t('Close')}>
                 <DialogHeader>
                     <DialogTitle>
-                        {shown?.kind === 'delete'
-                            ? t('Action items not deleted')
-                            : t('Action items not changed')}
+                        {shown?.kind === 'delete' &&
+                            t('Action items not deleted')}
+                        {shown?.kind === 'export' &&
+                            t('Action items not exported')}
+                        {shown?.kind === 'update' &&
+                            t('Action items not changed')}
                     </DialogTitle>
                     <DialogDescription>
                         {t(

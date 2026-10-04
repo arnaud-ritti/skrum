@@ -8,11 +8,14 @@ import type { ActionItemFilters } from '@/components/action-items/use-action-ite
 import type { RunMutation } from '@/components/action-items/use-action-item-mutations';
 import { useActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import { RetroRequestError } from '@/lib/retro/api';
+import type { ActionItem } from '@/lib/retro/types';
 import {
+    actionItemEndpointsFixture,
     actionItemFixture,
     actionItemViewerFixture,
 } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
+import type { ExportSource } from '@/types/integrations';
 
 const retroRequest = vi.hoisted(() => vi.fn());
 const toast = vi.hoisted(() => ({
@@ -84,16 +87,30 @@ const handlers = {
     onRemoved: vi.fn(),
 };
 
+const jira: ExportSource = {
+    source: 'jira',
+    label: 'Jira',
+    integrationId: 'integration-1',
+};
+
 function Harness({
     total = 3,
     reloadedTotal = total,
+    items = rows,
+    shownFilters = filters,
+    sources = {},
+    layout = 'floating',
 }: {
     total?: number;
     reloadedTotal?: number;
+    items?: ActionItem[];
+    shownFilters?: ActionItemFilters;
+    sources?: Record<string, ExportSource[]>;
+    layout?: 'floating' | 'docked';
 }) {
     const [count, setCount] = useState(total);
     const selection = useActionItemSelection({
-        rows,
+        rows: items,
         viewer: actionItemViewerFixture(),
         total: count,
         filtersKey: 'f',
@@ -102,7 +119,7 @@ function Harness({
 
     return (
         <>
-            {rows.map((row) => (
+            {items.map((row) => (
                 <ActionItemSelectCell
                     key={row.id}
                     item={row}
@@ -112,11 +129,15 @@ function Harness({
             <ActionItemsBulkBar
                 workspace="nordlys"
                 locale="en"
-                items={rows}
+                items={items}
                 selection={selection}
-                filters={filters}
+                filters={shownFilters}
                 teams={[atlas, borealis]}
                 viewer={actionItemViewerFixture()}
+                endpoints={actionItemEndpointsFixture()}
+                scope={{ workspace: 'nordlys', canManagePeople: false }}
+                sourcesOf={(teamId) => sources[teamId] ?? []}
+                layout={layout}
                 {...handlers}
                 onReload={() => setCount(reloadedTotal)}
             />
@@ -463,6 +484,344 @@ describe('ActionItemsBulkBar', () => {
             expect(within(bar()).getByRole('status').textContent).toBe(
                 '2 selected',
             );
+        });
+    });
+
+    describe('sync to a tracker', () => {
+        const linked = actionItemFixture({
+            id: 'd',
+            content: 'Close the incident',
+            externalLinks: [
+                {
+                    id: 'link-1',
+                    source: 'jira',
+                    key: 'OPS-1',
+                    url: 'https://jira.test/OPS-1',
+                    state: 'open',
+                    statusName: 'To Do',
+                    syncState: 'synced',
+                    syncError: null,
+                    lastSyncedAt: null,
+                } as NonNullable<ActionItem['externalLinks']>[number],
+            ],
+        });
+        const items = [...rows, linked];
+        const targets = {
+            projects: [{ id: '10', key: 'OPS', name: 'Operations' }],
+            issueTypes: [{ id: '3', name: 'Task' }],
+            defaults: { projectId: '10', issueTypeId: '3' },
+        };
+
+        function exportAnswer(item: ActionItem, key: string) {
+            return {
+                actionItem: {
+                    ...item,
+                    externalLinks: [
+                        { ...linked.externalLinks![0], id: `l-${key}`, key },
+                    ],
+                },
+                warnings: [],
+            };
+        }
+
+        function answer(exportOne: (url: string) => Promise<unknown>): void {
+            retroRequest.mockImplementation(
+                (route: { url: string; method: string }) =>
+                    route.method === 'get'
+                        ? Promise.resolve(targets)
+                        : exportOne(route.url),
+            );
+        }
+
+        async function openSync(): Promise<HTMLElement> {
+            await userEvent.click(
+                within(bar()).getByRole('button', { name: 'Sync to Jira' }),
+            );
+
+            const dialog = await screen.findByRole('dialog', {
+                name: 'Sync to Jira',
+            });
+
+            await waitFor(() =>
+                expect(
+                    within(dialog)
+                        .getByRole('button', { name: 'Export 2 items' })
+                        .hasAttribute('disabled'),
+                ).toBe(false),
+            );
+
+            return dialog;
+        }
+
+        it('is hidden for a selection of two teams', async () => {
+            renderWithProviders(
+                <Harness
+                    items={items}
+                    sources={{ 'team-1': [jira], 'team-2': [jira] }}
+                />,
+            );
+
+            await select('Fix the build', 'Rotate the keys');
+
+            expect(
+                within(bar()).queryByRole('button', { name: 'Sync to Jira' }),
+            ).toBeNull();
+        });
+
+        it('is hidden for a team without a tracker', async () => {
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Rotate the keys');
+
+            expect(
+                within(bar()).queryByRole('button', { name: 'Sync to Jira' }),
+            ).toBeNull();
+        });
+
+        it('is disabled in all matching mode, with its reason', async () => {
+            renderWithProviders(
+                <Harness
+                    total={137}
+                    shownFilters={{ ...filters, team: 'team-1' }}
+                    sources={{ 'team-1': [jira] }}
+                />,
+            );
+
+            await select(
+                'Fix the build',
+                'Write the runbook',
+                'Rotate the keys',
+            );
+            await userEvent.click(
+                within(bar()).getByRole('button', {
+                    name: 'Select all 137 matching',
+                }),
+            );
+
+            const sync = within(bar()).getByRole('button', {
+                name: 'Sync to Jira',
+            });
+
+            expect(sync.hasAttribute('disabled')).toBe(true);
+
+            await userEvent.hover(sync.parentElement!);
+
+            expect(
+                await screen.findByRole('tooltip', {
+                    name: 'Select rows on this page to sync them.',
+                }),
+            ).toBeTruthy();
+        });
+
+        it('exports the unlinked items one after the other and skips the linked one', async () => {
+            const finishes: ((value: unknown) => void)[] = [];
+
+            answer(
+                () =>
+                    new Promise((resolve) => {
+                        finishes.push(resolve);
+                    }),
+            );
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select(
+                'Fix the build',
+                'Write the runbook',
+                'Close the incident',
+            );
+
+            const dialog = await openSync();
+
+            await userEvent.click(
+                within(dialog).getByRole('button', { name: 'Export 2 items' }),
+            );
+
+            expect(
+                await within(bar()).findByText('Exporting 1 of 2…'),
+            ).toBeTruthy();
+            expect(within(bar()).getByRole('progressbar')).toBeTruthy();
+
+            await act(async () => finishes[0](exportAnswer(rows[0], 'OPS-2')));
+
+            expect(
+                await within(bar()).findByText('Exporting 2 of 2…'),
+            ).toBeTruthy();
+
+            await act(async () => finishes[1](exportAnswer(rows[1], 'OPS-3')));
+
+            const posts = retroRequest.mock.calls
+                .filter(([route]) => route.method === 'post')
+                .map(([route]) => route.url);
+
+            expect(posts).toEqual(['/items/a/exports', '/items/b/exports']);
+            await waitFor(() =>
+                expect(toast.success).toHaveBeenCalledWith(
+                    '2 exported, 1 already linked.',
+                ),
+            );
+            expect(handlers.onSaved).toHaveBeenCalledTimes(2);
+        });
+
+        it('stops on a reconnect answer and lists it in the details', async () => {
+            answer(() =>
+                Promise.reject(
+                    new RetroRequestError(
+                        409,
+                        'Reconnect Jira in the team settings.',
+                    ),
+                ),
+            );
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Fix the build', 'Write the runbook');
+            await userEvent.click(
+                within(await openSync()).getByRole('button', {
+                    name: 'Export 2 items',
+                }),
+            );
+
+            await waitFor(() =>
+                expect(toast.warning).toHaveBeenCalledWith(
+                    '0 exported, 0 already linked, 1 failed.',
+                    expect.anything(),
+                ),
+            );
+            expect(
+                retroRequest.mock.calls.filter(
+                    ([route]) => route.method === 'post',
+                ),
+            ).toHaveLength(1);
+
+            const [, options] = toast.warning.mock.calls[0];
+
+            act(() => {
+                options.action.onClick();
+            });
+
+            const details = await screen.findByRole('dialog', {
+                name: 'Action items not exported',
+            });
+
+            expect(within(details).getByText('Fix the build')).toBeTruthy();
+            expect(
+                within(details).getByText(
+                    'Reconnect Jira in the team settings.',
+                ),
+            ).toBeTruthy();
+        });
+
+        it('ends after the current item when stopped', async () => {
+            const finishes: ((value: unknown) => void)[] = [];
+
+            answer(
+                () =>
+                    new Promise((resolve) => {
+                        finishes.push(resolve);
+                    }),
+            );
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Fix the build', 'Write the runbook');
+            await userEvent.click(
+                within(await openSync()).getByRole('button', {
+                    name: 'Export 2 items',
+                }),
+            );
+            await userEvent.click(
+                await within(bar()).findByRole('button', { name: 'Stop' }),
+            );
+            await act(async () => finishes[0](exportAnswer(rows[0], 'OPS-2')));
+
+            await waitFor(() =>
+                expect(toast.success).toHaveBeenCalledWith(
+                    '1 exported, 0 already linked.',
+                ),
+            );
+            expect(finishes).toHaveLength(1);
+        });
+    });
+
+    describe('docked below 80rem', () => {
+        it('shows Status, Assign and Due date, and the rest under More actions', async () => {
+            renderWithProviders(
+                <Harness layout="docked" sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Fix the build');
+
+            const docked = bar();
+
+            expect(docked.getAttribute('data-layout')).toBe('docked');
+            expect(
+                within(docked)
+                    .getAllByRole('button')
+                    .map(
+                        (button) =>
+                            button.textContent ||
+                            button.getAttribute('aria-label'),
+                    ),
+            ).toEqual([
+                'Status',
+                'Assign',
+                'Due date',
+                'More actions',
+                'Clear selection',
+            ]);
+
+            await userEvent.click(
+                within(docked).getByRole('button', { name: 'More actions' }),
+            );
+
+            const menu = await screen.findByRole('menu');
+
+            expect(
+                within(menu)
+                    .getAllByRole('menuitem')
+                    .map((item) => item.textContent),
+            ).toEqual(['Priority', 'Sync to Jira', 'Delete']);
+        });
+
+        it('selects every matching item from More actions in one step', async () => {
+            renderWithProviders(<Harness layout="docked" total={137} />);
+
+            await select('Fix the build');
+            await userEvent.click(
+                within(bar()).getByRole('button', { name: 'More actions' }),
+            );
+            await userEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'Select all 137 matching',
+                }),
+            );
+
+            expect(within(bar()).getByRole('status').textContent).toBe(
+                'All 137 matching selected',
+            );
+        });
+
+        it('refuses every matching item above the cap', async () => {
+            renderWithProviders(<Harness layout="docked" total={501} />);
+
+            await select('Fix the build');
+            await userEvent.click(
+                within(bar()).getByRole('button', { name: 'More actions' }),
+            );
+
+            expect(
+                (
+                    await screen.findByRole('menuitem', {
+                        name: 'Select all 501 matching',
+                    })
+                ).getAttribute('aria-disabled'),
+            ).toBe('true');
         });
     });
 });

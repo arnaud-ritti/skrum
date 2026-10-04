@@ -1,9 +1,14 @@
 import { useState } from 'react';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { toActionItemData } from '@/components/action-items/action-item-adapters';
+import { ActionItemSelectCell } from '@/components/action-items/action-item-select-cell';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
 import { ItemComments } from '@/components/action-items/item-comments';
 import { ItemExport } from '@/components/action-items/item-export';
 import { ItemSubtasks } from '@/components/action-items/item-subtasks';
+import { useLongPress } from '@/components/action-items/use-long-press';
+import type { LongPressHandlers } from '@/components/action-items/use-long-press';
+import type { ActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import type {
     ActionItemLink,
     ActionItemPatch,
@@ -14,6 +19,7 @@ import type { ActionItemEndpoints } from '@/lib/action-items/endpoints';
 import type { ActionItemGroup } from '@/lib/action-items/grouping';
 import { canManageActionItem } from '@/lib/action-items/permissions';
 import type { ActionItem as ActionItemPayload } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 
 type Props = {
     groups: ActionItemGroup[];
@@ -25,7 +31,109 @@ type Props = {
     focusedId?: string | null;
     'aria-label'?: string;
     onPatch: (item: ActionItemPayload, patch: ActionItemPatch) => void;
+    /** The page's selection; without it the list has no selection mode. */
+    selection?: ActionItemSelection;
+    /** Selection mode (spec 24 §9.5): a box before each item, a tap toggles it. */
+    selecting?: boolean;
+    /** A long press of a finger or a pen, outside selection mode. */
+    onLongPress?: (item: ActionItemPayload) => void;
 };
+
+type RowProps = LongPressHandlers & {
+    onKeyDownCapture: (event: KeyboardEvent<HTMLElement>) => void;
+    'data-selected'?: 'true';
+    className?: string;
+};
+
+/**
+ * One item of the list with what selection adds to it: the long press
+ * outside the mode, and in the mode a box before it and a tap that toggles
+ * it instead of reaching the item's own buttons.
+ */
+function SelectableRow({
+    item,
+    selection,
+    selecting,
+    onLongPress,
+    render,
+}: {
+    item: ActionItemPayload;
+    selection: ActionItemSelection;
+    selecting: boolean;
+    onLongPress?: (item: ActionItemPayload) => void;
+    render: (props: RowProps) => ReactNode;
+}) {
+    const press = useLongPress(() => {
+        if (!selecting) {
+            onLongPress?.(item);
+        }
+    });
+    const selected = selecting && selection.isSelected(item.id);
+
+    const onClickCapture = (event: MouseEvent<HTMLElement>): void => {
+        press.onClickCapture(event);
+
+        if (!selecting || event.isPropagationStopped()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (selection.selectable(item)) {
+            selection.toggle(item.id);
+        }
+    };
+
+    // Space and Enter on the focused item select it, as a tap does.
+    const onKeyDownCapture = (event: KeyboardEvent<HTMLElement>): void => {
+        if (!selecting || event.target !== event.currentTarget) {
+            return;
+        }
+
+        if (event.key !== ' ' && event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (selection.selectable(item)) {
+            selection.toggle(item.id);
+        }
+    };
+
+    const row = render({
+        ...press,
+        onClickCapture,
+        onKeyDownCapture,
+        'data-selected': selected ? 'true' : undefined,
+        className: cn(
+            selecting && 'min-w-0 flex-1 cursor-pointer select-none',
+            'data-[selected=true]:border-ring data-[selected=true]:bg-skrum-primary-soft',
+        ),
+    });
+
+    if (!selecting) {
+        return row;
+    }
+
+    return (
+        <div
+            data-slot="action-item-selectable"
+            className="flex min-w-0 items-start gap-1"
+        >
+            <span className="grid size-11 shrink-0 place-items-center">
+                <ActionItemSelectCell
+                    item={item}
+                    selection={selection}
+                    className="size-5"
+                />
+            </span>
+            {row}
+        </div>
+    );
+}
 
 /**
  * The action items of a page below the width of the table: one `ActionItem`
@@ -39,6 +147,9 @@ export function ActionItemsList({
     focusedId = null,
     'aria-label': ariaLabel,
     onPatch,
+    selection,
+    selecting = false,
+    onLongPress,
 }: Props) {
     const { t } = useTrans();
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -66,7 +177,7 @@ export function ActionItemsList({
         return paged ? `${label} · ${t('on this page')}` : label;
     };
 
-    const row = (item: ActionItemPayload) => {
+    const row = (item: ActionItemPayload, selectionProps?: RowProps) => {
         const { canComplete, ...data } = toActionItemData(item, {
             locale: context.locale,
             viewer: context.viewer,
@@ -81,6 +192,7 @@ export function ActionItemsList({
             <ActionItem
                 key={item.id}
                 id={`action-item-${item.id}`}
+                {...selectionProps}
                 {...data}
                 today={context.today}
                 withDoing
@@ -163,7 +275,20 @@ export function ActionItemsList({
                         </h2>
                     )}
                     <div role="list" className="flex min-w-0 flex-col gap-2">
-                        {group.items.map(row)}
+                        {group.items.map((item) =>
+                            selection === undefined ? (
+                                row(item)
+                            ) : (
+                                <SelectableRow
+                                    key={item.id}
+                                    item={item}
+                                    selection={selection}
+                                    selecting={selecting}
+                                    onLongPress={onLongPress}
+                                    render={(props) => row(item, props)}
+                                />
+                            ),
+                        )}
                     </div>
                 </section>
             ))}

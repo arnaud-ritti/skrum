@@ -2,6 +2,8 @@ import {
     Calendar as CalendarIcon,
     CalendarX,
     CircleDot,
+    Ellipsis,
+    Send,
     SignalHigh,
     Trash2,
     UserRound,
@@ -16,9 +18,15 @@ import type { BulkAssignee } from '@/components/action-items/bulk-assign-menu';
 import { BulkDeleteConfirm } from '@/components/action-items/bulk-delete-confirm';
 import { BulkMatchingConfirm } from '@/components/action-items/bulk-matching-confirm';
 import { useBulkResultToast } from '@/components/action-items/bulk-result-toast';
+import { BulkSyncDialog } from '@/components/action-items/bulk-sync-dialog';
+import type {
+    ExportTarget,
+    IntegrationScope,
+} from '@/components/action-items/export-target-fields';
 import type { ActionItemFilters } from '@/components/action-items/use-action-item-filters';
 import type { RunMutation } from '@/components/action-items/use-action-item-mutations';
 import type { ActionItemSelection } from '@/components/action-items/use-action-item-selection';
+import { useBulkTrackerExport } from '@/components/action-items/use-bulk-tracker-export';
 import {
     ActionPriorityMark,
     useActionItemLabels,
@@ -29,6 +37,9 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -36,6 +47,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import {
     Tooltip,
@@ -44,8 +56,10 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { bulkDelete, bulkUpdate } from '@/lib/action-items/bulk';
+import { itemsToExport } from '@/lib/action-items/bulk-export';
 import type { BulkChanges, BulkTarget } from '@/lib/action-items/bulk';
 import { localToday } from '@/lib/action-items/due';
+import type { ActionItemEndpoints } from '@/lib/action-items/endpoints';
 import {
     canCompleteActionItem,
     canManageActionItem,
@@ -59,8 +73,9 @@ import type {
     ActionItemStatus,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
+import type { ExportSource } from '@/types/integrations';
 
-type BulkAction = 'status' | 'assign' | 'due' | 'priority' | 'delete';
+type BulkAction = 'status' | 'assign' | 'due' | 'priority' | 'delete' | 'sync';
 
 type Props = {
     /** The workspace's slug. */
@@ -79,6 +94,11 @@ type Props = {
     onRemoved: (actionItemId: string) => void;
     /** Reloads the list and its counters. */
     onReload: () => void;
+    endpoints: ActionItemEndpoints;
+    scope: IntegrationScope;
+    /** The trackers the viewer may export a team's items to. */
+    sourcesOf: (teamId: string) => ExportSource[];
+    /** Floating over the table; docked at the bottom below 80rem, three actions and "…". */
     layout?: 'floating' | 'docked';
 };
 
@@ -211,6 +231,9 @@ export function ActionItemsBulkBar({
     onSaved,
     onRemoved,
     onReload,
+    endpoints,
+    scope,
+    sourcesOf,
     layout = 'floating',
 }: Props) {
     const { t } = useTrans();
@@ -224,6 +247,10 @@ export function ActionItemsBulkBar({
     const [deleting, setDeleting] = useState(false);
     const [changedSentence, setChangedSentence] = useState<string>();
     const [dueOpen, setDueOpen] = useState(false);
+    const [syncing, setSyncing] = useState<ExportSource | null>(null);
+    const [stopping, setStopping] = useState(false);
+    const tracker = useBulkTrackerExport({ endpoints, onSaved });
+    const docked = layout === 'docked';
 
     const matching = selection.matching;
     const selectedRows = items.filter((item) => selection.isSelected(item.id));
@@ -243,6 +270,17 @@ export function ActionItemsBulkBar({
               ? [filters.team]
               : teams.map((team) => team.id);
     const members = commonMembers(teams, selectionTeamIds);
+
+    // A tracker belongs to a team: one team, one target (P24-06).
+    const syncTeamId =
+        selectionTeamIds.length === 1 ? selectionTeamIds[0] : null;
+    const syncSources = syncTeamId === null ? [] : sourcesOf(syncTeamId);
+    const syncReason =
+        matching !== null
+            ? t('Select rows on this page to sync them.')
+            : mayManage
+              ? undefined
+              : cannot;
 
     /**
      * Sends a request; a list that changed since it was counted keeps the
@@ -338,6 +376,32 @@ export function ActionItemsBulkBar({
         }
     };
 
+    const sync = async (
+        source: ExportSource,
+        target: ExportTarget,
+    ): Promise<void> => {
+        setSyncing(null);
+        setStopping(false);
+        setPending('sync');
+
+        try {
+            const finished = await tracker.start(selectedRows, source, target);
+
+            result.report(
+                'export',
+                finished.exported.length,
+                finished.failed,
+                finished.skipped.length,
+            );
+
+            if (finished.failed.length === 0) {
+                selection.clear();
+            }
+        } finally {
+            setPending(null);
+        }
+    };
+
     const change = (action: BulkAction, changes: BulkChanges): void => {
         if (matching !== null) {
             setChangedSentence(undefined);
@@ -407,7 +471,7 @@ export function ActionItemsBulkBar({
 
     const offer = selection.offer;
     const tooMany = offer === 'too-many';
-    const offerButton = offer !== null && (
+    const offerButton = offer !== null && !docked && (
         <Button
             type="button"
             variant="link"
@@ -426,6 +490,127 @@ export function ActionItemsBulkBar({
             {t('Select all :count matching', { count: selection.total })}
         </Button>
     );
+
+    const syncLabel = (source: ExportSource): string =>
+        t('Sync to :tracker', { tracker: source.label });
+    const syncButton = (): ReactNode => {
+        if (syncSources.length === 0 || docked) {
+            return null;
+        }
+
+        if (syncSources.length === 1 || syncReason !== undefined) {
+            return (
+                <BarButton
+                    icon={Send}
+                    label={
+                        syncSources.length === 1
+                            ? syncLabel(syncSources[0])
+                            : t('Sync to a tracker')
+                    }
+                    busy={false}
+                    disabled={busy}
+                    disabledReason={syncReason}
+                    onClick={() => setSyncing(syncSources[0])}
+                />
+            );
+        }
+
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <BarButton
+                        icon={Send}
+                        label={t('Sync to a tracker')}
+                        busy={false}
+                        disabled={busy}
+                    />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top">
+                    {syncSources.map((source) => (
+                        <DropdownMenuItem
+                            key={source.source}
+                            onSelect={() => setSyncing(source)}
+                        >
+                            {syncLabel(source)}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
+
+    const tooManyMatching = selection.total > MatchingCap;
+    const moreMenu = docked && (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('More actions')}
+                    disabled={busy}
+                >
+                    <Ellipsis aria-hidden />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top">
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger disabled={!mayManage}>
+                        <SignalHigh aria-hidden />
+                        {t('Priority')}
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                        {Priorities.map((priority) => (
+                            <DropdownMenuItem
+                                key={priority}
+                                onSelect={() =>
+                                    change('priority', { priority })
+                                }
+                            >
+                                <ActionPriorityMark
+                                    priority={priority}
+                                    label={labels.priority[priority]}
+                                />
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                {syncSources.map((source) => (
+                    <DropdownMenuItem
+                        key={source.source}
+                        disabled={syncReason !== undefined}
+                        onSelect={() => setSyncing(source)}
+                    >
+                        <Send aria-hidden />
+                        {syncLabel(source)}
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem
+                    variant="destructive"
+                    disabled={!mayManage}
+                    onSelect={() => {
+                        setChangedSentence(undefined);
+                        setDeleting(true);
+                    }}
+                >
+                    <Trash2 aria-hidden />
+                    {t('Delete')}
+                </DropdownMenuItem>
+                {matching === null && selection.total > items.length && (
+                    <DropdownMenuItem
+                        disabled={tooManyMatching}
+                        onSelect={selection.selectMatching}
+                    >
+                        {t('Select all :count matching', {
+                            count: selection.total,
+                        })}
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+
+    const progress = tracker.progress;
 
     return (
         <>
@@ -489,98 +674,151 @@ export function ActionItemsBulkBar({
                         aria-hidden
                         className="my-1 w-px self-stretch bg-border"
                     />
-                    {menu(
-                        statusButton,
-                        mayComplete && !busy,
-                        Statuses.map((status) => (
-                            <DropdownMenuItem
-                                key={status}
-                                onSelect={() => change('status', { status })}
+                    {progress !== null && (
+                        <div
+                            data-slot="bulk-sync-progress"
+                            className="flex min-w-0 flex-1 items-center gap-3"
+                        >
+                            <div className="w-48 min-w-0">
+                                <Progress
+                                    value={progress.done}
+                                    max={progress.total}
+                                    label={t('Exporting :current of :total…', {
+                                        current: progress.done,
+                                        total: progress.total,
+                                    })}
+                                    valueLabel={`${progress.done} / ${progress.total}`}
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={stopping}
+                                onClick={() => {
+                                    setStopping(true);
+                                    tracker.stop();
+                                }}
                             >
-                                {labels.status[status]}
-                            </DropdownMenuItem>
-                        )),
+                                {stopping && <Spinner aria-hidden />}
+                                {t('Stop')}
+                            </Button>
+                        </div>
                     )}
-                    {mayManage && !busy ? (
-                        <BulkAssignMenu
-                            members={members}
-                            trigger={assignButton}
-                            onAssign={(userId) =>
-                                change('assign', { assignee_user_id: userId })
-                            }
-                        />
-                    ) : (
-                        assignButton
-                    )}
-                    {mayManage && !busy ? (
-                        <Popover open={dueOpen} onOpenChange={setDueOpen}>
-                            <PopoverTrigger asChild>{dueButton}</PopoverTrigger>
-                            <PopoverContent
-                                align="start"
-                                side="top"
-                                className="grid w-auto gap-2 p-2"
-                            >
-                                <Calendar
-                                    mode="single"
-                                    locale={locale === 'fr' ? 'fr' : 'en'}
-                                    onSelect={(date) => {
-                                        if (date === undefined) {
-                                            return;
+                    {progress === null && (
+                        <>
+                            {menu(
+                                statusButton,
+                                mayComplete && !busy,
+                                Statuses.map((status) => (
+                                    <DropdownMenuItem
+                                        key={status}
+                                        onSelect={() =>
+                                            change('status', { status })
                                         }
-
-                                        setDueOpen(false);
-                                        change('due', {
-                                            due_on: localToday(date),
-                                        });
-                                    }}
+                                    >
+                                        {labels.status[status]}
+                                    </DropdownMenuItem>
+                                )),
+                            )}
+                            {mayManage && !busy ? (
+                                <BulkAssignMenu
+                                    members={members}
+                                    trigger={assignButton}
+                                    onAssign={(userId) =>
+                                        change('assign', {
+                                            assignee_user_id: userId,
+                                        })
+                                    }
                                 />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="justify-start"
-                                    onClick={() => {
-                                        setDueOpen(false);
-                                        change('due', { due_on: null });
-                                    }}
+                            ) : (
+                                assignButton
+                            )}
+                            {mayManage && !busy ? (
+                                <Popover
+                                    open={dueOpen}
+                                    onOpenChange={setDueOpen}
                                 >
-                                    <CalendarX aria-hidden />
-                                    {t('No due date')}
-                                </Button>
-                            </PopoverContent>
-                        </Popover>
-                    ) : (
-                        dueButton
-                    )}
-                    {menu(
-                        priorityButton,
-                        mayManage && !busy,
-                        Priorities.map((priority) => (
-                            <DropdownMenuItem
-                                key={priority}
-                                onSelect={() =>
-                                    change('priority', { priority })
-                                }
-                            >
-                                <ActionPriorityMark
-                                    priority={priority}
-                                    label={labels.priority[priority]}
+                                    <PopoverTrigger asChild>
+                                        {dueButton}
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        side="top"
+                                        className="grid w-auto gap-2 p-2"
+                                    >
+                                        <Calendar
+                                            mode="single"
+                                            locale={
+                                                locale === 'fr' ? 'fr' : 'en'
+                                            }
+                                            onSelect={(date) => {
+                                                if (date === undefined) {
+                                                    return;
+                                                }
+
+                                                setDueOpen(false);
+                                                change('due', {
+                                                    due_on: localToday(date),
+                                                });
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="justify-start"
+                                            onClick={() => {
+                                                setDueOpen(false);
+                                                change('due', { due_on: null });
+                                            }}
+                                        >
+                                            <CalendarX aria-hidden />
+                                            {t('No due date')}
+                                        </Button>
+                                    </PopoverContent>
+                                </Popover>
+                            ) : (
+                                dueButton
+                            )}
+                            {!docked &&
+                                menu(
+                                    priorityButton,
+                                    mayManage && !busy,
+                                    Priorities.map((priority) => (
+                                        <DropdownMenuItem
+                                            key={priority}
+                                            onSelect={() =>
+                                                change('priority', { priority })
+                                            }
+                                        >
+                                            <ActionPriorityMark
+                                                priority={priority}
+                                                label={
+                                                    labels.priority[priority]
+                                                }
+                                            />
+                                        </DropdownMenuItem>
+                                    )),
+                                )}
+                            {syncButton()}
+                            {moreMenu}
+                            {!docked && (
+                                <BarButton
+                                    icon={Trash2}
+                                    label={t('Delete')}
+                                    busy={pending === 'delete'}
+                                    disabled={busy}
+                                    disabledReason={manageReason}
+                                    className="text-skrum-destructive-text hover:text-skrum-destructive-text"
+                                    onClick={() => {
+                                        setChangedSentence(undefined);
+                                        setDeleting(true);
+                                    }}
                                 />
-                            </DropdownMenuItem>
-                        )),
+                            )}
+                        </>
                     )}
-                    <BarButton
-                        icon={Trash2}
-                        label={t('Delete')}
-                        busy={pending === 'delete'}
-                        disabled={busy}
-                        disabledReason={manageReason}
-                        className="text-skrum-destructive-text hover:text-skrum-destructive-text"
-                        onClick={() => {
-                            setChangedSentence(undefined);
-                            setDeleting(true);
-                        }}
-                    />
                     <span
                         aria-hidden
                         className="my-1 w-px self-stretch bg-border"
@@ -616,6 +854,16 @@ export function ActionItemsBulkBar({
                 onCancel={closeDialogs}
                 onConfirm={remove}
             />
+            {syncing !== null && syncTeamId !== null && (
+                <BulkSyncDialog
+                    source={syncing}
+                    scope={scope}
+                    teamId={syncTeamId}
+                    count={itemsToExport(selectedRows, syncing.source).length}
+                    onCancel={() => setSyncing(null)}
+                    onConfirm={(target) => void sync(syncing, target)}
+                />
+            )}
             {result.details}
         </>
     );

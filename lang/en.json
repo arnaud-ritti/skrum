@@ -5071,5 +5071,12 @@
     "Select all on this page": "Select all on this page",
     "This cannot be undone. Their comments and sub-tasks are deleted too.": "This cannot be undone. Their comments and sub-tasks are deleted too.",
     "Up to :cap at once. Narrow the filters.": "Up to :cap at once. Narrow the filters.",
-    "You cannot change this action item": "You cannot change this action item"
+    "You cannot change this action item": "You cannot change this action item",
+    "Finish selecting": "Finish selecting",
+    "Sync to :tracker": "Sync to :tracker",
+    "Sync to a tracker": "Sync to a tracker",
+    "Select rows on this page to sync them.": "Select rows on this page to sync them.",
+    ":exported exported, :skipped already linked.": ":exported exported, :skipped already linked.",
+    ":exported exported, :skipped already linked, :failed failed.": ":exported exported, :skipped already linked, :failed failed.",
+    "Action items not exported": "Action items not exported"
 }

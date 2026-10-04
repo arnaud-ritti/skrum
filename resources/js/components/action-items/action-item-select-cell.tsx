@@ -12,9 +12,12 @@ import type { ActionItem } from '@/lib/retro/types';
 export function ActionItemSelectCell({
     item,
     selection,
+    className,
 }: {
     item: ActionItem;
     selection: ActionItemSelection;
+    /** The box's size: the list draws a larger one for a finger. */
+    className?: string;
 }) {
     const { t } = useTrans();
     const name = t('Select :title', { title: item.content });
@@ -28,7 +31,12 @@ export function ActionItemSelectCell({
                         data-slot="action-row-select-locked"
                         className="inline-flex rounded-xs outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
-                        <Checkbox aria-label={name} checked={false} disabled />
+                        <Checkbox
+                            aria-label={name}
+                            checked={false}
+                            disabled
+                            className={className}
+                        />
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -42,6 +50,7 @@ export function ActionItemSelectCell({
         <Checkbox
             aria-label={name}
             data-slot="action-row-select"
+            className={className}
             checked={selection.isSelected(item.id)}
             onCheckedChange={() => selection.toggle(item.id)}
         />

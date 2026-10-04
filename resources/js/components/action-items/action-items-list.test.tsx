@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsList } from '@/components/action-items/action-items-list';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
 import { ActionItemMutationsContext } from '@/components/action-items/use-action-item-mutations';
+import { useActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import type { ActionItemGroup } from '@/lib/action-items/grouping';
 import {
     actionItemEndpointsFixture,
@@ -208,5 +209,161 @@ describe('ActionItemsList', () => {
             'Atlas2 action items · on this page',
             'Mobile1 action item · on this page',
         ]);
+    });
+
+    describe('selection mode', () => {
+        const items = [
+            actionItemFixture({ id: 'a', content: 'Fix the build' }),
+            actionItemFixture({ id: 'b', content: 'Write the runbook' }),
+        ];
+
+        function Selectable({
+            selecting,
+            onLongPress,
+        }: {
+            selecting: boolean;
+            onLongPress: (id: string) => void;
+        }) {
+            const selection = useActionItemSelection({
+                rows: items,
+                viewer: actionItemViewerFixture(),
+                total: 2,
+                filtersKey: 'f',
+                pageKey: 'p',
+            });
+
+            return (
+                <ActionItemMutationsContext
+                    value={actionItemMutationsFixture()}
+                >
+                    <ActionItemsList
+                        groups={[{ key: 'all', label: '', items }]}
+                        context={context()}
+                        endpoints={actionItemEndpointsFixture()}
+                        selection={selection}
+                        selecting={selecting}
+                        onLongPress={(item) => onLongPress(item.id)}
+                        onPatch={vi.fn()}
+                    />
+                </ActionItemMutationsContext>
+            );
+        }
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('shows no box outside selection mode', () => {
+            renderWithProviders(
+                <Selectable selecting={false} onLongPress={vi.fn()} />,
+            );
+
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Fix the build',
+                }),
+            ).toBeNull();
+        });
+
+        it('puts a box before each item, and a tap on the item toggles it', () => {
+            renderWithProviders(<Selectable selecting onLongPress={vi.fn()} />);
+
+            const box = screen.getByRole('checkbox', {
+                name: 'Select Fix the build',
+            });
+
+            expect(box.getAttribute('data-state')).toBe('unchecked');
+
+            fireEvent.click(document.getElementById('action-item-a')!);
+
+            expect(box.getAttribute('data-state')).toBe('checked');
+            expect(
+                document
+                    .getElementById('action-item-a')
+                    ?.getAttribute('data-selected'),
+            ).toBe('true');
+
+            fireEvent.click(box);
+
+            expect(box.getAttribute('data-state')).toBe('unchecked');
+        });
+
+        it('does not change the status when a tap selects', () => {
+            const onStatusChange = vi.fn();
+
+            function WithContext() {
+                const selection = useActionItemSelection({
+                    rows: items,
+                    viewer: actionItemViewerFixture(),
+                    total: 2,
+                    filtersKey: 'f',
+                    pageKey: 'p',
+                });
+
+                return (
+                    <ActionItemMutationsContext
+                        value={actionItemMutationsFixture()}
+                    >
+                        <ActionItemsList
+                            groups={[{ key: 'all', label: '', items }]}
+                            context={context({ onStatusChange })}
+                            endpoints={actionItemEndpointsFixture()}
+                            selection={selection}
+                            selecting
+                            onPatch={vi.fn()}
+                        />
+                    </ActionItemMutationsContext>
+                );
+            }
+
+            renderWithProviders(<WithContext />);
+            fireEvent.click(
+                screen.getAllByRole('button', {
+                    name: 'Mark as in progress',
+                })[0],
+            );
+
+            expect(onStatusChange).not.toHaveBeenCalled();
+            expect(
+                screen
+                    .getByRole('checkbox', { name: 'Select Fix the build' })
+                    .getAttribute('data-state'),
+            ).toBe('checked');
+        });
+
+        it('selects the focused item with Space instead of starting it', () => {
+            renderWithProviders(<Selectable selecting onLongPress={vi.fn()} />);
+
+            fireEvent.keyDown(document.getElementById('action-item-a')!, {
+                key: ' ',
+            });
+
+            expect(
+                screen
+                    .getByRole('checkbox', { name: 'Select Fix the build' })
+                    .getAttribute('data-state'),
+            ).toBe('checked');
+        });
+
+        it('enters the mode on a long press of 500 ms, not on a 200 ms press', () => {
+            vi.useFakeTimers();
+            const onLongPress = vi.fn();
+
+            renderWithProviders(
+                <Selectable selecting={false} onLongPress={onLongPress} />,
+            );
+            const item = document.getElementById('action-item-b')!;
+
+            fireEvent.pointerDown(item, { clientX: 5, clientY: 5 });
+            vi.advanceTimersByTime(200);
+            fireEvent.pointerUp(item, { clientX: 5, clientY: 5 });
+
+            expect(onLongPress).not.toHaveBeenCalled();
+
+            fireEvent.pointerDown(item, { clientX: 5, clientY: 5 });
+            vi.advanceTimersByTime(500);
+
+            expect(onLongPress).toHaveBeenCalledExactlyOnceWith('b');
+        });
     });
 });

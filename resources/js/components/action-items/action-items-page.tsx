@@ -129,6 +129,7 @@ export function ActionItemsPage({
     const [sheetOpen, setSheetOpen] = useState(false);
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState<ActionItem | null>(null);
+    const [selecting, setSelecting] = useState(false);
     const endpoints = useMemo(
         () => workspaceActionItemEndpoints(workspace.slug),
         [workspace.slug],
@@ -195,6 +196,23 @@ export function ActionItemsPage({
         pageKey: `${items.currentPage}:${filtering.grouping}`,
     });
     const { count: selectedCount, clear: clearSelection } = selection;
+
+    const changeSelecting = (on: boolean): void => {
+        setSelecting(on);
+
+        if (!on) {
+            clearSelection();
+        }
+    };
+
+    // A long press enters selection mode with its item selected (spec 24 §9.5).
+    const selectByLongPress = (item: ActionItem): void => {
+        setSelecting(true);
+
+        if (selection.selectable(item) && !selection.isSelected(item.id)) {
+            selection.toggle(item.id);
+        }
+    };
 
     // Escape leaves the selection once nothing else is open: a sheet, a
     // menu or a dialog closes first on the same key.
@@ -382,7 +400,7 @@ export function ActionItemsPage({
             />
         );
 
-    const list = (shown: typeof groups, label?: string) =>
+    const list = (shown: typeof groups, label?: string, selectable = false) =>
         wide ? (
             <ActionItemsTable
                 groups={shown}
@@ -400,6 +418,11 @@ export function ActionItemsPage({
                 focusedId={linkedId}
                 aria-label={label}
                 onPatch={(item, patch) => void mutations.patch(item, patch)}
+                {...(selectable && {
+                    selection,
+                    selecting,
+                    onLongPress: selectByLongPress,
+                })}
             />
         );
 
@@ -413,6 +436,8 @@ export function ActionItemsPage({
                 counts={counts}
                 grouping={filtering.grouping}
                 onGroupingChange={filtering.setGrouping}
+                selecting={selecting}
+                onSelectingChange={wide ? undefined : changeSelecting}
             />
 
             {isMobile ? (
@@ -481,7 +506,7 @@ export function ActionItemsPage({
                 {!wide && groups.length === 0 && empty}
                 {!wide && groups.length > 0 && (
                     <>
-                        {list(groups, t('Action items'))}
+                        {list(groups, t('Action items'), true)}
                         {pagination('rounded-xl border bg-card shadow-card')}
                     </>
                 )}
@@ -506,6 +531,10 @@ export function ActionItemsPage({
                         onReload={() =>
                             router.reload({ only: ['items', 'counts'] })
                         }
+                        endpoints={endpoints}
+                        scope={context.scope}
+                        sourcesOf={context.sourcesOf}
+                        layout={wide ? 'floating' : 'docked'}
                     />
                 )}
 

@@ -630,6 +630,69 @@ describe('ActionItemsPage', () => {
             );
         });
 
+        it('enters selection mode below the table with Select, and Finish selecting clears it', () => {
+            screenWidth.wide = false;
+            renderPage();
+
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Quarantine the flaky tests',
+                }),
+            ).toBeNull();
+
+            fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+
+            const toolbar = screen.getByRole('toolbar', {
+                name: 'Bulk actions',
+            });
+
+            expect(toolbar.getAttribute('data-layout')).toBe('docked');
+            expect(toolbar.textContent).toContain('1 selected');
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Finish selecting' }),
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Quarantine the flaky tests',
+                }),
+            ).toBeNull();
+        });
+
+        it('enters selection mode with the item of a long press selected', () => {
+            vi.useFakeTimers();
+            screenWidth.wide = false;
+            renderPage();
+
+            const item = document.getElementById('action-item-item-1')!;
+
+            fireEvent.pointerDown(item, { clientX: 5, clientY: 5 });
+            act(() => {
+                vi.advanceTimersByTime(500);
+            });
+            vi.useRealTimers();
+
+            expect(
+                box('Select Quarantine the flaky tests').getAttribute(
+                    'data-state',
+                ),
+            ).toBe('checked');
+            expect(
+                screen.getByRole('button', { name: 'Finish selecting' }),
+            ).toBeTruthy();
+        });
+
+        it('offers no Select button beside the table', () => {
+            renderPage();
+
+            expect(screen.queryByRole('button', { name: 'Select' })).toBeNull();
+        });
+
         it('clears the selection with Escape', () => {
             renderPage();
 

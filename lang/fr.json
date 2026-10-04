@@ -5290,5 +5290,12 @@
     "Select all on this page": "Tout sélectionner sur cette page",
     "This cannot be undone. Their comments and sub-tasks are deleted too.": "Impossible d’annuler. Leurs commentaires et sous-tâches sont supprimés aussi.",
     "Up to :cap at once. Narrow the filters.": "Jusqu’à :cap à la fois. Affine les filtres.",
-    "You cannot change this action item": "Tu ne peux pas modifier cette action"
+    "You cannot change this action item": "Tu ne peux pas modifier cette action",
+    "Finish selecting": "Terminer la sélection",
+    "Sync to :tracker": "Synchroniser vers :tracker",
+    "Sync to a tracker": "Synchroniser vers un outil de suivi",
+    "Select rows on this page to sync them.": "Sélectionne des lignes de cette page pour les synchroniser.",
+    ":exported exported, :skipped already linked.": ":exported exportées, :skipped déjà liées.",
+    ":exported exported, :skipped already linked, :failed failed.": ":exported exportées, :skipped déjà liées, :failed en échec.",
+    "Action items not exported": "Actions non exportées"
 }

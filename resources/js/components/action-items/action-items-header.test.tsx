@@ -73,4 +73,48 @@ describe('ActionItemsHeader', () => {
 
         expect(onGroupingChange).toHaveBeenCalledWith('assignee');
     });
+
+    it('shows no Select button unless the page asks for one', () => {
+        renderWithProviders(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+            />,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Select' })).toBeNull();
+    });
+
+    it('enters selection mode with Select, and leaves it with Finish selecting', () => {
+        const onSelectingChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+                selecting={false}
+                onSelectingChange={onSelectingChange}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+
+        expect(onSelectingChange).toHaveBeenLastCalledWith(true);
+
+        rerender(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+                selecting
+                onSelectingChange={onSelectingChange}
+            />,
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Finish selecting' }),
+        );
+
+        expect(onSelectingChange).toHaveBeenLastCalledWith(false);
+    });
 });
