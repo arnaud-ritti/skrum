@@ -49,7 +49,7 @@ const base: OnboardingProps = {
     teamAddressBase: 'https://skrum.test/t/',
     teamName: 'Atlas',
     defaultColor: 'lagoon',
-    locales: [
+    languages: [
         { value: 'en', label: 'English' },
         { value: 'fr', label: 'Français' },
     ],

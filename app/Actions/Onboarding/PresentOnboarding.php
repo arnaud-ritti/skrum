@@ -28,7 +28,7 @@ class PresentOnboarding
      *     teamAddressBase: string,
      *     teamName: ?string,
      *     defaultColor: string,
-     *     locales: array<int, array{value: string, label: string}>,
+     *     languages: array<int, array{value: string, label: string}>,
      *     userLocale: string,
      *     inviteRoles: array<int, string>,
      *     invitedCount: int,
@@ -61,7 +61,7 @@ class PresentOnboarding
             'teamAddressBase' => url('t').'/',
             'teamName' => $team === null ? $onboarding->team_name : null,
             'defaultColor' => TeamMark::derived($onboarding->workspace_id ?? $user->id)->value,
-            'locales' => $this->locales(),
+            'languages' => $this->languages(),
             'userLocale' => $user->locale ?? app()->getLocale(),
             'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
             'invitedCount' => $team === null ? 0 : $this->pendingInvitationsCount($team),
@@ -73,7 +73,7 @@ class PresentOnboarding
     }
 
     /** @return array<int, array{value: string, label: string}> */
-    private function locales(): array
+    private function languages(): array
     {
         /** @var array<int, string> $locales */
         $locales = config('skrum.locales');

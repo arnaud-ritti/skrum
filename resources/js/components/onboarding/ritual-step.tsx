@@ -102,7 +102,7 @@ export function RitualStep() {
                 value={ritual}
                 onValueChange={setRitual}
                 disabled={busy}
-                className="gap-2"
+                className="gap-2 [&>input]:hidden"
             >
                 {Rituals.map((card) => {
                     const Icon = card.icon;

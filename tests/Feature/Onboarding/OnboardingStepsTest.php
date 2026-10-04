@@ -52,6 +52,16 @@ it('creates the team at step two with its colour, the user its owner, prefilled 
         ->and($team->fresh()->name)->toBe('Atlas 2');
 });
 
+it('names the languages of step one without replacing the shared locales the language switcher reads', function () {
+    $onboarding = Onboarding::factory()->create();
+
+    $this->actingAs($onboarding->user)
+        ->get(route('onboarding.show'))
+        ->assertInertia(fn (Assert $page) => $page->component('onboarding/show')
+            ->where('locales', config('skrum.locales'))
+            ->where('languages.1', ['value' => 'fr', 'label' => 'Français']));
+});
+
 it('refuses the team step before the workspace exists', function () {
     $onboarding = Onboarding::factory()->create();
 

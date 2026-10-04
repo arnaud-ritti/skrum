@@ -39,7 +39,8 @@ export type OnboardingProps = {
     /** The team name given at registration, until the team exists. */
     teamName: string | null;
     defaultColor: ColumnColor;
-    locales: LocaleOption[];
+    /** Not `locales`: that shared prop is the language switcher's. */
+    languages: LocaleOption[];
     userLocale: string;
     inviteRoles: TeamRoleValue[];
     invitedCount: number;
@@ -136,7 +137,7 @@ export function OnboardingPage(props: OnboardingProps) {
                 {step === 'workspace' && (
                     <WorkspaceStep
                         workspace={workspace}
-                        locales={props.locales}
+                        locales={props.languages}
                         userLocale={props.userLocale}
                         name={workspaceName}
                         onNameChange={setWorkspaceName}
