@@ -89,7 +89,26 @@ class ActionItemQuery
             $query->whereNull('retro_id');
         }
 
+        if ($filters->search !== null) {
+            $this->filterBySearch($query, $filters->search);
+        }
+
         return $query;
+    }
+
+    /**
+     * Spec 24 §6.3: the item's text or one of its ticket keys contains the term, case ignored
+     * (the folded columns of docs/database.md rule 4). The rows are not checked again in PHP:
+     * the list, its counters, its export and "all matching" must stay one set.
+     *
+     * @param  Builder<ActionItem>  $query
+     */
+    private function filterBySearch(Builder $query, string $term): void
+    {
+        $query->where(function (Builder $query) use ($term): void {
+            $query->whereContains('content', $term)
+                ->orWhereHas('externalLinks', fn (Builder $links) => $links->whereContains('external_key', $term));
+        });
     }
 
     public function find(User $user, Workspace $workspace, string $itemId): ?ActionItem

@@ -24,9 +24,12 @@ class ActionItemFilters
 
     public const Sources = ['retro', 'outside'];
 
+    public const SearchMaxLength = 100;
+
     /**
      * @param  array<int, string>  $statuses  StatusTokens, canonical order
      * @param  array<int, string>  $priorities  priority values, canonical order; empty is every priority
+     * @param  ?string  $search  the topbar search, trimmed, cut at SearchMaxLength
      */
     public function __construct(
         public array $statuses = self::DefaultStatuses,
@@ -36,6 +39,7 @@ class ActionItemFilters
         public array $priorities = [],
         public ?string $due = null,
         public ?string $source = null,
+        public ?string $search = null,
     ) {}
 
     /**
@@ -68,6 +72,7 @@ class ActionItemFilters
             priorities: self::many($query['priority'] ?? null, self::priorityValues()),
             due: self::one($query['due'] ?? null, self::DueBuckets) ?? $statusDue,
             source: self::one($query['source'] ?? null, self::Sources),
+            search: self::search($query['q'] ?? null),
         );
     }
 
@@ -92,6 +97,7 @@ class ActionItemFilters
      *     priority: array<int, string>,
      *     due: ?string,
      *     source: ?string,
+     *     q: ?string,
      *     assignee: ?string,
      *     team: ?string,
      *     item: ?string
@@ -104,6 +110,7 @@ class ActionItemFilters
             'priority' => $this->priorities,
             'due' => $this->due,
             'source' => $this->source,
+            'q' => $this->search,
             'assignee' => $this->assignee,
             'team' => $this->teamId,
             'item' => $this->itemId,
@@ -154,6 +161,17 @@ class ActionItemFilters
     private static function priorityValues(): array
     {
         return array_map(fn (ActionItemPriority $priority): string => $priority->value, ActionItemPriority::cases());
+    }
+
+    private static function search(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $term = trim(mb_substr(trim($value), 0, self::SearchMaxLength));
+
+        return $term === '' ? null : $term;
     }
 
     private static function assignee(mixed $value): ?string

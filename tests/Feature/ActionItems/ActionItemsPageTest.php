@@ -97,7 +97,7 @@ it('ignores unknown filter values', function () {
     actionItemsPage($this, $user, $team->workspace, ['status' => 'bogus', 'assignee' => 'somebody', 'team' => $invisibleTeam->id, 'item' => 'nope'])
         ->assertInertia(fn (Assert $page) => $page
             ->component('action-items/index', false)
-            ->where('filters', ['status' => ['todo', 'doing'], 'priority' => [], 'due' => null, 'source' => null, 'assignee' => null, 'team' => null, 'item' => null])
+            ->where('filters', ['status' => ['todo', 'doing'], 'priority' => [], 'due' => null, 'source' => null, 'q' => null, 'assignee' => null, 'team' => null, 'item' => null])
             ->where('items.data.0.id', $item->id)
             ->where('focusedItem', null));
 });

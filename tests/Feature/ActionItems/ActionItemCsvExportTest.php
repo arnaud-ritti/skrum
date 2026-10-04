@@ -9,21 +9,10 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-10 12:00:00'));
 });
-
-/**
- * @return array<int, array<int, string>>
- */
-function actionItemCsvRows(TestResponse $response): array
-{
-    $body = ltrim($response->streamedContent(), "\u{FEFF}");
-
-    return array_map(fn (string $line): array => str_getcsv($line, ',', '"', ''), explode("\n", trim($body)));
-}
 
 it('exports every matching item of every page, in the order of the list, with its columns', function () {
     $team = Team::factory()->create(['name' => 'Platform']);

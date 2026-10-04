@@ -24,7 +24,7 @@ class ActionItemBulkChanges
 {
     public const MatchingCap = 500;
 
-    public const FilterKeys = ['status', 'priority', 'due', 'source', 'assignee', 'team'];
+    public const FilterKeys = ['status', 'priority', 'due', 'source', 'q', 'assignee', 'team'];
 
     public function __construct(
         private ActionItemQuery $actionItemQuery,
