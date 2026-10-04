@@ -117,14 +117,22 @@ describe('canvas commands', () => {
         expect(seen).toHaveBeenCalledWith('g', true, true, true);
     });
 
-    it('fails soft without the library container', () => {
+    it('fails soft without the library container, warning once', async () => {
+        vi.resetModules();
+        const fresh = await import('./canvas-commands');
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         expect(
-            runCanvasCommand(canvasWith('<div></div>'), 'delete', 'Win32'),
+            fresh.runCanvasCommand(
+                canvasWith('<div></div>'),
+                'delete',
+                'Win32',
+            ),
         ).toBe(false);
-        expect(runCanvasCommand(null, 'delete', 'Win32')).toBe(false);
+        expect(fresh.runCanvasCommand(null, 'delete', 'Win32')).toBe(false);
         expect(warn).toHaveBeenCalledTimes(1);
+
+        warn.mockRestore();
     });
 });
 
