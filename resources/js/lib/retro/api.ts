@@ -1,4 +1,5 @@
 import { http, HttpCancelledError, HttpResponseError } from '@inertiajs/core';
+import type { HttpResponse } from '@inertiajs/core';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 
 const RequestTimeoutMs = 15_000;
@@ -49,16 +50,16 @@ export async function retroRequest<T = null>(
         headers['X-Socket-ID'] = socket;
     }
 
+    let response: HttpResponse;
+
     try {
-        const response = await http.getClient().request({
+        response = await http.getClient().request({
             method: route.method as 'get',
             url: route.url,
             data,
             headers,
             signal: AbortSignal.timeout(options.timeoutMs ?? RequestTimeoutMs),
         });
-
-        return (response.data === '' ? null : JSON.parse(response.data)) as T;
     } catch (error) {
         if (error instanceof HttpResponseError) {
             const payload = parse(error.response.data);
@@ -77,5 +78,15 @@ export async function retroRequest<T = null>(
         }
 
         throw error;
+    }
+
+    if (response.data === '') {
+        return null as T;
+    }
+
+    try {
+        return JSON.parse(response.data) as T;
+    } catch {
+        throw new RetroRequestError(response.status, 'invalid response');
     }
 }
