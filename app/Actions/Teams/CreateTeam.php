@@ -59,9 +59,7 @@ class CreateTeam
                     'slug' => TeamSlug::availableIn($workspace->id, $base),
                 ]));
             } catch (UniqueConstraintViolationException $exception) {
-                if ($attempt >= self::Attempts) {
-                    throw $exception;
-                }
+                throw_if($attempt >= self::Attempts, $exception);
 
                 $attempt++;
             }

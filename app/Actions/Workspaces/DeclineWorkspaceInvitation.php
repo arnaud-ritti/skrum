@@ -24,9 +24,7 @@ class DeclineWorkspaceInvitation
         $declined = DB::transaction(function () use ($invitation): WorkspaceInvitation {
             $locked = WorkspaceInvitation::query()->lockForUpdate()->find($invitation->id);
 
-            if ($locked === null || ! $locked->isPending()) {
-                throw new InvitationUnavailable('The invitation is no longer pending.');
-            }
+            throw_if($locked === null || ! $locked->isPending(), InvitationUnavailable::class, 'The invitation is no longer pending.');
 
             $locked->update(['declined_at' => now()]);
             $this->forgetNotifications->handle([$locked->id]);

@@ -16,9 +16,7 @@ trait LocksOnboarding
     {
         $onboarding = Onboarding::query()->where('user_id', $user->id)->lockForUpdate()->first();
 
-        if ($onboarding === null || $onboarding->isCompleted()) {
-            abort(404);
-        }
+        abort_if($onboarding === null || $onboarding->isCompleted(), 404);
 
         $onboarding->rewindToReachableStep();
 

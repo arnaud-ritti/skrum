@@ -27,9 +27,7 @@ class JoinTeamByLink
         return DB::transaction(function () use ($link, $user): Team {
             $locked = TeamInviteLink::query()->lockForUpdate()->find($link->id);
 
-            if ($locked === null) {
-                throw new InvitationUnavailable('The link no longer exists.');
-            }
+            throw_if($locked === null, InvitationUnavailable::class, 'The link no longer exists.');
 
             $team = $locked->team;
 
@@ -37,9 +35,7 @@ class JoinTeamByLink
                 return $team;
             }
 
-            if (! $locked->isUsable()) {
-                throw new InvitationUnavailable('The link no longer works.');
-            }
+            throw_unless($locked->isUsable(), InvitationUnavailable::class, 'The link no longer works.');
 
             $workspace = $team->workspace;
 

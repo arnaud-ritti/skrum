@@ -61,15 +61,19 @@ class Team extends Model
 
     public const int DefaultSprintLengthWeeks = 2;
 
-    protected static function booted(): void
+    /**
+     * Gives the team its slug at the insert rather than in a `creating` listener,
+     * so that a team saved quietly or while events are faked still has one.
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function performInsert(Builder $query): bool
     {
-        static::creating(function (Team $team): void {
-            if (filled($team->getAttribute('slug'))) {
-                return;
-            }
+        if (blank($this->getAttribute('slug'))) {
+            $this->slug = TeamSlug::availableIn($this->workspace_id, TeamSlug::fromName($this->name));
+        }
 
-            $team->slug = TeamSlug::availableIn($team->workspace_id, TeamSlug::fromName($team->name));
-        });
+        return parent::performInsert($query);
     }
 
     /** @return BelongsTo<Workspace, $this> */

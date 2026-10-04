@@ -5,6 +5,7 @@ use App\Models\Onboarding;
 use App\Models\Team;
 use App\Models\Workspace;
 use App\Support\Teams\TeamSlug;
+use Illuminate\Support\Facades\Event;
 
 it('derives a slug from a name', function (string $name, string $slug) {
     expect(TeamSlug::fromName($name))->toBe($slug);
@@ -32,6 +33,17 @@ it('gives a new team a slug unique in its workspace, and the same slug in anothe
     expect($first->slug)->toBe('atlas')
         ->and($second->slug)->toBe('atlas-2')
         ->and($elsewhere->slug)->toBe('atlas');
+});
+
+it('gives a new team its slug while events are faked or muted', function () {
+    $workspace = Workspace::factory()->create();
+    Event::fake();
+
+    $faked = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $quiet = Team::factory()->for($workspace)->createQuietly(['name' => 'Atlas']);
+
+    expect($faked->slug)->toBe('atlas')
+        ->and($quiet->slug)->toBe('atlas-2');
 });
 
 it('creates a team from the workspace page with a derived slug', function () {

@@ -69,7 +69,7 @@ it('can run a second time, and then writes no team that already has its slug', f
 
     $indexes = collect(Schema::getIndexes('teams'))->filter(fn (array $index): bool => $index['columns'] === ['workspace_id', 'slug']);
 
-    expect($updates)->toBe([])
+    expect($updates)->toBeEmpty()
         ->and(DB::table('teams')->value('slug'))->toBe('atlas')
         ->and($indexes)->toHaveCount(1);
 });

@@ -30,10 +30,8 @@ it('lets every person join when many use the link at the same instant, and count
     $contenders = [];
 
     foreach ($userIds as $userId) {
-        $contenders[] = static function () use ($linkId, $userId): string {
-            return resolve(JoinTeamByLink::class)
-                ->handle(TeamInviteLink::query()->findOrFail($linkId), User::query()->findOrFail($userId))->id;
-        };
+        $contenders[] = (static fn (): string => resolve(JoinTeamByLink::class)
+            ->handle(TeamInviteLink::query()->findOrFail($linkId), User::query()->findOrFail($userId))->id);
     }
 
     $outcomes = Race::run($contenders);

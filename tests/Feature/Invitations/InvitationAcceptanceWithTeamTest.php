@@ -150,9 +150,8 @@ it('refuses to accept an invitation read before it was declined', function () {
     WorkspaceInvitation::query()->findOrFail($staleInvitation->id)->update(['declined_at' => now()]);
 
     expect(fn () => resolve(AcceptWorkspaceInvitation::class)->handle($staleInvitation, $user))
-        ->toThrow(InvitationUnavailable::class);
-
-    expect($staleInvitation->fresh()->accepted_at)->toBeNull()
+        ->toThrow(InvitationUnavailable::class)
+        ->and($staleInvitation->fresh()->accepted_at)->toBeNull()
         ->and($team->hasMember($user))->toBeFalse()
         ->and($user->belongsToWorkspace($team->workspace))->toBeFalse();
 });
