@@ -20,7 +20,7 @@ export default function SliderSection() {
     const { t } = useTrans();
     const [single, setSingle] = useState([8]);
     const [range, setRange] = useState([4, 12]);
-    const minutes = (value: number) => t(':count minutes', { count: value });
+    const minutes = (value: number) => t(':count min', { count: value });
 
     return (
         <section className="@container grid gap-4 p-4 md:grid-cols-2 md:p-6">

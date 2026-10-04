@@ -271,38 +271,48 @@ function NpsHistogram({ buckets }: { buckets: SurveyQuestionBucket[] }) {
         .join(', ');
 
     return (
-        <div
-            role="img"
-            aria-label={t('NPS distribution: :values', { values: description })}
-            data-slot="survey-nps-histogram"
-            className="flex h-24 items-end gap-1"
-        >
-            {buckets.map((bucket) => {
-                const score = Number(bucket.key);
-                const tone =
-                    score <= 6
-                        ? 'bg-skrum-roti-1'
-                        : score <= 8
-                          ? 'bg-skrum-roti-3'
-                          : 'bg-skrum-roti-5';
+        <div className="flex flex-col gap-1">
+            <div
+                role="img"
+                aria-label={t('NPS distribution: :values', {
+                    values: description,
+                })}
+                data-slot="survey-nps-histogram"
+                className="flex h-24 items-end gap-1"
+            >
+                {buckets.map((bucket) => {
+                    const score = Number(bucket.key);
+                    const tone =
+                        score <= 6
+                            ? 'bg-skrum-roti-1'
+                            : score <= 8
+                              ? 'bg-skrum-roti-3'
+                              : 'bg-skrum-roti-5';
 
-                return (
-                    <div
-                        key={bucket.key}
-                        className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-                    >
+                    return (
                         <div
-                            className={cn('w-full rounded-t-sm', tone)}
-                            style={{
-                                height: `${percentOf(bucket.count, highest)}%`,
-                            }}
-                        />
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                            {bucket.label}
-                        </span>
-                    </div>
-                );
-            })}
+                            key={bucket.key}
+                            className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                        >
+                            <div
+                                className={cn('w-full rounded-t-sm', tone)}
+                                style={{
+                                    height: `${percentOf(bucket.count, highest)}%`,
+                                }}
+                            />
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                                {bucket.label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+            <p
+                data-slot="survey-nps-histogram-caption"
+                className="text-center text-xs text-muted-foreground"
+            >
+                {t('Score distribution')}
+            </p>
         </div>
     );
 }
@@ -696,7 +706,7 @@ function Results({
           ? [value]
           : [];
 
-    return (
+    const counts = (
         <CountResults
             items={options.map((option) => ({
                 key: option.id,
@@ -708,6 +718,22 @@ function Results({
             selectedKeys={selected}
             asCount
         />
+    );
+
+    if (kind !== 'multiple') {
+        return counts;
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            {counts}
+            <p
+                data-slot="survey-results-footnote"
+                className="text-xs text-muted-foreground"
+            >
+                {t('% of the respondents who ticked the option')}
+            </p>
+        </div>
     );
 }
 

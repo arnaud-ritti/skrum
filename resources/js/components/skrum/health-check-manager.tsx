@@ -194,10 +194,25 @@ function StatementFields({
                 }
             }}
             className={cn(
-                'grid gap-2 @lg/card:grid-cols-[minmax(0,1fr)_auto_auto] @lg/card:items-start',
+                'grid gap-2 @lg/card:grid-cols-[auto_minmax(0,1fr)_auto] @lg/card:items-start',
                 className,
             )}
         >
+            <div className="min-w-0 @lg/card:w-36">
+                <Input
+                    name="label"
+                    value={draft.label}
+                    maxLength={healthStatementLabelMax}
+                    placeholder={t('Axis label')}
+                    aria-label={t('Axis label')}
+                    aria-invalid={errors?.label ? true : undefined}
+                    aria-describedby={errors?.label ? labelErrorId : undefined}
+                    onChange={(event) =>
+                        setDraft({ ...draft, label: event.target.value })
+                    }
+                />
+                <FieldError id={labelErrorId} message={errors?.label} />
+            </div>
             <div className="min-w-0">
                 <Input
                     ref={textRef}
@@ -213,21 +228,6 @@ function StatementFields({
                     }
                 />
                 <FieldError id={textErrorId} message={errors?.text} />
-            </div>
-            <div className="min-w-0 @lg/card:w-36">
-                <Input
-                    name="label"
-                    value={draft.label}
-                    maxLength={healthStatementLabelMax}
-                    placeholder={t('Axis label')}
-                    aria-label={t('Axis label')}
-                    aria-invalid={errors?.label ? true : undefined}
-                    aria-describedby={errors?.label ? labelErrorId : undefined}
-                    onChange={(event) =>
-                        setDraft({ ...draft, label: event.target.value })
-                    }
-                />
-                <FieldError id={labelErrorId} message={errors?.label} />
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
                 <Button

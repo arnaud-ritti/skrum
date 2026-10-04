@@ -5414,5 +5414,7 @@
     "Default workspace saved.": "Standard-Arbeitsbereich gespeichert.",
     "New SSO accounts": "Neue SSO-Konten",
     "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Per SSO ohne Einladung erstellte Konten treten diesem Arbeitsbereich als Mitglieder bei und erstellen zuerst ihr Team.",
-    "Default workspace": "Standard-Arbeitsbereich"
+    "Default workspace": "Standard-Arbeitsbereich",
+    "% of the respondents who ticked the option": "% der Antwortenden, die die Option angekreuzt haben",
+    "Score distribution": "Verteilung der Noten"
 }
