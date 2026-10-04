@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/table';
 import { InvitationLink } from '@/components/workspaces/invitations-table';
 import { useMinWidth } from '@/hooks/use-min-width';
+import { useNow } from '@/hooks/use-now';
 import { useOnlineUserIds } from '@/hooks/use-online-user-ids';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
@@ -268,7 +269,7 @@ export function MembersTable({
     const pendingCount = pendingInvitationCount(invitations);
     const wide = useMinWidth(TableMinWidth);
     const online = useOnlineUserIds();
-    const [now] = useState(() => Date.now());
+    const now = useNow(members);
     const headingRef = useRef<HTMLHeadingElement>(null);
     const memberLeft = useRef(false);
     const [roleError, setRoleError] = useState<RoleError | null>(null);
@@ -319,7 +320,6 @@ export function MembersTable({
                 }),
                 {
                     preserveScroll: true,
-                    only: ['members', 'facilitators'],
                     onSuccess: () => {
                         memberLeft.current = true;
                         resolve();
@@ -337,7 +337,7 @@ export function MembersTable({
         });
 
     const roleControl = (member: TeamSettingsMember) => {
-        if (!canManageMembers) {
+        if (!canManageMembers || member.isViewer) {
             return (
                 <span className="text-sm">{teamRoleLabel(member.role, t)}</span>
             );
@@ -360,7 +360,7 @@ export function MembersTable({
     };
 
     const rowMenu = (member: TeamSettingsMember) => {
-        if (!canManageMembers) {
+        if (!canManageMembers || member.isViewer) {
             return null;
         }
 
