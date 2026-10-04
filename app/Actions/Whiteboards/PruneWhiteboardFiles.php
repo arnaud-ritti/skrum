@@ -40,15 +40,16 @@ class PruneWhiteboardFiles
     }
 
     /**
-     * A file lives while a live element of its board shows it (spec §6.5).
-     * A template keeps its own copy of every image (spec §10).
+     * A file lives while an element of its board shows it (spec §6.5), a
+     * deleted one included: its tombstone is kept for undo until the purge
+     * that runs before this one. A template keeps its own copy of every
+     * image (spec §10).
      */
     private function isUsed(WhiteboardFile $file): bool
     {
         return WhiteboardElement::query()
             ->where('whiteboard_id', $file->whiteboard_id)
             ->where('type', 'image')
-            ->where('is_deleted', false)
             ->where('data->fileId', $file->file_id)
             ->exists();
     }
