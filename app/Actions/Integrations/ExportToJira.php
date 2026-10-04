@@ -42,7 +42,7 @@ class ExportToJira
             'issuetype' => ['id' => $target['issue_type_id']],
             'summary' => $draft->title,
             'description' => $isDataCenter ? MarkdownToWikiMarkup::draft($draft) : $draft->adf(),
-            'duedate' => $draft->dueOn,
+            'duedate' => $fields->hasDueDate ? $draft->dueOn : null,
             'priority' => $priority->value === null ? null : ['id' => (string) $priority->value],
             'assignee' => $assignee->accountId === null ? null : [$isDataCenter ? 'name' : 'accountId' => $assignee->accountId],
         ], fn (mixed $value): bool => $value !== null);

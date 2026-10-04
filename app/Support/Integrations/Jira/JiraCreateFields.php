@@ -11,5 +11,6 @@ class JiraCreateFields
         public bool $hasAssignee,
         public bool $hasPriority,
         public array $priorities,
+        public bool $hasDueDate,
     ) {}
 }

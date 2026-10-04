@@ -1091,9 +1091,13 @@ function exportBoardItem(array $attributes = []): array
  * @param  array<int, array{id: string, name: string}>|null  $priorities
  * @return array<string, mixed>
  */
-function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $priorities = null): array
+function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $priorities = null, bool $dueDate = true): array
 {
     $fields = [['fieldId' => 'summary', 'name' => 'Summary']];
+
+    if ($dueDate) {
+        $fields[] = ['fieldId' => 'duedate', 'name' => 'Due date'];
+    }
 
     if ($assignee) {
         $fields[] = ['fieldId' => 'assignee', 'name' => 'Assignee'];
