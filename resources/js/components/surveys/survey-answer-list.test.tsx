@@ -95,6 +95,19 @@ describe('SurveyAnswerList', () => {
         ).toBe('true');
     });
 
+    it('drops the required error of a question once it is answered', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+
+        renderList();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+        await act(async () => {
+            fireEvent.click(screen.getByRole('radio', { name: 'Weekly' }));
+        });
+
+        expect(screen.queryByText('An answer is required.')).toBeNull();
+    });
+
     it('finishes once every required question has an answer', async () => {
         const { onFinish } = renderList();
 

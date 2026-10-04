@@ -136,7 +136,10 @@ export function SurveyAnswerList({
                                     index: index + 1,
                                     count: questions.length,
                                 })}
-                                invalid={invalidIds.includes(question.id)}
+                                invalid={
+                                    invalidIds.includes(question.id) &&
+                                    !answers.isAnswered(question)
+                                }
                                 disabled={readOnly}
                                 value={draft.value}
                                 comment={draft.comment}

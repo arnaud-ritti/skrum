@@ -430,7 +430,8 @@ export function SurveyAnswerFlow({
         return null;
     }
 
-    const isInvalid = invalidId === question.id;
+    const isInvalid =
+        invalidId === question.id && !answers.isAnswered(question);
     const nextLabel = isLast ? t('Finish') : t('Next');
 
     const previousButton = isPhone ? (

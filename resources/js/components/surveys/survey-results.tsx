@@ -162,10 +162,17 @@ export function SurveyResults({
     const status = <ResultsStatus status={survey.status} />;
 
     const line = [
-        t(':responses answers out of :audience participants · anonymous', {
-            responses: progress.responses,
-            audience: progress.audience,
-        }),
+        progress.responses === 1
+            ? t('1 answer out of :audience participants · anonymous', {
+                  audience: progress.audience,
+              })
+            : t(
+                  ':responses answers out of :audience participants · anonymous',
+                  {
+                      responses: progress.responses,
+                      audience: progress.audience,
+                  },
+              ),
         closedOn === null ? null : t('closed on :date', { date: closedOn }),
     ]
         .filter((part) => part !== null)
