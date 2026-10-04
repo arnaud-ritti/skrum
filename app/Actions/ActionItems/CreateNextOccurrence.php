@@ -59,7 +59,7 @@ class CreateNextOccurrence
     }
 
     /**
-     * Guests and members who left the team are not carried over.
+     * Guests, members who left the team and deactivated accounts are not carried over.
      */
     private function keptAssignee(ActionItem $completed): ?string
     {
@@ -69,6 +69,6 @@ class CreateNextOccurrence
             return null;
         }
 
-        return $completed->team->members()->whereKey($userId)->exists() ? $userId : null;
+        return $completed->team->members()->whereKey($userId)->whereNull('deactivated_at')->exists() ? $userId : null;
     }
 }
