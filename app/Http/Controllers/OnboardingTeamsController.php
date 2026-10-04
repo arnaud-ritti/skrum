@@ -18,6 +18,7 @@ class OnboardingTeamsController extends Controller
 {
     use LocksOnboarding;
 
+    /** Rule D-1: the onboarding row is the authorisation to create its one team in its workspace (the one step 1 created, or the instance's default workspace). */
     public function update(OnboardingTeamRequest $request, CreateTeam $createTeam): RedirectResponse
     {
         $user = $request->user();

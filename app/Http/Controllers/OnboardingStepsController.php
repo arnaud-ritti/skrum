@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OnboardingStep;
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Concerns\LocksOnboarding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,12 @@ class OnboardingStepsController extends Controller
 
             if (! in_array([$onboarding->step, $target], self::Moves, true)) {
                 throw ValidationException::withMessages(['step' => __('This step is not available.')]);
+            }
+
+            $workspace = $onboarding->workspace;
+
+            if ($target === OnboardingStep::Workspace && $workspace !== null && $request->user()->roleIn($workspace) !== WorkspaceRole::Owner) {
+                throw ValidationException::withMessages(['step' => __('Your admin chose this workspace.')]);
             }
 
             $onboarding->update(['step' => $target]);

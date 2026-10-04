@@ -31,6 +31,7 @@ enum InstanceSettingKey: string
     case DisabledIntegrations = 'disabled_integrations';
     case MailLastTest = 'mail_last_test';
     case SsoLastTest = 'sso_last_test';
+    case DefaultWorkspace = 'default_workspace';
     case SsoGoogle = 'sso_google';
     case SsoGitHub = 'sso_github';
     case SsoEntra = 'sso_entra';

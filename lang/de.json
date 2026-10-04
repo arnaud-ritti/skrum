@@ -5340,5 +5340,7 @@
     "Step :n of 4": "Schritt :n von 4",
     "Team colour": "Teamfarbe",
     "What do you want to start with?": "Womit möchtest du anfangen?",
-    "Writing → vote → actions": "Schreiben → Abstimmen → Aktionspunkte"
+    "Writing → vote → actions": "Schreiben → Abstimmen → Aktionspunkte",
+    "Your admin chose this workspace.": "Dein Admin hat diesen Arbeitsbereich gewählt.",
+    "Default workspace saved.": "Standard-Arbeitsbereich gespeichert."
 }

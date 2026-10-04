@@ -58,6 +58,7 @@ const base: OnboardingProps = {
     inviteLinkExpiresInDays: 7,
     inviteLinkUsesCount: 0,
     membersCount: 0,
+    canEditWorkspace: true,
 };
 
 const atTeam: OnboardingProps = {

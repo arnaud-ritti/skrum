@@ -50,7 +50,7 @@ export type OnboardingProps = {
     inviteLinkUsesCount: number;
     membersCount: number;
     /** False once the account joined the instance's default workspace (P25-15): step 1 is done and "Back" is not offered. */
-    canEditWorkspace?: boolean;
+    canEditWorkspace: boolean;
 };
 
 /** The address as ScreenOnboarding draws it: no scheme. */
@@ -74,7 +74,6 @@ export function OnboardingPage(props: OnboardingProps) {
     const { step, workspace, team } = props;
     const headerStepper = useMinWidth(HeaderStepperMinWidth);
     const fullStepper = useMinWidth(FullStepperMinWidth);
-    const canEditWorkspace = props.canEditWorkspace ?? true;
     const addressBase = shownAddressBase(props.teamAddressBase);
     const [workspaceName, setWorkspaceName] = useState(workspace?.name ?? '');
     const [draft, setDraft] = useState(() => teamDraftFrom(props));
@@ -146,7 +145,7 @@ export function OnboardingPage(props: OnboardingProps) {
                         onDraftChange={setDraft}
                         addressBase={addressBase}
                         workspaceName={workspace?.name ?? ''}
-                        canGoBack={canEditWorkspace}
+                        canGoBack={props.canEditWorkspace}
                     />
                 )}
                 {step === 'invite' && team !== null && workspace !== null && (

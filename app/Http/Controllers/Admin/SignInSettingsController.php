@@ -10,6 +10,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SignInSettingsUpdateRequest;
 use App\Models\MagicLink;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Support\Alphabetical;
 use App\Support\Auth\PasswordConfirmation;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
@@ -38,6 +40,11 @@ class SignInSettingsController extends Controller
             'lastTest' => $settings->ssoLastTest(),
             'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
             'confirmUrl' => route('admin.signInConfirmation.create'),
+            'defaultWorkspaceId' => $this->existingDefaultWorkspaceId($settings),
+            'workspaces' => Alphabetical::sort(Workspace::query()->orderBy('id')->get(['id', 'name']), fn (Workspace $workspace): string => $workspace->name)
+                ->map(fn (Workspace $workspace): array => $workspace->only(['id', 'name']))
+                ->values()
+                ->all(),
         ]);
     }
 
@@ -64,5 +71,16 @@ class SignInSettingsController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sign-in settings saved.')]);
 
         return to_route('admin.signIn.edit');
+    }
+
+    private function existingDefaultWorkspaceId(InstanceSettings $settings): ?string
+    {
+        $id = $settings->defaultWorkspaceId();
+
+        if ($id === null) {
+            return null;
+        }
+
+        return Workspace::query()->whereKey($id)->exists() ? $id : null;
     }
 }

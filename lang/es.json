@@ -5340,5 +5340,7 @@
     "Step :n of 4": "Paso :n de 4",
     "Team colour": "Color del equipo",
     "What do you want to start with?": "¿Con qué quieres empezar?",
-    "Writing → vote → actions": "Escritura → voto → acciones"
+    "Writing → vote → actions": "Escritura → voto → acciones",
+    "Your admin chose this workspace.": "Tu administrador eligió este espacio de trabajo.",
+    "Default workspace saved.": "Espacio de trabajo predeterminado guardado."
 }

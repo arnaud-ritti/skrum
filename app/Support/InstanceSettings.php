@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use SensitiveParameter;
 
@@ -311,6 +312,18 @@ class InstanceSettings
     public function updateCheckedAt(): ?string
     {
         return $this->storedString(InstanceSettingKey::UpdateCheckedAt);
+    }
+
+    /** The workspace new SSO accounts join (P25-15); it may have been deleted since. */
+    public function defaultWorkspaceId(): ?string
+    {
+        $id = $this->storedString(InstanceSettingKey::DefaultWorkspace);
+
+        if ($id === null || ! Str::isUuid($id)) {
+            return null;
+        }
+
+        return $id;
     }
 
     /** @return array<int, string> */

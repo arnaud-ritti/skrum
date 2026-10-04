@@ -2,6 +2,7 @@
 
 namespace App\Actions\Auth;
 
+use App\Actions\Onboarding\JoinDefaultWorkspace;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Enums\SsoProvider;
 use App\Exceptions\InvitationUnavailable;
@@ -19,6 +20,7 @@ class ResolveSsoUser
     public function __construct(
         private SignupGate $signupGate,
         private AcceptWorkspaceInvitation $acceptInvitation,
+        private JoinDefaultWorkspace $joinDefaultWorkspace,
     ) {}
 
     /**
@@ -75,7 +77,7 @@ class ResolveSsoUser
             throw SsoLoginRefused::signupsRestricted();
         }
 
-        return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null);
+        return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null, $link);
     }
 
     private function link(User $user, SsoProvider $provider, string $providerUserId): User
@@ -94,8 +96,9 @@ class ResolveSsoUser
         string $providerUserId,
         string $email,
         ?WorkspaceInvitation $invitation,
+        ?TeamInviteLink $link,
     ): User {
-        return DB::transaction(function () use ($provider, $ssoUser, $providerUserId, $email, $invitation): User {
+        return DB::transaction(function () use ($provider, $ssoUser, $providerUserId, $email, $invitation, $link): User {
             $isFirstUser = User::query()->doesntExist();
 
             $user = User::create([
@@ -117,6 +120,10 @@ class ResolveSsoUser
 
             if ($invitation !== null) {
                 $this->acceptInvitation->handle($invitation, $user);
+            }
+
+            if ($invitation === null && $link?->isUsable() !== true) {
+                $this->joinDefaultWorkspace->handle($user);
             }
 
             return $user;

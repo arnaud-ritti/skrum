@@ -5120,5 +5120,7 @@
     "Step :n of 4": "Step :n of 4",
     "Team colour": "Team colour",
     "What do you want to start with?": "What do you want to start with?",
-    "Writing → vote → actions": "Writing → vote → actions"
+    "Writing → vote → actions": "Writing → vote → actions",
+    "Your admin chose this workspace.": "Your admin chose this workspace.",
+    "Default workspace saved.": "Default workspace saved."
 }

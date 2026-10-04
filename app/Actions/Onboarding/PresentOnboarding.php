@@ -2,7 +2,9 @@
 
 namespace App\Actions\Onboarding;
 
+use App\Enums\OnboardingStep;
 use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
 use App\Models\Onboarding;
 use App\Models\Team;
 use App\Models\TeamInviteLink;
@@ -23,6 +25,7 @@ class PresentOnboarding
     /**
      * @return array{
      *     step: string,
+     *     canEditWorkspace: bool,
      *     workspace: array{name: string, slug: string, locale: ?string}|null,
      *     team: array{id: string, name: string, slug: string, color: string, description: ?string}|null,
      *     teamAddressBase: string,
@@ -45,7 +48,8 @@ class PresentOnboarding
         $link = $team?->usableInviteLink();
 
         return [
-            'step' => $onboarding->step->value,
+            'step' => $workspace === null ? OnboardingStep::Workspace->value : $onboarding->step->value,
+            'canEditWorkspace' => $workspace === null || $user->roleIn($workspace) === WorkspaceRole::Owner,
             'workspace' => $workspace === null ? null : [
                 'name' => $workspace->name,
                 'slug' => $workspace->slug,
