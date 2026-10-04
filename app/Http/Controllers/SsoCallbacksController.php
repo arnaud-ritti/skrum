@@ -11,6 +11,7 @@ use App\Enums\SsoProvider;
 use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SocialAccountRefused;
 use App\Exceptions\SsoLoginRefused;
+use App\Http\Controllers\Concerns\FlashesLiveSession;
 use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
@@ -24,6 +25,8 @@ use Throwable;
 
 class SsoCallbacksController extends Controller
 {
+    use FlashesLiveSession;
+
     public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin, LinkSocialAccount $linkSocialAccount, InvitationLanding $landing): RedirectResponse
     {
         abort_unless($provider->isEnabled(), 404);
@@ -67,6 +70,8 @@ class SsoCallbacksController extends Controller
 
         if ($acceptedInvitation?->accepted_at !== null && $acceptedInvitation->team_id !== null) {
             redirect()->setIntendedUrl($landing->url($acceptedInvitation, $user));
+
+            $this->flashLiveSession($acceptedInvitation->team, $user);
         }
 
         return $completeLogin->handle($request, $user, SignInEntry::Sso);
