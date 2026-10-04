@@ -138,9 +138,9 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
 
     $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
         ->assertValue('#email', 'mona@example.com')
-        ->assertPresent('[data-slot="invitation-card"] a[href$="/register"]')
-        ->assertSeeIn('[data-slot="invitation-card"] a[href$="/register"]', 'Create an account')
-        ->assertSeeIn('[data-slot="invitation-card"] a[href$="/login"]', 'Log in')
+        ->assertPresent('[data-slot="invitation-account-form"]')
+        ->assertSeeIn('@create-invitation-account-button', 'Create my account and join Nordlys')
+        ->assertSeeIn('[data-slot="invitation-card"] a[href$="/login"]', 'Sign in')
         ->click('[data-slot="invitation-card"] a[href$="/login"]')
         ->assertPathIs('/login')
         ->fill('#email', $otto->email)
@@ -172,8 +172,7 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
     expect($workspace->members()->whereKey($mona->id)->exists())->toBeTrue();
 
     $page->navigate('/invitations/expired-token')
-        ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
-        ->assertSeeIn('[data-slot="access-notice"]', 'Your invitation to join Aurora was valid until')
+        ->assertSeeIn('[data-slot="access-notice"]', 'Your invitation to join Aurora has expired or was already used.')
         ->assertSeeIn('[data-slot="access-notice"]', "Ask {$inviter->name} for a new link; nothing else to do.")
         ->assertNotPresent('[data-slot="invitation-card"]')
         ->assertNotPresent('@accept-invitation-button');
@@ -221,7 +220,7 @@ it('[P18e-11-08] shows the inviter, the role and the members, and the SSO button
         ->assertSeeIn('[data-slot="sso-buttons"] a[href$="/auth/github/redirect"]', 'Continue with GitHub');
 
     $page->navigate('/invitations/expired-token')
-        ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
+        ->assertSeeIn('[data-slot="access-notice"]', 'has expired or was already used.')
         ->assertNotPresent('[data-slot="sso-buttons"]')
         ->assertNotPresent('a[href$="/auth/github/redirect"]');
 

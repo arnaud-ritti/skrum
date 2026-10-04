@@ -29,6 +29,7 @@ function idleModel() {
         failed: false,
         markingAllRead: false,
         arriving: false,
+        subscribed: false,
         load,
         loadMore,
         stopWatching,

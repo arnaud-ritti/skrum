@@ -88,48 +88,64 @@ export function NotificationsMenu() {
         />
     );
 
+    /** Tells a browser test when an arrival can reach the bell without a reload. */
+    const channelState = (
+        <span
+            hidden
+            data-notifications-channel={
+                model.subscribed ? 'subscribed' : 'subscribing'
+            }
+        />
+    );
+
     if (!isWide) {
         return (
-            <Drawer open={isOpen} onOpenChange={onOpenChange}>
-                <DrawerTrigger asChild>{bell}</DrawerTrigger>
-                <DrawerContent
-                    showCloseButton={false}
-                    aria-describedby={undefined}
-                    className="px-0"
-                >
-                    <DrawerTitle className="sr-only">
-                        {t('Notifications')}
-                    </DrawerTitle>
-                    <div className="flex min-h-0 flex-col overflow-y-auto">
-                        {panel}
-                    </div>
-                </DrawerContent>
-            </Drawer>
+            <>
+                {channelState}
+                <Drawer open={isOpen} onOpenChange={onOpenChange}>
+                    <DrawerTrigger asChild>{bell}</DrawerTrigger>
+                    <DrawerContent
+                        showCloseButton={false}
+                        aria-describedby={undefined}
+                        className="px-0"
+                    >
+                        <DrawerTitle className="sr-only">
+                            {t('Notifications')}
+                        </DrawerTitle>
+                        <div className="flex min-h-0 flex-col overflow-y-auto">
+                            {panel}
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            </>
         );
     }
 
     return (
-        <Popover open={isOpen} onOpenChange={onOpenChange}>
-            <PopoverTrigger asChild>{bell}</PopoverTrigger>
-            <PopoverContent
-                align="end"
-                aria-labelledby={titleId}
-                className="w-100 max-w-100 overflow-hidden p-0"
-                onOpenAutoFocus={(event) => {
-                    const activeTab = (
-                        event.currentTarget as HTMLElement | null
-                    )?.querySelector<HTMLElement>(
-                        '[role="tab"][aria-selected="true"]',
-                    );
+        <>
+            {channelState}
+            <Popover open={isOpen} onOpenChange={onOpenChange}>
+                <PopoverTrigger asChild>{bell}</PopoverTrigger>
+                <PopoverContent
+                    align="end"
+                    aria-labelledby={titleId}
+                    className="w-100 max-w-100 overflow-hidden p-0"
+                    onOpenAutoFocus={(event) => {
+                        const activeTab = (
+                            event.currentTarget as HTMLElement | null
+                        )?.querySelector<HTMLElement>(
+                            '[role="tab"][aria-selected="true"]',
+                        );
 
-                    if (activeTab) {
-                        event.preventDefault();
-                        activeTab.focus();
-                    }
-                }}
-            >
-                {panel}
-            </PopoverContent>
-        </Popover>
+                        if (activeTab) {
+                            event.preventDefault();
+                            activeTab.focus();
+                        }
+                    }}
+                >
+                    {panel}
+                </PopoverContent>
+            </Popover>
+        </>
     );
 }

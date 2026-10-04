@@ -11,6 +11,7 @@ const privateChannel = vi.fn();
 let shared: { unreadCount: number } | null = { unreadCount: 2 };
 let echoConfigured = false;
 let received: (payload: { unreadCount?: number }) => void = () => {};
+let confirmSubscription: () => void = () => {};
 const toast = vi.hoisted(() => ({
     error: vi.fn(),
     info: vi.fn(),
@@ -29,7 +30,12 @@ vi.mock('@laravel/echo-react', () => ({
         private: (name: string) => {
             privateChannel(name);
 
-            return {
+            const channel = {
+                subscribed: (callback: () => void) => {
+                    confirmSubscription = callback;
+
+                    return channel;
+                },
                 listen: (
                     event: string,
                     callback: (payload: { unreadCount?: number }) => void,
@@ -37,8 +43,12 @@ vi.mock('@laravel/echo-react', () => ({
                     if (event === '.notification.received') {
                         received = callback;
                     }
+
+                    return channel;
                 },
             };
+
+            return channel;
         },
         leave: (name: string) => leave(name),
         socketId: () => undefined,
@@ -139,6 +149,7 @@ describe('useNotifications', () => {
         shared = { unreadCount: 2 };
         echoConfigured = false;
         received = () => {};
+        confirmSubscription = () => {};
     });
 
     afterEach(() => vi.useRealTimers());
@@ -324,6 +335,21 @@ describe('useNotifications', () => {
                 only: ['notifications', 'actionItems'],
             }),
         );
+    });
+
+    it('says it is subscribed once the private channel of the user confirms it, and no longer after leaving it', () => {
+        echoConfigured = true;
+        const { result, unmount } = renderHook(() => useNotifications());
+
+        expect(result.current.subscribed).toBe(false);
+
+        act(() => confirmSubscription());
+
+        expect(result.current.subscribed).toBe(true);
+
+        unmount();
+
+        expect(leave).toHaveBeenCalledWith('user.u1');
     });
 
     it('takes the count of an arrival from the private channel of the user, without reading the list of a closed panel', () => {
