@@ -68,7 +68,6 @@ vi.mock('@/hooks/use-two-factor-auth', () => ({
     useTwoFactorAuth: () => ({
         qrCodeSvg: null,
         manualSetupKey: null,
-        recoveryCodesList: [],
         errors: [],
         hasSetupData: false,
         clearSetupData: vi.fn(),
