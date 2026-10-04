@@ -285,6 +285,38 @@ describe('BoardMenu', () => {
             expect(screen.queryByRole('menu')).toBeNull();
         });
 
+        it.each([
+            ['Save as image', 'saveAsImage'],
+            ['Find on canvas', 'findOnCanvas'],
+            ['Canvas help', 'canvasHelp'],
+            ['Clear canvas', 'clearCanvas'],
+        ] as const)(
+            'leaves the focus in what "%s" opens instead of giving it back to the menu button',
+            async (entry, action) => {
+                const opened = document.createElement('button');
+                document.body.append(opened);
+                const actions = canvasActions({
+                    [action]: vi.fn(() => setTimeout(() => opened.focus())),
+                });
+                const { user, menu } = await openMenu(
+                    boardState(),
+                    vi.fn(),
+                    actions,
+                );
+
+                await user.click(menu.getByRole('menuitem', { name: entry }));
+
+                await waitFor(() =>
+                    expect(screen.queryByRole('menu')).toBeNull(),
+                );
+                await waitFor(() =>
+                    expect(document.activeElement).toBe(opened),
+                );
+
+                opened.remove();
+            },
+        );
+
         it('chooses the canvas background among the paper and the five picks', async () => {
             const actions = canvasActions({ background: '#f5faff' });
             const { user, menu } = await openMenu(

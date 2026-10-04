@@ -6,7 +6,7 @@ use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
 use App\Support\WhiteboardTemplates\BuiltInTemplates;
 
-it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in with "Join", and shows the notice for an invalid link', function () {
+it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in with "Join the session", and shows the notice for an invalid link', function () {
     ['board' => $board] = whiteboardWithFacilitator();
     whiteboardGuest($board);
     $oscar = renamedWhiteboardUser(User::factory()->create(), 'Oscar Outsider');
@@ -25,14 +25,14 @@ it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in w
         ->fill('#name', '')
         ->assertNotPresent('[data-slot="guest-join-preview"]')
         ->assertDontSee('Suggested nickname if you leave it empty')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIs($joinPath)
         ->assertPresent('#name[aria-invalid="true"]')
         ->assertPresent('#name ~ [role="alert"]')
         ->assertScript('document.querySelector(\'#name ~ [role="alert"]\').textContent.trim() !== \'\'', true)
         ->fill('#name', 'Oscar Outsider')
         ->assertNotPresent('#name ~ [role="alert"]')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIs($this->whiteboardPath($board));
 
     $this->awaitRealtime($page)
@@ -216,9 +216,10 @@ it('[P18e-07-06] renames the board in place for everyone, gives a guest no field
         ->assertSee('Download board data');
 });
 
-it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the colour bar, hides the canvas\'s quick picks but keeps its colour picker, and checks the colour of a template note', function () {
+it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the selection bar, hides the canvas\'s quick picks but keeps its colour picker under Styles, and checks the colour of a template note', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
-    $bar = '.whiteboard-canvas [data-slot="canvas-colors"] [role="radiogroup"][aria-label="Fill colour"]';
+    $selectionBar = '.whiteboard-canvas [role="toolbar"][aria-label="Selection"]';
+    $bar = "{$selectionBar} [role=\"radiogroup\"][aria-label=\"Fill colour\"]";
     $quickPicksHidden = <<<'JS'
         (() => {
             const picks = [...document.querySelectorAll('.whiteboard-canvas .color-picker__top-picks')];
@@ -246,8 +247,7 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
 
     $this->selectWhiteboardTool($page, 'rectangle');
 
-    $page->assertCount("{$bar} [role=\"radio\"]", 8)
-        ->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]");
+    $page->assertNotPresent($bar);
 
     $this->dragOnWhiteboard($page, [420, 320], [580, 420]);
     $this->awaitWhiteboardStored($page, $board, 1);
@@ -259,7 +259,10 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
         ->and($rectangle->data['strokeColor'])->toBe('#ddc362')
         ->and($rectangle->is_sticky)->toBeFalse();
 
-    $page->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]")
+    $page->assertCount("{$bar} [role=\"radio\"]", 8)
+        ->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]")
+        ->click("{$selectionBar} button[aria-label=\"Styles\"]")
+        ->assertAttribute("{$selectionBar} button[aria-label=\"Styles\"]", 'aria-pressed', 'true')
         ->assertScript($quickPicksHidden, true)
         ->assertScript($pickerRowsCollapsed, true)
         ->click("{$bar} [role=\"radio\"][aria-label=\"Sky\"]")
@@ -317,7 +320,7 @@ it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the c
 it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode and back, has no toggle at 1440, and gives a guest of a locked board no toggle', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     $toggle = '.whiteboard-canvas [data-slot="read-mode-toggle"]';
-    $tools = '.whiteboard-canvas .App-toolbar [data-testid="toolbar-rectangle"]';
+    $tools = '.whiteboard-canvas [role="toolbar"][aria-label="Tools"]';
     $scrollBack = '.whiteboard-canvas .scroll-back-to-content';
     $wheel = <<<'JS'
         async ([zooming, deltaY, steps]) => {
@@ -356,9 +359,9 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
             const apart = (first, second) => first.bottom <= second.top || first.top >= second.bottom || first.right <= second.left || first.left >= second.right;
             const dock = document.querySelector('.whiteboard-canvas [data-slot="read-mode-toggle"]').getBoundingClientRect();
             const bar = document.querySelector('.whiteboard-reactions').getBoundingClientRect();
-            const bottom = document.querySelector('.whiteboard-canvas .App-bottom-bar .App-toolbar').getBoundingClientRect();
+            const tools = document.querySelector('.whiteboard-canvas [data-slot="phone-toolbar"] [role="toolbar"]');
 
-            return dock.width > 0 && dock.right <= window.innerWidth && apart(dock, bar) && apart(dock, bottom);
+            return dock.width > 0 && dock.right <= window.innerWidth && apart(dock, bar) && (tools === null || apart(dock, tools.getBoundingClientRect()));
         })()
         JS;
 
@@ -382,7 +385,7 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
         ->assertSeeIn('.whiteboard-canvas span[role="status"]', 'Reading')
         ->assertNotPresent($tools)
         ->assertNotPresent('button[aria-label="Sticky note"]')
-        ->assertNotPresent('.whiteboard-canvas [data-slot="canvas-colors"]')
+        ->assertNotPresent('.whiteboard-canvas [role="toolbar"][aria-label="Selection"]')
         ->assertScript($dockIsClear, true)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
 

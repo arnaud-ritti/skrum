@@ -37,6 +37,7 @@ export type Placement = { left: number; top: number; side: 'below' | 'above' };
 /** Pixels on screen: 0.75rem, the count chip's 1.625rem, 1rem. */
 export const BarGap = 12;
 export const ChipHeight = 26;
+export const ChipMinWidth = 32;
 export const EdgeMargin = 16;
 
 /**
@@ -144,8 +145,21 @@ export function selectionBarPlacement(
     };
 }
 
-export function selectionCountPlacement(bounds: Rect, view: CanvasView): Point {
+/**
+ * The count sits on the top-left corner of the selection, slid in from the left edge of the canvas and cut
+ * (ellipsis) at its right edge, so it never widens the page; none when too little of the canvas is left for it.
+ */
+export function selectionCountPlacement(
+    bounds: Rect,
+    view: CanvasView,
+): (Point & { maxWidth: number }) | null {
     const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
+    const x = Math.max(topLeft.x, 0);
+    const maxWidth = view.width - x;
 
-    return { x: topLeft.x, y: topLeft.y - ChipHeight };
+    if (maxWidth < ChipMinWidth) {
+        return null;
+    }
+
+    return { x, y: topLeft.y - ChipHeight, maxWidth };
 }

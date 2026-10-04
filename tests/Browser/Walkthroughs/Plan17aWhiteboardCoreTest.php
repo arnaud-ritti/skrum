@@ -511,18 +511,20 @@ it('[P17a-08a] stores nothing forged: the author is the requester, unknown data 
         ->and(json_encode($received))->not->toContain('forged');
 });
 
-it('[P17a-09] shows no Library button, no link group in the canvas menu and no outbound link in the help dialog', function () {
+it('[P17a-09] shows no Library button, no canvas menu, no link in the board menu and no outbound link in the help dialog', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
-    $page->assertPresent('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+    $page->assertScript("Array.from(document.querySelectorAll('.whiteboard-canvas .main-menu-trigger')).every((trigger) => trigger.getClientRects().length === 0)", true)
         ->assertScript("Array.from(document.querySelectorAll('.excalidraw .default-sidebar-trigger')).every((trigger) => getComputedStyle(trigger).display == 'none')", true)
-        ->assertDontSee('Library')
-        ->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
-        ->assertPresent('[data-testid="dropdown-menu"] [data-testid="help-menu-item"]')
-        ->assertNotPresent('[data-testid="dropdown-menu"] a[href]')
-        ->click('[data-testid="help-menu-item"]')
+        ->assertDontSee('Library');
+
+    $this->openWhiteboardMenu($page);
+
+    $page->assertSeeIn('[role="menu"]', 'Canvas help')
+        ->assertNotPresent('[role="menu"] a[href]')
+        ->click('[role="menu"] [role="menuitem"]:has-text("Canvas help")')
         ->assertPresent('.HelpDialog .HelpDialog__islands-container')
         ->assertScript("Array.from(document.querySelectorAll('.HelpDialog a[href]')).filter((link) => link.getClientRects().length > 0).length", 0)
         ->assertScript("Array.from(document.querySelectorAll('.HelpDialog__header')).every((header) => getComputedStyle(header).display == 'none')", true)

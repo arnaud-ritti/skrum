@@ -13,7 +13,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import WhiteboardDuplicatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardDuplicatesController';
 import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
@@ -146,6 +146,14 @@ export function BoardMenu({
     const request = useWhiteboardRequest();
     const { board, me } = state.snapshot;
     const [dialog, setDialog] = useState<BoardDialog | null>(null);
+    /** A canvas entry opens the library's dialog or sidebar, which takes the focus: the menu must not take it back. */
+    const canvasTookFocus = useRef(false);
+    const keepingFocus =
+        (run: () => void): (() => void) =>
+        () => {
+            canvasTookFocus.current = true;
+            run();
+        };
 
     const run = async (pending: Promise<unknown>): Promise<void> => {
         if ((await request(pending)) === undefined) {
@@ -246,7 +254,17 @@ export function BoardMenu({
                 </DropdownMenuCheckboxItem>
             </>
         ),
-        canvasActions && <CanvasEntries actions={canvasActions} />,
+        canvasActions && (
+            <CanvasEntries
+                actions={{
+                    ...canvasActions,
+                    saveAsImage: keepingFocus(canvasActions.saveAsImage),
+                    findOnCanvas: keepingFocus(canvasActions.findOnCanvas),
+                    canvasHelp: keepingFocus(canvasActions.canvasHelp),
+                    clearCanvas: keepingFocus(canvasActions.clearCanvas),
+                }}
+            />
+        ),
         me.canDelete && (
             <DropdownMenuItem
                 variant="destructive"
@@ -272,7 +290,18 @@ export function BoardMenu({
                         <Ellipsis aria-hidden />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" size="wide">
+                <DropdownMenuContent
+                    align="end"
+                    size="wide"
+                    onCloseAutoFocus={(event) => {
+                        if (!canvasTookFocus.current) {
+                            return;
+                        }
+
+                        canvasTookFocus.current = false;
+                        event.preventDefault();
+                    }}
+                >
                     {groups.map((group, index) => (
                         <Fragment key={index}>
                             {index > 0 && <DropdownMenuSeparator />}

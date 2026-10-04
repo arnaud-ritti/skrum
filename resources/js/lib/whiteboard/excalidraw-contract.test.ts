@@ -46,6 +46,12 @@ describe('Excalidraw contract of the whiteboard chrome', () => {
         expect(chunks).toMatch(/var DEFAULT_SIDEBAR = \{\s*name: "default"/);
     });
 
+    it('still wraps the field of its canvas search in the class "Find on canvas" focuses', () => {
+        expect(chunks).toContain(
+            'SEARCH_MENU_INPUT_WRAPPER: "layer-ui__search-inputWrapper"',
+        );
+    });
+
     it('still styles the zoom group the CSS hides', () => {
         expect(styles).toContain('.zoom-actions');
     });

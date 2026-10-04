@@ -245,8 +245,8 @@ describe('CanvasSelection', () => {
 
         expect(bar()?.style.left).toBe(`${place.left}px`);
         expect(bar()?.style.top).toBe(`${place.top}px`);
-        expect(chip()?.style.left).toBe(`${corner.x}px`);
-        expect(chip()?.style.top).toBe(`${corner.y}px`);
+        expect(chip()?.style.left).toBe(`${corner?.x}px`);
+        expect(chip()?.style.top).toBe(`${corner?.y}px`);
         expect(chip()?.textContent).toBe('2 elements');
     });
 

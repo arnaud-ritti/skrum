@@ -14,9 +14,9 @@ const P17cFollowingNotice = 'div[role="status"]:has-text("Following the facilita
 const P17cPausedNotice = 'div[role="status"]:has-text("Following paused")';
 const P17cResume = 'div[role="status"] button:text-is("Resume")';
 const P17cFollowSwitch = '[aria-label="Bring everyone to me"]';
-const P17cZoomLabel = '.whiteboard-canvas .reset-zoom-button';
-const P17cZoomIn = '.whiteboard-canvas .zoom-in-button';
-const P17cZoomOut = '.whiteboard-canvas .zoom-out-button';
+const P17cZoomLabel = '[role="toolbar"][aria-label="Zoom"] [data-zoom-percent]';
+const P17cZoomIn = '[role="toolbar"][aria-label="Zoom"] button[aria-label="Zoom in"]';
+const P17cZoomOut = '[role="toolbar"][aria-label="Zoom"] button[aria-label="Zoom out"]';
 
 function p17cTimerSeconds(mixed $page): int
 {
@@ -167,8 +167,8 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
 it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s writes with 403 and errors.locked, lets the facilitator edit, and gives the tools back on unlock', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
-    $shapesTool = '.whiteboard-canvas [data-testid="toolbar-rectangle"]';
-    $stickyTool = 'button[aria-label="Sticky note"]';
+    $shapesTool = '[data-slot="canvas-tools"] [role="toolbar"][aria-label="Tools"] button[aria-keyshortcuts="R"]';
+    $stickyTool = '[data-slot="canvas-tools"] [role="toolbar"][aria-label="Tools"] button[aria-keyshortcuts="N"]';
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
@@ -496,7 +496,7 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
-            ->assertSeeIn(P17cZoomLabel, '100%')
+            ->assertSeeIn(P17cZoomLabel, '100 %')
             ->assertNotPresent('div[role="status"]');
     }
 
@@ -511,42 +511,42 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
         ->and($this->whiteboardSnapshot($guestPage, $board)['board']['followEnabled'])->toBeTrue();
 
     $franPage->click(P17cZoomIn)
-        ->assertSeeIn(P17cZoomLabel, '110%');
+        ->assertSeeIn(P17cZoomLabel, '110 %');
 
-    $guestPage->assertSeeIn(P17cZoomLabel, '110%');
+    $guestPage->assertSeeIn(P17cZoomLabel, '110 %');
 
     $this->settleWhiteboard($guestPage, 2400);
 
     $guestPage->assertPresent(P17cFollowingNotice)
         ->assertNotPresent(P17cPausedNotice)
-        ->assertSeeIn(P17cZoomLabel, '110%');
+        ->assertSeeIn(P17cZoomLabel, '110 %');
 
     $guestPage->click(P17cZoomOut)
-        ->assertSeeIn(P17cZoomLabel, '100%')
+        ->assertSeeIn(P17cZoomLabel, '100 %')
         ->assertPresent(P17cPausedNotice)
         ->assertPresent(P17cResume)
         ->assertNotPresent(P17cFollowingNotice);
 
     $this->settleWhiteboard($franPage, 800);
 
-    $franPage->assertSeeIn(P17cZoomLabel, '110%')
+    $franPage->assertSeeIn(P17cZoomLabel, '110 %')
         ->assertPresent(P17cLeadingNotice)
         ->assertNotPresent(P17cPausedNotice);
 
     $franPage->click(P17cZoomIn)
-        ->assertSeeIn(P17cZoomLabel, '120%');
+        ->assertSeeIn(P17cZoomLabel, '120 %');
 
     $this->settleWhiteboard($guestPage, 2400);
 
-    $guestPage->assertSeeIn(P17cZoomLabel, '100%')
+    $guestPage->assertSeeIn(P17cZoomLabel, '100 %')
         ->assertPresent(P17cPausedNotice);
 
     $guestPage->click(P17cResume)
-        ->assertSeeIn(P17cZoomLabel, '120%')
+        ->assertSeeIn(P17cZoomLabel, '120 %')
         ->assertPresent(P17cFollowingNotice)
         ->assertNotPresent(P17cResume);
 
-    $franPage->assertSeeIn(P17cZoomLabel, '120%');
+    $franPage->assertSeeIn(P17cZoomLabel, '120 %');
 });
 
 it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator\'s view, and frees everyone when it is switched off', function () {
@@ -557,14 +557,14 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
     $franPage->assertPresent(P17cLeadingNotice)
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true')
         ->click(P17cZoomIn)
-        ->assertSeeIn(P17cZoomLabel, '110%')
+        ->assertSeeIn(P17cZoomLabel, '110 %')
         ->click(P17cZoomIn)
-        ->assertSeeIn(P17cZoomLabel, '120%');
+        ->assertSeeIn(P17cZoomLabel, '120 %');
 
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent(P17cFollowingNotice)
-        ->assertSeeIn(P17cZoomLabel, '120%')
+        ->assertSeeIn(P17cZoomLabel, '120 %')
         ->assertNotPresent(P17cPausedNotice);
 
     $franPage->click(P17cFollowSwitch)
@@ -574,14 +574,14 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
     $guestPage->assertNotPresent('div[role="status"]');
 
     $guestPage->click(P17cZoomOut)
-        ->assertSeeIn(P17cZoomLabel, '110%');
+        ->assertSeeIn(P17cZoomLabel, '110 %');
 
     $this->settleWhiteboard($guestPage, 800);
 
     $guestPage->assertNotPresent('div[role="status"]')
-        ->assertSeeIn(P17cZoomLabel, '110%');
+        ->assertSeeIn(P17cZoomLabel, '110 %');
 
-    $franPage->assertSeeIn(P17cZoomLabel, '120%');
+    $franPage->assertSeeIn(P17cZoomLabel, '120 %');
 
     expect($board->fresh()->follow_enabled)->toBeFalse()
         ->and($this->whiteboardSnapshot($guestPage, $board)['board']['followEnabled'])->toBeFalse();
@@ -598,22 +598,22 @@ it('[P17c-04c] lets a guest in view mode on a locked board follow the facilitato
         ->assertPresent(P17cFollowingNotice);
 
     $franPage->click(P17cZoomIn)
-        ->assertSeeIn(P17cZoomLabel, '110%');
+        ->assertSeeIn(P17cZoomLabel, '110 %');
 
-    $guestPage->assertSeeIn(P17cZoomLabel, '110%')
+    $guestPage->assertSeeIn(P17cZoomLabel, '110 %')
         ->assertNotPresent(P17cPausedNotice);
 
     $guestPage->click(P17cZoomOut)
-        ->assertSeeIn(P17cZoomLabel, '100%')
+        ->assertSeeIn(P17cZoomLabel, '100 %')
         ->assertPresent(P17cPausedNotice)
         ->assertPresent(P17cLockedNotice);
 
     $guestPage->click(P17cResume)
-        ->assertSeeIn(P17cZoomLabel, '110%')
+        ->assertSeeIn(P17cZoomLabel, '110 %')
         ->assertPresent(P17cFollowingNotice)
         ->assertPresent(P17cViewMode);
 
-    $franPage->assertSeeIn(P17cZoomLabel, '110%');
+    $franPage->assertSeeIn(P17cZoomLabel, '110 %');
 });
 
 it('[P17c-04d] zooms a follower with a narrower window out until the facilitator\'s view fits in it', function () {
@@ -624,7 +624,7 @@ it('[P17c-04d] zooms a follower with a narrower window out until the facilitator
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent(P17cFollowingNotice)
-        ->assertSeeIn(P17cZoomLabel, '100%');
+        ->assertSeeIn(P17cZoomLabel, '100 %');
 
     $guestPage->resize(900, 1117)
         ->assertScript('window.innerWidth', 900);
@@ -635,11 +635,11 @@ it('[P17c-04d] zooms a follower with a narrower window out until the facilitator
 
     expect($fitted)->toBeGreaterThan(0.3)->toBeLessThan(0.6);
 
-    $guestPage->assertSeeIn(P17cZoomLabel, number_format($fitted * 100).'%')
+    $guestPage->assertSeeIn(P17cZoomLabel, number_format($fitted * 100).' %')
         ->assertPresent(P17cFollowingNotice)
         ->assertNotPresent(P17cPausedNotice);
 
-    $franPage->assertSeeIn(P17cZoomLabel, '100%');
+    $franPage->assertSeeIn(P17cZoomLabel, '100 %');
 });
 
 it('[P17c-05a] lists the team members and the workspace admins in the hand-over dialog, hands facilitation over without a reload, switches follow-me off at each change, and lets the former facilitator take control back', function () {
@@ -737,7 +737,7 @@ it('[P17c-05b] says that no one else can facilitate when the facilitator is alon
 
     $this->openWhiteboardMenu($guestPage)
         ->assertPresent('[role="menuitemcheckbox"]:has-text("Hide my cursor")')
-        ->assertCount('[role="menu"] [role="menuitem"]', 0)
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Save as image|Find on canvas|Canvas help|Clear canvas|Canvas background')
         ->assertDontSeeIn('[role="menu"]', 'Take control')
         ->assertDontSeeIn('[role="menu"]', 'Hand over facilitation');
 

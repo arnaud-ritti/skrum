@@ -24,6 +24,7 @@ import { strokeForTool } from '@/lib/whiteboard/canvas-colors';
 import { runCanvasCommand } from '@/lib/whiteboard/canvas-commands';
 import {
     CaptureUpdateAction,
+    CanvasSearchInput,
     CanvasSearchSidebar,
     Excalidraw,
     HiddenSaveToDiskAction,
@@ -131,7 +132,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 api.updateScene({
                     appState: { openDialog: { name: 'imageExport' } },
                 }),
-            findOnCanvas: () => api.toggleSidebar(CanvasSearchSidebar),
+            findOnCanvas: () => {
+                api.toggleSidebar(CanvasSearchSidebar);
+                window.setTimeout(() =>
+                    root.current
+                        ?.querySelector<HTMLInputElement>(CanvasSearchInput)
+                        ?.focus(),
+                );
+            },
             canvasHelp: () =>
                 api.updateScene({ appState: { openDialog: { name: 'help' } } }),
             clearCanvas: () => runCanvasCommand(root.current, 'clearCanvas'),
