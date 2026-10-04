@@ -131,6 +131,16 @@ describe('PasswordCard', () => {
         expect(screen.queryByText(/data breaches/)).toBeNull();
     });
 
+    it('calls weak a new password shorter than the rule of the server', async () => {
+        renderWithProviders(<Card passwordRules="minlength: 12;" />);
+
+        await userEvent.type(field('New password'), 'Abcdefg1');
+
+        expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toBe(
+            'Weak',
+        );
+    });
+
     it('marks the confirmation once it matches the new password', async () => {
         renderWithProviders(<Card />);
 

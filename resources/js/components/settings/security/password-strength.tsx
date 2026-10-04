@@ -39,6 +39,7 @@ function countCharacterClasses(password: string): number {
  */
 export function estimatePasswordStrength(
     password: string,
+    minLength = 0,
 ): PasswordStrengthEstimate {
     const length = Array.from(password).length;
 
@@ -46,7 +47,7 @@ export function estimatePasswordStrength(
         return { score: 0, level: null };
     }
 
-    if (length < 8) {
+    if (length < Math.max(8, minLength)) {
         return { score: 1, level: 'weak' };
     }
 
@@ -55,7 +56,7 @@ export function estimatePasswordStrength(
     if (
         (length >= 12 && classes === 4) ||
         (length >= 16 && classes >= 3) ||
-        length >= 20
+        (length >= 20 && classes >= 2)
     ) {
         return { score: 4, level: 'strong' };
     }
@@ -65,6 +66,15 @@ export function estimatePasswordStrength(
     }
 
     return { score: 2, level: 'weak' };
+}
+
+/** The minimum length of the server's rule, 0 when it sets none. */
+export function passwordMinLength(rules: string): number {
+    const rule = parsePasswordRules(rules).find(
+        (candidate) => candidate.kind === 'minlength',
+    );
+
+    return rule?.kind === 'minlength' ? rule.count : 0;
 }
 
 /** Reads the string of `Password::defaults()->toPasswordRulesString()`. */
@@ -110,11 +120,14 @@ function meetsPasswordRule(rule: PasswordRule, password: string): boolean {
 
 export function PasswordStrength({
     password,
+    minLength = 0,
 }: {
     password: string;
+    /** The server's minimum: a shorter password is weak whatever it holds. */
+    minLength?: number;
 }): ReactElement {
     const { t } = useTrans();
-    const { score, level } = estimatePasswordStrength(password);
+    const { score, level } = estimatePasswordStrength(password, minLength);
     const labels: Record<PasswordStrengthLevel, string> = {
         weak: t('Weak'),
         good: t('Good'),

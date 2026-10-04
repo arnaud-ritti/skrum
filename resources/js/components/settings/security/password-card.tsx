@@ -11,6 +11,7 @@ import {
 import {
     PasswordRules,
     PasswordStrength,
+    passwordMinLength,
 } from '@/components/settings/security/password-strength';
 import { useBreachCheck } from '@/components/settings/security/use-breach-check';
 import { SettingsCard } from '@/components/settings/settings-card';
@@ -133,7 +134,10 @@ export function PasswordCard({
                                 }
                                 error={errors.password}
                             />
-                            <PasswordStrength password={password} />
+                            <PasswordStrength
+                                password={password}
+                                minLength={passwordMinLength(passwordRules)}
+                            />
                         </div>
                         <PasswordField
                             id="password_confirmation"
