@@ -64,6 +64,20 @@ function plan06Column(Column $column): string
     return "[data-test=\"retro-column-{$column->id}\"]";
 }
 
+function plan06Compose(mixed $page, Column $column, string $content): mixed
+{
+    $composer = plan06Column($column).' [data-slot="retro-card-composer"] textarea';
+
+    return $page->click(plan06Column($column).' [data-slot="retro-column-add"]')
+        ->assertVisible($composer)
+        ->fill($composer, $content);
+}
+
+function plan06Save(Column $column): string
+{
+    return plan06Column($column).' [data-slot="retro-card-composer"] button[type="submit"]';
+}
+
 function plan06RecordRequests(mixed $page): void
 {
     $page->script(<<<'JS'
@@ -204,16 +218,12 @@ it('[P06-02] keeps a vote cast while a snapshot refetch is in flight', function 
 
 it('[P06-03] shows a member their own card in a second tab during Writing and keeps it hidden from others', function () {
     [$retro, $columns, $alice, $bob] = plan06Board();
-    $start = plan06Column($columns[0]);
-    $composer = "{$start} textarea";
-    $add = "{$start} form button:not([type=\"button\"])";
-
     $firstTab = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $secondTab = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $firstTab->fill($composer, 'Ship smaller pull requests')
-        ->click($add)
+    plan06Compose($firstTab, $columns[0], 'Ship smaller pull requests')
+        ->click(plan06Save($columns[0]))
         ->assertSeeIn('article[id^="card-"]', 'Ship smaller pull requests');
 
     $card = Card::query()->where('content', 'Ship smaller pull requests')->firstOrFail();
@@ -318,8 +328,8 @@ it('[P06-06] keeps the delete-column dialog open when the server refuses the del
         ->click('[role="menuitem"]:has-text("Delete column")')
         ->assertSeeIn('[role="alertdialog"]', 'Delete the column Continue?');
 
-    $bobPage->fill("{$continue} textarea", 'Keep the demo on Fridays')
-        ->click("{$continue} form button:not([type=\"button\"])")
+    plan06Compose($bobPage, $columns[2], 'Keep the demo on Fridays')
+        ->click(plan06Save($columns[2]))
         ->assertSee('Keep the demo on Fridays');
 
     $alicePage->assertCount('article[id^="card-"]', 1)
@@ -416,7 +426,6 @@ it('[P06-08a] shows the drag preview outside the scrolling board and as wide as 
 
 it('[P06-10a] shows one session-expired banner, freezes the board and sends Reload to the login page', function () {
     [$retro, $columns, $alice, $bob] = plan06Board();
-    $start = plan06Column($columns[0]);
     $banner = '[role="alert"]:has-text("Your session has expired.")';
     $snapshot = "GET /retros/{$retro->id}/snapshot";
 
@@ -428,8 +437,8 @@ it('[P06-10a] shows one session-expired banner, freezes the board and sends Relo
     plan06RecordRequests($bobPage);
     plan06SignOutElsewhere($bobPage);
 
-    $bobPage->fill("{$start} textarea", 'Written after signing out')
-        ->click("{$start} form button:not([type=\"button\"])")
+    plan06Compose($bobPage, $columns[0], 'Written after signing out')
+        ->click(plan06Save($columns[0]))
         ->assertCount($banner, 1)
         ->assertScript("document.querySelector('[data-realtime] > div[inert]') !== null", true)
         ->assertNotPresent('[data-sonner-toast]');
@@ -450,14 +459,12 @@ it('[P06-10a] shows one session-expired banner, freezes the board and sends Relo
 
 it('[P06-10b] sends Reload to the session-ended page when the retro accepts guests', function () {
     [$retro, $columns, , $bob] = plan06Board(RetroPhase::Writing, ['guest_access_enabled' => true]);
-    $start = plan06Column($columns[0]);
-
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     plan06SignOutElsewhere($page);
 
-    $page->fill("{$start} textarea", 'Written after signing out')
-        ->click("{$start} form button:not([type=\"button\"])")
+    plan06Compose($page, $columns[0], 'Written after signing out')
+        ->click(plan06Save($columns[0]))
         ->assertCount('[role="alert"]:has-text("Your session has expired.")', 1)
         ->click('Reload')
         ->assertSee('Your session has ended.')
@@ -493,7 +500,7 @@ it('[P06-11] shows the translated timeout message when the server stalls and let
 
     $page->assertSee('Votes restants : 5')
         ->click($addVote)
-        ->assertSee("Le serveur n'a pas répondu à temps. Veuillez réessayer.")
+        ->assertSee("Le serveur n'a pas répondu à temps. Réessaie.")
         ->assertSee('Votes restants : 4');
 
     expect($stalled)->toBeTrue()
