@@ -110,7 +110,9 @@ function InteractiveGif({ hasKey }: { hasKey: boolean }) {
         <GifSettings
             hasKey={hasKey}
             value={value}
-            onChange={(patch) => setValue({ ...value, ...patch })}
+            onChange={(patch) =>
+                setValue((current) => ({ ...current, ...patch }))
+            }
         />
     );
 }

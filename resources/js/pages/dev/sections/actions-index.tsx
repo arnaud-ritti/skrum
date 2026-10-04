@@ -679,10 +679,11 @@ export default function ActionsIndexSection() {
     const isMobile = useIsMobile();
     const [rows, setRows] = useState(() => copies('page'));
     const [grouping, setGrouping] = useState<ActionItemGrouping>('none');
-    const [filters, setFilters] = useState<ActionItemFilters>({
+    const landingFilters: ActionItemFilters = {
         ...defaultFilters,
         team: 'atlas',
-    });
+    };
+    const [filters, setFilters] = useState<ActionItemFilters>(landingFilters);
     const [overlay, setOverlay] = useState<Overlay | null>(initialOverlay);
     const teamsById = useMemo(
         () => new Map(teams.map((team) => [team.id, team])),
@@ -768,7 +769,7 @@ export default function ActionsIndexSection() {
         isDefault,
         onChange: (changes: ActionItemFilterChanges) =>
             setFilters((current) => ({ ...current, ...changes })),
-        onReset: () => setFilters(defaultFilters),
+        onReset: () => setFilters(landingFilters),
         extraFacets: (
             <ActionItemExtraFacets
                 filters={filters}
@@ -805,7 +806,7 @@ export default function ActionsIndexSection() {
         overlay?.kind === 'sheet' ||
         overlay?.kind === 'deleted' ||
         overlay?.kind === 'started'
-            ? overlay.item
+            ? { ...overlay.item, subtasks: base.subtasks }
             : null;
     const sheetData =
         sheetItem &&
@@ -1154,7 +1155,7 @@ export default function ActionsIndexSection() {
                         onRetrySync={() => {}}
                     >
                         <ItemSubtasks
-                            item={{ ...sheetItem, subtasks: base.subtasks }}
+                            item={sheetItem}
                             endpoints={mutations.endpoints}
                             canManage={overlay?.kind !== 'deleted'}
                             canComplete={overlay?.kind !== 'deleted'}

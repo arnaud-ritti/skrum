@@ -85,7 +85,12 @@ export default function AvatarSection() {
                     />
                 </Cell>
                 <Cell label={t('Image failed, initials')}>
-                    <PersonAvatar name="Inès B." presence={3} size="lg" />
+                    <PersonAvatar
+                        name="Inès B."
+                        presence={3}
+                        size="lg"
+                        src="/avatars/not-a-valid-seed.svg"
+                    />
                 </Cell>
                 <Cell label={t('Online')}>
                     <PersonAvatar
