@@ -444,3 +444,23 @@ it('[P19w-14] speaks the reader\'s language on the participant page: English, th
         ->assertSee('Question 1 sur 1')
         ->assertDontSee('Anonymous answers');
 });
+
+it('[P19w-15] previews the participant view from the builder, then closes it on Finish without saving an answer', function () {
+    [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
+    $workload = p19wWorkload($survey);
+
+    $page = $this->signIn($fran, route('surveys.edit', $survey, false));
+
+    $page->click('[data-slot="survey-builder-topbar"] button[aria-label="Preview"]')
+        ->assertPresent('[role="dialog"] [data-slot="survey-preview"] [data-test="survey-step"]')
+        ->assertSeeIn('[role="dialog"]', 'How was your workload?')
+        ->assertSeeIn('[role="dialog"]', 'Question 1 of 1')
+        ->click('[role="dialog"] '.p19wPick(3))
+        ->assertChecked('[role="dialog"] '.p19wPick(3).' input')
+        ->click('[role="dialog"] button:has-text("Finish")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent('[data-slot="survey-builder"]');
+
+    expect($workload->answers()->count())->toBe(0)
+        ->and($survey->fresh()->status)->toBe(TeamSurveyStatus::Draft);
+});

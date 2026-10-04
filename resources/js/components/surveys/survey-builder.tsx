@@ -46,8 +46,8 @@ const MaxTitleLength = 120;
 
 type SurveyBuilderProps = {
     snapshot: SurveySnapshot;
-    /** The participant view in its preview mode; "Preview" stays disabled without it. */
-    preview?: (snapshot: SurveySnapshot) => ReactNode;
+    /** The participant view in its preview mode, given a way to close the preview; "Preview" stays disabled without it. */
+    preview?: (snapshot: SurveySnapshot, close: () => void) => ReactNode;
 };
 
 function messageOf(error: unknown): string {
@@ -665,7 +665,9 @@ export function SurveyBuilder({
                     onOpenChange={setPreviewOpen}
                     title={survey.title}
                 >
-                    {preview({ ...snapshot, questions })}
+                    {preview({ ...snapshot, questions }, () =>
+                        setPreviewOpen(false),
+                    )}
                 </SurveyPreviewDialog>
             )}
         </AppLayout>
