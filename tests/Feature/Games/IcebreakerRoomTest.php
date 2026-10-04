@@ -4,6 +4,7 @@ use App\Actions\Games\EnsureIcebreakerRoom;
 use App\Enums\GameKind;
 use App\Enums\GameRoundOutcome;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Events\Games\GameRoundEnded;
 use App\Events\Games\GameRoundStarted;
 use App\Jobs\CloseExpiredGameRound;
@@ -269,4 +270,14 @@ it('refuses the reactions setting on an icebreaker room, which uses the bar of i
         ->assertUnprocessable();
 
     expect($room->fresh()->reactions_enabled)->toBeTrue();
+});
+
+it('tells an observer of the team they observe the icebreaker', function () {
+    [$retro] = hangmanIcebreaker();
+    [$observer] = retroMember($retro);
+    $retro->team->members()->updateExistingPivot($observer->id, ['role' => TeamRole::Observer->value]);
+
+    $this->actingAs($observer)->getJson(route('retros.snapshot.show', $retro))
+        ->assertOk()
+        ->assertJsonPath('icebreaker.viewerIsObserver', true);
 });

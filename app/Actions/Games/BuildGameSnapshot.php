@@ -121,7 +121,7 @@ class BuildGameSnapshot
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
             'share' => $this->gameRoomShares->availability($room, $viewer),
             'deliveries' => $this->gameRoomShares->deliveries($room, $viewer),
-            'viewerIsObserver' => $viewer->user?->isObserverOf($room->team) ?? false,
+            'viewerIsObserver' => $viewer->account()?->isObserverOf($room->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }
