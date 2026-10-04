@@ -83,6 +83,24 @@ export function TaskQueue({ onSelected }: Props) {
         .join(' & ');
     const points = game.isNumeric ? estimatedPoints(tasks) : null;
 
+    /** The server counts the missing tasks of every source together: a single source is named. */
+    const missingMessage = (missing: number): string => {
+        if (refreshableSources.length > 1) {
+            return missing === 1
+                ? t('1 task was not found in its tracker.')
+                : t(':count tasks were not found in their tracker.', {
+                      count: missing,
+                  });
+        }
+
+        return missing === 1
+            ? t('1 task was not found in :source.', { source: refreshLabel })
+            : t(':count tasks were not found in :source.', {
+                  count: missing,
+                  source: refreshLabel,
+              });
+    };
+
     const refresh = async () => {
         setRefreshing(true);
 
@@ -99,16 +117,13 @@ export function TaskQueue({ onSelected }: Props) {
         }
 
         toast.success(
-            t(':count tasks refreshed.', { count: result.refreshed }),
+            result.refreshed === 1
+                ? t('1 task refreshed.')
+                : t(':count tasks refreshed.', { count: result.refreshed }),
         );
 
         if (result.missing > 0) {
-            toast.warning(
-                t(':count tasks were not found in :source.', {
-                    count: result.missing,
-                    source: refreshLabel,
-                }),
-            );
+            toast.warning(missingMessage(result.missing));
         }
 
         await refetch();
