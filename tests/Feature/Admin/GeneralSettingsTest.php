@@ -124,6 +124,23 @@ it('requires at least one domain in domain mode', function () {
         ->assertSessionHasErrors('allowed_email_domains');
 });
 
+it('requires a domain in domain mode when the form leaves the domains out and none is stored', function () {
+    config(['skrum.allowed_email_domains' => []]);
+
+    $this->put(route('admin.general.update'), ['signup_mode' => 'domain'])
+        ->assertSessionHasErrors('allowed_email_domains');
+
+    expect(resolve(InstanceSettings::class)->signupMode())->toBeNull();
+});
+
+it('accepts domain mode without domains in the form when some are stored', function () {
+    config(['skrum.allowed_email_domains' => []]);
+    resolve(InstanceSettings::class)->set('allowed_email_domains', ['acme.fr']);
+
+    $this->put(route('admin.general.update'), ['signup_mode' => 'domain'])
+        ->assertSessionHasNoErrors();
+});
+
 it('leaves the general settings in place on a branding reset', function () {
     $this->put(route('admin.general.update'), ['signup_mode' => 'open']);
     $this->delete(route('admin.branding.destroy'));

@@ -119,6 +119,20 @@ it('tells the manager why an approval became a decline and spares the former mem
     expect($request->user->notifications()->count())->toBe(0);
 });
 
+it('gives no reason for a decline the manager chose after the requester left', function () {
+    $team = Team::factory()->create();
+    $manager = workspaceManager($team->workspace);
+    $request = TeamAccessRequest::factory()->for($team)->pending()->create();
+    $team->workspace->members()->detach($request->user_id);
+
+    $this->actingAs($manager)
+        ->patchJson(route('teams.accessRequests.update', [$team->workspace, $team, $request]), ['decision' => 'decline'])
+        ->assertOk()
+        ->assertExactJson(['status' => 'declined']);
+
+    expect($request->user->notifications()->count())->toBe(0);
+});
+
 it('gives no reason for a decline the manager chose', function () {
     $team = Team::factory()->create();
     $request = TeamAccessRequest::factory()->for($team)->pending()->create();

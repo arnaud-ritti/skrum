@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Poker\SavedPokerDeckRules;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
@@ -135,6 +136,14 @@ it('lets the creator and a workspace admin manage a team deck, and only the admi
     expect($manages($creator))->toBe(['Hours' => true, 'House scale' => false])
         ->and($manages($member))->toBe(['Hours' => false, 'House scale' => false])
         ->and($manages($admin))->toBe(['Hours' => true, 'House scale' => true]);
+});
+
+it('does not offer to manage a team deck to its creator once they only observe the team', function () {
+    $team = Team::factory()->create();
+    $creator = teamMember($team, TeamRole::Observer);
+    SavedPokerDeck::factory()->create(['team_id' => $team->id, 'name' => 'Hours', 'created_by_user_id' => $creator->id]);
+
+    expect(deckNamed(savedDecksProps($this, $creator, $team)['savedDecks'], 'Hours')['canManage'])->toBeFalse();
 });
 
 it('lets only a user who can update the team set the default deck', function () {

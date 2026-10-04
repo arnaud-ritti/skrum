@@ -25,7 +25,7 @@ class AdminsController extends Controller
             fn (User $admin): string => $admin->name,
         );
 
-        $canRevoke = $admins->count() > 1;
+        $hasAnotherActiveAdmin = $admins->whereNull('deactivated_at')->count() > 1;
 
         return Inertia::render('admin/admins', [
             'admins' => $admins
@@ -35,7 +35,7 @@ class AdminsController extends Controller
                     'email' => $admin->email,
                     'avatarUrl' => $admin->avatarUrl(),
                     'isSelf' => $admin->is($request->user()),
-                    'canRevoke' => $canRevoke,
+                    'canRevoke' => $admin->deactivated_at !== null || $hasAnotherActiveAdmin,
                 ])
                 ->all(),
         ]);

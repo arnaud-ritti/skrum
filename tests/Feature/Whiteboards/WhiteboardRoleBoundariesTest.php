@@ -87,6 +87,20 @@ it('lets a facilitator who became an observer keep driving the board they facili
         ->and($board->fresh()->locked)->toBeTrue();
 });
 
+it('refuses a facilitator who became an observer a new board or a template made from theirs', function (string $route, array $body) {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardFacilitator($board);
+    $board->team->members()->updateExistingPivot($user->id, ['role' => TeamRole::Observer->value]);
+
+    $this->actingAs($user)->postJson(route($route, $board), $body)->assertForbidden();
+
+    expect(Whiteboard::query()->count())->toBe(1)
+        ->and(WhiteboardTemplate::query()->count())->toBe(0);
+})->with([
+    'duplicate' => ['whiteboards.duplicate.store', []],
+    'template' => ['whiteboards.template.store', ['name' => 'Ours']],
+]);
+
 it('refuses a guest who changes the settings, asks for a new guest link or deletes the board', function (string $method, string $route, array $body) {
     Event::fake([WhiteboardChanged::class, WhiteboardDeleted::class, WhiteboardTimerChanged::class]);
 

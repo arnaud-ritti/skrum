@@ -8,7 +8,9 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Games\GameRulesRegistry;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\SqlProbe;
 
 function workspaceWith(User $user, WorkspaceRole $role): Workspace
 {
@@ -114,6 +116,23 @@ it('lets managers add and remove workspace members from a team', function () {
     $this->actingAs($admin)->delete(route('teams.members.destroy', [$workspace, $team, $colleague]));
     expect($team->members()->whereKey($colleague->id)->exists())->toBeFalse();
 });
+
+it('adds a member once when the same addition arrives twice', function () {
+    $admin = User::factory()->create();
+    $colleague = User::factory()->create();
+    $workspace = Workspace::factory()
+        ->withMember($admin, WorkspaceRole::Admin)
+        ->withMember($colleague, WorkspaceRole::Member)
+        ->create();
+    $team = Team::factory()->for($workspace)->create();
+    $levelOutside = DB::transactionLevel();
+
+    $locks = SqlProbe::locks(fn () => $this->actingAs($admin)->post(route('teams.members.store', [$workspace, $team]), ['user_id' => $colleague->id])->assertSessionHasNoErrors());
+    $this->actingAs($admin)->post(route('teams.members.store', [$workspace, $team]), ['user_id' => $colleague->id])->assertSessionHasNoErrors();
+
+    expect($locks)->toBe([['table' => 'teams', 'level' => $levelOutside + 1]])
+        ->and($team->members()->whereKey($colleague->id)->count())->toBe(1);
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('refuses to add someone outside the workspace to a team', function () {
     $admin = User::factory()->create();

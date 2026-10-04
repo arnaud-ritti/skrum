@@ -19,7 +19,6 @@ import type {
     CatalogueTemplate,
     CategoryOption,
     TeamFacilitatorsPanel,
-    TeamMember,
     TeamRituals,
     TeamRoleOption,
     TeamSettingsMember,
@@ -38,7 +37,6 @@ type Props = {
     members: TeamSettingsMember[];
     canManageMembers: boolean;
     roleOptions: TeamRoleOption[];
-    availableMembers: TeamMember[];
     sprints: TeamSprintsPanel;
     rituals: TeamRituals;
     facilitators: TeamFacilitatorsPanel;

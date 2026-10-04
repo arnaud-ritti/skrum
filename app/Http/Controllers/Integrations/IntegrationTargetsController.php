@@ -18,6 +18,8 @@ class IntegrationTargetsController extends Controller
     {
         Gate::authorize('view', $team);
 
+        abort_if($request->user()?->isObserverOf($team) ?? true, 403);
+
         IntegrationMappingGuard::ensureTracker($integration);
 
         $validated = $request->validate([

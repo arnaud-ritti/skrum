@@ -33,7 +33,7 @@ class IntegrationUrlsController extends Controller
             return response()->json([
                 ...$presentTeamIntegration->handle($integration->load('connectedBy')),
                 'secret' => $integration->credential('webhookSecret'),
-            ], 201);
+            ], 201)->header('Cache-Control', 'no-store, private');
         }
 
         $validated = $request->validate($connectUrlChannel->rules($provider));

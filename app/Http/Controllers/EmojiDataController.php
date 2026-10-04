@@ -15,7 +15,7 @@ class EmojiDataController extends Controller
 {
     private const array Files = ['data.json', 'messages.json'];
 
-    private const MaxBytes = 10 * 1024 * 1024;
+    private const int MaxBytes = 10 * 1024 * 1024;
 
     public function show(string $version, string $locale, string $file): Response
     {

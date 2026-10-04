@@ -32,8 +32,8 @@ class SignInSettingsController extends Controller
             'inForce' => $policy->ssoRequired(),
             'providers' => SsoProvider::options(),
             'blockers' => $policy->enablingBlockers($request->user()),
-            'accountsWithoutSso' => User::query()->whereDoesntHave('socialAccounts')->count(),
-            'adminsWithPasswordWayBack' => User::query()->where('is_instance_admin', true)->get()
+            'accountsWithoutSso' => User::query()->whereNull('deactivated_at')->whereDoesntHave('socialAccounts')->count(),
+            'adminsWithPasswordWayBack' => User::query()->where('is_instance_admin', true)->whereNull('deactivated_at')->get()
                 ->filter(fn (User $admin): bool => $secondFactors->requiredFor($admin))
                 ->count(),
             'providerDetails' => $presentSsoProviders->handle(),

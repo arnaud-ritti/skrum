@@ -42,6 +42,7 @@ it('connects a webhook and shows its signing secret once', function () {
         ]);
 
     $response->assertCreated()
+        ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJson([
             'provider' => 'webhook',
             'status' => 'active',
@@ -248,6 +249,7 @@ it('rotates the signing secret', function () {
     $secret = $this->actingAs($admin)
         ->postJson(route('teams.integrations.secret.store', [$team->workspace, $team, $integration]))
         ->assertOk()
+        ->assertHeader('Cache-Control', 'no-store, private')
         ->json('secret');
 
     expect($secret)->toMatch('/^[0-9a-f]{64}$/')

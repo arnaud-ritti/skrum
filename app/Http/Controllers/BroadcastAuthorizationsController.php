@@ -208,7 +208,10 @@ class BroadcastAuthorizationsController extends Controller
     /**
      * Standalone rooms only (icebreakers play on the retro channel), capped
      * at twelve distinct online players; a player already online may always
-     * reconnect, and an unreadable roster lets everyone in.
+     * reconnect, and an unreadable roster lets everyone in. The cap is soft:
+     * the roster grows only once the socket subscribes, after this signature,
+     * so a lock here could not close the gap and players who authorise at the
+     * same instant may take the room a little past the cap.
      *
      * @param  array{socket_id: string, channel_name: string}  $validated
      */

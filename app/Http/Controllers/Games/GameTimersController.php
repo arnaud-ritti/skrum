@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class GameTimersController extends Controller
 {
-    public const MaxSeconds = 7200;
+    public const int MaxSeconds = 7200;
 
     public function update(Request $request, GameRoom $room, ScheduleRoundExpiry $scheduleRoundExpiry): JsonResponse
     {

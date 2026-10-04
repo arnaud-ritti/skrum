@@ -2,6 +2,7 @@
 
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
+use App\Http\Controllers\TeamDataController;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -34,7 +35,7 @@ it('opens Members & rituals to facilitators with the members read-only, and refu
         ->assertInertia(fn (Assert $page) => $page
             ->component('teams/members')
             ->where('canManageMembers', false)
-            ->where('availableMembers', [])
+            ->missing('availableMembers')
             ->has('roleOptions', 4)
             ->has('templates'));
 });
@@ -116,7 +117,8 @@ it('sends every tab the facts of the header line: description, members count and
 it('lists on Data & export the closed surveys the viewer may export', function () {
     $team = Team::factory()->create();
     $owner = teamMember($team, TeamRole::Owner);
-    $mine = TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => $owner->id]);
+    $mine = TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['created_by_user_id' => $owner->id]);
+    TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => $owner->id, 'results_threshold' => 3]);
     TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => teamMember($team)->id]);
     TeamSurvey::factory()->for($team)->open()->create(['created_by_user_id' => $owner->id]);
 
@@ -126,6 +128,17 @@ it('lists on Data & export the closed surveys the viewer may export', function (
             ->has('closedSurveys', 1)
             ->where('closedSurveys.0.id', $mine->id)
             ->where('closedSurveys.0.exportUrl', route('surveys.export.show', $mine)));
+});
+
+it('fills the Data & export list with older exportable surveys when the latest ones are under their threshold', function () {
+    $team = Team::factory()->create();
+    $owner = teamMember($team, TeamRole::Owner);
+    TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->count(TeamDataController::MaxSurveys)
+        ->create(['created_by_user_id' => $owner->id, 'closed_at' => now()->subDay()]);
+    TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => $owner->id, 'results_threshold' => 3]);
+
+    $this->actingAs($owner)->get(route('teams.data.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->has('closedSurveys', TeamDataController::MaxSurveys));
 });
 
 it('leads the team settings entry where the viewer may go, and names their role', function (?TeamRole $role, ?string $routeName) {

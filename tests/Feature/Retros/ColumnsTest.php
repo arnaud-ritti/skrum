@@ -2,6 +2,7 @@
 
 use App\Enums\RetroPhase;
 use App\Events\Retros\ColumnsChanged;
+use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\Retro;
@@ -31,6 +32,30 @@ it('adds a column at the end', function () {
         ->assertJsonPath('columns.2.position', 2);
 
     Event::assertDispatched(fn (ColumnsChanged $event) => count($event->columns) === 3);
+});
+
+it('refuses a column past the column cap of a board', function () {
+    [$retro, $user] = columnsRetro();
+    Column::factory()->count(WorkspaceTemplateRequest::MaxColumns - 2)->sequence(fn ($sequence): array => ['position' => $sequence->index + 2])->create(['retro_id' => $retro->id]);
+
+    $this->actingAs($user)
+        ->postJson(route('retros.columns.store', $retro), ['title' => 'One more', 'color' => 'plum'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('column');
+
+    expect($retro->columns()->count())->toBe(WorkspaceTemplateRequest::MaxColumns);
+});
+
+it('refuses to remove the last column of a board', function () {
+    [$retro, $user, $first, $second] = columnsRetro();
+
+    $this->actingAs($user)->deleteJson(route('retros.columns.destroy', [$retro, $second]))->assertOk();
+    $this->actingAs($user)
+        ->deleteJson(route('retros.columns.destroy', [$retro, $first]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('column');
+
+    expect($first->fresh())->not->toBeNull();
 });
 
 it('renames and removes empty columns only', function () {

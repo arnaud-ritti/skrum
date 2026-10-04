@@ -23,6 +23,7 @@ class SsoConnectionTestStoreRequest extends FormRequest
     {
         return [
             'provider' => [
+                'bail',
                 'required',
                 'string',
                 Rule::enum(SsoProvider::class),

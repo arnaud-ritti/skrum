@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class RetroTimersController extends Controller
 {
-    public const MaxSeconds = 7200;
+    public const int MaxSeconds = 7200;
 
     public function update(Request $request, Retro $retro, ScheduleIcebreakerExpiry $scheduleIcebreakerExpiry, MarkRetroStarted $markRetroStarted): JsonResponse
     {

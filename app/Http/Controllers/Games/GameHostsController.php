@@ -36,11 +36,7 @@ class GameHostsController extends Controller
             $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
             $target = GamePlayer::query()->with('user')->whereKey($validated['player_id'])->where('game_room_id', $locked->id)->firstOrFail();
 
-            if ($target->id === $player->id) {
-                $this->ensureCanTakeHosting($locked, $player);
-            } else {
-                GameGuard::host($locked, $player);
-            }
+            $this->ensureCanHandHosting($locked, $player, $target);
 
             if ($target->isGuest() || ! ($target->user?->can('view', $locked->team) ?? false)) {
                 throw ValidationException::withMessages(['player_id' => __('Only a team member can host.')]);
@@ -54,6 +50,17 @@ class GameHostsController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    private function ensureCanHandHosting(GameRoom $room, GamePlayer $player, GamePlayer $target): void
+    {
+        if ($target->id !== $player->id) {
+            GameGuard::host($room, $player);
+
+            return;
+        }
+
+        $this->ensureCanTakeHosting($room, $player);
     }
 
     private function ensureCanTakeHosting(GameRoom $room, GamePlayer $player): void

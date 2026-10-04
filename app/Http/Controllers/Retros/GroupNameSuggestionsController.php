@@ -34,10 +34,10 @@ class GroupNameSuggestionsController extends Controller
             'cardIds.*' => ['uuid', 'distinct'],
         ]);
 
+        $leads = $this->groups($retro, $validated['cardIds'] ?? null);
+
         LlmRateLimit::hit("group-names:participant:{$participant->id}", self::RequestsPerMinutePerParticipant);
         LlmRateLimit::hit("group-names:retro:{$retro->id}", self::RequestsPerMinutePerRetro);
-
-        $leads = $this->groups($retro, $validated['cardIds'] ?? null);
 
         return response()->json(['suggestions' => $suggestGroupNames->handle($retro, $leads)]);
     }

@@ -77,8 +77,9 @@ it('lets an editor create a new link, which signs the guests out', function () {
 
     expect($survey->fresh()->guest_token)->not->toBe($oldToken)
         ->and($url)->toBe(route('surveys.join.show', $survey->fresh()->guest_token))
-        ->and($guest->fresh()->guest_secret_hash)->toBeNull();
-    Event::assertDispatched(TeamSurveyChanged::class);
+        ->and($guest->fresh()->guest_secret_hash)->toBeNull()
+        ->and($survey->fresh()->version)->toBe($survey->version + 1);
+    Event::assertDispatched(fn (TeamSurveyChanged $event): bool => $event->version === $survey->version + 1);
 
     auth()->logout();
     $this->withCookies(surveyGuestCookie($guest))->withCredentials()

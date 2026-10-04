@@ -64,6 +64,16 @@ it('counts the admins who can use the password way back', function () {
     $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page->where('adminsWithPasswordWayBack', 1));
 });
 
+it('leaves deactivated accounts out of both counts', function () {
+    actingAsInstanceAdminWithoutSecondFactor($this);
+    User::factory()->instanceAdmin()->withTwoFactor()->deactivated()->create();
+    User::factory()->deactivated()->create();
+
+    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('accountsWithoutSso', 1)
+        ->where('adminsWithPasswordWayBack', 0));
+});
+
 it('refuses to turn it on when the acting admin has no second factor', function () {
     $admin = actingAsInstanceAdminWithoutSecondFactor($this);
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);

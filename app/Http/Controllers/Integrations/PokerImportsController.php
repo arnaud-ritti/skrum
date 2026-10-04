@@ -8,6 +8,7 @@ use App\Actions\Poker\PokerGuard;
 use App\Http\Controllers\Controller;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
+use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,8 @@ class PokerImportsController extends Controller
         ]);
 
         $integration = $resolvePokerTracker->handle($game->team, $source);
+
+        TrackerBrowseLimit::hit($player->user_id ?? $player->id);
 
         return response()->json(
             $importPokerTasks->handle($game, $player, $integration, array_values($validated['external_ids'])),

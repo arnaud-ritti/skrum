@@ -155,6 +155,10 @@ class SurveyCommentsController extends Controller
         $parent->delete();
     }
 
+    /**
+     * A deleted opening comment stays as a placeholder while its thread has replies, and the
+     * thread stays open: a reply still joins the conversation under it.
+     */
     private function threadIdFor(Survey $survey, ?string $parentCommentId): ?string
     {
         if ($parentCommentId === null) {

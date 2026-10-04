@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ActionItemBulkUpdateRequest extends FormRequest
 {
-    public const Changes = ['status', 'priority', 'due_on', 'assignee_user_id'];
+    public const array Changes = ['status', 'priority', 'due_on', 'assignee_user_id'];
 
     public function authorize(): bool
     {

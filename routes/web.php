@@ -424,6 +424,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.update');
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:10,1,jiraFieldDetections')
                     ->name('teams.integrations.detection.store');
                 Route::get('teams/{team}/integrations/{integration}/user-mappings', [IntegrationUserMappingsController::class, 'index'])
                     ->whereUuid('integration')
@@ -444,6 +445,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.accounts.index');
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationPriorities')
                     ->name('teams.integrations.priorities.index');
                 Route::get('teams/{team}/integrations/{integration}/statuses', [IntegrationStatusesController::class, 'index'])
                     ->whereUuid('integration')
@@ -478,7 +480,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.deliveries.index');
                 Route::get('teams/{team}/integrations/{integration}/deliveries/{delivery}', [WebhookDeliveriesController::class, 'show'])
                     ->whereUuid(['integration', 'delivery'])
-                    ->middleware('throttle:60,1,webhookDeliveries')
+                    ->middleware('throttle:60,1,webhookDeliveryDetails')
                     ->name('teams.integrations.deliveries.show');
                 Route::post('teams/{team}/integrations/{integration}/deliveries/{delivery}/redelivery', [WebhookRedeliveriesController::class, 'store'])
                     ->whereUuid(['integration', 'delivery'])

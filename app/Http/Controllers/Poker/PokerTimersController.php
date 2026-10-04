@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class PokerTimersController extends Controller
 {
-    public const MaxSeconds = 3600;
+    public const int MaxSeconds = 3600;
 
     public function update(Request $request, PokerGame $game, PokerRound $round): JsonResponse
     {

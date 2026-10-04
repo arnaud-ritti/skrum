@@ -19,6 +19,6 @@ class WebhookSecretsController extends Controller
 
         abort_unless($integration->provider === IntegrationProvider::Webhook, 404);
 
-        return response()->json(['secret' => $connectOutgoingWebhook->rotateSecret($integration)]);
+        return response()->json(['secret' => $connectOutgoingWebhook->rotateSecret($integration)])->header('Cache-Control', 'no-store, private');
     }
 }

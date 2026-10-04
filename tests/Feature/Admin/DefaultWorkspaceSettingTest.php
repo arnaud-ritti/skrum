@@ -49,6 +49,16 @@ it('stores the default workspace, audits the change and clears it', function () 
     expect(resolve(InstanceSettings::class)->defaultWorkspaceId())->toBeNull();
 });
 
+it('writes no audit event when the default workspace is saved unchanged', function () {
+    $workspace = Workspace::factory()->create();
+    resolve(InstanceSettings::class)->set('default_workspace', $workspace->id);
+
+    $this->put(route('admin.defaultWorkspace.update'), ['default_workspace_id' => $workspace->id])
+        ->assertRedirect(route('admin.signIn.edit'));
+
+    expect(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->exists())->toBeFalse();
+});
+
 it('shows no default workspace once the one set was deleted', function () {
     $workspace = Workspace::factory()->create();
     resolve(InstanceSettings::class)->set('default_workspace', $workspace->id);

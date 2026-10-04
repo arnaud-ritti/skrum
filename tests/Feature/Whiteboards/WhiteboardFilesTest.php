@@ -7,7 +7,9 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\SqlProbe;
 
 beforeEach(function () {
     Storage::fake();
@@ -51,6 +53,18 @@ it('answers an upload that already exists without storing it twice', function ()
 
     expect(WhiteboardFile::query()->count())->toBe(1);
 });
+
+it('looks for an upload that already exists under the board lock', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+    uploadBoardFile($this->actingAs($user), $board, UploadedFile::fake()->image('a.png'))->assertCreated();
+    $levelOutside = DB::transactionLevel();
+
+    $locks = SqlProbe::locks(fn () => uploadBoardFile($this->actingAs($user), $board, UploadedFile::fake()->image('a.png'))->assertOk());
+
+    expect($locks)->toBe([['table' => 'whiteboards', 'level' => $levelOutside + 1]])
+        ->and(WhiteboardFile::query()->count())->toBe(1);
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('refuses what is not a png, jpeg, webp or gif, whatever its name says', function (UploadedFile $file) {
     $board = Whiteboard::factory()->create();

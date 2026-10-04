@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Admin\RecordAuditEvent;
 use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\Avatars\AvatarStyleCatalogue;
@@ -528,6 +529,18 @@ it('resets every setting and removes the images', function () {
         ->getContent();
 
     expect($html)->not->toContain('skrum-brand');
+});
+
+it('keeps the images when the reset of the settings fails', function () {
+    brandingAdmin($this);
+    resolve(BrandAssets::class)->store('favicon', UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>'));
+    storedBrandingSettings()->setMany(['display_name' => 'Acme']);
+    $this->mock(RecordAuditEvent::class)->shouldReceive('handle')->andThrow(new RuntimeException('Audit store down'));
+
+    $this->delete(route('admin.branding.destroy'))->assertServerError();
+
+    expect(Storage::disk('local')->allFiles('branding'))->toHaveCount(1)
+        ->and(storedBrandingSettings()->displayName())->toBe('Acme');
 });
 
 it('strips bidirectional controls, the zero-width space and the byte-order mark from the display name', function (string $typed) {

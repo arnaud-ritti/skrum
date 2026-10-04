@@ -47,9 +47,15 @@ class TeamAccessRequestsController extends Controller
         /** @var User $manager */
         $manager = $request->user();
 
-        $status = $answer->handle($manager, $accessRequest, $request->validated('decision') === 'approve');
+        $isApproval = $request->validated('decision') === 'approve';
+
+        $status = $answer->handle($manager, $accessRequest, $isApproval);
 
         if (! $accessRequest->user->belongsToWorkspace($workspace)) {
+            if (! $isApproval) {
+                return response()->json(['status' => $status->value]);
+            }
+
             return response()->json([
                 'status' => $status->value,
                 'reason' => 'leftWorkspace',

@@ -3,7 +3,9 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -42,6 +44,33 @@ class ProfileUpdateTest extends TestCase
         expect($user->name)->toBe('Test User')
             ->and($user->email)->toBe('test@example.com')
             ->and($user->email_verified_at)->toBeNull();
+    }
+
+    public function test_a_new_email_address_gets_a_verification_mail(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->patch(route('profile.update'), ['name' => $user->name, 'email' => 'new@example.com'])
+            ->assertSessionHasNoErrors();
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_an_unchanged_email_address_gets_no_verification_mail(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'Renamed', 'email' => $user->email])
+            ->assertSessionHasNoErrors();
+
+        Notification::assertNotSentTo($user, VerifyEmail::class);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

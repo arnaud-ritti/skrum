@@ -2,6 +2,8 @@
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\TeamRole;
+use App\Models\PokerPlayer;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -88,6 +90,23 @@ it('refuses guests and ended games', function () {
 
     Http::assertNothingSent();
 });
+
+it('refuses a team observer who does not facilitate the game', function (string $method, string $routeName, array $query, array $payload) {
+    $table = trackerTable();
+    $observer = teamMember($table['game']->team, TeamRole::Observer);
+    PokerPlayer::factory()->create(['poker_game_id' => $table['game']->id, 'user_id' => $observer->id, 'is_spectator' => true]);
+
+    $this->actingAs($observer)
+        ->json($method, route($routeName, [$table['game'], 'jira', ...$query]), $payload)
+        ->assertForbidden();
+
+    Http::assertNothingSent();
+})->with([
+    'containers' => ['GET', 'poker.imports.containers.index', [], []],
+    'iterations' => ['GET', 'poker.imports.iterations.index', ['container' => '1'], []],
+    'preview' => ['POST', 'poker.imports.preview.store', [], ['mode' => 'query', 'query' => 'project = PROJ']],
+    'import' => ['POST', 'poker.imports.store', [], ['external_ids' => ['10001']]],
+]);
 
 it('answers 404 for a disabled provider and 409 without an active connection', function () {
     $table = trackerTable();

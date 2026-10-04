@@ -117,6 +117,12 @@ it('refuses an issuer that is not https', function () {
         ->assertSessionHasErrors('base_url');
 });
 
+it('refuses a provider sent as a list with a validation error', function () {
+    $this->postJson(route('admin.ssoTests.store'), ['provider' => ['oidc']])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('provider');
+});
+
 it('tests the discovery document of the values in force', function () {
     Mail::fake();
     $this->put(route('admin.ssoProviders.update', 'oidc'), ['base_url' => 'https://login.atlas.test/realms/atlas']);

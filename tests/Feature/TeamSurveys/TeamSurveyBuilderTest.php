@@ -6,6 +6,7 @@ use App\Enums\TeamSurveyTemplate;
 use App\Events\TeamSurveys\TeamSurveyChanged;
 use App\Models\TeamSurvey;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Event::fake([TeamSurveyChanged::class]);
@@ -67,6 +68,7 @@ it('validates a question by kind', function (array $body, string $field) {
     'no label' => [['kind' => 'text', 'label' => '', 'options' => []], 'label'],
     'label too long' => [['kind' => 'text', 'label' => str_repeat('a', 201), 'options' => []], 'label'],
     'unknown kind' => [['kind' => 'ranking', 'label' => 'Q', 'options' => []], 'kind'],
+    'kind sent as a list' => [['kind' => ['single'], 'label' => 'Q', 'options' => []], 'kind'],
     'one option' => [['kind' => 'single', 'label' => 'Q', 'options' => ['A']], 'options'],
     'eleven options' => [['kind' => 'multiple', 'label' => 'Q', 'options' => array_map(fn (int $i) => "O{$i}", range(1, 11))], 'options'],
     'empty option' => [['kind' => 'single', 'label' => 'Q', 'options' => ['A', '']], 'options.1'],
@@ -121,6 +123,15 @@ it('reorders questions and refuses a list that is not every question once', func
     $this->actingAs($facilitator)->putJson(route('surveys.questionOrder.update', $survey), ['ids' => [$second->id]])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('ids');
+});
+
+it('refuses an order longer than the question cap of a survey', function () {
+    [$survey, $facilitator] = draftSurvey();
+    $ids = array_map(fn (): string => (string) Str::uuid(), range(0, TeamSurvey::MaxQuestions));
+
+    $this->actingAs($facilitator)->putJson(route('surveys.questionOrder.update', $survey), ['ids' => $ids])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['ids' => trans('validation.max.array', ['attribute' => 'ids', 'max' => TeamSurvey::MaxQuestions])]);
 });
 
 it('duplicates a question right after its source, with its options and a key of its own', function () {

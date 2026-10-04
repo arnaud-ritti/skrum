@@ -62,8 +62,6 @@ class InviteLinksController extends Controller
             ]);
         }
 
-        $members = $team->members();
-
         return Inertia::render('invite-links/show', [
             'isInvalid' => false,
             'isUsable' => true,
@@ -77,7 +75,7 @@ class InviteLinksController extends Controller
             'workspaceName' => $team->workspace->name,
             'inviter' => $this->person($link->createdBy),
             'teamRole' => $link->team_role->value,
-            'membersCount' => $members->count(),
+            'membersCount' => $team->members()->count(),
             'members' => Alphabetical::sort($team->members()->orderBy('users.name')->orderBy('users.id')->limit(5)->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => $this->person($member))
                 ->all(),

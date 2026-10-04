@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class WhiteboardTimerExtensionsController extends Controller
 {
-    public const ExtensionSeconds = 120;
+    public const int ExtensionSeconds = 120;
 
     public function store(Request $request, Whiteboard $board): JsonResponse
     {

@@ -21,26 +21,28 @@ class TeamSurveyGuestTokensController extends Controller
 
         TeamSurveyGuard::editor($teamSurvey, $respondent);
 
-        $guestToken = DB::transaction(function () use ($teamSurvey, $respondent): string {
+        $rotated = DB::transaction(function () use ($teamSurvey, $respondent): TeamSurvey {
             $locked = TeamSurvey::query()->whereKey($teamSurvey->id)->lockForUpdate()->firstOrFail();
 
             TeamSurveyGuard::editor($locked, $respondent);
 
-            $locked->update(['guest_token' => Str::random(40)]);
+            $locked->update(['guest_token' => Str::random(40), 'version' => $locked->version + 1]);
 
             $locked->respondents()
                 ->whereNull('user_id')
                 ->whereNotNull('guest_secret_hash')
                 ->update(['guest_secret_hash' => null]);
 
-            TeamSurveyChanged::for($locked)->sendToOthers();
-
-            return $locked->guest_token;
+            return $locked;
         });
 
+        $joinCode = $joinCodes->rotate($teamSurvey);
+
+        TeamSurveyChanged::for($rotated)->sendToOthers();
+
         return response()->json([
-            'guestUrl' => route('surveys.join.show', $guestToken),
-            'joinCode' => $joinCodes->rotate($teamSurvey),
+            'guestUrl' => route('surveys.join.show', $rotated->guest_token),
+            'joinCode' => $joinCode,
         ]);
     }
 }

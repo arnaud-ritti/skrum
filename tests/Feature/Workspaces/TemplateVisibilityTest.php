@@ -32,6 +32,17 @@ it('keeps a template posted by an admin without a visibility as a workspace temp
     expect(WorkspaceTemplate::query()->sole()->visibility)->toBe(TemplateVisibility::Workspace);
 });
 
+it('refuses a visibility sent as a list with a validation error', function () {
+    $team = Team::factory()->create();
+
+    test()->actingAs(workspaceManager($team->workspace))
+        ->postJson(route('workspaces.templates.store', $team->workspace), templateBody(['visibility' => ['team']]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('visibility');
+
+    expect(WorkspaceTemplate::query()->count())->toBe(0);
+});
+
 it('lets any member keep a personal template that nobody else sees', function () {
     $team = Team::factory()->create();
     $author = teamMember($team);

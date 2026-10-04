@@ -35,6 +35,18 @@ function actionItemsPageIds(TestResponse $response): array
     return collect($response->viewData('page')['props']['items']['data'])->pluck('id')->all();
 }
 
+it('leaves the teams the viewer only observes out of the teams they can add an item to', function () {
+    $workspace = Workspace::factory()->create();
+    $observed = Team::factory()->for($workspace)->create(['name' => 'Observed']);
+    $joined = Team::factory()->for($workspace)->create(['name' => 'Joined']);
+    $user = teamMember($observed, TeamRole::Observer);
+    $joined->members()->attach($user, ['role' => TeamRole::Member->value]);
+
+    actionItemsPage($this, $user, $workspace)
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('creatableTeams', 1)
+            ->where('creatableTeams.0.id', $joined->id));
+});
 it('orders open items overdue first, then by due date, priority and age, then completed ones', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-10 12:00:00'));
     $team = Team::factory()->create();

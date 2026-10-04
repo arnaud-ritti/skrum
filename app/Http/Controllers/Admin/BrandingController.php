@@ -100,11 +100,11 @@ class BrandingController extends Controller
 
     public function destroy(Request $request, InstanceSettings $settings, BrandAssets $assets, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
-        foreach (BrandAssets::Names as $asset) {
-            $assets->remove($asset);
-        }
+        DB::transaction(function () use ($request, $settings, $assets, $recordAuditEvent): void {
+            foreach (BrandAssets::Names as $asset) {
+                $assets->remove($asset);
+            }
 
-        DB::transaction(function () use ($request, $settings, $recordAuditEvent): void {
             $settings->setMany(array_fill_keys(array_column(InstanceSettingKey::branding(), 'value'), null));
 
             $recordAuditEvent->handle(AuditAction::BrandingReset, $request->user());

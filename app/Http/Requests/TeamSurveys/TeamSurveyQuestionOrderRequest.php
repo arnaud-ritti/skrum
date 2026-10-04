@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\TeamSurveys;
 
+use App\Models\TeamSurvey;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TeamSurveyQuestionOrderRequest extends FormRequest
@@ -12,7 +13,7 @@ class TeamSurveyQuestionOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ids' => ['required', 'array'],
+            'ids' => ['bail', 'required', 'array', 'max:'.TeamSurvey::MaxQuestions],
             'ids.*' => ['required', 'uuid', 'distinct'],
         ];
     }

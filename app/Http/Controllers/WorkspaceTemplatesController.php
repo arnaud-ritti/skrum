@@ -26,7 +26,7 @@ use Inertia\Response;
 
 class WorkspaceTemplatesController extends Controller
 {
-    public const MaxTemplates = 100;
+    public const int MaxTemplates = 100;
 
     public function index(Request $request, Workspace $workspace, BuildTemplateCatalogue $buildTemplateCatalogue): Response
     {

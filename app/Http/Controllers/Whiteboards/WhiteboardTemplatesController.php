@@ -9,12 +9,15 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class WhiteboardTemplatesController extends Controller
 {
     public function store(Request $request, Whiteboard $board, SaveWhiteboardTemplate $saveWhiteboardTemplate): JsonResponse
     {
         WhiteboardGuard::notGuest(WhiteboardMember::current($request));
+
+        Gate::authorize('createWhiteboard', $board->team);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:80'],

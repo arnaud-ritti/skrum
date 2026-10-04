@@ -41,6 +41,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * @property-read Retro|null $retro
  * @property-read Collection<int, TeamSurveyQuestion> $questions
  * @property-read Collection<int, TeamSurveyRespondent> $respondents
+ * @property-read int|null $response_count
  */
 #[Fillable([
     'retro_id', 'title', 'description', 'template', 'status', 'facilitator_respondent_id', 'created_by_user_id',

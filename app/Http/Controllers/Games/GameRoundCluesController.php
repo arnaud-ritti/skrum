@@ -13,9 +13,9 @@ use Illuminate\Http\Request;
 
 class GameRoundCluesController extends Controller
 {
-    public const RateLimitPerSecond = 5;
+    public const int RateLimitPerSecond = 5;
 
-    public const SecondsPerClueToken = 0.2;
+    public const float SecondsPerClueToken = 0.2;
 
     public function update(Request $request, GameRoom $room, GameRound $round, SetGameClue $setGameClue): JsonResponse
     {
