@@ -9,6 +9,7 @@ use ErrorException;
 use finfo;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -79,6 +80,7 @@ class BrandAssets
         $this->delete($previousPath);
     }
 
+    /** Inside a transaction the file goes only once it commits: a rollback keeps the row and its file together. */
     public function remove(string $asset): void
     {
         $key = $this->key($asset);
@@ -86,7 +88,7 @@ class BrandAssets
 
         $this->settings->forget($key->value);
 
-        $this->delete($path);
+        DB::afterCommit(fn () => $this->delete($path));
     }
 
     public function url(string $asset): ?string
