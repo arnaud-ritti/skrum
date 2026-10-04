@@ -566,6 +566,34 @@ describe('StoryPointsField', () => {
         expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
     });
 
+    it('stays a controlled select from the placeholder to the chosen field', () => {
+        const warnings = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const undetected = connection('jira', {
+            settings: {
+                storyPointFields: [],
+                numberFields: jira.settings.numberFields,
+            },
+        } as Partial<TeamIntegration>);
+
+        const view = renderWithProviders(
+            <StoryPointsField scope={scope} connection={undetected} />,
+        );
+
+        expect(
+            screen.getByRole('combobox', { name: 'Story points field' })
+                .textContent,
+        ).toContain('Choose a field');
+
+        view.rerender(<StoryPointsField scope={scope} connection={jira} />);
+
+        expect(
+            warnings.mock.calls.some((call) =>
+                String(call[0]).includes('uncontrolled'),
+            ),
+        ).toBe(false);
+        warnings.mockRestore();
+    });
+
     it('says so when Jira has no number field, and hides "Detect again" until the connection works', () => {
         const empty = connection('jira', { status: 'reconnect_required' });
 
