@@ -46,7 +46,7 @@ use App\Support\Sessions\JoinCodes;
  */
 class BuildWhiteboardSnapshot
 {
-    public const TimerLingerMinutes = 5;
+    public const int TimerLingerMinutes = 5;
 
     public function __construct(
         private FacilitatorCandidates $facilitatorCandidates,
