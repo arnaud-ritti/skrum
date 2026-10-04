@@ -216,7 +216,7 @@ function plan07Requested(string $path): string
 
 function plan07RecordResourcesPastTheBoardLoad(): string
 {
-    return '() => { performance.clearResourceTimings(); performance.setResourceTimingBufferSize(10000); return true; }';
+    return '() => { performance.setResourceTimingBufferSize(10000); return true; }';
 }
 
 function plan07ThirdPartyRequests(): string

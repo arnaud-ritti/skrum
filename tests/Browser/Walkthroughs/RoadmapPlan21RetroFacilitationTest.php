@@ -105,12 +105,34 @@ function rt21StartWriting(mixed $page, Column $column, string $text): mixed
 }
 
 /**
- * The board refetches its snapshot a quarter of a second after it joins the channel, and the resource timings of the
- * page are full of its assets by then: a change written behind the page waits a second, past that refetch.
+ * The assets of the board fill the resource timing buffer of the page while it loads: the buffer grows before the
+ * board joins its channel, so the snapshot it refetches then is recorded.
+ */
+function rt21RecordResources(mixed $page): mixed
+{
+    $page->script('() => performance.setResourceTimingBufferSize(10000)');
+
+    return $page;
+}
+
+/**
+ * The board refetches its snapshot a quarter of a second after it joins the channel: a change written behind the page
+ * waits until the answer of that refetch has arrived, so the refetch cannot bring the change to the page.
  */
 function rt21AwaitSnapshot(mixed $page): mixed
 {
-    $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 1000))');
+    $page->script(<<<'JS'
+        () => new Promise((resolve) => {
+            const isSnapshot = (entry) => entry.name.includes('/snapshot') && entry.responseEnd > 0;
+
+            new PerformanceObserver((list, observer) => {
+                if (list.getEntries().some(isSnapshot)) {
+                    observer.disconnect();
+                    setTimeout(() => resolve(true), 0);
+                }
+            }).observe({ type: 'resource', buffered: true });
+        })
+        JS);
 
     return $page;
 }
@@ -404,7 +426,7 @@ it('[RT21-10] keeps the text of a note saved from an older version below the not
     [$retro, $alice, , $cards, $aliceParticipant] = rt21Discussion();
     $retro->update(['highlighted_card_id' => $cards['slow']->id]);
 
-    $alicePage = rt21AwaitSnapshot($this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}")));
+    $alicePage = rt21AwaitSnapshot($this->awaitRealtime(rt21RecordResources($this->signIn($alice, "/retros/{$retro->id}"))));
 
     TopicNote::factory()->create([
         'retro_id' => $retro->id,
@@ -450,9 +472,11 @@ it('[RT21-11] links an action created in Discussing to the topic in front of the
     expect($item->card_id)->toBe($cards['slow']->id);
 
     $alicePage->assertSeeIn(Rt21Topics." > li[data-topic-id=\"{$cards['slow']->id}\"] [data-slot=\"retro-topic-meta\"]", '1 action')
-        ->assertSeeIn($panel, 'Cache the dependencies');
+        ->assertSeeIn($panel, 'Cache the dependencies')
+        ->click("#card-{$cards['slow']->id} button[aria-pressed=\"false\"]:has-text(\"Discuss\")")
+        ->assertPresent("#card-{$cards['slow']->id} button[aria-pressed=\"true\"]:has-text(\"Discuss\")");
 
-    $retro->update(['highlighted_card_id' => $cards['slow']->id]);
+    $bobPage->assertPresent(Rt21Topics." > li[data-topic-id=\"{$cards['slow']->id}\"] [data-slot=\"retro-topic-meta\"][data-state=\"now\"]");
 
     $alicePage->click(Rt21Bar.' button:has-text("Actions")')
         ->assertSeeIn('[aria-current="step"]', 'Actions');
@@ -521,7 +545,7 @@ it('[RT21-13] exports the action items of the retro to Jira one by one from the 
     $dialog = '[data-slot="retro-bulk-export"]';
     $row = fn (ActionItem $item): string => "{$dialog} [data-item-id=\"{$item->id}\"]";
 
-    $alicePage = rt21AwaitSnapshot($this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}")));
+    $alicePage = rt21AwaitSnapshot($this->awaitRealtime(rt21RecordResources($this->signIn($alice, "/retros/{$retro->id}"))));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
@@ -602,4 +626,6 @@ it('[RT21-16] speaks the language of the viewer on the discussion', function (st
 })->with([
     'English' => ['en', 'Discussion notes', 'Topic actions', 'Mark as discussed', '5 min per topic'],
     'French' => ['fr', 'Notes de discussion', 'Actions du sujet', 'Marquer comme discuté', '5 min par sujet'],
+    'Spanish' => ['es', 'Notas de la discusión', 'Acciones del tema', 'Marcar como tratado', '5 min por tema'],
+    'German' => ['de', 'Diskussionsnotizen', 'Aktionen des Themas', 'Als besprochen markieren', '5 Min. pro Thema'],
 ]);
