@@ -3,14 +3,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import SelectSection from '@/pages/dev/sections/select';
 import { renderWithProviders } from '@/test/render';
 
-const { scrollIntoView } = window.HTMLElement.prototype;
-
 beforeAll(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 
 afterAll(() => {
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    Reflect.deleteProperty(window.HTMLElement.prototype, 'scrollIntoView');
 });
 
 describe('select bench section', () => {
