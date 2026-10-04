@@ -712,6 +712,44 @@ describe('TemplateEditor columns', () => {
         ).toContain('italic');
     });
 
+    it('shows each column of the preview in its colour with its help question, or a dash without one', () => {
+        renderWithProviders(
+            <Harness
+                initial={{
+                    ...draft,
+                    columns: [
+                        {
+                            id: 'a',
+                            title: 'Kudos',
+                            description: 'Who helped you this sprint?',
+                            color: 'moss',
+                        },
+                        { id: 'b', title: 'Stop', color: 'plum' },
+                    ],
+                }}
+            />,
+        );
+
+        const preview = within(
+            document.querySelector(
+                '[data-slot="template-preview"]',
+            ) as HTMLElement,
+        );
+        const kudos = preview.getByText('Kudos').closest('.col-moss');
+
+        expect(kudos).not.toBeNull();
+        expect(
+            within(kudos as HTMLElement).getByText(
+                'Who helped you this sprint?',
+            ),
+        ).toBeTruthy();
+        expect(
+            within(
+                preview.getByText('Stop').closest('.col-plum') as HTMLElement,
+            ).getByText('—'),
+        ).toBeTruthy();
+    });
+
     it('exposes every handle as a sortable button with its position', () => {
         renderWithProviders(<Harness />);
 
