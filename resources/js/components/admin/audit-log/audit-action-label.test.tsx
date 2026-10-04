@@ -27,13 +27,95 @@ function event(
     };
 }
 
+const recordedProperties: Partial<
+    Record<AuditAction, AuditEvent['properties']>
+> = {
+    settings_updated: { section: 'general', keys: ['signup_mode'] },
+    configuration_updated: {
+        section: 'smtp',
+        changed: ['host'],
+        cleared: [],
+        alertSent: null,
+    },
+    sso_tested: { provider: 'google', ok: true },
+    mail_tested: { ok: true },
+    sso_required_changed: { value: true },
+    sign_in_failed: { email: 'malik@atlas.fr' },
+    token_created: { name: 'CI' },
+    token_revoked: { name: 'CI' },
+    token_revoked_by_admin: { name: 'CI', owner: 'user-2' },
+};
+
 describe('auditActionLabel', () => {
     it.each(AuditActions)('gives %s a sentence of its own', (action) => {
-        const label = auditActionLabel(event(action), t);
+        const label = auditActionLabel(
+            event(action, { properties: recordedProperties[action] ?? {} }),
+            t,
+        );
 
         expect(label).not.toBe('');
         expect(label).not.toBe(action);
         expect(label).not.toMatch(/:[a-z]+/);
+        expect(label).not.toMatch(/^\s|\s{2}|\s$/);
+    });
+
+    it.each([
+        [
+            'general',
+            [
+                'signup_mode',
+                'allowed_email_domains',
+                'maintenance_message',
+                'update_check_enabled',
+            ],
+        ],
+        [
+            'branding',
+            [
+                'brand_color',
+                'brand_radius',
+                'display_name',
+                'powered_by',
+                'logo_light',
+                'logo_dark',
+                'favicon',
+                'logo_mail',
+                'avatar_style',
+                'avatar_member_choice',
+                'profile_photos',
+                'gif_provider',
+                'gif_enabled',
+                'gif_rating',
+                'gif_key',
+            ],
+        ],
+        ['integrations', ['disabled_integrations']],
+        ['sign_in', ['default_workspace']],
+    ])('names every key the server records in %s', (section, keys) => {
+        const label = auditActionLabel(
+            event('settings_updated', {
+                subject: null,
+                properties: { section, keys },
+            }),
+            t,
+        );
+
+        expect(label).not.toMatch(/[a-z]+_[a-z]+/);
+    });
+
+    it('leaves out the author of the maintenance message, which changes with it', () => {
+        expect(
+            auditActionLabel(
+                event('settings_updated', {
+                    subject: null,
+                    properties: {
+                        section: 'general',
+                        keys: ['maintenance_message', 'maintenance_message_by'],
+                    },
+                }),
+                t,
+            ),
+        ).toBe('changed Maintenance message in General');
     });
 
     it('gives every action a different sentence', () => {
@@ -52,13 +134,13 @@ describe('auditActionLabel', () => {
                     properties: {
                         section: 'sso_oidc',
                         changed: ['client_id'],
-                        cleared: ['issuer'],
+                        cleared: ['label'],
                         alertSent: true,
                     },
                 }),
                 t,
             ),
-        ).toBe('changed Client ID, issuer of OIDC (admins alerted)');
+        ).toBe('changed Client ID, Button label of OIDC (admins alerted)');
         expect(
             auditActionLabel(
                 event('configuration_updated', {
