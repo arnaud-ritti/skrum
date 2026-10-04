@@ -36,6 +36,25 @@ describe('ConfirmationLine', () => {
 
         expect(container.textContent).toBe('');
     });
+
+    it('keeps its live region mounted, so the request is announced when it appears', () => {
+        const { rerender } = renderWithProviders(
+            <ConfirmationLine
+                visible={false}
+                confirmUrl="/admin/sign-in/confirm"
+            />,
+        );
+        const region = screen.getByRole('status');
+
+        rerender(
+            <ConfirmationLine visible confirmUrl="/admin/sign-in/confirm" />,
+        );
+
+        expect(screen.getByRole('status')).toBe(region);
+        expect(region.textContent).toContain(
+            'Confirm your password to change these settings.',
+        );
+    });
 });
 
 describe('useFreshConfirmation', () => {
