@@ -111,11 +111,13 @@ class TeamMembersController extends Controller
             'role' => ['nullable', Rule::enum(TeamRole::class)],
         ]);
 
-        if ($team->members()->whereKey($validated['user_id'])->exists()) {
-            return back();
-        }
-
         DB::transaction(function () use ($team, $validated, $recordTeamActivity): void {
+            Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
+
+            if ($team->members()->whereKey($validated['user_id'])->exists()) {
+                return;
+            }
+
             $team->members()->attach($validated['user_id'], ['role' => $validated['role'] ?? TeamRole::Member->value]);
 
             $recordTeamActivity->handle($team->id, TeamActivityKind::MemberJoined, User::query()->whereKey($validated['user_id'])->firstOrFail());
