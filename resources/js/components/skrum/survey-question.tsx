@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { signed } from '@/lib/surveys/compare';
+import { formatDecimal, formatPercent } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 
 export type SurveyQuestionKind =
@@ -246,8 +247,8 @@ function CountResults({
                             </span>
                             <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                                 {asCount
-                                    ? `${item.count} · ${percent}%`
-                                    : `${percent}% · ${item.count}`}
+                                    ? `${item.count} · ${formatPercent(percent)}`
+                                    : `${formatPercent(percent)} · ${item.count}`}
                             </span>
                         </div>
                         <ResultBar
@@ -472,7 +473,9 @@ function TextResults({ results }: { results: SurveyQuestionResults }) {
 }
 
 function formatDelta(value: number): string {
-    const rounded = Number.isInteger(value) ? String(value) : value.toFixed(1);
+    const rounded = Number.isInteger(value)
+        ? String(value)
+        : formatDecimal(value);
 
     return value > 0 ? `+${rounded}` : rounded;
 }
@@ -561,7 +564,7 @@ function NpsSegments({ segments }: { segments: SurveyQuestionSegments }) {
                             style={{ flexGrow: part.count, flexBasis: 0 }}
                         >
                             <span className="truncate">
-                                {percentOf(part.count, total)}%
+                                {formatPercent(percentOf(part.count, total))}
                             </span>
                         </span>
                     ))}
@@ -627,14 +630,13 @@ function Results({
                         {kind === 'scale5' && results.mean !== undefined && (
                             <p
                                 data-slot="survey-key-figure"
-                                className="font-display text-3xl font-semibold tabular-nums"
+                                className="flex flex-col"
                             >
-                                <span className="sr-only">
-                                    {t('Average')}:{' '}
+                                <span className="font-display text-3xl font-semibold tabular-nums">
+                                    {formatDecimal(results.mean)}
                                 </span>
-                                {results.mean.toFixed(1)}
-                                <span className="text-base text-muted-foreground">
-                                    {' / 5'}
+                                <span className="text-xs text-muted-foreground">
+                                    {t('average / 5')}
                                 </span>
                             </p>
                         )}
@@ -656,12 +658,14 @@ function Results({
                         {kind === 'nps' && results.nps !== undefined && (
                             <p
                                 data-slot="survey-key-figure"
-                                className="font-display text-3xl font-semibold tabular-nums"
+                                className="flex flex-col"
                             >
-                                <span className="sr-only">
-                                    {t('NPS score')}:{' '}
+                                <span className="font-display text-3xl font-semibold tabular-nums">
+                                    {signed(results.nps)}
                                 </span>
-                                {signed(results.nps)}
+                                <span className="text-xs text-muted-foreground">
+                                    {t('NPS score')}
+                                </span>
                             </p>
                         )}
                         {results.delta && <DeltaBadge delta={results.delta} />}

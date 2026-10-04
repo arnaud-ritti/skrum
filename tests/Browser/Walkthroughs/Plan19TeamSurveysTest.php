@@ -464,3 +464,22 @@ it('[P19w-15] previews the participant view from the builder, then closes it on 
     expect($workload->answers()->count())->toBe(0)
         ->and($survey->fresh()->status)->toBe(TeamSurveyStatus::Draft);
 });
+
+it('[P19w-16] writes the figures of the results as the reader\'s language does, each with its label', function () {
+    [$survey, $fran, , $franRespondent] = p19wSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
+    answerSurveyQuestion(p19wWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(p19wRitual($survey), $franRespondent, [1]);
+
+    $page = $this->signIn($fran, route('surveys.results.show', $survey, false));
+
+    $page->assertSeeIn('[data-slot="survey-key-figure"]', '4.0')
+        ->assertSeeIn('[data-slot="survey-key-figure"]', 'average / 5')
+        ->assertSeeIn('[data-slot="survey-results-grid"]', '1 · 100%');
+
+    $fran->update(['locale' => 'fr']);
+
+    $page->navigate(route('surveys.results.show', $survey, false))
+        ->assertSeeIn('[data-slot="survey-key-figure"]', '4,0')
+        ->assertSeeIn('[data-slot="survey-key-figure"]', 'moyenne / 5')
+        ->assertScript("document.querySelector('[data-slot=\"survey-results-grid\"]').innerText.includes('1 · 100\u{202F}%') || document.querySelector('[data-slot=\"survey-results-grid\"]').innerText.includes('1 · 100\u{00A0}%')", true);
+});

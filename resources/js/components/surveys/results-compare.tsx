@@ -16,6 +16,7 @@ import { useSurveyComparison } from '@/hooks/use-survey-comparison';
 import type { ComparisonLoad } from '@/hooks/use-survey-comparison';
 import { useTrans } from '@/hooks/use-trans';
 import { signed } from '@/lib/surveys/compare';
+import { formatDecimal, formatPercent } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 import type {
     SurveyComparable,
@@ -112,9 +113,9 @@ function useFormatDate(): (iso: string) => string {
         );
 }
 
-const percent = (value: number): string => `${value}%`;
+const percent = (value: number): string => formatPercent(value);
 
-const onFive = (value: number): string => `${value.toFixed(1)} / 5`;
+const onFive = (value: number): string => `${formatDecimal(value)} / 5`;
 
 /** The distribution of a scale or an NPS, value by value, when both surveys have the same values. */
 function distributionOf(
