@@ -53,22 +53,6 @@ function r24lChoose(mixed $page, string $trigger, string $option): void
         ->assertNotPresent('[role="listbox"]');
 }
 
-function r24lToggle(mixed $page, string $facet, string $option): void
-{
-    $trigger = r24lFacet($facet);
-    $box = "[role=\"listbox\"] [role=\"option\"]:has-text(\"{$option}\")";
-
-    $page->click($trigger)
-        ->assertPresent('[role="listbox"]');
-
-    $checked = $page->attribute($box, 'aria-checked') === 'true' ? 'false' : 'true';
-
-    $page->click($box)
-        ->assertAttribute($box, 'aria-checked', $checked)
-        ->keys($trigger, 'Escape')
-        ->assertNotPresent('[role="listbox"]');
-}
-
 function r24lSearch(): string
 {
     return '[data-slot="action-items-page"] input[aria-label="Search action items"], header input[aria-label="Search action items"]';
@@ -113,14 +97,14 @@ it('[R24-05] narrows the list by priority, due date and source, writes them to t
     $page->assertCount('tr[data-slot="action-row"]', 3)
         ->assertNotPresent('[data-slot="action-item-filters"] button:has-text("Reset")');
 
-    r24lToggle($page, 'Priority', 'High');
+    $this->toggleListboxOption($page, r24lFacet('Priority'), 'High');
     $page->assertQueryStringHas('priority', 'high')
         ->assertSeeIn(r24lFacet('Priority'), 'High')
         ->assertPresent(r24lRow($fromRetro))
         ->assertNotPresent(r24lRow($later))
         ->assertNotPresent(r24lRow($overdue));
 
-    r24lToggle($page, 'Priority', 'Low');
+    $this->toggleListboxOption($page, r24lFacet('Priority'), 'Low');
     $page->assertQueryStringHas('priority', 'high,low')
         ->assertSeeIn(r24lFacet('Priority'), '2 of 3')
         ->assertPresent(r24lRow($later))
@@ -153,7 +137,7 @@ it('[R24-05] narrows the list by priority, due date and source, writes them to t
         ->assertNotPresent(r24lRow($fromRetro))
         ->assertCount('tr[data-slot="action-row"]', 2);
 
-    r24lToggle($page, 'Priority', 'Medium');
+    $this->toggleListboxOption($page, r24lFacet('Priority'), 'Medium');
     r24lChoose($page, r24lFacet('Due date'), 'Later');
     $page->assertSee('Nothing matches these filters.')
         ->click('[data-slot="action-item-filters"] button:has-text("Reset")')
@@ -246,7 +230,7 @@ it('[R24-08] exports the filtered list, every page of it, as a CSV file', functi
     $page->assertSeeIn($export, 'Export')
         ->assertPresent("{$export}[download]");
 
-    r24lToggle($page, 'Priority', 'High');
+    $this->toggleListboxOption($page, r24lFacet('Priority'), 'High');
     $page->assertQueryStringHas('priority', 'high')
         ->assertScript("{$download}.includes('priority=high')", true);
 
@@ -337,9 +321,9 @@ it('[R24-10] lists the actions at phone width without overflow, enters selection
         ->assertNoJavaScriptErrors();
 });
 
-it('[R24-11] draws the actions page in the dark theme without overflow', function () {
+it('[R24-11] draws the actions page in the dark theme without overflow, and light again in the light theme', function () {
     [$team, $alice] = r24lFacetedTeam();
-    $background = 'getComputedStyle(document.querySelector(\'[data-slot="action-items-table"]\')).backgroundColor';
+    $tableLightness = '() => { const background = getComputedStyle(document.querySelector(\'[data-slot="action-items-table"]\')).backgroundColor; const oklch = background.match(/oklch\\(([\\d.]+)/); if (oklch) { return parseFloat(oklch[1]); } const [r, g, b] = background.match(/[\\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }';
 
     $page = $this->signIn($alice, '/settings/appearance');
 
@@ -352,10 +336,20 @@ it('[R24-11] draws the actions page in the dark theme without overflow', functio
         ->click('[role="checkbox"][aria-label="Select Book the room"]')
         ->assertPresent('[role="toolbar"][aria-label="Bulk actions"]');
 
-    $lightness = (float) $page->script("() => { const [r, g, b] = {$background}.match(/[\\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }");
+    $darkLightness = (float) $page->script($tableLightness);
+    $darkOverflow = $this->overflowingElements($page);
 
-    expect($lightness)->toBeLessThan(0.3)
-        ->and($this->overflowingElements($page))->toBe([]);
+    $page->navigate('/settings/appearance')
+        ->click('[role="radio"]:has-text("Light")')
+        ->assertScript('document.documentElement.classList.contains("dark")', false)
+        ->navigate(r24lPath($team))
+        ->assertPresent('[data-slot="action-items-table"]');
+
+    $lightLightness = (float) $page->script($tableLightness);
+
+    expect($darkLightness)->toBeLessThan(0.3)
+        ->and($lightLightness)->toBeGreaterThan(0.7)
+        ->and($darkOverflow)->toBe([]);
 
     $page->assertNoJavaScriptErrors();
 });
@@ -382,7 +376,7 @@ it('[R24-12] speaks the language of the member on the actions page, English and 
         ->assertSeeIn('[data-slot="action-items-header"] h1', 'Actions')
         ->assertAttribute('input[aria-label="Rechercher des actions"]', 'placeholder', 'Rechercher une action, un ticket…')
         ->assertSeeIn('[data-slot="action-items-header"]', 'Grouper par')
-        ->assertSeeIn('[data-slot="action-items-counts"]', '3 ouvertes · 1 en retard · issues d’1 rituel')
+        ->assertSeeIn('[data-slot="action-items-counts"]', '3 ouvertes · 1 en retard · issues d’un rituel')
         ->assertSeeIn('[data-slot="export-action-items"]', 'Exporter')
         ->assertNoJavaScriptErrors();
 });
