@@ -241,6 +241,7 @@ class BuildSummaryInput
             ->with([
                 'options' => fn ($query) => $query->orderBy('position')->withCount('responses'),
                 'textAnswers' => fn ($query) => $query->orderBy('id'),
+                'responses:id,survey_id,participant_id',
             ])
             ->get()
             ->map(function (Survey $survey): array {
@@ -249,7 +250,7 @@ class BuildSummaryInput
                     'kind' => $survey->kind->value,
                     'responses' => $survey->kind === SurveyKind::Text
                         ? $survey->textAnswers->count()
-                        : $survey->responses()->distinct()->count('participant_id'),
+                        : $survey->responses->pluck('participant_id')->unique()->count(),
                 ];
 
                 if ($survey->kind === SurveyKind::Text) {
