@@ -169,6 +169,15 @@ it('never creates a player when reading', function () {
         ->and($result['currentTask']['round']['myVote'])->toBeNull();
 });
 
+it('tells the client tasks cannot be edited once the game has ended', function () {
+    $game = PokerGame::factory()->ended()->create();
+    $reader = teamMember($game->team);
+
+    $result = mcpStructured(actingAsMcp($reader)->tool(GetGame::class, ['game_id' => $game->id])->assertOk());
+
+    expect($result['me']['canEditTasks'])->toBeFalse();
+});
+
 it('lists tasks in order with the current task and Markdown source', function () {
     $game = PokerGame::factory()->create();
     [$user] = pokerMember($game);

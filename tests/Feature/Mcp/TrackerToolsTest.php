@@ -6,6 +6,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
+use App\Enums\TeamRole;
 use App\Jobs\SyncTaskEstimate;
 use App\Mcp\Tools\Poker\ImportTasks;
 use App\Mcp\Tools\Poker\ListIterations;
@@ -146,6 +147,27 @@ it('imports a whole sprint or query, skipping existing issues', function () {
 
     mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira'])->assertHasErrors();
     mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira', 'iteration_id' => '31', 'query' => 'project = PROJ'])->assertHasErrors();
+});
+
+it('imports by query when the iteration id is an empty string', function () {
+    [$team, $user] = trackerMcpTeam();
+    $game = PokerGame::factory()->create(['team_id' => $team->id]);
+    Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/api/3/search/jql' => Http::response(['issues' => [jiraTrackerIssue('10002', 'PROJ-2')]])]);
+
+    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira', 'iteration_id' => '', 'query' => 'project = PROJ'])->assertOk();
+
+    Http::assertSent(fn (Request $request) => str_contains((string) $request['jql'], 'project = PROJ'));
+});
+
+it('refuses to browse the tracker for an observer', function () {
+    [$team] = trackerMcpTeam();
+    $observer = teamMember($team, TeamRole::Observer);
+    fakeJiraTrackerApi();
+
+    actingAsMcp($observer)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'jira'])
+        ->assertHasErrors(['Observers can follow this session but not take part.']);
+
+    Http::assertNothingSent();
 });
 
 it('keeps the 200-task limit and surfaces JQL errors when importing', function () {

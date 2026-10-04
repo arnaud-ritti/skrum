@@ -13,6 +13,7 @@ use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpPokerGame;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\PokerPlayer;
+use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -73,13 +74,7 @@ class CreateGame extends SkrumTool
                 : PokerDeckRules::rules()),
         ]);
 
-        if ($usesSavedDeck) {
-            $savedDeck = SavedPokerDeckRules::findForTeam($team, (string) $validated['saved_deck_id']);
-            [$deck, $cards, $deckName] = [PokerDeck::Custom, $savedDeck->cards, $savedDeck->name];
-        } else {
-            [$deck, $cards] = PokerDeckRules::resolve($validated);
-            $deckName = null;
-        }
+        [$deck, $cards, $deckName] = $this->resolveDeck($team, $validated, $usesSavedDeck);
 
         $game = $this->createPokerGame->handle($team, McpGrant::current()->user, new NewPokerGame(
             title: $validated['title'],
@@ -91,5 +86,22 @@ class CreateGame extends SkrumTool
         $player = PokerPlayer::query()->whereKey($game->facilitator_player_id)->firstOrFail();
 
         return Response::structured($this->presentGame->game($game->fresh() ?? $game, $player));
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{0: PokerDeck, 1: array<int, string>, 2: ?string}
+     */
+    private function resolveDeck(Team $team, array $validated, bool $usesSavedDeck): array
+    {
+        if ($usesSavedDeck) {
+            $savedDeck = SavedPokerDeckRules::findForTeam($team, (string) $validated['saved_deck_id']);
+
+            return [PokerDeck::Custom, $savedDeck->cards, $savedDeck->name];
+        }
+
+        [$deck, $cards] = PokerDeckRules::resolve($validated);
+
+        return [$deck, $cards, null];
     }
 }

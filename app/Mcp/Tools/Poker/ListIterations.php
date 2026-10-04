@@ -7,10 +7,12 @@ use App\Enums\McpFeature;
 use App\Enums\McpScope;
 use App\Mcp\Concerns\ResolvesTracker;
 use App\Mcp\McpContext;
+use App\Mcp\McpGrant;
 use App\Mcp\PokerTrackerSources;
 use App\Mcp\Tools\SkrumTool;
 use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -61,6 +63,11 @@ class ListIterations extends SkrumTool
         ]);
 
         $team = $this->context->team((string) $validated['team_id']);
+
+        $this->refuseObserver($team);
+
+        Gate::forUser(McpGrant::current()->user)->authorize('createPokerGame', $team);
+
         $integration = $this->trackerFor($team, (string) $validated['source']);
 
         TrackerBrowseLimit::hit($this->context->user()->id);

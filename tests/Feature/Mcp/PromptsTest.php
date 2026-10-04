@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ActionItemPriority;
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
@@ -16,8 +17,10 @@ use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\Vote;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 it('lists both prompts for a read-only token', function () {
     $team = Team::factory()->create();
@@ -177,6 +180,25 @@ it('gives the health trend of a team that ran its health checks without any retr
 
     expect($data['boards'])->toBe([])
         ->and(collect($data['healthTrend'])->pluck('title')->all())->toBe(['Health check — September']);
+});
+
+it('counts every open agreement of a team, however many there are', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    collect(range(1, 1001))
+        ->map(fn (): array => [
+            ...ActionItem::factory()->withoutRetro($team, $user)->raw(),
+            'id' => (string) Str::uuid(),
+            'sort_rank' => ActionItem::sortRankFor(false, null, ActionItemPriority::Medium),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])
+        ->chunk(250)
+        ->each(fn (Collection $rows) => ActionItem::query()->insert($rows->values()->all()));
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect($data['openAgreements'])->toBe(1001);
 });
 
 it('takes the ROTI trend from the newest board that has a ROTI', function () {
