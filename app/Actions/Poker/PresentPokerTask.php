@@ -151,7 +151,8 @@ class PresentPokerTask
 
     /**
      * Keyed by the hash of the text rendered (AC-6): HTML cached for a
-     * whole description is never served for its shorter part.
+     * whole description is never served for its shorter part. The entries expire, since every edit
+     * leaves the previous text's entry behind.
      */
     private function html(string $prefix, PokerTask $task, ?string $markdown): string
     {
@@ -161,6 +162,6 @@ class PresentPokerTask
 
         $key = "{$prefix}:{$task->id}:".hash('xxh128', $markdown);
 
-        return Cache::rememberForever($key, fn (): string => $this->renderTaskMarkdown->handle($markdown));
+        return Cache::remember($key, now()->addWeek(), fn (): string => $this->renderTaskMarkdown->handle($markdown));
     }
 }
