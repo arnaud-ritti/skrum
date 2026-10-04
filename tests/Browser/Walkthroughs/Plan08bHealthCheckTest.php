@@ -527,9 +527,8 @@ it('[P08b-05b] shows the refusal and resyncs when the answers are sent to a boar
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     p08bScoreAll(p08bOpen($page), [4, 4, 4, 4, 4, 4])
+        ->assertSeeIn(p08bDialog(), '6 of 6 answered')
         ->assertEnabled(p08bSubmit());
-
-    $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 500))');
 
     $retro->update(['is_locked' => true]);
 

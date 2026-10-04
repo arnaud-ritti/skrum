@@ -44,9 +44,8 @@ function p19wRitual(TeamSurvey $survey, bool $required = false): TeamSurveyQuest
     return surveyQuestion($survey, TeamSurveyQuestionKind::Single, ['label' => 'Which ritual should we keep?', 'is_required' => $required], ['Daily', 'Demo', 'Pairing']);
 }
 
-function p19wFinished(TeamSurvey $survey, User $user): TeamSurveyRespondent
+function p19wFinished(TeamSurveyRespondent $respondent): TeamSurveyRespondent
 {
-    $respondent = TeamSurveyRespondent::query()->firstOrCreate(['team_survey_id' => $survey->id, 'user_id' => $user->id]);
     $respondent->update(['completed_at' => now()]);
 
     return $respondent;
@@ -225,7 +224,7 @@ it('[P19w-05] moves the counter and the results of the facilitator live when a m
     [$survey, $fran, $bob, $franRespondent] = p19wSurvey();
     $workload = p19wWorkload($survey);
     answerSurveyQuestion($workload, $franRespondent, 4);
-    p19wFinished($survey, $fran);
+    p19wFinished($franRespondent);
 
     $franPage = $this->awaitRealtime($this->signIn($fran, route('surveys.show', $survey, false)));
     $bobPage = $this->awaitRealtime($this->signIn($bob, route('surveys.show', $survey, false)));
@@ -275,11 +274,11 @@ it('[P19w-06] lets a guest join with the link, answer and see the results after 
         ->and($guest->completed_at)->not->toBeNull();
 });
 
-it('[P19w-07] tells a member who has answered how many answers are still missing below the threshold, and an unfinished member when results show', function () {
+it('[P19w-07] tells a member who has answered how many answers are still missing below the threshold, and tells a member who has not answered that results show once the survey is closed', function () {
     [$survey, $fran, $bob, $franRespondent] = p19wSurvey(['results_threshold' => 3]);
     $workload = p19wWorkload($survey);
     answerSurveyQuestion($workload, $franRespondent, 4);
-    p19wFinished($survey, $fran);
+    p19wFinished($franRespondent);
 
     $page = $this->signIn($fran, route('surveys.results.show', $survey, false));
 
@@ -294,7 +293,7 @@ it('[P19w-07] tells a member who has answered how many answers are still missing
 });
 
 it('[P19w-08] compares a closed survey with the one it was duplicated from, question by question', function () {
-    [$previous, $fran] = p19wSurvey(['title' => 'Sprint 41 pulse', 'status' => TeamSurveyStatus::Closed, 'closed_at' => now()->subWeek()]);
+    [$previous] = p19wSurvey(['title' => 'Sprint 41 pulse', 'status' => TeamSurveyStatus::Closed, 'closed_at' => now()->subWeek()]);
     $before = p19wWorkload($previous);
     answerSurveyQuestion($before, TeamSurveyRespondent::query()->where('team_survey_id', $previous->id)->sole(), 2);
 
@@ -302,12 +301,11 @@ it('[P19w-08] compares a closed survey with the one it was duplicated from, ques
         'title' => 'Sprint 42 pulse',
         'previous_survey_id' => $previous->id,
     ]);
-    $franNow = TeamSurveyRespondent::factory()->create(['team_survey_id' => $current->id, 'user_id' => $fran->id]);
-    $current->update(['facilitator_respondent_id' => $franNow->id]);
+    [$facilitator, $facilitatorRespondent] = surveyFacilitator($current);
     $now = surveyQuestion($current, TeamSurveyQuestionKind::Scale, ['label' => 'How was your workload?', 'match_key' => $before->match_key]);
-    answerSurveyQuestion($now, $franNow, 4);
+    answerSurveyQuestion($now, $facilitatorRespondent, 4);
 
-    $page = $this->signIn($fran, route('surveys.results.show', $current, false));
+    $page = $this->signIn($facilitator, route('surveys.results.show', $current, false));
 
     $page->assertPresent('[data-slot="survey-results-grid"] [data-slot="survey-delta"]')
         ->click('[role="tab"]:has-text("Compare")')
@@ -457,6 +455,29 @@ it('[P19w-15] previews the participant view from the builder, then closes it on 
         ->assertSeeIn('[role="dialog"]', 'Question 1 of 1')
         ->click('[role="dialog"] '.p19wPick(3))
         ->assertChecked('[role="dialog"] '.p19wPick(3).' input')
+        ->click('[role="dialog"] button:has-text("Finish")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent('[data-slot="survey-builder"]');
+
+    expect($workload->answers()->count())->toBe(0)
+        ->and($survey->fresh()->status)->toBe(TeamSurveyStatus::Draft);
+});
+
+it('[P19w-15b] previews every question on one page when the survey does not ask one at a time', function () {
+    [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null, 'one_question_at_a_time' => false]);
+    $workload = p19wWorkload($survey);
+    p19wRitual($survey);
+    $workloadPick = '[role="dialog"] [data-slot="survey-question"]:has-text("How was your workload?") label:has(input[value="3"])';
+
+    $page = $this->signIn($fran, route('surveys.edit', $survey, false));
+
+    $page->click('[data-slot="survey-builder-topbar"] button[aria-label="Preview"]')
+        ->assertPresent('[role="dialog"] [data-slot="survey-preview"]')
+        ->assertNotPresent('[role="dialog"] '.p19wStep())
+        ->assertSeeIn('[role="dialog"]', 'How was your workload?')
+        ->assertSeeIn('[role="dialog"]', 'Which ritual should we keep?')
+        ->click($workloadPick)
+        ->assertChecked("{$workloadPick} input")
         ->click('[role="dialog"] button:has-text("Finish")')
         ->assertNotPresent('[role="dialog"]')
         ->assertPresent('[data-slot="survey-builder"]');
