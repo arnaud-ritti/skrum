@@ -294,7 +294,7 @@ export function ErrorPage({
                         <RotateCcw />
                         <span className="truncate">{t('Try again')}</span>
                     </Button>
-                    {home('outline')}
+                    {signedIn && home('outline')}
                 </>
             ),
         },
