@@ -5438,5 +5438,6 @@
     "A board needs at least one column.": "Un tableau a besoin d'au moins une colonne.",
     "Your access to this survey has ended.": "Ton accès à ce sondage a pris fin.",
     "1 person": "1 personne",
-    "1 estimated": "1 estimée"
+    "1 estimated": "1 estimée",
+    "No account in this state.": "Aucun compte dans cet état."
 }
