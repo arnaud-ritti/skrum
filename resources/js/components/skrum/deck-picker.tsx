@@ -6,7 +6,7 @@ import {
     Plus,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -297,6 +297,7 @@ export function DeckPicker({
 }: DeckPickerProps) {
     const { t } = useTrans();
     const createRef = useRef<HTMLButtonElement>(null);
+    const createDescriptionId = useId();
     const deletedIdRef = useRef<string | null>(null);
     const [deleting, setDeleting] = useState<Deck | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -488,7 +489,10 @@ export function DeckPicker({
                                                 <DeckSourceBadge deck={deck} />
                                                 {deck.createdBy ? (
                                                     <span className="truncate text-xs text-muted-foreground">
-                                                        {deck.createdBy.name}
+                                                        {t('by :name', {
+                                                            name: deck.createdBy
+                                                                .name,
+                                                        })}
                                                     </span>
                                                 ) : null}
                                             </span>
@@ -518,11 +522,24 @@ export function DeckPicker({
                             ref={createRef}
                             onClick={onCreate}
                             data-slot="deck-create"
-                            className="flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input p-3 text-sm font-semibold text-muted-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                            aria-label={t('Create a deck')}
+                            aria-describedby={createDescriptionId}
+                            className="flex min-h-20 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input p-3 text-sm font-semibold text-muted-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                         >
-                            <Plus aria-hidden="true" className="size-4" />
-                            <span className="truncate">
-                                {t('Create a deck')}
+                            <span className="flex max-w-full min-w-0 items-center gap-2">
+                                <Plus
+                                    aria-hidden="true"
+                                    className="size-4 shrink-0"
+                                />
+                                <span className="truncate">
+                                    {t('Create a deck')}
+                                </span>
+                            </span>
+                            <span
+                                id={createDescriptionId}
+                                className="max-w-full text-center text-xs font-normal"
+                            >
+                                {t('Your values, ? and ☕ optional.')}
                             </span>
                         </button>
                     </div>

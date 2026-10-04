@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\PokerRevealReason;
+use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -104,4 +106,26 @@ it('loads the history with a constant number of queries', function () {
     $addRounds(4, 4);
 
     expect($countQueries())->toBe($small);
+});
+
+it('refuses the rounds of a task to a workspace member outside the team and to a logged-out request', function () {
+    $table = pokerRevealTable();
+    $outsider = User::factory()->create();
+    $table['game']->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+    $url = route('poker.tasks.rounds.index', [$table['game'], $table['round']->task]);
+
+    $this->actingAs($outsider)->getJson($url)->assertForbidden();
+
+    resolve('auth')->forgetGuards();
+
+    $this->getJson($url)->assertUnauthorized();
+});
+
+it('answers 404 for the rounds of a task of another game', function () {
+    $table = pokerRevealTable();
+    $otherTask = PokerTask::factory()->create();
+
+    $this->actingAs($table['member'])
+        ->getJson(route('poker.tasks.rounds.index', [$table['game'], $otherTask]))
+        ->assertNotFound();
 });

@@ -315,7 +315,7 @@ export function SavedDecksPage({
                         onClick={() => openEditor(null)}
                     >
                         <Plus aria-hidden="true" />
-                        <span className="truncate">{t('Create a deck')}</span>
+                        <span className="truncate">{t('New deck')}</span>
                     </Button>
                 ) : null}
             </div>

@@ -44,6 +44,19 @@ it('creates the game with the chosen tickets in the source order', function () {
         ->and($game->tasks()->where('external_key', 'PROJ-2')->sole()->external_labels)->toBe(['csv']);
 });
 
+it('counts one imported ticket in the singular', function () {
+    [$team, , $member] = importTeam();
+    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1')]);
+
+    $this->actingAs($member)
+        ->post(route('teams.pokerGames.store', [$team->workspace, $team]), [
+            'title' => 'Sprint 44 refinement', 'deck' => 'fibonacci',
+            'import_source' => 'jira', 'import_ids' => ['10001', '10404'],
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('inertia.flash_data.toast.message', '1 ticket imported, 1 skipped.');
+});
+
 it('creates nothing when the tracker fails', function () {
     [$team, , $member] = importTeam();
     Http::fake(['api.atlassian.com/*' => Http::response(['errorMessages' => ['boom']], 500)]);

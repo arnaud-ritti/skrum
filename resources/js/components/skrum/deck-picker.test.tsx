@@ -102,7 +102,7 @@ describe('DeckPicker', () => {
 
         expect(screen.getAllByText('Built-in')).toHaveLength(2);
         expect(screen.getByText('Saved')).toBeTruthy();
-        expect(screen.getByText('Ada')).toBeTruthy();
+        expect(screen.getByText('by Ada')).toBeTruthy();
     });
 
     it('marks a deck typed for one game and a deck of the workspace', () => {
@@ -167,6 +167,21 @@ describe('DeckPicker', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
 
         expect(onCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it('describes the dashed card with the values and the optional special cards', () => {
+        renderPicker();
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Create a deck' })
+                .getAttribute('aria-describedby'),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', {
+                description: 'Your values, ? and ☕ optional.',
+            }),
+        ).toBeTruthy();
     });
 
     it('offers no edit or delete without the callbacks', () => {
