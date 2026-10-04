@@ -165,7 +165,7 @@ export function PokerTasksField({
                 >
                     {t('Tasks')}
                 </span>
-                <TabsList aria-label={t('Tasks')} className="shrink-0">
+                <TabsList aria-labelledby={`${id}-label`} className="shrink-0">
                     {tabs.map((tab) => (
                         <TabsTrigger
                             key={tab.value}

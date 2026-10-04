@@ -55,6 +55,8 @@ type TrackerIssuePickerProps = {
     describeError: (caught: unknown) => string | null;
     /** Prefix of the field ids. */
     idPrefix?: string;
+    /** The id of the refusal shown under the picker, while there is one. */
+    errorId?: string;
 };
 
 /**
@@ -69,6 +71,7 @@ export function TrackerIssuePicker({
     onSelectedChange,
     describeError,
     idPrefix = 'import',
+    errorId,
 }: TrackerIssuePickerProps): ReactElement {
     const { t } = useTrans();
     const [mode, setMode] = useState<Mode>('iteration');
@@ -287,6 +290,12 @@ export function TrackerIssuePicker({
     return (
         <div
             data-slot="tracker-issue-picker"
+            role="group"
+            aria-label={t('Import from :source', {
+                source: TrackerLabels[source],
+            })}
+            aria-invalid={errorId === undefined ? undefined : true}
+            aria-describedby={errorId}
             className="@container flex min-w-0 flex-col gap-4"
         >
             <Tabs

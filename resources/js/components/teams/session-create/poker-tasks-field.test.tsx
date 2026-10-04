@@ -104,8 +104,12 @@ describe('tasksProblem', () => {
 });
 
 describe('PokerTasksField', () => {
-    it('opens on "Later", with the two tabs of today', () => {
+    it('opens on "Later", with the two tabs of today named by the visible label', () => {
         renderWithProviders(<Harness />);
+
+        expect(
+            screen.getByRole('tablist').getAttribute('aria-labelledby'),
+        ).toBe(screen.getByText('Tasks').id);
 
         expect(
             screen.getAllByRole('tab').map((tab) => tab.textContent),

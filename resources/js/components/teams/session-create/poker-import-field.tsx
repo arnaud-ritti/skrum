@@ -92,6 +92,9 @@ export function PokerImportField({
                 onSelectedChange={(ids) => onChange({ ...value, ids })}
                 describeError={describeError}
                 idPrefix="new-poker-import"
+                errorId={
+                    error === undefined ? undefined : 'new-poker-import-error'
+                }
             />
             <FieldError id="new-poker-import-error" message={error} />
         </div>
