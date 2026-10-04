@@ -47,6 +47,18 @@ describe('GamesPlayed', () => {
         expect(row.querySelector('svg.lucide-cloud-sun')).not.toBeNull();
     });
 
+    it('counts one round played in the singular', () => {
+        renderRounds([round({})]);
+
+        expect(screen.getByText('1 round played')).toBeTruthy();
+    });
+
+    it('counts several rounds played in the plural', () => {
+        renderRounds([round({}), round({ id: 'round-2' })]);
+
+        expect(screen.getByText('2 rounds played')).toBeTruthy();
+    });
+
     it('counts the statements of a Two truths round', () => {
         const [row] = renderRounds([
             round({ game: 'two_truths', outcome: 'revealed' }),

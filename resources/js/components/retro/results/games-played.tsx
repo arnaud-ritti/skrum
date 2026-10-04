@@ -345,7 +345,11 @@ export function GamesPlayed({ games }: { games: GamesPlayedPayload }) {
     return (
         <ResultsCard title={t('Games we played')}>
             <p className="text-sm text-muted-foreground">
-                {t(':count rounds played', { count: games.roundsPlayed })}
+                {games.roundsPlayed === 1
+                    ? t(':count round played', { count: games.roundsPlayed })
+                    : t(':count rounds played', {
+                          count: games.roundsPlayed,
+                      })}
             </p>
             <Podium leaderboard={games.leaderboard} />
             <ol className="min-w-0 space-y-2">
