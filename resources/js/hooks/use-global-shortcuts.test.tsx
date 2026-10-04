@@ -46,6 +46,18 @@ describe('useGlobalShortcuts', () => {
         expect(screen.getByTestId('state').textContent).toBe('true|none');
     });
 
+    it('keeps the "?" that opens it from being typed in the search field it focuses', () => {
+        render(<Probe />);
+
+        const isTyped = fireEvent.keyDown(document.body, {
+            key: '?',
+            shiftKey: true,
+        });
+
+        expect(isTyped).toBe(false);
+        expect(screen.getByTestId('state').textContent).toBe('true|none');
+    });
+
     it('ignores "?" typed in a field but keeps mod+/ there', () => {
         render(<Probe />);
 

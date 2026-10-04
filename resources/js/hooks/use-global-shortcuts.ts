@@ -55,6 +55,7 @@ export function useGlobalShortcuts(): GlobalShortcuts {
                 return;
             }
 
+            event.preventDefault();
             setOpen(true);
         },
         { enabled: !open, preventDefault: false },

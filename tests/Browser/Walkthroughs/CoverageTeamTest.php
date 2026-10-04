@@ -311,13 +311,14 @@ it('[CVT-14] opens the command palette with the keyboard, lists the recent sessi
         ->assertPathIs("/retros/{$retro->id}");
 });
 
-it('[CVT-15] opens the keyboard shortcuts with "?" and closes them with Escape, but types "?" in a field', function () {
+it('[CVT-15] opens the keyboard shortcuts with "?" without typing it in their search, closes them with Escape, and types "?" in a field', function () {
     ['team' => $team, 'member' => $member] = cvtAtlas();
 
     $page = $this->signIn($member, route('workspaces.templates.index', $team->workspace, false));
 
     $page->keys('html > body', '?')
         ->assertPresent('[data-slot="keyboard-shortcuts"] [data-slot="keyboard-shortcuts-row"]')
+        ->assertValue('[data-slot="keyboard-shortcuts"] input[type="search"]', '')
         ->fill('[data-slot="keyboard-shortcuts"] input', 'zzzzqq')
         ->assertPresent('[data-slot="keyboard-shortcuts-empty"]')
         ->keys('[data-slot="keyboard-shortcuts"] input', 'Escape')
