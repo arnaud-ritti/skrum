@@ -19,7 +19,7 @@ class PokerImportIterationsController extends Controller
         $player = PokerPlayer::current($request);
 
         PokerGuard::notEnded($game);
-        PokerGuard::canEditTasks($player);
+        PokerGuard::canBrowseTracker($game, $player);
 
         $validated = $request->validate([
             'container' => ['required', 'string', 'max:100'],

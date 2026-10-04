@@ -39,6 +39,25 @@ class PokerGuard
         throw new AuthorizationException(__("Guests can't add or edit tasks."));
     }
 
+    /**
+     * Browsing reads the tracker through the team's credentials, for those who may add tasks:
+     * an observer only follows the game, unless they facilitate it.
+     */
+    public static function canBrowseTracker(PokerGame $game, PokerPlayer $player): void
+    {
+        self::canEditTasks($player);
+
+        if ($game->isFacilitator($player)) {
+            return;
+        }
+
+        if (! ($player->user?->isObserverOf($game->team) ?? false)) {
+            return;
+        }
+
+        throw new AuthorizationException(__('Observers can follow this session but not take part.'));
+    }
+
     public static function canVote(PokerPlayer $player): void
     {
         if (! $player->is_spectator) {
