@@ -4,6 +4,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Events\Poker\PokerGameChanged;
 use App\Models\PokerTask;
+use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -93,6 +94,22 @@ it('renders imported descriptions safely and trims long titles and descriptions'
         ->and(mb_strlen($long->title))->toBe(200)
         ->and($long->external_site)->toBe('org-1')
         ->and($long->external_url)->toBe('https://linear.app/acme/issue/ENG-2');
+});
+
+it('counts an import against the tracker browse limit of the person', function () {
+    $table = trackerTable();
+    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1')]);
+
+    foreach (range(1, TrackerBrowseLimit::MaxAttempts) as $attempt) {
+        TrackerBrowseLimit::hit($table['member']->id);
+    }
+
+    $this->actingAs($table['member'])
+        ->postJson(route('poker.imports.store', [$table['game'], 'jira']), ['external_ids' => ['10001']])
+        ->assertTooManyRequests();
+
+    expect($table['game']->tasks()->count())->toBe(0);
+    Http::assertNothingSent();
 });
 
 it('refuses guests, ended games and malformed selections', function () {
