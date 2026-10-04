@@ -128,3 +128,30 @@ it('lets nobody else touch the onboarding of a user', function () {
     $this->actingAs($stranger)->put(route('onboarding.team.update'), ['name' => 'Hijack'])->assertSessionHasErrors('name');
     expect($onboarding->fresh()->team->name)->not->toBe('Hijack');
 });
+
+it('takes an onboarding back to the team step when its team was deleted, so its user can go on', function () {
+    $onboarding = onboardingAtInvite();
+    $onboarding->update(['step' => OnboardingStep::Ritual]);
+    $onboarding->team->delete();
+
+    $this->actingAs($onboarding->user)
+        ->get(route('onboarding.show'))
+        ->assertInertia(fn (Assert $page) => $page->where('step', 'team'));
+
+    $this->actingAs($onboarding->user)->put(route('onboarding.team.update'), ['name' => 'Atlas', 'color' => 'lagoon'])->assertSessionHasNoErrors();
+
+    expect($onboarding->fresh()->step)->toBe(OnboardingStep::Invite);
+});
+
+it('takes an onboarding back to the workspace step when its workspace was deleted', function () {
+    $onboarding = onboardingAtInvite();
+    $onboarding->workspace->delete();
+
+    $this->actingAs($onboarding->user)
+        ->get(route('onboarding.show'))
+        ->assertInertia(fn (Assert $page) => $page->where('step', 'workspace'));
+
+    $this->actingAs($onboarding->user)->put(route('onboarding.workspace.update'), ['name' => 'Nordlys', 'locale' => 'en'])->assertSessionHasNoErrors();
+
+    expect($onboarding->fresh()->step)->toBe(OnboardingStep::Team);
+});

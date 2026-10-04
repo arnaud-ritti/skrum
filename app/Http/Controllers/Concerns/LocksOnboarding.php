@@ -20,6 +20,8 @@ trait LocksOnboarding
             abort(404);
         }
 
+        $onboarding->rewindToReachableStep();
+
         return $onboarding;
     }
 }

@@ -19,6 +19,8 @@ class OnboardingsController extends Controller
             return to_route('dashboard');
         }
 
+        $onboarding->rewindToReachableStep();
+
         return Inertia::render('onboarding/show', $presentOnboarding->handle($onboarding, $user));
     }
 }

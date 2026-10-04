@@ -56,6 +56,23 @@ class Onboarding extends Model
         return $this->completed_at !== null;
     }
 
+    /**
+     * The workspace and the team are nulled when deleted elsewhere: a step
+     * whose prerequisite is gone goes back to the step that creates it.
+     */
+    public function rewindToReachableStep(): void
+    {
+        if ($this->workspace_id === null && $this->step !== OnboardingStep::Workspace) {
+            $this->update(['step' => OnboardingStep::Workspace, 'team_id' => null]);
+
+            return;
+        }
+
+        if ($this->team_id === null && $this->step->number() > OnboardingStep::Team->number()) {
+            $this->update(['step' => OnboardingStep::Team]);
+        }
+    }
+
     protected function casts(): array
     {
         return [
