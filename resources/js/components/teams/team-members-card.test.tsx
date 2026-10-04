@@ -220,7 +220,7 @@ describe('the members card of a team', () => {
         );
     });
 
-    it('adds the chosen workspace member and shows the server error', () => {
+    it('keeps Add disabled until someone is picked and shows the server error under the form', () => {
         mocks.props.errors = { user_id: 'This person is already in the team.' };
 
         card();
@@ -246,10 +246,9 @@ describe('the members card of a team', () => {
             { value: 'observer', label: 'Observer' },
         ] as const;
 
-        const { container } = card({ roleOptions: [...roleOptions] });
+        card({ roleOptions: [...roleOptions] });
         const role = screen.getByRole('combobox', { name: 'Add as' });
 
-        expect(role.id).toBe('add-member-role');
         expect(role.textContent).toBe('Member');
 
         await user.click(
@@ -273,7 +272,31 @@ describe('the members card of a team', () => {
             user_id: 'user-20',
             role: 'facilitator',
         });
-        expect(container.querySelector('#add-member-role')).not.toBeNull();
+    });
+
+    it('shows a refused role under the form, tied to "Add as"', () => {
+        mocks.props.errors = { role: 'The selected role is invalid.' };
+
+        card({ roleOptions: [{ value: 'member', label: 'Member' }] });
+
+        const role = screen.getByRole('combobox', { name: 'Add as' });
+
+        expect(role.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(role.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('The selected role is invalid.');
+    });
+
+    it('gives each card its own "Add as" id', () => {
+        card({ roleOptions: [{ value: 'member', label: 'Member' }] });
+        card({ roleOptions: [{ value: 'member', label: 'Member' }] });
+
+        const [first, second] = screen.getAllByRole('combobox', {
+            name: 'Add as',
+        });
+
+        expect(first.id).not.toBe(second.id);
     });
 
     it('posts no role when the viewer is given no role to choose', async () => {
