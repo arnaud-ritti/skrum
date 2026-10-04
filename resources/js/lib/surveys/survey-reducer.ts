@@ -94,21 +94,23 @@ export function surveyReducer(
                     ),
                 ),
             };
-        case 'question.reorder':
+        case 'question.reorder': {
+            const named = action.ids
+                .map((id) =>
+                    state.questions.find((question) => question.id === id),
+                )
+                .filter(
+                    (question): question is SurveyQuestionPayload =>
+                        question !== undefined,
+                );
+            const unnamed = state.questions.filter(
+                (question) => !action.ids.includes(question.id),
+            );
+
             return {
                 ...state,
-                questions: renumbered(
-                    action.ids
-                        .map((id) =>
-                            state.questions.find(
-                                (question) => question.id === id,
-                            ),
-                        )
-                        .filter(
-                            (question): question is SurveyQuestionPayload =>
-                                question !== undefined,
-                        ),
-                ),
+                questions: renumbered([...named, ...unnamed]),
             };
+        }
     }
 }
