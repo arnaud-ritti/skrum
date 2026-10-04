@@ -115,6 +115,7 @@ describe('ActionItemsTable', () => {
             .map((head) => head.textContent);
 
         expect(heads).toEqual([
+            'Select',
             'Action',
             'Status',
             'Assignee',
@@ -124,6 +125,7 @@ describe('ActionItemsTable', () => {
             'More',
         ]);
         expect(row('item-1').querySelector('td')?.textContent).toBe('');
+        expect(screen.getAllByRole('row')[0].querySelector('td')).toBeNull();
     });
 
     it('is a table row per item, under the id the links point to', () => {
@@ -261,16 +263,25 @@ describe('ActionItemsTable', () => {
         expect(row('item-1').dataset.late).toBe('true');
     });
 
-    it('does not let a viewer without rights complete an item, nor edit it', () => {
-        renderTable([actionItemFixture({ isMine: false })]);
+    it('does not let a viewer without rights complete an item, nor edit it', async () => {
+        const { ctx } = renderTable([actionItemFixture({ isMine: false })]);
+        const status = within(row('item-1')).getByRole('button', {
+            name: 'Mark as in progress',
+        });
+
+        expect(status.getAttribute('aria-disabled')).toBe('true');
+
+        fireEvent.click(status);
+
+        expect(ctx.onStatusChange).not.toHaveBeenCalled();
+
+        status.focus();
 
         expect(
-            (
-                within(row('item-1')).getByRole('button', {
-                    name: 'Mark as in progress',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+            await screen.findByRole('tooltip', {
+                name: 'You cannot change this action item',
+            }),
+        ).toBeTruthy();
         expect(
             within(row('item-1')).queryByRole('button', {
                 name: 'More actions',

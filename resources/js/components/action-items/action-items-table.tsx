@@ -97,16 +97,13 @@ type Props = {
     empty?: ReactNode;
     /** Under the rows, inside the card: the pagination. */
     footer?: ReactNode;
-    /**
-     * Place of the selection box of a row, in the first column (AI-1). The
-     * column stays empty until then.
-     */
+    /** The selection box of a row, in the first column; empty without it. */
     selectionCell?: (item: ActionItem) => ReactNode;
-    /** Place of the "select all" box, in the header of the first column (AI-1). */
+    /** The "select all" box, in the header of the first column. */
     selectionHead?: ReactNode;
-    /** Place of the box of a group row, which selects the group's rows (AI-1). */
+    /** The box of a group row, which selects the group's rows. */
     selectionGroup?: (group: ActionItemGroup) => ReactNode;
-    /** A selected row has the selected background (AI-1). */
+    /** A selected row has the selected background. */
     isSelected?: (item: ActionItem) => boolean;
     'aria-label'?: string;
     onOpen: (item: ActionItem) => void;
@@ -302,12 +299,15 @@ function Row({
                             data-slot="action-row-status"
                             aria-label={statusAction}
                             aria-describedby={statusId}
-                            disabled={!canComplete || busy}
-                            onClick={() =>
-                                context.onStatusChange(item, nextStatus)
-                            }
+                            aria-disabled={canComplete ? undefined : true}
+                            disabled={busy}
+                            onClick={() => {
+                                if (canComplete) {
+                                    context.onStatusChange(item, nextStatus);
+                                }
+                            }}
                             className={cn(
-                                'inline-flex rounded-full disabled:cursor-not-allowed',
+                                'inline-flex rounded-full disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
                                 focusRing,
                             )}
                         >
@@ -319,7 +319,11 @@ function Row({
                             </span>
                         </button>
                     </TooltipTrigger>
-                    <TooltipContent>{statusAction}</TooltipContent>
+                    <TooltipContent>
+                        {canComplete
+                            ? statusAction
+                            : t('You cannot change this action item')}
+                    </TooltipContent>
                 </Tooltip>
             </TableCell>
             <TableCell>
@@ -487,13 +491,11 @@ export function ActionItemsTable({
             <Table aria-label={ariaLabel} aria-busy={loading || undefined}>
                 <TableHeader className="bg-muted">
                     <TableRow className="hover:bg-transparent">
-                        {selectionHead === undefined ? (
-                            <TableCell className="w-10" />
-                        ) : (
-                            <TableHead className="w-10">
-                                {selectionHead}
-                            </TableHead>
-                        )}
+                        <TableHead className="w-10">
+                            {selectionHead ?? (
+                                <span className="sr-only">{t('Select')}</span>
+                            )}
+                        </TableHead>
                         <TableHead>{t('Action')}</TableHead>
                         <TableHead className="w-25">{t('Status')}</TableHead>
                         <TableHead className="w-34">{t('Assignee')}</TableHead>
