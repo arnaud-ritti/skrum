@@ -311,9 +311,9 @@ describe('SessionSettingsPopover', () => {
     it('puts the given id on each control', () => {
         renderWithProviders(<Harness />);
 
-        expect(
-            screen.getByRole('switch', { name: 'Close for editing' }).id,
-        ).toBe('retro-locked');
+        expect(screen.getByRole('switch', { name: 'Lock board' }).id).toBe(
+            'retro-locked',
+        );
         expect(
             screen.getByRole('switch', { name: 'Hide vote counts' }).id,
         ).toBe('retro-hide-vote-counts');
@@ -331,7 +331,7 @@ describe('SessionSettingsPopover', () => {
         renderWithProviders(<Harness onDraftChange={onDraftChange} />);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: 'Close for editing' }),
+            screen.getByRole('switch', { name: 'Lock board' }),
         );
 
         expect(onDraftChange).toHaveBeenCalledWith({ is_locked: true });
@@ -343,7 +343,7 @@ describe('SessionSettingsPopover', () => {
     it('drops a draft key when the value returns to the applied one', async () => {
         const onDraftChange = vi.fn();
         renderWithProviders(<Harness onDraftChange={onDraftChange} />);
-        const lock = screen.getByRole('switch', { name: 'Close for editing' });
+        const lock = screen.getByRole('switch', { name: 'Lock board' });
 
         await userEvent.click(lock);
         await userEvent.click(lock);
@@ -498,9 +498,7 @@ describe('SessionSettingsPopover', () => {
             ),
         ).toBe(true);
         expect(
-            isDisabled(
-                screen.getByRole('switch', { name: 'Close for editing' }),
-            ),
+            isDisabled(screen.getByRole('switch', { name: 'Lock board' })),
         ).toBe(false);
     });
 
@@ -539,7 +537,7 @@ describe('SessionSettingsPopover', () => {
         renderWithProviders(<Harness onApply={onApply} />);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: 'Close for editing' }),
+            screen.getByRole('switch', { name: 'Lock board' }),
         );
         await userEvent.click(
             screen.getByRole('button', { name: 'Apply (1)' }),
@@ -563,7 +561,7 @@ describe('SessionSettingsPopover', () => {
     it('applies with Ctrl+Enter', async () => {
         const onApply = vi.fn().mockResolvedValue(undefined);
         renderWithProviders(<Harness onApply={onApply} />);
-        const lock = screen.getByRole('switch', { name: 'Close for editing' });
+        const lock = screen.getByRole('switch', { name: 'Lock board' });
 
         await userEvent.click(lock);
         fireEvent.keyDown(lock, { key: 'Enter', ctrlKey: true });
@@ -580,7 +578,7 @@ describe('SessionSettingsPopover', () => {
                 }),
         );
         renderWithProviders(<Harness onApply={onApply} />);
-        const lock = screen.getByRole('switch', { name: 'Close for editing' });
+        const lock = screen.getByRole('switch', { name: 'Lock board' });
 
         await userEvent.click(lock);
         await userEvent.click(
@@ -598,7 +596,7 @@ describe('SessionSettingsPopover', () => {
         renderWithProviders(<Harness onApply={onApply} />);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: 'Close for editing' }),
+            screen.getByRole('switch', { name: 'Lock board' }),
         );
         await userEvent.click(
             screen.getByRole('button', { name: 'Apply (1)' }),
@@ -622,7 +620,7 @@ describe('SessionSettingsPopover', () => {
 
         expect(
             screen
-                .getByRole('switch', { name: 'Close for editing' })
+                .getByRole('switch', { name: 'Lock board' })
                 .getAttribute('aria-checked'),
         ).toBe('true');
         expect(

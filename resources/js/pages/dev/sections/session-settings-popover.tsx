@@ -234,7 +234,7 @@ function useWhiteboardGroups(): SessionSettingGroup[] {
                 {
                     type: 'switch',
                     key: 'locked',
-                    label: t('Close for editing'),
+                    label: t('Lock board'),
                     onLabel: t('Locked'),
                     offLabel: t('Unlocked'),
                 },

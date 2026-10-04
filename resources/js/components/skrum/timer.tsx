@@ -64,7 +64,15 @@ export type TimerProps = {
     className?: string;
 };
 
-function TimerRing({ fraction, big }: { fraction: number; big: boolean }) {
+function TimerRing({
+    fraction,
+    big,
+    isLow,
+}: {
+    fraction: number;
+    big: boolean;
+    isLow: boolean;
+}) {
     const radius = 9;
     const circumference = 2 * Math.PI * radius;
     const clamped = Math.min(Math.max(fraction, 0), 1);
@@ -82,7 +90,10 @@ function TimerRing({ fraction, big }: { fraction: number; big: boolean }) {
                 r={radius}
                 fill="none"
                 strokeWidth="3"
-                className="stroke-current opacity-20"
+                className={cn(
+                    'stroke-current',
+                    isLow ? 'opacity-20' : 'opacity-12',
+                )}
             />
             <circle
                 cx="12"
@@ -93,7 +104,7 @@ function TimerRing({ fraction, big }: { fraction: number; big: boolean }) {
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference * (1 - clamped)}
-                className="stroke-current"
+                className={isLow ? 'stroke-current' : 'stroke-primary'}
             />
         </svg>
     );
@@ -283,7 +294,11 @@ export function Timer({
                     {StateIcon ? (
                         <StateIcon className={iconSize} aria-hidden />
                     ) : fraction !== null ? (
-                        <TimerRing fraction={fraction} big={isBig} />
+                        <TimerRing
+                            fraction={fraction}
+                            big={isBig}
+                            isLow={isLow}
+                        />
                     ) : (
                         <TimerIcon className={iconSize} aria-hidden />
                     )}

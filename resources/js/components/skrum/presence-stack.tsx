@@ -1,4 +1,4 @@
-import { UserPlus, WandSparkles } from 'lucide-react';
+import { UserPlus, VenetianMask, WandSparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -369,10 +369,11 @@ export function PresenceStack({
             </Popover>
             {guestCount > 0 && (
                 <Badge
-                    variant="secondary"
+                    variant="muted"
                     shape="pill"
                     data-slot="presence-stack-guests"
                 >
+                    <VenetianMask aria-hidden />
                     {guestCount === 1
                         ? t(':count guest', { count: guestCount })
                         : t(':count guests', { count: guestCount })}
