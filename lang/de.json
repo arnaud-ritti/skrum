@@ -5260,5 +5260,6 @@
     "Suggested by the rotation.": "Von der Rotation vorgeschlagen.",
     "More than :cap action items match. Narrow the filters.": "Mehr als :cap Aktionen passen. Grenze die Filter ein.",
     "The list changed: :count action items match now.": "Die Liste hat sich geändert: Jetzt passen :count Aktionen.",
-    "Tickets": "Tickets"
+    "Tickets": "Tickets",
+    "Started :date": "Begonnen am :date"
 }

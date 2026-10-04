@@ -5040,5 +5040,6 @@
     "Suggested by the rotation.": "Suggested by the rotation.",
     "More than :cap action items match. Narrow the filters.": "More than :cap action items match. Narrow the filters.",
     "The list changed: :count action items match now.": "The list changed: :count action items match now.",
-    "Tickets": "Tickets"
+    "Tickets": "Tickets",
+    "Started :date": "Started :date"
 }

@@ -95,6 +95,8 @@ export type ActionSheetProps = ActionItemData & {
     /** The retro card the action comes from. */
     originCard?: ReactNode;
     history?: ReactNode;
+    /** When the item was put in progress; shown until it is done. */
+    startedAt?: string | null;
 };
 
 const NoOwner = 'none';
@@ -225,6 +227,7 @@ export function ActionSheet({
     links = null,
     members,
     withDoing = false,
+    startedAt = null,
     today,
     locale = defaultActionLocale(),
     onStatusChange,
@@ -267,7 +270,7 @@ export function ActionSheet({
         status,
         today,
     });
-    const nextStatus = nextActionStatus(status, withDoing);
+    const footerStatus = nextActionStatus(status, false);
     const statuses: ActionItemStatus[] =
         withDoing || status === 'doing'
             ? ['open', 'doing', 'completed']
@@ -500,6 +503,16 @@ export function ActionSheet({
                                 )}
                                 <SavingMark active={savingField === 'status'} />
                             </div>
+                            {status === 'doing' && startedAt && (
+                                <p className="mt-1 text-xs break-words text-muted-foreground">
+                                    {t('Started :date', {
+                                        date: formatActionDay(
+                                            startedAt,
+                                            locale,
+                                        ),
+                                    })}
+                                </p>
+                            )}
                             {isCompleted && (doneAt || completedVia) && (
                                 <p className="mt-1 text-xs break-words text-muted-foreground">
                                     {[
@@ -905,10 +918,10 @@ export function ActionSheet({
                                 type="button"
                                 className="min-w-0"
                                 disabled={!completes}
-                                onClick={() => onStatusChange(nextStatus)}
+                                onClick={() => onStatusChange(footerStatus)}
                             >
                                 <span className="truncate">
-                                    {labels.statusAction[nextStatus]}
+                                    {labels.statusAction[footerStatus]}
                                 </span>
                             </Button>
                         )}
