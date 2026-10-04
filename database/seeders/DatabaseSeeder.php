@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         if (! app()->environment('local', 'testing')) {
-            $this->command?->warn('The test user is only seeded in the local and testing environments, skipping.');
+            $this->command->warn('The test user is only seeded in the local and testing environments, skipping.');
 
             return;
         }
