@@ -72,6 +72,7 @@ export function useNotifications() {
     const [failed, setFailed] = useState(false);
     const [markingAllRead, setMarkingAllRead] = useState(false);
     const [arriving, setArriving] = useState(false);
+    const [subscribed, setSubscribed] = useState(false);
     const latestLoad = useRef(0);
     const loadingMore = useRef(false);
     const watching = useRef(false);
@@ -143,6 +144,7 @@ export function useNotifications() {
 
         echo<'reverb'>()
             .private(name)
+            .subscribed(() => setSubscribed(true))
             .listen(
                 '.notification.received',
                 (payload: { unreadCount?: number }) => {
@@ -166,6 +168,7 @@ export function useNotifications() {
                 clearTimeout(settle);
             }
 
+            setSubscribed(false);
             echo().leave(name);
         };
     }, [userId]);
@@ -322,6 +325,7 @@ export function useNotifications() {
         failed,
         markingAllRead,
         arriving,
+        subscribed,
         load,
         loadMore,
         stopWatching,
