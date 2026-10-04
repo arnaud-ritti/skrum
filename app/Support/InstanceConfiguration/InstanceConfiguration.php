@@ -172,7 +172,7 @@ class InstanceConfiguration
     /**
      * Lays the stored fields over config() and puts back the environment value of every key it wrote
      * before that is no longer stored. Called per request, per job and per command; never at boot.
-     * Nothing is written, and no resolved client dropped, when the values are those of the last apply.
+     * No resolved client is dropped when the values are those of the last apply.
      */
     public function apply(): void
     {
@@ -204,9 +204,7 @@ class InstanceConfiguration
             return;
         }
 
-        if ($written === $previous && config(self::AppliedFingerprint) === $fingerprint) {
-            return;
-        }
+        $isUnchanged = $written === $previous && config(self::AppliedFingerprint) === $fingerprint;
 
         config($values);
 
@@ -215,6 +213,10 @@ class InstanceConfiguration
         }
 
         config([self::AppliedKeys => $written, self::AppliedFingerprint => $fingerprint]);
+
+        if ($isUnchanged) {
+            return;
+        }
 
         $this->forgetResolvedClients();
     }
